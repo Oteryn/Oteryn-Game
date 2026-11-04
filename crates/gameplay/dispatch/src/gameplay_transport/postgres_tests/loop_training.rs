@@ -53,7 +53,7 @@ fn scenario() -> TestResult {
             .await?;
         assert_eq!(count, 0, "shipped gate writes nothing");
         let mut rates = TrainingRates::from_json(include_bytes!(
-            "../../../../../../rulesets/training/provisional-v1.json"
+            "../../../../../../rulesets/training/crystal-201189f-v1.json"
         ))
         .map_err(debug)?;
         rates.enabled = true;
@@ -117,7 +117,7 @@ fn loop_training_postgres_missing_progression_is_atomic_with_settlement() -> Tes
         let current=crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).current_session(deps.admitted.game_session_id).await?;
         let item=crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;
         let fence=crate::durability::character_progression::CurrentCharacterGameplayFence {character_id:item.character_id,game_session_id:item.game_session_id,connection_generation:item.connection_generation,character_lease_generation:item.character_lease_generation,runtime_scope:item.runtime_scope,scope_ownership_generation:item.scope_ownership_generation,expected_character_revision:crate::domain::CharacterRevision::new(1).map_err(debug)?};
-        let mut rates=TrainingRates::from_json(include_bytes!("../../../../../../rulesets/training/provisional-v1.json")).map_err(debug)?;rates.enabled=true;
+        let mut rates=TrainingRates::from_json(include_bytes!("../../../../../../rulesets/training/crystal-201189f-v1.json")).map_err(debug)?;rates.enabled=true;
         let context=crate::durability::loop_training::TrainingContext {rates:Arc::new(rates),formula:active.native_gameplay().and_then(|n|n.training_formula()).ok_or("formula")?.clone(),progression:active.progression().cloned()};
         let mut stale=context.clone();stale.formula.content_revision="stale-content".into();
         assert!(h.root.settle_offline_training(&authority,&h.node,fence,stale).await.is_err());

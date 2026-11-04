@@ -41,7 +41,6 @@ pub(super) async fn finish_owner_with_house_position(
         String,
     )>,
 ) -> Result<UseOutcome, crate::durability::DurabilityError> {
-    use crate::durability::bed_sleep::BedSleepOutcome;
     if command.item_fence != Some(owner.request.fence)
         || command.game_session_id != owner.request.fence.game_session_id
         || command.command_id != owner.request.command_id
@@ -49,16 +48,24 @@ pub(super) async fn finish_owner_with_house_position(
     {
         return Ok(UseOutcome::rejected());
     }
-    let disposition = match owner.commit_with_house_position(house).await? {
-        BedSleepOutcome::Slept => UseDisposition::OfflineTraining,
-        BedSleepOutcome::Occupied => UseDisposition::BedOccupied,
-        BedSleepOutcome::Stale | BedSleepOutcome::Conflict => UseDisposition::StaleState,
-        BedSleepOutcome::Denied => UseDisposition::Rejected,
-    };
+    let disposition = bed_sleep_disposition(owner.commit_with_house_position(house).await?);
     Ok(UseOutcome {
         disposition,
         ..UseOutcome::rejected()
     })
+}
+
+/// Keep the durable ACL/reservation decisions on the real USE response path.
+/// Crystal 201189f `src/items/bed.cpp:126-142,162-175` distinguishes an
+/// authorized wake/sleep from a bed occupied by another character.
+fn bed_sleep_disposition(outcome: crate::durability::bed_sleep::BedSleepOutcome) -> UseDisposition {
+    use crate::durability::bed_sleep::BedSleepOutcome;
+    match outcome {
+        BedSleepOutcome::Slept => UseDisposition::OfflineTraining,
+        BedSleepOutcome::Occupied => UseDisposition::BedOccupied,
+        BedSleepOutcome::Stale | BedSleepOutcome::Conflict => UseDisposition::StaleState,
+        BedSleepOutcome::Denied => UseDisposition::Rejected,
+    }
 }
 
 pub(super) async fn dispatch(

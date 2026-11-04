@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 POLICY_PATH = ROOT / ".github/repository-policy.json"
 USES_LINE = re.compile(r"^\s*uses:\s*([^@\s]+)@([^\s#]+)", re.MULTILINE)
 CANONICAL_MPL_2_0_GIT_BLOB_SHA = "d0a1fa1482eea82e19510e7920cbe3a03e41f691"
-EXPECTED_REQUIRED_STATUS = "game-gate"
+EXPECTED_REQUIRED_STATUSES = ["game-gate", "heavy-gate"]
 EXPECTED_CONTROL_PLANE_PATHS = [
     ".github/workflows/*",
     ".github/workflows/**/*",
@@ -219,8 +219,8 @@ def main() -> int:
 
     if policy.get("schema_version") != "1.0":
         errors.append("repository policy schema_version must be 1.0")
-    if policy.get("required_status_check") != EXPECTED_REQUIRED_STATUS:
-        errors.append(f"required_status_check must be {EXPECTED_REQUIRED_STATUS}")
+    if policy.get("required_status_check") != EXPECTED_REQUIRED_STATUSES:
+        errors.append(f"required_status_check must be {EXPECTED_REQUIRED_STATUSES}")
 
     licensing = policy.get("licensing", {})
     expected_licensing = {
@@ -321,10 +321,10 @@ def main() -> int:
         errors.append("strict signed commits are incompatible with third-party squash PRs")
 
     contexts = required_status_contexts(ruleset)
-    if contexts != [EXPECTED_REQUIRED_STATUS]:
+    if contexts != EXPECTED_REQUIRED_STATUSES:
         errors.append(
-            "ruleset required status checks must contain only the stable aggregate "
-            f"{EXPECTED_REQUIRED_STATUS!r}; got {contexts!r}"
+            "ruleset required status checks must contain the stable aggregates "
+            f"{EXPECTED_REQUIRED_STATUSES!r}; got {contexts!r}"
         )
 
     push_ruleset = policy.get("push_ruleset", {})
@@ -763,7 +763,7 @@ def main() -> int:
     if github_governance.is_file():
         text = github_governance.read_text(encoding="utf-8")
         for fragment in (
-            f"`{EXPECTED_REQUIRED_STATUS}` is the single stable required status check",
+            "`game-gate` and `heavy-gate` are the stable required status checks",
             "PR metadata edits automatically re-run the exact-head aggregate gate",
             "dedicated push ruleset",
             "Dependabot maintains both GitHub Actions and Cargo dependencies",

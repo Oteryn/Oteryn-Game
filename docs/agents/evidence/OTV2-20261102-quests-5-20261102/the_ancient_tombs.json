@@ -1,0 +1,2362 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "the_ancient_tombs",
+    "elements": 60,
+    "auto": 17,
+    "manual": 43,
+    "statuses": {
+      "LEFT_OUT": 43,
+      "CALLBACK_DATA_IMPLEMENTED": 17
+    },
+    "new_callbacks": 17,
+    "prepared_npc": {
+      "rules": 0,
+      "reply_paragraphs": 0,
+      "conversations": 0
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [
+    "oteryn:quest-callback/ancient-tombs-diprath-sign-1",
+    "oteryn:quest-callback/ancient-tombs-diprath-sign-2",
+    "oteryn:quest-callback/ancient-tombs-diprath-sign-3",
+    "oteryn:quest-callback/ancient-tombs-diprath-sign-4",
+    "oteryn:quest-callback/ancient-tombs-diprath-sign-5",
+    "oteryn:quest-callback/ancient-tombs-diprath-sign-6",
+    "oteryn:quest-callback/ancient-tombs-diprath-sign-7",
+    "oteryn:quest-callback/ancient-tombs-diprath-sign-8",
+    "oteryn:quest-callback/ancient-tombs-mahrdis-room",
+    "oteryn:quest-callback/ancient-tombs-morguthis-flame-1",
+    "oteryn:quest-callback/ancient-tombs-morguthis-flame-2",
+    "oteryn:quest-callback/ancient-tombs-morguthis-flame-3",
+    "oteryn:quest-callback/ancient-tombs-morguthis-flame-4",
+    "oteryn:quest-callback/ancient-tombs-morguthis-flame-5",
+    "oteryn:quest-callback/ancient-tombs-morguthis-flame-6",
+    "oteryn:quest-callback/ancient-tombs-morguthis-flame-7",
+    "oteryn:quest-callback/ancient-tombs-morguthis-seven-flame-gate"
+  ],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Ściana Morguthisa",
+      "pattern": "P01",
+      "trigger": "aid10808",
+      "condition": "wall1306 na(33211,32698,13)",
+      "effect": "usuń wall lub przesuń creatures/items na y+1 i odtwórz wall",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/action_morguthis_wall.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gdy ściana1306 nie istnieje, źródło wypycha wszystkie creatures i items z(33211,32698,13) na y+1, po czym tworzy ścianę. Zwykła passage zmiana nie obejmuje atomowego przesunięcia tej zawartości; WorldBundle ownera nie rozszerzamy. Ta akcja nie ma timera.",
+      "missing_owner_function": "WorldBundle object movement and wall reconstruction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Gdy ściana1306 nie istnieje, źródło wypycha wszystkie creatures i items z(33211,32698,13) na y+1, po czym tworzy ścianę. Zwykła passage zmiana nie obejmuje atomowego przesunięcia tej zawartości; WorldBundle ownera nie rozszerzamy. Ta akcja nie ma timera.",
+        "dependency": "WorldBundle object movement and wall reconstruction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/action_morguthis_wall.lua:3",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 2,
+      "step": "Thalas: licznik przełączników",
+      "pattern": "P01/P16/P22",
+      "trigger": "aid12121,item2772",
+      "condition": "zarejestrowany switch",
+      "effect": "Game storage++;2772→2773; po20min reset2773→2772; jeśli gracz online: ThalasTreasure<=0→1, Game storage--",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_active_teleport_switches.lua:2",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Switch zapisuje Game storage i planuje wspólny reset po20 minutach. Nie zastępujemy Game licznikiem pojedynczego gracza; brak istniejącego podłączenia tego globalnego cyklu do WorldBundle.",
+      "missing_owner_function": "World-scoped storage + 20-minute timer owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Switch zapisuje Game storage i planuje wspólny reset po20 minutach. Nie zastępujemy Game licznikiem pojedynczego gracza; brak istniejącego podłączenia tego globalnego cyklu do WorldBundle.",
+        "dependency": "World-scoped storage + 20-minute timer owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_active_teleport_switches.lua:2",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 3,
+      "step": "Diprath: licznik przełączników",
+      "pattern": "P01/P16/P22",
+      "trigger": "aid12122,item2772",
+      "condition": "zarejestrowany switch",
+      "effect": "Game storage++;2772→2773; po20min reset2773→2772; jeśli gracz online: DiphtrahsTreasure<=1→2, Game storage--",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_active_teleport_switches.lua:10",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Switch zapisuje Game storage i planuje wspólny reset po20 minutach. Nie zastępujemy Game licznikiem pojedynczego gracza; brak istniejącego podłączenia tego globalnego cyklu do WorldBundle.",
+      "missing_owner_function": "World-scoped storage + 20-minute timer owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Switch zapisuje Game storage i planuje wspólny reset po20 minutach. Nie zastępujemy Game licznikiem pojedynczego gracza; brak istniejącego podłączenia tego globalnego cyklu do WorldBundle.",
+        "dependency": "World-scoped storage + 20-minute timer owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_active_teleport_switches.lua:10",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 4,
+      "step": "Ashmunrah: licznik przełączników",
+      "pattern": "P01/P16/P22",
+      "trigger": "aid12123,item2772",
+      "condition": "zarejestrowany switch",
+      "effect": "Game storage++;2772→2773; po20min reset2773→2772; jeśli gracz online: bez player effect, Game storage--",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_active_teleport_switches.lua:18",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Switch zapisuje Game storage i planuje wspólny reset po20 minutach. Nie zastępujemy Game licznikiem pojedynczego gracza; brak istniejącego podłączenia tego globalnego cyklu do WorldBundle.",
+      "missing_owner_function": "World-scoped storage + 20-minute timer owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Switch zapisuje Game storage i planuje wspólny reset po20 minutach. Nie zastępujemy Game licznikiem pojedynczego gracza; brak istniejącego podłączenia tego globalnego cyklu do WorldBundle.",
+        "dependency": "World-scoped storage + 20-minute timer owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_active_teleport_switches.lua:18",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 5,
+      "step": "Diphtrah: znak1",
+      "pattern": "P18",
+      "trigger": "aid40032",
+      "condition": "pierwszy dowolnie; kolejne poprzedni znak=1; bieżący!=1",
+      "effect": "Diprath_sign1=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:4",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific already-completed text on sign reentry is not encoded separately from a missing predecessor.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:4",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-1"
+      }
+    },
+    {
+      "row": 6,
+      "step": "Diphtrah: znak2",
+      "pattern": "P18",
+      "trigger": "aid40033",
+      "condition": "pierwszy dowolnie; kolejne poprzedni znak=1; bieżący!=1",
+      "effect": "Diprath_sign2=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:5",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific already-completed text on sign reentry is not encoded separately from a missing predecessor.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:5",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-2"
+      }
+    },
+    {
+      "row": 7,
+      "step": "Diphtrah: znak3",
+      "pattern": "P18",
+      "trigger": "aid40034",
+      "condition": "pierwszy dowolnie; kolejne poprzedni znak=1; bieżący!=1",
+      "effect": "Diprath_sign3=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:6",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific already-completed text on sign reentry is not encoded separately from a missing predecessor.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:6",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-3"
+      }
+    },
+    {
+      "row": 8,
+      "step": "Diphtrah: znak4",
+      "pattern": "P18",
+      "trigger": "aid40035",
+      "condition": "pierwszy dowolnie; kolejne poprzedni znak=1; bieżący!=1",
+      "effect": "Diprath_sign4=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:7",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific already-completed text on sign reentry is not encoded separately from a missing predecessor.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:7",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-4"
+      }
+    },
+    {
+      "row": 9,
+      "step": "Diphtrah: znak5",
+      "pattern": "P18",
+      "trigger": "aid40036",
+      "condition": "pierwszy dowolnie; kolejne poprzedni znak=1; bieżący!=1",
+      "effect": "Diprath_sign5=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:8",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific already-completed text on sign reentry is not encoded separately from a missing predecessor.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:8",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-5"
+      }
+    },
+    {
+      "row": 10,
+      "step": "Diphtrah: znak6",
+      "pattern": "P18",
+      "trigger": "aid40037",
+      "condition": "pierwszy dowolnie; kolejne poprzedni znak=1; bieżący!=1",
+      "effect": "Diprath_sign6=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:9",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific already-completed text on sign reentry is not encoded separately from a missing predecessor.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:9",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-6"
+      }
+    },
+    {
+      "row": 11,
+      "step": "Diphtrah: znak7",
+      "pattern": "P18",
+      "trigger": "aid40038",
+      "condition": "pierwszy dowolnie; kolejne poprzedni znak=1; bieżący!=1",
+      "effect": "Diprath_sign7=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:10",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific already-completed text on sign reentry is not encoded separately from a missing predecessor.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:10",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-7"
+      }
+    },
+    {
+      "row": 12,
+      "step": "Diphtrah: znak8",
+      "pattern": "P18",
+      "trigger": "aid40039",
+      "condition": "pierwszy dowolnie; kolejne poprzedni znak=1; bieżący!=1",
+      "effect": "Diprath_sign8=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:11",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific already-completed text on sign reentry is not encoded separately from a missing predecessor.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:11",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-8"
+      }
+    },
+    {
+      "row": 13,
+      "step": "Rahemos: kapelusz i marchew",
+      "pattern": "P01/P30",
+      "trigger": "aid12107,item2772",
+      "condition": "los1…3",
+      "effect": "1: marchew3595 na x-1; dźwignia2773/4s; drzwi1662→1663; inaczej200 physical dmg",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_oasis_lever_door.lua:26",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Jedna akcja łączy losowanie1/3, carrot3595, transformację dźwigni i drzwi,4-sekundowy reset albo200 physical damage. Nie publikujemy częściowej gałęzi bez wspólnego ownera obrażeń/mapy/reward.",
+      "missing_owner_function": "Atomic random lever / damage / item / timed door operation",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Jedna akcja łączy losowanie1/3, carrot3595, transformację dźwigni i drzwi,4-sekundowy reset albo200 physical damage. Nie publikujemy częściowej gałęzi bez wspólnego ownera obrażeń/mapy/reward.",
+        "dependency": "Atomic random lever / damage / item / timed door operation",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_oasis_lever_door.lua:26",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 14,
+      "step": "Rahemos: drzwi zamknięte",
+      "pattern": "P04",
+      "trigger": "aid12107,item1662",
+      "condition": "brak odnalezionej marchewki",
+      "effect": "tylko komunikat odmowy",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_oasis_lever_door.lua:17",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Rejestracja donora po item1662 dotyczy specjalnego feedbacku zamkniętych drzwi. Nie ma potwierdzonego selector UID/AID/pozycji tej gałęzi w mapie; nie przechwytujemy globalnie wszystkich drzwi1662.",
+      "missing_owner_function": "Qualified world-object selector and feedback-only routing",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Rejestracja donora po item1662 dotyczy specjalnego feedbacku zamkniętych drzwi. Nie ma potwierdzonego selector UID/AID/pozycji tej gałęzi w mapie; nie przechwytujemy globalnie wszystkich drzwi1662.",
+        "dependency": "Qualified world-object selector and feedback-only routing",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_oasis_lever_door.lua:17",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:320"
+      }
+    },
+    {
+      "row": 15,
+      "step": "Vashresamun: instrument1",
+      "pattern": "P18",
+      "trigger": "aid12106,item3255",
+      "condition": "VashresamunInstruments (-1 jako0)+1=1",
+      "effect": "counter=1; błąd→counter0 i20 physical",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:2",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Instrument zmienia indeks sekwencji, a błędny krok zeruje go i zadaje20 physical damage; finał warunkowo zmienia drzwi i treasure. Brak istniejącego ownera atomowej reguły stan+obrażenia; dodanie wspólnego routingu jest zabronione przez ANSWER.",
+      "missing_owner_function": "Atomic conditional QuestState + actor damage dispatch",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Instrument zmienia indeks sekwencji, a błędny krok zeruje go i zadaje20 physical damage; finał warunkowo zmienia drzwi i treasure. Brak istniejącego ownera atomowej reguły stan+obrażenia; dodanie wspólnego routingu jest zabronione przez ANSWER.",
+        "dependency": "Atomic conditional QuestState + actor damage dispatch",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:2",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 16,
+      "step": "Vashresamun: instrument2",
+      "pattern": "P18",
+      "trigger": "aid12106,item3261",
+      "condition": "VashresamunInstruments (-1 jako0)+1=2",
+      "effect": "counter=2; błąd→counter0 i20 physical",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Instrument zmienia indeks sekwencji, a błędny krok zeruje go i zadaje20 physical damage; finał warunkowo zmienia drzwi i treasure. Brak istniejącego ownera atomowej reguły stan+obrażenia; dodanie wspólnego routingu jest zabronione przez ANSWER.",
+      "missing_owner_function": "Atomic conditional QuestState + actor damage dispatch",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Instrument zmienia indeks sekwencji, a błędny krok zeruje go i zadaje20 physical damage; finał warunkowo zmienia drzwi i treasure. Brak istniejącego ownera atomowej reguły stan+obrażenia; dodanie wspólnego routingu jest zabronione przez ANSWER.",
+        "dependency": "Atomic conditional QuestState + actor damage dispatch",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:3",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 17,
+      "step": "Vashresamun: instrument3",
+      "pattern": "P18",
+      "trigger": "aid12106,item3258",
+      "condition": "VashresamunInstruments (-1 jako0)+1=3",
+      "effect": "counter=3; błąd→counter0 i20 physical",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Instrument zmienia indeks sekwencji, a błędny krok zeruje go i zadaje20 physical damage; finał warunkowo zmienia drzwi i treasure. Brak istniejącego ownera atomowej reguły stan+obrażenia; dodanie wspólnego routingu jest zabronione przez ANSWER.",
+      "missing_owner_function": "Atomic conditional QuestState + actor damage dispatch",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Instrument zmienia indeks sekwencji, a błędny krok zeruje go i zadaje20 physical damage; finał warunkowo zmienia drzwi i treasure. Brak istniejącego ownera atomowej reguły stan+obrażenia; dodanie wspólnego routingu jest zabronione przez ANSWER.",
+        "dependency": "Atomic conditional QuestState + actor damage dispatch",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:4",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 18,
+      "step": "Vashresamun: instrument4",
+      "pattern": "P18",
+      "trigger": "aid12106,item3260",
+      "condition": "VashresamunInstruments (-1 jako0)+1=4",
+      "effect": "counter=4; błąd→counter0 i20 physical",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:5",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Instrument zmienia indeks sekwencji, a błędny krok zeruje go i zadaje20 physical damage; finał warunkowo zmienia drzwi i treasure. Brak istniejącego ownera atomowej reguły stan+obrażenia; dodanie wspólnego routingu jest zabronione przez ANSWER.",
+      "missing_owner_function": "Atomic conditional QuestState + actor damage dispatch",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Instrument zmienia indeks sekwencji, a błędny krok zeruje go i zadaje20 physical damage; finał warunkowo zmienia drzwi i treasure. Brak istniejącego ownera atomowej reguły stan+obrażenia; dodanie wspólnego routingu jest zabronione przez ANSWER.",
+        "dependency": "Atomic conditional QuestState + actor damage dispatch",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:5",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 19,
+      "step": "Vashresamun: instrument5",
+      "pattern": "P18",
+      "trigger": "aid12106,item3257",
+      "condition": "VashresamunInstruments (-1 jako0)+1=5",
+      "effect": "counter=5; Door=1; Treasure<=1→2; błąd→counter0 i20 physical",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:6",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Instrument zmienia indeks sekwencji, a błędny krok zeruje go i zadaje20 physical damage; finał warunkowo zmienia drzwi i treasure. Brak istniejącego ownera atomowej reguły stan+obrażenia; dodanie wspólnego routingu jest zabronione przez ANSWER.",
+      "missing_owner_function": "Atomic conditional QuestState + actor damage dispatch",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Instrument zmienia indeks sekwencji, a błędny krok zeruje go i zadaje20 physical damage; finał warunkowo zmienia drzwi i treasure. Brak istniejącego ownera atomowej reguły stan+obrażenia; dodanie wspólnego routingu jest zabronione przez ANSWER.",
+        "dependency": "Atomic conditional QuestState + actor damage dispatch",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:6",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 20,
+      "step": "Ofiara Scarab Coin 9033",
+      "pattern": "P19/P03",
+      "trigger": "onAddItem3042 do item2114,uid9033",
+      "condition": "top player na(33097,32816,13)",
+      "effect": "usuń monetę (także bez gracza); DefaultStart=1; ; teleport(33093,32824,13)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:2",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+      "missing_owner_function": "World AddItem offering transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+        "dependency": "World AddItem offering transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:2",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 21,
+      "step": "Ofiara Scarab Coin 9034",
+      "pattern": "P19/P03",
+      "trigger": "onAddItem3042 do item2114,uid9034",
+      "condition": "top player na(33293,32742,13)",
+      "effect": "usuń monetę (także bez gracza); DefaultStart=1; ; teleport(33299,32742,13)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+      "missing_owner_function": "World AddItem offering transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+        "dependency": "World AddItem offering transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:3",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 22,
+      "step": "Ofiara Scarab Coin 9035",
+      "pattern": "P19/P03",
+      "trigger": "onAddItem3042 do item2114,uid9035",
+      "condition": "top player na(33073,32590,13)",
+      "effect": "usuń monetę (także bez gracza); DefaultStart=1; DiphtrahsTreasure<=0→1; teleport(33080,32588,13)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+      "missing_owner_function": "World AddItem offering transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+        "dependency": "World AddItem offering transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:4",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 23,
+      "step": "Ofiara Scarab Coin 9036",
+      "pattern": "P19/P03",
+      "trigger": "onAddItem3042 do item2114,uid9036",
+      "condition": "top player na(33240,32856,13)",
+      "effect": "usuń monetę (także bez gracza); DefaultStart=1; MahrdisTreasure<=0→1; teleport(33246,32850,13)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:13",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+      "missing_owner_function": "World AddItem offering transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+        "dependency": "World AddItem offering transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:13",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 24,
+      "step": "Ofiara Scarab Coin 9037",
+      "pattern": "P19/P03",
+      "trigger": "onAddItem3042 do item2114,uid9037",
+      "condition": "top player na(33276,32553,14)",
+      "effect": "usuń monetę (także bez gracza); DefaultStart=1; ; teleport(33271,32553,14)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:22",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+      "missing_owner_function": "World AddItem offering transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+        "dependency": "World AddItem offering transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:22",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 25,
+      "step": "Ofiara Scarab Coin 9038",
+      "pattern": "P19/P03",
+      "trigger": "onAddItem3042 do item2114,uid9038",
+      "condition": "top player na(33234,32692,13)",
+      "effect": "usuń monetę (także bez gracza); DefaultStart=1; ; teleport(33234,32687,13)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:23",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+      "missing_owner_function": "World AddItem offering transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+        "dependency": "World AddItem offering transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:23",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 26,
+      "step": "Ofiara Scarab Coin 9039",
+      "pattern": "P19/P03",
+      "trigger": "onAddItem3042 do item2114,uid9039",
+      "condition": "top player na(33135,32683,12)",
+      "effect": "usuń monetę (także bez gracza); DefaultStart=1; ; teleport(33130,32683,12)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:24",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+      "missing_owner_function": "World AddItem offering transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+        "dependency": "World AddItem offering transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:24",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 27,
+      "step": "Ofiara Scarab Coin 9040",
+      "pattern": "P19/P03",
+      "trigger": "onAddItem3042 do item2114,uid9040",
+      "condition": "top player na(33162,32831,10)",
+      "effect": "usuń monetę (także bez gracza); DefaultStart=1; ; teleport(33158,32832,10)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:25",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+      "missing_owner_function": "World AddItem offering transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Donor reaguje na AddItem scarab coin3042 w konkretnym basin, usuwa monetę i sprawdza stojącego obok gracza, następnie teleportuje/zmienia progres. Literal Use ani StepIn nie reprezentuje tego zdarzenia; potrzebny wspólny owner ofiary na ziemi.",
+        "dependency": "World AddItem offering transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_all_teleports_tombs_coal_basin.lua:25",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 28,
+      "step": "Złożenie hełmu",
+      "pattern": "P19",
+      "trigger": "onAddItem,aid40040",
+      "condition": "komplet3222…3228 na polu",
+      "effect": "usuń po1 części; utwórz3229",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_craft_helmet.lua:23",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Zestaw części hełmu lub rubin i hełm jest sprawdzany/usuwany na polu, a wynik tworzony z decay. Nie ma istniejącego kontraktu atomowego AddItem craftingu z placementem i timerem tego rezultatu.",
+      "missing_owner_function": "World-item crafting and decay transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Zestaw części hełmu lub rubin i hełm jest sprawdzany/usuwany na polu, a wynik tworzony z decay. Nie ma istniejącego kontraktu atomowego AddItem craftingu z placementem i timerem tego rezultatu.",
+        "dependency": "World-item crafting and decay transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_craft_helmet.lua:23",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 29,
+      "step": "Aktywacja hełmu",
+      "pattern": "P19/P16",
+      "trigger": "onAddItem3030,aid40040",
+      "condition": "item3229 na polu",
+      "effect": "3229→3230; decay; usuń3030×1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_craft_helmet.lua:6",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Zestaw części hełmu lub rubin i hełm jest sprawdzany/usuwany na polu, a wynik tworzony z decay. Nie ma istniejącego kontraktu atomowego AddItem craftingu z placementem i timerem tego rezultatu.",
+      "missing_owner_function": "World-item crafting and decay transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Zestaw części hełmu lub rubin i hełm jest sprawdzany/usuwany na polu, a wynik tworzony z decay. Nie ma istniejącego kontraktu atomowego AddItem craftingu z placementem i timerem tego rezultatu.",
+        "dependency": "World-item crafting and decay transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_craft_helmet.lua:6",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 30,
+      "step": "Ashmunrah: teleport przełączników",
+      "pattern": "P03",
+      "trigger": "uid50138",
+      "condition": "PLAYER AshmunrahSwitchesGlobalStorage>=5",
+      "effect": "teleport(33198,32885,11); inaczej fromPosition; UWAGA: Pisarz licznika używa Game; czytelnik używa player — QUESTION.",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_ashmunrah_teleport_switche_done.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Bramka zależy od liczników przełączników Game, przy czym donor w części miejsc czyta player storage zamiast Game. Nie zgadujemy korekty ani nie omijamy globalnego guardu; brak istniejącego ownera wspólnego licznika.",
+      "missing_owner_function": "World counter read + player-state/movement transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Bramka zależy od liczników przełączników Game, przy czym donor w części miejsc czyta player storage zamiast Game. Nie zgadujemy korekty ani nie omijamy globalnego guardu; brak istniejącego ownera wspólnego licznika.",
+        "dependency": "World counter read + player-state/movement transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_ashmunrah_teleport_switche_done.lua:9",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 31,
+      "step": "Diphtrah: teleport przełączników",
+      "pattern": "P03/P22",
+      "trigger": "uid50137",
+      "condition": "GAME DiprathSwitchesGlobalStorage>=7",
+      "effect": "teleport(33083,32568,14); inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_diprath_teleport_switche_done.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Bramka zależy od liczników przełączników Game, przy czym donor w części miejsc czyta player storage zamiast Game. Nie zgadujemy korekty ani nie omijamy globalnego guardu; brak istniejącego ownera wspólnego licznika.",
+      "missing_owner_function": "World counter read + player-state/movement transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Bramka zależy od liczników przełączników Game, przy czym donor w części miejsc czyta player storage zamiast Game. Nie zgadujemy korekty ani nie omijamy globalnego guardu; brak istniejącego ownera wspólnego licznika.",
+        "dependency": "World counter read + player-state/movement transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_diprath_teleport_switche_done.lua:8",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 32,
+      "step": "Thalas: teleport przełączników",
+      "pattern": "P03/P22",
+      "trigger": "uid50135",
+      "condition": "GAME ThalasSwitchesGlobalStorage>=8",
+      "effect": "teleport(33367,32805,14); inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_thalas_teleport_switches_done.lua:7",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Bramka zależy od liczników przełączników Game, przy czym donor w części miejsc czyta player storage zamiast Game. Nie zgadujemy korekty ani nie omijamy globalnego guardu; brak istniejącego ownera wspólnego licznika.",
+      "missing_owner_function": "World counter read + player-state/movement transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Bramka zależy od liczników przełączników Game, przy czym donor w części miejsc czyta player storage zamiast Game. Nie zgadujemy korekty ani nie omijamy globalnego guardu; brak istniejącego ownera wspólnego licznika.",
+        "dependency": "World counter read + player-state/movement transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_thalas_teleport_switches_done.lua:7",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 33,
+      "step": "Diphtrah: pokój bossa",
+      "pattern": "P03",
+      "trigger": "uid40083",
+      "condition": "PLAYER DiprathSwitchesGlobalStorage>=7 LUB Diprath_sign8=1",
+      "effect": "teleport(33092,32590,15); DiphtrahsTreasure<=2→3; inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_diprath_room.lua:11",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Warunek to licznik>=7 LUB znak8=1, a skutek warunkowo podnosi treasure oraz teleportuje. Wymaga jednego rozstrzygnięcia przed commit; dwa callbacki o tym samym selectorze są odrzucane przed guardami. Nowy wspólny arbiter nie jest w zakresie.",
+      "missing_owner_function": "Conditional multi-track movement rule",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Warunek to licznik>=7 LUB znak8=1, a skutek warunkowo podnosi treasure oraz teleportuje. Wymaga jednego rozstrzygnięcia przed commit; dwa callbacki o tym samym selectorze są odrzucane przed guardami. Nowy wspólny arbiter nie jest w zakresie.",
+        "dependency": "Conditional multi-track movement rule",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_diprath_room.lua:11",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589435366"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 34,
+      "step": "Mahrdis: pokój bossa",
+      "pattern": "P03",
+      "trigger": "uid40084",
+      "condition": "MahrdisTreasure=1",
+      "effect": "teleport(33190,32947,15); Treasure=2; inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_mahrdis_room.lua:9",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_mahrdis_room.lua:9",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-mahrdis-room"
+      }
+    },
+    {
+      "row": 35,
+      "step": "Wejście morguthis_room",
+      "pattern": "P03",
+      "trigger": "uid40085",
+      "condition": "DefaultStart=1",
+      "effect": "teleport(33259,32707,13); MorguthisTreasure<=0→1, wyższa wartość bez zmiany; inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_morguthis_room.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+      "missing_owner_function": "Conditional preservation of quest tracks during movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+        "dependency": "Conditional preservation of quest tracks during movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_morguthis_room.lua:9",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 36,
+      "step": "Wejście omruc_specific",
+      "pattern": "P03",
+      "trigger": "uid40086",
+      "condition": "DefaultStart=1",
+      "effect": "teleport(33205,32955,14); OmrucsTreasure<=0→1, wyższa wartość bez zmiany; inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_specific.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+      "missing_owner_function": "Conditional preservation of quest tracks during movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+        "dependency": "Conditional preservation of quest tracks during movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_specific.lua:9",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 37,
+      "step": "Wejście omruc_room",
+      "pattern": "P03",
+      "trigger": "uid40087",
+      "condition": "DefaultStart=1",
+      "effect": "teleport(33207,33002,14); OmrucsTreasure<=1→2, wyższa wartość bez zmiany; inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_room.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+      "missing_owner_function": "Conditional preservation of quest tracks during movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+        "dependency": "Conditional preservation of quest tracks during movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_room.lua:9",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 38,
+      "step": "Wejście rahemos_levers",
+      "pattern": "P03",
+      "trigger": "uid40088",
+      "condition": "DefaultStart=1",
+      "effect": "teleport(33124,32760,14); RahemosTreasure<=0→1, wyższa wartość bez zmiany; inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_levers.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+      "missing_owner_function": "Conditional preservation of quest tracks during movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+        "dependency": "Conditional preservation of quest tracks during movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_levers.lua:9",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 39,
+      "step": "Wejście rahemos_room",
+      "pattern": "P03",
+      "trigger": "uid40089",
+      "condition": "DefaultStart=1",
+      "effect": "teleport(33086,32781,14); RahemosTreasure<=1→2, wyższa wartość bez zmiany; inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_room.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+      "missing_owner_function": "Conditional preservation of quest tracks during movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+        "dependency": "Conditional preservation of quest tracks during movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_room.lua:9",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 40,
+      "step": "Wejście vashresamun_specific",
+      "pattern": "P03",
+      "trigger": "uid40090",
+      "condition": "DefaultStart=1",
+      "effect": "teleport(33194,32665,15); VashresamunsTreasure<=0→1, wyższa wartość bez zmiany; inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_vashresamun_specific.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+      "missing_owner_function": "Conditional preservation of quest tracks during movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+        "dependency": "Conditional preservation of quest tracks during movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_vashresamun_specific.lua:9",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 41,
+      "step": "Wejście vashresamun_room",
+      "pattern": "P03",
+      "trigger": "uid40091",
+      "condition": "DefaultStart=1",
+      "effect": "teleport(33129,32657,15); VashresamunsTreasure<=2→3, wyższa wartość bez zmiany; inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_vashresamun_room.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+      "missing_owner_function": "Conditional preservation of quest tracks during movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Teleport współwystępuje z warunkowym ustawieniem default_start/treasure, przy zachowaniu wyższego istniejącego progresu. Stały SET byłby regresją postępu; rozdzielenie wariantów tego samego selectoru nie działa w bieżącym exact-one dispatch, a jego rozszerzenie jest poza zakresem.",
+        "dependency": "Conditional preservation of quest tracks during movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_vashresamun_room.lua:9",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 42,
+      "step": "Thalas: zatrucie",
+      "pattern": "P30",
+      "trigger": "uid50136",
+      "condition": "gracz na polu",
+      "effect": "poison min20/max70/start50,tick6000ms,delayed+forceupdate; tile→420",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_thalas_poison_tile.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pole nakłada źródłowy poison (start50,min20,max70,tick6000ms) i transformuje obiekt. Wymagany lifecycle condition nie może być zastąpiony jednorazowym odjęciem HP albo samym SET.",
+      "missing_owner_function": "Poison condition + map transform owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Pole nakłada źródłowy poison (start50,min20,max70,tick6000ms) i transformuje obiekt. Wymagany lifecycle condition nie może być zastąpiony jednorazowym odjęciem HP albo samym SET.",
+        "dependency": "Poison condition + map transform owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_thalas_poison_tile.lua:1",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 43,
+      "step": "Cobra: wejście po zatruciu",
+      "pattern": "P09/P03",
+      "trigger": "NPC Cobra greet",
+      "condition": "CONDITION_POISON",
+      "effect": "teleport(33396,32836,14); ThalasTreasure<=1→2; inaczej odmowa",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cobra.lua:48",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cobra czyta CONDITION_POISON, teleportuje i warunkowo zmienia ThalasTreasure, po czym odmawia rozmowy. Read-only greeting i obecny quest transition nie obejmują tej nierozdzielnej operacji.",
+      "missing_owner_function": "NPC greeting live-condition/movement transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Cobra czyta CONDITION_POISON, teleportuje i warunkowo zmienia ThalasTreasure, po czym odmawia rozmowy. Read-only greeting i obecny quest transition nie obejmują tej nierozdzielnej operacji.",
+        "dependency": "NPC greeting live-condition/movement transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cobra.lua:48",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 44,
+      "step": "Oasis: przejście drzwi",
+      "pattern": "P03",
+      "trigger": "aid12108",
+      "condition": "gracz",
+      "effect": "teleport do position.y+1, bez storage",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_oasis_lever_door.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor przenosi gracza na position.y+1 względem konkretnego pola. Brak kwalifikowanego mapowego position do wypełnienia stałego callbacku; nie zgadujemy absolutnego destination.",
+      "missing_owner_function": "Source-relative teleport selector",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Donor przenosi gracza na position.y+1 względem konkretnego pola. Brak kwalifikowanego mapowego position do wypełnienia stałego callbacku; nie zgadujemy absolutnego destination.",
+        "dependency": "Source-relative teleport selector",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_oasis_lever_door.lua:8",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:320"
+      }
+    },
+    {
+      "row": 45,
+      "step": "Peninsula: błędne pole labiryntu",
+      "pattern": "P03",
+      "trigger": "aid12101",
+      "condition": "gracz",
+      "effect": "bezwarunkowo teleport(fromPosition)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_peninsula_tomb_maze.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor zawsze odsyła na fromPosition. Istniejący return_on_failure jest skutkiem odmowy pełnego callbacku, a nie źródłowym samodzielnym StepIn-return; nowego wspólnego routingu nie dodajemy.",
+      "missing_owner_function": "Movement-origin return routing",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Donor zawsze odsyła na fromPosition. Istniejący return_on_failure jest skutkiem odmowy pełnego callbacku, a nie źródłowym samodzielnym StepIn-return; nowego wspólnego routingu nie dodajemy.",
+        "dependency": "Movement-origin return routing",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_peninsula_tomb_maze.lua:9",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 46,
+      "step": "Morguthis: niebieski płomień1",
+      "pattern": "P18",
+      "trigger": "uid50139",
+      "condition": "MorguthisBlueFlameStorage1!=1",
+      "effect": "MorguthisBlueFlameStorage1=1; już1 bez zmiany",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:2",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:2",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-1"
+      }
+    },
+    {
+      "row": 47,
+      "step": "Morguthis: niebieski płomień2",
+      "pattern": "P18",
+      "trigger": "uid50140",
+      "condition": "MorguthisBlueFlameStorage2!=1",
+      "effect": "MorguthisBlueFlameStorage2=1; już1 bez zmiany",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:3",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:3",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-2"
+      }
+    },
+    {
+      "row": 48,
+      "step": "Morguthis: niebieski płomień3",
+      "pattern": "P18",
+      "trigger": "uid50141",
+      "condition": "MorguthisBlueFlameStorage3!=1",
+      "effect": "MorguthisBlueFlameStorage3=1; już1 bez zmiany",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:4",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:4",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-3"
+      }
+    },
+    {
+      "row": 49,
+      "step": "Morguthis: niebieski płomień4",
+      "pattern": "P18",
+      "trigger": "uid50142",
+      "condition": "MorguthisBlueFlameStorage4!=1",
+      "effect": "MorguthisBlueFlameStorage4=1; już1 bez zmiany",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:5",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:5",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-4"
+      }
+    },
+    {
+      "row": 50,
+      "step": "Morguthis: niebieski płomień5",
+      "pattern": "P18",
+      "trigger": "uid50143",
+      "condition": "MorguthisBlueFlameStorage5!=1",
+      "effect": "MorguthisBlueFlameStorage5=1; już1 bez zmiany",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:6",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:6",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-5"
+      }
+    },
+    {
+      "row": 51,
+      "step": "Morguthis: niebieski płomień6",
+      "pattern": "P18",
+      "trigger": "uid50144",
+      "condition": "MorguthisBlueFlameStorage6!=1",
+      "effect": "MorguthisBlueFlameStorage6=1; już1 bez zmiany",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:7",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:7",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-6"
+      }
+    },
+    {
+      "row": 52,
+      "step": "Morguthis: niebieski płomień7",
+      "pattern": "P18",
+      "trigger": "uid50145",
+      "condition": "MorguthisBlueFlameStorage7!=1",
+      "effect": "MorguthisBlueFlameStorage7=1; już1 bez zmiany",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:8",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:8",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-7"
+      }
+    },
+    {
+      "row": 53,
+      "step": "Morguthis: brama siedmiu płomieni",
+      "pattern": "P03/P18",
+      "trigger": "uid50146",
+      "condition": "wszystkie7 flag=1",
+      "effect": "teleport(33163,32694,14); Treasure<=1→2; inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:27",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:27",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/ancient-tombs-morguthis-seven-flame-gate"
+      }
+    },
+    {
+      "row": 54,
+      "step": "Teleport po bossie3950",
+      "pattern": "P03/P10",
+      "trigger": "uid3950",
+      "condition": "removeItem(3237,1) powiedzie się",
+      "effect": "sukces→(33182,32714,14), brak przedmiotu→(33231,32705,8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+      "missing_owner_function": "Carried-item consume + two-destination movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+        "dependency": "Carried-item consume + two-destination movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:3",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 55,
+      "step": "Teleport po bossie3951",
+      "pattern": "P03/P10",
+      "trigger": "uid3951",
+      "condition": "removeItem(3238,1) powiedzie się",
+      "effect": "sukces→(33174,32934,15), brak przedmiotu→(33282,32744,8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+      "missing_owner_function": "Carried-item consume + two-destination movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+        "dependency": "Carried-item consume + two-destination movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:9",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 56,
+      "step": "Teleport po bossie3952",
+      "pattern": "P03/P10",
+      "trigger": "uid3952",
+      "condition": "removeItem(3240,1) powiedzie się",
+      "effect": "sukces→(33126,32591,15), brak przedmiotu→(33250,32832,8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:15",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+      "missing_owner_function": "Carried-item consume + two-destination movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+        "dependency": "Carried-item consume + two-destination movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:15",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 57,
+      "step": "Teleport po bossie3953",
+      "pattern": "P03/P10",
+      "trigger": "uid3953",
+      "condition": "removeItem(3239,1) powiedzie się",
+      "effect": "sukces→(33145,32665,15), brak przedmiotu→(33025,32868,8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:21",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+      "missing_owner_function": "Carried-item consume + two-destination movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+        "dependency": "Carried-item consume + two-destination movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:21",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 58,
+      "step": "Teleport po bossie3954",
+      "pattern": "P03/P10",
+      "trigger": "uid3954",
+      "condition": "removeItem(3235,1) powiedzie się",
+      "effect": "sukces→(33041,32774,14), brak przedmiotu→(33133,32642,8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:27",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+      "missing_owner_function": "Carried-item consume + two-destination movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+        "dependency": "Carried-item consume + two-destination movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:27",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 59,
+      "step": "Teleport po bossie3955",
+      "pattern": "P03/P10",
+      "trigger": "uid3955",
+      "condition": "removeItem(3241,1) powiedzie się",
+      "effect": "sukces→(33349,32827,14), brak przedmiotu→(33131,32566,8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:33",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+      "missing_owner_function": "Carried-item consume + two-destination movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+        "dependency": "Carried-item consume + two-destination movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:33",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 60,
+      "step": "Teleport po bossie3956",
+      "pattern": "P03/P10",
+      "trigger": "uid3956",
+      "condition": "removeItem(3236,1) powiedzie się",
+      "effect": "sukces→(33186,33012,14), brak przedmiotu→(33206,32592,8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:39",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+      "missing_owner_function": "Carried-item consume + two-destination movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Po bossie trzeba atomowo spróbować konsumować konkretny klucz; sukces i brak klucza mają dwa różne absolutne cele. Obecny callback ma jeden teleport i odmowę do origin, co nie odtwarza obu celów źródła.",
+        "dependency": "Carried-item consume + two-destination movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:39",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    }
+  ]
+}

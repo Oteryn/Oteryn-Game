@@ -1,0 +1,1413 @@
+{
+  "schema": 1,
+  "runtime_admission": {
+    "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+    "loaded_by_current_runtime": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+    "qualification": "Literal dialogue and selected owned source rules for the coordinator shared-adapter PR. Source dispatch constraints are mandatory; this is not the active Dialogue family or an executable replacement."
+  },
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_lava_teleport",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2422",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2421",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2424",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/last_lore_killed",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2420",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2425",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/shapers",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "shapers"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The {Shapers} were an advanced civilisation, well versed in art, construction, language and exploration of our world in their time. ...",
+        "The foundations of this {temple} are testament to their genius and advanced understanding of complex problems. They were master craftsmen and excelled in magic."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:105-110"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/temple",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "temple"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The temple has been restored to its former glory, yet we strife to live and praise in the {Shaper} ways. Do you still need me to take some old {tomes} from you my child?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:112-115"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/tomes-already-offered",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You already offered enough tomes for us to study and rebuild this temple. Thank you, my child."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:116-120"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/tomes-offer",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "tomes"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 7,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "If you have some old shaper tomes I would {buy} them."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:134-137"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/astral-rune-offer",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "astral shaper rune"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 8,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/last_lore_killed",
+          "comparison": "ge",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Do you wish to merge your rune parts into an astral shaper rune?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:145-148"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/astral-rune-refusal",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "astral shaper rune"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/last_lore_killed",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I'm sorry but you lack the needed rune parts."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:145-152"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/holy-portal-offer",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "holy portal"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 3,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You may pass this portal if you have 50 incantation notes as offering. Do you have the incantation notes with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:195-200"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/holy-portal-refusal",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "holy portal"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Sorry, first you need to bring my Heavy Old Tomes."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:195-202"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/holy-portal-no",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 3,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "In this case I'm sorry, you may not pass this portal."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:212-214"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/energy-portal-offer",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "energy portal"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 4,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You may pass this portal if you have 50 marsh stalker feathers as offering. Do you have the marsh stalker feathers with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:217-222"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/energy-portal-refusal",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "energy portal"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Sorry, first you need to bring my Heavy Old Tomes."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:217-224"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/energy-portal-no",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 4,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "In this case I'm sorry, you may not pass this portal."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:234-236"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/earth-portal-offer",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "earth portal"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 5,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You may pass this portal if you have 50 acorns as offering. Do you have the acorns with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:239-244"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/earth-portal-refusal",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "earth portal"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Sorry, first you need to bring my Heavy Old Tomes."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:239-246"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/earth-portal-no",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 5,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "In this case I'm sorry, you may not pass this portal."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:256-258"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/death-portal-offer",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "death portal"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 6,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You may pass this portal if you have 50 pelvis bones as offering. Do you have the pelvis bones with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:261-266"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/death-portal-refusal",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "death portal"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Sorry, first you need to bring my Heavy Old Tomes."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:261-268"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/death-portal-no",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 6,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "In this case I'm sorry, you may not pass this portal."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:278-280"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/info-name",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "name"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I am Albinius, a worshipper of the {Astral Shapers}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:289"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/info-time",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "time"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Precisely time."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:290"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/info-job",
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "job"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I find ways to unveil the secrets of the stars. Judging by this question, I doubt you follow my weekly publications concerning this research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:291"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/ivalisse/temple",
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "temple"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Well, I hope you like it here. We tried to rebuild in the {Shaper}'s will. I am a bit preoccupied at the moment because of the absence of my {father}. I may not be the best of help currently, sorry."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:61-63"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/ivalisse/mission",
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Besides my various {duties} in the temple, I also take care of visitors. Well, I would but right now I can't get my mind of how my {father}'s doing. I am sorry."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:64-66"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/ivalisse/imbuing",
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "imbuing",
+        "imbuements"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The astral Shapers had many ways to shape and refine weapons and equipment. They built shrines dedicated to this world's energies, focussing it and utilising it like a tool to enhance objects. ...",
+        "They called this process imbuing and perfected it throughout time. Remains of these shrines are scattered all over Tibia. ...",
+        "If you truly want to master this art, you will need to visit the various ancient sites related to the original Shaper imbuements. There is one for each element and we know of at least one other besides these. ...",
+        "The discovery of the foundations of this very temple we are standing in, was the key to access their legacy. It is now the center of all our efforts in getting closer to the astral predecessors. ...",
+        "They found ways to connect various sites with a system of gates, all concentrating energy to allow travel to far away places. The more we learn, the more we can restore of these ancient gateways. ...",
+        "We see the gates as an invitation, use them to your advantage and follow the ways of the Shapers. Access to one of these ancient shrines is the only way to learn additional imbuements. ...",
+        "But beware, as far as we know, some of them have been claimed by other ancient beings and there is now way for us to prepare you what lies beyond any of those gates."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:67-77"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/ivalisse/no",
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Oh nevermind, I am sorry I asked you for this."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:116-119"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/ivalisse/info-silus",
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "silus"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "My {father}, can you tell me if he's alright?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:130"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/ivalisse/info-thais",
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "thais"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Alright then, you are very welcome to explore the temple!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:131"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/ivalisse/info-name",
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "name"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "My name is Ivalisse."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:132"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/ivalisse/info-time",
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "time"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "There is always time to make a change."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:133"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/ivalisse/info-job",
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "job"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Besides my various {duties} in the temple, I also take care of visitors. Well, I would but right now I can't get my mind of how my {father}'s doing. I am sorry."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:134"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/ivalisse/info-duties",
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "duties"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        " I help linking the portals of this temple to other ancient sites of the {Astral Shapers}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:135"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_strange_chalice/chalice",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "chalice"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/chalice",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Finally. That's what I... oh wait, you're still talking to me - you will blow my cover! What do you want? Oh wait, did my {daughter} send you? It has been some time now, indeed."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_chalice.lua:60-63"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_strange_chalice/daughter",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "daughter"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 1,
+      "next_topic": 2,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Well, besides being a renowned sorcerer and scholar at the magic academy in Edron, I am also the proud father of a beautiful daughter, Ivalisse. My little endeavour here must have troubled the poor thing all the time since I left. ...",
+        "Tell her I love her and that I will take care. I have to press on! My research is most valuable to the 'Edron-Zaoan Exploration Division'. You don't happen to have some water, do you? Ah nevermind. It's a long {story}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_chalice.lua:65-78"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_strange_chalice/story",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "story"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 2,
+      "next_topic": 3,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "No water then? Ah drat - er, don't worry, no problem. So, from the day I received news of the discovery of Zao, I wanted to study its inhabitants, wildlife, plants and geography. ...",
+        "The academy instated the 'Edron-Zaoan Exploration Division' shortly after. I was a founding member and head of the 'Draken' research branch. ...",
+        "Since my valued and practical oriented colleague and mentor Spectulus did not join us, there is only one member of the academy exploration division to actually venture out to see the place - me. ...",
+        "You must know, most things in the academy happen 'inside', behind closed doors. But some of us simply refuse to let theory reign over practical experience in science. ...",
+        "Well, basically Spectulus is the only one likeminded so far. In fact, he incited me to work in the field in first place. So here I am! {Disguised} as a chalice."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_chalice.lua:73-86"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_strange_chalice/disguised",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "disguised"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 3,
+      "next_topic": 4,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Oh yes, so since I wanted to study the Draken up close, I came up with an idea. Based on my research, and some slight bruises and a scar, the perfect hiding place is often right in the middle of subjects. ...",
+        "If I could enter their lair unseen and establish a forward camp, I would be able to study the draken in peace - or so I thought. Turns out the whole place was empty. I set up my camp and waited. ...",
+        "Then something happened, lizardfolk started to appear, searching the place. I had to retreat from my hiding place and advance through a safer position. ...",
+        "I needed to get close and blend in. So I came up with the ultimate disguise: a chalice. I could establish foothold right in their midst, would never be identified as an intruder and could even analyse their drinks! ...",
+        "I quickly dug a tunnel to get into what I assume is a throne room and waited for them to pick me up an carry me around! ...",
+        "They also 'used' me a bit, you don't want to go into any details here. I am really {thirsty}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_chalice.lua:84-97"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_strange_chalice/thirsty",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "thirsty"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 4,
+      "next_topic": 5,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Ah did I say that? Nevermind, I'm not really thirsty. It's part of this illusion. Somehow, I've been in hiding for so long, I started to... become... a vessel. ...",
+        "I don't know, I have that constant urge to drink but in this form I would not need to, there is no mouth, no stomach, no flesh and no actual need to eat, drink or sleep. ...",
+        "I basically communicate by making the metal of this goblet vibrate and using its form as a body of sound. Like a real voice, don't you think?? Yes, alright I know it's creepy. ...",
+        "I am still in the middle of my research and do not want to go home, so please tell my daughter to not worry about my - this will be a breakthrough! I already {learned} a lot!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_chalice.lua:96-109"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_strange_chalice/learned",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "learned"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 5,
+      "next_topic": null,
+      "guards": [],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_lava_teleport",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Yes, well for instance I tried for some time to figure out how to enter the fiery portal in this complex. Most of the draken never come up here. They rather hide somewhere down there, planning and plotting. ...",
+        " I already know how to enter it, you need to step in and yell 'zzubaran'. Unfortunately they never took me with them. ...",
+        " I heard them say it once, when a seemingly drunk guard yelled it in front of a wall mounted torch, hitting his head against it afterwards. He spilt all my contents on the floor, hmpf."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_chalice.lua:106-113"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_strange_chalice/info-name",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "name"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "'Alice the chalice'... Hmpf, of course I won't TELL you my name, I am UNDERCOVER! Now be quiet or they will hear you."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_chalice.lua:49"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_strange_chalice/info-job",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "job"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Well, I am drinking most of the time. Er, no I mean - trying to hold my fluids... ah, wait that came out wrong: I am doing research. Let's just keep it at that."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_chalice.lua:50"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/distress",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "distress",
+        "mission"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "My pride is great but not greater than reason. I am not too proud to ask for help as this is a dark hour. ... ",
+        "This glade has been desecrated. We kept it secret for centuries, yet evil has found a way to sully and destroy what was our most sacred. ...",
+        "There is only one way to reinvigorate its spirits, a guardian must venture down there and bring life back into the forest. ... ",
+        "Stolen {seeds} need to be wrested from the {intruders} and planted where the soil still hungers. ... ",
+        "The purest {water} from the purest well needs to be brought there and poured and {birds} that give life need to be brought back to the inner sanctum of the glade. ...",
+        "Will you be our guardian?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/seeds",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "seeds"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Seeds to give life to strong trees, blooming and proud. The {intruders} robbed us from them."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:81-85"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/intruders",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "intruders"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The intruders appeared in the blink of an eye. Out of thin air, as if they came from nowhere. They overrun the glade within ours and drove away what was remaining from us within the day."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:86-90"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/water",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "water"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The purest water flows through this well. For centuries we concealed it, for other beings to not lay their eyes on it."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:91-95"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/birds",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "birds"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Take care, guardian."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:96-100"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/phials",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "phials"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Phials for the purest water from our sacred well. They are finely crafted and very fragile. We keep a small supply up here around the well. Probably the only thing the intruders did not care for."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:101-105"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/cages",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "cages"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 2,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Crafted generations ago to rob a creature of its freedom for that it may earn it again truthfully. You will need them if you plan on returning the birds to their rightful home in the glade. ... ",
+        "Are you in need of another one? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:106-111"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/info-name",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "name"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "My name is now known only to the wind and it shall remain like this until I will return to my kin."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:127"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/info-job",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "job"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I was a guardian of this glade. I am the last one... everyone had to leave."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:128"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/info-time",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "time"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "This glade's time is growing short if nothing will be done soon."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:129"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/info-forest-fury",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "forest fury"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Take care, guardian."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:130"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/a_weakened_forest_fury/info-orclops",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "keywords": [
+        "orclops"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Cruel beings. Large and monstrous, with a single eye, staring at their prey. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:131"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    }
+  ],
+  "conversations": [
+    {
+      "npc": "oteryn:npc.albinius",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Greetings, pilgrim. Welcome to the halls of hope. We are the keepers of this {temple} and welcome everyone willing to contribute.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:284"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/albinius.lua:284",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ivalisse",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Hello, worshiper of the Astral Shapers! Welcome to the temple! While you are here to pay tribute, you can also learn something about the ancient art of imbuing.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:124"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ivalisse.lua:124",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_strange_chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Hi? What do you mean 'hi' - can't you see I am a... I have to lower my voice. Did it occur to you, that this 'chalice' does not want to be disturbed?! Leave me alone!",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_chalice.lua:117"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_strange_chalice.lua:117",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "I greet you, human. This is a time of distress, more than ever are we in need of guardians to protect us and our world.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:122"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_weakened_forest_fury.lua:122",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ]
+    }
+  ],
+  "source_documents": [
+    {
+      "name": "forgotten_knowledge.npc.json",
+      "authoring_readiness": {
+        "runtime_loaded": false,
+        "note": "Selected source branches only; complete dispatch/matching/greeting qualification is held."
+      }
+    }
+  ]
+}

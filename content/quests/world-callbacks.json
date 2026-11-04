@@ -2,6 +2,739 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-callback/alawars-vault-entrance",
+      "quest": "oteryn:quest.alawar_s_vault_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32187,
+          "y": 31622,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32107,
+        "y": 31567,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:671-677",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:4-20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/alawars-vault-exit",
+      "quest": "oteryn:quest.alawar_s_vault_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32107,
+          "y": 31566,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32189,
+        "y": 31625,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:679-684",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:4-20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/alawars-vault-lever",
+      "quest": "oteryn:quest.alawar_s_vault_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 30008,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32186,
+            "y": 31626,
+            "floor": -8
+          },
+          "appearance": 2129
+        },
+        {
+          "position": {
+            "x": 32187,
+            "y": 31626,
+            "floor": -8
+          },
+          "appearance": 2129
+        },
+        {
+          "position": {
+            "x": 32188,
+            "y": 31626,
+            "floor": -8
+          },
+          "appearance": 2129
+        },
+        {
+          "position": {
+            "x": 32189,
+            "y": 31626,
+            "floor": -8
+          },
+          "appearance": 2129
+        },
+        {
+          "position": {
+            "x": 32180,
+            "y": 31633,
+            "floor": -8
+          },
+          "appearance": 2772
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/alawars_vault/action-lever.lua:1-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:793",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/items/item_functions.cpp:194",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/items/item_functions.cpp:274"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-1",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40032,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-2",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40033,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-3",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40034,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign3",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-4",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40035,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign4",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-5",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40036,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign5",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-6",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40037,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign5",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign6",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-7",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40038,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign6",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign7",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:10"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-8",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40039,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign7",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign8",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-mahrdis-room",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40084,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33190,
+        "y": 32947,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/mahrdis_treasure",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_mahrdis_room.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-1",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50139,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage1",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-2",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50140,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage2",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-3",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50141,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage3",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-4",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50142,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage4",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-5",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50143,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage5",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-6",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50144,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage6",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-7",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50145,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage7",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-seven-flame-gate",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50146,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33163,
+        "y": 32694,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage5",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage6",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage7",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_treasure",
+          "minimum": -1,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:27",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:41-45",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/quests.lua:2819-2828",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_morguthis_room.lua:16-17"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/banshees-final-battle-exit",
       "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
       "trigger": "step_in",
@@ -216,6 +949,357 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/behemoth/action-lever.lua:1-28",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/behemoth/action-lever.lua:1-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-edron-to-one",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33185,
+          "y": 31794,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50978
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32520,
+        "y": 32514,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-four-to-one",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32585,
+          "y": 32557,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51756
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32520,
+        "y": 32514,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:38"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-one-to-edron",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32522,
+          "y": 32512,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51528
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33185,
+        "y": 31795,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-one-to-four",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32540,
+          "y": 32512,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51626
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32585,
+        "y": 32558,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:32"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-one-to-two",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32526,
+          "y": 32512,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51624
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32526,
+        "y": 32513,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-third-labelled-to-two",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32536,
+          "y": 32512,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51625
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32526,
+        "y": 32513,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:26"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-three-to-one",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32552,
+          "y": 32594,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51756
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32520,
+        "y": 32514,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:38"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-two-to-one",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32526,
+          "y": 32512,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51756
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32520,
+        "y": 32514,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:38"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/blood-brothers-quest-castle-entrance",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32953,
+          "y": 31486,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32953,
+        "y": 31483,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/castle_hidden_entrance",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "A strange force prevents you from entering.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/movements_castle_entrace.lua:1-19"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/children-of-the-revolution-battle-passage-1",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33356,
+          "y": 31124,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33261,
+        "y": 31077,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:1-27"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/children-of-the-revolution-battle-passage-2",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33261,
+          "y": 31076,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33356,
+        "y": 31126,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:1-27"
       ]
     },
     {
@@ -1063,6 +2147,96 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/dangerous-depth-dwarves-energy-exit",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33921,
+          "y": 32402,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33782,
+        "y": 32205,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:40-41"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dangerous-depth-gnomes-energy-exit",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33982,
+          "y": 32234,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33829,
+        "y": 32186,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:50-51"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dangerous-depth-scouts-energy-exit",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 34021,
+          "y": 32037,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33831,
+        "y": 32141,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:30-31"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/dawnport-rare-herb",
       "quest": "oteryn:quest.dawnport_quest",
       "trigger": "use",
@@ -1094,6 +2268,287 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_the_rare_herb.lua:3-17",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4658-4661"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/deeplings-boss-28574",
+      "quest": "oteryn:quest.deeplings_worldchange",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 28574,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33641,
+        "y": 31236,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/deeplings_world_change/crystal",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 13
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/deeplings-boss-28575",
+      "quest": "oteryn:quest.deeplings_worldchange",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 28575,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33421,
+        "y": 31255,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/deeplings_world_change/crystal",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 13
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/deeplings-boss-28576",
+      "quest": "oteryn:quest.deeplings_worldchange",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 28576,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33543,
+        "y": 31263,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/deeplings_world_change/crystal",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 13
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-reward-grave",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 1001,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32714,
+        "y": 32398,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_gravestone.lua:2-11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/demon_oak.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-square-1",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 9001,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/squares",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-square-2",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 9002,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/squares",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-square-3",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 9003,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/squares",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-square-4",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 9004,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/squares",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-square-5",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 9005,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/squares",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
       ]
     },
     {
@@ -1468,6 +2923,444 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/feaster-of-souls-brain-head-exit",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31946,
+          "y": 32334,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31971,
+        "y": 32325,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:2-7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:141",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/teleport.lua:5-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-irgix-exit",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33467,
+          "y": 31396,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33493,
+        "y": 31400,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:45-46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:58-68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:112-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-01",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33484,
+          "y": 31435,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33483,
+        "y": 31452,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-02",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33481,
+          "y": 31452,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33486,
+        "y": 31435,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-03",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33558,
+          "y": 31467,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33573,
+        "y": 31467,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-04",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33570,
+          "y": 31467,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33555,
+        "y": 31467,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-05",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33549,
+          "y": 31440,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33537,
+        "y": 31440,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-06",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33539,
+          "y": 31440,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33550,
+        "y": 31439,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-07",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33540,
+          "y": 31411,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33528,
+        "y": 31410,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-08",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33531,
+          "y": 31410,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33541,
+        "y": 31412,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-09",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33535,
+          "y": 31444,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33546,
+        "y": 31444,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:10",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-10",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33544,
+          "y": 31444,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33533,
+        "y": 31444,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-unaz-exit",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33562,
+          "y": 31492,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33563,
+        "y": 31477,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:49-50",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:58-68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:112-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-vok-exit",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33505,
+          "y": 31485,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33509,
+        "y": 31451,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:53-54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:58-68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:112-117"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/first-dragon-exit-35005",
       "quest": "oteryn:quest.the_first_dragon_quest",
       "trigger": "step_in",
@@ -1613,6 +3506,33 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/forgotten-knowledge-secret-wall-exit",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 24877,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32891,
+        "y": 31620,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/actions_secret_wall.lua:3"
       ]
     },
     {
@@ -4512,6 +6432,459 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:1-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-darashia-challenge-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32945,
+          "y": 32313,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 4930,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33101,
+        "y": 32381,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/the_parth_of_defiances_desert/movements_teleportTo.lua:14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-darashia-color-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32942,
+          "y": 32283,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4930,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32942,
+        "y": 32288,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/the_parth_of_defiances_desert/movements_teleportTo.lua:13"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-darashia-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32958,
+          "y": 32322,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 4930,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33110,
+        "y": 32387,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/the_parth_of_defiances_desert/movements_teleportTo.lua:11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-falcon-access",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33344,
+          "y": 31348,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_80/the_secret_library/falcon_bastion/access",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/movements_access_storage.lua:1-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-falcon-anteroom-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33329,
+          "y": 31333,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 4920,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33308,
+        "y": 31325,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/movements_boss_entrance.lua:1-25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-ghulosh-exit",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32755,
+          "y": 32729,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4950,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32664,
+        "y": 32711,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/library_area/movements_timers.lua:7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-gorzindel-exit",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32687,
+          "y": 32726,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4950,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32662,
+        "y": 32734,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/library_area/movements_timers.lua:8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-liquid-ruins-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32881,
+          "y": 32473,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 4900,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32871,
+        "y": 32513,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/liquid_death/movements_teleportTo.lua:1-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-liquid-temple-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33560,
+          "y": 31395,
+          "floor": -13
+        },
+        "unique": null,
+        "action": 4900,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33561,
+        "y": 31391,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/liquid_death/movements_teleportTo.lua:1-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-lokathmor-exit",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32750,
+          "y": 32696,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4950,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32466,
+        "y": 32652,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/library_area/movements_timers.lua:6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-main-ascent",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32480,
+          "y": 32601,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32674,
+        "y": 32738,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/movement_teleport.lua:7-25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-main-descent",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32672,
+          "y": 32736,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32480,
+        "y": 32597,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/movement_teleport.lua:1-25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-mazzinor-exit",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32724,
+          "y": 32728,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4950,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32618,
+        "y": 32527,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/library_area/movements_timers.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-museum-last-room",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33344,
+          "y": 32117,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4907,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33363,
+        "y": 32146,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/bursting_at_the_seams_museum/movements_teleportTo.lua:49-51"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-svargrond-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32119,
+          "y": 31734,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4935,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32127,
+        "y": 31665,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_stepIn.lua:79-82"
       ]
     },
     {

@@ -1,0 +1,666 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "deeplings_worldchange",
+    "elements": 16,
+    "auto": 3,
+    "manual": 13,
+    "statuses": {
+      "LEFT_OUT": 13,
+      "CALLBACK_DATA_IMPLEMENTED": 3
+    },
+    "new_callbacks": 3,
+    "prepared_npc": {
+      "rules": 0,
+      "reply_paragraphs": 0,
+      "conversations": 0
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [
+    "oteryn:quest-callback/deeplings-boss-28574",
+    "oteryn:quest-callback/deeplings-boss-28575",
+    "oteryn:quest-callback/deeplings-boss-28576"
+  ],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Wydobycie kryształu: strażnik",
+      "pattern": "P30",
+      "trigger": "aid28570",
+      "condition": "Crystal=1",
+      "effect": "spawn Deepling Guard przy graczu; Crystal=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_crystal.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Spawn potwora przy graczu i zmiana Crystal należą do jednej akcji. Brak istniejącego kontraktu tej akcji łączącego spawn z trwałym SET; wspólnego ownera nie rozszerzamy. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+      "missing_owner_function": "BossActivity/WorldBundle + QuestState transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Spawn potwora przy graczu i zmiana Crystal należą do jednej akcji. Brak istniejącego kontraktu tej akcji łączącego spawn z trwałym SET; wspólnego ownera nie rozszerzamy. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+        "dependency": "BossActivity/WorldBundle + QuestState transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_crystal.lua:4",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 2,
+      "step": "Wydobycie kryształu: odłamki",
+      "pattern": "P02",
+      "trigger": "aid28570",
+      "condition": "Crystal=2",
+      "effect": "Crystal=3; komunikat bez nagrody; UWAGA: Współdzielony selector z gałęzią spawn/nagrody wymaga jednego arbitra.",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_crystal.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Ten sam aid obsługuje także spawn i nagrodę. Istniejący dispatch wybiera dokładnie jeden callback przed sprawdzeniem storage; osobny callback tylko tej gałęzi nie jest pełnym źródłowym handlerem. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+      "missing_owner_function": "World Use selector arbitration",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Ten sam aid obsługuje także spawn i nagrodę. Istniejący dispatch wybiera dokładnie jeden callback przed sprawdzeniem storage; osobny callback tylko tej gałęzi nie jest pełnym źródłowym handlerem. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+        "dependency": "World Use selector arbitration",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_crystal.lua:8",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:320"
+      }
+    },
+    {
+      "row": 3,
+      "step": "Wydobycie kryształu: surowy klejnot",
+      "pattern": "P05",
+      "trigger": "aid28570",
+      "condition": "Crystal=3",
+      "effect": "daj14162×1; Crystal=4",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_crystal.lua:11",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wydanie konkretnego przedmiotu i zmiana Crystal muszą stanowić atomową operację z kontrolą placementu; sam SET nie może zastąpić nagrody. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+      "missing_owner_function": "RewardClaimMint + QuestState atomic grant",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Wydanie konkretnego przedmiotu i zmiana Crystal muszą stanowić atomową operację z kontrolą placementu; sam SET nie może zastąpić nagrody. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+        "dependency": "RewardClaimMint + QuestState atomic grant",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_crystal.lua:11",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 4,
+      "step": "Przemiana surowego klejnotu",
+      "pattern": "P02",
+      "trigger": "item14162 na target14157",
+      "condition": "Crystal=4",
+      "effect": "zabierz14162×1; daj14018×1; Crystal=5",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_crystalvortex.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wymagana konsumpcja konkretnego użytego przedmiotu, ewentualna wymiana i zmiana Crystal. Brak zatwierdzonego callbacku połączonego z tym carried-item/target ownerem; operacja pozostaje cała poza runtime. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+      "missing_owner_function": "UseWith / carried inventory transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Wymagana konsumpcja konkretnego użytego przedmiotu, ewentualna wymiana i zmiana Crystal. Brak zatwierdzonego callbacku połączonego z tym carried-item/target ownerem; operacja pozostaje cała poza runtime. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+        "dependency": "UseWith / carried inventory transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_crystalvortex.lua:3",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 5,
+      "step": "Włożenie klejnotu w statuę",
+      "pattern": "P02",
+      "trigger": "item14018 na target13827",
+      "condition": "Crystal=6",
+      "effect": "zabierz14018×1; ponownie Crystal=6 (nie7)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_statue.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wymagana konsumpcja konkretnego użytego przedmiotu, ewentualna wymiana i zmiana Crystal. Brak zatwierdzonego callbacku połączonego z tym carried-item/target ownerem; operacja pozostaje cała poza runtime. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+      "missing_owner_function": "UseWith / carried inventory transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Wymagana konsumpcja konkretnego użytego przedmiotu, ewentualna wymiana i zmiana Crystal. Brak zatwierdzonego callbacku połączonego z tym carried-item/target ownerem; operacja pozostaje cała poza runtime. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+        "dependency": "UseWith / carried inventory transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_statue.lua:3",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 6,
+      "step": "Pierwsza nagroda",
+      "pattern": "P05",
+      "trigger": "uid1105",
+      "condition": "Crystal=7",
+      "effect": "daj3035×10; Crystal=8",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_questfirst.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wydanie konkretnego przedmiotu i zmiana Crystal muszą stanowić atomową operację z kontrolą placementu; sam SET nie może zastąpić nagrody. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+      "missing_owner_function": "RewardClaimMint + QuestState atomic grant",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Wydanie konkretnego przedmiotu i zmiana Crystal muszą stanowić atomową operację z kontrolą placementu; sam SET nie może zastąpić nagrody. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+        "dependency": "RewardClaimMint + QuestState atomic grant",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_questfirst.lua:4",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 7,
+      "step": "Koral: robotnik",
+      "pattern": "P30",
+      "trigger": "aid28572",
+      "condition": "Crystal=9",
+      "effect": "spawn Deepling Worker przy graczu; Crystal=10",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_coral.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Spawn potwora przy graczu i zmiana Crystal należą do jednej akcji. Brak istniejącego kontraktu tej akcji łączącego spawn z trwałym SET; wspólnego ownera nie rozszerzamy. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+      "missing_owner_function": "BossActivity/WorldBundle + QuestState transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Spawn potwora przy graczu i zmiana Crystal należą do jednej akcji. Brak istniejącego kontraktu tej akcji łączącego spawn z trwałym SET; wspólnego ownera nie rozszerzamy. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+        "dependency": "BossActivity/WorldBundle + QuestState transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_coral.lua:4",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 8,
+      "step": "Koral: nieudana próba",
+      "pattern": "P02",
+      "trigger": "aid28572",
+      "condition": "Crystal=10",
+      "effect": "Crystal=11; komunikat Fail; UWAGA: Współdzielony selector z gałęzią spawn/nagrody wymaga jednego arbitra.",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_coral.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Ten sam aid obsługuje także spawn i nagrodę. Istniejący dispatch wybiera dokładnie jeden callback przed sprawdzeniem storage; osobny callback tylko tej gałęzi nie jest pełnym źródłowym handlerem. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+      "missing_owner_function": "World Use selector arbitration",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Ten sam aid obsługuje także spawn i nagrodę. Istniejący dispatch wybiera dokładnie jeden callback przed sprawdzeniem storage; osobny callback tylko tej gałęzi nie jest pełnym źródłowym handlerem. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+        "dependency": "World Use selector arbitration",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_coral.lua:8",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:320"
+      }
+    },
+    {
+      "row": 9,
+      "step": "Koral: przedmiot",
+      "pattern": "P05",
+      "trigger": "aid28572",
+      "condition": "Crystal=11",
+      "effect": "daj14165×1; Crystal=12",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_coral.lua:11",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wydanie konkretnego przedmiotu i zmiana Crystal muszą stanowić atomową operację z kontrolą placementu; sam SET nie może zastąpić nagrody. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+      "missing_owner_function": "RewardClaimMint + QuestState atomic grant",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Wydanie konkretnego przedmiotu i zmiana Crystal muszą stanowić atomową operację z kontrolą placementu; sam SET nie może zastąpić nagrody. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+        "dependency": "RewardClaimMint + QuestState atomic grant",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_coral.lua:11",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 10,
+      "step": "Rampa",
+      "pattern": "P02",
+      "trigger": "uid1106",
+      "condition": "Crystal=12",
+      "effect": "removeItem14165×1 bez sprawdzenia wyniku; Crystal=13",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_boxramp.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wymagana konsumpcja konkretnego użytego przedmiotu, ewentualna wymiana i zmiana Crystal. Brak zatwierdzonego callbacku połączonego z tym carried-item/target ownerem; operacja pozostaje cała poza runtime. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+      "missing_owner_function": "UseWith / carried inventory transaction",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Wymagana konsumpcja konkretnego użytego przedmiotu, ewentualna wymiana i zmiana Crystal. Brak zatwierdzonego callbacku połączonego z tym carried-item/target ownerem; operacja pozostaje cała poza runtime. Ponadto brakuje źródłowych writerów potrzebnych etapów1/6/7/9 (F5-DW1); nie uzupełniono ich domysłem.",
+        "dependency": "UseWith / carried inventory transaction",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_boxramp.lua:4",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433980"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 11,
+      "step": "Wejście bossów 28574",
+      "pattern": "P03",
+      "trigger": "uid28574",
+      "condition": "Crystal=13",
+      "effect": "teleport(33641,31236,11); inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:2",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:2",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/deeplings-boss-28574"
+      }
+    },
+    {
+      "row": 12,
+      "step": "Wejście bossów 28575",
+      "pattern": "P03",
+      "trigger": "uid28575",
+      "condition": "Crystal=13",
+      "effect": "teleport(33421,31255,11); inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:3",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:3",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/deeplings-boss-28575"
+      }
+    },
+    {
+      "row": 13,
+      "step": "Wejście bossów 28576",
+      "pattern": "P03",
+      "trigger": "uid28576",
+      "condition": "Crystal=13",
+      "effect": "teleport(33543,31263,11); inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:4",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "missing_owner_function": null,
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Source-specific visual effect (MAGIC_BLUE, TELEPORT or WATERSPLASH) is not encoded in the Callback schema; equivalent dispatch delivery has not been qualified.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:4",
+          "dependency": "Source-specific conditional feedback/visual dispatch",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        }
+      ],
+      "qualification": "Existing qualified callback owner; missing live map tile refuses normally, no arbitrary placement added.",
+      "source_implementation": {
+        "file": "content/quests/world-callbacks.json",
+        "key": "oteryn:quest-callback/deeplings-boss-28576"
+      }
+    },
+    {
+      "row": 14,
+      "step": "Złota kotwica → Navigator",
+      "pattern": "P02",
+      "trigger": "item14019 na target13941/13942",
+      "condition": "gracz; brak storage",
+      "effect": "teleport(33640,31379,9), bez konsumpcji kotwicy",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_golden_anchor.lua:10",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Użycie golden anchor14019 na target13941/13942 przenosi do Navigatora bez konsumpcji. Nie ma kwalifikowanego literal-Use callbacku równoważnego temu UseWith; nie zastępujemy go bezwarunkowym teleportem.",
+      "missing_owner_function": "UseWith target identity and guarded movement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Użycie golden anchor14019 na target13941/13942 przenosi do Navigatora bez konsumpcji. Nie ma kwalifikowanego literal-Use callbacku równoważnego temu UseWith; nie zastępujemy go bezwarunkowym teleportem.",
+        "dependency": "UseWith target identity and guarded movement",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_golden_anchor.lua:10",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 15,
+      "step": "Navigator — historia",
+      "pattern": "P09",
+      "trigger": "flou→explain→yes→no→yes→yes→yes",
+      "condition": "Storage.Navigator<1 przy flou; topic1…7",
+      "effect": "topic1→2→3→4→5→6→7; bez Crystal",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/navigator.lua:53",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Historia i końcowa nagroda używają odrębnego Storage.Navigator (donor storages.lua:107), nie Crystal. Obecny zestaw tracków Deeplings zawiera tylko Crystal; finalna gałąź wymaga trwałego addonu463/464. Brak zgody na przejęcie innej własności stanu lub ownera wyglądu.",
+      "missing_owner_function": "NPC foreign storage ownership + appearance grant",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Historia i końcowa nagroda używają odrębnego Storage.Navigator (donor storages.lua:107), nie Crystal. Obecny zestaw tracków Deeplings zawiera tylko Crystal; finalna gałąź wymaga trwałego addonu463/464. Brak zgody na przejęcie innej własności stanu lub ownera wyglądu.",
+        "dependency": "NPC foreign storage ownership + appearance grant",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/navigator.lua:53",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 16,
+      "step": "Navigator — hełm/addon",
+      "pattern": "P12",
+      "trigger": "helmet→yes, topic7→8",
+      "condition": "topic8; brak sprawdzenia/odebrania kotwicy",
+      "effect": "addOutfitAddon464/463,2; Storage.Navigator=4",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/navigator.lua:119",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Historia i końcowa nagroda używają odrębnego Storage.Navigator (donor storages.lua:107), nie Crystal. Obecny zestaw tracków Deeplings zawiera tylko Crystal; finalna gałąź wymaga trwałego addonu463/464. Brak zgody na przejęcie innej własności stanu lub ownera wyglądu.",
+      "missing_owner_function": "NPC foreign storage ownership + appearance grant",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Historia i końcowa nagroda używają odrębnego Storage.Navigator (donor storages.lua:107), nie Crystal. Obecny zestaw tracków Deeplings zawiera tylko Crystal; finalna gałąź wymaga trwałego addonu463/464. Brak zgody na przejęcie innej własności stanu lub ownera wyglądu.",
+        "dependency": "NPC foreign storage ownership + appearance grant",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/navigator.lua:119",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    }
+  ]
+}

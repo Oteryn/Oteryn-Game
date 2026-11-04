@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-// The merged quest batches contain 151 static callbacks plus the dynamic altar.
+// The merged quest batches contain 224 static callbacks plus the dynamic altar.
 pub const MAX_CALLBACKS: usize = 256;
 pub const MAX_EFFECTS: usize = 8;
 

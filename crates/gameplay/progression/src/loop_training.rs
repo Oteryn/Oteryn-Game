@@ -1,4 +1,4 @@
-//! LOOP-TRAIN-1 pure OFFLINE0/exercise planning with data-loaded provisional rates.
+//! LOOP-TRAIN-1 pure OFFLINE0/exercise planning with donor-verified exercise rates.
 use oteryn_gameplay_domain::domain::character_build::{
     BuildFormula, DeathBuildState, MAX_BUILD_PROGRESS, cumulative_progress, relevel,
 };
@@ -12,7 +12,7 @@ pub const MAX_OFFLINE_SECONDS: u64 = 21 * 24 * 60 * 60;
 #[serde(deny_unknown_fields)]
 pub struct TrainingRates {
     pub schema_version: u8,
-    pub provisional: bool,
+    pub donor_revision: String,
     pub enabled: bool,
     pub source: String,
     pub offline_divisors: [u32; 8],
@@ -22,7 +22,13 @@ pub struct TrainingRates {
     pub statues: BTreeMap<String, usize>,
     /// Production item key to the donor's integer percentage (100 public, 110 house).
     pub dummies: BTreeMap<String, u16>,
-    pub weapons: BTreeMap<String, usize>,
+    pub weapons: BTreeMap<String, ExerciseWeapon>,
+}
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExerciseWeapon {
+    pub family: usize,
+    pub charges: u32,
 }
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -43,7 +49,7 @@ impl TrainingRates {
         }
         let rates: Self = serde_json::from_slice(bytes).map_err(|_| TrainingUnavailable)?;
         if rates.schema_version != 1
-            || !rates.provisional
+            || rates.donor_revision != "201189f871d23597b82caf88fd611454a2ddefb8"
             || rates.source.is_empty()
             || rates.percent_scale != 100
             || rates.vocations.is_empty()
@@ -63,7 +69,9 @@ impl TrainingRates {
                 .dummies
                 .values()
                 .any(|percentage| !matches!(percentage, 100 | 110))
-            || rates.weapons.values().any(|family| *family > 6)
+            || rates.weapons.values().any(|weapon| {
+                weapon.family > 6 || !matches!(weapon.charges, 50 | 500 | 1800 | 14400)
+            })
             || rates.vocations.iter().enumerate().any(|(i, v)| {
                 v.vocation.is_empty()
                     || v.vocation.len() > 128

@@ -1,0 +1,494 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "barbarian_test",
+    "elements": 18,
+    "auto": 0,
+    "manual": 18,
+    "statuses": {
+      "DATA_PREPARED_RUNTIME_LEFT_OUT": 5,
+      "LEFT_OUT": 13
+    },
+    "new_callbacks": 0,
+    "prepared_npc": {
+      "rules": 8,
+      "reply_paragraphs": 17,
+      "conversations": 1
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Zaproszenie",
+      "pattern": "P09",
+      "trigger": "Sven: barbarian/test",
+      "condition": "Questline<1",
+      "effect": "topic1/2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:70",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ]
+    },
+    {
+      "row": 2,
+      "step": "Potwierdzenie testu",
+      "pattern": "P09",
+      "trigger": "Sven: yes",
+      "condition": "topic2",
+      "effect": "topic3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:128",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ]
+    },
+    {
+      "row": 3,
+      "step": "Przyjęcie pierwszej misji",
+      "pattern": "P09",
+      "trigger": "Sven: yes",
+      "condition": "topic3",
+      "effect": "Questline1; Mission01=1; TheIceIslands.Questline1; topic0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:135",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ]
+    },
+    {
+      "row": 4,
+      "step": "Zapytanie o miód",
+      "pattern": "P09",
+      "trigger": "Sven: mead",
+      "condition": "Questline1",
+      "effect": "topic4",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:79",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ]
+    },
+    {
+      "row": 5,
+      "step": "Opłata za próbę",
+      "pattern": "P10",
+      "trigger": "Sven: yes",
+      "condition": "topic4; removeItem5902×1 succeeds",
+      "effect": "Questline2; Mission01=2; MeadTotalSips0; nie zeruje MeadSuccessSips",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:144",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 6,
+      "step": "Róg i misja niedźwiedzia",
+      "pattern": "P11",
+      "trigger": "Sven: mead",
+      "condition": "Questline3",
+      "effect": "Questline4; Mission02=1;7140×1;topic0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:84",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 7,
+      "step": "Misja mamuta",
+      "pattern": "P09",
+      "trigger": "Sven: hug",
+      "condition": "Questline5",
+      "effect": "Questline6;Mission03=1;topic0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:99",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ]
+    },
+    {
+      "row": 8,
+      "step": "Honorary Barbarian",
+      "pattern": "P11",
+      "trigger": "Sven: mammoth",
+      "condition": "Questline7",
+      "effect": "Questline8; achievement Honorary Barbarian",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:110",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Sven:107–115 przyznaje Honorary Barbarian wraz z Questline8. Nie zawiera wymiany przedmiotów ani pieniędzy; brak dopuszczonego powiązania achievement ownera z całym krokiem.",
+      "missing_owner_function": "Achievement grant + QuestState",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 9,
+      "step": "Reparacje za husky",
+      "pattern": "P10",
+      "trigger": "Sven: yes",
+      "condition": "HuskyKillStatus1;Questline8;money>=HuskyKill×1500",
+      "effect": "usuń pieniądze;HuskyKillStatus0;HuskyKill0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:118",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 10,
+      "step": "Rezygnacja z odszkodowania",
+      "pattern": "P09",
+      "trigger": "Sven: no",
+      "condition": "HuskyKillStatus1/topic0; następnie topic10",
+      "effect": "drugie no zeruje do -1 Questline oraz Mission01/02/03",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:154",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Ta gałąź rozmowy zależy od gałęzi odszkodowania i powitania przy zabitym husky. Nie podłączono odłączonej odpowiedzi bez całej kwalifikowanej rozmowy.",
+      "missing_owner_function": "NPC greeting / computed Husky compensation topic",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 11,
+      "step": "Udany łyk",
+      "pattern": "P30",
+      "trigger": "Use32201/31154/7",
+      "condition": "Questline2;MeadTotalSips<=20;random1..5>1",
+      "effect": "MeadSuccessSips+1; po osiągnięciu9 Questline3/Mission01=3 i early return bez zwiększenia total",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_mead.lua:5",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak dopuszczonego powiązania całej źródłowej reguły losowej, czasowej, przemiany lub prezentacji z istniejącym ownerem. Nie rozszerzono wspólnego kontraktu i nie pominięto części operacji w runtime.",
+      "missing_owner_function": "Quest condition / timed world effect / appearance grant / presentation publication",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 12,
+      "step": "Omdlenie",
+      "pattern": "P20",
+      "trigger": "ten sam kubeł",
+      "condition": "jak wyżej;random=1",
+      "effect": "outfit lookTypeEx111 na1000ms;success0;MeadTotalSips+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_mead.lua:16",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak dopuszczonego powiązania całej źródłowej reguły losowej, czasowej, przemiany lub prezentacji z istniejącym ownerem. Nie rozszerzono wspólnego kontraktu i nie pominięto części operacji w runtime.",
+      "missing_owner_function": "Quest condition / timed world effect / appearance grant / presentation publication",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 13,
+      "step": "Limit próby",
+      "pattern": "P30",
+      "trigger": "ten sam kubeł",
+      "condition": "MeadTotalSips>20 (przed sprawdzeniem Questline>=3)",
+      "effect": "Questline1;Mission01=1;odsyła do Sven",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_mead.lua:23",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Guard MeadTotalSips>20 ustawia tylko Questline1/Mission01=1 i zachowuje licznik. Obecny callback wymaga SET na każdym guard track; zastąpienie zakresu odczytu stałym21 obniżałoby legalne większe wartości. Nie zawężono domeny ani nie rozszerzono ownera.",
+      "missing_owner_function": "WorldCallback guard-only counter range",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 14,
+      "step": "Napełnienie rogu",
+      "pattern": "P02",
+      "trigger": "item7140",
+      "condition": "istnieje7142 na32201/31154/7; brak porównania wybranego targetu",
+      "effect": "source7140→7141",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "action_horn.lua:8–11 sprawdza obecność7142 na stałym polu i transformuje użyty róg7140→7141; nie sprawdza wskazanego target. Brak podłączonego atomowego ownera tej pełnej kompozycji.",
+      "missing_owner_function": "Use z warunkiem fizycznego obiektu na ustalonym polu i transformacją",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 15,
+      "step": "Uśpienie niedźwiedzia",
+      "pattern": "P02",
+      "trigger": "item7141",
+      "condition": "istnieje7174 na32253/31049/5; brak porównania wybranego targetu",
+      "effect": "target na stałej pozycji7174→7175; róg niezużyty",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:12",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "action_horn.lua:12–17 sprawdza7174 na stałym polu i transformuje obiekt świata7174→7175; nie sprawdza wskazanego target ani nie zużywa rogu. Brak podłączonego atomowego ownera tej pełnej kompozycji.",
+      "missing_owner_function": "Use z warunkiem fizycznego obiektu na ustalonym polu i transformacją",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 16,
+      "step": "Przytulenie",
+      "pattern": "P02",
+      "trigger": "Use7175",
+      "condition": "Questline4",
+      "effect": "Questline5;Mission02=2;Bearhugger;7175→7174",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:19",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przytulenie wymaga wspólnego wykonania Bearhugger, zapisu postępu i transformacji obiektu świata; nie wdrożono samego SET.",
+      "missing_owner_function": "Achievement grant + QuestState + world transform",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 17,
+      "step": "Nieprzyjazny niedźwiedź",
+      "pattern": "P30",
+      "trigger": "Use7174",
+      "condition": "bez guarda",
+      "effect": "physical10..30 wobec gracza",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:30",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Normalny niedźwiedź zadaje losowe obrażenia fizyczne10–30 i emituje komunikaty. Ten krok nie ma timera ani przemiany; wymaga własnego podłączenia efektu walki.",
+      "missing_owner_function": "Quest physical damage + presentation",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 18,
+      "step": "Przewrócenie mamuta",
+      "pattern": "P30",
+      "trigger": "Use7176",
+      "condition": "Questline6;CONDITION_DRUNK",
+      "effect": "Questline7;Mission03=2;7176→7177;decay;efekt po60s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:34",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak dopuszczonego powiązania całej źródłowej reguły losowej, czasowej, przemiany lub prezentacji z istniejącym ownerem. Nie rozszerzono wspólnego kontraktu i nie pominięto części operacji w runtime.",
+      "missing_owner_function": "Quest condition / timed world effect / appearance grant / presentation publication",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    }
+  ]
+}
