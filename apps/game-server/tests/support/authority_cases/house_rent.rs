@@ -16,7 +16,7 @@ fn rent_payment_warning_and_seventh_warning_eviction_moves_items_to_inbox() -> T
         let world = hex::encode(id(WORLD));
         let character = hex::encode(id(41));
         let account: String = sqlx::query_scalar(
-            "SELECT account_id::text FROM game_character_roots WHERE character_id=$1::uuid",
+            "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
         )
         .bind(id(41).as_slice())
         .fetch_one(&h.pool)
