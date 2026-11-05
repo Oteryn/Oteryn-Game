@@ -145,6 +145,7 @@ pub(super) struct Mailbox {
     // CL26s1
     pub(super) chat: oteryn_client_ui::chat::ChatPanel,
     pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,
+    pub(super) chat_private: oteryn_client_ui::chat_private_channel::ChatPanel,
     pub(super) chat_public_shutdown: bool,
     // CL26s2: player-typing panel state and native-window shutdown.
     pub(super) player_typing: oteryn_client_ui::player_typing::PlayerTypingPanel,

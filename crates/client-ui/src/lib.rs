@@ -157,6 +157,9 @@ pub mod hireling;
 #[path = "features/0063-market/mod.rs"]
 pub mod market;
 
+/// Private-channel membership controls and live transcript.
+#[path = "features/0080-chat-private-channel/mod.rs"]
+pub mod chat_private_channel;
 /// Negotiated public chat rooms, their live lines, and room controls.
 #[path = "features/0259-chat-public-channels/mod.rs"]
 pub mod chat_public_channels;
