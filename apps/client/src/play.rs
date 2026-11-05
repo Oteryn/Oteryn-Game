@@ -28,6 +28,7 @@ const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    sounds: Vec<SoundCue>,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
     facing: StepDir,
@@ -74,6 +75,7 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            sounds: Vec::new(),
             own,
             facing: StepDir::South,
             floor,
@@ -119,6 +121,7 @@ impl PlayView {
                 }
                 PlayEvent::Pushed(pushed) => {
                     self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
+                    self.enqueue(pushed.sounds);
                 }
                 PlayEvent::Combat(report) => self.apply_combat(report),
                 PlayEvent::LogoutRefused(result) => self.apply_logout_refusal(result),
@@ -160,12 +163,15 @@ mod session_stepper;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
+pub use feature_0023_presentation::state::*;
+
 pub use end::{PlayEnd, public_class};
 use feature_0013_paced_movement::protocol::step_direction;
 pub use feature_0021_logout::protocol::logout_refusal_text;
+pub use feature_0031_tutorial_notices::protocol::run_session;
 pub use feature_0092_zones_nologout::state::ServerMessageInbox;
 pub use mailbox::{Outbox, PlayEvent, PlayLink, Pushed, play_channel};
-pub use session_loop::{Stepper, run_session};
+pub use session_loop::Stepper;
 
 #[cfg(test)]
 mod tests;

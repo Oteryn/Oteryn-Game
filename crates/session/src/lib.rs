@@ -23,10 +23,16 @@ mod domain_dispatch;
 mod events;
 pub use events::SessionEvent;
 mod gated_command;
+/// Server-owned highscores query and result codecs.
+pub use oteryn_protocol_oteryn::highscores;
 mod hotkey_equip_transport;
 mod join;
 mod map_transport;
+mod presentation;
 mod quest_log_transport;
+pub use oteryn_protocol_oteryn::presentation::{
+    PresentationEvent, PresentationEventKind, PresentationSource,
+};
 mod recovery;
 use join::JoinAcceptance;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
@@ -40,6 +46,7 @@ pub use oteryn_protocol_oteryn::market;
 /// Party wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::party;
 pub use oteryn_protocol_oteryn::quest_log;
+pub use oteryn_protocol_oteryn::world_event;
 /// Live map snapshot and delta value types and codecs.
 pub use oteryn_protocol_oteryn::world_map;
 pub use oteryn_protocol_oteryn::{
@@ -86,7 +93,10 @@ pub use oteryn_protocol_oteryn::item_view::{
 };
 use oteryn_protocol_oteryn::logout;
 mod server_messages;
+mod server_save_countdown;
 mod tutorial_notices;
+pub use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
+pub use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
 pub use oteryn_protocol_oteryn::{
     boss_difficulty, boss_rewards, character_info, cyclopedia_character, cyclopedia_tracker,
     weapon_proficiency, zones_nologout::ServerMessage,

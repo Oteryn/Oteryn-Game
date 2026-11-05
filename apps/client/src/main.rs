@@ -3,16 +3,8 @@ mod windows_shell;
 
 /// Build the process runtime once; the window owns every native entry attempt.
 fn native_client() -> Option<oteryn_client::ClientBootstrap> {
-    let config = match oteryn_client::NativeLoginConfig::from_env(|name| std::env::var(name).ok()) {
-        Ok(Some(config)) => config,
-        Ok(None) => return None,
-        Err(error) => {
-            println!("Oteryn: {error}");
-            return None;
-        }
-    };
     match oteryn_client::ClientBootstrap::new() {
-        Ok(client) => Some(client.with_native_login(config)),
+        Ok(client) => Some(client),
         Err(error) => {
             println!("Oteryn: {error}");
             None
@@ -42,8 +34,11 @@ fn main() -> std::process::ExitCode {
 
 #[cfg(not(windows))]
 fn main() {
-    if let Some(client) = native_client() {
-        let mut entry = oteryn_client::reentry::Reentry::new(client);
+    if let Some(client) = native_client()
+        && let Ok(Some(config)) =
+            oteryn_client::NativeLoginConfig::from_env(|name| std::env::var(name).ok())
+    {
+        let mut entry = oteryn_client::reentry::Reentry::new(client.with_native_login(config));
         entry.request();
         while entry.poll().is_none() {
             std::thread::park_timeout(std::time::Duration::from_millis(10));

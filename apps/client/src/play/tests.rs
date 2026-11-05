@@ -477,12 +477,12 @@ fn pushes_older_than_a_step_outcome_are_delivered_before_it() {
     outbox.push(vec![spatial_event(3, 60)]);
     assert!(matches!(
         link.poll(),
-        Some(PlayEvent::Pushed(Pushed { own: Some(position), .. })) if position.x == 50
+        Some(PlayEvent::Pushed(pushed)) if pushed.own.is_some_and(|position| position.x == 50)
     ));
     assert!(matches!(link.poll(), Some(PlayEvent::Stepped(_))));
     assert!(matches!(
         link.poll(),
-        Some(PlayEvent::Pushed(Pushed { own: Some(position), .. })) if position.x == 60
+        Some(PlayEvent::Pushed(pushed)) if pushed.own.is_some_and(|position| position.x == 60)
     ));
     assert!(link.poll().is_none());
 }

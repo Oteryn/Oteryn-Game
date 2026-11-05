@@ -9,7 +9,13 @@ impl Application {
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
         if let Some(play) = &mut self.play {
-            if play.link.animus_input(events)
+            if play.view.audio_input(events) {
+                return;
+            }
+            if play.link.boss_encounter_input(events)
+                || play.link.highscores_input(events)
+                || play.link.notices_input(events)
+                || play.link.animus_input(events)
                 || play.link.prey_input(events)
                 || play.link.task_board_input(events)
                 || play.link.wheel_input(events)
@@ -23,6 +29,7 @@ impl Application {
                 || play.link.chat_party_room_input(events)
                 || play.link.cyclopedia_character_input(events)
                 || play.link.cyclopedia_tracker_input(events)
+                || play.link.world_event_input(events)
                 || play.link.daily_boost_input(events)
                 || play.link.depot_search_input(events)
                 || play.link.hireling_input(events)

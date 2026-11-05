@@ -5,11 +5,14 @@ use super::*;
 /// session's domain store (FND-02 §14, §15), in the order it was applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
+    Presentation(AppliedDelta<Vec<PresentationEvent>>),
+    ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
     NpcConversation(AppliedDelta<npc_service::NpcConversation>),
     NpcTradeWindow(AppliedDelta<npc_service::NpcTradeWindow>),
     /// Domain 16: the requested view and tracked lines, replaced whole.
     QuestLog(AppliedDelta<quest_log::QuestLog>),
     Appearance(AppliedDelta<AppearanceUpdate>),
+    ServerSaveCountdown(AppliedDelta<ServerSaveCountdown>),
     TutorialNotice(AppliedDelta<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice>),
     /// Domain 13: a newly earned account achievement; a duplicate grant produces no delta.
     AchievementEarned(AppliedDelta<AchievementEarned>),
@@ -56,6 +59,9 @@ impl SessionEvent {
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
             Self::TutorialNotice(_) => 23,
+            Self::Presentation(_) => 19,
+            Self::ActorCooldowns(_) => 20,
+            Self::ServerSaveCountdown(_) => 40,
             Self::AchievementEarned(_) => {
                 oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES
             }

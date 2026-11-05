@@ -48,6 +48,15 @@ impl Reentry {
         }
     }
 
+    /// Applies edited settings only while offline; the runtime is reused.
+    pub fn configure(&mut self, config: crate::NativeLoginConfig) -> bool {
+        if self.state != EntryState::Offline {
+            return false;
+        }
+        self.client.native_login = Some(config);
+        true
+    }
+
     /// Starts a user-requested attempt without blocking the window. Existing native entry
     /// owns bounded admission retries; there is no automatic outer retry loop.
     pub fn request(&mut self) -> bool {

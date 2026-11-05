@@ -2,6 +2,8 @@
 
 pub mod connection;
 pub mod hotkey_equip;
+#[path = "features/0053-world-event/protocol.rs"]
+pub mod world_event;
 
 use oteryn_foundation::CancellationToken;
 use std::fmt::{self, Display, Formatter};
@@ -130,6 +132,9 @@ pub use oteryn_session::exiva;
 /// Loyalty skills wire values owned by the admitted session.
 pub use oteryn_session::loyalty_skills;
 
+#[path = "features/0117-boss-encounter/protocol.rs"]
+pub mod boss_encounter;
+
 /// Achievement notice values validated by the session transport (capability 8).
 pub mod achievement_notices {
     pub use oteryn_session::{AchievementEarned, AchievementWatermark};
@@ -176,10 +181,16 @@ pub mod cl25a_protocol {
     };
 }
 
+/// Highscores through the admitted session command adapter.
+#[path = "features/0009-highscores/protocol.rs"]
+pub mod highscores;
 /// Admitted command transport for feature-local protocol adapters.
 pub mod raw_feature;
 /// Command and result vocabulary for server-owned mechanic panels.
 pub mod server_mechanic;
+
+#[path = "features/0031-tutorial-notices/protocol.rs"]
+pub mod tutorial_notices;
 
 /// Stash command execution through the admitted session.
 #[path = "features/0062-stash/protocol.rs"]

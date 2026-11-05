@@ -1,0 +1,9 @@
+{
+  "mechanic": "0031-tutorial-notices",
+  "kind": "keybindings",
+  "id": "0031-tutorial-notices-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+SHIFT+N",
+  "entry": "input.rs::open_key"
+}
