@@ -101,7 +101,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [10, 10, 230, 180],
             LBS_NOTIFY as u32 | WS_BORDER,
         );
-        for room in extended_rooms() {
+        for room in ChatRoom::ALL {
             SendMessageW(
                 rooms,
                 LB_ADDSTRING,
@@ -151,7 +151,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             for action in std::mem::take(&mut actions.0) {
                 if action == ROOMS {
                     if let Ok(row) = usize::try_from(SendMessageW(rooms, LB_GETCURSEL, 0, 0))
-                        && let Some(room) = extended_rooms().get(row)
+                        && let Some(room) = ChatRoom::ALL.get(row)
                     {
                         mailbox.chat_public.room = *room;
                     }
@@ -181,15 +181,6 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         }
         close(&weak);
     }
-}
-
-const fn extended_rooms() -> [ChatRoom; 4] {
-    [
-        ChatRoom::AdvertisingRookgaard,
-        ChatRoom::Tutor,
-        ChatRoom::Gamemaster,
-        ChatRoom::GuildLeaders,
-    ]
 }
 
 fn close(weak: &WeakMailbox) {

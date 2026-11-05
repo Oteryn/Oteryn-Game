@@ -2914,6 +2914,7 @@ dependencies = [
  "oteryn-client",
  "oteryn-client-domain",
  "oteryn-client-simulation",
+ "oteryn-client-ui",
  "oteryn-dev-client",
  "oteryn-foundation",
  "oteryn-input-actions",

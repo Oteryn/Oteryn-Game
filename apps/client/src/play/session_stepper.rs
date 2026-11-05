@@ -11,6 +11,13 @@ use std::future::Future;
 use std::time::Duration;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    async fn target_walk(
+        &mut self,
+        position: oteryn_session::ActorPosition,
+    ) -> Result<oteryn_client_runtime::target_move::WalkResponse, SessionError> {
+        oteryn_client_runtime::target_move::send(self, position).await
+    }
+
     async fn account_achievements(
         &mut self,
         page: u32,

@@ -16,6 +16,7 @@ pub enum PlayCommand {
     Feature(oteryn_client_runtime::raw_feature::FeatureCommand),
     ServerMechanic(oteryn_client_runtime::server_mechanic::ServerMechanicCommand),
     Step(StepDir),
+    TargetWalk(oteryn_session::ActorPosition),
     Combat(CombatCommand),
     /// Leave the game (capability 21 `LOGOUT_INTENT`).
     Logout,
