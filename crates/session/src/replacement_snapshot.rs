@@ -4,11 +4,19 @@ use snapshot_state::SnapshotState;
 
 impl<S: SessionStream> Session<S> {
     pub(super) async fn replace_snapshot(&mut self, payload: &[u8]) -> Result<(), SessionError> {
-        let begin = decode_snapshot_begin(payload)?;
         let expected = self
             .last_server_sequence
             .checked_add(1)
             .ok_or(FoundationProtocolError::ServerSequenceGap)?;
+        self.replace_snapshot_at(payload, expected).await
+    }
+
+    pub(super) async fn replace_snapshot_at(
+        &mut self,
+        payload: &[u8],
+        expected: u64,
+    ) -> Result<(), SessionError> {
+        let begin = decode_snapshot_begin(payload)?;
         if begin.target_server_sequence != expected {
             return Err(SessionError::ServerSequenceMismatch {
                 expected,

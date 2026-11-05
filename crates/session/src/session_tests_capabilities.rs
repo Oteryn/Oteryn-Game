@@ -115,6 +115,13 @@ fn derived_gated_routes_match_previous_table() {
         (53, &[64], &[]),
         (54, &[66, 67], &[]),
         (55, &[68, 69], &[]),
+        // P-C04: existing move-out, scope-transfer and guildhall leadership routes.
+        (59, &[76, 77], &[]),
+        (86, &[102], &[51]),
+        (99, &[115], &[]),
+        // P-C01 already routes charm progression and expert fight modes on this base.
+        (67, &[84], &[]),
+        (87, &[103], &[52]),
         (60, &[78], &[26]),
         (62, &[79], &[27]),
         (63, &[80], &[28]),
