@@ -232,7 +232,14 @@ mod tests {
     fn primary_click_becomes_a_gameplay_action_at_the_pointer() -> Result<(), InputError> {
         let mut actions = MouseActions::new()?;
         let clicks = actions.route(&[moved(100, 60)?, primary(ButtonState::Pressed)]);
-        assert_eq!(clicks, vec![ClickAction { x: 100.0, y: 60.0 }]);
+        assert_eq!(
+            clicks,
+            vec![ClickAction {
+                x: 100.0,
+                y: 60.0,
+                secondary: false
+            }]
+        );
         assert!(actions.route(&[primary(ButtonState::Released)]).is_empty());
         Ok(())
     }
@@ -278,7 +285,11 @@ mod tests {
         actions.route(&[primary(ButtonState::Released), moved(30, 40)?]);
         assert_eq!(
             actions.route(&[primary(ButtonState::Pressed)]),
-            vec![ClickAction { x: 30.0, y: 40.0 }]
+            vec![ClickAction {
+                x: 30.0,
+                y: 40.0,
+                secondary: false
+            }]
         );
         actions.route(&[
             primary(ButtonState::Released),

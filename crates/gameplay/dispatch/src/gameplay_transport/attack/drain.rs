@@ -652,6 +652,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     } else {
                         landed
                     };
+                let analyser_before_prey = landed;
                 let prey = states.prey_percent(
                     &runtime,
                     entry.actor,
@@ -737,6 +738,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         content,
                         entry.actor,
                         &selected.weapon,
+                    );
+                }
+                if result.applied {
+                    let value = u32::try_from(
+                        result
+                            .health_before
+                            .saturating_sub(result.health_after)
+                            .max(0),
+                    )
+                    .unwrap_or(0);
+                    let (primary, element) = match selected.weapon.ranged.as_ref() {
+                        Some(ranged) => {
+                            let primary = ranged_magnitude.map_or(0, |parts| {
+                                bounty_talisman::damage(
+                                    super::super::prey::damage(
+                                        parts[0]
+                                            .saturating_add(
+                                                analyser_before_prey.saturating_sub(magnitude),
+                                            )
+                                            .max(0),
+                                        prey,
+                                    ),
+                                    talisman_damage,
+                                )
+                            });
+                            let element = match ranged.damage {
+                                ranged::RangedDamage::Magic { element, .. }
+                                | ranged::RangedDamage::Distance { element, .. } => element,
+                            };
+                            (
+                                u32::try_from(primary).unwrap_or(0).min(value),
+                                ranged::analyser_element(element),
+                            )
+                        }
+                        None => (
+                            value,
+                            oteryn_protocol_oteryn::damage_element::DamageElement::Physical,
+                        ),
+                    };
+                    states.analyser.impact(
+                        entry.actor,
+                        entry.session,
+                        primary,
+                        Some(oteryn_protocol_oteryn::damage_element::DamageElement::Physical),
+                    );
+                    states.analyser.impact(
+                        entry.actor,
+                        entry.session,
+                        value.saturating_sub(primary),
+                        Some(element),
                     );
                 }
                 train_swing(
@@ -868,6 +919,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             amount,
                             now.get() / 1_000,
                         ) {
+                            if child.applied {
+                                states.analyser.impact_amount(
+                                    entry.actor,
+                                    entry.session,
+                                    u64::try_from(
+                                        child.health_before.saturating_sub(child.health_after),
+                                    )
+                                    .unwrap_or(0),
+                                    Some(super::super::analyser::charm_element(damage.element)),
+                                );
+                            }
                             record_hit_activity(
                                 entry,
                                 &runtime,

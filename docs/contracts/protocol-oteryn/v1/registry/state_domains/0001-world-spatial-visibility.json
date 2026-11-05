@@ -15,7 +15,7 @@
       "name": "WORLD_SPATIAL_ENTITIES_DELTA_V2",
       "capability": 6,
       "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialEntitiesDeltaV2",
-      "max_payload_bytes": 33792
+      "max_payload_bytes": 50688
     }
   ],
   "snapshot_types": [
@@ -30,7 +30,7 @@
       "name": "WORLD_SPATIAL_ENTITIES_SNAPSHOT_V2",
       "capability": 6,
       "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialEntitiesSnapshotV2",
-      "max_payload_bytes": 33792
+      "max_payload_bytes": 50688
     }
   ]
 }

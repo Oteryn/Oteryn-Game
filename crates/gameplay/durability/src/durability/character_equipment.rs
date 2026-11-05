@@ -968,6 +968,7 @@ mod tests {
 
 #[derive(Debug, Clone)]
 pub struct RawCastDurableFacts {
+    pub learned: std::collections::BTreeSet<String>,
     pub account: [u8; 16],
     pub loyalty_points: u32,
     pub equipment: EquipmentSnapshot,
@@ -990,7 +991,13 @@ pub async fn read_raw_cast_facts_in_transaction(
         .command
         .ok_or_else(|| rejected("cast read needs actual command"))?;
     let raw = read_lifecycle_facts_in_transaction(tx, authority).await?;
+    let learned = super::character_known_spells::read_known_spells_in_transaction(
+        tx,
+        raw.fence.character_id,
+    )
+    .await?;
     Ok(RawCastDurableFacts {
+        learned,
         account: raw.account,
         loyalty_points: raw.loyalty_points,
         equipment: raw.equipment,

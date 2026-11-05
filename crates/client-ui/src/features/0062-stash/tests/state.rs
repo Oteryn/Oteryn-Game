@@ -51,3 +51,67 @@ fn browse_and_withdraw_use_server_rows_and_render_refusals() -> Result<(), &'sta
     assert!(panel_text(&panel).contains("item.apple"));
     Ok(())
 }
+
+#[test]
+fn stow_rejects_handles_not_in_the_visible_carried_picker() {
+    let mut panel = StashPanel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(request(&mut panel, Intent::Stow(std::num::NonZeroU64::MIN)).is_none());
+    assert!(!panel.pending);
+}
+
+#[test]
+fn visible_carried_selection_stows_the_server_handle_and_blocks_repeated_input()
+-> Result<(), &'static str> {
+    let item = oteryn_client_runtime::depot::ItemEntry {
+        handle: std::num::NonZeroU64::MIN,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    };
+    let mut panel = StashPanel {
+        selected: true,
+        carried: vec![item],
+        ..Default::default()
+    };
+    let handle = panel.carried[0].handle;
+    let command = request(&mut panel, Intent::Stow(handle)).ok_or("stow command")?;
+    assert_eq!(
+        stash::decode_stash_intent(&command.payload)
+            .map_err(|_| "payload")?
+            .action,
+        stash::StashAction::Stow(item.handle)
+    );
+    assert!(request(&mut panel, Intent::Stow(item.handle)).is_none());
+    apply_result(&mut panel, &reply(stash::StashOutcome::Unsupported));
+    assert!(panel_text(&panel).contains("cannot be stowed"));
+    panel.carried.clear();
+    assert!(request(&mut panel, Intent::Stow(item.handle)).is_none());
+    panel.selected = false;
+    panel.carried.push(item);
+    assert!(request(&mut panel, Intent::Stow(item.handle)).is_none());
+    Ok(())
+}
+
+#[test]
+fn carried_click_rejects_a_changed_projection_and_invalid_row() {
+    let item = oteryn_client_runtime::depot::ItemEntry {
+        handle: std::num::NonZeroU64::MIN,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    };
+    let mut panel = StashPanel {
+        carried: vec![item],
+        ..Default::default()
+    };
+    assert_eq!(
+        carried_intent(&panel, &[item], 0),
+        Some(Intent::Stow(item.handle))
+    );
+    assert_eq!(carried_intent(&panel, &[item], 1), None);
+    panel.carried.clear();
+    assert_eq!(carried_intent(&panel, &[item], 0), None);
+}

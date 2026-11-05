@@ -2,16 +2,29 @@
   {
     "mechanic": "0036-chat-guild-room",
     "kind": "handlers",
-    "id": "0036-chat-guild-room-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0036-chat-guild-room-chat",
+    "status": "supported",
     "commands": [],
+    "direction": "server_to_client",
+    "capability": 36,
+    "entry": "protocol.rs::replace_state",
+    "push_messages": [
+      "ChatLine"
+    ],
+    "reducer": "protocol.rs::replace_state",
+    "test": "tests.rs::guild_composer_requires_live_membership",
+    "shared_commands": [
+      13
+    ],
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Guild membership is server-owned."
     }
+  },
+  {
+    "mechanic": "0036-chat-guild-room",
+    "kind": "panels",
+    "id": "0036-chat-guild-room-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

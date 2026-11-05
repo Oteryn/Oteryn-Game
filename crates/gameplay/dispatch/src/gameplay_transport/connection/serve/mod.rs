@@ -6,6 +6,7 @@ use crate::gameplay_transport::operator_event;
 
 mod achievement_notices;
 mod activity_transfer;
+mod analyser;
 mod autowalk;
 mod command;
 mod creature_push;
@@ -24,6 +25,7 @@ mod pvp_expert;
 mod refresh;
 mod setup;
 mod snapshot;
+mod spell_catalog;
 mod target_move;
 use command::CommandOutcome;
 mod effects;
@@ -35,6 +37,7 @@ mod use_effects;
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,
     target_walk: Option<target_move::PendingWalk>,
     target_move_window: crate::gameplay_transport::attack::IntentWindow,
@@ -234,6 +237,10 @@ where
                 }
                 Ok(None) => {}
                 Err(end) => return end.finish(session.admitted),
+            }
+            if let Err(end) = analyser::emit(stream, authority, &mut session).await {
+                authority.player_trade_disconnected(session.admitted.game_session_id);
+                return end.finish(authority.current_activity_connection(session.admitted));
             }
             let next = poll::next(stream, authority, &mut session).await;
             // A member who did not issue the lever may have changed owner while

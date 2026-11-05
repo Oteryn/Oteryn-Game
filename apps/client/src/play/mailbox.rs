@@ -30,9 +30,11 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    pub world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     pub world_clock: Option<oteryn_session::world_clock::WorldClock>,
     pub achievements: Vec<oteryn_client_ui::achievement_notices::AchievementEarned>,
     pub sounds: Vec<super::SoundCue>,
+    pub visuals: Vec<oteryn_session::PresentationEventKind>,
     pub notices: Box<oteryn_client_ui::tutorial_notices::NoticePanel>,
     /// Latest complete live map window, reduced before publication.
     pub map: Option<Box<oteryn_session::world_map::WorldMapViewSnapshot>>,
@@ -54,6 +56,10 @@ pub struct Pushed {
 impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
+        super::feature_0023_presentation::protocol::absorb_visuals(
+            &mut self.visuals,
+            newer.visuals,
+        );
         let room = super::MAX_PENDING_SOUNDS.saturating_sub(self.sounds.len());
         self.sounds.extend(newer.sounds.into_iter().take(room));
         for text in newer.notices.tutorial {
@@ -64,6 +70,7 @@ impl Pushed {
         }
         self.notices.save_minutes = newer.notices.save_minutes.or(self.notices.save_minutes);
         self.world_clock = newer.world_clock.or(self.world_clock);
+        self.world_weather = newer.world_weather.or(self.world_weather);
         self.map = newer.map.or(self.map.take());
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
@@ -84,6 +91,20 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) containers: oteryn_client_ui::container_tree::ContainerPanel,
+    pub(super) world_context: oteryn_client_ui::world_interaction::menu::State,
+    pub(super) inventory: oteryn_client_ui::inventory::InventoryPanel,
+    pub(super) inventory_shutdown: bool,
+    pub(super) item_movement: oteryn_client_ui::inventory::movement::Movement,
+    pub(super) item_count_selected: bool,
+    pub(super) equipment_selected: bool,
+    #[cfg(windows)]
+    pub(super) item_drag_native: super::feature_0004_item_view_move::view::DragNative,
+    pub(super) battle: oteryn_client_ui::battle::BattlePanel,
+    pub(super) death: super::feature_local_death_respawn::protocol::DeathState,
+    pub(super) death_reset_commands: bool,
+    pub(super) depot: oteryn_client_ui::depot::DepotPanel,
+    pub(super) depot_shutdown: bool,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,
@@ -130,6 +151,14 @@ pub(super) struct Mailbox {
     logout_refused: Option<Option<LogoutResult>>,
     ended: Option<PlayEvent>,
     pub(super) task_board: oteryn_client_ui::task_board::TaskBoardPanel,
+    pub(super) dialogue: oteryn_client_ui::npc_dialogue::DialoguePanel,
+    #[cfg(any(windows, test))]
+    pub(super) dialogue_pointer: Option<(f64, f64)>,
+    #[cfg(windows)]
+    pub(super) dialogue_window: bool,
+    pub(super) dialogue_shutdown: bool,
+    #[cfg(windows)]
+    pub(super) npc_shop_window: bool,
     pub(super) npc_shop: oteryn_client_ui::npc_shop::NpcShopPanel,
     pub(super) prey: oteryn_client_ui::prey::PreyPanel,
     pub(super) prey_shutdown: bool,
@@ -145,6 +174,7 @@ pub(super) struct Mailbox {
     // CL26s1
     pub(super) chat: oteryn_client_ui::chat::ChatPanel,
     pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,
+    pub(super) chat_private: oteryn_client_ui::chat_private_channel::ChatPanel,
     pub(super) chat_public_shutdown: bool,
     // CL26s2: player-typing panel state and native-window shutdown.
     pub(super) player_typing: oteryn_client_ui::player_typing::PlayerTypingPanel,
@@ -161,6 +191,13 @@ const MAX_COMBAT_REPORTS: usize = 8;
 pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 
 impl Mailbox {
+    pub(super) fn combat_report(&mut self, report: CombatReport) {
+        if self.combat.len() == MAX_COMBAT_REPORTS {
+            self.combat.pop_front();
+        }
+        self.combat.push_back(report);
+    }
+
     /// A slow shell may not silently lose an announcement or grow an unbounded event queue.
     fn check_server_messages(&mut self) {
         if self.before.server_messages.overflowed()
@@ -195,8 +232,13 @@ impl Outbox {
 
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, events: Vec<SessionEvent>) {
+        self.inventory_events(&events);
+        self.container_events(&events);
         let mut mailbox = lock(&self.0);
+        super::feature_0060_player_trade::protocol::reduce(&mut mailbox.player_trade, &events);
         super::feature_local_spell_action_bar::protocol::vitals_events(&mut mailbox, &events);
+        mailbox.dialogue_events(&events);
+        mailbox.npc_shop_events(&events);
         for event in &events {
             if let SessionEvent::PlayerTyping(update) = event {
                 oteryn_client_ui::player_typing::protocol::reduce(
@@ -233,6 +275,7 @@ impl Outbox {
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
         for line in std::mem::take(&mut mailbox.pushed.chat_lines) {
+            oteryn_client_ui::party::push_feedback(&mut mailbox.party, &line);
             oteryn_client_ui::chat_party_room::push_line(&mut mailbox.chat_party_room, line);
         }
         if let Some(rooms) = mailbox.pushed.chat_rooms.take() {
@@ -261,36 +304,54 @@ impl Outbox {
         mailbox.pushed.entities = Some(entities);
     }
 
-    pub(super) fn combat(&self, report: CombatReport) {
-        let mut mailbox = lock(&self.0);
-        if mailbox.combat.len() == MAX_COMBAT_REPORTS {
-            mailbox.combat.pop_front();
-        }
-        mailbox.combat.push_back(report);
-    }
-
     pub(super) fn logout_refused(&self, result: Option<LogoutResult>) {
         lock(&self.0).logout_refused = Some(result);
     }
 
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
+        self.inventory_end();
+        self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.player_trade = Default::default();
+        mailbox.battle_end();
+        mailbox.stash_end();
+        mailbox.depot = Default::default();
+        mailbox.depot_shutdown = true;
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
+        mailbox.chat.guild = Default::default();
+        mailbox.chat.guild_selected = false;
+        mailbox.chat.guild_open = false;
+        mailbox.npc_shop = Default::default();
+        mailbox.dialogue = Default::default();
+        mailbox.dialogue_shutdown = true;
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::Ended(class));
     }
 
     pub(super) fn logged_out(&self) {
+        self.inventory_end();
+        self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.player_trade = Default::default();
+        mailbox.battle_end();
+        mailbox.stash_end();
+        mailbox.depot = Default::default();
+        mailbox.depot_shutdown = true;
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
+        mailbox.chat.guild = Default::default();
+        mailbox.chat.guild_selected = false;
+        mailbox.chat.guild_open = false;
+        mailbox.npc_shop = Default::default();
+        mailbox.dialogue = Default::default();
+        mailbox.dialogue_shutdown = true;
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::LoggedOut);
@@ -306,12 +367,19 @@ pub struct PlayLink {
 
 impl PlayLink {
     pub fn request(&self, direction: StepDir) {
+        let mailbox = lock(&self.mailbox);
+        if mailbox.world_input_blocked() {
+            return;
+        }
         // A closed task has already reported or will report `Ended`.
         let _ = self.commands.send(PlayCommand::Step(direction));
     }
 
     pub fn request_combat(&self, command: CombatCommand) {
-        let _ = self.commands.send(PlayCommand::Combat(command));
+        let mailbox = lock(&self.mailbox);
+        if !mailbox.world_input_blocked() {
+            let _ = self.commands.send(PlayCommand::Combat(command));
+        }
     }
 
     pub fn request_logout(&self) {
@@ -320,6 +388,8 @@ impl PlayLink {
 
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
     pub fn poll(&self) -> Option<PlayEvent> {
+        #[cfg(windows)]
+        super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
         let mut mailbox = lock(&self.mailbox);
         if mailbox.before != Pushed::default() {
             return Some(PlayEvent::Pushed(Box::new(std::mem::take(
@@ -361,12 +431,19 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
+        mailbox.player_trade = Default::default();
         mailbox.world_event_shutdown = true;
         mailbox.highscores_shutdown = true;
+        mailbox.npc_shop = Default::default();
+        mailbox.dialogue = Default::default();
+        mailbox.dialogue_shutdown = true;
         mailbox.vip.open = false;
+        mailbox.inventory_shutdown = true;
+        mailbox.containers.end();
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
         mailbox.prey_shutdown = true;
+        mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
         mailbox.hireling_shutdown = true;

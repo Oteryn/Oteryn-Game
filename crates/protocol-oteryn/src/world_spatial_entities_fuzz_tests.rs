@@ -11,6 +11,7 @@ fn scene(rng: &mut Rng, fields: EntityFields) -> (WorldSpatialEntitiesSnapshot, 
         floor: rng.below(16) as i16,
     };
     let own = WorldSpatialEntity {
+        display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {
             identity: [1; 16],
@@ -24,6 +25,7 @@ fn scene(rng: &mut Rng, fields: EntityFields) -> (WorldSpatialEntitiesSnapshot, 
         },
     };
     let object = WorldSpatialEntity {
+        display_name: None,
         kind: EntityKind::GroundItem,
         entity: EntityRef {
             identity: [2; 16],
@@ -103,6 +105,7 @@ fn fuzz_entity_snapshot_and_delta_decoders() {
     for item_handles in [false, true] {
         for light in [false, true] {
             let fields = EntityFields {
+                display_names: false,
                 item_handles,
                 light,
                 party_icons: false,

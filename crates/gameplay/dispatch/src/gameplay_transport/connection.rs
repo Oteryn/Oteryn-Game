@@ -114,6 +114,7 @@ use oteryn_protocol_oteryn::container_tree::{
     encode_container_view_result,
 };
 use oteryn_protocol_oteryn::encode_command_error_result;
+use oteryn_protocol_oteryn::encode_snapshot;
 use oteryn_protocol_oteryn::highscores::{HighscoresQuery, decode_highscores_query};
 use oteryn_protocol_oteryn::item_look::{
     ItemLookRefusal, ItemLookResult, ItemLookSelection, ItemLookTarget,
@@ -222,6 +223,8 @@ pub struct AdmittedSession {
 /// with, on a strictly newer connection generation (FND-04B §16).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SessionContinuity {
+    /// Domain 15 cumulative revision, including discards at recovery snapshots.
+    pub analyser_revision: u64,
     /// Domain 57 revision and once-per-login MOTD receipt; both survive reconnect/transfer.
     pub server_message_revision: u64,
     pub server_motd_sent: bool,
@@ -293,6 +296,7 @@ impl SessionContinuity {
     /// baseline spatial revision 1, and no overlay observed yet (0, the door's own initial
     /// revision).
     pub const FRESH: Self = Self {
+        analyser_revision: 0,
         server_message_revision: 0,
         server_motd_sent: false,
         gameplay_idle: GameplayIdleState::FRESH,
@@ -1203,24 +1207,43 @@ async fn record_actor_step<A: FreshAdmissionAuthority>(
         .await;
 }
 
-/// MAP-WIRE-2: the domain 17 delta frame at the sequence after `sequence`, `Some(None)` when no
-/// tile in view changed, or `None` when the session must end: the map is unserved or does not
-/// encode, or it needs a snapshot (a jump or a delta over `MAPW-RL-03`), which a running
-/// connection does not send, so the client resumes and gets one.
-async fn world_map_delta<A: FreshAdmissionAuthority>(
+/// MAP-WIRE-2: the domain 17 update at the sequence after `sequence`, `Some(None)` when
+/// unchanged, or `None` when the map is unserved or cannot encode. A replacement uses the same
+/// snapshot producer as admission. Callers write all frames before any later sequenced output,
+/// preserving the FND-02 §16 publication barrier and the current connection generation.
+async fn world_map_frames<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
     generation: u64,
     sequence: u64,
     view: &mut SessionMapView,
     items: &mut SessionItemView,
-) -> Option<Option<(u64, Vec<u8>)>> {
+) -> Option<Option<(u64, Vec<Vec<u8>>)>> {
     match authority.observe_world_map(actor, view, items).await? {
         Ok(None) => Some(None),
         Ok(Some(MapUpdate::Delta(delta))) => {
-            item_view_delta(generation, sequence, &delta).map(Some)
+            let (sequence, frame) = item_view_delta(generation, sequence, &delta)?;
+            Some(Some((sequence, vec![frame])))
         }
-        Ok(Some(MapUpdate::Snapshot(_))) | Err(_) => None,
+        Ok(Some(MapUpdate::Snapshot(snapshot))) => {
+            // Admission reserves snapshot ID 1. Sequence boundaries also identify the
+            // existing scope-barrier snapshots, so reserve at least boundary 2 here.
+            let target = sequence.checked_add(1)?.max(2);
+            let frames = encode_snapshot(
+                generation,
+                target,
+                target,
+                &[DomainSnapshot {
+                    domain_id: snapshot.domain_id,
+                    revision: snapshot.revision,
+                    snapshot_type: snapshot.snapshot_type,
+                    payload: &snapshot.payload,
+                }],
+            )
+            .ok()?;
+            Some(Some((target, frames)))
+        }
+        Err(_) => None,
     }
 }
 

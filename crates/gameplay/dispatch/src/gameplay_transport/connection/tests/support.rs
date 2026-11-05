@@ -398,6 +398,19 @@ impl FreshAdmissionAuthority for SpellAuthority {
         Some(at(0))
     }
 
+    async fn observe_spell_catalog(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<Vec<oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry>> {
+        let states = self.states.borrow();
+        crate::gameplay_transport::spell_catalog::catalog(
+            &self.book,
+            states.get(&self.runtime, actor, session)?,
+            0,
+        )
+    }
+
     async fn observe_vitals(
         &self,
         actor: ExactActorRef,

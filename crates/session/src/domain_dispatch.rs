@@ -23,6 +23,9 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            player_trade::STATE_DOMAIN_PLAYER_TRADE => {
+                self.apply_trade_delta(server_sequence, delta)
+            }
             npc_service::STATE_DOMAIN_NPC_CONVERSATION
             | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW => {
                 if !self.is_selected(npc_service::CAPABILITY_NPC_SERVICE_V1) {
@@ -64,7 +67,9 @@ impl<S: SessionStream> Session<S> {
                 Ok(event)
             }
             18 => crate::world_light::apply(self, server_sequence, payload),
+            22 => crate::weather::apply(self, server_sequence, payload),
             19 | 20 => crate::presentation::apply(self, server_sequence, payload),
+            14 => crate::container_tree::apply(self, server_sequence, delta),
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
             40 => crate::server_save_countdown::apply(self, server_sequence, payload),
             23 => crate::tutorial_notices::apply(self, server_sequence, payload),

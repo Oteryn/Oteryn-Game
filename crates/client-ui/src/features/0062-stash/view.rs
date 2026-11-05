@@ -34,6 +34,7 @@ pub fn panel_text(panel: &StashPanel) -> String {
             ""
         }
     ));
+    lines.push("Select a carried item to stow its stack. Open carried bags in Depot to list their items. Retrieve depot items there before stowing. The server accepts eligible items in the main backpack.".into());
     lines.extend(panel.rows.iter().map(row_label));
     lines.join("\r\n")
 }

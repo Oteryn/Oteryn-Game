@@ -1,20 +1,48 @@
 [
   {
     "mechanic": "0003-npc-service",
+    "kind": "panels",
+    "id": "0003-npc-service-dialogue",
+    "status": "supported",
+    "entry": "mod.rs::panel_text"
+  },
+  {
+    "mechanic": "0003-npc-service",
+    "kind": "keybindings",
+    "id": "0003-npc-service-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+X",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0003-npc-service",
     "kind": "handlers",
-    "id": "0003-npc-service-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0003-npc-service-talk",
+    "status": "supported",
     "commands": [
-      7,
+      7
+    ],
+    "capability": 3,
+    "direction": "client_to_server",
+    "entry": "mod.rs::request",
+    "not_applicable": {
+      "settings": "No local settings."
+    }
+  },
+  {
+    "mechanic": "0003-npc-service",
+    "kind": "handlers",
+    "id": "0003-npc-service-trade",
+    "status": "supported",
+    "commands": [
       8
     ],
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
-    }
+      "settings": "The server owns NPC quotes and carried items."
+    },
+    "capability": 3,
+    "direction": "client_to_server",
+    "entry": "mod.rs::trade_request"
   }
 ]

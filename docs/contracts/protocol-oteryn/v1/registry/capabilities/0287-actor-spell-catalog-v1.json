@@ -1,0 +1,12 @@
+{
+  "id": 287,
+  "name": "ACTOR_SPELL_CATALOG_V1",
+  "owner_decision": "S-SPELLBOOK",
+  "owner": "current ChannelRuntime / Character known-spell owner",
+  "command_types": [],
+  "state_domains": [
+    100
+  ],
+  "offered": true,
+  "offer_gate": "Selected capability 287 receives its own actor catalog on join and replacement deltas when changed."
+}

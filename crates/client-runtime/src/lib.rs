@@ -6,12 +6,31 @@ pub mod account_achievements;
 #[path = "features/0008-achievement-notices/protocol.rs"]
 pub mod achievement_notices;
 
+#[path = "features/0014-container-tree/protocol.rs"]
+pub mod container_tree;
+#[path = "features/0012-item-equip-drop/protocol.rs"]
+pub mod equipment;
+#[path = "features/0004-item-view-move/protocol.rs"]
+pub mod inventory;
+
+#[path = "features/0011-world-interaction/protocol.rs"]
+pub mod world_interaction;
+
+#[path = "features/0015-item-use/protocol.rs"]
+pub mod item_use;
+
 pub mod connection;
+#[path = "features/0037-depot/protocol.rs"]
+pub mod depot;
 pub mod hotkey_equip;
+#[path = "features/0003-npc-service/protocol.rs"]
+pub mod npc_dialogue;
 #[path = "features/0053-world-event/protocol.rs"]
 pub mod world_event;
 #[path = "features/0019-world-light/protocol.rs"]
 pub mod world_light;
+#[path = "features/0026-world-weather/protocol.rs"]
+pub mod world_weather;
 
 use oteryn_foundation::CancellationToken;
 use std::fmt::{self, Display, Formatter};
@@ -226,6 +245,11 @@ pub mod market;
 /// Local speech and named private messages.
 #[path = "features/0007-chat/protocol.rs"]
 pub mod chat;
+#[path = "features/0036-chat-guild-room/protocol.rs"]
+pub mod chat_guild_room;
+/// Private-channel membership controls and live transcript.
+#[path = "features/0080-chat-private-channel/protocol.rs"]
+pub mod chat_private_channel;
 /// Existing chat command and state types extended by capability 259.
 #[path = "features/0259-chat-public-channels/protocol.rs"]
 pub mod chat_public_channels;

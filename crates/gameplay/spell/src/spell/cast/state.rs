@@ -42,6 +42,14 @@ impl PlayerSpellState {
         Ok(changed)
     }
 
+    /// Knowledge supplied by the fenced durable Character owner, never by client intent.
+    pub fn install_learned_spells(&mut self, learned: BTreeSet<String>) {
+        self.learned = learned;
+    }
+    pub fn learned_spells(&self) -> &BTreeSet<String> {
+        &self.learned
+    }
+
     pub fn source_cooldown_deadlines(&self) -> Vec<(String, u64)> {
         self.cooldowns.canonical_deadlines()
     }
@@ -449,8 +457,7 @@ impl PlayerSpellState {
             mana: self.mana,
             max_mana: self.facts.max_mana,
             soul: self.soul,
-            // §4: V1 serves no spell with `learning_required`.
-            learned: BTreeSet::new(),
+            learned: self.learned.clone(),
             // No V1 spell reads skills or equipment; they have no owner here yet.
             attack_skill: 0,
             attack_value: 0,

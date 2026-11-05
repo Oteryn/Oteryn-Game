@@ -10,4 +10,14 @@ impl PlayLink {
 #[path = "native.rs"]
 mod native;
 #[cfg(windows)]
-pub(in crate::play) use native::open_window;
+pub(in crate::play) use native::{context_menu, open_window};
+
+#[cfg(windows)]
+impl PlayLink {
+    pub(in crate::play) fn player_trade_present(&self) {
+        let panel = self.player_trade_panel();
+        if panel.selected && panel.show_requested {
+            open_window(self);
+        }
+    }
+}

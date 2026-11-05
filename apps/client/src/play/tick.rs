@@ -11,6 +11,8 @@ impl PlayView {
     /// its public class, a committed logout to character selection; a view error is a render
     /// failure.
     pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
+        #[cfg(windows)]
+        link.player_trade_present();
         const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
         while let Some(event) = link.poll() {
             match event {
@@ -27,6 +29,10 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
+        self.advance_presentation(std::time::Instant::now())
+            .map_err(|_error| UNAVAILABLE)?;
+        self.world_context_feedback = link.world_context_feedback();
+        self.project_death(link).map_err(|_error| UNAVAILABLE)?;
         self.vitals = link.actor_vitals();
         self.target_walk_feedback = link.target_walk_feedback();
         // One chronological queue: each input goes out in the order it was given. A step still

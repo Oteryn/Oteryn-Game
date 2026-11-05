@@ -3,15 +3,29 @@ use super::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Browse,
+    Wares,
     OwnOffers,
     History,
     CreateOffer,
     CancelOffer,
     AcceptOffer,
     Refresh,
+    NextPage,
+    PreviousPage,
 }
 
 pub fn request(panel: &mut MarketPanel, intent: Intent) -> Option<MarketCommand> {
+    if panel.pending.is_some() {
+        panel.feedback = Some("Waiting for the server");
+        return None;
+    }
+    let old_page = panel.page;
+    match intent {
+        Intent::Browse | Intent::Wares | Intent::OwnOffers | Intent::History => panel.page = 0,
+        Intent::NextPage => panel.page = panel.page.saturating_add(1),
+        Intent::PreviousPage => panel.page = panel.page.saturating_sub(1),
+        _ => {}
+    }
     let result = prepare(panel, intent);
     match result {
         Ok(command) => {
@@ -20,6 +34,7 @@ pub fn request(panel: &mut MarketPanel, intent: Intent) -> Option<MarketCommand>
             Some(command)
         }
         Err(message) => {
+            panel.page = old_page;
             panel.feedback = Some(message);
             None
         }
@@ -36,6 +51,7 @@ fn prepare(panel: &MarketPanel, intent: Intent) -> Result<MarketCommand, &'stati
     let zero = [0; 16];
     let (action, definition, offer, amount, price, anonymous) = match intent {
         Intent::Browse => (2, panel.definition, zero, 0, 0, false),
+        Intent::Wares => (1, 0, zero, 0, 0, false),
         Intent::OwnOffers => (3, 0, zero, 0, 0, false),
         Intent::History => (4, 0, zero, 0, 0, false),
         Intent::CreateOffer => (
@@ -62,7 +78,8 @@ fn prepare(panel: &MarketPanel, intent: Intent) -> Result<MarketCommand, &'stati
             0,
             false,
         ),
-        Intent::Refresh => match panel.view {
+        Intent::Refresh | Intent::NextPage | Intent::PreviousPage => match panel.view {
+            MarketView::Browse if panel.definition == 0 => (1, 0, zero, 0, 0, false),
             MarketView::Browse => (2, panel.definition, zero, 0, 0, false),
             MarketView::Own => (3, 0, zero, 0, 0, false),
             MarketView::History => (4, 0, zero, 0, 0, false),
@@ -89,24 +106,27 @@ pub fn apply_result(panel: &mut MarketPanel, response: &MarketResponse) -> bool 
         panel.feedback = Some("The server refused the market request");
         return false;
     };
-    if reply.action != pending.0.action {
-        panel.feedback = Some("The market response did not match the request");
-        return false;
-    }
     if reply.code != 1 {
         panel.feedback = Some(refusal(reply.code));
         return false;
     }
+    if reply.action != pending.0.action {
+        panel.feedback = Some("The market response did not match the request");
+        return false;
+    }
     panel.view = match reply.action {
-        2 => MarketView::Browse,
+        1 | 2 => MarketView::Browse,
         3 => MarketView::Own,
         4 => MarketView::History,
         _ => panel.view,
     };
+    if reply.action == 1 {
+        panel.definition = 0;
+    }
     if matches!(reply.action, 1..=4) {
         panel.rows.clone_from(&reply.rows);
     }
-    panel.selected_offer = panel.rows.first().map(|row| row.offer);
+    panel.selected_offer = None;
     panel.feedback = Some("The server confirmed the market request");
     true
 }

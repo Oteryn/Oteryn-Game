@@ -1,0 +1,13 @@
+{
+  "id": 286,
+  "name": "WORLD_SPATIAL_ENTITIES_V2",
+  "owner_decision": "S-ENTNAME: continuous live actor display names",
+  "owner": "current ChannelRuntime + character name authority",
+  "requires": [
+    6
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Selected together with WORLD_SPATIAL_ENTITIES; field 13 is required on live actors only. Legacy selections retain unchanged bytes."
+}

@@ -7,6 +7,7 @@ pub(super) mod step;
 pub(super) use reply::result;
 
 pub(super) struct State {
+    spell_catalog: Option<super::spell_catalog::SessionCatalog>,
     actor: ExactActorRef,
     enabled: bool,
     items: Option<SessionItemView>,
@@ -329,10 +330,13 @@ impl State {
         admitted: &mut AdmittedSession,
     ) -> Result<(), ServeEnd> {
         if let Some(view) = self.visibility.as_mut() {
-            let entities = authority
-                .observe_visible_entities(self.actor)
-                .await
-                .ok_or(ServeEnd::Disconnected)?;
+            let entities = crate::gameplay_transport::entity_names::observe(
+                authority,
+                self.actor,
+                admitted.continuity.selected_capabilities,
+            )
+            .await
+            .ok_or(ServeEnd::Disconnected)?;
             let sequence = admitted.continuity.server_sequence;
             let (_, revision) = self
                 .appearances
@@ -411,6 +415,12 @@ impl State {
     ) -> Result<(), ServeEnd> {
         if self.enabled {
             self.vitals(stream, authority, admitted, true).await?;
+        }
+        if let Some(catalog) = &mut self.spell_catalog {
+            let mut sequence = admitted.continuity.server_sequence;
+            catalog
+                .refresh(stream, authority, self.actor, admitted, &mut sequence)
+                .await?;
         }
         if self.npc_active
             && let Some(update) = authority

@@ -39,17 +39,20 @@ fn wide(s: &str) -> Vec<u16> {
         .chain(Some(0))
         .collect()
 }
-pub(in crate::play) fn open_window(link: &PlayLink) {
+pub(in crate::play) fn open_window(
+    shared: &Arc<std::sync::Mutex<crate::play::mailbox::Mailbox>>,
+    commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
+) {
     {
-        let mut m = lock(&link.mailbox);
-        if m.stash.open {
+        let mut m = lock(shared);
+        if m.stash.open || m.depot_shutdown {
             return;
         }
         m.stash.open = true;
     }
-    let weak = Arc::downgrade(&link.mailbox);
+    let weak = Arc::downgrade(shared);
     let failed = weak.clone();
-    let commands = link.commands.clone();
+    let commands = commands.clone();
     if std::thread::Builder::new()
         .name("stash-panel".into())
         .spawn(move || run(weak, commands))
@@ -70,7 +73,7 @@ fn run(
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            620,
+            940,
             560,
             null_mut(),
             null_mut(),
@@ -138,30 +141,47 @@ fn run(
         );
         let item = control(
             hwnd,
-            "EDIT",
+            "LISTBOX",
             "",
             ITEM,
-            [340, 320, 120, 28],
-            ES_NUMBER as u32 | WS_BORDER | WS_TABSTOP,
+            [610, 35, 300, 275],
+            LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL | WS_TABSTOP,
         );
         let stow = control(
             hwnd,
             "BUTTON",
-            "Stow item handle",
+            "Stow selected item",
             STOW,
-            [470, 320, 120, 28],
+            [610, 320, 300, 28],
             WS_TABSTOP,
+        );
+        let carried_label = control(
+            hwnd,
+            "STATIC",
+            "Carried items (open bags in Depot)",
+            110,
+            [610, 10, 300, 20],
+            0,
         );
         let status = control(
             hwnd,
             "EDIT",
             "",
             107,
-            [10, 396, 580, 115],
+            [10, 396, 900, 115],
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
         if [
-            list, amount, withdraw, previous, next, refresh, item, stow, status,
+            list,
+            amount,
+            withdraw,
+            previous,
+            next,
+            refresh,
+            item,
+            stow,
+            status,
+            carried_label,
         ]
         .iter()
         .any(|h| h.is_null())
@@ -184,21 +204,33 @@ fn run(
                 break;
             };
             let mut mailbox = lock(&shared);
+            if mailbox.depot_shutdown {
+                break;
+            }
             for id in std::mem::take(&mut actions.0) {
                 let intent = match id {
                     PREVIOUS => Some(Intent::Previous),
                     NEXT => Some(Intent::Next),
                     REFRESH => Some(Intent::Refresh),
                     STOW => {
-                        let mut buffer = [0_u16; 21];
-                        let length = GetWindowTextW(item, buffer.as_mut_ptr(), 21);
-                        String::from_utf16_lossy(&buffer[..length as usize])
-                            .parse()
-                            .ok()
-                            .and_then(oteryn_client_runtime::stash::ItemHandle::new)
-                            .map(Intent::Stow)
+                        // Resolve only against the exact projection currently displayed.
+                        if held.as_ref() == Some(&mailbox.stash)
+                            && let Ok(row) = usize::try_from(SendMessageW(item, LB_GETCURSEL, 0, 0))
+                        {
+                            let displayed = mailbox.stash.carried.clone();
+                            PlayLink::stash_enqueue_selected(
+                                &mut mailbox,
+                                &commands,
+                                &displayed,
+                                row,
+                            );
+                        }
+                        None
                     }
                     WITHDRAW => {
+                        if held.as_ref() != Some(&mailbox.stash) {
+                            continue;
+                        }
                         let row = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0)).ok();
                         let mut b = [0u16; 11];
                         let n = GetWindowTextW(amount, b.as_mut_ptr(), 11);
@@ -220,6 +252,11 @@ fn run(
                 }
             }
             if held.as_ref() != Some(&mailbox.stash) {
+                SendMessageW(item, LB_RESETCONTENT, 0, 0);
+                for entry in &mailbox.stash.carried {
+                    let label = format!("Item {} × {}", entry.item_definition_ref, entry.count);
+                    SendMessageW(item, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                }
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
                 for row in &mailbox.stash.rows {
                     SendMessageW(
@@ -235,7 +272,7 @@ fn run(
                 EnableWindow(previous, i32::from(ready && mailbox.stash.page > 0));
                 EnableWindow(next, i32::from(ready && mailbox.stash.has_more));
                 EnableWindow(refresh, i32::from(ready));
-                EnableWindow(stow, i32::from(ready));
+                EnableWindow(stow, i32::from(ready && !mailbox.stash.carried.is_empty()));
                 held = Some(mailbox.stash.clone());
             }
             drop(mailbox);

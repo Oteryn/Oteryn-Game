@@ -248,6 +248,8 @@ struct ReleasingMark {
 
 #[derive(Debug, Default)]
 struct KillQueueState {
+    /// Advisory deduplication follows the already bounded, exact corpse projections.
+    analyser: Vec<(ExactActorRef, Arc<Mutex<super::analyser::DeathReceipts>>)>,
     boss_contributions: boss_reward_contribution::BossContributions,
     // Equipment-owner projections, independent of a held attack target or swing-cache epoch.
     proficiency_weapons: Vec<(ExactActorRef, GameSessionId, u64, Option<String>)>,
@@ -379,6 +381,23 @@ struct FrozenProficiencyDeath {
 }
 
 impl KillSettlementQueue {
+    pub(super) fn analyser_receipts(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+    ) -> Arc<Mutex<super::analyser::DeathReceipts>> {
+        let mut state = self.state();
+        state
+            .analyser
+            .retain(|(actor, _)| runtime.retains_corpse_projection(*actor));
+        if let Some((_, receipts)) = state.analyser.iter().find(|(actor, _)| *actor == target) {
+            return Arc::clone(receipts);
+        }
+        let receipts = Arc::default();
+        state.analyser.push((target, Arc::clone(&receipts)));
+        receipts
+    }
+
     /// A parked or in-flight oldest death must settle before any later death can
     /// change a shared member's bounty and therefore the oldest death's bonus.
     fn ordered_principal(&self) -> Result<Option<Principal>, ()> {
@@ -1253,6 +1272,23 @@ pub fn record_creature_kill(
         refuse("damage_shares_unavailable", &creature);
         return;
     };
+    if !top.is_gone()
+        && let Some(states) = sink.prey
+    {
+        let receipts = sink.queue.analyser_receipts(runtime, target);
+        if let Ok(mut receipts) = receipts.lock()
+            && !receipts.kill
+        {
+            states.analyser.push(
+                principal.actor,
+                principal.session,
+                oteryn_protocol_oteryn::analyser::AnalyserFact::Kill {
+                    race: super::analyser::race(&creature),
+                },
+            );
+            receipts.kill = true;
+        }
+    }
     let source = sink.rewards.encounter_facts(&creature);
     let prey_checkpoint = sink.prey.and_then(|states| {
         states.prey_kill_checkpoint(
@@ -2616,6 +2652,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         } else {
             None
         };
+        let party_was_settled = party.is_some();
         let (party_xp, mut other_slots, mut leveled) = party
             .map_or((None, Vec::new(), Vec::new()), |p| {
                 (Some(p.xp), p.slots, p.leveled)
@@ -2760,6 +2797,30 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             )
             .await
         };
+        if let Ok(outcome) = &outcome {
+            admission
+                .analyser_loot(&entry, &outcome.rewards.committed_loot)
+                .await;
+            if !party_was_settled && let Ok(xp) = &outcome.rewards.xp {
+                let award = match xp {
+                    crate::durability::character_progression::ExperienceCommitOutcome::Committed(award)
+                    | crate::durability::character_progression::ExperienceCommitOutcome::AlreadyCommitted(award) => award,
+                };
+                let receipts = admission.analyser_receipts(entry.target).await;
+                if let Ok(mut receipts) = receipts.lock()
+                    && receipts.xp.insert(award.character_id)
+                {
+                    admission.states.analyser.push(
+                        entry.facts.principal.actor,
+                        entry.facts.principal.session,
+                        oteryn_protocol_oteryn::analyser::AnalyserFact::Experience {
+                            raw: u64::try_from(row.xp_amount.get()).unwrap_or(0),
+                            gained: u64::try_from(award.experience_awarded.get()).unwrap_or(0),
+                        },
+                    );
+                }
+            }
+        }
         // Publish every committed recipient effect while its revision slots
         // and the source lane are still held. An activity handoff takes these
         // same guards, so it cannot move the Character between award and mark.

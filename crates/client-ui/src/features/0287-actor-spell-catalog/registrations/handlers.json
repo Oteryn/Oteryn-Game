@@ -1,0 +1,15 @@
+{
+  "mechanic": "0287-actor-spell-catalog",
+  "kind": "handlers",
+  "id": "0287-actor-spell-catalog-unsupported",
+  "status": "unsupported",
+  "reason": "C18 owns the native spell catalog consumer and UI.",
+  "commands": [],
+  "not_applicable": {
+    "state": "C18 owns the native spell catalog consumer and UI.",
+    "protocol": "C18 owns the native spell catalog consumer and UI.",
+    "view": "C18 owns the native spell catalog consumer and UI.",
+    "input": "C18 owns the native spell catalog consumer and UI.",
+    "settings": "C18 owns the native spell catalog consumer and UI."
+  }
+}

@@ -115,6 +115,8 @@ impl Stepper for Fake {
         lock_combats(&self.combats).push(command);
         Ok(match command {
             CombatCommand::Cast(_) => CombatReport::Cast(SpellCastDisposition::NotEnoughMana),
+            CombatCommand::Stop => CombatReport::Stop(AttackIntentDisposition::Ok),
+            CombatCommand::Modes(_) => CombatReport::Modes(AttackIntentDisposition::Ok),
             CombatCommand::Attack(_) => CombatReport::Attack(AttackIntentDisposition::Ok),
         })
     }
