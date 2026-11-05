@@ -330,6 +330,16 @@ async fn live<A: FreshAdmissionAuthority>(
         actor,
         revision,
         sequence,
+        sound_cursor: if selected_capabilities
+            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1)
+        {
+            authority
+                .observe_sounds(actor, admitted.game_session_id, 0)
+                .await
+                .map_or(0, |(cursor, _)| cursor)
+        } else {
+            0
+        },
         movement_effect_revision: authority
             .observe_movement_effects(0)
             .last()

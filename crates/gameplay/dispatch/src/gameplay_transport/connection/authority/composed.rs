@@ -5,6 +5,29 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn observe_sounds(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+    ) -> Option<(
+        u64,
+        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+    )> {
+        let runtime = self.runtime.lock().await;
+        runtime.player_control_facts(actor, session).ok()?;
+        let mut states = self.states.spell_states.lock().await;
+        let actor_spell::ChannelSpellStates {
+            presentations,
+            sounds,
+            ..
+        } = &mut *states;
+        if let Some(owner) = presentations {
+            sounds.capture(owner, &runtime).ok()?;
+        }
+        sounds.observe(&runtime, actor, session, after, true)
+    }
+
     fn observe_movement_effects(
         &self,
         after: u64,
@@ -747,6 +770,26 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn observe_house_destroy(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        source: [u8; 16],
+        target: [u8; 16],
+    ) -> Option<house_destroy::Candidate> {
+        self.observe_house_destroy_impl(actor, command, source, target)
+            .await
+    }
+    async fn destroy_house_furniture(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        input: crate::durability::house_furniture_destroy::HouseDestroyCommand,
+    ) -> Option<UseOutcome> {
+        self.destroy_house_furniture_impl(actor, command, input)
+            .await
+    }
+
     async fn use_pick(
         &self,
         actor: ExactActorRef,
@@ -1030,6 +1073,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        self.expire_house_furniture_on_tick(actor, game_session_id)
+            .await;
         self.tick_actor_vitals(actor, game_session_id).await
     }
 
