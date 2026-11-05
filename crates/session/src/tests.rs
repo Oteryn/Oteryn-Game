@@ -1,3 +1,4 @@
+include!("achievement_notices_tests.rs");
 mod appearance_session_tests;
 #[path = "tests/depot_map_tests.rs"]
 mod depot_map_tests;

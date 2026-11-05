@@ -285,7 +285,7 @@ pub trait Stepper: Send {
 
 /// Hands the shell what the session pushed, and the visible entities when they changed.
 fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpatialEntity>) {
-    outbox.push(session.drain());
+    outbox.achievement_notices_publish(session);
     if let Some(payload) = session.feature_snapshot(98) {
         outbox.cyclopedia_tracker_push(payload);
     }

@@ -2,6 +2,8 @@
 
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
+#[path = "features/0008-achievement-notices/mod.rs"]
+pub mod achievement_notices;
 #[path = "features/0225-boss-difficulty/mod.rs"]
 pub mod boss_difficulty;
 #[path = "features/0230-browse-field/mod.rs"]

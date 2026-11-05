@@ -1,5 +1,7 @@
 //! Application-owned Tokio runtime and deterministic shutdown boundary.
 
+#[path = "features/0008-achievement-notices/protocol.rs"]
+pub mod achievement_notices;
 pub mod connection;
 pub mod hotkey_equip;
 

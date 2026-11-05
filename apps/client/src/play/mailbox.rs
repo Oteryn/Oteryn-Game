@@ -30,6 +30,7 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    pub achievements: Vec<oteryn_client_ui::achievement_notices::AchievementEarned>,
     /// Transient domain-16 updates, reduced before publication to the shell.
     pub quests: Vec<oteryn_session::AppliedDelta<oteryn_client_runtime::quest_log::QuestLog>>,
     /// Transient domain-57 messages retained in order; they are never coalesced to one value.
@@ -66,6 +67,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) boss_difficulty: oteryn_client_ui::boss_difficulty::BossDifficultyPanel,
     pub(super) browse_field: oteryn_client_ui::browse_field::BrowseFieldPanel,
     pub(super) chat_party_room: oteryn_client_ui::chat_party_room::ChatPartyRoomPanel,
@@ -174,6 +176,8 @@ impl Outbox {
         }
         coalesce_pushed(&mut mailbox.pushed, events);
         mailbox.check_server_messages();
+        let notices = std::mem::take(&mut mailbox.pushed.achievements);
+        mailbox.reduce_achievement_notices(notices);
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
         for line in std::mem::take(&mut mailbox.pushed.chat_lines) {
@@ -220,6 +224,7 @@ impl Outbox {
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
         let mut mailbox = lock(&self.0);
+        mailbox.achievement_notices = Default::default();
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::Ended(class));
@@ -227,6 +232,7 @@ impl Outbox {
 
     pub(super) fn logged_out(&self) {
         let mut mailbox = lock(&self.0);
+        mailbox.achievement_notices = Default::default();
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::LoggedOut);
