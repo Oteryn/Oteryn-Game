@@ -445,3 +445,9 @@ pub(super) fn admission_with(supported: &'static [u32]) -> Result<Admission<'sta
         ..admission()?
     })
 }
+
+#[test]
+fn gap_cl1_advertises_existing_character_tab_capability() {
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&199));
+    assert!(gated_routes().any(|(id, commands, _)| id == 199 && commands.contains(&388)));
+}

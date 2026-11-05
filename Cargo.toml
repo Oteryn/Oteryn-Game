@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "crates/admin/agent",
+    "crates/admin/contracts",
     "crates/gameplay/dispatch",
     "crates/gameplay/npc",
     "crates/gameplay/entities",

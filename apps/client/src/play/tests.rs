@@ -4,7 +4,7 @@ use crate::combat_input::{CombatCommand, CombatReport};
 use oteryn_client_runtime::ClientRuntime;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_session::{
-    ActorPosition, AppliedDelta, AttackIntentDisposition, CommandStatus, LogoutResult,
+    ActorPosition, AppliedDelta, AttackIntentDisposition, CommandStatus, EntityRef, LogoutResult,
     MAX_QUEUED_EVENTS, SessionError, SessionEvent, SpellCastDisposition, StepDirection,
     StepDisposition, StepOutcome, WorldSpatialObservation,
 };
@@ -114,7 +114,9 @@ impl Stepper for Fake {
     async fn combat(&mut self, command: CombatCommand) -> Result<CombatReport, SessionError> {
         lock_combats(&self.combats).push(command);
         Ok(match command {
-            CombatCommand::Cast(_) => CombatReport::Cast(SpellCastDisposition::NotEnoughMana),
+            CombatCommand::Cast(_) | CombatCommand::CastAt { .. } => {
+                CombatReport::Cast(SpellCastDisposition::NotEnoughMana)
+            }
             CombatCommand::Stop => CombatReport::Stop(AttackIntentDisposition::Ok),
             CombatCommand::Modes(_) => CombatReport::Modes(AttackIntentDisposition::Ok),
             CombatCommand::Attack(_) => CombatReport::Attack(AttackIntentDisposition::Ok),

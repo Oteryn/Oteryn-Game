@@ -6,22 +6,11 @@ use crate::input::StepDir;
 use crate::map::World;
 use crate::scene::Scene;
 use feature_local_reference_preferences::settings::LocalPlayState;
+use input::Input;
 use oteryn_renderer::{BatchError, TileCoord};
-use oteryn_session::{EntityRef, SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity};
+use oteryn_session::{SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity};
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
-
-/// One input waiting for its turn on the session task.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Input {
-    Arrow(StepDir),
-    Cast(NonZeroU32),
-    Attack(EntityRef),
-    TargetWalk(oteryn_session::ActorPosition),
-    Logout,
-}
-
-const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
@@ -51,6 +40,7 @@ pub struct PlayView {
     in_flight: bool,
     /// Arrow, hotkey and click input not yet sent, in the order it was given.
     inputs: VecDeque<Input>,
+    cursor_spell: Option<NonZeroU32>,
     /// The other entities the server reports as visible.
     entities: Vec<WorldSpatialEntity>,
     appearances: Vec<oteryn_session::VisibleAppearance>,
@@ -92,6 +82,7 @@ impl PlayView {
             map_floor: None,
             in_flight: false,
             inputs: VecDeque::new(),
+            cursor_spell: None,
             entities: Vec::new(),
             appearances: Vec::new(),
             ground_items: Vec::new(),
@@ -105,20 +96,10 @@ impl PlayView {
         view.rebuild()?;
         Ok(view)
     }
-
-    /// Appends `input` unless the same one already waits (a repeated press of a slot or click of
-    /// a target is one command) or the queue is full.
-    fn queue(&mut self, input: Input) {
-        if self.death.dead && !matches!(input, Input::Logout) {
-            return;
-        }
-        if self.inputs.len() < MAX_QUEUED_INPUTS && !self.inputs.contains(&input) {
-            self.inputs.push_back(input);
-        }
-    }
 }
 
 mod end;
+mod input;
 mod mailbox;
 mod session_loop;
 mod session_stepper;

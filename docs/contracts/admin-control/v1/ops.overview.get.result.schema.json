@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Overview",
+  "type": "object",
+  "properties": {
+    "agents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Agent"
+      }
+    },
+    "alerts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "backup_age_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    },
+    "db_available": {
+      "type": "boolean"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Node"
+      }
+    },
+    "players_online": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "worlds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/World"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "agents",
+    "worlds",
+    "nodes",
+    "players_online",
+    "db_available",
+    "alerts"
+  ],
+  "$defs": {
+    "Agent": {
+      "type": "object",
+      "properties": {
+        "agent_id": {
+          "type": "string"
+        },
+        "build": {
+          "type": "string"
+        },
+        "catalog_digest": {
+          "type": "string"
+        },
+        "connected": {
+          "type": "boolean"
+        },
+        "last_heartbeat": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "agent_id",
+        "build",
+        "catalog_digest",
+        "last_heartbeat",
+        "connected"
+      ]
+    },
+    "Node": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "string"
+        },
+        "cpu_percent": {
+          "type": "number",
+          "format": "double"
+        },
+        "host": {
+          "type": "string"
+        },
+        "memory_bytes": {
+          "type": "string"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "uptime_seconds": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "worlds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "host",
+        "build",
+        "uptime_seconds",
+        "worlds",
+        "ready",
+        "cpu_percent",
+        "memory_bytes"
+      ]
+    },
+    "World": {
+      "type": "object",
+      "properties": {
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "content_revision": {
+          "type": "string"
+        },
+        "map_revision": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "policy_revision": {
+          "type": "string"
+        },
+        "ruleset_revision": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "world_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "world_id",
+        "name",
+        "state",
+        "channels",
+        "ruleset_revision",
+        "content_revision",
+        "map_revision",
+        "policy_revision"
+      ]
+    }
+  }
+}

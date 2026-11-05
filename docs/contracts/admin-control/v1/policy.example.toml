@@ -1,0 +1,11 @@
+# Replace the public-key placeholder with an unpadded base64url Ed25519 public key.
+[[signers]]
+key_id = "platform-admin-signer-1"
+public_key = "REPLACE_WITH_PLATFORM_PUBLIC_KEY"
+not_before = "2026-11-05T00:00:00Z"
+not_after = "2027-11-05T00:00:00Z"
+
+[operations."admin.policy.get"]
+min_risk_class = "R0"
+allowed_permissions = ["game.ops.read"]
+worlds = ["w-example"]

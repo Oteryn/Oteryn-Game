@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Request",
+  "type": "object",
+  "properties": {
+    "actor": {
+      "$ref": "#/$defs/Actor"
+    },
+    "admin_operation_id": {
+      "type": "string"
+    },
+    "approvals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Approval"
+      }
+    },
+    "contract": {
+      "type": "string"
+    },
+    "dry_run": {
+      "type": "boolean"
+    },
+    "expires_at": {
+      "type": "string"
+    },
+    "issued_at": {
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/Kind"
+    },
+    "nonce": {
+      "type": "string"
+    },
+    "operation": {
+      "type": "string"
+    },
+    "operation_version": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "params": {
+      "description": "Kept opaque until verifier step 5; decoded by the operation's closed schema."
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Reason"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "risk_class": {
+      "$ref": "#/$defs/RiskClass"
+    },
+    "signature": {
+      "type": "string"
+    },
+    "signer_key_id": {
+      "type": "string"
+    },
+    "target": {
+      "$ref": "#/$defs/Target"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "request_id",
+    "admin_operation_id",
+    "operation",
+    "operation_version",
+    "kind",
+    "target",
+    "params",
+    "dry_run",
+    "actor",
+    "approvals",
+    "risk_class",
+    "issued_at",
+    "expires_at",
+    "nonce",
+    "signer_key_id",
+    "signature"
+  ],
+  "$defs": {
+    "Actor": {
+      "type": "object",
+      "properties": {
+        "admin_id": {
+          "type": "string"
+        },
+        "ip_hash": {
+          "type": "string"
+        },
+        "mfa_at": {
+          "type": "string"
+        },
+        "permission": {
+          "type": "string"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "session_ref": {
+          "type": "string"
+        },
+        "step_up_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "admin_id",
+        "roles",
+        "permission",
+        "mfa_at",
+        "ip_hash",
+        "session_ref"
+      ]
+    },
+    "Approval": {
+      "type": "object",
+      "properties": {
+        "admin_id": {
+          "type": "string"
+        },
+        "approval_id": {
+          "type": "string"
+        },
+        "approved_at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "admin_id",
+        "approved_at",
+        "approval_id"
+      ]
+    },
+    "Kind": {
+      "type": "string",
+      "enum": [
+        "command",
+        "query"
+      ]
+    },
+    "Reason": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "ticket_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "text"
+      ]
+    },
+    "RiskClass": {
+      "type": "string",
+      "enum": [
+        "R0",
+        "R1",
+        "R2",
+        "R3",
+        "R4"
+      ]
+    },
+    "Target": {
+      "type": "object",
+      "properties": {
+        "account_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "character_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "node_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "world_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
