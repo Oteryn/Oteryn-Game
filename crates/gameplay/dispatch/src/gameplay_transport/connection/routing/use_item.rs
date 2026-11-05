@@ -116,7 +116,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         }
     }
     // The shared item-action owner also admits equipped hats and player-targeted toys.
+    // Map and position uses must reach their own receipt probes before an unrelated
+    // event-item inventory check can reject a historical command's stale fence.
     if let Ok(intent) = &decoded
+        && intent.use_with_map_item.is_none()
+        && intent.use_with_position.is_none()
         && admitted
             .continuity
             .selected_capabilities
