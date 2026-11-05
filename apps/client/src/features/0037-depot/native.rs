@@ -142,6 +142,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
                 [470, 76, 440, 20],
             ),
         ];
+        control(hwnd, "BUTTON", "Market (Ctrl+M)", 36, [10, 490, 200, 28]);
         let status = control(hwnd, "STATIC", "", 300, [10, 530, 900, 100]);
         if boxes
             .iter()
@@ -176,6 +177,12 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
                 break;
             }
             for id in std::mem::take(&mut actions.0) {
+                if id == 36 {
+                    drop(m);
+                    crate::play::feature_0063_market::input::open_from_depot(&shared, &commands);
+                    m = lock(&shared);
+                    continue;
+                }
                 if m.depot.pending || ((100..=231).contains(&id) && held.as_ref() != Some(&m.depot))
                 {
                     continue;
