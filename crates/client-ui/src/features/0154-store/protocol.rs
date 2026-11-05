@@ -24,14 +24,28 @@ fn encoded(
     })?;
     request(panel, command(kind, payload)?)
 }
+// CLIGAP-W09 accepted transport difference: follow Game's opaque catalogue cursor,
+// reset it on category changes; Crystal sends category offers without this cursor.
 pub fn catalogue(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
+    if !panel.selected || panel.pending {
+        return None;
+    }
     panel.page = StorePage::Catalogue;
+    if panel.category != panel.catalogue_category {
+        panel.catalogue = None;
+        panel.selected_offer = 0;
+        panel.catalogue_category = panel.category.clone();
+    }
+    let cursor = panel
+        .catalogue
+        .as_ref()
+        .map_or_else(String::new, |p| p.next_page_cursor.clone());
     encoded(
         panel,
         COMMAND_TYPE_STORE_CATALOGUE_PAGE,
         store::encode_catalogue_request(&StoreCatalogueRequest {
             category: panel.category.clone(),
-            page_cursor: String::new(),
+            page_cursor: cursor,
         }),
     )
 }
@@ -46,9 +60,16 @@ pub fn history(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
     )
 }
 pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
+    if !panel.selected || panel.pending {
+        return None;
+    }
     if !panel.purchase_confirmed {
         panel.feedback = Some("Confirm this purchase first".into());
         return None;
+    }
+    if let Some(payload) = panel.confirmed_purchase.clone() {
+        panel.purchase_confirmed = false;
+        return encoded(panel, COMMAND_TYPE_STORE_PURCHASE, Ok(payload));
     }
     let offer = panel
         .catalogue
@@ -61,18 +82,48 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
         })?;
     let revision = panel.catalogue.as_ref()?.catalog_revision.clone();
     panel.purchase_confirmed = false;
-    encoded(
-        panel,
-        COMMAND_TYPE_STORE_PURCHASE,
-        store::encode_purchase_request(&StorePurchaseRequest {
-            purchase_request_id: panel.purchase_request_id,
-            offer_key: offer.offer_key,
-            catalog_revision: revision,
-            price: offer.price,
-            currency: offer.currency,
+    // Crystal 201189f, data/modules/scripts/gamestore/gamestore.lua:6302-6332:
+    // hire / rename / sex-change identities. init.lua:1877-1900,1951-1972,1990-2020:
+    // hire takes name+sex, rename takes target+name, sex-change toggles target.
+    // CLIGAP-W09 uses the existing Game UUID customization instead of donor modals;
+    // capability-250 negotiation belongs to W00.
+    // Prices, currency and revision always come from the selected server row.
+    let customization = match offer.offer_key.as_str() {
+        "store:hireling:25440" => Some(StoreHirelingCustomization {
+            hireling_id: None,
+            name: Some(panel.hireling_name.clone()),
+            sex: Some(panel.hireling_sex),
         }),
-    )
+        "store:hireling:25438" | "store:hireling:25437" => {
+            let id = panel.hireling_id.or_else(|| {
+                panel.feedback = Some("Enter the Hireling identity".into());
+                None
+            })?;
+            Some(StoreHirelingCustomization {
+                hireling_id: Some(id),
+                name: (offer.offer_key == "store:hireling:25438")
+                    .then(|| panel.hireling_name.clone()),
+                sex: None,
+            })
+        }
+        _ => None,
+    };
+    let quote = StorePurchaseRequest {
+        purchase_request_id: panel.purchase_request_id,
+        offer_key: offer.offer_key,
+        catalog_revision: revision,
+        price: offer.price,
+        currency: offer.currency,
+    };
+    let payload = match customization {
+        Some(c) => store::encode_hireling_purchase_request(&quote, &c),
+        None => store::encode_purchase_request(&quote),
+    };
+    let command = encoded(panel, COMMAND_TYPE_STORE_PURCHASE, payload)?;
+    panel.confirmed_purchase = Some(command.payload.clone());
+    Some(command)
 }
+
 pub fn claim(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
     panel.page = StorePage::Inbox;
     encoded(
@@ -106,7 +157,10 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
     }
     let decoded = match panel.pending_action {
         COMMAND_TYPE_STORE_CATALOGUE_PAGE => {
-            store::decode_catalogue_page(&result.payload).map(|v| panel.catalogue = Some(v))
+            store::decode_catalogue_page(&result.payload).map(|v| {
+                panel.selected_offer = 0;
+                panel.catalogue = Some(v);
+            })
         }
         COMMAND_TYPE_STORE_HISTORY_PAGE => {
             store::decode_history_page(&result.payload).map(|v| panel.history = Some(v))
@@ -114,7 +168,10 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
         COMMAND_TYPE_STORE_INBOX_CLAIM => {
             store::decode_claim_receipt(&result.payload).map(|v| panel.claim = Some(v))
         }
-        _ => store::decode_purchase_result(&result.payload).map(|v| panel.purchase = Some(v)),
+        _ => store::decode_purchase_result(&result.payload).map(|v| {
+            panel.confirmed_purchase = None;
+            panel.purchase = Some(v);
+        }),
     };
     panel.feedback = decoded
         .err()
@@ -125,6 +182,129 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
+    #[test]
+    fn gap_store_hireling_fields_follow_offer_kind() {
+        let mut id = [1; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        for (key, expected) in [
+            (
+                "store:hireling:25440",
+                Some((None, Some("Alex".into()), Some(2))),
+            ),
+            (
+                "store:hireling:25438",
+                Some((Some(id), Some("Alex".into()), None)),
+            ),
+            ("store:hireling:25437", Some((Some(id), None, None))),
+            ("store:hireling:1001", None),
+            ("mount", None),
+        ] {
+            let mut p = StorePanel {
+                selected: true,
+                purchase_confirmed: true,
+                purchase_request_id: id,
+                hireling_name: "Alex".into(),
+                hireling_sex: 2,
+                hireling_id: Some(id),
+                catalogue: Some(StoreCataloguePage {
+                    catalog_revision: "server-revision".into(),
+                    offers: vec![StoreOffer {
+                        offer_key: key.into(),
+                        title: "Server title".into(),
+                        price: 73,
+                        currency: "coins".into(),
+                    }],
+                    next_page_cursor: String::new(),
+                    total_coins: 100,
+                    transferable_coins: 0,
+                }),
+                ..Default::default()
+            };
+            let c = purchase(&mut p).unwrap();
+            let (quote, custom) = store::decode_purchase_request_with_hireling(&c.payload).unwrap();
+            assert_eq!(
+                (
+                    quote.offer_key.as_str(),
+                    quote.catalog_revision.as_str(),
+                    quote.price,
+                    quote.currency.as_str()
+                ),
+                (key, "server-revision", 73, "coins")
+            );
+            assert_eq!(custom.map(|c| (c.hireling_id, c.name, c.sex)), expected);
+            p.pending = false;
+            p.purchase_confirmed = true;
+            p.hireling_name = "Changed".into();
+            p.catalogue = None;
+            assert_eq!(purchase(&mut p).unwrap().payload, c.payload);
+        }
+        let mut p = StorePanel {
+            selected: true,
+            purchase_confirmed: true,
+            purchase_request_id: id,
+            catalogue: Some(StoreCataloguePage {
+                catalog_revision: "rev".into(),
+                offers: vec![StoreOffer {
+                    offer_key: "store:hireling:25438".into(),
+                    title: "Rename".into(),
+                    price: 25,
+                    currency: "coins".into(),
+                }],
+                next_page_cursor: String::new(),
+                total_coins: 0,
+                transferable_coins: 0,
+            }),
+            ..Default::default()
+        };
+        assert!(purchase(&mut p).is_none());
+        assert!(!p.pending);
+        assert!(p.confirmed_purchase.is_none());
+    }
+
+    #[test]
+    fn gap_store_catalogue_follows_cursor_and_resets_category() {
+        let mut p = StorePanel {
+            selected: true,
+            category: "featured".into(),
+            ..Default::default()
+        };
+        catalogue(&mut p).unwrap();
+        apply_result(
+            &mut p,
+            &ServerMechanicResponse {
+                command_id: 1,
+                status: CommandStatus::Accepted,
+                server_sequence: 1,
+                payload: store::encode_catalogue_page(&StoreCataloguePage {
+                    catalog_revision: "rev-1".into(),
+                    offers: vec![],
+                    next_page_cursor: "server-cursor".into(),
+                    total_coins: 0,
+                    transferable_coins: 0,
+                })
+                .unwrap(),
+            },
+        );
+        let next = catalogue(&mut p).unwrap();
+        assert_eq!(
+            store::decode_catalogue_request(&next.payload)
+                .unwrap()
+                .page_cursor,
+            "server-cursor"
+        );
+        p.pending = false;
+        p.category = "houses.hirelings".into();
+        let changed = catalogue(&mut p).unwrap();
+        assert!(
+            store::decode_catalogue_request(&changed.payload)
+                .unwrap()
+                .page_cursor
+                .is_empty()
+        );
+        assert!(p.catalogue.is_none());
+    }
+
     #[test]
     fn controls_encode_reply_and_refusal() {
         let mut p = StorePanel {
