@@ -7,6 +7,9 @@ use oteryn_client_ui::boss_encounter::{Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    pub fn boss_encounter_edit(&self, field: usize, value: String) {
+        edit(&mut lock(&self.mailbox).boss_encounter, field, value);
+    }
     pub fn boss_encounter_request(&self, intent: Intent) {
         enqueue(&mut lock(&self.mailbox), &self.commands, intent);
     }
@@ -34,5 +37,19 @@ pub(in crate::play) fn enqueue(
     {
         mailbox.boss_encounter.pending = false;
         mailbox.boss_encounter.feedback = Some("The session has ended");
+    }
+}
+
+pub(in crate::play) fn edit(
+    panel: &mut oteryn_client_ui::boss_encounter::BossEncounterPanel,
+    field: usize,
+    value: String,
+) {
+    if !panel.pending
+        && value.len() <= 512
+        && !value.contains('\0')
+        && let Some(slot) = panel.fields.get_mut(field)
+    {
+        *slot = value;
     }
 }

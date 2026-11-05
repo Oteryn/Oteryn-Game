@@ -97,4 +97,6 @@ pub fn training_result(bytes: &[u8]) -> Option<loop_training::TrainingResult> {
 
 #[path = "features/0097-character-info/protocol.rs"]
 pub mod character_info;
+pub use oteryn_protocol_oteryn::boss_encounter;
 pub use oteryn_protocol_oteryn::raid_schedule;
+pub use oteryn_protocol_oteryn::{bosstiary_slots, hazard};
