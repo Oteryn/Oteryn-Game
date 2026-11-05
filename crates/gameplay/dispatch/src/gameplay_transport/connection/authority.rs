@@ -25,6 +25,11 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    #[cfg(test)]
+    fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
+        None
+    }
+
     fn observe_sounds(
         &self,
         _actor: ExactActorRef,

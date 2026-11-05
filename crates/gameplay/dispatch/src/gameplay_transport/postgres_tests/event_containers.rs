@@ -226,6 +226,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         // Keep the real session's command floor at one. Select a valid fixture
         // item UUID for the source branch instead of skipping unexecuted commands.
         let command_id = if nested { 2 } else { 1 };
+        // Crystal CreateItem normalizes the source prize 3549 to base soft boots 6529.
         let source = if bag_key == "oteryn:item.tibia.i12045" {
             (1_u32..=4096)
                 .map(|candidate| {
@@ -238,7 +239,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
                         reward_bag_draw(*fence.game_session_id.as_bytes(), command_id, *source);
                     reward_bag_conversion(native, &bag_definition, draw).is_some_and(|plan| {
                         plan.outputs.iter().any(|(definition, count)| {
-                            definition.production_key == "oteryn:item.tibia.i3549" && *count == 1
+                            definition.production_key == "oteryn:item.tibia.i6529" && *count == 1
                         })
                     })
                 })
@@ -536,7 +537,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             let boot = durable
                 .entries
                 .iter()
-                .find(|entry| entry.item.definition.production_key == "oteryn:item.tibia.i3549")
+                .find(|entry| entry.item.definition.production_key == "oteryn:item.tibia.i6529")
                 .ok_or("source soft-boots reward")?;
             let timed_rows: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid",

@@ -32,29 +32,27 @@ fn surprise_bag_use_wire_atomic_replay_and_stale_generation() -> TestResult {
 
 #[test]
 fn surprise_bag_quantity_endpoints_and_special_rewards_use_wire() -> TestResult {
-    for count in [1, 10] {
-        run_scenario("oteryn:item.tibia.i6570", Some(("oteryn:item.tibia.i3598", count)))?;
-    }
-    run_scenario("oteryn:item.tibia.i6507", Some(("oteryn:item.tibia.i6505", 1)))?;
-    run_scenario("oteryn:item.tibia.i12045", Some(("oteryn:item.tibia.i6529", 1)))?;
-    run_scenario("oteryn:item.tibia.i21203", Some(("oteryn:item.tibia.i21295", 1)))?;
-    run_scenario("oteryn:item.tibia.i8853", Some(("oteryn:item.tibia.i7377", 1)))
+    run_scenarios(vec![
+        ("oteryn:item.tibia.i6570", Some(("oteryn:item.tibia.i3598", 1))),
+        ("oteryn:item.tibia.i6570", Some(("oteryn:item.tibia.i3598", 10))),
+        ("oteryn:item.tibia.i6507", Some(("oteryn:item.tibia.i6505", 1))),
+        ("oteryn:item.tibia.i12045", Some(("oteryn:item.tibia.i6529", 1))),
+        ("oteryn:item.tibia.i21203", Some(("oteryn:item.tibia.i21295", 1))),
+        ("oteryn:item.tibia.i8853", Some(("oteryn:item.tibia.i7377", 1))),
+    ])
 }
 
 #[test]
 fn anniversary_box_outcomes_use_wire_and_replay() -> TestResult {
-    for key in [
+    run_scenarios([
         "oteryn:item.tibia.i39704", "oteryn:item.tibia.i39705",
         "oteryn:item.tibia.i39706", "oteryn:item.tibia.i39710",
-    ] {
-        run_scenario(key, None)?;
-    }
-    Ok(())
+    ].into_iter().map(|key| (key, None)).collect())
 }
 
 #[test]
 fn event_present_and_box_outcomes_use_wire_and_replay() -> TestResult {
-    for key in [
+    run_scenarios([
         "oteryn:item.tibia.i6506", "oteryn:item.tibia.i6507", "oteryn:item.tibia.i6508",
         "oteryn:item.tibia.i6571", "oteryn:item.tibia.i8853", "oteryn:item.tibia.i12045",
         "oteryn:item.tibia.i14751", "oteryn:item.tibia.i14759", "oteryn:item.tibia.i21203",
@@ -62,26 +60,85 @@ fn event_present_and_box_outcomes_use_wire_and_replay() -> TestResult {
         "oteryn:item.tibia.i37463", "oteryn:item.tibia.i37465", "oteryn:item.tibia.i37466",
         "oteryn:item.tibia.i37467", "oteryn:item.tibia.i37468", "oteryn:item.tibia.i37469",
         "oteryn:item.tibia.i37614",
-    ] {
-        run_scenario(key, None)?;
-    }
-    Ok(())
+    ].into_iter().map(|key| (key, None)).collect())
+}
+
+type RewardBagCase = (&'static str, Option<(&'static str, u32)>);
+struct RewardBagContent {
+    world: crate::foundation::WorldId,
+    room: crate::content::QualifiedNativeEntryRoom,
+    spells: crate::spell::SpellBook,
+    controller: crate::content::ContentActivationController,
+    pin: crate::content::NativeEntryContentPin,
 }
 
 fn run_scenario(bag_key: &'static str, forced_reward: Option<(&'static str, u32)>) -> TestResult {
+    run_scenarios(vec![(bag_key, forced_reward)])
+}
+
+fn run_scenarios(cases: Vec<RewardBagCase>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(bag_key, forced_reward).map_err(|e| e.to_string()))?
+        .spawn(move || {
+            // Reuse only immutable content. Every case still creates its own
+            // runtime, owner, admission and database, with the same assertions.
+            let Dependencies { admitted, room, spells, .. } =
+                Dependencies::new().map_err(|error| error.to_string())?;
+            let world = admitted.world_id;
+            let (controller, pin) =
+                crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+            let content = RewardBagContent { world, room, spells, controller, pin };
+            for (bag_key, forced_reward) in cases {
+                scenario(bag_key, forced_reward, &content).map_err(|error| error.to_string())?;
+            }
+            Ok::<_, String>(())
+        })?
         .join()
         .map_err(|_| "reward bag e2e panic")??;
     Ok(())
 }
 
-fn scenario(bag_key: &str, forced_reward: Option<(&str, u32)>) -> TestResult {
-    run(async |admin| {
+async fn with_case_deadline(
+    bag_key: &str,
+    case: impl std::future::Future<Output = TestResult>,
+) -> TestResult {
+    // Each case has two exchanges, whose existing individual limits remain 30s.
+    // Also bound setup, direct owner replay and cleanup, which had no deadline.
+    tokio::time::timeout(std::time::Duration::from_secs(60), case)
+        .await
+        .map_err(|_| format!("reward bag {bag_key}: setup, exchange, replay or cleanup did not finish within 60 seconds"))?
+        .map_err(|error| format!("reward bag {bag_key}: {error}").into())
+}
+
+#[test]
+fn reward_bag_unreachable_case_reports_its_deadline() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let started = tokio::time::Instant::now();
+            let error = with_case_deadline("unreachable-case", std::future::pending())
+                .await
+                .err()
+                .ok_or("unreachable case unexpectedly completed")?;
+            assert!(error.to_string().contains("unreachable-case"));
+            assert!(error.to_string().contains("60 seconds"));
+            assert_eq!(started.elapsed(), std::time::Duration::from_secs(60));
+            Ok(())
+        })
+}
+
+fn scenario(
+    bag_key: &str,
+    forced_reward: Option<(&str, u32)>,
+    content: &RewardBagContent,
+) -> TestResult {
+    run(async |admin| with_case_deadline(bag_key, async {
+        eprintln!("SV11 PG starting: {bag_key}");
         let harness = Harness::create_with_admission_seed(admin, "reward_bag", true, false).await?;
         super::reset();
         prepare_current_session(&harness).await?;
@@ -91,12 +148,12 @@ fn scenario(bag_key: &str, forced_reward: Option<(&str, u32)>) -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let mut deps = Dependencies::new()?;
-        let (controller, pin) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(
-                deps.admitted.world_id,
-                None,
-            );
+        let mut deps = Dependencies::with_content(
+            ChannelContentPin::test(content.world),
+            content.room.clone(),
+            content.spells.clone(),
+        )?;
+        let (controller, pin) = (&content.controller, &content.pin);
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
@@ -328,5 +385,5 @@ fn scenario(bag_key: &str, forced_reward: Option<(&str, u32)>) -> TestResult {
         drop(seal);
         eprintln!("SV11 PG executed: {bag_key}; {} durable outputs; stale, refusal and replay verified", expected.outputs.len());
         harness.cleanup().await
-    })
+    }).await)
 }
