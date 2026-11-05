@@ -313,6 +313,10 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     }
     fn chat_private_state(&self) -> (bool, Option<oteryn_session::ChatChannelList>) {
         (self.is_selected(80), self.private_channel_list().cloned())
+    fn guild_chat_state(&self) -> oteryn_session::GuildRoomState {
+        self.chat_log()
+            .map(|log| log.guild_room().clone())
+            .unwrap_or_default()
     }
     fn chat_public_selected(&self) -> bool {
         self.is_selected(259)
@@ -338,6 +342,7 @@ pub(super) fn publish<T: Stepper>(
     outbox.chat_private_publish(session);
     outbox.targeting_refresh(session);
     outbox.achievement_notices_publish(session);
+    outbox.guild_chat_publish(session);
     outbox.vitals(session.actor_vitals());
     if let Some(payload) = session.feature_snapshot(98) {
         outbox.cyclopedia_tracker_push(payload);

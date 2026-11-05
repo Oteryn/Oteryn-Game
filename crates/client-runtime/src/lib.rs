@@ -244,6 +244,8 @@ pub mod chat;
 /// Private-channel membership controls and live transcript.
 #[path = "features/0080-chat-private-channel/protocol.rs"]
 pub mod chat_private_channel;
+#[path = "features/0036-chat-guild-room/protocol.rs"]
+pub mod chat_guild_room;
 /// Existing chat command and state types extended by capability 259.
 #[path = "features/0259-chat-public-channels/protocol.rs"]
 pub mod chat_public_channels;

@@ -94,3 +94,72 @@ fn local_speech_projection_preserves_mode_and_speaker() {
     };
     assert!(panel_text(&panel).contains("[Yell] Bob: over here"));
 }
+
+#[test]
+fn guild_lines_reach_the_native_chat_projection() {
+    let panel = ChatPanel {
+        guild: oteryn_client_runtime::chat_guild_room::GuildRoomState::Member {
+            guild_id: [1; 16],
+            rank: 1,
+            motd: "".into(),
+        },
+        lines: vec![ChatLine::Guild(
+            oteryn_client_runtime::chat_guild_room::GuildChatLine {
+                guild_id: [1; 16],
+                rank: 1,
+                speaker_name: "Alice".into(),
+                text: "Guild hello".into(),
+            },
+        )],
+        ..Default::default()
+    };
+    assert!(panel_text(&panel).contains("[Guild] Alice: Guild hello"));
+}
+
+#[test]
+fn guild_lines_require_current_matching_membership_and_preserve_order() {
+    use oteryn_client_runtime::chat_guild_room::{GuildChatLine, GuildRoomState};
+    let mut panel = ChatPanel {
+        lines: vec![
+            ChatLine::Private {
+                speaker_name: "Bob".into(),
+                text: "first".into(),
+            },
+            ChatLine::Guild(GuildChatLine {
+                guild_id: [1; 16],
+                rank: 1,
+                speaker_name: "Alice".into(),
+                text: "second".into(),
+            }),
+            ChatLine::Private {
+                speaker_name: "Bob".into(),
+                text: "third".into(),
+            },
+        ],
+        ..Default::default()
+    };
+    for state in [
+        GuildRoomState::Absent,
+        GuildRoomState::Unavailable,
+        GuildRoomState::Member {
+            guild_id: [2; 16],
+            rank: 1,
+            motd: "".into(),
+        },
+    ] {
+        panel.guild = state;
+        assert!(!panel_text(&panel).contains("second"));
+    }
+    panel.guild = GuildRoomState::Member {
+        guild_id: [1; 16],
+        rank: 1,
+        motd: "".into(),
+    };
+    let text = panel_text(&panel);
+    let positions: Vec<_> = ["first", "second", "third"]
+        .iter()
+        .map(|word| text.find(word))
+        .collect();
+    assert!(positions.iter().all(Option::is_some));
+    assert!(positions.windows(2).all(|p| p[0] < p[1]));
+}

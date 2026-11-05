@@ -32,6 +32,8 @@ pub mod browse_field;
 /// Local speech and named private messages.
 #[path = "features/0007-chat/mod.rs"]
 pub mod chat;
+#[path = "features/0036-chat-guild-room/mod.rs"]
+pub mod chat_guild_room;
 #[path = "features/0240-chat-party-room/mod.rs"]
 pub mod chat_party_room;
 #[path = "features/0199-cyclopedia-character/mod.rs"]

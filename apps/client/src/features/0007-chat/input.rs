@@ -17,13 +17,16 @@ impl PlayLink {
         if !oteryn_client_ui::chat::open_key(events) {
             return false;
         }
+        self.open_chat();
+        true
+    }
+    pub fn open_chat(&self) {
         #[cfg(windows)]
         super::view::open_window(self);
         #[cfg(not(windows))]
         {
             lock(&self.mailbox).chat.open = true;
         }
-        true
     }
 }
 pub(in crate::play) fn enqueue(

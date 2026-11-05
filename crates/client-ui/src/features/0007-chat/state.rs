@@ -5,4 +5,5 @@ pub enum Mode {
     Whisper,
     Yell,
     Private,
+    Guild,
 }
