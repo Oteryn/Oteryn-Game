@@ -484,6 +484,8 @@ impl ChannelSpellStates {
                 {
                     changed = true;
                     self.owner_wake.notify_one();
+                    // TODO(M10-MOVE): fenced, idempotent Snowbunny +1/10000 progress.
+                    // durability/account_achievement.rs:add_progress is transaction-private.
                 }
                 if entry.appearance_id == 26100 {
                     changed |= map.facts.transform_movement_item(*key, 26077);

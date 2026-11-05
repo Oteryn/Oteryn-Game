@@ -22,9 +22,12 @@ class GrizzlyRoomTests(unittest.TestCase):
                 self.assertTrue(room['reason'])
         self.assertEqual([r['boss_id'] for r in actual['rooms'] if not r['qualified']], [])
         counts = {room["boss_id"]: room["connected_tiles"] for room in actual["rooms"]}
+        # Crystal 201189f data-global/world/world.otbm, blob e61658ec0ab7b70ec35025ae969426d6fc57ae75:
+        # Tromphonyte's component has 146 debris-bearing + 142 other tiles = 288.
+        # See samples/grizzly-room-count-evidence.md for the donor count and 73's origin.
         self.assertEqual(
             {boss: counts[boss] for boss in (2, 6, 16)},
-            {2: 90, 6: 64, 16: 73},
+            {2: 90, 6: 64, 16: 288},
         )
 
 if __name__ == '__main__':

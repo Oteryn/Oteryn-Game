@@ -504,9 +504,15 @@ def validate_record(record):
     if errors:
         return errors
     if "item_pointer" not in record["provenance"]:
+        import grizzly_ground
         import summer_ground
 
-        expected = json.loads(summer_ground.outputs()[summer_ground.SHARD])["records"][
+        ground = (
+            grizzly_ground
+            if record["provenance"]["source_item_id"] == grizzly_ground.IDENTIFIER
+            else summer_ground
+        )
+        expected = json.loads(ground.outputs()[ground.SHARD])["records"][
             0
         ]
         return (

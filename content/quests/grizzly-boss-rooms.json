@@ -29,8 +29,14 @@
     {
       "boss_id": 2,
       "name": "Hide",
-      "qualified": false,
-      "bounds": null,
+      "qualified": true,
+      "bounds": [
+        32810,
+        32702,
+        32822,
+        32712,
+        8
+      ],
       "donor_bounds": [
         32810,
         32702,
@@ -38,8 +44,8 @@
         32712,
         8
       ],
-      "connected_tiles": 31,
-      "reason": "Source player and spawn positions are not in one bounded map component with known collision facts.",
+      "connected_tiles": 90,
+      "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:13"
     },
     {
@@ -111,8 +117,14 @@
     {
       "boss_id": 6,
       "name": "Esmeralda",
-      "qualified": false,
-      "bounds": null,
+      "qualified": true,
+      "bounds": [
+        32755,
+        31250,
+        32763,
+        31258,
+        9
+      ],
       "donor_bounds": [
         32755,
         31250,
@@ -120,8 +132,8 @@
         31258,
         9
       ],
-      "connected_tiles": 0,
-      "reason": "Source player and spawn positions are not in one bounded map component with known collision facts.",
+      "connected_tiles": 64,
+      "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:57"
     },
     {
@@ -296,7 +308,7 @@
         31070,
         8
       ],
-      "connected_tiles": 233,
+      "connected_tiles": 277,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:145"
     },
@@ -325,8 +337,14 @@
     {
       "boss_id": 16,
       "name": "Tromphonyte",
-      "qualified": false,
-      "bounds": null,
+      "qualified": true,
+      "bounds": [
+        33102,
+        31170,
+        33124,
+        31206,
+        8
+      ],
       "donor_bounds": [
         33102,
         31170,
@@ -334,8 +352,8 @@
         31206,
         8
       ],
-      "connected_tiles": 0,
-      "reason": "Source player and spawn positions are not in one bounded map component with known collision facts.",
+      "connected_tiles": 288,
+      "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:167"
     },
     {
@@ -648,7 +666,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "ae76b5b4198b48ad5e679016b66013d911c6160830f5b5d292e2119e7a694db5",
+    "content/items/definitions/spell-native-profiles.json": "5dbb164da08aa4df4004a94b138366055064eaa914436cca9af87831cfd33e9e",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
@@ -679,7 +697,7 @@
     "content/world/objects/objects-12782-12876.json": "a5b1b3f7fb8beb9b82b089f099bd401a62372a9a6602a2c5b4eb5bd6ac9a0a3a",
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
-    "content/world/placements/index.json": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+    "content/world/placements/index.json": "245f6eb6dec4687b047d9fc860beb34a3c8d93231b1b65eb20809013eadb7cd1",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "c280a3777ab40f568fd4cda4883af45ceaea36e0a4bdc15e87b9ab3c237d34c3",
@@ -729,6 +747,7 @@
     "content/world/terrain/terrain-08500-08547.json": "0a3742d9431f50123f14963c5529ea700eebc22c9b5cde52ef7bea57729e6ca9",
     "content/world/terrain/terrain-08548-08577.json": "5f2dca58c5b7e16dc66e2278ade5f8b23c4a30605c4390cdfe5b7a72377d7357",
     "content/world/terrain/terrain-08578-08611.json": "471e062add36ecdf53b6f4d4ab9d22313bab683fce781cb63ffbba8a165f00f4",
-    "content/world/terrain/terrain-08612-08612.json": "fc560952a802576672c9473d12d1fab8013eeca07136a79c0b8732b5a2f485cf"
+    "content/world/terrain/terrain-08612-08612.json": "fc560952a802576672c9473d12d1fab8013eeca07136a79c0b8732b5a2f485cf",
+    "content/world/terrain/terrain-08613-08613.json": "aefdac30e8f0a33bbb52acd1d4e160b33c7f40ce9d8d447496ba95d525b182aa"
   }
 }

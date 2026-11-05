@@ -1,5 +1,6 @@
 """The admitted Grizzly ground must retain its official collision facts."""
 
+import copy
 import json
 import unittest
 
@@ -26,6 +27,14 @@ class GrizzlyGroundTests(unittest.TestCase):
     def test_generated_files_are_current(self):
         for name, raw in self.files.items():
             self.assertEqual((grizzly_ground.ROOT / name).read_bytes(), raw, name)
+
+    def test_ground_collision_must_match_official_source(self):
+        record = copy.deepcopy(self.record)
+        record["walkable"]["value"] = False
+        self.assertEqual(
+            world_objects.validate_record(record),
+            ["appearance-only Terrain differs from its qualified official source"],
+        )
 
 
 if __name__ == "__main__":
