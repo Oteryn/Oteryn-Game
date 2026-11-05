@@ -1,0 +1,165 @@
+{
+  "schema": "OTERYN_WORLD_BOSS_CHANCES/v1",
+  "bosses": {
+    "oteryn:creature.ancient_lion_knight": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.bragrumol": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.custodian": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.diseased_bill": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.diseased_dan": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.diseased_fred": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.glitterscale": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.grand_canon_dominus": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.grand_chaplain_gaunder": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.grand_commander_soeren": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.heoni": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.mozradek": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.preceptor_lazare": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.splasher": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.the_collector": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    },
+    "oteryn:creature.xogixath": {
+      "at_reset": {
+        "chance": {
+          "numerator": 1,
+          "denominator": 50
+        }
+      },
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"
+    }
+  }
+}

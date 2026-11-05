@@ -21,9 +21,9 @@ pub enum LogoutReply {
     Unknown,
 }
 
-struct LogoutZones {
+pub(super) struct LogoutZones {
     no_logout: bool,
-    protection_zone: Option<bool>,
+    pub(super) protection_zone: Option<bool>,
 }
 
 /// `retry_after_ms` of an in-fight refusal: the time left until `until`, rounded up to whole
@@ -156,7 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Ok((actor, controller))
     }
 
-    async fn logout_zones(&self, actor: ExactActorRef) -> Option<LogoutZones> {
+    pub(super) async fn logout_zones(&self, actor: ExactActorRef) -> Option<LogoutZones> {
         use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
         let mut runtime = self.runtime.lock().await;
         // This format has no OTBM zones; retain its existing logout behavior, including

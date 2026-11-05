@@ -114,6 +114,7 @@ use oteryn_gameplay_quests::quest::{QUESTSTATE0_RL_07, valid_quest_key};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
+mod arena;
 pub mod boss_reward;
 mod contents;
 mod grizzly;

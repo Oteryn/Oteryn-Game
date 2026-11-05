@@ -77,7 +77,7 @@ pub fn panel_text(panel: &WheelPanel) -> String {
         "Allocated points: {committed}. Edited points: {draft}{}.",
         if panel.dirty() { " (not saved)" } else { "" }
     ));
-    lines.push("Save Wheel applies point and vessel edits together. Refresh discards unsaved edits. Removing points or resetting requires a temple.".into());
+    lines.push("Save Wheel applies point and vessel edits together. Refresh discards unsaved edits. Removing points or resetting is blocked while you are in a fight (PZ lock).".into());
     for (domain, gem) in panel.vessels.iter().enumerate() {
         let name = gem
             .and_then(|id| {

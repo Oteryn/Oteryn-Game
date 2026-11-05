@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "67c6d60e8f509e2c7fcf20b3b94f5ebcf27f96865e0d5a49774edd4362220303",
+  "input_sha256": "f393c552d16d3535e602239fc9b7d2b9fcc3ec635a718c29ee8fbd1ad7c7bd70",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -211,14 +211,14 @@
           "boss_policy": null
         },
         {
-          "creature": "oteryn:creature.white_pale",
-          "source_path": "content/world/spawns/spawns-boss-spawn1.json",
-          "source_group": "oteryn:spawn.boss_spawn1.white_pale",
+          "creature": "oteryn:creature.the_collector",
+          "source_path": "content/world/spawns/spawns-54000-54673.json",
+          "source_group": "oteryn:spawn.x32028_y31816_z8.boss.oteryn_creature_the_collector",
           "source_point": 0,
           "cell": {
-            "floor": 11,
-            "x": 33264,
-            "y": 31875
+            "floor": 8,
+            "x": 32028,
+            "y": 31817
           },
           "respawn_ms": null,
           "boss_policy": {
@@ -529,14 +529,14 @@
           "boss_policy": null
         },
         {
-          "creature": "oteryn:creature.weakened_shlorg",
-          "source_path": "content/world/spawns/spawns-boss-spawn1.json",
-          "source_group": "oteryn:spawn.boss_spawn1.weakened_shlorg",
+          "creature": "oteryn:creature.ancient_lion_knight",
+          "source_path": "content/world/spawns/spawns-54000-54673.json",
+          "source_group": "oteryn:spawn.x32439_y32470_z6.boss.oteryn_creature_ancient_lion_knight",
           "source_point": 0,
           "cell": {
-            "floor": 9,
-            "x": 33164,
-            "y": 31716
+            "floor": 6,
+            "x": 32439,
+            "y": 32471
           },
           "respawn_ms": null,
           "boss_policy": {
@@ -635,20 +635,20 @@
           "boss_policy": null
         },
         {
-          "creature": "oteryn:creature.furyosa",
-          "source_path": "content/world/spawns/spawns-boss-spawn1.json",
-          "source_group": "oteryn:spawn.boss_spawn1.furyosa",
+          "creature": "oteryn:creature.xogixath",
+          "source_path": "content/world/spawns/spawns-54000-54673.json",
+          "source_group": "oteryn:spawn.x33794_y31478_z8.boss.oteryn_creature_xogixath",
           "source_point": 0,
           "cell": {
-            "floor": 15,
-            "x": 33281,
-            "y": 31804
+            "floor": 8,
+            "x": 33800,
+            "y": 31475
           },
           "respawn_ms": null,
           "boss_policy": {
             "at_reset": {
               "chance": {
-                "denominator": 100,
+                "denominator": 50,
                 "numerator": 1
               }
             }
@@ -915,10 +915,10 @@
       "tier": 5,
       "chosen": "oteryn:creature.radiant_inquisitor",
       "global_micros": 9000000000,
-      "offensive_micros": 9186000000,
-      "defense_v1_micros": 9208000000,
-      "defense_v2_micros": 9186000000,
-      "observed_micros": 9362000000,
+      "offensive_micros": 9276000000,
+      "defense_v1_micros": 9298000000,
+      "defense_v2_micros": 9276000000,
+      "observed_micros": 9452000000,
       "kills": 33,
       "chosen_kills": 32,
       "consumed_seconds": [

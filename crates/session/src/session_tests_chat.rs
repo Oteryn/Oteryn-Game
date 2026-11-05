@@ -117,11 +117,13 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // party chat and VIP presence, including the equipment/container prerequisites 12/14.
     // C78 adds 8 (live achievement notices).
     // C89 adds server-save countdown notices (75, domain 40).
+    // CP01 adds 54, 55, 115, 150 and the podium prerequisite 49.
     // C88 adds 53 (world-event query) through the admitted raw-command route.
     // C76 adds 9 (highscores), using the existing selected-session query route.
     // C10 adds counted item movement (61) and refusal details (66).
     // C12 adds item-look (28); world interaction (11) already carries bed support.
     // C04 adds 286 (live world entity display names).
+    // P-C01 adds 67 (bestiary/charm progression) and 87 (PvP expert, domain 52).
     // C24 adds server target walking (64), with existing prerequisites 6 and 13.
     // C27 adds server weather (26, domain 22).
     // C17b adds 275 (empty-outfit-v1: invisible creatures project an empty outfit).
@@ -132,9 +134,9 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
         CLIENT_SUPPORTED_CAPABILITIES,
         &[
             3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 28, 30, 31,
-            36, 37, 40, 42, 43, 51, 53, 60, 61, 62, 63, 64, 66, 68, 72, 75, 80, 81, 91, 92, 98,
-            117, 132, 140, 147, 148, 151, 152, 153, 154, 165, 168, 179, 182, 200, 224, 230, 232,
-            233, 240, 258, 259, 272, 274, 275, 285, 286
+            36, 37, 40, 42, 43, 49, 51, 53, 54, 55, 60, 61, 62, 63, 64, 66, 67, 68, 72, 75, 80, 81, 87, 91,
+            92, 98, 115, 117, 132, 140, 147, 148, 150, 151, 152, 153, 154, 165, 168, 179, 182, 200,
+            224, 230, 232, 233, 240, 258, 259, 272, 274, 275, 285, 286
         ]
     );
 }

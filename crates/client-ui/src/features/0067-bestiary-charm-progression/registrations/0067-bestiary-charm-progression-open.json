@@ -1,0 +1,9 @@
+{
+  "mechanic": "0067-bestiary-charm-progression",
+  "kind": "keybindings",
+  "id": "0067-bestiary-charm-progression-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+C",
+  "entry": "input.rs::open_key"
+}
