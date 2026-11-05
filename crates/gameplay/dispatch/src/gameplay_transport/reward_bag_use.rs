@@ -263,7 +263,7 @@ mod tests {
         let native = active.native_gameplay().expect("native");
         let plan = reward_bag_conversion(native, &item("oteryn:item.tibia.i6570"), 0)
             .expect("W19 blue present is handled by the existing reward-bag owner");
-        assert_eq!(plan.recipe, "oteryn:event-container.6570");
+        assert_eq!(plan.recipe, "oteryn:reward-bag.event_6570");
         assert_eq!(plan.outputs.len(), 1);
     }
 
