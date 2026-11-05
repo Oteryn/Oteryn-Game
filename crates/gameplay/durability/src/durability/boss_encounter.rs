@@ -357,7 +357,7 @@ pub fn plan_reset(
     {
         return Err(BossClockError::InvalidInput);
     }
-    if epoch == clock.reset_epoch {
+    if epoch == clock.reset_epoch || clock.state == BossClockState::Alive {
         return Ok(None);
     }
     let draw = draw(key, epoch, "boss_at_reset")?;
@@ -397,7 +397,7 @@ pub fn plan_reset_death(clock: &BossClock) -> Result<BossClock> {
 }
 
 // Versioned unambiguous coordinate encoding only; the sole generator is native deterministic
-// decision RNG. World and Channel have distinct fixed fields; spawn text has an explicit length.
+// decision RNG. Reset draws belong to the World; respawn timers retain their Channel field.
 fn draw(key: &BossClockKey, ordinal: u64, purpose: &str) -> Result<u64> {
     if key.spawn.is_empty() {
         return Err(BossClockError::InvalidInput);
@@ -405,7 +405,9 @@ fn draw(key: &BossClockKey, ordinal: u64, purpose: &str) -> Result<u64> {
     let mut seed = Sha256::new();
     seed.update(b"oteryn:boss-clock:v1");
     seed.update(key.world.as_bytes());
-    seed.update(key.channel.as_bytes());
+    if purpose != "boss_at_reset" {
+        seed.update(key.channel.as_bytes());
+    }
     seed.update((key.spawn.len() as u64).to_be_bytes());
     seed.update(key.spawn.as_bytes());
     let root = GameplayDecisionRoot::from_bytes(seed.finalize().into());
@@ -429,6 +431,8 @@ pub(crate) mod cooldown_storage;
 
 #[path = "boss_encounter/cooldown_list.rs"]
 mod cooldown_list;
+mod world_spawns;
+pub use world_spawns::spawned_bosses_for_epoch;
 #[path = "boss_encounter/reward_chest.rs"]
 pub mod reward_chest;
 
@@ -446,6 +450,7 @@ impl super::DurabilityRoot {
         authority: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         key: BossClockKey,
+        boss: String,
         generation: ScopeOwnershipGeneration,
         policy: oteryn_gameplay_content::content::BossPolicy,
     ) -> Result<BossClockClaim> {
@@ -474,6 +479,13 @@ impl super::DurabilityRoot {
                     // No actual reset owner yet: no invented reset or draw.
                     return Ok(BossClockClaim::Unchanged);
                 }
+                let world_spawn = world_spawns::lock_world_spawn(&mut tx, &key, &boss).await?;
+                let can_spawn = if let oteryn_gameplay_content::content::BossPolicy::AtReset { chance } = policy {
+                    world_spawns::retain_roll(&mut tx, &key, &boss, epoch, chance, &world_spawn).await?
+                } else { true };
+                if world_spawn.active && !world_spawn.same_clock {
+                    return Ok(BossClockClaim::Unchanged);
+                }
                 let mut initial = BossClock { cycle: 0, state: BossClockState::Inactive,
                     reset_epoch: 0, due_at_unix_ms: None, owner_generation: None };
                 if let oteryn_gameplay_content::content::BossPolicy::Respawn { min_s, max_s } = policy {
@@ -483,9 +495,8 @@ impl super::DurabilityRoot {
                     initial.due_at_unix_ms = Some(seconds.checked_mul(1000).and_then(|d| now.checked_add(d)).ok_or(BossClockError::InvalidInput)?);
                     initial.reset_epoch = epoch;
                 }
-                if let oteryn_gameplay_content::content::BossPolicy::AtReset { chance } = policy {
-                    let yes = oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
-                        draw(&key,epoch,"boss_at_reset")?,0,(chance.denominator-1) as i64) < chance.numerator as i64;
+                if let oteryn_gameplay_content::content::BossPolicy::AtReset { .. } = policy {
+                    let yes = can_spawn;
                     initial.reset_epoch = epoch;
                     if yes { initial.state = BossClockState::Due; initial.due_at_unix_ms = Some(reset_time); }
                 }
@@ -493,18 +504,24 @@ impl super::DurabilityRoot {
                     .bind(key.world.as_bytes().as_slice()).bind(key.channel.as_bytes().as_slice()).bind(&key.spawn)
                     .bind(initial.state.stored()).bind(initial.reset_epoch.to_string()).bind(initial.due_at_unix_ms).execute(&mut *tx).await?;
                 let mut clock = read_clock(&mut tx, &key).await?.ok_or(BossClockError::MissingClock)?;
-                if let oteryn_gameplay_content::content::BossPolicy::AtReset { chance } = policy {
-                    if let Some(next) = plan_reset(&key,&clock,epoch,reset_time,chance.numerator,chance.denominator)? {
+                if let oteryn_gameplay_content::content::BossPolicy::AtReset { .. } = policy {
+                    // The retained outcome, rather than today's content ratio, governs retries.
+                    if let Some(next) = plan_reset(&key,&clock,epoch,reset_time,u64::from(can_spawn),1)? {
                         if !compare_and_set_clock(&mut tx,&key,&clock,&next).await? { return Ok(BossClockClaim::CompareFailed); }
                         clock = next;
                     }
                     if let Some(next) = plan_claim(&clock,generation,now)? {
                         if !compare_and_set_clock(&mut tx,&key,&clock,&next).await? { return Ok(BossClockClaim::CompareFailed); }
+                        world_spawns::mark_claimed(&mut tx, &key, &boss, epoch, true).await?;
                         return Ok(BossClockClaim::Claimed(next));
                     }
                     Ok(BossClockClaim::Unchanged)
                 } else {
-                    claim_respawn_clock_in_transaction(&mut tx,&recovery,&node,&key,generation,&clock).await
+                    let claim = claim_respawn_clock_in_transaction(&mut tx,&recovery,&node,&key,generation,&clock).await?;
+                    if matches!(claim, BossClockClaim::Claimed(_)) {
+                        world_spawns::mark_claimed(&mut tx, &key, &boss, epoch, false).await?;
+                    }
+                    Ok(claim)
                 }
             }.await;
             let result = match result {
@@ -534,6 +551,8 @@ pub(crate) async fn advance_death_in_transaction(
     policy
         .validate()
         .map_err(|_| BossClockError::InvalidInput)?;
+    // Same World-before-Channel lock order as activation. Any rejected death rolls this back.
+    world_spawns::release_world_spawn(tx, key).await?;
     let clock = read_clock(tx, key)
         .await?
         .ok_or(BossClockError::MissingClock)?;
