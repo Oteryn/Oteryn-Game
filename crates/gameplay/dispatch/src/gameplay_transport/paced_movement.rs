@@ -178,9 +178,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         underwater_drown::underwater(map, snapshot.position()),
                     );
                 }
-                super::echo_warden::step_in(self, &mut runtime, actor, session, now / 1000);
                 drop(states);
                 drop(runtime);
+                super::echo_warden::step_in(self, actor, session, now / 1000).await;
                 if let Some(event) = snowbunny_progress_operation(
                     snow_origin,
                     actor.placement_identity(),

@@ -20,6 +20,16 @@ def canonical(value):
 
 
 class SoulpitEchoItemProfilesTest(unittest.TestCase):
+    def test_echo_catalysts_are_materializable_in_the_existing_overlay(self):
+        catalysts = {51588, 51589, 54266}
+        admitted = {int(row['production_binding']['external_id']): row
+                    for row in self.overlay['records']}
+        self.assertTrue(catalysts <= admitted.keys())
+        for item_id in catalysts:
+            self.assertTrue(admitted[item_id]['admission']['materializable'])
+            self.assertEqual(admitted[item_id]['admission']['legal_destinations'],
+                             ['CharacterInventory', 'Ground'])
+
     def setUp(self):
         self.capture = (ROOT / soulpit.PATH).read_bytes()
         self.overlay = json.loads(self.capture)
@@ -67,7 +77,7 @@ class SoulpitEchoItemProfilesTest(unittest.TestCase):
         self.assertTrue(set(unbound).issubset(ids))
         records = self.overlay['records']
         admitted = [int(row['production_binding']['external_id']) for row in records]
-        self.assertEqual(len(records), 845)
+        self.assertEqual(len(records), 848)
         self.assertEqual(admitted, sorted((set(ids) | soulpit.EXTRA_IDS) - set(unbound)))
         self.assertTrue(all(row['admission']['materializable'] is True for row in records))
         self.assertTrue(all(row['admission']['legal_destinations'] == ['CharacterInventory', 'Ground']
@@ -104,7 +114,7 @@ class SoulpitEchoItemProfilesTest(unittest.TestCase):
             self.admit(root, generated)
             result = json.loads(generated[PROFILES])
             by_key = {row['production_definition']['production_key']: row for row in result['records']}
-            self.assertEqual(len(by_key), len(original['records']) + 845)
+            self.assertEqual(len(by_key), len(original['records']) + 848)
             for row in original['records']:
                 self.assertEqual(by_key[row['production_definition']['production_key']], row)
             for row in self.overlay['records']:
