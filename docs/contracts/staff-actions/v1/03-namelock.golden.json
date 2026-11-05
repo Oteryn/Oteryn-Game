@@ -1,0 +1,1 @@
+{"version":1,"operation_id":"op-3","environment":"test","idempotency_key":"key-3","kind":"namelock","account_id":"account-1","generation":3,"actor":{"id":"staff-1","tier":"god"},"reason":"support","explanation":"Reviewed support report","evidence_refs":["report-1"],"issued_at":"2026-11-05T12:00:00Z","expires_at":"2026-11-06T12:00:00Z","character_id":"character-1"}

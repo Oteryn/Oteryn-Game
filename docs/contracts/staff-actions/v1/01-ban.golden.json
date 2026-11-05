@@ -1,0 +1,1 @@
+{"version":1,"operation_id":"op-1","environment":"test","idempotency_key":"key-1","kind":"ban","account_id":"account-1","generation":1,"actor":{"id":"staff-1","tier":"god"},"reason":"support","explanation":"Reviewed support report","evidence_refs":["report-1"],"issued_at":"2026-11-05T12:00:00Z","expires_at":null,"approvers":["staff-2","staff-3"]}

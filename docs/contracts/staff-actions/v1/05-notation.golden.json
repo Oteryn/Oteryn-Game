@@ -1,0 +1,1 @@
+{"version":1,"operation_id":"op-5","environment":"test","idempotency_key":"key-5","kind":"notation","account_id":"account-1","generation":5,"actor":{"id":"staff-1","tier":"god"},"reason":"support","explanation":"Reviewed support report","evidence_refs":["report-1"],"issued_at":"2026-11-05T12:00:00Z","character_id":"character-1"}
