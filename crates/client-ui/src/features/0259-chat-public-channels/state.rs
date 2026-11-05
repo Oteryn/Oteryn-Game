@@ -19,7 +19,7 @@ impl Default for ChatPanel {
             open: false,
             rooms: ChatRoomSet::default(),
             lines: Vec::new(),
-            room: ChatRoom::AdvertisingRookgaard,
+            room: ChatRoom::World,
             text: String::new(),
             pending: false,
             feedback: None,
