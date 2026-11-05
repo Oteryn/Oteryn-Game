@@ -108,6 +108,8 @@ mod mailbox;
 mod refusal_details;
 mod session_loop;
 mod session_stepper;
+#[cfg(windows)]
+mod status_window;
 mod stepper;
 mod tick;
 

@@ -46,6 +46,11 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
+    outbox.condition_status_initialize(session.feature_selected(276));
+    outbox.rest_status_initialize(session.feature_selected(277));
+    outbox.battle_instinct_status_initialize(session.feature_selected(278));
+    outbox.skill_progress_initialize(session.feature_selected(279));
+    outbox.party_effects_initialize(session.feature_selected(280));
     outbox.quest_initialize(session.quest_state());
     outbox.task_board_initialize(session.task_board_selected());
     outbox.stash_initialize(session.stash_selected());
@@ -125,6 +130,11 @@ pub async fn run_session<T: Stepper>(
                         199 => outbox.cyclopedia_character_result(&result),
                         225 => outbox.boss_difficulty_result(&result),
                         250 => outbox.hireling_management_result(&result),
+                        276 => outbox.condition_status_result(&result),
+                        277 => outbox.rest_status_result(&result),
+                        278 => outbox.battle_instinct_status_result(&result),
+                        279 => outbox.skill_progress_result(&result),
+                        280 => outbox.party_effects_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);

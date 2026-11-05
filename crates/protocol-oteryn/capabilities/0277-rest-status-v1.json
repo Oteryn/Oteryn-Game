@@ -1,0 +1,17 @@
+{
+  "id": 277,
+  "name": "REST_STATUS_V1",
+  "constant": "rest_status::CAPABILITY_REST_STATUS_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    493
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

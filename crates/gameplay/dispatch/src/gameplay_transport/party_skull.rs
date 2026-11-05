@@ -80,6 +80,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .continuity
             .selected_capabilities
             .contains(CAPABILITY_PARTY_SKULL_V1)
+            && !admitted
+                .continuity
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::party_effects::CAPABILITY_PARTY_EFFECTS_V1)
         {
             return None;
         }
