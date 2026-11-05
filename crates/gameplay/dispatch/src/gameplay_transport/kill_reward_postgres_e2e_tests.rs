@@ -309,7 +309,7 @@ fn scenario_with_creature_observed(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let w22a_tables = super::w22a_loot::table_override()?;
+        let w22a_tables = super::scheduled_event_rates::table_override()?;
         let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_with_custom_loot_tables(
                 world,
@@ -1439,6 +1439,7 @@ fn scenario_with_creature_observed(
                 &mut table,
                 event_rates.loot,
             );
+            super::scheduled_event_rates::expected(&mut table, &row.loot_table, event_rates.loot);
             let raised = table != row.loot_table;
             assert!(
                 raised,
@@ -1626,6 +1627,7 @@ fn scenario_with_creature_observed(
                 actual, expected,
                 "daily loot rolls reach durable Item quantities"
             );
+            super::scheduled_event_rates::verify(&actual);
         }
 
         assert!(
