@@ -9,6 +9,8 @@ mod depot_map_tests;
 mod item_movement_tests;
 #[path = "tests/property_services.rs"]
 mod property_services_tests;
+#[path = "tests/pvp_expert.rs"]
+mod pvp_expert_tests;
 #[path = "quest_log_transport/tests.rs"]
 mod quest_log_tests;
 #[path = "tests/replacement_snapshot.rs"]

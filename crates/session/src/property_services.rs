@@ -1,6 +1,9 @@
 //! Client adapters for existing property/service codecs. No registry or wire changes.
 use crate::ItemHandle;
-pub use oteryn_protocol_oteryn::{guild_bank, house_podium, loop_training, mail};
+pub use oteryn_protocol_oteryn::{
+    appearance, attack, bestiary, charm, charm_progression, guild_bank, house_podium,
+    loop_training, mail, pvp_expert,
+};
 
 pub fn offline_payload(target: ItemHandle) -> Vec<u8> {
     let mut out = vec![8];
