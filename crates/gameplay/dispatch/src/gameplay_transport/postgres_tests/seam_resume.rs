@@ -34,7 +34,25 @@ fn seam_second_same_session_resume_has_deterministic_frames_with_busy_holder() -
                     .open_character_authority(&seal)
                     .await
                     .map_err(debug)?;
-                let deps = Dependencies::new()?;
+                // Movement must use the room's real content pin. Dependencies::new()
+                // deliberately uses a synthetic pin for tests that do not move actors.
+                let world = fence(1)?.runtime_scope.world_id();
+                let room = crate::content::qualify_native_entry_room(world).map_err(debug)?;
+                let start = room.entry_start();
+                let pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
+                    world,
+                    1,
+                    room.compiled().server_digest(),
+                    room.compiled().client_digest(),
+                    room.frame_binding().digest(),
+                    room.map_revision_digest(),
+                    (start.x, start.y, start.floor),
+                );
+                let deps = Dependencies::with_content(
+                    pin,
+                    room,
+                    crate::spell::cast::v1_spell_book().map_err(debug)?,
+                )?;
                 let mut owner = deps.owner(&h, &authority);
                 owner.evidence = &recovery.evidence;
                 {
