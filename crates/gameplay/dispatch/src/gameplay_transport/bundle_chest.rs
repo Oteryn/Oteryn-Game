@@ -158,6 +158,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 quantity: child.count,
                                 key_number: child.key_number,
                                 text: child.text.clone(),
+                                fluid_subtype: None,
                             }
                         })
                     })
@@ -177,6 +178,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     quantity: reward.count,
                     contents,
                     root_text: bound.root_text.clone(),
+                    root_fluid_subtype: None,
                     backpack,
                     content_revision: format!(
                         "sha256:{}",

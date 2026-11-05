@@ -117,6 +117,7 @@ use sqlx::Row;
 mod arena;
 pub mod boss_reward;
 mod contents;
+mod fluid;
 mod grizzly;
 mod monk;
 mod soul_war;
@@ -152,6 +153,8 @@ pub struct RewardClaimMintContent {
     pub key_number: Option<u16>,
     /// Public authored source text, never player-supplied writing.
     pub text: Option<String>,
+    /// Source-resolved fluid subtype; no row means an empty container.
+    pub fluid_subtype: Option<u8>,
 }
 
 /// Complete semantic intent of one reward-claim MINT.
@@ -173,6 +176,8 @@ pub struct RewardClaimMintRequest {
     pub contents: Vec<RewardClaimMintContent>,
     /// Immutable source-authored text on the top-level reward.
     pub root_text: Option<String>,
+    /// Source-resolved fluid subtype of the top-level reward.
+    pub root_fluid_subtype: Option<u8>,
     /// Facts of the equipped main backpack's definition.
     pub backpack: ItemDefinitionFacts,
     pub content_revision: String,
@@ -1235,11 +1240,11 @@ async fn apply_claim(
            character_id, claim_family, claim_production_key, claim_revision_ref, \
            intent_binding, transaction_id, event_id, item_instance_id, quantity, \
            destination_parent_item_instance_id, destination_ordinal, occurred_at, \
-           envelope_sha256, committed_at, contents_capacity, contents_plan, root_text) \
+           envelope_sha256, committed_at, contents_capacity, contents_plan, root_text, fluid_plan) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            $4, $5, $6, $7, encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
            encode($10,'hex')::uuid, $11, encode($12,'hex')::uuid, $13::text::numeric(20,0), \
-           $14, $15, $16, $17, $18, $19)",
+           $14, $15, $16, $17, $18, $19, $20)",
     )
     .bind(command.game_session_id().as_bytes().as_slice())
     .bind(command.command_id().get().to_string())
@@ -1260,6 +1265,7 @@ async fn apply_claim(
     .bind(contents::capacity(request))
     .bind(sqlx::types::Json(contents::plan(request, reservation)))
     .bind(&request.root_text)
+    .bind(sqlx::types::Json(fluid::plan(request)))
     .execute(&mut **tx)
     .await?;
     if let Some(number) = request.key_number {
@@ -1300,6 +1306,7 @@ async fn apply_claim(
         .await?;
     }
     contents::apply(tx, frozen, reservation, envelope, tuple).await?;
+    fluid::apply(tx, frozen, reservation).await?;
     Ok(CommittedRewardClaimMint {
         transaction_id: frozen.transaction_id,
         event_id: frozen.event_id,
@@ -1335,7 +1342,7 @@ async fn load_reservation(
     Ok(sqlx::query(
         "SELECT intent_binding, character_id::text, world_id::text, channel_id::text, \
                 transaction_id::text, event_id::text, item_instance_id::text, occurred_at, \
-                work_units_used, contents_capacity, contents_plan, root_text \
+                work_units_used, contents_capacity, contents_plan, root_text, fluid_plan \
            FROM game_reward_claim_mint_reservations \
           WHERE game_session_id = encode($1,'hex')::uuid \
             AND command_id = $2::text::numeric(20,0)",
@@ -1374,11 +1381,11 @@ async fn insert_reservation(
         "INSERT INTO game_reward_claim_mint_reservations(game_session_id, command_id, \
            character_id, world_id, channel_id, claim_family, claim_production_key, \
            claim_revision_ref, intent_binding, transaction_id, event_id, item_instance_id, \
-           occurred_at, work_units_used, reserved_at, contents_capacity, contents_plan, root_text) \
+           occurred_at, work_units_used, reserved_at, contents_capacity, contents_plan, root_text, fluid_plan) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6, $7, $8, $9, \
            encode($10,'hex')::uuid, encode($11,'hex')::uuid, encode($12,'hex')::uuid, $13, 0, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $14, $15, $16)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $14, $15, $16, $17)",
     )
     .bind(request.command.game_session_id().as_bytes().as_slice())
     .bind(request.command.command_id().get().to_string())
@@ -1396,6 +1403,7 @@ async fn insert_reservation(
     .bind(contents::capacity(request))
     .bind(sqlx::types::Json(contents::plan(request, reservation)))
     .bind(&request.root_text)
+    .bind(sqlx::types::Json(fluid::plan(request)))
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -1502,6 +1510,7 @@ fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
         return Err(RewardClaimMintError::InvalidInput);
     }
     contents::validate(request)?;
+    fluid::validate(request)?;
     Ok(())
 }
 
@@ -1594,6 +1603,12 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
     if let Some(text) = &request.root_text {
         canonical.push(0x54);
         push_text(&mut canonical, text.as_bytes()).map_err(from_transfer_input)?;
+    }
+    let fluid_plan = fluid::plan(request);
+    if fluid_plan.as_array().is_some_and(|plan| !plan.is_empty()) {
+        canonical.push(0x46);
+        push_text(&mut canonical, fluid_plan.to_string().as_bytes())
+            .map_err(from_transfer_input)?;
     }
     let mut out = [0_u8; 33];
     out[0] = INTENT_BINDING_VERSION;
@@ -1829,6 +1844,7 @@ mod tests {
             quantity: 3,
             contents: Vec::new(),
             root_text: None,
+            root_fluid_subtype: None,
             backpack: backpack_facts(20),
             content_revision: "content-1".into(),
             ruleset_revision: "ruleset-1".into(),
@@ -1986,6 +2002,57 @@ mod tests {
     }
 
     #[test]
+    fn filled_fluid_rewards_bind_subtypes_and_refuse_ambiguous_shapes() {
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let mut empty = request(None);
+        empty.item = facts("fixture:vial", ItemStackClass::NonStackable);
+        empty.quantity = 1;
+        let mut filled = empty.clone();
+        filled.root_fluid_subtype = Some(6);
+        assert!(validate_request(&filled).is_ok());
+        assert_ne!(
+            intent_binding(&empty, character).expect("empty intent"),
+            intent_binding(&filled, character).expect("filled intent")
+        );
+        let mut wine = filled.clone();
+        wine.root_fluid_subtype = Some(15);
+        assert_ne!(
+            intent_binding(&filled, character).expect("filled intent"),
+            intent_binding(&wine, character).expect("wine intent")
+        );
+        for mutation in ["empty subtype", "stack", "key", "text", "container"] {
+            let mut changed = filled.clone();
+            match mutation {
+                "empty subtype" => changed.root_fluid_subtype = Some(0),
+                "stack" => changed.item.stack = COIN,
+                "key" => changed.key_number = Some(3801),
+                "text" => changed.root_text = Some("authored".into()),
+                _ => changed.item.container_capacity = Some(4),
+            }
+            assert!(validate_request(&changed).is_err(), "{mutation}");
+        }
+        let mut bag = request(None);
+        bag.item = backpack_facts(4);
+        bag.quantity = 1;
+        bag.contents = vec![RewardClaimMintContent {
+            item: filled.item.clone(),
+            quantity: 1,
+            key_number: None,
+            text: None,
+            fluid_subtype: Some(6),
+        }];
+        assert!(validate_request(&bag).is_ok());
+        let before = intent_binding(&bag, character).expect("bag intent");
+        bag.contents[0].fluid_subtype = Some(15);
+        assert_ne!(
+            before,
+            intent_binding(&bag, character).expect("changed bag intent")
+        );
+        bag.contents[0].fluid_subtype = Some(0);
+        assert!(validate_request(&bag).is_err());
+    }
+
+    #[test]
     fn container_contents_are_complete_bounded_and_part_of_the_frozen_intent() {
         let mut container = request(None);
         container.item = backpack_facts(24);
@@ -1996,12 +2063,14 @@ mod tests {
                 quantity: 100,
                 key_number: None,
                 text: None,
+                fluid_subtype: None,
             },
             RewardClaimMintContent {
                 item: facts("fixture:key", ItemStackClass::NonStackable),
                 quantity: 1,
                 key_number: Some(3801),
                 text: None,
+                fluid_subtype: None,
             },
         ];
         assert!(validate_request(&container).is_ok());
@@ -2059,6 +2128,7 @@ mod tests {
             item: facts("fixture:book", ItemStackClass::NonStackable),
             quantity: 1,
             key_number: None,
+            fluid_subtype: None,
             text: Some("source-authored text".into()),
         }];
         assert!(validate_request(&container).is_ok());

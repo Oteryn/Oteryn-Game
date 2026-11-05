@@ -27,6 +27,36 @@ class ContainerNativeTests(unittest.TestCase):
                          [('oteryn:item.tibia.i3447', 12), ('oteryn:item.tibia.i3031', 40)])
         self.assertEqual(placement['completion'], {'kind': 'quest_kv', 'key': 'bearChest1'})
 
+    def test_medusa_uses_complete_crystal_reward_without_canary_fox_text(self):
+        definition = next(d for d in self.rows
+                          if d['identity']['key'].endswith('quest.u7_3.the_medusa_quest'))
+        before = copy.deepcopy(definition)
+        native = container_native.derive(definition, self.items, plain.stack_problem)
+        self.assertIsNotNone(native)
+        self.assertEqual(native['source_difference'], 'CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT')
+        placement = native['placements'][0]
+        self.assertEqual(placement['unique_id'], 6183)
+        self.assertEqual(placement['root']['key'], 'oteryn:item.tibia.i2853')
+        self.assertEqual([(child['item']['key'], child['count']) for child in placement['contents']],
+                         [(f'oteryn:item.tibia.i{i}', 1) for i in (3436, 3567, 3324)])
+        self.assertNotIn('root_text', placement)
+        self.assertTrue(all('text' not in child for child in placement['contents']))
+        self.assertEqual(definition, before, 'the original Canary SOURCE hold stays intact')
+
+    def test_medusa_reconciliation_cannot_clear_a_sibling_hold_or_invent_a_carrier(self):
+        definition = next(d for d in self.rows
+                          if d['identity']['key'].endswith('quest.u7_3.the_medusa_quest'))
+        for mutation in ('hold', 'carrier', 'quantity'):
+            changed = copy.deepcopy(definition)
+            if mutation == 'hold':
+                changed['data_holds'].append({'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING'})
+            elif mutation == 'carrier':
+                changed['placements'][0]['reward']['written_text']['item'] = self.items[
+                    'oteryn:item.tibia.i3436']['identity']
+            else:
+                changed['placements'][0]['reward']['items'][0]['count'] = 2
+            self.assertIsNone(container_native.derive(changed, self.items, plain.stack_problem), mutation)
+
     def test_no_recipe_for_unsourced_quantity_position_uid_or_container(self):
         for mutation in ('quantity', 'position', 'unique', 'root'):
             d = copy.deepcopy(self.bear)
@@ -99,9 +129,9 @@ class ContainerNativeTests(unittest.TestCase):
             row = recipe['placements'][0]
             self.assertLessEqual(len(row['contents']), min(row['capacity'], 20))
         native = [d for d in self.rows if container_native.derive(d, self.items, plain.stack_problem)]
-        self.assertEqual(len(native), 67)
+        self.assertEqual(len(native), 73)  # Full-charge containers plus the reconciled Crystal Medusa bag.
         self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
-                             for d in native), 54)
+                             for d in native), 60)
 
     def test_all_twelve_text_leaves_keep_the_established_lf_normalization(self):
         evidence, _ = container_native.source()
@@ -159,6 +189,18 @@ class ContainerNativeTests(unittest.TestCase):
             else: claim += 'forged'
             self.assertFalse(container_native.full_charge_leaf(changed, claim, point,
                              item['identity']['key'], raw), mutation)
+
+    def test_every_admitted_default_matching_charge_leaf_uses_one_instance(self):
+        proof = plain.load_source_charge_evidence()
+        for source in proof:
+            item = self.items[source['item']]
+            if (not item['materializable'] or source['source_count_argument']
+                    != source['source_default_charges']):
+                continue
+            with self.subTest(claim=source['pilot_key']):
+                self.assertEqual(plain.charged_source_reward(
+                    item, source['pilot_key'], source['project_position'], source['item'],
+                    source['source_count_argument'], proof), (1, None))
 
     def test_authored_text_is_bound_only_to_the_exact_source_book(self):
         d = next(d for d in self.rows if d['identity']['key'].endswith('dreamers_challenge.bplong_sword'))
