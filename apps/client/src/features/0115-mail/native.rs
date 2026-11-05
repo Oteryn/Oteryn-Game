@@ -131,7 +131,8 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, form: Form) {
             for (index, label) in form.labels.iter().enumerate() {
                 control(hwnd, "STATIC", label, 0, [12, y, 640, 20], 0);
                 y += 22;
-                let multiline = form.title == "Mail" && index == 2;
+                let multiline = (form.title == "Mail" && index == 2)
+                    || (form.title == "Player reports" && index == 4);
                 let height = if multiline { 125 } else { 26 };
                 let edit = control(
                     hwnd,

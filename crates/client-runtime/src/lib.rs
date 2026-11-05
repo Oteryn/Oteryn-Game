@@ -19,6 +19,13 @@ pub mod world_interaction;
 #[path = "features/0015-item-use/protocol.rs"]
 pub mod item_use;
 
+#[path = "features/0146-container-sort/protocol.rs"]
+pub mod container_sort;
+#[path = "features/0103-guild-war/protocol.rs"]
+pub mod guild_war;
+#[path = "features/0076-player-report/protocol.rs"]
+pub mod player_report;
+
 pub mod connection;
 #[path = "features/0037-depot/protocol.rs"]
 pub mod depot;
