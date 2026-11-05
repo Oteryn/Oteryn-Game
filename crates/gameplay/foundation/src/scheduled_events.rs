@@ -1,6 +1,6 @@
 //! W05d events scheduler: rate events active between a start and an end instant.
 //!
-//! Donor: zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8 (an OTS hypothesis
+//! Donor: zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a (an OTS hypothesis
 //! source), `data/XML/events.xml` read by `src/game/scheduling/events_scheduler.cpp`.
 //! - Window: `startdate`/`enddate` are `MM/DD/YYYY` (`events_scheduler.cpp:29-33`); `hour`
 //!   sets both times, `starthour` defaults to `00:00` and `endhour` to `23:59:59` (`:336-338`);
@@ -178,6 +178,8 @@ impl Schedule {
     }
 
     /// The compounded rates at a UTC instant; both window edges are inclusive.
+    /// SV10: Crystal ff7ede59 `src/game/scheduling/events_scheduler.hpp:67-110` multiplies
+    /// overlapping percentages; two 200% schedules therefore yield 400%, not 300%.
     pub fn rates_at(&self, unix_seconds: i64) -> EventRates {
         let compound = |schedule: u32, rate: u32| {
             u32::try_from(u64::from(schedule) * u64::from(rate) / u64::from(NEUTRAL_RATE))

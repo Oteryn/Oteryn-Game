@@ -17,6 +17,8 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::time::Duration;
 use tokio::sync::Mutex;
 
+mod echo_warden_expiry;
+
 const CREATURE: &str = "oteryn:creature.rat";
 const POSITION: MovementLocalPosition = MovementLocalPosition {
     x: 2,
@@ -353,6 +355,7 @@ async fn scenario(h: &Harness) -> TestResult {
         second.current_character_lease().character_id().as_bytes(),
     )
     .await?;
+    echo_warden_expiry::verify(&owner, players[0], h).await?;
     spend_echo_major_points(&owner, native, [players[0].1, players[1].1]).await?;
     assert!(
         sqlx::query("DELETE FROM game_character_echo_warden_rewards")
