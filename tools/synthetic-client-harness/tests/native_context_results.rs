@@ -365,18 +365,15 @@ fn context_held_menu_drops_creature_moves_death_and_old_map_epoch_at_dispatch() 
             push.send(()).map_err(|_| "push peer gone")?;
             tokio::time::timeout(WAIT, async {
                 loop {
-                    if let Some(event) = link.poll() {
-                        if let oteryn_client::play::PlayEvent::Pushed(pushed) = event {
-                            if (leave && pushed.own == Some(position(100)))
-                                || pushed.entities.as_ref().is_some_and(|entities| {
-                                    entities
-                                        .iter()
-                                        .any(|entity| entity.position == position(103))
-                                })
-                            {
-                                break;
-                            }
-                        }
+                    if let Some(oteryn_client::play::PlayEvent::Pushed(pushed)) = link.poll()
+                        && ((leave && pushed.own == Some(position(100)))
+                            || pushed.entities.as_ref().is_some_and(|entities| {
+                                entities
+                                    .iter()
+                                    .any(|entity| entity.position == position(103))
+                            }))
+                    {
+                        break;
                     }
                     tokio::task::yield_now().await;
                 }
