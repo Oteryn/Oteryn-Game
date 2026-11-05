@@ -39,8 +39,10 @@ impl Stepper for DepotPeer {
         cap == 37
     }
     fn depot_items(&self) -> oteryn_client_ui::depot::Items {
-        let mut items = oteryn_client_ui::depot::Items::default();
-        items.containers_selected = true;
+        let mut items = oteryn_client_ui::depot::Items {
+            containers_selected: true,
+            ..Default::default()
+        };
         items.inventory.main_backpack = Some(bag());
         if self.carried {
             if self.withdrawn {
