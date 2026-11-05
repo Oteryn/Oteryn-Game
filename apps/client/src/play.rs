@@ -27,6 +27,7 @@ const MAX_QUEUED_INPUTS: usize = 16;
 pub struct PlayView {
     world_context_feedback: Option<String>,
     target_walk_feedback: Option<&'static str>,
+    world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
     vitals: Option<oteryn_session::ActorVitals>,
     sounds: Vec<SoundCue>,
@@ -71,6 +72,7 @@ impl PlayView {
             world_context_feedback: None,
             target_walk_feedback: None,
             world_clock: None,
+            world_weather: None,
             vitals: None,
             sounds: Vec::new(),
             visuals: Vec::new(),

@@ -83,11 +83,14 @@ impl PlayView {
         self.scene.retain_target(target)?;
         self.light_scene()?;
         self.project_presentation(std::time::Instant::now())
+        self.weather_scene();
+        Ok(())
     }
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
         self.world_clock = pushed.world_clock.or(self.world_clock);
+        self.world_weather = pushed.world_weather.or(self.world_weather);
         self.apply_server_messages(&pushed.server_messages);
         if let Some(map) = &pushed.map {
             self.set_live_map(map)?;

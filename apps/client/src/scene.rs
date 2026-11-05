@@ -100,6 +100,14 @@ impl Scene {
         Ok(scene)
     }
 
+    pub fn set_weather(&mut self, color: [u8; 3], strength: u8) {
+        self.lit_atlas = Some(oteryn_renderer::weather_atlas(
+            self.atlas(),
+            color,
+            strength,
+        ));
+    }
+
     pub fn set_ambient(&mut self, ambient: [u8; 3]) -> Result<(), BatchError> {
         self.lit_atlas = Some(oteryn_renderer::lit_atlas(self.world.atlas(), ambient));
         Ok(())

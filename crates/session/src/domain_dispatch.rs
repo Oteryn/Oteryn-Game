@@ -67,6 +67,7 @@ impl<S: SessionStream> Session<S> {
                 Ok(event)
             }
             18 => crate::world_light::apply(self, server_sequence, payload),
+            22 => crate::weather::apply(self, server_sequence, payload),
             19 | 20 => crate::presentation::apply(self, server_sequence, payload),
             14 => crate::container_tree::apply(self, server_sequence, delta),
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),

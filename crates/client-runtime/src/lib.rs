@@ -25,6 +25,8 @@ pub mod hotkey_equip;
 pub mod world_event;
 #[path = "features/0019-world-light/protocol.rs"]
 pub mod world_light;
+#[path = "features/0026-world-weather/protocol.rs"]
+pub mod world_weather;
 
 use oteryn_foundation::CancellationToken;
 use std::fmt::{self, Display, Formatter};

@@ -21,6 +21,7 @@ mod native_light;
 mod native_map;
 #[cfg(test)]
 mod native_trade;
+mod native_weather;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();

@@ -14,6 +14,8 @@ pub mod battle;
 
 #[path = "features/0019-world-light/mod.rs"]
 pub mod world_light;
+#[path = "features/0026-world-weather/mod.rs"]
+pub mod world_weather;
 
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
