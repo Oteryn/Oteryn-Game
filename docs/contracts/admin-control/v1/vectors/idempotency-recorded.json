@@ -1,0 +1,84 @@
+{
+  "canonical_signed_utf8": "{\"actor\":{\"admin_id\":\"a-17\",\"ip_hash\":\"test-hash\",\"mfa_at\":\"2026-11-05T11:59:00Z\",\"permission\":\"game.ops.read\",\"roles\":[\"game_viewer\"],\"session_ref\":\"test-session\",\"step_up_at\":null},\"admin_operation_id\":\"019a5620-0000-7000-8000-000000000001\",\"approvals\":[],\"contract\":\"oteryn.admin-control.v1\",\"dry_run\":false,\"expires_at\":\"2026-11-05T12:01:00Z\",\"issued_at\":\"2026-11-05T12:00:00Z\",\"kind\":\"query\",\"nonce\":\"AgICAgICAgICAgICAgICAg\",\"operation\":\"admin.policy.get\",\"operation_version\":1,\"params\":{},\"reason\":null,\"request_id\":\"019a5620-0000-7000-8000-000000000001\",\"risk_class\":\"R0\",\"signer_key_id\":\"platform-admin-signer-1\",\"target\":{\"account_ref\":null,\"character_id\":null,\"node_id\":null,\"world_id\":null}}",
+  "clock": 1793880000,
+  "expected_error": null,
+  "nonce_seen": false,
+  "policy": {
+    "operations": [
+      {
+        "allowed_permissions": [
+          "game.ops.read"
+        ],
+        "min_risk_class": "R0",
+        "operation": "admin.policy.get",
+        "worlds": [
+          "w-antica"
+        ]
+      }
+    ]
+  },
+  "precondition_error": null,
+  "preview_digest": null,
+  "prior_params_digest": "RBNvo1WzZ4oRRq0W9-hknpT7T8If536DEMBg9hyq_4o",
+  "prior_result": {
+    "admin_operation_id": "019a5620-0000-7000-8000-000000000001",
+    "agent_build": "test-build",
+    "agent_id": "test-agent",
+    "audit_event_ids": [],
+    "completed_at": "2026-11-05T12:00:00Z",
+    "dry_run_preview": null,
+    "effective_revision": null,
+    "error": null,
+    "game_ledger_id": "019a5620-0000-7000-8000-000000000002",
+    "progress": null,
+    "request_id": "019a5620-0000-7000-8000-000000000001",
+    "result": {
+      "operations": []
+    },
+    "signature": "",
+    "status": "succeeded"
+  },
+  "request": {
+    "actor": {
+      "admin_id": "a-17",
+      "ip_hash": "test-hash",
+      "mfa_at": "2026-11-05T11:59:00Z",
+      "permission": "game.ops.read",
+      "roles": [
+        "game_viewer"
+      ],
+      "session_ref": "test-session",
+      "step_up_at": null
+    },
+    "admin_operation_id": "019a5620-0000-7000-8000-000000000001",
+    "approvals": [],
+    "contract": "oteryn.admin-control.v1",
+    "dry_run": false,
+    "expires_at": "2026-11-05T12:01:00Z",
+    "issued_at": "2026-11-05T12:00:00Z",
+    "kind": "query",
+    "nonce": "AgICAgICAgICAgICAgICAg",
+    "operation": "admin.policy.get",
+    "operation_version": 1,
+    "params": {},
+    "reason": null,
+    "request_id": "019a5620-0000-7000-8000-000000000001",
+    "risk_class": "R0",
+    "signature": "jOrljVlDCSRdkN7QyUDYAFT2snKVdD0Hw7_OsbxyANLIznRi6dlDz1GH2W1kN1D5CtHe3WEvyCiGNcvfjhWwAA",
+    "signer_key_id": "platform-admin-signer-1",
+    "target": {
+      "account_ref": null,
+      "character_id": null,
+      "node_id": null,
+      "world_id": null
+    }
+  },
+  "trusted_signers": [
+    {
+      "key_id": "platform-admin-signer-1",
+      "not_after": "2027-01-01T00:00:00Z",
+      "not_before": "2026-01-01T00:00:00Z",
+      "public_key": "6kpsY-KcUgq-9VB7Ey7F-ZVHdq6-vnuSQh7qaRRG0iw"
+    }
+  ]
+}

@@ -107,7 +107,9 @@ pub use appearance_state::{
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).
-pub use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition, SpellTarget};
+pub use oteryn_protocol_oteryn::actor_spell::{
+    ActorVitals, SpellCastDisposition, SpellTarget, SpellTargetPosition,
+};
 use oteryn_protocol_oteryn::attack::{self, CAPABILITY_ATTACK_V1};
 /// The capability-17 attack types a client sends and draws from, re-exported so it needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).

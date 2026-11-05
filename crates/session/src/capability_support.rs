@@ -96,6 +96,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     // CL26s3: native daily reward wall, query, and claim controls.
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     oteryn_protocol_oteryn::daily_reward::CAPABILITY_DAILY_REWARD_V2,
+    oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
     // CL26s4: personal boss reward commands.
     oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
     boss_rewards::CAPABILITY_BOSS_REWARDS_V1,

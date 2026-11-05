@@ -1,7 +1,7 @@
 //! Non-blocking projection and chronological input dispatch for the play shell.
 use super::{
     Input, PlayEnd, PlayEvent, PlayLink, PlayView, feature_0011_world_interaction,
-    feature_local_spell_action_bar,
+    feature_local_cursor_spells, feature_local_spell_action_bar,
 };
 use oteryn_platform_client::native_login::PublicClass;
 
@@ -39,6 +39,9 @@ impl PlayView {
         // in flight holds back the arrow and what was given after it.
         while let Some(&input) = self.inputs.front() {
             match input {
+                Input::CastAt(spell, position) => {
+                    feature_local_cursor_spells::input::send_cast_at(link, spell, position);
+                }
                 Input::Cast(spell) => feature_local_spell_action_bar::input::send_cast(link, spell),
                 Input::Attack(target) => {
                     feature_0011_world_interaction::input::send_attack(link, target)

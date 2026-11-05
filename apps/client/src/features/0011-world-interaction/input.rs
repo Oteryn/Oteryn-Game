@@ -9,6 +9,9 @@ impl PlayView {
         if self.death.dead {
             return Ok(());
         }
+        if self.cast_at_cursor(tile) {
+            return Ok(());
+        }
         match self.scene.select_tile(tile)? {
             None => self.walk_to(tile),
             Some(Targetable {
