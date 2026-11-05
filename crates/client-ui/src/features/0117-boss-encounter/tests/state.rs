@@ -98,3 +98,133 @@ fn boss_encounter_open_requires_exact_chord_and_ignores_repeat_release()
     }
     Ok(())
 }
+
+#[test]
+fn pc05_boss_activity_uses_existing_codec_and_keeps_confirmed_state() {
+    let mut panel = BossEncounterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.fields[0] = "boss:test".into();
+    for (intent, kind) in [
+        (Intent::Enter, 178),
+        (Intent::Defeated, 179),
+        (Intent::Timeout, 180),
+    ] {
+        let command = request(&mut panel, intent).unwrap_or_else(|| unreachable!());
+        assert_eq!((command.capability, command.kind), (117, kind));
+        assert_eq!(
+            oteryn_client_runtime::boss_encounter::decode_boss_key(&command.payload)
+                .map(|v| v.boss_key),
+            Ok("boss:test".into())
+        );
+        assert!(request(&mut panel, intent).is_none());
+        let reply = GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Rejected,
+            payload: vec![8, 2, 32, 13],
+        };
+        assert!(apply_result(&mut panel, &reply));
+        assert!(panel_text(&panel).contains("Cooldown"));
+        assert!(!panel.pending);
+    }
+    let confirmed = panel.summary.clone();
+    assert!(request(&mut panel, Intent::Enter).is_some());
+    assert!(!apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            command_id: 2,
+            server_sequence: 2,
+            status: CommandStatus::Accepted,
+            payload: vec![255]
+        }
+    ));
+    assert_eq!(panel.summary, confirmed);
+    panel.fields[0] = "invalid".into();
+    assert!(request(&mut panel, Intent::Enter).is_none());
+    assert!(!panel.pending);
+}
+
+#[test]
+fn pc05_boss_auxiliary_flows_validate_input_and_render_server_results() {
+    let mut panel = BossEncounterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.fields = ["oteryn:creature.test".into(), "2".into(), "3".into()];
+    for (intent, kind, payload, reply) in [
+        (Intent::HazardQuery, 169, vec![], vec![5, 2]),
+        (Intent::HazardSelect, 169, vec![3], vec![5, 3]),
+        (Intent::SlotsQuery, 491, vec![0], vec![0; 26]),
+        (
+            Intent::SlotEquip,
+            491,
+            [vec![1, 2], b"oteryn:creature.test".to_vec()].concat(),
+            vec![0; 26],
+        ),
+        (Intent::SlotRemove, 491, vec![2, 2], vec![0; 26]),
+        (Intent::Rewards, 340, vec![], vec![8, 0]),
+    ] {
+        let command = request(&mut panel, intent).unwrap_or_else(|| unreachable!());
+        assert_eq!((command.kind, command.payload), (kind, payload));
+        assert!(apply_result(
+            &mut panel,
+            &GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload: reply
+            }
+        ));
+        assert!(!panel.summary.is_empty());
+    }
+    assert!(panel_text(&panel).contains("Reward groups"));
+    panel.fields[1] = "3".into();
+    assert!(request(&mut panel, Intent::SlotEquip).is_none());
+    panel.fields[2] = "13".into();
+    assert!(request(&mut panel, Intent::HazardSelect).is_none());
+}
+
+#[test]
+fn pc05_reward_chest_paging_uses_only_last_server_death_id() -> Result<(), String> {
+    use oteryn_client_runtime::boss_encounter as wire;
+    let entries = (1..=64)
+        .map(|id| wire::BossRewardChestEntry {
+            death: [id; 16],
+            boss_key: "boss:test".into(),
+            minted_at_unix_ms: 1,
+            expires_at_unix_ms: 1 + wire::BOSS_REWARD_EXPIRY_MS,
+            item_count: 1,
+        })
+        .collect::<Vec<_>>();
+    let mut panel = BossEncounterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(request(&mut panel, Intent::RewardsNext).is_none());
+    assert!(request(&mut panel, Intent::Rewards).is_some());
+    let result = GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: wire::encode_reward_chest(100, &entries).map_err(|e| format!("{e:?}"))?,
+    };
+    assert!(apply_result(&mut panel, &result));
+    let command = request(&mut panel, Intent::RewardsNext).ok_or("missing next page")?;
+    assert_eq!(
+        wire::decode_reward_chest_query(&command.payload),
+        Ok(Some([64; 16]))
+    );
+    assert_eq!((command.capability, command.kind), (117, 340));
+    assert!(apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            payload: vec![8, 100],
+            ..result
+        }
+    ));
+    assert!(request(&mut panel, Intent::RewardsNext).is_none());
+    assert!(panel_text(&panel).contains("Reward groups: 0"));
+    Ok(())
+}

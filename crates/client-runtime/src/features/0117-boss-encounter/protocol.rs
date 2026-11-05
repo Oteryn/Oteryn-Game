@@ -1,4 +1,5 @@
-//! Capability 117's bounded, read-only cooldown/Bosstiary projection.
+//! Capability 117 cooldown/Bosstiary projection and existing activity codecs.
+pub use oteryn_session::property_services::boss_encounter::*;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Snapshot {
     pub now: u64,
@@ -178,3 +179,8 @@ mod tests {
         assert!(decode(&full).is_none());
     }
 }
+
+pub use oteryn_session::property_services::{bosstiary_slots, hazard};
+#[path = "protocol/rewards.rs"]
+mod rewards;
+pub use rewards::{RewardChest, decode_rewards};
