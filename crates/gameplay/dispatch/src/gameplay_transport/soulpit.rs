@@ -18,6 +18,7 @@ use oteryn_protocol_oteryn::world_object::{
 mod cadence;
 mod entry;
 mod handoff;
+mod passages;
 pub mod runtime;
 pub use handoff::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,

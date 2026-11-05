@@ -7,6 +7,9 @@
 
 use std::collections::HashMap;
 
+mod dark_trails;
+mod isle_of_evil;
+
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
 use crate::greeting::{DEFAULT_TALK_RANGE, contains_words, words};
@@ -40,6 +43,8 @@ pub struct NpcTalkEntry {
     greetings: Vec<String>,
     greeting_reply: String,
     farewell_reply: String,
+    source_name_templates: bool,
+    source_walkaway: Option<String>,
     /// The service lines, joined; `None` when the NPC has no service.
     topic_reply: Option<String>,
     /// The admitted offers of every Service of the NPC, in source order (NPC-CMD-1b).
@@ -63,6 +68,23 @@ impl NpcTalkEntry {
         &self.farewell_reply
     }
 
+    /// Render a qualified source template once using the admitted customer name.
+    pub fn render_source_text(&self, text: &str, player_name: &str) -> String {
+        if self.source_name_templates {
+            crate::quest_greetings::render_player_name(text, player_name)
+        } else {
+            text.to_owned()
+        }
+    }
+
+    pub fn walkaway(&self) -> &str {
+        self.source_walkaway.as_deref().unwrap_or(self.farewell())
+    }
+
+    pub fn walkaway_for(&self, player_name: &str) -> String {
+        self.render_source_text(self.walkaway(), player_name)
+    }
+
     #[doc(hidden)]
     pub fn new(name: &str, topic: Option<&str>) -> Self {
         Self {
@@ -73,6 +95,8 @@ impl NpcTalkEntry {
             greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
             greeting_reply: format!("Greetings, I am {name}."),
             farewell_reply: "Farewell.".to_owned(),
+            source_name_templates: false,
+            source_walkaway: None,
             topic_reply: topic.map(str::to_owned),
             offers: Vec::new(),
             premium_services: Vec::new(),
@@ -109,16 +133,21 @@ impl NpcTalkBook {
     /// until a dialogue packet reads it.
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
-            catalogue_revision: revision_of(
-                &crate::content::npc_catalogue::grizzly_shop::book_digest(
-                    model.source_tree_digest(),
+            catalogue_revision: revision_of(&format!(
+                "{}\0{}\0{}",
+                crate::content::npc_catalogue::grizzly_shop::book_digest(
+                    model.source_tree_digest()
                 ),
-            ),
+                dark_trails::TEXT,
+                isle_of_evil::revision_material(),
+            )),
             ..Self::default()
         };
         for (reference, npc) in model.npcs() {
             book.display_names
                 .insert(reference.key.clone(), npc.name.clone());
+            let dark_messages = dark_trails::messages(&reference.key);
+            let isle_messages = isle_of_evil::messages(&reference.key);
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
                 &npc.services,
@@ -249,6 +278,15 @@ impl NpcTalkBook {
                         .cloned()
                         .collect(),
                 )
+            } else if let Some((greet, farewell)) = &dark_messages {
+                (greet.clone(), farewell.clone(), None, Vec::new())
+            } else if let Some(messages) = &isle_messages {
+                (
+                    messages.greet.clone(),
+                    messages.farewell.clone(),
+                    None,
+                    Vec::new(),
+                )
             } else {
                 continue;
             };
@@ -269,6 +307,12 @@ impl NpcTalkBook {
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
                     greeting_reply,
                     farewell_reply,
+                    source_name_templates: dark_messages.is_some() || isle_messages.is_some(),
+                    source_walkaway: if dark_messages.is_some() {
+                        Some(dark_trails::WALKAWAY.into())
+                    } else {
+                        isle_messages.map(|messages| messages.walkaway)
+                    },
                     topic_reply,
                     dialogue_keywords,
                     offers: npc
@@ -856,3 +900,39 @@ mod grizzly_dialogue_tests {
 #[cfg(test)]
 #[path = "npc_talk/entity_names_tests.rs"]
 mod entity_names_tests;
+#[cfg(test)]
+mod dark_trails_admission_tests {
+    #[test]
+    fn dark_trails_ezebeth_opens_the_real_conversation() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let book = super::NpcTalkBook::from_model(&model);
+        let entry = book
+            .get("oteryn:npc.ezebeth")
+            .ok_or("Ezebeth conversation is not admitted")?;
+        assert_eq!(entry.farewell(), "Good bye, |PLAYERNAME|.");
+        for key in [
+            "a_beggar",
+            "barazbaz",
+            "elliott",
+            "jacob",
+            "quandons_ghost",
+            "roswitha",
+            "sholley",
+            "terrence",
+        ] {
+            assert!(
+                book.get(&format!("oteryn:npc.{key}")).is_some(),
+                "missing {key}"
+            );
+        }
+        Ok(())
+    }
+}

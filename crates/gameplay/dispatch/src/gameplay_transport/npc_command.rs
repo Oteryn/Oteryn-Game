@@ -37,14 +37,17 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 type RecentIntents = VecDeque<u64>;
 mod classic_quests;
 mod coin_exchange;
+mod dark_trails;
 mod endgame;
 mod grizzly;
 mod grizzly_shop;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
+mod isle_of_evil;
 mod liquid_black;
 mod monk;
 mod premium_purchase;
+mod quest_dialogue;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
@@ -69,6 +72,7 @@ struct SessionNpc {
     grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
     monk: Option<monk::Pending>,
+    quest_dialogue: quest_dialogue::State,
     endgame: Option<endgame::Pending>,
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
@@ -552,7 +556,7 @@ impl NpcConversations {
                 // follow tick sees nothing left to close (NPC-0 section 4.1).
                 conversation: end(chat, session, intent).map(|mut closed| {
                     let line = oteryn_gameplay_npc::quest_greetings::walkaway(&npc.key)
-                        .unwrap_or(entry.farewell());
+                        .unwrap_or(entry.walkaway());
                     if let Some(name) = chat.speaker_name(session) {
                         closed.lines.push(
                             oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name),
@@ -723,6 +727,16 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
+    }
+    if let Some(step) = dark_trails::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = isle_of_evil::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = endgame::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
