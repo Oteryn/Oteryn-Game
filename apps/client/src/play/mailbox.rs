@@ -106,6 +106,9 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) analyser: oteryn_client_ui::analyser::Panel,
+    pub(super) spell_catalog: oteryn_client_ui::spell_catalog::Panel,
+    pub(super) spell_bar: oteryn_client_ui::spell_action_bar::ActionBarPanel,
     pub(super) served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
     pub(super) discovery: oteryn_client_ui::quick_loot::Discovery,
     pub(super) properties: super::feature_0115_mail::protocol::Panels,
@@ -212,6 +215,10 @@ pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 
 impl Mailbox {
     pub(super) fn combat_report(&mut self, report: CombatReport) {
+        if let CombatReport::Cast(disposition) = &report {
+            self.spell_bar.feedback =
+                oteryn_client_runtime::spell::feedback_text(*disposition).into();
+        }
         if self.combat.len() == MAX_COMBAT_REPORTS {
             self.combat.pop_front();
         }
@@ -270,6 +277,8 @@ impl Outbox {
                 );
             }
         }
+        super::feature_0010_analyser::protocol::reduce(&mut mailbox, &events);
+        super::feature_0287_actor_spell_catalog::protocol::reduce(&mut mailbox, &events);
         mailbox.coalesce_events(events);
         mailbox.check_server_messages();
         let notices = std::mem::take(&mut mailbox.pushed.achievements);
@@ -330,6 +339,9 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         mailbox.discovery.end();
         mailbox.properties.end();
+        mailbox.analyser = Default::default();
+        mailbox.spell_catalog = Default::default();
+        mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
@@ -356,6 +368,9 @@ impl Outbox {
         self.container_end();
         let mut mailbox = lock(&self.0);
         mailbox.properties.end();
+        mailbox.analyser = Default::default();
+        mailbox.spell_catalog = Default::default();
+        mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
@@ -452,6 +467,9 @@ impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
         mailbox.properties.end();
+        mailbox.analyser = Default::default();
+        mailbox.spell_catalog = Default::default();
+        mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.world_event_shutdown = true;
