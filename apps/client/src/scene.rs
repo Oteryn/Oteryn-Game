@@ -205,69 +205,48 @@ impl Scene {
             &self.view,
             atlas,
             |emit| {
-                visit_scene_entities(
-                    (origin.x, origin.y),
-                    self.anchor.map(|anchor| (anchor.x, anchor.y)),
-                    (
-                        (self.own.x, self.own.y),
-                        self.own_draws
-                            .as_deref()
-                            .unwrap_or_else(|| self.world.player(self.facing)),
-                    ),
-                    |x, y| self.world.tile(x, y),
-                    |x, y| {
-                        let tile = TileCoord::new(x, y);
-                        let has_actor = self.actor_draws.iter().any(|(at, _)| *at == tile);
-                        // Object markers remain below actors. Entity fallback glyphs are replaced.
-                        let marker = self.visible.iter().any(|v| {
-                            v.tile == tile
-                                && ((v.kind == TargetKind::Object && (v.glyph || v.item.is_none()))
-                                    || (v.glyph && !has_actor))
-                        });
-                        marker
-                            .then_some(Draw {
-                                cell: MARKER_CELL,
-                                offset: [0, 0],
-                            })
-                            .into_iter()
-                            .chain(
-                                self.actor_draws
-                                    .iter()
-                                    .filter(|(at, _)| *at == tile)
-                                    .flat_map(|(_, draws)| draws.iter().copied()),
-                            )
-                            .collect()
-                    },
-                    emit,
-                )
                 for floor in self.world.draw_floors() {
                     let own_floor = floor == self.world.center().2;
-                    visit_scene(
+                    visit_scene_entities(
                         (origin.x, origin.y),
                         self.anchor.map(|anchor| (anchor.x, anchor.y)),
                         (
                             (self.own.x, self.own.y),
                             if own_floor {
-                                self.world.player(self.facing)
+                                self.own_draws
+                                    .as_deref()
+                                    .unwrap_or_else(|| self.world.player(self.facing))
                             } else {
                                 &[]
                             },
                         ),
                         |x, y| self.world.floor_tile(floor, x, y),
                         |x, y| {
-                            // One glyph per tile however many markers and entities stand on it.
-                            self.visible
-                                .iter()
-                                .any(|v| {
-                                    own_floor
-                                        && v.tile == TileCoord::new(x, y)
-                                        && (v.glyph
-                                            || (v.kind == TargetKind::Object && v.item.is_none()))
-                                })
+                            let tile = TileCoord::new(x, y);
+                            if !own_floor {
+                                return Vec::new();
+                            }
+                            let has_actor = self.actor_draws.iter().any(|(at, _)| *at == tile);
+                            // Object markers remain below actors. Entity fallback glyphs are replaced.
+                            let marker = self.visible.iter().any(|v| {
+                                v.tile == tile
+                                    && ((v.kind == TargetKind::Object
+                                        && (v.glyph || v.item.is_none()))
+                                        || (v.glyph && !has_actor))
+                            });
+                            marker
                                 .then_some(Draw {
                                     cell: MARKER_CELL,
                                     offset: [0, 0],
                                 })
+                                .into_iter()
+                                .chain(
+                                    self.actor_draws
+                                        .iter()
+                                        .filter(|(at, _)| *at == tile)
+                                        .flat_map(|(_, draws)| draws.iter().copied()),
+                                )
+                                .collect()
                         },
                         &mut *emit,
                     )?;
@@ -332,10 +311,10 @@ impl Scene {
 #[cfg(test)]
 mod tests;
 
-#[path = "features/local-minimap/scene.rs"]
-mod minimap;
 #[path = "features/0006-world-spatial-entities/scene.rs"]
 mod live_entities;
+#[path = "features/local-minimap/scene.rs"]
+mod minimap;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;

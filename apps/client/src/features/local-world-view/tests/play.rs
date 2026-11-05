@@ -196,6 +196,7 @@ fn pushed_maps_stay_ordered_around_step_outcomes() -> Result<(), BatchError> {
 #[test]
 fn floor_replacement_follows_origin_and_draws_visible_floors() -> Result<(), BatchError> {
     let mut view = view()?;
+    hide_minimap(&mut view)?;
     let mut map = live_snapshot(100);
     map.header.origin.floor = -8;
     map.header.first_visible_floor = -8;
@@ -270,6 +271,7 @@ fn surface_and_deep_windows_draw_every_server_visible_floor() -> Result<(), Batc
             })
             .collect();
         let mut view = PlayView::new(TileCoord::new(100, 200), floor, &[])?;
+        hide_minimap(&mut view)?;
         view.set_live_map(&map)?;
         assert_eq!(view.local.world().tile_count(), count);
         assert_eq!(view.scene().sprites().len(), count + 1);
@@ -343,6 +345,7 @@ fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs()
 -> Result<(), BatchError> {
     use oteryn_session::world_map::MapOrigin;
     let mut view = view()?;
+    hide_minimap(&mut view)?;
     let mut map = live_snapshot(101);
     map.header.origin.floor = -8;
     map.header.first_visible_floor = -8;
@@ -366,4 +369,11 @@ fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs()
     assert_eq!(selected.map(|item| item.quantity()), Some(7));
     assert!(!view.inputs.iter().any(|input| matches!(input, Input::TargetWalk(_))));
     Ok(())
+}
+
+// Floor sprite assertions isolate world rendering from the package-5 minimap overlay.
+fn hide_minimap(view: &mut PlayView) -> Result<(), BatchError> {
+    let mut preferences = view.preferences().clone();
+    preferences.visible_panels.retain(|panel| panel != "minimap");
+    view.set_preferences(preferences).map_err(|_| BatchError::InvalidView)
 }

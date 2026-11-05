@@ -1,6 +1,5 @@
 //! Atomic domain decoding shared by admission and replacement snapshots.
 use super::*;
-use world_spatial_entities::decode_world_spatial_entities_snapshot_with_item_handles;
 
 #[derive(Clone, Default)]
 pub(super) struct SnapshotState {
@@ -16,6 +15,7 @@ pub(super) struct SnapshotState {
     pub(super) chat: Option<ChatLog>,
     pub(super) chat_revision: u64,
     pub(super) inventory: Option<CharacterInventory>,
+    pub(super) container_views: Option<container_tree::ContainerViews>,
     pub(super) open_container: Option<OpenContainer>,
     pub(super) inventory_revision: u64,
     pub(super) container_revision: u64,
@@ -53,13 +53,11 @@ impl SnapshotState {
                     world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
                     world_spatial_entities::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
                 ) if entities_selected => {
-                    let snapshot = if item_selected {
-                        decode_world_spatial_entities_snapshot_with_item_handles(domain.payload)?
-                    } else {
-                        world_spatial_entities::decode_world_spatial_entities_snapshot(
+                    let (snapshot, _) =
+                        world_spatial_entities::decode_world_spatial_entities_snapshot_with_fields(
                             domain.payload,
-                        )?
-                    };
+                            world_spatial_entities::EntityFields::selected(selected_capabilities),
+                        )?;
                     state.world_spatial_observation = Some(WorldSpatialObservation {
                         content_generation: snapshot.content_generation,
                         actor_position: snapshot.actor_position,
@@ -230,6 +228,9 @@ impl SnapshotState {
                 attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             ));
         }
+        state.container_views =
+            container_tree::initial(selected_capabilities, &state.gated_snapshots)?;
+        weather::validate_join(selected_capabilities, &state.gated_snapshots)?;
         quest_log_transport::validate_join(selected_capabilities, &state.gated_snapshots)?;
         tutorial_notices::validate_join(selected_capabilities, &state.gated_snapshots)?;
         world_light::validate_join(selected_capabilities, &state.gated_snapshots)?;

@@ -415,3 +415,91 @@ fn replacement_snapshot_notifies_overlay_and_gated_consumers() -> Result<(), Box
         .join()
         .map_err(|_| "replacement notification thread failed")?
 }
+
+#[test]
+fn negotiated_names_survive_a_floor_replacement_and_following_delta() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                use oteryn_protocol_oteryn::world_spatial_entities::{
+                    EntityFields, EntityLights, encode_world_spatial_entities_delta_with_fields,
+                    encode_world_spatial_entities_snapshot_with_fields,
+                };
+                let fields = EntityFields::selected(&[6, 286]);
+                let lights = EntityLights::new();
+                let mut player = own(at(0, 0));
+                player.display_name =
+                    Some(EntityDisplayName::new("Player").map_err(|e| format!("{e:?}"))?);
+                let mut snapshot = WorldSpatialEntitiesSnapshot {
+                    content_generation: CONTENT_GENERATION,
+                    actor_position: player.position,
+                    own_identity: OWN,
+                    entities: vec![player],
+                };
+                let initial =
+                    encode_world_spatial_entities_snapshot_with_fields(&snapshot, fields, &lights)
+                        .map_err(|e| format!("{e:?}"))?;
+                player.position.floor = -8;
+                player.display_name =
+                    Some(EntityDisplayName::new("Downstairs").map_err(|e| format!("{e:?}"))?);
+                snapshot.actor_position = player.position;
+                snapshot.entities = vec![player];
+                let replacement =
+                    encode_world_spatial_entities_snapshot_with_fields(&snapshot, fields, &lights)
+                        .map_err(|e| format!("{e:?}"))?;
+                let mut script: Vec<_> = encode_single_chunk_snapshot(
+                    1,
+                    2,
+                    41,
+                    &[DomainSnapshot {
+                        domain_id: 1,
+                        revision: 9,
+                        snapshot_type: 2,
+                        payload: &replacement,
+                    }],
+                )?
+                .into_iter()
+                .map(Step::Send)
+                .collect();
+                player.position.x = 1;
+                let delta = entities_delta(player.position, vec![], vec![player], vec![]);
+                let bytes =
+                    encode_world_spatial_entities_delta_with_fields(&delta, fields, &lights)
+                        .map_err(|e| format!("{e:?}"))?;
+                script.push(Step::ReadCommand);
+                script.push(Step::Send(encode_command_result(
+                    1,
+                    42,
+                    7,
+                    CommandStatus::Accepted,
+                    &encode_step_result(StepDisposition::Moved),
+                )?));
+                script.push(Step::Send(encode_state_delta(1, 43, 1, 9, 10, 2, &bytes)?));
+                let (client, peer) = entity_peer((2, initial), &[6, 286], script);
+                let mut session = Session::admit(client, entity_admission()?).await?;
+                let events = session.wait_for_events(Duration::from_secs(2)).await?;
+                assert!(
+                    events
+                        .iter()
+                        .any(|event| matches!(event, SessionEvent::WorldSpatial(_)))
+                );
+                assert_eq!(
+                    session.visible_appearances()[0].entity,
+                    snapshot.entities[0]
+                );
+                assert_eq!(session.last_server_sequence(), 41);
+                assert_eq!(
+                    session.step(StepDirection::East).await?.disposition,
+                    StepDisposition::Moved
+                );
+                assert_eq!(session.visible_appearances()[0].entity, player);
+                assert_eq!(session.last_server_sequence(), 43);
+                drop(session);
+                peer.await??;
+                Ok::<(), BoxError>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "named replacement test thread failed")?
+}

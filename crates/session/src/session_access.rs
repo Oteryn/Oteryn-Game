@@ -154,12 +154,17 @@ impl<S: SessionStream> Session<S> {
             Some(entry) => entry.1 = delta.new_revision,
             None => self.gated_revisions.push((domain_id, delta.new_revision)),
         }
-        Ok(GatedDelta {
+        let delta = GatedDelta {
             server_sequence: delta.server_sequence,
             base_revision: delta.base_revision,
             new_revision: delta.new_revision,
             payload: delta.payload,
-        })
+        };
+        if domain_id == player_trade::STATE_DOMAIN_PLAYER_TRADE {
+            let recorded = self.record_player_trade_delta(&delta);
+            self.poison_on_error(recorded)?;
+        }
+        Ok(delta)
     }
 
     pub fn join_snapshot(&self) -> &JoinSnapshot {

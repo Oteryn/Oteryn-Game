@@ -17,6 +17,7 @@ impl SnapshotState {
             chat: session.chat.clone(),
             chat_revision: session.chat_revision,
             inventory: session.inventory.clone(),
+            container_views: session.container_views.clone(),
             open_container: session.open_container.clone(),
             inventory_revision: session.inventory_revision,
             container_revision: session.container_revision,
@@ -44,6 +45,7 @@ impl SnapshotState {
         session.chat = self.chat;
         session.chat_revision = self.chat_revision;
         session.inventory = self.inventory;
+        session.container_views = self.container_views;
         session.open_container = self.open_container;
         session.inventory_revision = self.inventory_revision;
         session.container_revision = self.container_revision;

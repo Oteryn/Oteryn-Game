@@ -168,6 +168,7 @@ impl<S: SessionStream> Session<S> {
             })
             .collect()
     }
+}
 pub(crate) fn item_references(state: &AppearanceState) -> Option<Vec<u32>> {
     state.items.as_ref().map(|items| items.references())
 }

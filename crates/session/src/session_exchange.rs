@@ -28,7 +28,7 @@ impl<S: SessionStream> Session<S> {
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
         let disposition = world_spatial::decode_step_result_paced(
-            &result.payload,
+            self.item_result_payload(&result.payload)?.0,
             self.is_selected(CAPABILITY_PACED_MOVEMENT_V1),
         )?;
         check_status_pairing(
@@ -89,8 +89,9 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(world_object::COMMAND_TYPE_USE_INTENT, payload)
             .await?;
-        let (disposition, gate_message_id) =
-            world_object::decode_use_result_with_gate(&result.payload)?;
+        let (disposition, gate_message_id) = world_object::decode_use_result_with_gate(
+            self.item_result_payload(&result.payload)?.0,
+        )?;
         // Dispositions 11 to 17 and the gate message id exist only under capability 11, and
         // dispositions 18 and 19 only under capability 22.
         check_use_result_negotiated(
@@ -291,6 +292,7 @@ impl<S: SessionStream> Session<S> {
                     domain_id,
                     npc_service::STATE_DOMAIN_NPC_CONVERSATION
                         | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW
+                        | player_trade::STATE_DOMAIN_PLAYER_TRADE
                 ) {
                     return Err(SessionError::UnexpectedDomain {
                         expected: domain_id,

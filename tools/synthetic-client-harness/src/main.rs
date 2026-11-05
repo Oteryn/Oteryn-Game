@@ -17,6 +17,7 @@ mod live;
 mod native_context;
 #[cfg(test)]
 mod native_depot;
+#[cfg(test)]
 mod native_floor_transition;
 #[cfg(test)]
 mod native_light;

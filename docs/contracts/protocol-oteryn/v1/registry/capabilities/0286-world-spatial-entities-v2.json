@@ -10,5 +10,4 @@
   "state_domains": [],
   "offered": true,
   "offer_gate": "Selected together with WORLD_SPATIAL_ENTITIES; field 13 is required on live actors only. Legacy selections retain unchanged bytes."
-  "offer_gate": "Requires 6; actor field 13 required. Legacy bytes unchanged."
 }

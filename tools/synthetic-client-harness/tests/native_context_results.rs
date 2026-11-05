@@ -39,6 +39,7 @@ fn position(x: i32) -> ActorPosition {
 }
 fn actor(x: i32, id: u8) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        display_name: None,
         entity: EntityRef {
             identity: [id; 16],
             generation: 1,

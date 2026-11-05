@@ -87,6 +87,9 @@ impl<S: SessionStream> Session<S> {
                         value,
                     ))
                 }),
+                14 => next.container_views.clone().map(|value| {
+                    SessionEvent::ContainerViews(applied(expected, base, domain.revision, value))
+                }),
                 12 => next.chat.clone().map(|value| {
                     SessionEvent::ChatSnapshot(applied(
                         expected,

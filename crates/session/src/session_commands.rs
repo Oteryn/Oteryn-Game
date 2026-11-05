@@ -127,8 +127,15 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(COMMAND_TYPE_ITEM_MOVE_INTENT, payload)
             .await?;
-        let outcome =
-            item_view::decode_item_move_result(&result.payload).map_err(SessionError::ItemView)?;
+        let outcome = item_view::decode_item_move_result_for(
+            self.item_result_payload(&result.payload)?.0,
+            item_view::ItemMoveSelection {
+                equip_drop: self.is_selected(12),
+                container_tree: self.is_selected(14),
+                world_interaction: self.is_selected(11),
+            },
+        )
+        .map_err(SessionError::ItemView)?;
         check_status_pairing(
             result.command_id,
             result.status,

@@ -176,6 +176,11 @@ fn native_floor_transition_replaces_window_and_keeps_playing() -> Result<(), Err
                     view.set_live_map(&session.world_map_snapshot().ok_or("missing initial map")?)?;
                     let (link, commands, outbox) = play_channel();
                     let task = tokio::spawn(run_session(session, commands, outbox));
+                    let mut preferences = view.preferences().clone();
+                    preferences
+                        .visible_panels
+                        .retain(|panel| panel != "minimap");
+                    view.set_preferences(preferences)?;
                     for (floor, sprites) in [(-8, 4), (0, 2)] {
                         link.request(StepDir::North);
                         tokio::time::timeout(Duration::from_secs(5), async {
