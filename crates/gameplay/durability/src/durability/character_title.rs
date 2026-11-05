@@ -165,10 +165,6 @@ async fn read_title_facts(
         all_bestiary_complete: completion.all_bestiary,
         boss_categories_complete: completion.boss_categories,
         all_bosses_complete: completion.all_bosses,
-        // Crystal player_title.cpp:226-228 also has no Drome rota producer. Keep this
-        // dependency explicit: only its future native owner can supply these two facts.
-        drome_rota_top_five: false,
-        next_rotation_unix_ms: None,
     })
 }
 
