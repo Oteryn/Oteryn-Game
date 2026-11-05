@@ -186,6 +186,12 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_client_runtime::stash::StashResponse, SessionError> {
         oteryn_client_runtime::stash::send(self, command).await
     }
+    async fn npc_talk(
+        &mut self,
+        intent: &oteryn_session::npc_service::NpcTalkIntent,
+    ) -> Result<oteryn_session::NpcIntentDisposition, SessionError> {
+        oteryn_client_runtime::npc_dialogue::send_talk(self, intent).await
+    }
     fn npc_shop_selected(&self) -> bool {
         self.is_selected(oteryn_session::npc_shop::CAPABILITY_NPC_SHOP_V1)
     }

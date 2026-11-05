@@ -29,6 +29,7 @@ pub enum PlayCommand {
     Logout,
     TaskBoard(oteryn_client_runtime::task_board::TaskBoardCommand),
     Stash(oteryn_client_runtime::stash::StashCommand),
+    NpcTalk(oteryn_session::npc_service::NpcTalkIntent),
     NpcShop(oteryn_client_runtime::npc_shop::NpcShopCommand),
     PlayerTyping(oteryn_client_runtime::player_typing::PlayerTypingCommand),
     DailyReward(oteryn_client_runtime::daily_reward::DailyRewardCommand),

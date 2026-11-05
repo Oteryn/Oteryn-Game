@@ -151,6 +151,12 @@ pub(super) struct Mailbox {
     logout_refused: Option<Option<LogoutResult>>,
     ended: Option<PlayEvent>,
     pub(super) task_board: oteryn_client_ui::task_board::TaskBoardPanel,
+    pub(super) dialogue: oteryn_client_ui::npc_dialogue::DialoguePanel,
+    #[cfg(any(windows, test))]
+    pub(super) dialogue_pointer: Option<(f64, f64)>,
+    #[cfg(windows)]
+    pub(super) dialogue_window: bool,
+    pub(super) dialogue_shutdown: bool,
     pub(super) npc_shop: oteryn_client_ui::npc_shop::NpcShopPanel,
     pub(super) prey: oteryn_client_ui::prey::PreyPanel,
     pub(super) prey_shutdown: bool,
@@ -229,6 +235,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         super::feature_0060_player_trade::protocol::reduce(&mut mailbox.player_trade, &events);
         super::feature_local_spell_action_bar::protocol::vitals_events(&mut mailbox, &events);
+        mailbox.dialogue_events(&events);
         for event in &events {
             if let SessionEvent::PlayerTyping(update) = event {
                 oteryn_client_ui::player_typing::protocol::reduce(
@@ -314,6 +321,8 @@ impl Outbox {
         mailbox.chat.guild = Default::default();
         mailbox.chat.guild_selected = false;
         mailbox.chat.guild_open = false;
+        mailbox.dialogue = Default::default();
+        mailbox.dialogue_shutdown = true;
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::Ended(class));
@@ -334,6 +343,8 @@ impl Outbox {
         mailbox.chat.guild = Default::default();
         mailbox.chat.guild_selected = false;
         mailbox.chat.guild_open = false;
+        mailbox.dialogue = Default::default();
+        mailbox.dialogue_shutdown = true;
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::LoggedOut);
@@ -414,6 +425,8 @@ impl Drop for PlayLink {
         mailbox.player_trade = Default::default();
         mailbox.world_event_shutdown = true;
         mailbox.highscores_shutdown = true;
+        mailbox.dialogue = Default::default();
+        mailbox.dialogue_shutdown = true;
         mailbox.vip.open = false;
         mailbox.inventory_shutdown = true;
         mailbox.containers.end();

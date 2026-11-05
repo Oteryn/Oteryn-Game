@@ -4,11 +4,10 @@ use super::{
     Outbox, feature_0043_vip::protocol::send_vip, public_class, session_stepper::publish,
     step_direction,
 };
-use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
-use oteryn_session::{
-    LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome, WorldSpatialEntity,
-};
-use std::{future::Future, time::Duration};
+use crate::combat_input::PlayCommand;
+use oteryn_session::LogoutResult;
+
+use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 /// How long the session task serves liveness probes while no step is pending; well inside the
@@ -300,6 +299,7 @@ super::feature_0037_depot::protocol::session_trait! {
         async { Err(SessionError::CapabilityNotSelected { capability: 233 }) }
     }
 }
+pub use super::stepper::Stepper;
 
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
@@ -325,6 +325,7 @@ pub async fn run_session<T: Stepper>(
     outbox.quest_initialize(session.quest_state());
     outbox.task_board_initialize(session.task_board_selected());
     outbox.stash_initialize(session.stash_selected());
+    outbox.dialogue_initialize(&session);
     outbox.npc_shop_initialize(session.npc_shop_selected());
     outbox.prey_initialize(session.prey_selected());
     outbox.daily_reward_initialize(session.daily_reward_selected());
@@ -502,6 +503,10 @@ pub async fn run_session<T: Stepper>(
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::NpcTalk(intent)) => match outbox.dialogue_run(&mut session, &intent).await {
+                Ok(()) => { publish(&mut session, &outbox, &mut held); continue; }
                 Err(error) => error,
             },
             Ok(PlayCommand::NpcShop(command)) => match session.npc_shop(&command).await {

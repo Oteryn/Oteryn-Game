@@ -53,6 +53,8 @@ pub mod highscores;
 pub mod hotkey_equip;
 #[path = "features/0152-item-forge/mod.rs"]
 pub mod item_forge;
+#[path = "features/0003-npc-service/mod.rs"]
+pub mod npc_dialogue;
 #[path = "features/0154-store/mod.rs"]
 pub mod store;
 #[path = "features/0258-vip-presence/mod.rs"]
