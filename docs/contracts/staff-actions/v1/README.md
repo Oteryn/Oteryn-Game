@@ -20,7 +20,7 @@ One staff action is one ADM request: `kind=command`, `operation_version=1`,
 operation `staff.ban`, `staff.unban`, `staff.namelock`, `staff.warning` or
 `staff.notation`. `action.schema.json` composes the ADM request schema with
 this profile. The closed `params` contains only `sanction_id`, `expires_at`,
-`sanction_revision`, `evidence_refs`, plus the ADM R4 control `preview_digest`.
+`sanction_revision`, `evidence_refs`, plus the ADM R4 control `preview_digest` (only for R4 with `dry_run` false).
 The latter is required for executing R4, as required by ADM-01 §5; it is not
 another staff identity or audit field. No duplicate actor, target, reason,
 operation ID, timestamp or environment appears in params.
@@ -80,7 +80,7 @@ Temporary expiry must follow decision time. `sanction_revision` is a monotonic
 per-account Platform revision, within ADM safe-integer bounds, never session
 generation. Platform allocates revisions transactionally. `evidence_refs` is a
 bounded list of opaque Platform evidence references, never private player text.
-Namelock targets a character; notation may target account or character. Warning
+Namelock targets a character (`target.character_id` required); notation may target account or character. Warning
 is player-visible; notation is staff-only. Platform approves replacement names.
 
 Platform commits decision, audit and delivery evidence atomically before dispatch.
@@ -114,7 +114,9 @@ before results must recover without duplicate warning or repeated world effects.
 Request/command correlation, status, timestamps, signature, effective_revision,
 audit_event_ids and game_ledger_id belong solely to the ADM result envelope.
 Map pending to accepted/in-progress and applied to final success; errors use ADM
-error/status fields. Carry the result as a signed existing ADM results envelope
+error/status fields. There is no `rejected` enforcement value: a refused, stale or
+superseded command (for example an older `sanction_revision`) is reported only
+through ADM error/status, never as a successful result. Carry the result as a signed existing ADM results envelope
 following hello, never a separate ban-applied endpoint. The current closed ADM
 OperationResult union must be extended jointly before advertising staff commands.
 
