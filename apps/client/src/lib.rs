@@ -108,6 +108,7 @@ impl ClientBootstrap {
         let unavailable = || GameplayEntryError::Rejected(PublicClass::SessionUnavailable);
         let view = admitted.play_view().map_err(|_error| unavailable())?;
         let (link, commands, events) = play::play_channel();
+        link.party_own_character(admitted.character_name());
         self.runtime
             .spawn(play::run_session(admitted.into_session(), commands, events))
             .map_err(|_error| unavailable())?;

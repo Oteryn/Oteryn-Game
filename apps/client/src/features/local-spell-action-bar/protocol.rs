@@ -7,7 +7,7 @@ use oteryn_session::{ActorVitals, SessionEvent};
 pub(in crate::play) fn vitals_events(mailbox: &mut Mailbox, events: &[SessionEvent]) {
     for event in events {
         if let SessionEvent::ActorVitals(delta) = event {
-            mailbox.vitals = Some(delta.value);
+            mailbox.apply_death_vitals(delta.value);
         }
     }
 }
@@ -15,7 +15,7 @@ pub(in crate::play) fn vitals_events(mailbox: &mut Mailbox, events: &[SessionEve
 impl Outbox {
     pub(in crate::play) fn vitals(&self, vitals: Option<ActorVitals>) {
         if let Some(vitals) = vitals {
-            lock(&self.0).vitals = Some(vitals);
+            lock(&self.0).apply_death_vitals(vitals);
         }
     }
 }

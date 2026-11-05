@@ -91,6 +91,7 @@ impl<A: CurrentSpellAccessOwner> CurrentSpellAccessOwner for WheelCastAccess<'_,
         now: u64,
     ) -> Result<AccessProjections, AccessFactsError> {
         let mut projections = self.other.read_current(binding, now)?;
+        projections.learned = None;
         projections.wheel = None;
         projections.wheel_effects = None;
         projections.wheel_promoted = false;
@@ -108,6 +109,12 @@ impl<A: CurrentSpellAccessOwner> CurrentSpellAccessOwner for WheelCastAccess<'_,
             ));
         }
         if wheel_raw_matches_binding(read, binding) {
+            projections.learned = Some(CurrentProjection {
+                binding: binding.clone(),
+                authority_revision: binding.character_revision,
+                valid_until_micros: u64::MAX,
+                value: read.learned.clone(),
+            });
             projections.wheel = project_wheel_stages(
                 self.ruleset,
                 self.read.allocation(),
@@ -849,6 +856,7 @@ mod wheel_projection_tests {
             0x01, 0x90, 0, 0, 0, 0x36, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 0x36,
         ];
         let raw = crate::durability::character_equipment::RawCastDurableFacts {
+            learned: Default::default(),
             account: [6; 16],
             loyalty_points: 0,
             equipment: crate::durability::character_equipment::EquipmentSnapshot {

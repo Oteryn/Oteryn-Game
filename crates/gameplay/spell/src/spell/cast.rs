@@ -88,6 +88,7 @@ pub struct PlayerSpellState {
     /// Character-owner maxima before temporary Wheel dedication is projected.
     pub(crate) base_max_health: u32,
     pub(crate) base_max_mana: u32,
+    pub(super) learned: std::collections::BTreeSet<String>,
     pub(super) premium_current: bool,
     /// Fenced permanent promotion retained when Premium expires.
     pub(super) stored_promotion: bool,
@@ -105,6 +106,9 @@ pub struct PlayerSpellState {
     pub(super) regeneration_next_tick_us: Option<u64>,
     /// Owner-qualified daily streak for the current resting tile; runtime-only.
     pub(super) resting_streak: u32,
+    /// I05-r1: one runtime regeneration condition per worn regenerating item; runtime-only.
+    pub(super) equipped_regeneration:
+        Vec<oteryn_gameplay_progression::regeneration::EquipmentRegenerationClock>,
     pub(super) soul: u32,
     /// VITALS-SOUL-1: the running soul kill window, if any. Runtime-only.
     pub(super) soul_window: Option<super::soul_window::SoulWindow>,
@@ -133,6 +137,8 @@ pub struct PlayerSpellState {
     pub(super) equipped_armor: u32,
     /// ENERGY-RING-1: the active equipment form from the last fenced equipment read.
     pub(super) equipped_mana_shield: bool,
+    /// I05-r2: a worn item's active form grants invisibility (Crystal CONDITION_INVISIBLE per slot).
+    pub(super) equipped_invisible: bool,
     /// SHIELD-DEFENCE-1: what the hands of the last committed equipment read defend with.
     pub(super) equipped_defence:
         Option<oteryn_gameplay_combat_rules::resolution::player_defence::HandDefence>,
@@ -202,6 +208,8 @@ impl PlayerSpellState {
                 regen_mana_carry: 0,
                 regeneration_next_tick_us: None,
                 resting_streak: 0,
+                equipped_regeneration: Vec::new(),
+                learned: Default::default(),
                 premium_current: false,
                 stored_promotion: false,
                 premium_valid_until_micros: None,
@@ -227,6 +235,7 @@ impl PlayerSpellState {
                 equipped_mantra: 0,
                 equipped_armor: 0,
                 equipped_mana_shield: false,
+                equipped_invisible: false,
                 equipped_defence: None,
                 equipped_physical_protection: None,
                 equipped_ice_protection: None,
@@ -244,6 +253,8 @@ impl PlayerSpellState {
 }
 
 mod equipped_armor;
+mod equipped_invisibility;
+mod equipped_regeneration;
 mod gate;
 mod level_up_vitals;
 mod live_skill;

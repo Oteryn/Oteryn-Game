@@ -1079,6 +1079,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             attempt.training.install_into(&mut attempt.paid);
             attempt.player.install_rebind_training(attempt.paid);
             let receipt=install_owner_batch(&mut runtime,&mut states,attempt.physical,Some(attempt.player),checked);
+            if receipt.applied { states.analyser.supplies(attempt.actor, attempt.session, &attempt.request.operations); }
             if receipt.applied && let Some(presentations)=states.presentations.as_mut(){
                 presentations.install_preflighted(attempt.presentation,&receipt);
             }

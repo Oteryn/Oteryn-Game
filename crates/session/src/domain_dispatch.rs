@@ -23,6 +23,9 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            player_trade::STATE_DOMAIN_PLAYER_TRADE => {
+                self.apply_trade_delta(server_sequence, delta)
+            }
             npc_service::STATE_DOMAIN_NPC_CONVERSATION
             | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW => {
                 if !self.is_selected(npc_service::CAPABILITY_NPC_SERVICE_V1) {
@@ -64,7 +67,9 @@ impl<S: SessionStream> Session<S> {
                 Ok(event)
             }
             18 => crate::world_light::apply(self, server_sequence, payload),
+            22 => crate::weather::apply(self, server_sequence, payload),
             19 | 20 => crate::presentation::apply(self, server_sequence, payload),
+            14 => crate::container_tree::apply(self, server_sequence, delta),
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
             40 => crate::server_save_countdown::apply(self, server_sequence, payload),
             23 => crate::tutorial_notices::apply(self, server_sequence, payload),
@@ -84,13 +89,13 @@ impl<S: SessionStream> Session<S> {
                     world_spatial_entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
                     self.spatial_revision,
                 )?;
-                let entities_delta = if self.is_selected(CAPABILITY_ITEM_VIEW_MOVE_V1) {
-                    world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(
+                let fields =
+                    world_spatial_entities::EntityFields::selected(self.selected_capabilities());
+                let (entities_delta, _) =
+                    world_spatial_entities::decode_world_spatial_entities_delta_with_fields(
                         delta.payload,
-                    )?
-                } else {
-                    world_spatial_entities::decode_world_spatial_entities_delta(delta.payload)?
-                };
+                        fields,
+                    )?;
                 if entities_delta.content_generation != self.world_spatial.content_generation {
                     return Err(SessionError::ContentGenerationMismatch { domain_id });
                 }

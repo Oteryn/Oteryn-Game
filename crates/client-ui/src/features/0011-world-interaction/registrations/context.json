@@ -1,0 +1,9 @@
+{
+  "mechanic": "0011-world-interaction",
+  "kind": "keybindings",
+  "id": "0011-world-interaction-context",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "MOUSE2",
+  "entry": "input.rs::default_context_binding"
+}

@@ -213,6 +213,22 @@ fn current_player_buff_comes_from_canonical_owner_dot_heals_before_scaled_damage
             .instances()
             .is_empty()
     );
+    runtime
+        .bind_attacker_lease(
+            source,
+            session,
+            crate::foundation::CharacterLease::new(
+                CharacterId::decode(&[1, 0x90, 0, 0, 0, 5, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 5])
+                    .expect("character"),
+                1,
+            )
+            .expect("lease"),
+        )
+        .expect("current player source lease");
+    assert_eq!(
+        states.analyser.snapshot(source, session, 1, None),
+        Some(false)
+    );
     let receipt = states
         .tick_source_creature_conditions(
             &mut runtime,
@@ -226,6 +242,7 @@ fn current_player_buff_comes_from_canonical_owner_dot_heals_before_scaled_damage
         (5, 10),
         "map10 before50% source buff then damage5"
     );
+    assert_no_player_healing(&states, source, session);
     let retry = states
         .tick_source_creature_conditions(
             &mut runtime,
@@ -364,4 +381,77 @@ fn current_nonattackable_phase_does_not_trigger_pre_immunity_healing() {
         (5, 5),
         "phaseattackability precedes healingMap; damageimmunity differs"
     );
+}
+
+fn assert_no_player_healing(
+    states: &ChannelSpellStates,
+    source: ExactActorRef,
+    session: GameSessionId,
+) {
+    use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact, decode_analyser_facts};
+    let facts = decode_analyser_facts(
+        &states
+            .analyser
+            .next(source, session, 1)
+            .expect("applied damage facts"),
+    )
+    .expect("typed facts");
+    assert!(
+        facts
+            .iter()
+            .any(|fact| matches!(fact, AnalyserFact::Impact(AnalyserImpact::Damage { .. })))
+    );
+    assert!(
+        !facts
+            .iter()
+            .any(|fact| matches!(fact, AnalyserFact::Impact(AnalyserImpact::Healing(_)))),
+        "creature absorption never heals the player"
+    );
+    assert!(states.analyser.next(source, session, 1).is_none());
+}
+
+#[test]
+fn analyser_creature_element_absorption_does_not_credit_player_healing() {
+    let (mut runtime, mut states, source, target, session) = fixture();
+    assert_eq!(
+        states.analyser.snapshot(source, session, 1, None),
+        Some(false)
+    );
+    let batch = OwnerCombatBatch {
+        caster: source,
+        attacker: CharacterId::decode(&[1, 0x90, 0, 0, 0, 5, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 5])
+            .expect("test character"),
+        current_lease_generation: 1,
+        command: CommandRef::new(session, CommandId::new(2).expect("command")),
+        occurrence: SpellOccurrenceBinding {
+            id: "source-element-absorb".into(),
+            revisions: ["r1", "r1", "r1", "r1", "r1"].map(str::to_owned),
+        },
+        binding: b"actual-source-element-absorb".to_vec(),
+        anchor: None,
+        now_us: None,
+        now_ms: 0,
+        effects: vec![OwnerCombatEffect {
+            target,
+            sub_ordinal: 0,
+            change: OwnerCombatChange::DamageWithHealing {
+                target_atom: runtime
+                    .creature_spell_target_atom(target)
+                    .expect("creature identity"),
+                damage: 5,
+                healing: 10,
+            },
+        }],
+        deferred: None,
+    };
+    let staged = runtime.stage_spell_batch(&batch).expect("physical stage");
+    let proof = super::owner_commit::stage_player_batch(&runtime, &states, &batch, None)
+        .expect("player stage");
+    let receipt =
+        super::owner_commit::commit_owner_batch(&mut runtime, &mut states, staged, Some(proof))
+            .expect("real owner commit");
+    assert!(receipt.applied);
+    let health = receipt.effects[0].health.expect("applied creature HP");
+    assert_eq!((health.health_before, health.health_after), (5, 10));
+    assert_no_player_healing(&states, source, session);
 }

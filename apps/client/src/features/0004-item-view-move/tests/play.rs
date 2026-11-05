@@ -21,7 +21,12 @@ fn live_ground_item_identity_reaches_click_and_is_removed_with_tile() -> Result<
     let selected = view.scene().target().and_then(|target| target.item);
     assert_eq!(selected.map(|item| item.definition()), Some(1));
     assert_eq!(selected.map(|item| item.quantity()), Some(7));
-    assert!(!view.inputs.iter().any(|input| matches!(input, Input::TargetWalk(_))));
+    assert!(
+        !view
+            .inputs
+            .iter()
+            .any(|input| matches!(input, Input::TargetWalk(_)))
+    );
     let mut cleared = Pushed::default();
     coalesce_pushed(
         &mut cleared,
@@ -79,6 +84,7 @@ fn ground_entity_projection_preserves_handle_definition_and_quantity() {
     use oteryn_session::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
     use std::num::NonZeroU64;
     let entity = WorldSpatialEntity {
+        display_name: None,
         kind: EntityKind::GroundItem,
         entity: EntityRef {
             identity: [7; 16],
@@ -105,4 +111,25 @@ fn ground_entity_projection_preserves_handle_definition_and_quantity() {
             handle: Some(NonZeroU64::MIN),
         })
     );
+}
+
+#[test]
+fn drag_projection_requires_live_handle_and_follows_map_removals() -> Result<(), BatchError> {
+    use oteryn_session::world_map::MapOrigin;
+    let mut view = view()?;
+    let mut map = live_snapshot(101);
+    map.tiles[0].items[0].count = 12;
+    map.tiles[0].items[0].origin = MapOrigin::Handle(std::num::NonZeroU64::MIN);
+    view.set_live_map(&map)?;
+    let tile = TileCoord::new(101, 200);
+    let source = view.item_drag_source(tile);
+    assert_eq!(source.map(|s| s.handle), Some(std::num::NonZeroU64::MIN));
+    assert_eq!(source.map(|s| s.count), Some(12));
+    view.floor = 1;
+    assert_eq!(view.item_drag_source(tile), None);
+    view.floor = 0;
+    map.tiles.clear();
+    view.set_live_map(&map)?;
+    assert_eq!(view.item_drag_source(tile), None);
+    Ok(())
 }

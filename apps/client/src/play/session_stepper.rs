@@ -11,6 +11,51 @@ use std::future::Future;
 use std::time::Duration;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn equipment_selected(&self) -> bool {
+        self.is_selected(12)
+    }
+    fn item_count_selected(&self) -> bool {
+        self.is_selected(61)
+    }
+    async fn move_item(
+        &mut self,
+        request: oteryn_client_runtime::inventory::MoveRequest,
+    ) -> Result<Option<oteryn_client_runtime::inventory::MoveResponse>, SessionError> {
+        oteryn_client_runtime::inventory::send(self, request).await
+    }
+    fn container_views(&self) -> Option<oteryn_client_runtime::container_tree::ContainerViews> {
+        oteryn_client_runtime::container_tree::initial(self)
+    }
+    async fn container_view(
+        &mut self,
+        intent: oteryn_client_runtime::container_tree::ContainerViewIntent,
+    ) -> Result<Option<oteryn_client_runtime::container_tree::ContainerViewOutcome>, SessionError>
+    {
+        oteryn_client_runtime::container_tree::send(self, intent).await
+    }
+    fn battle_floor(&self) -> Option<i16> {
+        Some(self.world_spatial().actor_position.floor)
+    }
+
+    fn battle_state(&self) -> Option<oteryn_session::ActorCombatState> {
+        Session::combat_state(self).copied()
+    }
+    async fn depot_open_container(
+        &mut self,
+        handle: oteryn_session::ItemHandle,
+    ) -> Result<Option<oteryn_client_runtime::depot::ContainerViewOutcome>, SessionError> {
+        oteryn_client_runtime::depot::open_container(self, handle).await
+    }
+    fn depot_items(&self) -> oteryn_client_runtime::depot::Items {
+        oteryn_client_runtime::depot::items(self)
+    }
+    async fn depot(
+        &mut self,
+        intent: oteryn_session::DepotIntent,
+    ) -> Result<Option<oteryn_session::DepotReply>, SessionError> {
+        oteryn_client_runtime::depot::send(self, intent).await
+    }
+
     async fn target_walk(
         &mut self,
         position: oteryn_session::ActorPosition,
@@ -25,6 +70,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         oteryn_client_runtime::account_achievements::send(self, page).await
     }
 
+    fn inventory(&self) -> Option<oteryn_session::CharacterInventory> {
+        oteryn_client_runtime::inventory::initial(self)
+    }
     fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
         Session::actor_vitals(self).copied()
     }
@@ -122,6 +170,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn visible_appearances(&self) -> Vec<oteryn_session::VisibleAppearance> {
+        Session::visible_appearances(self)
+    }
     fn task_board_selected(&self) -> bool {
         self.is_selected(oteryn_session::task_board::CAPABILITY_TASK_BOARD_V1)
     }
@@ -139,6 +190,27 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         command: &oteryn_client_runtime::stash::StashCommand,
     ) -> Result<oteryn_client_runtime::stash::StashResponse, SessionError> {
         oteryn_client_runtime::stash::send(self, command).await
+    }
+    async fn npc_talk(
+        &mut self,
+        intent: &oteryn_session::npc_service::NpcTalkIntent,
+    ) -> Result<oteryn_session::NpcIntentDisposition, SessionError> {
+        oteryn_client_runtime::npc_dialogue::send_talk(self, intent).await
+    }
+    async fn npc_resources(
+        &mut self,
+    ) -> Result<Option<oteryn_client_runtime::npc_shop::resources::ResourceBalances>, SessionError>
+    {
+        oteryn_client_runtime::npc_shop::balances(self).await
+    }
+    fn npc_inventory(&self) -> Option<oteryn_session::CharacterInventory> {
+        self.inventory().cloned()
+    }
+    async fn npc_trade(
+        &mut self,
+        intent: &oteryn_session::npc_service::NpcTradeIntent,
+    ) -> Result<oteryn_session::NpcIntentDisposition, SessionError> {
+        oteryn_client_runtime::npc_shop::trade(self, intent).await
     }
     fn npc_shop_selected(&self) -> bool {
         self.is_selected(oteryn_session::npc_shop::CAPABILITY_NPC_SHOP_V1)
@@ -187,12 +259,14 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_client_runtime::imbue::ImbueResponse, SessionError> {
         oteryn_client_runtime::imbue::send(self, command).await
     }
+    fn player_trade_items(&self) -> oteryn_client_runtime::player_trade::TradeItems {
+        super::feature_0060_player_trade::protocol::initial_items(self)
+    }
     fn player_trade_selected(&self) -> bool {
         self.is_selected(oteryn_session::player_trade::CAPABILITY_PLAYER_TRADE_V1)
     }
     fn player_trade_state(&self) -> Option<oteryn_session::player_trade::State> {
-        self.gated_snapshot(oteryn_session::player_trade::STATE_DOMAIN_PLAYER_TRADE)
-            .and_then(|snapshot| oteryn_session::player_trade::decode_state(&snapshot.payload).ok())
+        oteryn_session::Session::player_trade_state(self)
     }
     async fn player_trade(
         &mut self,
@@ -236,6 +310,15 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_client_runtime::hireling::HirelingResponse, SessionError> {
         oteryn_client_runtime::hireling::send(self, request).await
     }
+    fn targeting_source_current(&self, source: oteryn_session::ItemHandle) -> bool {
+        oteryn_client_runtime::world_interaction::item_current(self, source)
+    }
+    async fn world_context(
+        &mut self,
+        command: &oteryn_client_runtime::world_interaction::Command,
+    ) -> Result<String, SessionError> {
+        oteryn_client_runtime::world_interaction::send(self, command).await
+    }
     fn feature_selected(&self, capability: u32) -> bool {
         self.is_selected(capability)
     }
@@ -268,6 +351,14 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_client_runtime::market::MarketResponse, SessionError> {
         oteryn_client_runtime::market::send(self, request).await
     }
+    fn chat_private_state(&self) -> (bool, Option<oteryn_session::ChatChannelList>) {
+        (self.is_selected(80), self.private_channel_list().cloned())
+    }
+    fn guild_chat_state(&self) -> oteryn_session::GuildRoomState {
+        self.chat_log()
+            .map(|log| log.guild_room().clone())
+            .unwrap_or_default()
+    }
     fn chat_public_selected(&self) -> bool {
         self.is_selected(259)
     }
@@ -289,8 +380,14 @@ pub(super) fn publish<T: Stepper>(
     outbox: &Outbox,
     held: &mut Vec<WorldSpatialEntity>,
 ) {
+    outbox.chat_private_publish(session);
+    outbox.targeting_refresh(session);
     outbox.achievement_notices_publish(session);
+    outbox.guild_chat_publish(session);
+    outbox.depot_publish(session);
+    outbox.stash_publish(session);
     outbox.vitals(session.actor_vitals());
+    outbox.appearances(session.visible_appearances());
     if let Some(payload) = session.feature_snapshot(98) {
         outbox.cyclopedia_tracker_push(payload);
     }
@@ -298,6 +395,7 @@ pub(super) fn publish<T: Stepper>(
         held.clone_from(&entities);
         outbox.entities(entities);
     }
+    outbox.battle_publish(session.battle_state(), session.battle_floor(), held);
     if let Some((rooms, lines)) = session.chat_state() {
         outbox.chat_public_state(rooms, lines);
     }

@@ -6,7 +6,7 @@
 
 use crate::input::{StepDir, TargetKind, Targetable, pick_target};
 use crate::map::{BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, World};
-use oteryn_client_simulation::scene::{scene_origin, visit_scene};
+use oteryn_client_simulation::scene::{scene_origin, visit_scene_entities};
 use oteryn_renderer::{
     AtlasImage, BatchError, MAX_BATCH_QUADS, SpriteBatch, TileBatch, TileCoord, TileView,
 };
@@ -15,16 +15,21 @@ use std::sync::Arc;
 /// Compatibility exports for the deterministic viewport policy.
 pub use oteryn_client_simulation::scene::{SCENE_COLUMNS, SCENE_ROWS, SCENE_TILE_PX};
 
-// A full view (map cells, a marker per tile, the player and the target) fits one sprite batch.
+// A full view plus the minimap (background, terrain, creature per cell and own marker)
+// fits one sprite batch.
+// One floor (map cells, a marker per tile, the player and the target) fits one sprite batch.
+// The renderer also bounds the aggregate draws from the visible floors.
 const _: () = assert!(
     ((SCENE_COLUMNS + SCAN_MARGIN as u32) * (SCENE_ROWS + SCAN_MARGIN as u32)) as usize
         * (MAX_TILE_DRAWS + 1)
         + MAX_TILE_DRAWS
+        + (31 * 25 * 3 + 1)
         < MAX_BATCH_QUADS
 );
 
 #[derive(Debug, Clone)]
 pub struct Scene {
+    minimap: bool,
     world: Arc<World>,
     lit_atlas: Option<AtlasImage>,
     /// `None` draws no map: the session is on a floor the loaded map does not cover.
@@ -36,6 +41,12 @@ pub struct Scene {
     sprites: SpriteBatch,
     visible: Vec<Targetable>,
     target: Option<Targetable>,
+    presentation_atlas: Option<Arc<AtlasImage>>,
+    cache: appearance_cache::PresentationCache,
+    own_identity: Option<[u8; 16]>,
+    own_draws: Option<Vec<Draw>>,
+    actor_draws: Vec<(TileCoord, Vec<Draw>)>,
+    names: Vec<(TileCoord, Vec<u16>)>,
 }
 
 impl Scene {
@@ -85,6 +96,7 @@ impl Scene {
             }])
             .collect();
         let mut scene = Self {
+            minimap: false,
             world,
             lit_atlas: None,
             anchor,
@@ -95,20 +107,64 @@ impl Scene {
             sprites: SpriteBatch::new(),
             visible,
             target: None,
+            presentation_atlas: None,
+            cache: appearance_cache::PresentationCache::default(),
+            own_identity: None,
+            own_draws: None,
+            actor_draws: Vec::new(),
+            names: Vec::new(),
         };
         scene.rebuild_sprites()?;
         Ok(scene)
     }
 
+    pub fn set_weather(&mut self, color: [u8; 3], strength: u8) {
+        self.lit_atlas = Some(oteryn_renderer::weather_atlas(
+            self.atlas(),
+            color,
+            strength,
+        ));
+    }
+    pub fn set_tile_px(&mut self, tile_px: u32) -> Result<(), BatchError> {
+        if self.view.tile_px() == tile_px {
+            return Ok(());
+        }
+        self.view = TileView::new(self.view.origin(), tile_px, SCENE_COLUMNS, SCENE_ROWS)?;
+        let cells = vec![BLACK_CELL; (SCENE_COLUMNS * SCENE_ROWS) as usize];
+        self.tiles = TileBatch::from_cells(&self.view, self.world.atlas(), &cells)?;
+        self.rebuild_sprites()
+    }
+
     pub fn set_ambient(&mut self, ambient: [u8; 3]) -> Result<(), BatchError> {
-        self.lit_atlas = Some(oteryn_renderer::lit_atlas(self.world.atlas(), ambient));
+        self.lit_atlas = Some(oteryn_renderer::lit_atlas(self.unlit_atlas(), ambient));
         Ok(())
+    }
+
+    /// Rebuilds base sprites before appending this frame's transient visual quads.
+    pub(crate) fn presentation_base(
+        &mut self,
+    ) -> Result<(&TileView, &mut SpriteBatch), BatchError> {
+        self.rebuild_sprites()?;
+        Ok((&self.view, &mut self.sprites))
     }
 
     /// Current target, if any.
     #[must_use]
     pub const fn target(&self) -> Option<Targetable> {
         self.target
+    }
+
+    pub(crate) fn target_at(&self, tile: TileCoord) -> Option<Targetable> {
+        // The own-actor highlight has no command identity; it must not hide an item below it.
+        let on_tile = || {
+            self.visible.iter().rev().filter(|target| {
+                target.tile == tile && (target.entity.is_some() || target.item.is_some())
+            })
+        };
+        on_tile()
+            .find(|target| target.kind == TargetKind::Entity)
+            .or_else(|| on_tile().find(|target| target.kind == TargetKind::Object))
+            .copied()
     }
 
     /// Selects what is drawn on `tile` (entity before object). Returns the new target; a tile
@@ -144,36 +200,77 @@ impl Scene {
     /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
-        let (atlas, origin) = (self.world.atlas(), self.view.origin());
-        let sprites = oteryn_renderer::world::sprite_batch(
+        let (atlas, origin) = (self.atlas(), self.view.origin());
+        let mut sprites = oteryn_renderer::world::sprite_batch(
             &self.view,
             atlas,
             |emit| {
-                visit_scene(
-                    (origin.x, origin.y),
-                    self.anchor.map(|anchor| (anchor.x, anchor.y)),
-                    ((self.own.x, self.own.y), self.world.player(self.facing)),
-                    |x, y| self.world.tile(x, y),
-                    |x, y| {
-                        // One glyph per tile however many markers and entities stand on it.
-                        self.visible
-                            .iter()
-                            .any(|v| {
-                                v.tile == TileCoord::new(x, y)
-                                    && (v.glyph
-                                        || (v.kind == TargetKind::Object && v.item.is_none()))
-                            })
-                            .then_some(Draw {
-                                cell: MARKER_CELL,
-                                offset: [0, 0],
-                            })
-                    },
-                    emit,
-                )
+                for floor in self.world.draw_floors() {
+                    let own_floor = floor == self.world.center().2;
+                    visit_scene_entities(
+                        (origin.x, origin.y),
+                        self.anchor.map(|anchor| (anchor.x, anchor.y)),
+                        (
+                            (self.own.x, self.own.y),
+                            if own_floor {
+                                self.own_draws
+                                    .as_deref()
+                                    .unwrap_or_else(|| self.world.player(self.facing))
+                            } else {
+                                &[]
+                            },
+                        ),
+                        |x, y| self.world.floor_tile(floor, x, y),
+                        |x, y| {
+                            let tile = TileCoord::new(x, y);
+                            if !own_floor {
+                                return Vec::new();
+                            }
+                            let has_actor = self.actor_draws.iter().any(|(at, _)| *at == tile);
+                            // Object markers remain below actors. Entity fallback glyphs are replaced.
+                            let marker = self.visible.iter().any(|v| {
+                                v.tile == tile
+                                    && ((v.kind == TargetKind::Object
+                                        && (v.glyph || v.item.is_none()))
+                                        || (v.glyph && !has_actor))
+                            });
+                            marker
+                                .then_some(Draw {
+                                    cell: MARKER_CELL,
+                                    offset: [0, 0],
+                                })
+                                .into_iter()
+                                .chain(
+                                    self.actor_draws
+                                        .iter()
+                                        .filter(|(at, _)| *at == tile)
+                                        .flat_map(|(_, draws)| draws.iter().copied()),
+                                )
+                                .collect()
+                        },
+                        &mut *emit,
+                    )?;
+                }
+                Ok(())
             },
             self.target.map(|target| target.tile),
         )?;
+        for (tile, cells) in &self.names {
+            let [x, y] = self.view.tile_to_screen(*tile);
+            let left = (x + 24.0 - cells.len() as f32 * 4.0).max(0.0);
+            for (index, cell) in cells.iter().enumerate() {
+                oteryn_renderer::name_text::label_quad(
+                    &mut sprites,
+                    atlas,
+                    *cell,
+                    [left + index as f32 * 8.0, (y - 14.0).max(0.0)],
+                )?;
+            }
+        }
         self.sprites = sprites;
+        if self.minimap {
+            self.draw_minimap()?;
+        }
         Ok(())
     }
 
@@ -182,11 +279,17 @@ impl Scene {
         self.facing
     }
 
+    fn unlit_atlas(&self) -> &AtlasImage {
+        self.presentation_atlas
+            .as_deref()
+            .unwrap_or_else(|| self.world.atlas())
+    }
+
     #[must_use]
     pub fn atlas(&self) -> &AtlasImage {
         self.lit_atlas
             .as_ref()
-            .unwrap_or_else(|| self.world.atlas())
+            .unwrap_or_else(|| self.unlit_atlas())
     }
 
     #[must_use]
@@ -207,3 +310,11 @@ impl Scene {
 
 #[cfg(test)]
 mod tests;
+
+#[path = "features/0006-world-spatial-entities/scene.rs"]
+mod live_entities;
+#[path = "features/local-minimap/scene.rs"]
+mod minimap;
+
+#[path = "features/0006-world-spatial-entities/cache.rs"]
+mod appearance_cache;

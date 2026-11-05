@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 
 fn spatial(id: u8) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        display_name: None,
         kind: EntityKind::Npc,
         entity: WireEntityRef {
             identity: [id; 16],
@@ -68,6 +69,7 @@ fn hireling_dictionary_attaches_existing_npc_look_once_and_does_not_bind_static_
         content_generation: [1; 32],
         observer: [9; 16],
         entities: vec![ChannelEntity {
+            display_name: None,
             kind: VisibleKind::Hireling,
             health_percent: 100,
             direction: StepDirection::South,

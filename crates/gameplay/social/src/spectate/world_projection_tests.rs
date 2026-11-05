@@ -37,6 +37,7 @@ fn spectate_native_map_and_spatial_payloads_preserve_presentation_fields() {
         actor_position: position,
         own_identity,
         entities: vec![WorldSpatialEntity {
+            display_name: None,
             kind: EntityKind::Player,
             entity: EntityRef {
                 identity: own_identity,

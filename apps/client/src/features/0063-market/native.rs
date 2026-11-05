@@ -1,6 +1,6 @@
-//! Minimal native market list and action controls.
+//! Native market form, paged server lists and trade controls.
 #![allow(unsafe_code)]
-use crate::play::{PlayLink, mailbox::lock};
+use crate::play::mailbox::{SharedMailbox, lock};
 use oteryn_client_ui::market::{Intent, panel_text, row_text};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
@@ -13,7 +13,12 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
     unsafe {
         if msg == WM_COMMAND {
             let p = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
-            if !p.is_null() && (*p).0.len() < 16 {
+            if !p.is_null()
+                && (*p).0.len() < 16
+                && (w >> 16 == BN_CLICKED as usize
+                    || w >> 16 == LBN_SELCHANGE as usize
+                    || ((20..=22).contains(&(w & 0xffff)) && w >> 16 == EN_CHANGE as usize))
+            {
                 (*p).0.push(w & 0xffff);
             }
             return 0;
@@ -28,17 +33,20 @@ fn wide(value: &str) -> Vec<u16> {
         .chain(Some(0))
         .collect()
 }
-pub(in crate::play) fn open_window(link: &PlayLink) {
+pub(in crate::play) fn open_window(
+    mailbox: &SharedMailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
+) {
     {
-        let mut m = lock(&link.mailbox);
-        if m.market.open {
+        let mut m = lock(mailbox);
+        if m.market.open || m.market_shutdown {
             return;
         }
         m.market.open = true;
     }
-    let weak = Arc::downgrade(&link.mailbox);
+    let weak = Arc::downgrade(mailbox);
     let failed = weak.clone();
-    let commands = link.commands.clone();
+    let commands = commands.clone();
     if std::thread::Builder::new()
         .name("market-panel".into())
         .spawn(move || run(weak, commands))
@@ -61,7 +69,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             720,
-            520,
+            620,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -83,8 +91,51 @@ fn run(
             "LISTBOX",
             "",
             1,
-            [10, 10, 680, 280],
-            WS_BORDER | WS_VSCROLL | WS_TABSTOP,
+            [10, 85, 680, 280],
+            WS_BORDER | WS_VSCROLL | WS_TABSTOP | LBS_NOTIFY as u32,
+        );
+        let item = control(
+            hwnd,
+            "EDIT",
+            "",
+            20,
+            [80, 10, 100, 25],
+            WS_BORDER | WS_TABSTOP,
+        );
+        let amount = control(
+            hwnd,
+            "EDIT",
+            "1",
+            21,
+            [270, 10, 100, 25],
+            WS_BORDER | WS_TABSTOP,
+        );
+        let price = control(
+            hwnd,
+            "EDIT",
+            "1",
+            22,
+            [475, 10, 170, 25],
+            WS_BORDER | WS_TABSTOP,
+        );
+        control(hwnd, "STATIC", "Item ID", 23, [10, 10, 65, 25], 0);
+        control(hwnd, "STATIC", "Amount", 24, [195, 10, 70, 25], 0);
+        control(hwnd, "STATIC", "Unit price", 25, [390, 10, 80, 25], 0);
+        let buy = control(
+            hwnd,
+            "BUTTON",
+            "Buy (unchecked: sell)",
+            26,
+            [10, 45, 240, 28],
+            BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
+        );
+        let anonymous = control(
+            hwnd,
+            "BUTTON",
+            "Anonymous",
+            27,
+            [270, 45, 150, 28],
+            BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
         );
         for (id, label) in [
             (2, "Browse"),
@@ -100,11 +151,28 @@ fn run(
                 "BUTTON",
                 label,
                 id,
-                [10 + (id as i32 - 2) * 95, 300, 90, 30],
+                [10 + (id as i32 - 2) * 95, 375, 90, 30],
                 WS_TABSTOP,
             );
         }
-        let status = control(hwnd, "STATIC", "", 9, [10, 345, 680, 120], 0);
+        control(
+            hwnd,
+            "BUTTON",
+            "Previous page",
+            10,
+            [10, 415, 150, 28],
+            WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Next page",
+            11,
+            [170, 415, 150, 28],
+            WS_TABSTOP,
+        );
+        control(hwnd, "BUTTON", "Wares", 12, [330, 415, 150, 28], WS_TABSTOP);
+        let status = control(hwnd, "STATIC", "", 9, [10, 455, 680, 110], 0);
         let mut held = None;
         loop {
             let mut message: MSG = std::mem::zeroed();
@@ -123,6 +191,21 @@ fn run(
                 break;
             }
             for id in std::mem::take(&mut actions.0) {
+                if (20..=22).contains(&id) && read(item).trim().is_empty() {
+                    continue;
+                }
+                if matches!(id, 2 | 5 | 7 | 20..=22 | 26 | 27)
+                    && !oteryn_client_ui::market::edit_details(
+                        &mut m.market,
+                        &read(item),
+                        &read(amount),
+                        &read(price),
+                        SendMessageW(buy, BM_GETCHECK, 0, 0) == 0,
+                        SendMessageW(anonymous, BM_GETCHECK, 0, 0) != 0,
+                    )
+                {
+                    continue;
+                }
                 let intent = match id {
                     2 => Some(Intent::Browse),
                     3 => Some(Intent::OwnOffers),
@@ -131,12 +214,27 @@ fn run(
                     6 => Some(Intent::CancelOffer),
                     7 => Some(Intent::AcceptOffer),
                     8 => Some(Intent::Refresh),
+                    10 => Some(Intent::PreviousPage),
+                    11 => Some(Intent::NextPage),
+                    12 => {
+                        SetWindowTextW(item, wide("").as_ptr());
+                        Some(Intent::Wares)
+                    }
                     1 => {
                         m.market.selected_offer =
                             usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
                                 .ok()
                                 .and_then(|i| m.market.rows.get(i))
                                 .map(|r| r.offer);
+                        if let Some(row) = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
+                            .ok()
+                            .and_then(|i| m.market.rows.get(i))
+                        {
+                            SetWindowTextW(item, wide(&row.definition.to_string()).as_ptr());
+                            if row.price > 0 {
+                                SetWindowTextW(price, wide(&row.price.to_string()).as_ptr());
+                            }
+                        }
                         None
                     }
                     _ => None,
@@ -154,6 +252,14 @@ fn run(
                         0,
                         wide(&row_text(row)).as_ptr() as isize,
                     );
+                }
+                if let Some(index) = m
+                    .market
+                    .rows
+                    .iter()
+                    .position(|r| Some(r.offer) == m.market.selected_offer)
+                {
+                    SendMessageW(list, LB_SETCURSEL, index, 0);
                 }
                 SetWindowTextW(status, wide(&panel_text(&m.market)).as_ptr());
                 held = Some(m.market.clone());
@@ -196,4 +302,10 @@ unsafe fn control(
             null(),
         )
     }
+}
+
+unsafe fn read(hwnd: HWND) -> String {
+    let mut buffer = [0u16; 64];
+    let length = unsafe { GetWindowTextW(hwnd, buffer.as_mut_ptr(), buffer.len() as i32) };
+    String::from_utf16_lossy(&buffer[..length.max(0) as usize])
 }

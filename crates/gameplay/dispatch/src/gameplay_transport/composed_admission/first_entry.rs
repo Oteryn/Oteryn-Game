@@ -123,6 +123,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         };
+        let learned = match self
+            .root
+            .read_character_known_spells(self.character, character_id)
+            .await
+        {
+            Ok(learned) => learned,
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
+        };
         #[cfg(test)]
         stage("character_facts_loaded");
         let Some(monk) = self.load_monk_state(character_id).await else {
@@ -379,6 +387,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_none()
         {
             return (FirstEntryOutcome::RefusedByChannel, None, None);
+        }
+        if let Some(state) =
+            self.states
+                .spell_states
+                .lock()
+                .await
+                .get_mut(&runtime, actor, game_session_id)
+        {
+            state.install_learned_spells(learned);
         }
         if gourmet_created {
             let mut states = self.states.spell_states.lock().await;

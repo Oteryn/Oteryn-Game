@@ -251,6 +251,45 @@ fn scenario_with_creature_charmed(
     elemental_area: bool,
     settings: KillScenarioSettings<'_>,
 ) -> TestResult {
+    scenario_with_creature_observed(
+        reconcile,
+        capacity,
+        radiant,
+        settle_radiant,
+        ranged_spell,
+        elemental_area,
+        settings,
+        false,
+    )
+}
+
+pub(super) fn analyser_scenario() -> TestResult {
+    scenario_with_creature_observed(
+        None,
+        false,
+        None,
+        false,
+        false,
+        false,
+        (None, None, None),
+        true,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "existing composed scenario options plus analyser observation"
+)]
+fn scenario_with_creature_observed(
+    reconcile: Option<bool>,
+    capacity: bool,
+    radiant: Option<&str>,
+    settle_radiant: bool,
+    ranged_spell: bool,
+    elemental_area: bool,
+    settings: KillScenarioSettings<'_>,
+    analyser: bool,
+) -> TestResult {
     let (charm, boss_policy, daily_target) = settings;
     let holy_target =
         matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
@@ -270,7 +309,7 @@ fn scenario_with_creature_charmed(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let w22a_tables = super::w22a_loot::table_override()?;
+        let w22a_tables = super::scheduled_event_rates::table_override()?;
         let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_with_custom_loot_tables(
                 world,
@@ -1187,6 +1226,16 @@ fn scenario_with_creature_charmed(
         // ARCH-PROGRESSION-SOURCE-0 §1.5: the session's progression binding, formed by the
         // production admission step from the Character root's stored revisions.
         owner.admit_progression_session(&mut admitted).await;
+        if analyser {
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                    crate::gameplay_transport::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
+                    &[10],
+                )
+                .ok_or("analyser negotiation")?;
+            assert!(admitted.continuity.selected_capabilities.contains(10));
+            assert_eq!(owner.analyser_snapshot(admitted).await, Some(false));
+        }
         assert!(
             owner.progression_binding(session).is_some(),
             "the fresh Character's session binds the generation's progression"
@@ -1390,6 +1439,7 @@ fn scenario_with_creature_charmed(
                 &mut table,
                 event_rates.loot,
             );
+            super::scheduled_event_rates::expected(&mut table, &row.loot_table, event_rates.loot);
             let raised = table != row.loot_table;
             assert!(
                 raised,
@@ -1429,20 +1479,21 @@ fn scenario_with_creature_charmed(
         assert_eq!(xp_receipts(&harness).await?, 0);
         assert_eq!(corpse_receipts(&harness).await?, 0);
 
-        let replay = if settle_radiant || boss_policy.is_some() || daily_target.is_some() {
-            let attack = owner.states.attack.lock().await;
-            let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
-                attack.kills().take(session, 2)
-            else {
-                return Err("queued real kill".into());
+        let replay =
+            if analyser || settle_radiant || boss_policy.is_some() || daily_target.is_some() {
+                let attack = owner.states.attack.lock().await;
+                let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
+                    attack.kills().take(session, 2)
+                else {
+                    return Err("queued real kill".into());
+                };
+                let entry = taken.entry().ok_or("captured kill")?;
+                let replay = (entry.facts, entry.target, entry.activity_observed_at);
+                taken.requeue();
+                Some(replay)
+            } else {
+                None
             };
-            let entry = taken.entry().ok_or("captured kill")?;
-            let replay = (entry.facts, entry.target, entry.activity_observed_at);
-            taken.requeue();
-            Some(replay)
-        } else {
-            None
-        };
         if boss_policy.is_some() {
             let held = owner.root.try_issue_semantic_pass().map_err(debug)?;
             assert!(
@@ -1510,6 +1561,65 @@ fn scenario_with_creature_charmed(
             "{creature_key} commits a positive native loot plan"
         );
 
+        let mut analyser_facts = Vec::new();
+        if analyser {
+            use oteryn_protocol_oteryn::analyser::{
+                AnalyserFact, AnalyserImpact, decode_analyser_facts,
+            };
+            let facts = &mut analyser_facts;
+            while let Some(payload) = owner.analyser_next(admitted).await {
+                facts.extend(decode_analyser_facts(&payload).map_err(debug)?);
+            }
+            assert_eq!(
+                facts
+                    .iter()
+                    .filter(|fact| matches!(fact, AnalyserFact::Kill { .. }))
+                    .count(),
+                1
+            );
+            let xp: u64 = facts
+                .iter()
+                .filter_map(|fact| match fact {
+                    AnalyserFact::Experience { gained, .. } => Some(*gained),
+                    _ => None,
+                })
+                .sum();
+            assert_eq!(xp, u64::try_from(experience)?);
+            let raw: i64 =
+                sqlx::query_scalar("SELECT base_xp FROM game_party_kill_xp_receipts LIMIT 1")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert!(facts.iter().any(|fact| matches!(fact, AnalyserFact::Experience { raw: reported, .. } if *reported == u64::try_from(raw).unwrap_or(0))));
+            assert!(
+                facts
+                    .iter()
+                    .any(|fact| matches!(fact, AnalyserFact::Experience { raw, .. } if *raw > 0))
+            );
+            assert!(
+                facts.iter().any(|fact| matches!(
+                    fact,
+                    AnalyserFact::Impact(AnalyserImpact::Damage { .. })
+                ))
+            );
+            let loot_count: usize = facts
+                .iter()
+                .filter_map(|fact| match fact {
+                    AnalyserFact::KillLoot { corpse_items, .. } => Some(corpse_items.len()),
+                    _ => None,
+                })
+                .sum();
+            assert_eq!(loot_count, usize::try_from(children)?);
+            let expected_gold: i64 = sqlx::query_scalar("SELECT COALESCE(sum(i.quantity * CASE i.definition_production_key WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 WHEN 'oteryn:item.tibia.i3043' THEN 10000 ELSE 0 END),0)::bigint FROM game_item_corpse_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id").fetch_one(&harness.pool).await?;
+            let gold: u64 = facts
+                .iter()
+                .filter_map(|fact| match fact {
+                    AnalyserFact::KillLoot { gold, .. } => Some(*gold),
+                    _ => None,
+                })
+                .sum();
+            assert_eq!(gold, u64::try_from(expected_gold)?);
+            assert!(owner.analyser_next(admitted).await.is_none());
+        }
         super::w22a_loot::qualify(&mut owner, &harness).await?;
         if let Some(expected) = daily_expected_loot {
             let actual: Vec<(String,i64)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_item_corpse_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id ORDER BY r.draw_ordinal LIMIT 17").fetch_all(&harness.pool).await?;
@@ -1517,16 +1627,22 @@ fn scenario_with_creature_charmed(
                 actual, expected,
                 "daily loot rolls reach durable Item quantities"
             );
+            super::scheduled_event_rates::verify(&actual);
         }
 
+        assert!(
+            !analyser || replay.is_some(),
+            "analyser scenario must exercise the replay"
+        );
         if let Some((facts, target, observed)) = replay {
             {
                 let mut runtime = owner.runtime.lock().await;
                 let attack = owner.states.attack.lock().await;
+                let states = owner.states.spell_states.lock().await;
                 crate::gameplay_transport::kill_reward::record_creature_kill(
                     &mut runtime,
                     crate::gameplay_transport::kill_reward::KillSink {
-                        prey: None,
+                        prey: analyser.then_some(&states),
                         activity: &[],
                         queue: attack.kills(),
                         rewards: native.reward_table(),
@@ -1556,6 +1672,24 @@ fn scenario_with_creature_charmed(
                 replay_children, children,
                 "kill replay never duplicates loot"
             );
+            if analyser {
+                assert!(
+                    owner.analyser_next(admitted).await.is_none(),
+                    "retry emits no new facts"
+                );
+                assert_eq!(
+                    analyser_facts
+                        .iter()
+                        .filter(|fact| matches!(
+                            fact,
+                            oteryn_protocol_oteryn::analyser::AnalyserFact::Kill { .. }
+                        ))
+                        .count(),
+                    1,
+                    "Kill count stays one after replay with the live producer enabled"
+                );
+                eprintln!("S_ANALYSER_LIVE_REPLAY_PASS kills=1 retry_facts=0");
+            }
         }
         if settle_radiant {
             qualify_summer_settlement(

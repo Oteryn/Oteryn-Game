@@ -1,5 +1,67 @@
 use super::*;
 
+#[test]
+fn equipment_effects_owner_regeneration_reads_worn_item_in_own_slot_only() -> TestResult {
+    use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
+
+    let modifier = |kind: &str, parameter: &str, value: u64| {
+        serde_json::json!({"kind":kind,
+          "parameter":{"state":"KNOWN","value":{"kind":parameter,"value":value}},
+          "evaluation_phase":{"state":"UNKNOWN"},"priority":{"state":"UNKNOWN"},
+          "target_domain":{"state":"UNKNOWN"}})
+    };
+    let content = native(&fixture_input(
+        serde_json::json!([
+            modifier("HEALTH_GAIN", "SIGNED_POINTS", 6),
+            modifier("HEALTH_TICKS", "MILLISECONDS", 6_000),
+            modifier("MANA_GAIN", "SIGNED_POINTS", 24),
+            modifier("MANA_TICKS", "MILLISECONDS", 6_000),
+        ]),
+        Some(0),
+    )?)?;
+    let regeneration = EquipmentRegeneration {
+        health_gain: 6,
+        health_ticks_ms: 6_000,
+        mana_gain: 24,
+        mana_ticks_ms: 6_000,
+    };
+    for slot in 1..=10 {
+        assert_eq!(
+            equipped_regeneration(
+                &snapshot(&content, "oteryn:item.tibia.i2854", slot),
+                &content,
+            ),
+            Some(if slot == 9 {
+                vec![(9, regeneration)]
+            } else {
+                vec![]
+            }),
+            "slot {slot}"
+        );
+    }
+
+    let gain_only = native(&fixture_input(
+        serde_json::json!([modifier("HEALTH_GAIN", "SIGNED_POINTS", 6)]),
+        Some(0),
+    )?)?;
+    assert_eq!(
+        equipped_regeneration(
+            &snapshot(&gain_only, "oteryn:item.tibia.i2854", 9),
+            &gain_only,
+        ),
+        Some(vec![])
+    );
+    let ordinary = native(&input()?)?;
+    assert_eq!(
+        equipped_regeneration(
+            &snapshot(&ordinary, "oteryn:item.tibia.i2854", 9),
+            &ordinary,
+        ),
+        Some(vec![])
+    );
+    Ok(())
+}
+
 /// The item profiles before any mechanic added its own; all of them are unchanged.
 const ORIGINAL_PROFILES: usize = 432;
 
@@ -535,6 +597,45 @@ fn equipment_effects_owner_uses_primary_slot_and_extra_never_suppresses() -> Tes
         assert_eq!(effects.speed, 0);
         assert!(effects.suppressions.is_empty());
     }
+    Ok(())
+}
+
+#[test]
+fn equipment_effects_owner_invisibility_reads_worn_item_in_own_slot_only() -> TestResult {
+    let invisible = |value| {
+        serde_json::json!({"kind":"INVISIBILITY",
+          "parameter":{"state":"KNOWN","value":{"kind":"BOOLEAN","value":value}},
+          "evaluation_phase":{"state":"UNKNOWN"},"priority":{"state":"UNKNOWN"},"target_domain":{"state":"UNKNOWN"}})
+    };
+    let content = native(&fixture_input(
+        serde_json::json!([invisible(true)]),
+        Some(0),
+    )?)?;
+    for slot in 1..=10 {
+        assert_eq!(
+            equipped_invisibility(
+                &snapshot(&content, "oteryn:item.tibia.i2854", slot),
+                &content
+            ),
+            Some(slot == 9),
+            "slot {slot}"
+        );
+    }
+
+    let content = native(&fixture_input(
+        serde_json::json!([invisible(false)]),
+        Some(0),
+    )?)?;
+    assert_eq!(
+        equipped_invisibility(&snapshot(&content, "oteryn:item.tibia.i2854", 9), &content),
+        Some(false)
+    );
+
+    let content = native(&input()?)?;
+    assert_eq!(
+        equipped_invisibility(&snapshot(&content, "oteryn:item.tibia.i2854", 9), &content),
+        Some(false)
+    );
     Ok(())
 }
 

@@ -55,6 +55,7 @@ impl Outbox {
                 refusal.clone_from(&mailbox.guild.feedback);
             }
         }
+        crate::play::feature_0036_chat_guild_room::protocol::refresh_membership(&mut mailbox);
         if refusal.is_some() {
             mailbox.guild.feedback = refusal;
         } else if refresh && mailbox.guild.feedback.is_none() {

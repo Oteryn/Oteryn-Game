@@ -359,6 +359,24 @@ fn condition_attributes(
 }
 
 impl PreparedMagnitudeOwner {
+    /// Damage classification for advisory committed-outcome emission.
+    pub fn analyser_element(&self) -> oteryn_protocol_oteryn::damage_element::DamageElement {
+        use oteryn_protocol_oteryn::damage_element::DamageElement as D;
+        match &self.plan {
+            NativeCombatPlan::Combat(plan) => match plan.element {
+                Element::Physical => D::Physical,
+                Element::Energy => D::Energy,
+                Element::Fire => D::Fire,
+                Element::Death => D::Death,
+                Element::Ice => D::Ice,
+                Element::Earth => D::Earth,
+                Element::Holy => D::Holy,
+                Element::Healing => D::Untyped,
+            },
+            _ => D::Untyped,
+        }
+    }
+
     fn damage_dealt_percent(&self) -> Result<u32, Error> {
         if let Some(frozen) = self.delayed_damage_percent {
             return Ok(frozen);

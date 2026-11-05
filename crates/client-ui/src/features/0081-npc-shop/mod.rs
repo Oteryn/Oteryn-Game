@@ -12,6 +12,7 @@ pub enum Intent {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcShopPanel {
+    pub live: LiveShop,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -70,7 +71,7 @@ pub fn panel_text(panel: &NpcShopPanel) -> String {
             result.sold_units, result.total_gold_units
         ),
         Some(_) => "NPC shop ready".into(),
-        None => "Choose Look or Sell all for the selected NPC trade offer".into(),
+        None => "Select a live NPC trade offer".into(),
     }
 }
 
@@ -122,3 +123,13 @@ pub fn buy_request(
         expected_unit_price: offer.unit_price,
     })
 }
+
+#[cfg(test)]
+#[path = "tests/live.rs"]
+mod live_tests;
+
+mod state;
+pub use state::{LiveShop, Quote};
+
+mod input;
+pub use input::parse_amount;

@@ -15,6 +15,8 @@ impl<S: SessionStream> Session<S> {
         let payload = encode_depot_intent(intent)
             .map_err(|_| SessionError::Protocol(FoundationProtocolError::MalformedEnvelope))?;
         let revision = self.inventory_revision;
+        let container_revision = self.container_revision;
+        let bag_revision = self.gated_snapshot(14).map(|s| s.revision);
         let result = self
             .gated_command(CAPABILITY_DEPOT_V1, COMMAND_TYPE_DEPOT_INTENT, &payload)
             .await?;
@@ -31,9 +33,13 @@ impl<S: SessionStream> Session<S> {
             .map_err(|_| SessionError::Protocol(FoundationProtocolError::MalformedEnvelope));
         let reply = self.poison_on_error(reply)?;
         if reply.outcome == DepotOutcome::Moved {
-            // The result precedes the inventory delta; wait before accepting another input.
+            // A nested-bag deposit may change only domain 14, leaving inventory unchanged.
+            // Wait for the authoritative item view update before accepting another input.
             let until = tokio::time::Instant::now() + self.deadline;
-            while self.inventory_revision == revision {
+            while self.inventory_revision == revision
+                && self.container_revision == container_revision
+                && self.gated_snapshot(14).map(|s| s.revision) == bag_revision
+            {
                 if tokio::time::Instant::now() >= until {
                     return self.poison_on_error(Err(SessionError::Timeout("depot inventory")));
                 }

@@ -20,6 +20,7 @@ pub struct CreatureFieldEntry {
 
 #[derive(Debug)]
 pub struct PreparedCreaturePeriodicTurn {
+    impacts: Vec<CreaturePeriodicImpact>,
     before: CompanionSnapshot,
     original_slot: Slot,
     after: CompanionState,
@@ -31,10 +32,20 @@ pub struct PreparedCreaturePeriodicTurn {
 }
 #[derive(Debug)]
 pub struct CreaturePeriodicReceipt {
+    /// Final per-tick health effects, installed with this transient owner receipt.
+    pub impacts: Vec<CreaturePeriodicImpact>,
     pub actor: ExactActorRef,
     pub health_before: i64,
     pub health_after: i64,
     pub ticks: Vec<ConditionTick<ExactActorRef>>,
+}
+/// Read-only attribution of an applied periodic health effect.
+#[derive(Debug)]
+pub struct CreaturePeriodicImpact {
+    pub source: Option<ExactActorRef>,
+    pub element: Option<oteryn_gameplay_domain::domain::condition::DotElement>,
+    pub damage: u64,
+    pub healing: u64,
 }
 impl ChannelRuntimeV1 {
     /// Install entry once per actual position successor, before its due HP
@@ -184,6 +195,7 @@ impl ChannelRuntimeV1 {
         let stamp = self.issue_owner_work()?;
         let mut after = before.state.clone();
         let ticks = after.conditions.take_due(now_us, facts);
+        let mut impacts = Vec::new();
         let mut total = 0i64;
         let mut had_damage = false;
         let mut health_after = before.health;
@@ -334,9 +346,20 @@ impl ChannelRuntimeV1 {
                     }
                     // Source combatBlockHit heals before residual damage; each
                     // real tick caps independently, and lethal never resurrects.
+                    let health_before_healing = health_after;
                     health_after = health_after
                         .saturating_add(healing)
                         .min(before.maximum_health);
+                    let healed = health_after.saturating_sub(health_before_healing);
+                    let applied = damage.min(health_after).max(0);
+                    if let TickKind::Damage { element, .. } = tick.kind {
+                        impacts.push(CreaturePeriodicImpact {
+                            source: tick.provenance.source,
+                            element: Some(element),
+                            damage: u64::try_from(applied).unwrap_or(0),
+                            healing: u64::try_from(healed).unwrap_or(0),
+                        });
+                    }
                     health_after = health_after
                         .checked_sub(damage)
                         .ok_or(
@@ -368,6 +391,12 @@ impl ChannelRuntimeV1 {
                             oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
                         );
                     }
+                    impacts.push(CreaturePeriodicImpact {
+                        source: tick.provenance.source,
+                        element: None,
+                        damage: u64::try_from(damage.min(health_after).max(0)).unwrap_or(0),
+                        healing: 0,
+                    });
                     health_after = health_after
                         .checked_sub(damage)
                         .ok_or(
@@ -450,6 +479,7 @@ impl ChannelRuntimeV1 {
             None
         };
         Ok(PreparedCreaturePeriodicTurn {
+            impacts,
             before,
             original_slot,
             after,
@@ -514,6 +544,7 @@ impl ChannelRuntimeV1 {
         }
         *companion = Some(next);
         Ok(CreaturePeriodicReceipt {
+            impacts: prepared.impacts,
             actor: prepared.before.actor,
             health_before: prepared.before.health,
             health_after: prepared.health_after,

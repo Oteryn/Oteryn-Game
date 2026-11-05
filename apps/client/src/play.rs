@@ -25,10 +25,14 @@ const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    world_context_feedback: Option<String>,
+    death: feature_local_death_respawn::protocol::DeathState,
     target_walk_feedback: Option<&'static str>,
+    world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
     vitals: Option<oteryn_session::ActorVitals>,
     sounds: Vec<SoundCue>,
+    visuals: Vec<VisualCue>,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
     facing: StepDir,
@@ -48,6 +52,7 @@ pub struct PlayView {
     inputs: VecDeque<Input>,
     /// The other entities the server reports as visible.
     entities: Vec<WorldSpatialEntity>,
+    appearances: Vec<oteryn_session::VisibleAppearance>,
     ground_items: Vec<crate::input::Targetable>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
@@ -66,10 +71,14 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            world_context_feedback: None,
+            death: Default::default(),
             target_walk_feedback: None,
             world_clock: None,
+            world_weather: None,
             vitals: None,
             sounds: Vec::new(),
+            visuals: Vec::new(),
             own,
             facing: StepDir::South,
             floor,
@@ -82,6 +91,7 @@ impl PlayView {
             in_flight: false,
             inputs: VecDeque::new(),
             entities: Vec::new(),
+            appearances: Vec::new(),
             ground_items: Vec::new(),
             combat_line: None,
             logout_line: None,
@@ -97,6 +107,9 @@ impl PlayView {
     /// Appends `input` unless the same one already waits (a repeated press of a slot or click of
     /// a target is one command) or the queue is full.
     fn queue(&mut self, input: Input) {
+        if self.death.dead && !matches!(input, Input::Logout) {
+            return;
+        }
         if self.inputs.len() < MAX_QUEUED_INPUTS && !self.inputs.contains(&input) {
             self.inputs.push_back(input);
         }
@@ -107,9 +120,17 @@ mod end;
 mod mailbox;
 mod session_loop;
 mod session_stepper;
+mod stepper;
 mod tick;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
+
+#[cfg(windows)]
+pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
+pub use feature_local_reference_preferences::settings::{
+    PreferenceBinding, PreferenceInput, PreferenceStore, ReferencePreferences, SettingsState,
+    preference_bindings,
+};
 
 pub use feature_0004_item_view_move::state::GroundItem;
 

@@ -1,16 +1,26 @@
 #[path = "tests/account_achievements.rs"]
 mod account_achievements_tests;
 mod appearance_session_tests;
+#[path = "container_tree_tests.rs"]
+mod container_tree_tests;
 #[path = "tests/depot_map_tests.rs"]
 mod depot_map_tests;
+#[path = "features/0004-item-view-move/tests.rs"]
+mod item_movement_tests;
 #[path = "quest_log_transport/tests.rs"]
 mod quest_log_tests;
+#[path = "tests/replacement_snapshot.rs"]
+mod replacement_snapshot_tests;
 #[path = "features/0064-target-move/tests.rs"]
 mod target_move_tests;
 include!("tutorial_notices_tests.rs");
 include!("presentation_tests.rs");
+#[path = "features/0011-world-interaction/tests.rs"]
+mod world_context_tests;
 #[path = "features/0019-world-light/tests.rs"]
 mod world_light_tests;
+#[path = "features/0026-world-weather/tests.rs"]
+mod world_weather_tests;
 include!("achievement_notices_tests.rs");
 include!("server_messages_tests.rs");
 use super::*;
@@ -169,3 +179,5 @@ include!("session_tests_push.rs");
 include!("session_tests_entities.rs");
 include!("session_tests_chat.rs");
 include!("session_tests_items.rs");
+
+include!("session_tests_player_trade.rs");

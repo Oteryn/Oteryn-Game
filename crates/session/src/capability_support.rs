@@ -37,6 +37,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
+    oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1,
+    oteryn_protocol_oteryn::capability_tables::CAPABILITY_ITEM_LOOK_V1,
     oteryn_protocol_oteryn::capability_tables::CAPABILITY_WORLD_SPATIAL_FIELDS,
     oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
     chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
@@ -47,9 +49,11 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::staff::CAPABILITY_STAFF_V1,
     world_event::CAPABILITY_WORLD_EVENT_V1,
     player_trade::CAPABILITY_PLAYER_TRADE_V1,
+    oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_STACK_COUNT_V1,
     stash::CAPABILITY_STASH_V1,
     market::CAPABILITY_MARKET_V1,
     oteryn_protocol_oteryn::target_move::CAPABILITY_TARGET_MOVE_V1,
+    oteryn_protocol_oteryn::refusal_detail::CAPABILITY_REFUSAL_DETAIL_V1,
     imbuement::CAPABILITY_IMBUE_V1,
     task_board::CAPABILITY_TASK_BOARD_V1,
     oteryn_protocol_oteryn::server_save_countdown::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1,
@@ -59,7 +63,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     // CL26s4: boss encounter prerequisite of boss rewards (224).
+    oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1,
     oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+    oteryn_protocol_oteryn::inspection::CAPABILITY_INSPECTION_V1,
     prey::CAPABILITY_PREY_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
@@ -73,9 +79,11 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     oteryn_protocol_oteryn::daily_reward::CAPABILITY_DAILY_REWARD_V2,
     // CL26s4: personal boss reward commands.
+    oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
     boss_rewards::CAPABILITY_BOSS_REWARDS_V1,
     // CL26s2: native player typing command and CHAT delta support.
     oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1,
+    oteryn_protocol_oteryn::team_finder_members::CAPABILITY_TEAM_FINDER_MEMBERS_V1,
     player_typing::CAPABILITY_PLAYER_TYPING_V1,
     // CL26s1: public channels.
     chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1,
@@ -84,6 +92,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_EMPTY_OUTFIT_V1,
+    oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
+    oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -96,12 +106,15 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ACHIEVEMENT_NOTICES_V1,
     highscores::CAPABILITY_HIGHSCORES_V1,
     CAPABILITY_ANALYSER_V1,
+    oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
     CAPABILITY_CONTAINER_TREE_V1,
     quest_log::CAPABILITY_QUEST_LOG_V1,
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     oteryn_protocol_oteryn::world_clock::CAPABILITY_WORLD_LIGHT_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
+    oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1,
+    oteryn_protocol_oteryn::capability_tables::CAPABILITY_ITEM_LOOK_V1,
     oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
     oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
     guild::CAPABILITY_GUILD_V1,
@@ -118,6 +131,8 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+    oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1,
+    oteryn_protocol_oteryn::inspection::CAPABILITY_INSPECTION_V1,
     prey::CAPABILITY_PREY_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
@@ -133,9 +148,13 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::cyclopedia_tracker::CAPABILITY_CYCLOPEDIA_TRACKER_V1,
     oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
     oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_V1,
+    oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
     oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1,
+    oteryn_protocol_oteryn::team_finder_members::CAPABILITY_TEAM_FINDER_MEMBERS_V1,
+    player_typing::CAPABILITY_PLAYER_TYPING_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
+    oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

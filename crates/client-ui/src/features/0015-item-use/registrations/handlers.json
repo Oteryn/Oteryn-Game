@@ -1,15 +1,21 @@
 {
   "mechanic": "0015-item-use",
   "kind": "handlers",
-  "id": "0015-item-use-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0015-item-use-targeting",
+  "status": "supported",
   "commands": [],
+  "direction": "server_to_client",
+  "capability": 15,
+  "entry": "state.rs::source_current",
+  "push_messages": [
+    "CharacterInventory",
+    "WorldMapView",
+    "WorldSpatialEntities"
+  ],
+  "reducer": "state.rs::source_current",
+  "test": "tests/state.rs::source_removal_clears_targeting",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "protocol": "Uses the existing item-use command 2 encoder in client-runtime; pushes are reduced by the session before validating the source.",
+    "settings": "No local settings or persistence."
   }
 }

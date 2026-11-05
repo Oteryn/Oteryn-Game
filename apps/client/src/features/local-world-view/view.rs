@@ -39,12 +39,20 @@ impl PlayView {
         map: &oteryn_session::world_map::WorldMapViewSnapshot,
     ) -> Result<(), BatchError> {
         let world = World::from_live_map(map)?;
-        self.ground_items = super::super::feature_0004_item_view_move::state::map_targets(map);
-        self.map_floor = Some(map.header.origin.floor);
-        self.anchor = TileCoord::new(0, 0);
-        self.local.set_world(Arc::new(world));
-        self.live_map = true;
-        self.rebuild()
+        let mut next = self.clone();
+        next.ground_items =
+            super::super::feature_0004_item_view_move::state::map_targets(map);
+        // Incremental windows do not replace same-floor spatial observations.
+        if next.floor != map.header.origin.floor {
+            next.place(map.header.origin);
+        }
+        next.map_floor = Some(map.header.origin.floor);
+        next.anchor = TileCoord::new(0, 0);
+        next.local.set_world(Arc::new(world));
+        next.live_map = true;
+        next.rebuild()?;
+        *self = next;
+        Ok(())
     }
 
     pub(in crate::play) fn rebuild(&mut self) -> Result<(), BatchError> {
@@ -72,7 +80,7 @@ impl PlayView {
                     .copied(),
             )
             .collect::<Vec<_>>();
-        self.scene = Scene::centered_with(
+        self.scene.recenter_with(
             self.local.world(),
             (self.map_floor == Some(self.floor)).then_some(self.anchor),
             self.own,
@@ -80,13 +88,21 @@ impl PlayView {
             &markers,
             &entities,
         )?;
+        self.apply_preference_scale()?;
+        self.scene
+            .set_presentations(&self.appearances, self.floor)?;
         self.scene.retain_target(target)?;
-        self.light_scene()
+        self.light_scene()?;
+        self.weather_scene();
+        self.scene
+            .set_minimap(self.live_map && self.preferences().panel_visible("minimap"))?;
+        self.project_presentation(std::time::Instant::now())
     }
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
         self.world_clock = pushed.world_clock.or(self.world_clock);
+        self.world_weather = pushed.world_weather.or(self.world_weather);
         self.apply_server_messages(&pushed.server_messages);
         if let Some(map) = &pushed.map {
             self.set_live_map(map)?;
@@ -94,12 +110,19 @@ impl PlayView {
         if let Some(position) = pushed.own {
             self.place(position);
         }
+        if let Some(entries) = &pushed.appearances {
+            self.appearances.clone_from(entries);
+        }
         if let Some(entities) = &pushed.entities {
             self.entities.clone_from(entities);
+        }
+        if pushed.markers_reset {
+            self.markers.clear();
         }
         for entry in &pushed.markers {
             self.set_marker(entry);
         }
+        self.receive_presentation(&pushed.visuals, std::time::Instant::now());
         self.rebuild()
     }
 }

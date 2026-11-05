@@ -1,12 +1,16 @@
 use super::*;
 
 pub fn row_text(row: &market::MarketRow) -> String {
+    if row.side == 0 {
+        return format!("Item {} · select and Browse to see offers", row.definition);
+    }
     format!(
-        "Item {} · {} · amount {} · price {}{}",
+        "Item {} · {} · amount {} · price {} · total {}{}",
         row.definition,
         if row.side == 1 { "buy" } else { "sell" },
         row.amount,
         row.price,
+        u128::from(row.amount) * u128::from(row.price),
         if row.anonymous { " · anonymous" } else { "" }
     )
 }
@@ -19,6 +23,11 @@ pub fn panel_text(panel: &MarketPanel) -> String {
         }
         .to_owned(),
     ];
+    lines.push(format!(
+        "Page {} · Total: {}",
+        panel.page + 1,
+        u128::from(panel.amount) * u128::from(panel.price)
+    ));
     if !panel.selected {
         lines.push("Market is unavailable in this session".into());
     }
@@ -28,6 +37,6 @@ pub fn panel_text(panel: &MarketPanel) -> String {
     if let Some(feedback) = panel.feedback {
         lines.push(feedback.into());
     }
-    lines.extend(panel.rows.iter().map(row_text));
+
     lines.join("\r\n")
 }

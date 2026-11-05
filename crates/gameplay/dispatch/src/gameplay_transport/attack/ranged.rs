@@ -438,6 +438,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(_) => {
                 let attempt = window.install();
+                states.analyser.supplies(
+                    attempt.actor,
+                    attempt.session,
+                    &attempt.request.operations,
+                );
                 if !states.commit(runtime, attempt.actor, attempt.session, attempt.paid) {
                     return false;
                 }
@@ -740,6 +745,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut attack = self.states.attack.lock().await;
         let attempt = window.install();
+        states
+            .analyser
+            .supplies(attempt.actor, attempt.session, &attempt.request.operations);
         // Receipt reconciliation releases the item reservation. It never delivers a late hit.
         if states.commit(&runtime, attempt.actor, attempt.session, attempt.paid)
             && let Some(index) = attack.index(attempt.actor, attempt.session)
@@ -936,6 +944,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // must reconcile the exact receipt, without another unit, hit or training credit.
         permit.open_commit_window(attempt, park).park();
         Ok(())
+    }
+}
+
+pub(super) fn analyser_element(
+    element: Element,
+) -> oteryn_protocol_oteryn::damage_element::DamageElement {
+    use oteryn_protocol_oteryn::damage_element::DamageElement as D;
+    match element {
+        Element::Physical => D::Physical,
+        Element::Death => D::Death,
+        Element::Earth => D::Earth,
+        Element::Energy => D::Energy,
+        Element::Fire => D::Fire,
+        Element::Ice => D::Ice,
     }
 }
 

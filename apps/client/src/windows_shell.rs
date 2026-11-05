@@ -3,6 +3,8 @@ mod hud;
 mod input;
 #[path = "features/local-native-login/shell.rs"]
 mod native_login_shell;
+#[path = "features/local-reference-preferences/native.rs"]
+mod settings;
 
 use oteryn_client::input::{MouseActions, StepDir};
 use oteryn_client::map::{START, World};
@@ -60,6 +62,7 @@ impl Display for ShellError {
 impl std::error::Error for ShellError {}
 
 struct Application {
+    settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
     smoke: bool,
@@ -99,6 +102,7 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
             smoke,
@@ -222,6 +226,7 @@ impl ApplicationHandler for Application {
             return;
         }
         self.hud = hud::Hud::new(&window);
+        self.settings.attach(&window);
         if self.hud.is_none() {
             self.fail(event_loop, ShellError::WindowCreation);
             return;
@@ -348,6 +353,9 @@ impl ApplicationHandler for Application {
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         self.poll_entry();
+        if let Some(play) = &mut self.play {
+            self.settings.restore(&mut play.view);
+        }
         if let Some(play) = &mut self.play
             && let Err(end) = play.view.tick(&play.link)
         {
@@ -355,6 +363,9 @@ impl ApplicationHandler for Application {
                 PlayEnd::Ended(class) => self.return_to_login(class),
                 PlayEnd::LoggedOut => self.return_to_character_selection(),
             }
+        }
+        if let (Some(play), Some(window)) = (&self.play, &self.window) {
+            play.link.item_drag_tick(&play.view, window);
         }
         self.update_hud();
         if let Some(window) = &self.window

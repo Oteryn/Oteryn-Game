@@ -286,13 +286,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .map_err(|_| UseDisposition::Rejected)?;
                 let attempt = window.install();
-                install_owner_batch(
+                let receipt = install_owner_batch(
                     &mut runtime,
                     &mut states,
                     attempt.physical,
                     Some(attempt.player),
                     checked,
                 );
+                if receipt.applied {
+                    states.analyser.supply(
+                        actor,
+                        receipt.command.game_session_id(),
+                        &attempt.request.source_definition,
+                        1,
+                    );
+                }
                 if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
                     gate.settle(command.command_id, UseDisposition::Committed, &[]);
                 }
@@ -402,13 +410,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return;
                 };
                 let attempt = window.install();
-                install_owner_batch(
+                let receipt = install_owner_batch(
                     &mut runtime,
                     &mut states,
                     attempt.physical,
                     Some(attempt.player),
                     checked,
                 );
+                if receipt.applied {
+                    states.analyser.supply(
+                        actor,
+                        receipt.command.game_session_id(),
+                        &attempt.request.source_definition,
+                        1,
+                    );
+                }
                 UseDisposition::Committed
             }
             Ok(false) => {

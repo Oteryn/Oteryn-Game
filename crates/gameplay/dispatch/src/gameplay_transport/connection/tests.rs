@@ -31,6 +31,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
 #[path = "tests/support.rs"]
 mod support;
+
+#[path = "tests/spell_catalog.rs"]
+mod spell_catalog;
 use support::*;
 
 include!("../step_dispatch_fixture.rs");

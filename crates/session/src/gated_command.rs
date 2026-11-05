@@ -1,6 +1,9 @@
 //! Optional capability command exchange through the existing command sequencing owner.
 use super::*;
 
+#[path = "features/0011-world-interaction/protocol.rs"]
+pub mod world_context;
+
 #[path = "features/0064-target-move/protocol.rs"]
 mod target_move;
 
