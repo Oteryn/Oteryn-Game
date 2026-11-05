@@ -4,7 +4,7 @@ use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::map::boot::BundleCollisionIndexExt;
 use crate::map::{overlay::TilePos, view};
 
-pub(super) fn step_in(
+pub fn step_in(
     runtime: &mut ChannelRuntimeV1,
     cells: &NativeEntryMovementCells,
     actor: ExactActorRef,
