@@ -747,6 +747,26 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn observe_house_destroy(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        source: [u8; 16],
+        target: [u8; 16],
+    ) -> Option<house_destroy::Candidate> {
+        self.observe_house_destroy_impl(actor, command, source, target)
+            .await
+    }
+    async fn destroy_house_furniture(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        input: crate::durability::house_furniture_destroy::HouseDestroyCommand,
+    ) -> Option<UseOutcome> {
+        self.destroy_house_furniture_impl(actor, command, input)
+            .await
+    }
+
     async fn use_pick(
         &self,
         actor: ExactActorRef,
@@ -1030,6 +1050,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        self.expire_house_furniture_on_tick(actor, game_session_id)
+            .await;
         self.tick_actor_vitals(actor, game_session_id).await
     }
 
