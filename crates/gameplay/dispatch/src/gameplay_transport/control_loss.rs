@@ -352,7 +352,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             proven = Some(true);
                             break;
                         }
-                        Ok(FreshLossReconciliation::Absent | FreshLossReconciliation::Conflict) => {
+                        // No receipt proves the failed attempt did not commit, not that
+                        // loss was refused. Keep the listener's retry owner: otherwise a
+                        // transient pass failure strands this dead transport ACTIVE.
+                        Ok(FreshLossReconciliation::Absent) => return ControlLossResult::Unknown,
+                        Ok(FreshLossReconciliation::Conflict) => {
                             proven = Some(false);
                             break;
                         }

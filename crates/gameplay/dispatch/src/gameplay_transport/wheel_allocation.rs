@@ -124,7 +124,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(Err(
                 crate::durability::character_progression::CharacterProgressionError::InvalidInput
                 | crate::durability::character_progression::CharacterProgressionError::AuthorityRejected
-                | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence,
+                | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence
+                | crate::durability::character_progression::CharacterProgressionError::MissingProgressionState,
             )) => return WheelAllocationReply::Rejected,
             Some(Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
                 crate::durability::DurabilityError::RootUnavailable,
@@ -138,7 +139,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()
             .and_then(|sessions| sessions.get(&session).cloned().flatten());
         let Some(allocation) = allocation else {
-            return WheelAllocationReply::Unavailable;
+            // Admission defers this projection when progression or the root is not ready.
+            // A query has no outcome to reconcile, so refuse it without ending the stream.
+            return if request.action == 0 {
+                WheelAllocationReply::Rejected
+            } else {
+                WheelAllocationReply::Unavailable
+            };
         };
         if let Some(actor) = admitted.runtime_actor {
             self.refresh_wheel_vitals(actor, session).await;
