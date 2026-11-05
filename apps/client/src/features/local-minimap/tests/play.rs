@@ -48,6 +48,7 @@ fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(),
             .any(|q| q.size == [12.0; 2] && q.position == [56.0, 44.0])
     ); // Background, one received tile, own marker.
     let creature = WorldSpatialEntity {
+        display_name: None,
         kind: oteryn_session::EntityKind::Creature,
         entity: EntityRef {
             identity: [1; 16],
@@ -153,6 +154,7 @@ fn minimap_rectangle_captures_clicks_before_world_selection() -> Result<(), Batc
     let beneath =
         crate::input::click_tile(play.scene().view(), 4.0, 4.0).ok_or(BatchError::InvalidView)?;
     let creature = WorldSpatialEntity {
+        display_name: None,
         kind: oteryn_session::EntityKind::Creature,
         entity: EntityRef {
             identity: [3; 16],

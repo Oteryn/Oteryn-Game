@@ -1,9 +1,9 @@
 use crate::play::{Outbox, Pushed};
-use oteryn_client_runtime::quest_log::{QuestLog, QuestState};
+use oteryn_client_runtime::quest_log::{QuestLog, QuestState, QuestUpdate};
 use oteryn_session::{AppliedDelta, Session, SessionError, SessionStream};
 
 pub(in crate::play) fn quest_log(pushed: &mut Pushed, delta: AppliedDelta<QuestLog>) {
-    pushed.quests.push(delta);
+    pushed.quests.push(QuestUpdate::Delta(delta));
 }
 
 pub(in crate::play) fn initial<S: SessionStream>(session: &Session<S>) -> QuestState {
@@ -42,10 +42,10 @@ impl Outbox {
 
 pub(in crate::play) fn reduce(
     panel: &mut oteryn_client_ui::quest_log::QuestPanel,
-    deltas: Vec<AppliedDelta<QuestLog>>,
+    deltas: Vec<QuestUpdate>,
 ) {
     for delta in deltas {
-        if let Err(refusal) = panel.state.apply(&delta) {
+        if let Err(refusal) = panel.state.apply_update(&delta) {
             panel.state.refusal = Some(refusal);
         }
         let missions = match &panel.state.log.view {
@@ -58,5 +58,15 @@ pub(in crate::play) fn reduce(
         {
             panel.mission = missions.first().map(|m| m.mission_index);
         }
+    }
+}
+
+/// Other gated features can subscribe to the same session notification when they cache a domain.
+pub(in crate::play) fn snapshot_replaced(
+    pushed: &mut Pushed,
+    snapshot: AppliedDelta<oteryn_session::GatedSnapshot>,
+) {
+    if snapshot.value.domain_id == 16 {
+        pushed.quests.push(QuestUpdate::Snapshot(snapshot.value));
     }
 }

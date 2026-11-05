@@ -6,6 +6,12 @@ use super::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
     WorldWeather(AppliedDelta<world_weather::WorldWeather>),
+    /// Every replaced domain, including those with a typed projection event.
+    GatedSnapshotReplaced(AppliedDelta<GatedSnapshot>),
+    /// Domain 2's whole placement set, including an empty set that removes old markers.
+    WorldObjectOverlaySnapshot(AppliedDelta<Vec<WorldObjectOverlayEntry>>),
+    /// Domain 12's complete room and retained-line state.
+    ChatSnapshot(AppliedDelta<ChatLog>),
     WorldClock(AppliedDelta<world_clock::WorldClock>),
     Presentation(AppliedDelta<Vec<PresentationEvent>>),
     ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
@@ -29,6 +35,9 @@ pub enum SessionEvent {
     /// Domain 2 `WORLD_OBJECT_OVERLAY`.
     WorldObjectOverlay(AppliedDelta<WorldObjectOverlayEntry>),
     /// Domain 17: validated bundle map changes, bound to the admitted content and reset epoch.
+    /// A complete replacement window, applied only after its matching commit.
+    WorldMapSnapshot(AppliedDelta<oteryn_protocol_oteryn::world_map::WorldMapViewSnapshot>),
+    /// A revisioned incremental change to the current map window.
     WorldMap(AppliedDelta<oteryn_protocol_oteryn::world_map::WorldMapViewDelta>),
     /// Domain 3 `ACTOR_VITALS`.
     ActorVitals(AppliedDelta<ActorVitals>),
@@ -60,6 +69,9 @@ impl SessionEvent {
     pub const fn domain_id(&self) -> u32 {
         match self {
             Self::PlayerTrade(_) => player_trade::STATE_DOMAIN_PLAYER_TRADE,
+            Self::GatedSnapshotReplaced(snapshot) => snapshot.value.domain_id,
+            Self::WorldObjectOverlaySnapshot(_) => 2,
+            Self::ChatSnapshot(_) => STATE_DOMAIN_CHAT,
             Self::NpcConversation(_) => npc_service::STATE_DOMAIN_NPC_CONVERSATION,
             Self::NpcTradeWindow(_) => npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW,
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
@@ -80,7 +92,9 @@ impl SessionEvent {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
             }
             Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-            Self::WorldMap(_) => oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+            Self::WorldMap(_) | Self::WorldMapSnapshot(_) => {
+                world_map::STATE_DOMAIN_WORLD_MAP_VIEW
+            }
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
             Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             Self::ChatLine(_)

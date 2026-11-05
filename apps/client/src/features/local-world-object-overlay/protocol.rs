@@ -18,3 +18,15 @@ impl Pushed {
         }
     }
 }
+
+/// A replacement is a reset, not a series of upserts over the previous placement set.
+pub(in crate::play) fn overlay_snapshot(
+    pushed: &mut Pushed,
+    snapshot: AppliedDelta<Vec<WorldObjectOverlayEntry>>,
+) {
+    pushed.markers_reset = true;
+    pushed.markers.clear();
+    for entry in snapshot.value {
+        pushed.set_marker(entry);
+    }
+}

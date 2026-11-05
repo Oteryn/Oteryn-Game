@@ -52,6 +52,7 @@ pub struct PlayView {
     inputs: VecDeque<Input>,
     /// The other entities the server reports as visible.
     entities: Vec<WorldSpatialEntity>,
+    appearances: Vec<oteryn_session::VisibleAppearance>,
     ground_items: Vec<crate::input::Targetable>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
@@ -90,6 +91,7 @@ impl PlayView {
             in_flight: false,
             inputs: VecDeque::new(),
             entities: Vec::new(),
+            appearances: Vec::new(),
             ground_items: Vec::new(),
             combat_line: None,
             logout_line: None,

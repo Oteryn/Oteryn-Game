@@ -4,6 +4,7 @@
     "state"
   ],
   "events": {
-    "WorldObjectOverlay": "overlay"
+    "WorldObjectOverlay": "overlay",
+    "WorldObjectOverlaySnapshot": "overlay_snapshot"
   }
 }

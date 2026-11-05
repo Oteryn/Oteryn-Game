@@ -153,6 +153,7 @@ fn world_context_own_tile_item_and_reset_binding() -> Result<(), BatchError> {
 #[test]
 fn world_context_creature_look_keeps_generation_without_attack() -> Result<(), BatchError> {
     let entity = WorldSpatialEntity {
+        display_name: None,
         entity: EntityRef {
             identity: [3; 16],
             generation: 9,
@@ -198,6 +199,7 @@ fn world_context_creature_look_keeps_generation_without_attack() -> Result<(), B
 #[test]
 fn world_context_npc_is_inspectable_without_becoming_attackable() -> Result<(), BatchError> {
     let entity = WorldSpatialEntity {
+        display_name: None,
         entity: EntityRef {
             identity: [4; 16],
             generation: 3,

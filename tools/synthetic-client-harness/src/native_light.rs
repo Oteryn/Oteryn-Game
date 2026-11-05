@@ -33,6 +33,7 @@ fn native_clock_update_reaches_status_and_scene()
                             initial,
                             incoming,
                             pending: vec![],
+                            appearances: vec![],
                         },
                         commands,
                         outbox,
