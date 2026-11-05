@@ -10,14 +10,9 @@
 //! - Thawing places Ice Flowers (13842) on 14 tiles (`thawing.lua:4-19,34-36`): the live map
 //!   has no owner that adds a volatile item to a tile (`BundleFacts::added_entry` returns
 //!   `None` for a volatile item, `crates/gameplay/world/src/map/facts.rs`).
-//! - Their Master's Voice turns 30% of the fungus 12065 on floor 9 into 12059..=12063
-//!   (`their_masters_voice.lua:5-14`): 12065 is a Terrain ground in this bundle
-//!   (`content/world/terrain/terrain-03000-03499.json`), and the map rotation owner
-//!   (`BundleFacts::rotate_base`) changes only fixed item placements.
-//! - Oriental Trader loads its ship map and Yasir stands on it (`oriental_trader.lua:61-65`):
-//!   no world-change map layer import exists, so Yasir would stand on a tile the map lacks.
-//! - Grimvale (`grimvale_respawn_event.lua:21-36`) and the Flower Month dryad waves
-//!   (`raids/world_changes/flower_month.lua:28-55`) change monster spawns.
+//! - Flower Month dryad waves (`raids/world_changes/flower_month.lua:28-55`).
+//!
+//! SP02 projects fungus and trader tiles before map boot and adds Grimvale activation sources.
 
 /// The donor `math.random(100) <= percent`, from one uniform 64-bit draw.
 fn percent_roll(draw: u64, percent: u64) -> bool {
@@ -48,6 +43,25 @@ pub enum OrientalTraderTown {
     Ankrahmun,
     Carlin,
     LibertyBay,
+}
+
+impl OrientalTraderTown {
+    pub fn layer(self) -> &'static str {
+        match self {
+            Self::Ankrahmun => "oriental_trader/ankrahmun",
+            Self::Carlin => "oriental_trader/carlin",
+            Self::LibertyBay => "oriental_trader/libertybay",
+        }
+    }
+
+    /// `oriental_trader.lua:13,17,21`: Yasir's deck position, in source coordinates.
+    pub fn yasir_position(self) -> (u16, u16, i8) {
+        match self {
+            Self::Ankrahmun => (33102, 32884, 6),
+            Self::Carlin => (32400, 31815, 6),
+            Self::LibertyBay => (32314, 32895, 6),
+        }
+    }
 }
 
 /// The draws a day takes, in this order, each its own purpose.
