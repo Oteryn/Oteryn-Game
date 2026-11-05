@@ -418,6 +418,17 @@ impl BundleFacts {
         }
     }
 
+    /// Immutable authored facts for a named-House view. The bundle palette and
+    /// placements are shared; Channel door, rotation and callback state is not.
+    pub fn base_only(&self) -> PinnedFacts<'_> {
+        PinnedFacts {
+            facts: self,
+            callbacks: Some(Arc::default()),
+            doors: DoorStates::default(),
+            rotations: Some(Arc::default()),
+        }
+    }
+
     /// A tool may use an ordinary placement or its explicit action number; every other authored
     /// attribute, dropped teleport, door and House tile stays with its existing owner.
     pub fn terrain_tool_action(&self, key: u64) -> Option<Option<u16>> {
@@ -1031,6 +1042,8 @@ impl MapFacts for PinnedFacts<'_> {
     }
 }
 
+#[cfg(test)]
+mod house_base_tests;
 #[cfg(test)]
 mod pickup_tests;
 

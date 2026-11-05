@@ -309,6 +309,42 @@ mod tests {
     use super::*;
 
     #[test]
+    fn dryad_garden_uses_source_unique_ids_in_both_directions() -> Result<(), String> {
+        let callbacks = load()?;
+        for (suffix, unique, destination) in [
+            (
+                "enter",
+                33331,
+                Position {
+                    x: 33202,
+                    y: 32012,
+                    floor: -11,
+                },
+            ),
+            (
+                "leave",
+                33332,
+                Position {
+                    x: 33264,
+                    y: 32012,
+                    floor: -7,
+                },
+            ),
+        ] {
+            let key = format!("oteryn:quest-callback/dryad-garden-{suffix}");
+            let callback = callbacks.iter().find(|c| c.key == key).ok_or(key)?;
+            assert_eq!(callback.trigger, Trigger::Use);
+            assert_eq!(callback.selector.unique, Some(unique));
+            assert_eq!(callback.teleport, Some(destination));
+            assert!(callback.storage.is_empty());
+            assert!(callback.sources.iter().all(|source| {
+                source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
+            }));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn quest_world_callbacks_accept_only_pinned_donor_revisions() -> Result<(), String> {
         let mut source: serde_json::Value =
             serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;

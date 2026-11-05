@@ -95,6 +95,45 @@ impl SpellGroundTarget {
         }
     }
 }
+impl crate::durability::item_loop_move::LoopGround {
+    /// The ordinary item-loop address uses the bundle's raw map revision and
+    /// native floor (-runtime z). Spell/corpse addresses use a different digest
+    /// level and floor convention; they cannot be stored as ordinary Ground.
+    pub fn from_native_owner(
+        room: &crate::content::QualifiedNativeEntryRoom,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        position: crate::foundation::MovementLocalPosition,
+        map_revision: &str,
+    ) -> Result<Self, &'static str> {
+        use sha2::Digest as _;
+        if !matches!(
+            room.movement_cells().index(),
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+        ) {
+            return Err("ordinary Ground requires the qualified bundle owner");
+        }
+        // Reuse the placed-cell and full world/frame/map/server qualification.
+        let target = SpellGroundTarget::from_native_owner(room, runtime, position)?;
+        let revision_digest: [u8; 32] = sha2::Sha256::digest(map_revision.as_bytes()).into();
+        if revision_digest != room.map_revision_digest() {
+            return Err("ordinary Ground raw map revision differs from the bundle pin");
+        }
+        let floor = position
+            .floor
+            .checked_neg()
+            .ok_or("ordinary Ground floor overflow")?;
+        let mut spatial_position = Vec::with_capacity(10);
+        spatial_position.extend_from_slice(&position.x.to_be_bytes());
+        spatial_position.extend_from_slice(&position.y.to_be_bytes());
+        spatial_position.extend_from_slice(&floor.to_be_bytes());
+        Ok(Self {
+            spatial_position,
+            map_revision: map_revision.to_owned(),
+            content_revision: target.content_revision,
+            placement_context: target.placement_context,
+        })
+    }
+}
 impl QualifiedItemDefinition {
     pub fn from_native_policy(
         policy: crate::content::native_gameplay::QualifiedItemPolicy<'_>,

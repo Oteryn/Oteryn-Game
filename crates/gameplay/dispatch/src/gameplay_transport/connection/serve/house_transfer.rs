@@ -253,7 +253,9 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 && selected.command_selected(command.command_type)
                 && matches!(
                     command.command_type,
-                    COMMAND_TYPE_HOUSE_TRANSFER | oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
+                    COMMAND_TYPE_HOUSE_TRANSFER
+                        | oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
+                        | oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
                 )
                 && super::super::gameplay_idle::meaningful(command, selected.as_slice());
             let mut effects = None;

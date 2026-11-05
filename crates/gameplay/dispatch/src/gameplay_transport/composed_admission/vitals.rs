@@ -48,7 +48,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<(u64, actor_spell::ActorVitals)> {
         // Named House residents also own these persistent native conditions.
         // Checkpoint before unrelated Channel-only cadence may return early.
-        if !super::super::item_use::gourmet::checkpoint(self, actor, game_session_id, false).await {
+        if !self
+            .reconcile_pending_item_effects(actor, game_session_id)
+            .await
+            || !super::super::item_use::gourmet::checkpoint(self, actor, game_session_id, false)
+                .await
+        {
             return None;
         }
         if self

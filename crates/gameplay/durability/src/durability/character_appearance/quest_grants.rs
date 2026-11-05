@@ -72,6 +72,7 @@ pub(crate) async fn grant_quest_outfit(
     .bind(character.as_bytes().as_slice())
     .fetch_one(&mut **tx)
     .await?;
+    super::lock_account_grants(tx, account).await?;
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))")
         .bind(format!("oteryn:quest-appearance:{account}:{}", grant.key()))
         .execute(&mut **tx)

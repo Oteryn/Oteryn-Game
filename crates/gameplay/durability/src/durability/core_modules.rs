@@ -55,6 +55,7 @@ pub mod chat_text;
 pub mod coin_exchange;
 pub mod consume_transform;
 mod consume_transform_audit;
+pub mod consume_transform_cosmetics;
 pub mod content_activation;
 pub mod cyclopedia_character;
 pub mod cyclopedia_tracker;

@@ -1052,6 +1052,8 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    #[cfg(test)]
+    super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
     let end = serve_admitted_actor(stream, admitted, authority, policy).await;
     let ended = match end {
         ConnectionEnd::AdmittedThenClosed(current, _)
@@ -1072,6 +1074,8 @@ where
             .yield_chase_to_client(actor, session)
             .await;
     }
+    #[cfg(test)]
+    super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
     end
 }
 

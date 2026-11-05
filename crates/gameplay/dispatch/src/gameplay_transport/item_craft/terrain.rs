@@ -384,6 +384,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return;
             };
+            // Map-authored plants may be Terrain; the pinned palette owns each successor.
+            if matches!(
+                row.item,
+                306 | 324 | 330 | 13842 | 13843 | 14029 | 14031 | 14032 | 3699 | 3700
+            ) {
+                let Some(after) = u16::try_from(row.item)
+                    .ok()
+                    .and_then(|appearance| map.facts.quest_callback_replacement(key, appearance))
+                else {
+                    return;
+                };
+                let Ok(revision) = u64::try_from(row.revision) else {
+                    return;
+                };
+                if !map
+                    .facts
+                    .install_gathering_state(key, revision, entry.facts, Some(after))
+                {
+                    return;
+                }
+                continue;
+            }
             let MapDefinition::Item(reference) = entry.facts.definition else {
                 return;
             };

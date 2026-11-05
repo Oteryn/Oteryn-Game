@@ -2057,6 +2057,8 @@ pub(super) mod tests {
                 // production_sources() yields the item_craft/ directory before item_craft.rs,
                 // in path order, so enchanting.rs comes before the soulpit files.
                 "crates/gameplay/durability/src/durability/item_craft/enchanting.rs",
+                // W19 map harvest binds the caller's fenced Type2Transaction tuple.
+                "crates/gameplay/durability/src/durability/item_craft/harvest.rs",
                 // Soul Core conversion and the shared-transaction entry debit both bind
                 // their existing CRAFT audit envelope to the caller's Type2 transaction.
                 "crates/gameplay/durability/src/durability/item_craft/soulpit/entry.rs",
@@ -2066,6 +2068,8 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/item_fee_burn.rs",
                 // P18 zero-gold Forge events use the fenced transaction's selected tuple.
                 "crates/gameplay/durability/src/durability/item_forge_live/actions.rs",
+                // W19 seed drops share the move owner's Type2 transaction and tuple.
+                "crates/gameplay/durability/src/durability/item_loop_move/seed_drop.rs",
                 "crates/gameplay/durability/src/durability/item_mint.rs",
                 "crates/gameplay/durability/src/durability/item_timed_state.rs",
                 "crates/gameplay/durability/src/durability/item_transfer.rs",

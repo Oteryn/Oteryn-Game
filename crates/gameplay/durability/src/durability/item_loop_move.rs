@@ -18,6 +18,9 @@
 //! (immediate line admission, deferred line and receipt proofs) decide the same facts again.
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
+mod seed_drop;
+pub use seed_drop::{SeedDropProbe, SeedDropTarget};
+
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_equipment::{EquipmentError, assert_current_equipment_in_transaction};
 use super::ground_cell_limit::{
@@ -961,7 +964,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
-                OR game_item_loop_map_mint_source(i.item_instance_id) AS loop_pickup \
+                OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) AS loop_pickup \
            FROM game_item_instances i \
            LEFT JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_character_depot_locations d ON d.item_instance_id = i.item_instance_id \
@@ -1879,7 +1882,7 @@ impl DurabilityRoot {
                         AND (g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) \
                             = ($5,$6,$7,$8) \
                         AND (game_item_loop_drop_ref(g.corpse_ref) \
-                             OR game_item_loop_map_mint_source(i.item_instance_id)) \
+                             OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id)) \
                       FOR SHARE OF i, target",
                 )
                 .bind(root.as_slice()).bind(world.as_bytes().as_slice())
@@ -1956,7 +1959,7 @@ impl DurabilityRoot {
                           WHERE g.world_id = encode($1,'hex')::uuid \
                             AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle = 1 \
                             AND (game_item_loop_drop_ref(g.corpse_ref) \
-                                 OR game_item_loop_map_mint_source(i.item_instance_id) \
+                                 OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) \
                                  OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL))) \
                           ORDER BY g.stack_ordinal, i.item_instance_id \
                           LIMIT $3",

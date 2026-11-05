@@ -4,7 +4,10 @@
 //! vitals and cooldowns and the owner work item of one cast.
 
 mod activity_transfer;
+#[path = "novelty_item_owner.rs"]
+mod novelty_item_owner;
 pub(in crate::gameplay_transport) use activity_transfer::PreparedActivitySpellStates;
+pub(in crate::gameplay_transport) use novelty_item_owner::NoveltyEffectRequest;
 pub use oteryn_protocol_oteryn::actor_spell::*;
 #[path = "actor_conditions.rs"]
 #[allow(
@@ -112,6 +115,8 @@ pub struct ChannelSpellStates {
         oteryn_gameplay_domain::domain::hireling::food::GourmetConditions,
         u64,
     )>,
+    pub(in crate::gameplay_transport) pending_item_effects:
+        Vec<super::novelty_item_use::PendingItemEffect>,
     pub(in crate::gameplay_transport) pending_gourmet: Vec<super::item_use::gourmet::PendingUse>,
     pub(in crate::gameplay_transport) pending_hireling_lamps: Vec<super::hireling::PendingLampUse>,
     pub(super) prey: Vec<super::prey::LivePrey>,
@@ -295,6 +300,7 @@ impl Default for ChannelSpellStates {
         Self {
             enchanting_pending: Vec::new(),
             gourmet_checkpoints: Vec::new(),
+            pending_item_effects: Vec::new(),
             pending_gourmet: Vec::new(),
             pending_hireling_lamps: Vec::new(),
             prey: Vec::new(),
@@ -438,9 +444,13 @@ impl ChannelSpellStates {
 
     /// Unknown durable outcomes retain their original prepared owner state.
     pub fn has_pending_spell_commit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        self.pending_gourmet
+        self.pending_item_effects
             .iter()
-            .any(|pending| pending.actor == actor && pending.session == session)
+            .any(|memo| memo.actor == actor && memo.request.command.game_session_id() == session)
+            || self
+                .pending_gourmet
+                .iter()
+                .any(|pending| pending.actor == actor && pending.session == session)
             || self
                 .pending_hireling_lamps
                 .iter()
@@ -646,6 +656,13 @@ impl ChannelSpellStates {
                 .is_ok()
                 || runtime
                     .house_player_control_facts(pending.actor, pending.session)
+                    .is_ok()
+        });
+        self.pending_item_effects.retain(|pending| {
+            let session = pending.request.command.game_session_id();
+            runtime.player_control_facts(pending.actor, session).is_ok()
+                || runtime
+                    .house_player_control_facts(pending.actor, session)
                     .is_ok()
         });
         self.pending_hireling_lamps.retain(|pending| {

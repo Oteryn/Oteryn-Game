@@ -54,7 +54,7 @@ impl Source {
             })?
             .into_iter()
             // Match the appearance owner's earned-unlock seam. Store does not authorize.
-            .filter(|fact| matches!(fact.source_kind.as_str(), "quest" | "npc" | "mount_taming"))
+            .filter(|fact| matches!(fact.source_kind.as_str(), "quest" | "npc" | "mount_taming" | "item_action"))
             .map(|fact| (fact.unlock_key, fact.content_revision))
             .collect();
         let outfits = self.content.outfit_keys().filter_map(|key| {

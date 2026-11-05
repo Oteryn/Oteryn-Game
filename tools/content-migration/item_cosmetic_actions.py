@@ -133,7 +133,9 @@ def capture(crystal):
             selected = outfit([row[1], row[2]], addon, donor)
             # Player::addOutfit (player.cpp:6840-6851) inserts the base with the addon.
             choices.append({'grants': [outfit([row[1], row[2]], 0, donor), selected],
-                            'owned': selected, 'required': [], 'cues': [cue('CONST_ME_GIFT_WRAPS')]})
+                            'owned': selected, 'required': [], 'cues': [cue('CONST_ME_GIFT_WRAPS')],
+                            'feedback': f'You received the {row[3]} outfit with addon {addon}!',
+                            'owned_feedback': 'You already have this outfit with this addon.'})
     add(int(re.search(r'local itemDollId = (\d+)', raw)[1]), f'{path}:53-71', choices, mode='random_outfit')
 
     path = 'data-crystal/scripts/special/mount_random.lua'
@@ -143,7 +145,9 @@ def capture(crystal):
     for index, row in entries.items():
         selected = mount(row[1], f'{path}:{line + index}')
         choices.append({'grants': [selected], 'owned': selected, 'required': [],
-                        'cues': [cue('CONST_ME_FIREWORK_RED')]})
+                        'cues': [cue('CONST_ME_FIREWORK_RED')],
+                        'feedback': f'You received the store mount: {row[2]}!',
+                        'owned_feedback': f'You already own the store mount: {row[2]}.'})
     add(int(re.search(r'local itemMountId = (\d+)', raw)[1]), f'{path}:44-68', choices, mode='random_mount')
     rules.sort(key=lambda row: row['item_id'])
     if len({r['item_id'] for r in rules}) != len(rules):
