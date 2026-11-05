@@ -355,6 +355,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.open_daily_shrine(actor, command, &target).await {
             return outcome;
         }
+        if let Some(outcome) = self.use_soulpit_exit(actor, command, &target).await {
+            return outcome;
+        }
         if self
             .rooms
             .gate_source_world()

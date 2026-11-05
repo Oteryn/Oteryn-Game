@@ -109,6 +109,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // and data-global/startup/tables/chest.lua:806-811 confirm the single reward and
     // no speed attribute (speed_bonus=0); boots 3554 and shield 3420 already exist.
     ("QUESTS3-DEMON-HELMET", 1),
+    // QUESTS-1: mummy disguise 144 adds one non-equipment profile with speed_bonus=0.
+    // XML: zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:195-198.
+    // Engine default: zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/items/items.hpp:38 (int32_t speed = 0).
+    // tools/content-migration/quest_disguise_item_profiles.py verifies this source default.
+    ("QUESTS-1-FOOLISH-DISGUISE", 1),
     // 19 read-only readable profiles (tools/content-migration/readable_item_profiles.py):
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
     // None of them is equipment.

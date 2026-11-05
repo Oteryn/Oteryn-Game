@@ -1,4 +1,5 @@
 """Register schema-preserving spell collections without changing legacy identities."""
+
 from __future__ import annotations
 
 import argparse
@@ -36,16 +37,37 @@ COIN_KEYS = {f"oteryn:item.tibia.i{i}" for i in (3031, 3035, 3043)}
 # I14: carry agreeing facts and the I14G owner-selected Global values into the native provider.
 # The four condition-only potions are admitted separately by condition_potion_profiles.
 CONSUMPTION_FACTS = "docs/agents/evidence/OTV2-20261004-item-consumption-facts-v1.json"
-CONSUMPTION_FACTS_SHA256 = "d13625eadd669ca491964e4a0cd1a76ec0e92999c613a55c9b8964c01687e5e6"
+CONSUMPTION_FACTS_SHA256 = (
+    "d13625eadd669ca491964e4a0cd1a76ec0e92999c613a55c9b8964c01687e5e6"
+)
 CONSUMABLE_KEY = "oteryn:item.tibia.i3577"
 # Crystal 201189f8 potions.lua:45-59; TibiaWiki revisions are pinned in the facts.
 # 238 still needs a canonical World correction beyond the immutable historical promotion chain.
 # I14G owner decision 2026-10-30 "wez global": admit the five conflicts using Global.
 # Food facts already pin The Carrot of Doom rev 1016926 (96s) and Energy Bar rev 1011115 (300s).
-POTION_KEYS = {f"oteryn:item.tibia.i{i}" for i in (
-    236, 237, 239, 266, 268, 283, 284, 285, 3250, 3578, 3606, 7642, 7643, 7876,
-    23373, 23374, 23375, 23535,
-)}
+POTION_KEYS = {
+    f"oteryn:item.tibia.i{i}"
+    for i in (
+        236,
+        237,
+        239,
+        266,
+        268,
+        283,
+        284,
+        285,
+        3250,
+        3578,
+        3606,
+        7642,
+        7643,
+        7876,
+        23373,
+        23374,
+        23375,
+        23535,
+    )
+}
 # Exact TibiaWiki revisions and restore values; agreeing health/level/flask facts stay intact.
 GLOBAL_POTION_RESTORES = {
     "oteryn:item.tibia.i7642": (1183259, [("HEALTH", 250, 350), ("MANA", 125, 185)]),
@@ -102,10 +124,14 @@ def check_door_profiles(doors: dict, present: set[str]) -> list[dict]:
     closed = set(doors["closed_door_ids"])
     keys = [r["production_definition"]["production_key"] for r in doors["records"]]
     extra = set(doors["open_door_extra_ids"])
-    expected = {f"oteryn:item.tibia.i{i}" for i in closed | {c + 1 for c in closed} | extra}
+    expected = {
+        f"oteryn:item.tibia.i{i}" for i in closed | {c + 1 for c in closed} | extra
+    }
     if (
         doors["schema"] != "OTERYN_NATIVE_DOOR_ITEM_PROFILES/v1"
-        or len(set(keys)) != len(keys) or not set(keys) <= expected or set(keys) & present
+        or len(set(keys)) != len(keys)
+        or not set(keys) <= expected
+        or set(keys) & present
         or len(keys) + len(expected & present) != len(expected)
     ):
         raise ValueError("DOOR_ITEM_PROFILES_DISAGREE_WITH_DOOR_REGISTRY")
@@ -113,11 +139,17 @@ def check_door_profiles(doors: dict, present: set[str]) -> list[dict]:
         number = record_number(record)
         kind = record["semantics"]["classification"]["value"]["item_type"]
         attributes = record["attributes"]
-        walkable = attributes["blocks_movement"] is False and attributes["blocks_projectile"] is False
+        walkable = (
+            attributes["blocks_movement"] is False
+            and attributes["blocks_projectile"] is False
+        )
         # A closed door blocks movement; its open item (C + 1) blocks neither movement nor projectiles.
         if (
             record["admission"] != DOOR_ADMISSION
-            or (number in closed and (kind != DOOR_KIND or attributes["blocks_movement"] is not True))
+            or (
+                number in closed
+                and (kind != DOOR_KIND or attributes["blocks_movement"] is not True)
+            )
             or (number not in closed and not walkable)
         ):
             raise ValueError("DOOR_ITEM_PROFILES_DISAGREE_WITH_DOOR_REGISTRY")
@@ -130,24 +162,36 @@ def admit_overlay_profiles(root: Path, generated: dict[str, bytes]) -> None:
     document = json.loads(generated[path])
     coins = json.loads((root / COIN_PROFILES).read_bytes())
     doors = json.loads((root / DOOR_PROFILES).read_bytes())
-    present = {r["production_definition"]["production_key"] for r in document["records"]}
+    present = {
+        r["production_definition"]["production_key"] for r in document["records"]
+    }
     keys = [r["production_definition"]["production_key"] for r in coins["records"]]
-    stack = {"state": "KNOWN", "value": {
-        "stackable": {"state": "KNOWN", "value": True},
-        "stack_max": {"state": "KNOWN", "value": 100},
-    }}
+    stack = {
+        "state": "KNOWN",
+        "value": {
+            "stackable": {"state": "KNOWN", "value": True},
+            "stack_max": {"state": "KNOWN", "value": 100},
+        },
+    }
     if (
         coins["schema"] != "OTERYN_NATIVE_COIN_ITEM_PROFILES/v1"
-        or len(keys) != len(COIN_KEYS) or set(keys) != COIN_KEYS or present & COIN_KEYS
-        or any(r["admission"] != COIN_ADMISSION or r["semantics"]["stack"] != stack
-               for r in coins["records"])
+        or len(keys) != len(COIN_KEYS)
+        or set(keys) != COIN_KEYS
+        or present & COIN_KEYS
+        or any(
+            r["admission"] != COIN_ADMISSION or r["semantics"]["stack"] != stack
+            for r in coins["records"]
+        )
     ):
         raise ValueError("COIN_ITEM_PROFILES_DISAGREE_WITH_D176")
     added = coins["records"] + check_door_profiles(doors, present)
     document["records"] = sorted(document["records"] + added, key=provider_order)
     data = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
     digest = hashlib.sha256(data).hexdigest()
-    if digest != coins["item_profiles_sha256"] or digest != doors["item_profiles_sha256"]:
+    if (
+        digest != coins["item_profiles_sha256"]
+        or digest != doors["item_profiles_sha256"]
+    ):
         raise ValueError("ITEM_PROFILES_PROVIDER_DRIFT")
     generated[path] = data
     manifest = json.loads(generated[NATIVE_MANIFEST])
@@ -157,7 +201,9 @@ def admit_overlay_profiles(root: Path, generated: dict[str, bytes]) -> None:
 
 def encoded(value: object, *, registry: bool = False) -> bytes:
     options = {"indent": 2} if registry else {"separators": (",", ":")}
-    return (json.dumps(value, ensure_ascii=False, sort_keys=True, **options) + "\n").encode()
+    return (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, **options) + "\n"
+    ).encode()
 
 
 def admit_agony_field(root: Path, generated: dict[str, bytes]) -> None:
@@ -210,15 +256,26 @@ def admit_consumable_profiles(root: Path, generated: dict[str, bytes]) -> None:
     rows = [row for row in facts["rows"] if row["target"]["key"] == CONSUMABLE_KEY]
     path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     document = json.loads(generated[path])
-    records = [r for r in document["records"]
-               if r["production_definition"]["production_key"] == CONSUMABLE_KEY]
-    if facts["schema"] != "OTERYN_ITEM_CONSUMPTION_FACTS/v1" or len(rows) != 1 or len(records) != 1:
+    records = [
+        r
+        for r in document["records"]
+        if r["production_definition"]["production_key"] == CONSUMABLE_KEY
+    ]
+    if (
+        facts["schema"] != "OTERYN_ITEM_CONSUMPTION_FACTS/v1"
+        or len(rows) != 1
+        or len(records) != 1
+    ):
         raise ValueError("CONSUMPTION_PROFILE_IDENTITY")
     row, record = rows[0], records[0]
     definition = record["production_definition"]
     if (
-        row["target"] != {"family": definition["family"], "key": definition["production_key"],
-                          "revision": definition["revision_ref"]}
+        row["target"]
+        != {
+            "family": definition["family"],
+            "key": definition["production_key"],
+            "revision": definition["revision_ref"],
+        }
         or "consumption" in record["semantics"]
     ):
         raise ValueError("CONSUMPTION_PROFILE_CONFLICT")
@@ -227,30 +284,56 @@ def admit_consumable_profiles(root: Path, generated: dict[str, bytes]) -> None:
     # definitions. Reuse their admitted identities and semantics; unspecified native
     # attributes stay unknown. No legacy potion identity is introduced or aliased.
     world = json.loads((root / "content/world/definitions/reference.json").read_bytes())
-    bindings = json.loads((root / "imports/crystalserver/bindings/items.json").read_bytes())
+    bindings = json.loads(
+        (root / "imports/crystalserver/bindings/items.json").read_bytes()
+    )
     for key in sorted(POTION_KEYS):
         sources = [r for r in world["records"] if r["identity"]["key"] == key]
         admitted = [b for b in bindings["bindings"] if b["target"]["key"] == key]
-        if len(sources) != 1 or len(admitted) != 1 or any(
-            r["production_definition"]["production_key"] == key for r in document["records"]
+        if (
+            len(sources) != 1
+            or len(admitted) != 1
+            or any(
+                r["production_definition"]["production_key"] == key
+                for r in document["records"]
+            )
         ):
             raise ValueError("CONSUMPTION_PROFILE_IDENTITY")
         source, binding = sources[0], admitted[0]
         semantics = copy.deepcopy(source["semantics"])
-        if key == CARROT_KEY and semantics["physical"]["value"]["movable"] == {"state": "UNKNOWN"}:
-            semantics["physical"]["value"]["movable"] = {"state": "KNOWN", "value": True}
+        if key == CARROT_KEY and semantics["physical"]["value"]["movable"] == {
+            "state": "UNKNOWN"
+        }:
+            semantics["physical"]["value"]["movable"] = {
+                "state": "KNOWN",
+                "value": True,
+            }
         if (
-            source["identity"] != binding["target"] or binding["disposition"] != "EXACT"
-            or source["materializable"] is not True or source["stack_class"] != "StackCapable"
-            or any(semantics["physical"]["value"][field] != {"state": "KNOWN", "value": True}
-                   for field in ("movable", "pickupable"))
+            source["identity"] != binding["target"]
+            or binding["disposition"] != "EXACT"
+            or source["materializable"] is not True
+            or source["stack_class"] != "StackCapable"
+            or any(
+                semantics["physical"]["value"][field]
+                != {"state": "KNOWN", "value": True}
+                for field in ("movable", "pickupable")
+            )
         ):
             raise ValueError("CONSUMPTION_PROFILE_CONFLICT")
-        if key not in {"oteryn:item.tibia.i283", "oteryn:item.tibia.i284", "oteryn:item.tibia.i285"}:
+        if key not in {
+            "oteryn:item.tibia.i283",
+            "oteryn:item.tibia.i284",
+            "oteryn:item.tibia.i285",
+        }:
             fact = next(r for r in facts["rows"] if r["target"] == source["identity"])
-            if (source["semantics"].get("consumption") != {"state": "KNOWN", "value": fact["consumption"]}
-                    or ("use_requirements" in fact and source["semantics"].get("use_requirements")
-                        != {"state": "KNOWN", "value": fact["use_requirements"]})):
+            if source["semantics"].get("consumption") != {
+                "state": "KNOWN",
+                "value": fact["consumption"],
+            } or (
+                "use_requirements" in fact
+                and source["semantics"].get("use_requirements")
+                != {"state": "KNOWN", "value": fact["use_requirements"]}
+            ):
                 raise ValueError("CONSUMPTION_PROFILE_CONFLICT")
         if key in GLOBAL_POTION_RESTORES:
             revision, restores = GLOBAL_POTION_RESTORES[key]
@@ -260,17 +343,25 @@ def admit_consumable_profiles(root: Path, generated: dict[str, bytes]) -> None:
                 {"resource": resource, "min": low, "max": high}
                 for resource, low, high in restores
             ]
-        document["records"].append({
-            "authoring": {"item": source["identity"]},
-            "semantics": semantics,
-            "attributes": {},
-            "admission": {"materializable": source["materializable"], "stack_class": source["stack_class"],
-                          "legal_destinations": ["CharacterInventory", "Ground"]},
-            "production_definition": {"family": source["identity"]["family"], "production_key": key,
-                                      "revision_ref": source["identity"]["revision"]},
-            "production_binding": binding,
-            "production_binding_qualification": None,
-        })
+        document["records"].append(
+            {
+                "authoring": {"item": source["identity"]},
+                "semantics": semantics,
+                "attributes": {},
+                "admission": {
+                    "materializable": source["materializable"],
+                    "stack_class": source["stack_class"],
+                    "legal_destinations": ["CharacterInventory", "Ground"],
+                },
+                "production_definition": {
+                    "family": source["identity"]["family"],
+                    "production_key": key,
+                    "revision_ref": source["identity"]["revision"],
+                },
+                "production_binding": binding,
+                "production_binding_qualification": None,
+            }
+        )
     document["records"].sort(key=provider_order)
     data = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
     generated[path] = data
@@ -282,17 +373,32 @@ def admit_consumable_profiles(root: Path, generated: dict[str, bytes]) -> None:
 def admit_current_staff_profile(root: Path, generated: dict[str, bytes]) -> None:
     """Use accepted current Staff facts, preserving the pinned historical test pack."""
     key = "oteryn:item.tibia.i3289"
-    authoring = json.loads((root / "content/items/definitions/items-20000-20499.json").read_bytes())
-    source, = [r["definition"] for r in authoring["records"] if r["definition"]["identity"]["key"] == key]
+    authoring = json.loads(
+        (root / "content/items/definitions/items-20000-20499.json").read_bytes()
+    )
+    (source,) = [
+        r["definition"]
+        for r in authoring["records"]
+        if r["definition"]["identity"]["key"] == key
+    ]
     path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     document = json.loads(generated[path])
-    record, = [r for r in document["records"] if r["production_definition"]["production_key"] == key]
-    if source["identity"]["revision"] != record["production_definition"]["revision_ref"]:
+    (record,) = [
+        r
+        for r in document["records"]
+        if r["production_definition"]["production_key"] == key
+    ]
+    if (
+        source["identity"]["revision"]
+        != record["production_definition"]["revision_ref"]
+    ):
         raise ValueError("STAFF_PROFILE_IDENTITY")
     # Monk Vocation Update: Fist/Monk/15/two hands; current wiki attack 22, defence 14.
     record["semantics"]["equipment"] = copy.deepcopy(source["semantics"]["equipment"])
     for field in ("weapon_type", "attack", "defense"):
-        record["semantics"]["weapon"]["value"][field] = copy.deepcopy(source["semantics"]["weapon"]["value"][field])
+        record["semantics"]["weapon"]["value"][field] = copy.deepcopy(
+            source["semantics"]["weapon"]["value"][field]
+        )
     data = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
     generated[path] = data
     manifest = json.loads(generated[NATIVE_MANIFEST])
@@ -310,119 +416,413 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     generated = baseline
     generated = current_sources.outputs(root, generated)
     from compose_monster_current_sources import compose
+
     generated = compose(root, baseline, generated)
     admit_overlay_profiles(root, generated)
     admit_consumable_profiles(root, generated)
     admit_agony_field(root, generated)
     admit_current_staff_profile(root, generated)
     import tutorial_movement_profiles
-    tutorial_movement_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    tutorial_movement_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import loop_training_profiles
-    loop_training_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    loop_training_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import timed_item_profiles
-    timed_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    timed_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import craft_runtime_profiles
-    craft_runtime_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    craft_runtime_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import key_door_item_profiles
-    key_door_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    key_door_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import tool_item_profiles
-    tool_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    tool_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import forge_creature_profiles
-    forge_creature_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    forge_creature_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import wheel_gem_item_profiles
-    wheel_gem_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    wheel_gem_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import soulpit_echo_item_profiles
-    soulpit_echo_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    soulpit_echo_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import gathering_item_profiles
-    gathering_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    gathering_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
+
     import harvest_item_profiles
-    harvest_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    harvest_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import mining_item_profiles
-    mining_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    mining_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import imbuement_item_profiles
-    imbuement_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    imbuement_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import item_transform_profiles
-    item_transform_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    item_transform_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import reward_bag_profiles
-    reward_bag_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    reward_bag_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import rust_lottery_profiles
-    rust_lottery_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    rust_lottery_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import readable_item_profiles
-    readable_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    readable_item_profiles.apply_native(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import writable_item_profiles
-    writable_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    writable_item_profiles.apply_native(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import mail_item_profiles
-    mail_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    mail_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import summer_source_qualification
-    summer_source_qualification.apply_native(root, generated, spell_import.canonical_bytes)
+
+    summer_source_qualification.apply_native(
+        root, generated, spell_import.canonical_bytes
+    )
     import fluid_container_profiles
-    fluid_container_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    fluid_container_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import monk_reward_profiles
-    monk_reward_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    monk_reward_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import podium_item_profiles
-    podium_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    podium_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import quick_loot_item_profiles
-    quick_loot_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    quick_loot_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import coin_converter_profiles
-    coin_converter_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    coin_converter_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import condition_potion_profiles
-    condition_potion_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    condition_potion_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import drome_item_profiles
-    drome_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    drome_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import enchanting_item_profiles
-    enchanting_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    enchanting_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     # Preserve every earlier owner cohort before adding the missing Task Board policies.
     import task_board_item_profiles
-    task_board_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    task_board_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import hireling_item_profiles
-    hireling_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    hireling_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     # Resolve existing ranged authoring after the complete native Item closure
     # is present, including the weapons sold by the source Hireling catalogue.
     import ranged_item_profiles
+
     ranged_item_profiles.apply_native(root, generated)
     # Event action facts must not replace any established owner's Item semantics.
     import event_item_profiles
-    event_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    event_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import item_spell_augment_profiles
-    item_spell_augment_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
+
+    item_spell_augment_profiles.apply_native(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        spell_import.canonical_bytes,
+    )
     import forge_core_profiles
-    forge_core_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    forge_core_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import forge_item_profiles
-    forge_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
+
+    forge_item_profiles.apply_native(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        spell_import.canonical_bytes,
+    )
     # Retain established native owners while admitting every shop and chest Item.
     import grizzly_shop_profiles
     import quests_2_emperor_item_profiles
     import quest_callback_profiles
-    grizzly_shop_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
-    quests_2_emperor_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
-    quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+
+    grizzly_shop_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
+    quests_2_emperor_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    quest_callback_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
+    import quest_disguise_item_profiles
+
+    quest_disguise_item_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
+
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
+
     generated = bind_definitions(root, generated)
     pin_repository_inputs(root, generated)
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     items = json.loads(generated[item_path])
-    energy = next(row for row in items["records"]
-                  if row["production_definition"]["production_key"] == "oteryn:item.tibia.i2122")
+    energy = next(
+        row
+        for row in items["records"]
+        if row["production_definition"]["production_key"] == "oteryn:item.tibia.i2122"
+    )
     energy["semantics"]["temporal"]["value"]["duration"]["value"] = 100_000
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
     generated[item_path] = spell_import.canonical_bytes(items)
     native_manifest = json.loads(generated[NATIVE_MANIFEST])
-    native_manifest["item_profiles"]["sha256"] = hashlib.sha256(generated[item_path]).hexdigest()
+    native_manifest["item_profiles"]["sha256"] = hashlib.sha256(
+        generated[item_path]
+    ).hexdigest()
     # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:
     # the live map viewport and LOS bound the cast, rather than Crystal's five tiles.
     catalog_path = spell_import.PROVIDER_DESTINATIONS["catalog"]
     catalog = json.loads(generated[catalog_path])
     spec = importlib.util.spec_from_file_location(
-        "build_executable_catalog", root / "tools/content-schema/spell-authoring/build_executable_catalog.py")
+        "build_executable_catalog",
+        root / "tools/content-schema/spell-authoring/build_executable_catalog.py",
+    )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_owner_decisions(catalog)
@@ -439,6 +839,7 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # requiring the very Prey results it is about to produce.
     if include_prey:
         import prey_difficulty
+
         prey_difficulty.apply_native(root, generated, spell_import.canonical_bytes)
 
     descriptors = spell_import.descriptors(root, generated)
@@ -447,17 +848,29 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
         index["spell_imports"] = descriptors.get(family, [])
         # Registration is semantic metadata; retain the existing index's explicit
         # pretty/compact convention instead of reformatting unchanged family data.
-        generated[path] = encoded(index, registry=b'\n  "' in (root / path).read_bytes())
+        generated[path] = encoded(
+            index, registry=b'\n  "' in (root / path).read_bytes()
+        )
     for path, prefix in (
-        ("content/presentations/bindings/index.json", "content/presentations/bindings/"),
-        ("rulesets/progression/wheel-of-destiny/index.json", "rulesets/progression/wheel-of-destiny/"),
+        (
+            "content/presentations/bindings/index.json",
+            "content/presentations/bindings/",
+        ),
+        (
+            "rulesets/progression/wheel-of-destiny/index.json",
+            "rulesets/progression/wheel-of-destiny/",
+        ),
     ):
         index = json.loads((root / path).read_bytes())
         index["spell_imports"] = [
-            entry for entries in descriptors.values() for entry in entries
+            entry
+            for entries in descriptors.values()
+            for entry in entries
             if entry["path"].startswith(prefix)
         ]
-        generated[path] = encoded(index, registry=b'\n  "' in (root / path).read_bytes())
+        generated[path] = encoded(
+            index, registry=b'\n  "' in (root / path).read_bytes()
+        )
     registration = {
         "native_manifest": "content/spells.manifest.json",
         "collections": descriptors,
@@ -481,12 +894,16 @@ def main() -> int:
     args = parser.parse_args()
     generated = outputs()
     if args.check:
-        drift = [path for path, data in generated.items()
-                 if not (ROOT / path).is_file() or (ROOT / path).read_bytes() != data]
+        drift = [
+            path
+            for path, data in generated.items()
+            if not (ROOT / path).is_file() or (ROOT / path).read_bytes() != data
+        ]
         if drift:
             raise SystemExit("Spell import drift: " + ", ".join(drift))
         # Native Forge Content and its immutable SQL admission must agree.
         import forge_sql_admission
+
         forge_sql_admission.check()
     else:
         for path, data in generated.items():

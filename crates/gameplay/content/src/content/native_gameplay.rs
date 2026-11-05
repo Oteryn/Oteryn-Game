@@ -1819,6 +1819,7 @@ mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::test_support::*;
     use super::*;
+    include!("native_gameplay/quest_disguise_tests.rs");
     use crate::content::production::{StagedGeneration, test_source};
     use crate::content::{
         ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,

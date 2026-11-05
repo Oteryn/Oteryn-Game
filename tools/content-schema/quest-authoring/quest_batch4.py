@@ -372,6 +372,24 @@ def load_packets(root, selected=None, available=False):
 def expected_files(root, selected=None, available=False):
     root = Path(root)
     packets = load_packets(root, selected=selected, available=available)
+    # Batch one's reviewed Spike inputs own the shared keys. Keep the rest of
+    # batch four intact, including its source-only NPC archive and exclusions.
+    batch_one = root / 'tools/content-schema/quest-authoring/batch-one-world-callbacks/spike_tasks.json'
+    if batch_one.is_file():
+        own = read(batch_one)
+        owner = QUEST_OWNERS['the_spike_tasks']
+        require(own.get('schema') == 1 and own.get('quest') == owner,
+                'batch-one Spike callback owner differs')
+        overrides = {row['key']: row for row in own['callbacks']}
+        require(len(overrides) == len(own['callbacks']) and
+                all(row.get('quest') == owner for row in overrides.values()),
+                'batch-one Spike callbacks have duplicate keys or a foreign owner')
+        for packet in packets:
+            if packet['quest_directory'] == 'the_spike_tasks':
+                packet['callbacks'] = [copy.deepcopy(overrides.get(row['key'], row))
+                                       for row in packet['callbacks']]
+                packet['runtime_exclusions'] = [row for row in packet['runtime_exclusions']
+                                                if row['key'] not in overrides]
     seed = read(root / CALLBACK_OUTPUT)
     fields(seed, {'schema', 'callbacks'}, {'schema', 'callbacks'}, 'existing world callbacks')
     require(type(seed['schema']) is int and seed['schema'] == 1 and isinstance(seed['callbacks'], list),

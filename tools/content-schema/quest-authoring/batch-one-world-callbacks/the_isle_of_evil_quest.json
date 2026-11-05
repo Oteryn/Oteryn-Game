@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_isle_of_evil_quest",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/isle-of-evil-upper-teleport",
+      "quest": "oteryn:quest.the_isle_of_evil_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32753,
+          "y": 31452,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32754,
+        "y": 31469,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_isle_of_evil_quest/movements_teleport_isle.lua:3-15"
+      ]
+    }
+  ]
+}

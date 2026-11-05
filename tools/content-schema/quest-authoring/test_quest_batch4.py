@@ -75,6 +75,21 @@ class QuestBatch4Tests(unittest.TestCase):
     def output(self):
         return json.loads((self.root / tool.CALLBACK_OUTPUT).read_text())
 
+    def test_batch_one_spike_callbacks_keep_their_reviewed_source_annotations(self):
+        row = callback('the_spike_tasks', 'spike-shared')
+        self.packets['the_spike_tasks']['callbacks'] = [row]
+        own = copy.deepcopy(row)
+        own.pop('item_on_target')
+        own['sources'] = [tool.SOURCE_PREFIX + 'data-global/scripts/quests/the_spike_tasks/fixture.lua:1-10']
+        write_json(self.root / 'tools/content-schema/quest-authoring/batch-one-world-callbacks/spike_tasks.json',
+                   {'schema': 1, 'quest': row['quest'], 'callbacks': [own]})
+        self.run_generator()
+        result = self.output()['callbacks']
+        self.assertEqual(next(value for value in result if value['key'] == own['key']), own)
+        self.assertEqual([value for value in result if value['key'] != own['key']],
+                         sorted(self.seed['callbacks'], key=lambda value: value['key']))
+        self.assertEqual(self.run_generator(check=True), [])
+
     def test_deterministic_regeneration_sorts_union_and_keeps_complete_npc_source(self):
         cults = self.packets['cults_of_tibia']
         cults['callbacks'] = [callback('cults_of_tibia', 'cults-a'), callback('cults_of_tibia', 'cults-b')]

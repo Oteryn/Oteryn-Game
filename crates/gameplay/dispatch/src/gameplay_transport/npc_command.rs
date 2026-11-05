@@ -37,16 +37,22 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 type RecentIntents = VecDeque<u64>;
 mod classic_quests;
 mod coin_exchange;
+mod dark_trails;
 mod endgame;
+mod ferumbras;
 mod grizzly;
 mod grizzly_shop;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
+mod isle_of_evil;
 mod liquid_black;
 mod monk;
 mod premium_purchase;
+mod quest_dialogue;
 mod service_context;
 mod session_transfer;
+mod spike_tasks;
+mod targuna;
 mod threatened_dreams;
 mod wrath_sleeping_dragon;
 pub(super) use premium_purchase::resume_npc_talk;
@@ -69,6 +75,8 @@ struct SessionNpc {
     grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
     monk: Option<monk::Pending>,
+    quest_dialogue: quest_dialogue::State,
+    targuna: Option<targuna::Pending>,
     endgame: Option<endgame::Pending>,
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
@@ -552,12 +560,15 @@ impl NpcConversations {
                 // follow tick sees nothing left to close (NPC-0 section 4.1).
                 conversation: end(chat, session, intent).map(|mut closed| {
                     let line = oteryn_gameplay_npc::quest_greetings::walkaway(&npc.key)
-                        .unwrap_or(entry.farewell());
-                    if let Some(name) = chat.speaker_name(session) {
-                        closed.lines.push(
-                            oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name),
-                        );
-                    }
+                        .and_then(|line| {
+                            chat.speaker_name(session).map(|name| {
+                                oteryn_gameplay_npc::quest_greetings::render_player_name(
+                                    line, &name,
+                                )
+                            })
+                        })
+                        .or_else(|| chat.npc_source_walkaway(session, entry));
+                    closed.lines.extend(line);
                     closed
                 }),
             };
@@ -589,6 +600,9 @@ impl NpcConversations {
                 Disposition::NoConversation
             });
         };
+        let Some(rendered) = chat.npc_source_reply(session, entry, &reply.text) else {
+            return NpcTalkOutcome::only(Disposition::Rejected);
+        };
         let open = engaged.then_some((intent.npc_actor, NpcConversationState::Open));
         NpcTalkOutcome {
             unknown: false,
@@ -596,7 +610,7 @@ impl NpcConversations {
             disposition: Disposition::Ok,
             conversation: Some(NpcConversation {
                 open,
-                lines: vec![reply.text],
+                lines: vec![rendered],
             }),
             window: None,
         }
@@ -640,6 +654,7 @@ pub(super) async fn npc_bank_talk(
     } else {
         None
     };
+    admission.refresh_level_up_vitals(actor, session).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -723,6 +738,26 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
+    }
+    if let Some(step) = dark_trails::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = spike_tasks::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = ferumbras::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return ferumbras::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = targuna::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return targuna::apply(admission, actor, command, intent, step, ordinary).await;
+    }
+    if let Some(step) = isle_of_evil::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = endgame::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
