@@ -160,11 +160,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             snapshot.position(),
                         );
                         if let Some(map) = self.bundle_map() {
-                            map.facts.record_monster_step(crate::map::facts::MonsterStep {
-                                actor: target,
-                                from,
-                                to: snapshot.position(),
-                            });
+                            map.facts
+                                .record_monster_step(crate::map::facts::MonsterStep {
+                                    actor: target,
+                                    from,
+                                    to: snapshot.position(),
+                                });
                             super::paced_movement::monster_trap::apply_monster_trap_steps(
                                 &mut runtime,
                                 &states,

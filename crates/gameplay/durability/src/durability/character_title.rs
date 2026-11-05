@@ -472,7 +472,8 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         title: Option<CharacterTitle>,
     ) -> Result<u64, CharacterAuthorityError> {
-        self.select_character_title_inner(authority, node, fence, title, None).await
+        self.select_character_title_inner(authority, node, fence, title, None)
+            .await
     }
 
     /// Client selection must reference an award still alive at the server's observation time
@@ -485,8 +486,11 @@ impl DurabilityRoot {
         title: Option<CharacterTitle>,
         now_unix_ms: i64,
     ) -> Result<u64, CharacterAuthorityError> {
-        if now_unix_ms < 0 { return Err(CharacterAuthorityError::Rejected); }
-        self.select_character_title_inner(authority, node, fence, title, Some(now_unix_ms)).await
+        if now_unix_ms < 0 {
+            return Err(CharacterAuthorityError::Rejected);
+        }
+        self.select_character_title_inner(authority, node, fence, title, Some(now_unix_ms))
+            .await
     }
 
     async fn select_character_title_inner(

@@ -67,19 +67,25 @@ mod tests {
         ] {
             for dispenser in [cask, keg] {
                 let last = keg_fill(dispenser, flask, 10, 3);
-                assert_eq!(last, Some(KegFill {
-                    potion_id: potion,
-                    filled: 3,
-                    empty_flasks_remaining: 7,
-                    charges_remaining: 0,
-                }));
+                assert_eq!(
+                    last,
+                    Some(KegFill {
+                        potion_id: potion,
+                        filled: 3,
+                        empty_flasks_remaining: 7,
+                        charges_remaining: 0,
+                    })
+                );
                 assert!(last.is_some_and(KegFill::removes_keg));
-                assert_eq!(keg_fill(dispenser, flask, 3, 10), Some(KegFill {
-                    potion_id: potion,
-                    filled: 3,
-                    empty_flasks_remaining: 0,
-                    charges_remaining: 7,
-                }));
+                assert_eq!(
+                    keg_fill(dispenser, flask, 3, 10),
+                    Some(KegFill {
+                        potion_id: potion,
+                        filled: 3,
+                        empty_flasks_remaining: 0,
+                        charges_remaining: 7,
+                    })
+                );
                 assert_eq!(keg_fill(dispenser, 999, 1, 1), None);
                 assert_eq!(keg_fill(dispenser, flask, 1, 0), None);
                 assert_eq!(keg_fill(dispenser, flask, 0, 1), None);

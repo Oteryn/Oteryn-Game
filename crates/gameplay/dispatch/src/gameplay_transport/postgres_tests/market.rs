@@ -149,7 +149,10 @@ fn reaudit_market_population() -> TestResult {
         .stack_size(256 << 20)
         .spawn(|| scenario(false, true).map_err(|e| e.to_string()))?
         .join();
-    eprintln!("reaudit_market_population duration: {:?}", started.elapsed());
+    eprintln!(
+        "reaudit_market_population duration: {:?}",
+        started.elapsed()
+    );
     result.map_err(|_| "market population scenario panicked")??;
     Ok(())
 }
@@ -353,7 +356,9 @@ fn scenario(bounds: bool, population: bool) -> TestResult {
             let key = "oteryn:item.tibia.i10219";
             let revision = "definition-r1";
             assert!(native.item_policy(key, revision).is_none());
-            let reference = index.definition_ref("Item", key, revision).ok_or("crocodile steak ref")?;
+            let reference = index
+                .definition_ref("Item", key, revision)
+                .ok_or("crocodile steak ref")?;
             ware = Some((key.into(), revision.into(), reference.get()));
         }
         let (key, revision, reference) = ware.ok_or("marketable native ware")?;
@@ -438,30 +443,45 @@ fn scenario(bounds: bool, population: bool) -> TestResult {
             let mut found = false;
             for page in 0..8 {
                 let payload = encode_request(MarketRequest { page, ..empty }).map_err(debug)?;
-                let reply = owner.market_command(admitted, 900 + u64::from(page), &payload)
-                    .await.ok_or("catalogue reply")?;
+                let reply = owner
+                    .market_command(admitted, 900 + u64::from(page), &payload)
+                    .await
+                    .ok_or("catalogue reply")?;
                 let reply = decode_reply(&reply).map_err(debug)?;
                 assert_eq!(reply.code, 1);
                 found |= reply.rows.iter().any(|row| row.definition == reference);
             }
-            assert!(found, "sourced crocodile steak omitted from market catalogue");
+            assert!(
+                found,
+                "sourced crocodile steak omitted from market catalogue"
+            );
             // Crystal item.cpp:3504 rejects imbuements even on a marketable type.
             let mut retained = harness.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *retained).await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *retained)
+                .await?;
             sqlx::query("INSERT INTO game_item_imbuements(item_instance_id,slot,category,imbuement_key,imbuement_revision,tier,remaining_ms,applying_occurrence_id,applying_transaction_id) VALUES(encode($1,'hex')::uuid,0,0,'oteryn:imbuement.vampirism.basic','definition-r1',1,1000,encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
                 .bind(id(200).as_slice()).bind(id(202).as_slice()).bind(id(203).as_slice()).execute(&mut *retained).await?;
             retained.commit().await?;
             let before = snapshot(&harness).await?;
-            let reply = owner.market_command(admitted, 910, &encode_request(sell).map_err(debug)?)
-                .await.ok_or("imbued ware refusal")?;
+            let reply = owner
+                .market_command(admitted, 910, &encode_request(sell).map_err(debug)?)
+                .await
+                .ok_or("imbued ware refusal")?;
             assert_eq!(decode_reply(&reply).map_err(debug)?.code, 3);
             assert_eq!(before, snapshot(&harness).await?);
             assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_imbuements WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(id(200).as_slice()).fetch_one(&harness.pool).await?, 1);
             let mut retained = harness.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *retained).await?;
-            sqlx::query("DELETE FROM game_item_imbuements WHERE item_instance_id=encode($1,'hex')::uuid")
-                .bind(id(200).as_slice()).execute(&mut *retained).await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *retained)
+                .await?;
+            sqlx::query(
+                "DELETE FROM game_item_imbuements WHERE item_instance_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(200).as_slice())
+            .execute(&mut *retained)
+            .await?;
             retained.commit().await?;
         }
         if bounds {
@@ -469,22 +489,25 @@ fn scenario(bounds: bool, population: bool) -> TestResult {
             // Keep each connection burst within the production 100-command ingress window.
             let mut replies = Vec::new();
             for batch in [1..=100, 101..=101] {
-                replies.extend(routed_market(
-                    &owner,
-                    &mut admitted,
-                    batch.map(|number| {
-                        (
-                            number,
-                            MarketRequest {
-                                action: 5,
-                                definition: reference,
-                                amount: 1,
-                                price: 1,
-                                ..empty
-                            },
-                        )
-                    }),
-                ).await?);
+                replies.extend(
+                    routed_market(
+                        &owner,
+                        &mut admitted,
+                        batch.map(|number| {
+                            (
+                                number,
+                                MarketRequest {
+                                    action: 5,
+                                    definition: reference,
+                                    amount: 1,
+                                    price: 1,
+                                    ..empty
+                                },
+                            )
+                        }),
+                    )
+                    .await?,
+                );
             }
             assert_eq!(replies.len(), 101);
             for (index, reply) in replies.iter().enumerate() {
@@ -838,20 +861,41 @@ fn scenario(bounds: bool, population: bool) -> TestResult {
         if population {
             // Crystal iomarket.cpp:174-237,253-258 returns the unsold six units on expiry.
             let mut retained = harness.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *retained).await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *retained)
+                .await?;
             sqlx::query("UPDATE game_market_offers SET created_at_us=1,expires_at_us=2592000000001 WHERE offer_id=encode($1,'hex')::uuid")
                 .bind(offer.as_slice()).execute(&mut *retained).await?;
             retained.commit().await?;
-            harness.root.advance_market(&authority, &harness.node, admitted.world_id).await.map_err(debug)?;
-            assert_eq!(sqlx::query_scalar::<_,i16>("SELECT state FROM game_market_offers WHERE offer_id=encode($1,'hex')::uuid")
-                .bind(offer.as_slice()).fetch_one(&harness.pool).await?, 4);
+            harness
+                .root
+                .advance_market(&authority, &harness.node, admitted.world_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                sqlx::query_scalar::<_, i16>(
+                    "SELECT state FROM game_market_offers WHERE offer_id=encode($1,'hex')::uuid"
+                )
+                .bind(offer.as_slice())
+                .fetch_one(&harness.pool)
+                .await?,
+                4
+            );
             for (character, expected) in [(id(41), 6), (buyer_character, 4)] {
                 assert_eq!(sqlx::query_scalar::<_,i64>("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_character_inbox_locations l JOIN game_item_instances i USING(item_instance_id) WHERE l.character_id=encode($1,'hex')::uuid AND i.definition_production_key=$2 AND i.definition_revision_ref=$3")
                     .bind(character.as_slice()).bind(&key).bind(&revision).fetch_one(&harness.pool).await?, expected);
             }
             let expired = snapshot(&harness).await?;
-            harness.root.advance_market(&authority, &harness.node, admitted.world_id).await.map_err(debug)?;
-            assert_eq!(expired, snapshot(&harness).await?, "expiry returns each item once");
+            harness
+                .root
+                .advance_market(&authority, &harness.node, admitted.world_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                expired,
+                snapshot(&harness).await?,
+                "expiry returns each item once"
+            );
             drop(owner);
             drop(authority);
             drop(seal);
