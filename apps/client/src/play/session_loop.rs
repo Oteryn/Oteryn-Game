@@ -19,6 +19,7 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn target_walk(&mut self, _position: oteryn_session::ActorPosition) -> impl Future<Output = Result<oteryn_client_runtime::target_move::WalkResponse, SessionError>> + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 64 }) }
     }
+    fn inventory(&self) -> Option<oteryn_session::CharacterInventory> { None }
     fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
         None
     }
@@ -296,6 +297,7 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.inventory_initialize(session.inventory());
     outbox.target_walk_initialize(session.feature_selected(64));
     outbox.vitals(session.actor_vitals());
     outbox.world_light_initialize(session.feature_snapshot(18));

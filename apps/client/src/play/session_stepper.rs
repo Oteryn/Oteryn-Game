@@ -25,6 +25,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         oteryn_client_runtime::account_achievements::send(self, page).await
     }
 
+    fn inventory(&self) -> Option<oteryn_session::CharacterInventory> {
+        oteryn_client_runtime::inventory::initial(self)
+    }
     fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
         Session::actor_vitals(self).copied()
     }
