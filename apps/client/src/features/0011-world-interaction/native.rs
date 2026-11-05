@@ -41,23 +41,3 @@ pub fn open_menu(view: &PlayView, link: &PlayLink, menu: &Menu) {
         DestroyMenu(popup);
     }
 }
-
-/// Present the complete server look text after it reaches the shell, outside the mailbox lock.
-pub fn present_look(link: &PlayLink) {
-    let text = crate::play::mailbox::lock(&link.mailbox)
-        .world_context
-        .look_text
-        .take();
-    if let Some(text) = text {
-        let text: Vec<u16> = text
-            .replace('\0', "\u{fffd}")
-            .encode_utf16()
-            .chain(Some(0))
-            .collect();
-        let title: Vec<u16> = "Look".encode_utf16().chain(Some(0)).collect();
-        // SAFETY: shell calls this on the window's UI thread; buffers live through the call.
-        unsafe {
-            MessageBoxW(GetForegroundWindow(), text.as_ptr(), title.as_ptr(), MB_OK);
-        }
-    }
-}

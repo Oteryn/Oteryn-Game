@@ -133,7 +133,7 @@ fn world_context_own_tile_item_and_reset_binding() -> Result<(), BatchError> {
         .world_context(TileCoord::new(100, 200), &link)
         .ok_or(BatchError::InvalidView)?;
     assert!(matches!(menu.target, Target::Item(_)));
-    assert_eq!(menu.entries.len(), 10);
+    assert_eq!(menu.entries.len(), 3);
     map.header.reset_epoch += 1;
     view.set_live_map(&map)?;
     assert!(!view.world_context_choose(&link, &menu, Action::Open));
@@ -181,7 +181,11 @@ fn world_context_creature_look_keeps_generation_without_attack() -> Result<(), B
         Ok(crate::combat_input::PlayCommand::WorldContext(
             oteryn_client_runtime::world_interaction::Command {
                 target: Target::Creature(entity.entity),
-                action: Action::Look
+                action: Action::Look,
+                selection: Some(oteryn_client_runtime::world_interaction::Selection {
+                    position: entity.position,
+                    binding: None
+                }),
             }
         ))
     );

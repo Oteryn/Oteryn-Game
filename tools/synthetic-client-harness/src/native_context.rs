@@ -34,7 +34,13 @@ impl Stepper for ContextSession {
         self.receipts
             .send(format!("{:?}", command.action))
             .map_err(|_| SessionError::SessionUnusable)?;
-        Ok("You see a bed.".into())
+        Ok(match command.action {
+            oteryn_client_ui::world_interaction::menu::Action::Look => "You see a bed.",
+            oteryn_client_ui::world_interaction::menu::Action::Use => "Use: completed",
+            oteryn_client_ui::world_interaction::menu::Action::Open => "Open: completed",
+            _ => "Bed: this bed is occupied",
+        }
+        .into())
     }
     async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
         Err(SessionError::SessionUnusable)
@@ -82,7 +88,10 @@ fn native_world_context_right_click_actions_and_feedback()
                                 definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
                                 count: 1,
                                 sub_type: 0,
-                                origin: MapOrigin::Handle(std::num::NonZeroU64::MIN),
+                                origin: MapOrigin::BaseOrdinal {
+                                    ordinal: 0,
+                                    object_revision: 0,
+                                },
                                 appearance_id: 0,
                             }],
                             more: false,
@@ -154,7 +163,19 @@ fn native_world_context_right_click_actions_and_feedback()
                             format!("{action:?}")
                         );
                         view.tick(&link).map_err(|e| format!("{e:?}"))?;
-                        assert!(view.hud_status().contains("You see a bed."));
+                        let expected = match action {
+                            oteryn_client_ui::world_interaction::menu::Action::Look => {
+                                "You see a bed."
+                            }
+                            oteryn_client_ui::world_interaction::menu::Action::Use => {
+                                "Use: completed"
+                            }
+                            oteryn_client_ui::world_interaction::menu::Action::Open => {
+                                "Open: completed"
+                            }
+                            _ => "Bed: this bed is occupied",
+                        };
+                        assert!(view.hud_status().contains(expected));
                     }
                     drop(link);
                     task.abort();

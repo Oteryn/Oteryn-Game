@@ -16,16 +16,51 @@ impl Outbox {
         mailbox.world_context.pending = false;
         match result {
             Ok(text) => {
-                if command.action == oteryn_client_runtime::world_interaction::Action::Look {
-                    mailbox.world_context.look_text = Some(text.clone());
-                }
-                mailbox.world_context.feedback = Some(text);
+                mailbox
+                    .world_context
+                    .set_feedback(text, std::time::Instant::now());
                 Ok(())
             }
             Err(error) => {
-                mailbox.world_context.feedback = Some("Session unavailable".into());
+                mailbox
+                    .world_context
+                    .set_feedback("Session unavailable".into(), std::time::Instant::now());
                 Err(error)
             }
         }
     }
 }
+
+macro_rules! session_trait {
+    ($($methods:tt)*) => {
+        super::feature_local_account_achievements::protocol::session_trait! {
+            $($methods)*
+            fn world_context(
+                &mut self,
+                _command: &oteryn_client_runtime::world_interaction::Command,
+            ) -> impl std::future::Future<Output = Result<String, oteryn_session::SessionError>> + Send {
+                async { Err(oteryn_session::SessionError::CapabilityNotSelected { capability: 28 }) }
+            }
+        }
+    };
+}
+pub(in crate::play) use session_trait;
+
+macro_rules! dispatch {
+    ($command:expr, $session:ident, $outbox:ident, $held:ident, $publish:ident; $($arms:tt)*) => {
+        super::feature_local_account_achievements::protocol::dispatch! {
+            $command, $session, $outbox, $held, $publish;
+            Ok(crate::combat_input::PlayCommand::WorldContext(command)) => {
+                match $outbox.world_context_run(&mut $session, &command).await {
+                    Ok(()) => {
+                        $publish(&mut $session, &$outbox, &mut $held);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
+            $($arms)*
+        }
+    };
+}
+pub(in crate::play) use dispatch;

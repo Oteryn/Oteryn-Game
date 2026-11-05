@@ -15,19 +15,10 @@ impl Menu {
         }
         if !matches!(target, Target::Creature(_)) {
             entries.extend([("Use", Action::Use), ("Open", Action::Open)]);
-            if bed {
-                entries.push(("Bed interaction", Action::BedInteract));
-            }
         }
-        if bed && matches!(target, Target::Item(_)) {
-            entries.extend([
-                ("Bed: fist", Action::Bed(1)),
-                ("Bed: club", Action::Bed(2)),
-                ("Bed: sword", Action::Bed(3)),
-                ("Bed: axe", Action::Bed(4)),
-                ("Bed: distance", Action::Bed(5)),
-                ("Bed: magic level", Action::Bed(6)),
-            ]);
+        // Client item data has no bed semantics, and an opaque handle does not prove a base item.
+        if bed && matches!(target, Target::Object(_)) {
+            entries.push(("Bed", Action::BedInteract));
         }
         Self {
             tile: None,
@@ -43,7 +34,29 @@ pub struct State {
     pub bed: bool,
     pub pending: bool,
     pub feedback: Option<String>,
-    pub look_text: Option<String>,
+    pub feedback_at: Option<std::time::Instant>,
+}
+
+impl State {
+    pub fn set_feedback(&mut self, text: String, now: std::time::Instant) {
+        self.feedback = Some(text);
+        self.feedback_at = Some(now);
+    }
+    pub fn feedback(&self, now: std::time::Instant) -> Option<String> {
+        let at = self.feedback_at?;
+        if now.saturating_duration_since(at) >= std::time::Duration::from_secs(10) {
+            return None;
+        }
+        // Both the HUD and its window-title projection are bounded, single-line text.
+        self.feedback.as_ref().map(|text| {
+            text.split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+                .chars()
+                .take(240)
+                .collect()
+        })
+    }
 }
 
 #[cfg(test)]
@@ -61,7 +74,7 @@ mod tests {
             vec![("Look", Action::Look)]
         );
         let item = Target::Item(std::num::NonZeroU64::MIN);
-        assert_eq!(Menu::new(item.clone(), true, true).entries.len(), 10);
+        assert_eq!(Menu::new(item.clone(), true, true).entries.len(), 3);
         assert_eq!(Menu::new(item, false, false).entries.len(), 2);
     }
 
@@ -102,5 +115,58 @@ mod tests {
         ]);
         assert!(actions.route(&[button(ButtonState::Pressed)]).is_empty());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod review_tests {
+    use super::*;
+    #[test]
+    fn handle_items_do_not_offer_bed_without_base_or_definition_facts() {
+        let base = Menu::new(
+            Target::Object(
+                oteryn_client_runtime::world_interaction::world_object::WorldObjectTarget {
+                    placement: vec![1; 40],
+                    expected_revision: 0,
+                },
+            ),
+            true,
+            true,
+        );
+        assert_eq!(
+            base.entries
+                .iter()
+                .map(|(label, _)| *label)
+                .collect::<Vec<_>>(),
+            vec!["Look", "Use", "Open", "Bed"]
+        );
+        let menu = Menu::new(Target::Item(std::num::NonZeroU64::MIN), true, true);
+        assert_eq!(
+            menu.entries
+                .iter()
+                .map(|(label, _)| *label)
+                .collect::<Vec<_>>(),
+            vec!["Look", "Use", "Open"]
+        );
+    }
+}
+
+#[cfg(test)]
+mod feedback_tests {
+    use super::*;
+    #[test]
+    fn context_feedback_expires_and_title_projection_is_single_line_and_bounded() {
+        let now = std::time::Instant::now();
+        let mut state = State::default();
+        state.set_feedback(format!("Look\r\n{}\ttext", "界".repeat(500)), now);
+        let text = state.feedback(now).unwrap_or_default();
+        assert!(!text.contains(['\r', '\n', '\t']));
+        assert_eq!(text.chars().count(), 240);
+        assert_eq!(
+            state.feedback(now + std::time::Duration::from_secs(10)),
+            None
+        );
+        state.set_feedback("Waiting for server".into(), now);
+        assert_eq!(state.feedback(now).as_deref(), Some("Waiting for server"));
     }
 }

@@ -20,9 +20,15 @@ pub enum Action {
     Bed(u8),
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Selection {
+    pub position: oteryn_session::ActorPosition,
+    pub binding: Option<([u8; 32], [u8; 32], u64)>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Command {
     pub target: Target,
     pub action: Action,
+    pub selection: Option<Selection>,
 }
 
 pub fn look_payload(target: &Target) -> Result<Vec<u8>, SessionError> {
@@ -53,69 +59,90 @@ pub fn bed_payload(handle: ItemHandle, skill: u8) -> Result<Vec<u8>, SessionErro
     Ok(payload)
 }
 
+#[path = "state.rs"]
+mod state;
+
 pub async fn send<S: SessionStream>(
     session: &mut Session<S>,
     command: &Command,
 ) -> Result<String, SessionError> {
-    if command.action == Action::Look {
-        let result = session
-            .gated_command(28, 30, &look_payload(&command.target)?)
-            .await?;
-        if !matches!(
-            result.status,
-            oteryn_session::CommandStatus::Accepted
-                | oteryn_session::CommandStatus::DuplicateReplay
-        ) {
-            return Ok("Look refused".into());
-        }
-        return item_look::decode_item_look_result_for(
-            &result.payload,
-            ItemLookSelection { extended: true },
-        )
-        .map(|result| match result {
-            item_look::ItemLookResult::Text(text) => text,
-            item_look::ItemLookResult::Refused(reason) => format!("Look: {reason:?}"),
-        })
-        .map_err(|_| SessionError::SessionUnusable);
+    // The session task continues receiving while the native popup owns the UI loop.
+    // Drain already-readable pushes before consulting the session's current stores.
+    session
+        .service_liveness(std::time::Duration::from_millis(1))
+        .await?;
+    if !state::current(session, command) {
+        return Ok("Target changed".into());
     }
-    let disposition = match (&command.target, command.action) {
+    let label = match command.action {
+        Action::Look => "Look",
+        Action::Use => "Use",
+        Action::Open => "Open",
+        Action::BedInteract | Action::Bed(_) => "Bed",
+    };
+    let result = match (&command.target, command.action) {
+        (_, Action::Look) => {
+            let Ok(payload) = look_payload(&command.target) else {
+                return Ok("Look unavailable".into());
+            };
+            session.gated_command(28, 30, &payload).await?
+        }
         (Target::Item(handle), Action::Use | Action::Open | Action::BedInteract) => {
-            session.use_item(*handle).await?.disposition
+            if !session.is_selected(4) {
+                return Ok(format!("{label} unavailable"));
+            }
+            session
+                .world_context_use(&world_object::encode_use_item_intent(*handle))
+                .await?
         }
         (Target::Object(object), Action::Use | Action::Open | Action::BedInteract) => {
-            session
-                .use_object(&object.placement, object.expected_revision)
-                .await?
-                .disposition
+            let Ok(payload) = world_object::encode_use_intent(object) else {
+                return Ok(format!("{label} unavailable"));
+            };
+            session.world_context_use(&payload).await?
         }
         (Target::Item(handle), Action::Bed(skill @ 1..=6)) => {
-            let payload = bed_payload(*handle, skill)?;
-            let result = session.gated_command(11, 31, &payload).await?;
-            if result.payload.is_empty() {
-                return Ok("Bed request refused".into());
-            }
-            world_object::decode_use_result_with_gate(&result.payload)
-                .map_err(|_| SessionError::SessionUnusable)?
-                .0
+            let Ok(payload) = bed_payload(*handle, skill) else {
+                return Ok("Bed unavailable".into());
+            };
+            session.gated_command(11, 31, &payload).await?
         }
-        _ => return Ok("Action unavailable".into()),
+        _ => return Ok(format!("{label} unavailable")),
     };
-    use world_object::UseDisposition;
-    Ok(match disposition {
-        UseDisposition::Committed => "Interaction completed",
-        UseDisposition::BedChooseSkill if !matches!(command.target, Target::Item(_)) => {
-            "Training selection is unavailable for this bed"
-        }
-        UseDisposition::BedChooseSkill => "Choose a training skill from the Bed menu",
-        UseDisposition::BedOccupied => "This bed is occupied",
-        UseDisposition::BedWoken => "You woke the sleeper",
-        UseDisposition::OfflineTraining => "Offline training started",
-        UseDisposition::TooFar => "Move closer to interact",
-        UseDisposition::StaleState => "The target changed; try again",
-        UseDisposition::NothingToUse => "There is nothing to use here",
-        _ => "Interaction refused",
+    if !matches!(
+        result.status,
+        oteryn_session::CommandStatus::Accepted | oteryn_session::CommandStatus::DuplicateReplay
+    ) {
+        return Ok(format!("{label} refused"));
     }
-    .into())
+    if command.action == Action::Look {
+        return Ok(
+            match item_look::decode_item_look_result_for(
+                &result.payload,
+                ItemLookSelection { extended: true },
+            ) {
+                Ok(item_look::ItemLookResult::Text(text)) => text,
+                Ok(item_look::ItemLookResult::Refused(_)) => "Look refused".into(),
+                Err(_) => "Look: unknown result".into(),
+            },
+        );
+    }
+    use world_object::UseDisposition;
+    let Ok((disposition, _)) = world_object::decode_use_result_with_gate(&result.payload) else {
+        return Ok(format!("{label}: unknown result"));
+    };
+    let text = match disposition {
+        UseDisposition::Committed => "completed",
+        UseDisposition::BedChooseSkill => "training selection unavailable for this bed",
+        UseDisposition::BedOccupied => "this bed is occupied",
+        UseDisposition::BedWoken => "sleeper woke",
+        UseDisposition::OfflineTraining => "offline training started",
+        UseDisposition::TooFar => "move closer",
+        UseDisposition::StaleState => "target changed",
+        UseDisposition::NothingToUse => "nothing to use here",
+        _ => "refused",
+    };
+    Ok(format!("{label}: {text}"))
 }
 
 #[cfg(test)]

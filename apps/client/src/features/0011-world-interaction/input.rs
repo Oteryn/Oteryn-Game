@@ -60,6 +60,9 @@ impl PlayView {
                 .as_ref()
                 != Some(&menu.target)
         {
+            lock(&link.mailbox)
+                .world_context
+                .set_feedback("Target changed".into(), std::time::Instant::now());
             return false;
         }
         if let Some(tile) = menu.tile {
@@ -67,6 +70,9 @@ impl PlayView {
                 return false;
             };
             if current.binding != menu.binding {
+                lock(&link.mailbox)
+                    .world_context
+                    .set_feedback("Target changed".into(), std::time::Instant::now());
                 return false;
             }
         }
@@ -87,18 +93,32 @@ impl PlayView {
             .send(crate::combat_input::PlayCommand::WorldContext(Command {
                 target: menu.target.clone(),
                 action,
+                selection: menu.tile.map(|tile| {
+                    oteryn_client_runtime::world_interaction::Selection {
+                        position: oteryn_session::ActorPosition {
+                            x: tile.x,
+                            y: tile.y,
+                            floor: self.floor,
+                        },
+                        binding: menu.binding,
+                    }
+                }),
             }))
             .is_err()
         {
             return false;
         }
         mailbox.world_context.pending = true;
-        mailbox.world_context.feedback = Some("Waiting for server".into());
+        mailbox
+            .world_context
+            .set_feedback("Waiting for server".into(), std::time::Instant::now());
         true
     }
 }
 impl PlayLink {
     pub fn world_context_feedback(&self) -> Option<String> {
-        lock(&self.mailbox).world_context.feedback.clone()
+        lock(&self.mailbox)
+            .world_context
+            .feedback(std::time::Instant::now())
     }
 }

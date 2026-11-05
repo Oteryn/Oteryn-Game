@@ -15,7 +15,7 @@ use tokio::sync::mpsc::UnboundedReceiver;
 /// server's probe cadence.
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
-super::feature_local_account_achievements::protocol::session_trait! {
+super::feature_0011_world_interaction::protocol::session_trait! {
     fn target_walk(&mut self, _position: oteryn_session::ActorPosition) -> impl Future<Output = Result<oteryn_client_runtime::target_move::WalkResponse, SessionError>> + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 64 }) }
     }
@@ -230,7 +230,6 @@ super::feature_local_account_achievements::protocol::session_trait! {
     > + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 165 }) }
     }
-    fn world_context(&mut self, _command: &oteryn_client_runtime::world_interaction::Command) -> impl Future<Output = Result<String, SessionError>> + Send { async { Err(SessionError::CapabilityNotSelected { capability: 28 }) } }
     fn feature_selected(&self, _capability: u32) -> bool {
         false
     }
@@ -346,7 +345,7 @@ pub async fn run_session<T: Stepper>(
     outbox.achievements_initialize();
     let mut held = Vec::new();
     loop {
-        let ended = super::feature_local_account_achievements::protocol::dispatch! {
+        let ended = super::feature_0011_world_interaction::protocol::dispatch! {
             commands.try_recv(), session, outbox, held, publish;
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
@@ -432,7 +431,6 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::WorldContext(command)) => match outbox.world_context_run(&mut session, &command).await { Ok(()) => { publish(&mut session, &outbox, &mut held); continue; } Err(error) => error },
             Ok(PlayCommand::TargetWalk(position)) => match outbox.target_walk_run(&mut session, position).await {
                 Ok(()) => {
                     publish(&mut session, &outbox, &mut held);

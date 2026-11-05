@@ -114,7 +114,7 @@ mod tick;
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
 #[cfg(windows)]
-pub use feature_0011_world_interaction::view::{open_world_context_menu, present_world_look};
+pub use feature_0011_world_interaction::view::open_world_context_menu;
 
 pub use feature_0004_item_view_move::state::GroundItem;
 
