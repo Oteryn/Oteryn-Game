@@ -59,13 +59,18 @@ fn due_boundary_and_ended_owner_recovery_never_advance_cycle() {
 }
 
 #[test]
-fn reset_overwrites_every_previous_state_before_any_recovery_once_per_epoch() {
+fn reset_preserves_alive_and_draws_other_states_once_per_epoch() {
     let inactive = BossClock {
         state: BossClockState::Inactive,
         due_at_unix_ms: None,
         ..due()
     };
-    for old in [due(), alive(), inactive] {
+    assert!(
+        plan_reset(&key(), &alive(), 11, 9000, 1, 1)
+            .expect("alive")
+            .is_none()
+    );
+    for old in [due(), inactive] {
         let no = plan_reset(&key(), &old, 11, 9000, 0, 1)
             .expect("reset")
             .expect("new epoch");
@@ -99,6 +104,36 @@ fn reset_overwrites_every_previous_state_before_any_recovery_once_per_epoch() {
                 .is_some()
         );
     }
+}
+
+#[test]
+fn boss_spawn_world_epoch_stream_and_chance_bounds() -> TestResult {
+    let mut other = key();
+    other.channel = ChannelId::decode(&id(44))?;
+    let stream = |epoch| draw(&key(), epoch, "boss_at_reset");
+    assert_eq!(stream(11)?, stream(11)?);
+    assert_eq!(stream(11)?, draw(&other, 11, "boss_at_reset")?);
+    assert_ne!(stream(11)?, stream(12)?);
+    other.world = WorldId::decode(&id(45))?;
+    assert_ne!(stream(11)?, draw(&other, 11, "boss_at_reset")?);
+    other = key();
+    other.spawn.push('x');
+    assert_ne!(stream(11)?, draw(&other, 11, "boss_at_reset")?);
+    for epoch in 11..100 {
+        assert_eq!(
+            plan_reset(&key(), &due(), epoch, 9000, 0, 1)?
+                .ok_or("roll")?
+                .state,
+            BossClockState::Inactive
+        );
+        assert_eq!(
+            plan_reset(&key(), &due(), epoch, 9000, 1, 1)?
+                .ok_or("roll")?
+                .state,
+            BossClockState::Due
+        );
+    }
+    Ok(())
 }
 
 #[test]
@@ -1075,12 +1110,14 @@ fn boss_cooldown_atomic_group_replay_and_compensation_postgres() -> TestResult {
 }
 
 #[test]
-fn boss_spawn1_activation_reset_and_channel_independence_postgres() -> TestResult {
+fn boss_spawn1_world_exclusion_restart_and_reset_postgres() -> TestResult {
     use crate::durability::runtime_scope_assignment as native;
     let Some(admin) = native_fixture::configured_admin() else {
         return Ok(());
     };
-    native_fixture::runtime()?.block_on(async move {
+    std::thread::Builder::new().name("boss-world-clock".into()).stack_size(64 << 20)
+        .spawn(move || {
+        let execute = || -> TestResult { native_fixture::runtime()?.block_on(async move {
         let h = native_fixture::Harness::create(admin,"boss_spawn1",false).await?;
         let result: TestResult = async {
             let seal = h.recovery.seal_current().map_err(|e| format!("{e:?}"))?;
@@ -1107,7 +1144,7 @@ fn boss_spawn1_activation_reset_and_channel_independence_postgres() -> TestResul
                 Ok(runtime)
             };
 
-            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),generation(1),respawn).await?,BossClockClaim::Waiting(_)));
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),key.spawn.clone(),generation(1),respawn).await?,BossClockClaim::Waiting(_)));
             let mut tx = h.pool.begin().await?;
             let initial = read_clock(&mut tx,&key).await?.ok_or("initial clock")?;
             assert_eq!(initial.state,BossClockState::Due);
@@ -1115,15 +1152,15 @@ fn boss_spawn1_activation_reset_and_channel_independence_postgres() -> TestResul
             assert!((now+9000..=now+20000).contains(&initial.due_at_unix_ms.ok_or("first timer")?));
             tx.rollback().await?;
             sqlx::query("UPDATE game_boss_spawn_clocks SET due_at=0").execute(&h.pool).await?;
-            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),generation(1),respawn).await?,BossClockClaim::Claimed(_)));
-            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),generation(1),respawn).await?,BossClockClaim::Unchanged);
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),key.spawn.clone(),generation(1),respawn).await?,BossClockClaim::Claimed(_)));
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),key.spawn.clone(),generation(1),respawn).await?,BossClockClaim::Unchanged);
             let first_assignment=h.root.read_runtime_scope_assignment(native_fixture::scope()?).await.map_err(|e|format!("{e:?}"))?.ok_or("first assignment")?;
             let mut first_runtime=make_runtime(&first_assignment)?;
             let first_actor=first_runtime.realize_boss_spawn(&key.spawn,0).map_err(|e|format!("{e:?}"))?.ok_or("first actor")?;
             let full=first_runtime.companion_snapshot(first_actor).map_err(|e|format!("{e:?}"))?.maximum_health;
             first_runtime.set_test_creature_health(first_actor,1).map_err(|e|format!("{e:?}"))?;
 
-            // A separately assigned channel gets its own initial timer, independent of ALIVE.
+            // A separately assigned channel cannot duplicate the world-wide ALIVE boss.
             let mut other = key.clone();other.channel=ChannelId::decode(&id(44))?;
             sqlx::query("INSERT INTO game_control_scope_grants SELECT session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,operation FROM unnest(ARRAY[1,2,3]::smallint[]) AS operation")
                 .bind(other.world.as_bytes().as_slice()).bind(other.channel.as_bytes().as_slice()).execute(&h.pool).await?;
@@ -1136,10 +1173,10 @@ fn boss_spawn1_activation_reset_and_channel_independence_postgres() -> TestResul
                 },
             }).await.map_err(|e| format!("{e:?}"))?;
             assert!(matches!(outcome,native::AssignmentOutcome::Committed(_)));
-            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,other.clone(),generation(1),respawn).await?,BossClockClaim::Waiting(_)));
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,other.clone(),other.spawn.clone(),generation(1),respawn).await?,BossClockClaim::Unchanged);
             let mut tx=h.pool.begin().await?;
             assert_eq!(read_clock(&mut tx,&key).await?.ok_or("first")?.state,BossClockState::Alive);
-            assert_eq!(read_clock(&mut tx,&other).await?.ok_or("second")?.state,BossClockState::Due);
+            assert!(read_clock(&mut tx,&other).await?.is_none(), "one world-wide live boss");
             tx.rollback().await?;
             // The native assignment writer ends generation 1 before recovery can claim ALIVE.
             let scope=native_fixture::scope()?;
@@ -1149,8 +1186,8 @@ fn boss_spawn1_activation_reset_and_channel_independence_postgres() -> TestResul
                 actor:native::ControlActor::new("oteryn_test_admin").map_err(|e| format!("{e:?}"))?,
                 command:native::AssignmentCommand::Replace { scope,predecessor,target:h.node.fact() },
             }).await.map_err(|e| format!("{e:?}"))?;
-            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),generation(2),respawn).await?,BossClockClaim::Claimed(_)));
-            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),generation(2),respawn).await?,BossClockClaim::Unchanged);
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),key.spawn.clone(),generation(2),respawn).await?,BossClockClaim::Claimed(_)));
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),key.spawn.clone(),generation(2),respawn).await?,BossClockClaim::Unchanged);
             let new_assignment=h.root.read_runtime_scope_assignment(native_fixture::scope()?).await.map_err(|e|format!("{e:?}"))?.ok_or("new assignment")?;
             let mut restarted=make_runtime(&new_assignment)?;
             let recovered=restarted.realize_boss_spawn(&key.spawn,0).map_err(|e|format!("{e:?}"))?.ok_or("recovered actor")?;
@@ -1162,27 +1199,63 @@ fn boss_spawn1_activation_reset_and_channel_independence_postgres() -> TestResul
             sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)").bind(key.world.as_bytes().as_slice()).execute(&h.pool).await?;
             let yes=oteryn_gameplay_content::content::BossPolicy::AtReset { chance:oteryn_gameplay_content::content::BossChance { numerator:1,denominator:1 } };
             let mut reset_key=key.clone();reset_key.spawn="boss_spawn1.reset".into();
-            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),generation(2),yes).await?,BossClockClaim::Claimed(_)));
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),reset_key.spawn.clone(),generation(2),yes).await?,BossClockClaim::Claimed(_)));
+            let mut duplicate = reset_key.clone();
+            duplicate.channel = other.channel;
+            duplicate.spawn = "boss_spawn1.second_fixed_cell".into();
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,duplicate.clone(),reset_key.spawn.clone(),generation(1),yes).await?,BossClockClaim::Unchanged,"a different point and Channel cannot duplicate the same boss");
             let mut tx=h.pool.begin().await?;
+            assert_eq!(spawned_bosses_for_epoch(&mut tx,key.world,0).await?,vec![(reset_key.spawn.clone(),reset_key.spawn.clone())]);
             advance_death_in_transaction(&mut tx,&reset_key,generation(2),0,yes).await?;
             tx.commit().await?;
-            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),generation(2),yes).await?,BossClockClaim::Waiting(BossClock { state:BossClockState::Inactive,.. })),"INACTIVE stays inactive in the same epoch");
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,duplicate,reset_key.spawn.clone(),generation(1),yes).await?,BossClockClaim::Waiting(BossClock { state:BossClockState::Inactive,.. })),"the blocked point retains its outcome after death");
+            let mut tx=h.pool.begin().await?;
+            assert_eq!(spawned_bosses_for_epoch(&mut tx,key.world,0).await?,vec![(reset_key.spawn.clone(),reset_key.spawn.clone())],"the public projection retains a killed boss");
+            tx.rollback().await?;
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),reset_key.spawn.clone(),generation(2),yes).await?,BossClockClaim::Waiting(BossClock { state:BossClockState::Inactive,.. })),"INACTIVE stays inactive in the same epoch");
             sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,1,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,clock_timestamp(),reset_month FROM game_world_reset_epochs WHERE reset_epoch=0").execute(&h.pool).await?;
             sqlx::query("UPDATE game_world_reset_active SET reset_epoch=1").execute(&h.pool).await?;
-            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),generation(2),yes).await?,BossClockClaim::Claimed(_)));
-            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),generation(2),yes).await?,BossClockClaim::Unchanged,"one draw and installation per epoch");
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),reset_key.spawn.clone(),generation(2),yes).await?,BossClockClaim::Claimed(_)));
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),reset_key.spawn.clone(),generation(2),yes).await?,BossClockClaim::Unchanged,"one draw and installation per epoch");
+            sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,2,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,clock_timestamp(),reset_month FROM game_world_reset_epochs WHERE reset_epoch=1").execute(&h.pool).await?;
+            sqlx::query("UPDATE game_world_reset_active SET reset_epoch=2").execute(&h.pool).await?;
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),reset_key.spawn.clone(),generation(2),yes).await?,BossClockClaim::Unchanged,"an earlier epoch's live boss must survive, without a second installation");
+            let scope=native_fixture::scope()?;
+            let predecessor=h.root.read_runtime_scope_predecessor(scope).await.map_err(|e| format!("{e:?}"))?.ok_or("predecessor")?;
+            h.writer.submit(&native::AssignmentRequest {
+                operation_key:native::OperationKey::from_bytes([93;32]),
+                actor:native::ControlActor::new("oteryn_test_admin").map_err(|e| format!("{e:?}"))?,
+                command:native::AssignmentCommand::Replace { scope,predecessor,target:h.node.fact() },
+            }).await.map_err(|e| format!("{e:?}"))?;
+            let recovered = h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),reset_key.spawn.clone(),generation(3),yes).await?;
+            assert!(matches!(recovered,BossClockClaim::Claimed(BossClock { reset_epoch:1,cycle:1,.. })),"restart recovers the earlier live outcome without a fresh epoch spawn");
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),reset_key.spawn.clone(),generation(3),yes).await?,BossClockClaim::Unchanged);
             let half=oteryn_gameplay_content::content::BossPolicy::AtReset { chance:oteryn_gameplay_content::content::BossChance { numerator:1,denominator:2 } };
             let mut failed=key.clone();
             for ordinal in 0..1000 {
                 failed.spawn=format!("boss_spawn1.failed.{ordinal}");
-                if oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(draw(&failed,1,"boss_at_reset")?,0,1)==1 { break; }
+                if oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(draw(&failed,2,"boss_at_reset")?,0,1)==1 { break; }
             }
-            let first=h.root.activate_boss_clock(&authority,&h.node,failed.clone(),generation(2),half).await?;
+            let first=h.root.activate_boss_clock(&authority,&h.node,failed.clone(),failed.spawn.clone(),generation(3),half).await?;
             assert!(matches!(first,BossClockClaim::Waiting(BossClock { state:BossClockState::Inactive,.. })),"a failed nonzero chance draw remains inactive");
-            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,failed,generation(2),yes).await?,first,"same epoch is never redrawn, even if content chance changes");
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,failed.clone(),failed.spawn.clone(),generation(3),yes).await?,first,"same epoch is never redrawn, even if content chance changes");
+            let persisted: (bool,bool) = sqlx::query_as("SELECT won,spawned FROM game_boss_spawn_rolls WHERE spawn_key=$1 AND reset_epoch=2").bind(&failed.spawn).fetch_one(&h.pool).await?;
+            assert_eq!(persisted,(false,false));
+            let mut tx=h.pool.begin().await?;
+            assert!(spawned_bosses_for_epoch(&mut tx,key.world,2).await?.is_empty(),"recovering an earlier-epoch boss is not a fresh spawn today");
+            tx.rollback().await?;
+            let mut disabled=key.clone(); disabled.spawn="boss_spawn1.disabled".into();
+            let never=oteryn_gameplay_content::content::BossPolicy::AtReset { chance:oteryn_gameplay_content::content::BossChance { numerator:0,denominator:1 } };
+            let disabled_outcome=h.root.activate_boss_clock(&authority,&h.node,disabled.clone(),disabled.spawn.clone(),generation(3),never).await?;
+            assert!(matches!(disabled_outcome,BossClockClaim::Waiting(BossClock { state:BossClockState::Inactive,.. })));
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,disabled.clone(),disabled.spawn.clone(),generation(3),yes).await?,disabled_outcome);
+            eprintln!("BOSS-SPAWN-1 PG EXECUTED: persisted success/failure; same-epoch replay; generation restart; cross-Channel and cross-point exclusion; earlier-epoch alive suppression; read-only killed-boss projection");
             Ok(())
         }.await;
         h.cleanup().await?;
         result
-    })
+    }) };
+        execute().map_err(|error| error.to_string())
+    })?.join().map_err(|_| "boss world clock thread failed")??;
+    Ok(())
 }
