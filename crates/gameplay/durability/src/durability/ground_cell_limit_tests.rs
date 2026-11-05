@@ -313,6 +313,9 @@ mod postgres {
     mod field_capabilities {
         include!("field_capability_port_postgres_tests.rs");
     }
+    mod gap_sv2_decay {
+        include!("gap_sv2_decay_tests.rs");
+    }
     use crate::bestiary_postgres_harness as harness;
     use crate::durability::ground_cell_limit::{
         GroundCellAdmissionError, GroundCellLimitError,

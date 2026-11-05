@@ -121,6 +121,7 @@ message OneItemTransactionV1 {
     OneItemPlayerDeathItemV1 player_death_drop = 17;
     OneItemPlayerDeathItemV1 player_death_amulet = 18;
     OneItemForgeV1 forge = 19; // P18; PR2785 answer6547509519, preserves death17/18
+    OneItemWriteOnceV1 write_once = 20; // WRITE-0 §5.3; PRESERVE_INSTANCE, no free text
   }
 }
 
@@ -822,4 +823,16 @@ message OneItemPlayerDeathItemV1 {
 message OneItemPlayerDeathInstanceV1 {
   bytes instance_id = 1;           // exactly 16-byte non-nil UUIDv7
   uint64 ownership_generation = 2; // positive; matches Ground and envelope when present
+}
+
+// One identity-preserving definition transform under the text CommandRef.
+message OneItemWriteOnceV1 {
+  OneItemStateV1 before = 1;
+  OneItemStateV1 after = 2;
+  OneItemCommandRefV1 command = 3;
+  bytes character_id = 4;
+  uint64 state_revision_before = 5;
+  uint64 state_revision_after = 6;
+  uint64 scope_ownership_generation = 7;
+  uint64 character_lease_generation = 8;
 }

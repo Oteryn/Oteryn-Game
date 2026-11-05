@@ -75,7 +75,13 @@ pub(super) async fn exercise(
         mailbox_handle: 2,
     })
     .map_err(debug)?;
-    set_text(pool, letter, &name).await?;
+    let write_started = std::time::Instant::now();
+    let write = encode_intent(&MailIntent::WriteText { item_handle: 1, text: name.clone() }).map_err(debug)?;
+    for _ in 0..2 {
+        assert_eq!(owner.mail_command(actor, admitted, 500, &write, Some(ItemKey::Instance(letter)), None).await,
+            Some(MailOutcome::TextWritten));
+    }
+    eprintln!("GAP-SV2 I04 PostgreSQL production text ingress/replay PASS in {:?}", write_started.elapsed());
     // Command 124 names a mailbox: the adjacent depot locker is none, the mailbox two tiles
     // away is out of reach. Neither writes.
     for (command_id, mailbox) in [(501, base(6, 1)?), (502, base(10, 1)?)] {

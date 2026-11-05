@@ -407,6 +407,8 @@ pub enum OneItemOperationV1 {
     // 17/18 belong to the PlayerDeathItem owner and retain their existing encoding.
     #[prost(message, tag = "19")]
     Forge(super::character_forge_dust::OneItemForgeV1),
+    #[prost(message, tag = "20")]
+    WriteOnce(super::item_text::write_once::OneItemWriteOnceV1),
     // End tag-sorted variants.
 }
 
@@ -433,6 +435,7 @@ pub struct OneItemTransactionV1 {
             15, // Craft
             16, // Atelier
             19, // Native Forge
+            20, // WriteOnce
         )
     )]
     pub operation: Option<OneItemOperationV1>,

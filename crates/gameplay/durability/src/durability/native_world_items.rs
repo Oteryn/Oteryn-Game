@@ -382,12 +382,32 @@ pub fn source_magic_field(
 }
 pub fn qualify_source_field_chain(
     content: &crate::content::native_gameplay::NativeGameplayState,
+    item: QualifiedItemDefinition,
+) -> Result<QualifiedItemDefinition, crate::durability::spell_item_transaction::SpellItemError> {
+    qualify_source_chain(content, item, true)
+}
+
+/// Complete ordinary Item chain, including a final permanent transformed form.
+pub fn qualify_source_item_chain(
+    content: &crate::content::native_gameplay::NativeGameplayState,
+    item: QualifiedItemDefinition,
+) -> Result<QualifiedItemDefinition, crate::durability::spell_item_transaction::SpellItemError> {
+    // No timer exists: preserve ordinary permanent stack/container grant rules.
+    if item.decay.is_none() && item.decay_chain.is_empty() {
+        return Ok(item);
+    }
+    qualify_source_chain(content, item, false)
+}
+
+fn qualify_source_chain(
+    content: &crate::content::native_gameplay::NativeGameplayState,
     mut item: QualifiedItemDefinition,
+    field_only: bool,
 ) -> Result<QualifiedItemDefinition, crate::durability::spell_item_transaction::SpellItemError> {
     let mut current = item.definition.clone();
     let mut seen = std::collections::BTreeSet::new();
     let mut stages = Vec::new();
-    for _ in 0..32 {
+    for _ in 0..=32 {
         if !seen.insert((current.production_key.clone(), current.revision_ref.clone())) {
             return Err(
                 crate::durability::spell_item_transaction::SpellItemError::Rejected(
@@ -402,7 +422,7 @@ pub fn qualify_source_field_chain(
                     "field decay target source missing",
                 ),
             )?;
-        if !source_magic_field(policy)? {
+        if field_only && !source_magic_field(policy)? {
             return Err(
                 crate::durability::spell_item_transaction::SpellItemError::Rejected(
                     "field decay target classification",
@@ -412,9 +432,11 @@ pub fn qualify_source_field_chain(
         let record = policy.record();
         let qualified = QualifiedItemDefinition::from_native_policy(policy)
             .map_err(crate::durability::spell_item_transaction::SpellItemError::Rejected)?;
-        if qualified.definition != current
-            || !qualified.ground_destination
+        if (!field_only && qualified.field_class != SpellFieldClass::NotField)
+            || qualified.definition != current
+            || (!qualified.ground_destination && (field_only || !qualified.inventory_destination))
             || qualified.stack_maximum != 1
+            || qualified.container_capacity.is_some()
             || qualified.content_generation_digest != content.source_digest()
         {
             return Err(
@@ -427,13 +449,14 @@ pub fn qualify_source_field_chain(
             // Permanent source fields have no schedule. A final permanent
             // transformation requires its own explicit immutable collision
             // closure; current supported source chains end by retiring.
-            if !stages.is_empty() {
+            if field_only && !stages.is_empty() {
                 return Err(
                     crate::durability::spell_item_transaction::SpellItemError::Rejected(
                         "permanent transformed field source unsupported",
                     ),
                 );
             }
+            item.decay_chain = stages;
             return Ok(item);
         };
         let blocks = record.attributes.blocks_movement.ok_or(
@@ -451,6 +474,13 @@ pub fn qualify_source_field_chain(
                 "field source immovability unknown",
             ),
         )?;
+        if stages.len() == 32 {
+            return Err(
+                crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                    "Item decay chain bound",
+                ),
+            );
+        }
         stages.push(QualifiedItemDecayStage {
             definition: current.clone(),
             duration_millis: decay.duration_millis,
