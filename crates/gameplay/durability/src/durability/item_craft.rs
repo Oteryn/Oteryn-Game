@@ -22,8 +22,11 @@ use sqlx::Row;
 
 pub(crate) mod audit;
 mod enchanting;
+mod event_containers;
+mod harvest;
 pub mod soulpit;
 pub use enchanting::EnchantingCraft;
+pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
 
 #[derive(Debug, Clone)]
 pub struct ItemCraftRequest {
@@ -145,16 +148,28 @@ async fn write<C: ItemLoopContent>(
     }
     let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     // Root serialization precedes all item locks. Basic cooking accepts main-backpack leaves.
-    let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent,e.placement_ordinal::text AS ordinal FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND e.world_id=i.world_id AND b.world_id=i.world_id FOR UPDATE OF i")
+    let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent,e.placement_ordinal::text AS ordinal,NULL::jsonb AS nested_source FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND e.world_id=i.world_id AND b.world_id=i.world_id FOR UPDATE OF i")
         .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+    let source = match source {
+        Some(source) => Some(source),
+        None if request.station.is_none() && request.tool.is_none() && request.gathering.is_none() =>
+            event_containers::nested_source(tx, fence, request.source, *world.as_bytes()).await?,
+        None => None,
+    };
     let Some(source) = source else {
         return Ok(UseDisposition::StaleState);
     };
+    let nested_source: Option<Value> = source.try_get("nested_source")?;
     let definition = TypedDefinitionRef {
         family: source.try_get("definition_family")?,
         production_key: source.try_get("definition_production_key")?,
         revision_ref: source.try_get("definition_revision_ref")?,
     };
+    if nested_source.is_some()
+        && oteryn_gameplay_items::reward_bag::event_containers::event_container_rule(&definition.production_key).is_none()
+    {
+        return Ok(UseDisposition::NothingToUse);
+    }
     let consumes_source = request
         .gathering
         .as_ref()
@@ -171,6 +186,14 @@ async fn write<C: ItemLoopContent>(
         let tool_id = request.tool.unwrap_or(request.source);
         let tool: Option<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND e.world_id=i.world_id AND b.world_id=i.world_id AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
             .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+        let planting = definition.production_key.strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u16>().ok())
+            .and_then(|seed| u16::try_from(gathering.mutation.before).ok()
+                .and_then(|target| oteryn_gameplay_items::event_planting::planting_attempt(seed, target)));
+        let seed_is_qualified = planting.is_some_and(|plan| plan == gathering.attempt
+            && gathering.mutation.after == plan.after.map_or(0, u32::from)
+            && gathering.mutation.decay == plan.after.map(oteryn_gameplay_items::event_planting::planting_decays).unwrap_or_default()
+            && request.tool.is_none() && tool_id == request.source);
         if tool
             .as_ref()
             .map(|(key, revision)| (key.as_str(), revision.as_str()))
@@ -180,7 +203,7 @@ async fn write<C: ItemLoopContent>(
             ))
             || tool_id != gathering.mutation.tool
             || gathering.scope.content_generation != native.source_digest()
-            || (consumes_source && definition.production_key != bait)
+            || (consumes_source && definition.production_key != bait && !seed_is_qualified)
         {
             return Ok(UseDisposition::StaleState);
         }
@@ -202,7 +225,7 @@ async fn write<C: ItemLoopContent>(
             .collect::<Option<Vec<_>>>();
         outputs.map(
             |outputs| oteryn_gameplay_items::item_craft::CookingConversion {
-                recipe: "oteryn:gathering.crystal".into(),
+                recipe: if seed_is_qualified { "oteryn:planting.crystal" } else { "oteryn:gathering.crystal" }.into(),
                 outputs,
             },
         )
@@ -265,6 +288,15 @@ async fn write<C: ItemLoopContent>(
     };
     let before: Value = source.try_get("before_item")?;
     let quantity: i64 = source.try_get("quantity")?;
+    let consumed_quantity = if !consumes_source {
+        0
+    } else if oteryn_gameplay_items::reward_bag::event_containers::consumes_whole_stack(&conversion.recipe) {
+        quantity
+    } else {
+        1
+    };
+    let retires_source = consumes_source && quantity == consumed_quantity;
+    let frees_output_slot = retires_source && nested_source.is_none();
     let parent: Vec<u8> = source.try_get("parent")?;
     let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(&parent).fetch_one(&mut ***tx).await?;
     let tree_count: i64 = sqlx::query_scalar(
@@ -277,7 +309,7 @@ async fn write<C: ItemLoopContent>(
     if tree_count
         + i64::try_from(conversion.outputs.len())
             .map_err(|_| DurabilityError::InvalidStoredState)?
-        - i64::from(consumes_source && quantity == 1)
+        - i64::from(retires_source)
         > 500
     {
         return Ok(UseDisposition::NoRoom);
@@ -297,7 +329,7 @@ async fn write<C: ItemLoopContent>(
     if occupied
         + i64::try_from(conversion.outputs.len())
             .map_err(|_| DurabilityError::InvalidStoredState)?
-        - i64::from(consumes_source && quantity == 1)
+        - i64::from(frees_output_slot)
         > i64::from(capacity)
     {
         return Ok(UseDisposition::NoRoom);
@@ -318,12 +350,17 @@ async fn write<C: ItemLoopContent>(
         let Some(weight) = facts.weight else {
             return Ok(UseDisposition::NotPossible);
         };
-        // REWARD-BAGS-2: the alicorn quiver is one fresh empty container. The
-        // existing mint inserts only its instance and parent placement, no children.
-        let empty_quiver = request.station.is_none()
-            && definition.production_key == "oteryn:item.tibia.i39150"
-            && *count == 1;
-        if (facts.container_capacity.is_some() && !empty_quiver)
+        // Empty containers are granted only by the existing Primal Bag rule or
+        // an exact W19 source reward table (including the birthday backpack).
+        // The same writer creates no children and all custody checks still apply.
+        let empty_container = request.station.is_none()
+            && *count == 1
+            && (definition.production_key == "oteryn:item.tibia.i39150"
+                || oteryn_gameplay_items::reward_bag::event_containers::permits_empty_container(
+                    &conversion.recipe,
+                    &definition.production_key,
+                ));
+        if (facts.container_capacity.is_some() && !empty_container)
             || *count
                 > stack_maximum(facts.stack)
                     .map(|(maximum, _)| maximum)
@@ -337,6 +374,7 @@ async fn write<C: ItemLoopContent>(
     if carried
         .checked_sub(if consumes_source {
             u64::from(used_weight)
+                * u64::try_from(consumed_quantity).map_err(|_| DurabilityError::InvalidStoredState)?
         } else {
             0
         })
@@ -351,7 +389,7 @@ async fn write<C: ItemLoopContent>(
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let mut outputs = Vec::new();
     for (position, (definition, count)) in conversion.outputs.iter().enumerate() {
-        let output_ordinal = if consumes_source && quantity == 1 && position == 0 {
+        let output_ordinal = if frees_output_slot && position == 0 {
             source.try_get::<String, _>("ordinal")?
         } else {
             ordinal = ordinal
@@ -396,11 +434,11 @@ async fn write<C: ItemLoopContent>(
             .bind(ingredient.as_slice()).fetch_optional(&mut ***tx).await?,
         None => None,
     };
-    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,ingredient_item_instance_id,ingredient_before_item) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,$18)")
-        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).bind(request.ingredient.map(|id| id.to_vec())).bind(ingredient_before).execute(&mut ***tx).await?;
+    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,ingredient_item_instance_id,ingredient_before_item,event_source_location) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,$18,$19)")
+        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).bind(request.ingredient.map(|id| id.to_vec())).bind(ingredient_before).bind(&nested_source).execute(&mut ***tx).await?;
     if consumes_source {
-        sqlx::query("UPDATE game_item_instances SET quantity=quantity-1,lifecycle=CASE WHEN quantity=1 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
-        .bind(request.source.as_slice()).bind(&transaction).execute(&mut ***tx).await?;
+        sqlx::query("UPDATE game_item_instances SET quantity=quantity-$3,lifecycle=CASE WHEN quantity=$3 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(request.source.as_slice()).bind(&transaction).bind(consumed_quantity).execute(&mut ***tx).await?;
     }
     if let Some(ingredient) = request.ingredient {
         sqlx::query("UPDATE game_item_instances SET quantity=quantity-1,lifecycle=CASE WHEN quantity=1 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -408,19 +446,25 @@ async fn write<C: ItemLoopContent>(
         sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND (SELECT lifecycle=2 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid)")
             .bind(ingredient.as_slice()).execute(&mut ***tx).await?;
     }
-    if consumes_source && quantity == 1 {
-        sqlx::query(
-            "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
-        )
-        .bind(request.source.as_slice())
-        .execute(&mut ***tx)
-        .await?;
+    if retires_source {
+        let deletion = if nested_source.is_some() {
+            "DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid"
+        } else {
+            "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid"
+        };
+        sqlx::query(deletion).bind(request.source.as_slice()).execute(&mut ***tx).await?;
     }
     for output in outputs {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
         sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,($1->>'ordinal')::numeric,$5::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&parent).bind(&transaction).execute(&mut ***tx).await?;
+    }
+    if conversion.recipe == "oteryn:planting.crystal"
+        && request.gathering.as_ref().is_some_and(|g| g.mutation.before == 14029) {
+        super::account_achievement::grant_missing(tx, fence.character_id,
+            &["oteryn:achievement/preservationist"], "map_seed_planting",
+            &super::item_mint::uuid_text(&event)?).await?;
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;

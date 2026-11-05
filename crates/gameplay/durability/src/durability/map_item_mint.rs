@@ -1014,6 +1014,7 @@ async fn apply_mint(
     .bind(committed_at)
     .execute(&mut **tx)
     .await?;
+    planting::inherit_in_transaction(tx, frozen, reservation).await?;
     Ok(CommittedMapItemMint {
         transaction_id: frozen.transaction_id,
         event_id: frozen.event_id,
@@ -1439,3 +1440,5 @@ mod tests {
         }
     }
 }
+
+mod planting;

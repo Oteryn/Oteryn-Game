@@ -25,10 +25,39 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     );
     // W09: a committed Cube may have consumed the last source unit. Its original
     // command still resolves from a receipt even when the view handle no longer exists.
+    // Preserve the same timeout/unknown close used by receipt-backed Item actions.
+    if let Ok(UseIntent {
+        target: UseTarget::WorldObject(target),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    }) = &decoded
+        && let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            authority.use_event_world_object(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                target.clone(),
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?
+    {
+        return Some(Dispatch::Use(outcome));
+    }
     if admitted
         .continuity
         .selected_capabilities
         .contains(CAPABILITY_ITEM_USE_V1)
+        // Cube receipts belong to Channel sessions. A named-House handoff has
+        // its own session and must reach its owner after the shared trade check.
+        && !admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }))
         && let Ok(intent) = &decoded
         && intent.use_with.is_none()
         && intent.use_with_map_item.is_none()
@@ -84,6 +113,38 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 .await?
         {
             return Some(Dispatch::Use(UseOutcome::rejected()));
+        }
+    }
+    // The shared item-action owner also admits equipped hats and player-targeted toys.
+    if let Ok(intent) = &decoded
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_ITEM_USE_V1)
+        && let UseTarget::Item(handle) = intent.target
+    {
+        let source = item_view.as_ref().and_then(|view| view.resolve(handle));
+        if let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            authority.use_event_item(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                intent.clone(),
+                source,
+                intent.use_with.is_none_or(|target| {
+                    visibility.as_ref().is_some_and(|view| view.shows(target))
+                }),
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?
+        {
+            return Some(Dispatch::Use(outcome));
         }
     }
     if let Ok(intent) = &decoded

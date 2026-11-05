@@ -94,6 +94,9 @@ pub enum EntrySource {
     Added(EntryId),
     /// A durable Ground item.
     Ground([u8; 16]),
+    /// A durable HouseInterior item read under its named-House owner. It is
+    /// injected only by that owner's view, never by a Channel Ground rebuild.
+    House([u8; 16]),
 }
 
 impl EntrySource {
@@ -101,7 +104,7 @@ impl EntrySource {
     pub const fn handle_bearing(&self) -> bool {
         match self {
             Self::Base { movable, .. } => *movable,
-            Self::Added(_) | Self::Ground(_) => true,
+            Self::Added(_) | Self::Ground(_) | Self::House(_) => true,
         }
     }
 }
@@ -113,6 +116,7 @@ pub enum MapEntryKey {
     Base(u64),
     Added(EntryId),
     Ground([u8; 16]),
+    House([u8; 16]),
 }
 
 impl EntrySource {
@@ -121,6 +125,7 @@ impl EntrySource {
             Self::Base { placement_key, .. } => MapEntryKey::Base(*placement_key),
             Self::Added(id) => MapEntryKey::Added(*id),
             Self::Ground(id) => MapEntryKey::Ground(*id),
+            Self::House(id) => MapEntryKey::House(*id),
         }
     }
 }

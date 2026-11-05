@@ -1975,3 +1975,109 @@ fn item_look_far_ground_stack_top_is_visible_and_out_of_view_is_typed() {
         Err(ItemLookRefusal::NotVisible)
     );
 }
+
+#[test]
+fn w19_house_map_excludes_channel_movement_and_overlay_items() {
+    let mut fixture = Fixture::new(vec![(ACTOR, vec![item(GRASS)])]);
+    fixture.facts.houses.insert(ACTOR);
+    let movement = fixture
+        .overlay
+        .add_volatile(
+            ACTOR,
+            VolatileItem {
+                id: COIN,
+                count: 1,
+                attributes: Vec::new(),
+            },
+            None,
+        )
+        .unwrap();
+    fixture.overlay.remove(ACTOR, movement).unwrap();
+    fixture.facts.movement_items.insert(
+        ACTOR,
+        vec![ComposedEntry {
+            source: EntrySource::Added(movement),
+            facts: facts_of(COIN),
+        }],
+    );
+    let ordinary = fixture.add(ACTOR, COIN);
+    fixture.join(ACTOR);
+    assert_eq!(
+        fixture
+            .client_tile(ACTOR)
+            .unwrap()
+            .items
+            .iter()
+            .filter(|item| item.definition == MapDefinition::Item(nz(COIN)))
+            .count(),
+        2,
+        "the ordinary Channel view still carries both Channel owners"
+    );
+    let source = MapViewSource {
+        overlay: &fixture.overlay,
+        facts: &fixture.facts,
+        content_generation: [7; 32],
+        reset_epoch: fixture.reset_epoch,
+    };
+    let house_item = uuid(39);
+    let entries = [HouseMapEntry {
+        position: ACTOR,
+        item: house_item,
+        ordinal: 1,
+        facts: facts_of(BAG),
+    }];
+    let mut house = SessionMapView::default();
+    let Some(MapUpdate::Snapshot(snapshot)) = house
+        .update_house(&mut fixture.items, &source, at(ACTOR), &entries)
+        .unwrap()
+    else {
+        panic!("new House map snapshot");
+    };
+    let decoded = decode_world_map_snapshot(&snapshot.payload).unwrap();
+    let actual: Vec<_> = decoded
+        .tiles
+        .iter()
+        .flat_map(|tile| &tile.items)
+        .filter_map(|item| match item.definition {
+            MapDefinition::Item(reference) => Some(reference),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(actual, vec![nz(BAG)]);
+    assert!(
+        fixture
+            .items
+            .table()
+            .handle(&ItemKey::Instance(house_item))
+            .is_some()
+    );
+    assert!(
+        fixture
+            .items
+            .table()
+            .handle(&ItemKey::MapAdded(movement.get()))
+            .is_none()
+    );
+    assert!(
+        fixture
+            .items
+            .table()
+            .handle(&ItemKey::MapAdded(ordinary))
+            .is_none()
+    );
+    let mut empty = SessionMapView::default();
+    let Some(MapUpdate::Snapshot(snapshot)) = empty
+        .update_house(&mut fixture.items, &source, at(ACTOR), &[])
+        .unwrap()
+    else {
+        panic!("empty House map snapshot");
+    };
+    assert!(
+        decode_world_map_snapshot(&snapshot.payload)
+            .unwrap()
+            .tiles
+            .iter()
+            .flat_map(|tile| &tile.items)
+            .all(|item| !matches!(item.definition, MapDefinition::Item(_)))
+    );
+}

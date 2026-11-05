@@ -130,6 +130,15 @@ pub trait FreshAdmissionAuthority {
     fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }
     }
+    fn observe_house_map(
+        &self,
+        _admitted: AdmittedSession,
+        _view: &mut SessionMapView,
+        _items: &mut SessionItemView,
+    ) -> impl Future<Output = Option<Result<Option<MapUpdate>, MapViewError>>> {
+        async { None }
+    }
+
     fn house_scope_ack(
         &self,
         _admitted: AdmittedSession,
@@ -496,6 +505,15 @@ pub trait FreshAdmissionAuthority {
     ///
     /// `command_id` is the FND-02 CommandId of the `USE` and `item_fence` the admitted session's
     /// [`AdmittedSession::item_fence`]; a chest `USE` keys its fenced MINT by both (C2).
+    fn use_event_world_object(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     fn use_object(
         &self,
         _actor: ExactActorRef,
@@ -545,6 +563,17 @@ pub trait FreshAdmissionAuthority {
         _session: GameSessionId,
     ) -> impl Future<Output = bool> {
         async { false }
+    }
+
+    fn use_event_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _visible_target: bool,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
     }
 
     fn use_consume_transform(

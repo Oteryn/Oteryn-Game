@@ -240,29 +240,7 @@ pub(super) async fn read_current_house_equipment(
     {
         return None;
     }
-    let digest = {
-        let runtime = admission.runtime.lock().await;
-        let house = runtime.house_actor_state(actor, session).ok()?;
-        if fence.game_session_id != session
-            || house.scope != fence.runtime_scope
-            || house.generation != fence.scope_ownership_generation
-            || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
-            || house.lease.generation() != fence.character_lease_generation
-        {
-            return None;
-        }
-        pinned_index(&runtime, admission.active_generation)?;
-        let digest = runtime.content_pin().server_artifact_digest();
-        if admission
-            .active_generation?
-            .native_gameplay()?
-            .source_digest()
-            != digest
-        {
-            return None;
-        }
-        digest
-    };
+    let digest = house_equipment_digest(admission, actor, session, fence).await?;
     let read = admission
         .root
         .read_house_equipment(
@@ -274,10 +252,41 @@ pub(super) async fn read_current_house_equipment(
         )
         .await
         .ok()?;
-    if read.fence() != &fence || read.equipment().content_digest != digest {
+    if read.fence() != &fence
+        || read.equipment().content_digest != digest
+        || house_equipment_digest(admission, actor, session, fence).await != Some(digest)
+    {
         return None;
     }
     Some(read.equipment().clone())
+}
+
+// A durable read can wait while native custody changes. Prove the same resident,
+// lease, scope generation and active content both before and after that read.
+async fn house_equipment_digest(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> Option<[u8; 32]> {
+    let runtime = admission.runtime.lock().await;
+    let house = runtime.house_actor_state(actor, session).ok()?;
+    if fence.game_session_id != session
+        || house.scope != fence.runtime_scope
+        || house.generation != fence.scope_ownership_generation
+        || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
+        || house.lease.generation() != fence.character_lease_generation
+    {
+        return None;
+    }
+    pinned_index(&runtime, admission.active_generation)?;
+    let digest = runtime.content_pin().server_artifact_digest();
+    (admission
+        .active_generation?
+        .native_gameplay()?
+        .source_digest()
+        == digest)
+        .then_some(digest)
 }
 
 /// Domain 9's occupied equipment slots of `game_session_id`'s Character, in ascending wire slot
@@ -288,6 +297,28 @@ pub(super) async fn observe_character_equipment(
     game_session_id: GameSessionId,
 ) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
     let equipment = read_current_equipment(admission, game_session_id).await?;
+    equipment_view(admission, equipment).await
+}
+
+/// The same domain-9 projection under the actual named-House actor and session.
+pub(super) async fn observe_house_character_equipment(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    game_session_id: GameSessionId,
+) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
+    let (current, _) = FreshAdmissionStore::from_root(admission.root.clone())
+        .current_session_at(game_session_id)
+        .await
+        .ok()?;
+    let fence = super::item_fence_of(current)?;
+    let equipment = read_current_house_equipment(admission, actor, game_session_id, fence).await?;
+    equipment_view(admission, equipment).await
+}
+
+async fn equipment_view(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    equipment: character_equipment::EquipmentSnapshot,
+) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
     let native = admission.active_generation?.native_gameplay()?;
     let index = pinned_index(
         &*admission.runtime.lock().await,

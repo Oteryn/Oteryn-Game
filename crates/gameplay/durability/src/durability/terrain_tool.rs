@@ -25,6 +25,17 @@ pub struct TerrainMutation {
     pub decay: Vec<(u32, i64)>,
 }
 
+/// A real map object used without a carried tool. Zero is the existing removed-placement
+/// tombstone; positive states and decay states name admitted source appearances.
+#[derive(Debug, Clone)]
+pub struct MapMutation {
+    pub placement: Vec<u8>,
+    pub expected_revision: i64,
+    pub before: u32,
+    pub after: u32,
+    pub decay: Vec<(u32, i64)>,
+}
+
 #[derive(Debug, Clone)]
 pub struct TerrainScope {
     pub map_revision: String,
@@ -142,6 +153,47 @@ pub(super) async fn apply_in_transaction(
     scope: &TerrainScope,
     mutation: &TerrainMutation,
 ) -> Result<bool, DurabilityError> {
+    apply_object_in_transaction(
+        tx,
+        fence,
+        command,
+        intent,
+        scope,
+        Some(mutation.tool),
+        &MapMutation {
+            placement: mutation.placement.clone(),
+            expected_revision: mutation.expected_revision,
+            before: mutation.before,
+            after: mutation.after,
+            decay: mutation.decay.clone(),
+        },
+    )
+    .await
+}
+
+/// Shared with source map harvesting and world-event consumption. The caller holds the
+/// complete current Character/Channel fence and commits its value/counter receipt in this
+/// same transaction. A failed CAS must abort every promised consequence.
+pub(super) async fn apply_map_in_transaction(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    intent: &[u8],
+    scope: &TerrainScope,
+    mutation: &MapMutation,
+) -> Result<bool, DurabilityError> {
+    apply_object_in_transaction(tx, fence, command, intent, scope, None, mutation).await
+}
+
+async fn apply_object_in_transaction(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    intent: &[u8],
+    scope: &TerrainScope,
+    tool: Option<[u8; 16]>,
+    mutation: &MapMutation,
+) -> Result<bool, DurabilityError> {
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     let placement: &[u8; 40] = mutation
         .placement
@@ -176,7 +228,7 @@ pub(super) async fn apply_in_transaction(
     let delays: Vec<i64> = mutation.decay.iter().map(|(_, delay)| *delay).collect();
     let applied: bool = sqlx::query_scalar("SELECT game_apply_terrain_tool_transform(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8,$9,$10,$11,$12,$13,$14,$15,$16)")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(command.command_id().get().to_string())
-                .bind(fence.character_id.as_bytes().as_slice()).bind(mutation.tool.as_slice()).bind(intent)
+                .bind(fence.character_id.as_bytes().as_slice()).bind(tool.as_ref().map(|id| id.as_slice())).bind(intent)
                 .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&mutation.placement)
                 .bind(&scope.map_revision).bind(scope.content_generation.as_slice()).bind(scope.reset_epoch)
                 .bind(mutation.expected_revision).bind(i64::from(mutation.before)).bind(i64::from(mutation.after))

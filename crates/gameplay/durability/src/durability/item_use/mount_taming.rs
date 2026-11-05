@@ -216,6 +216,7 @@ async fn attempt(
     .bind(fence.character_id.as_bytes().as_slice())
     .fetch_one(&mut ***tx)
     .await?;
+    super::super::character_appearance::lock_account_grants(tx, account).await?;
     // Different Characters of one account must not burn two items for the same grant.
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))")
         .bind(format!("mount-taming:{account}:{}", rule.grant_key))
@@ -240,7 +241,7 @@ async fn attempt(
         .filter(|fact| {
             matches!(
                 fact.source_kind.as_str(),
-                "quest" | "npc" | "mount_taming" | "task_board"
+                "quest" | "npc" | "mount_taming" | "item_action" | "task_board"
             )
         })
         .map(|fact| (fact.unlock_key, fact.content_revision))

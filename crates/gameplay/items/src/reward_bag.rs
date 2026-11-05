@@ -6,6 +6,8 @@ use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
 use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
 
+pub mod event_containers;
+
 /// Its own tag, so no combat or world-item draw shifts.
 const DRAW_TAG: &[u8] = b"oteryn:reward-bag-draw:v1";
 
@@ -39,6 +41,13 @@ pub fn reward_bags() -> Option<&'static [RewardBag]> {
         .map(|o| o.bags)
     })
     .as_deref()
+}
+
+/// The existing USE route recognizes the same generated bags and W19 source tables
+/// that the durable conversion resolves again under the item fence.
+pub fn is_reward_bag(key: &str) -> bool {
+    event_containers::event_container_rule(key).is_some()
+        || reward_bags().is_some_and(|bags| playable_bag(bags, key).is_some())
 }
 
 /// The draw for one command on one source; a receipt replay never redraws.
@@ -109,6 +118,9 @@ pub fn reward_bag_conversion(
         .record();
     if record.production_definition.family != used.family || !record.admission.materializable {
         return None;
+    }
+    if event_containers::event_container_rule(&used.production_key).is_some() {
+        return event_containers::conversion(native, used, draw);
     }
     let bag = playable_bag(reward_bags()?, &used.production_key)?;
     let reward = select_reward(&bag.rewards, draw)?;
