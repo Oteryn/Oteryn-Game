@@ -36,7 +36,8 @@ mod map_transport;
 mod presentation;
 mod quest_log_transport;
 pub use oteryn_protocol_oteryn::presentation::{
-    PresentationEvent, PresentationEventKind, PresentationSource,
+    PresentationColor, PresentationEvent, PresentationEventKind, PresentationSource,
+    PresentationValue, PresentationValueKind,
 };
 mod recovery;
 use join::JoinAcceptance;

@@ -81,7 +81,8 @@ impl PlayView {
             &entities,
         )?;
         self.scene.retain_target(target)?;
-        self.light_scene()
+        self.light_scene()?;
+        self.project_presentation(std::time::Instant::now())
     }
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.
@@ -100,6 +101,7 @@ impl PlayView {
         for entry in &pushed.markers {
             self.set_marker(entry);
         }
+        self.receive_presentation(&pushed.visuals, std::time::Instant::now());
         self.rebuild()
     }
 }

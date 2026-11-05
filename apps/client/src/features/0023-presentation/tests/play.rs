@@ -161,3 +161,237 @@ fn audio_mapping_rejects_unsafe_paths_and_catalog_verifies_audio_bytes()
     fs::remove_dir_all(dir)?;
     Ok(())
 }
+
+#[test]
+fn combat_presentation_synthetic_flow_reaches_scene_and_expires()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = crate::play::play_channel();
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?;
+    let baseline = view.scene().sprites().instances().len();
+    outbox.push(vec![oteryn_session::SessionEvent::Presentation(
+        AppliedDelta {
+            server_sequence: 42,
+            base_revision: 0,
+            new_revision: 1,
+            value: vec![PresentationEvent {
+                decision_ordinal: 1,
+                emission_ordinal: 1,
+                kind: PresentationEventKind::MagicEffect {
+                    position: oteryn_session::ActorPosition {
+                        x: 0,
+                        y: 0,
+                        floor: 0,
+                    },
+                    effect_id: 1,
+                    source: PresentationSource::Own,
+                },
+            }],
+        },
+    )]);
+    assert!(view.tick(&link).is_ok());
+    assert!(view.scene().sprites().instances().len() > baseline);
+    view.advance_presentation(std::time::Instant::now() + std::time::Duration::from_secs(2))?;
+    assert_eq!(view.scene().sprites().instances().len(), baseline);
+    Ok(())
+}
+
+fn value_event(floor: i16) -> PresentationEventKind {
+    PresentationEventKind::ValueText {
+        kind: oteryn_session::PresentationValueKind::Healed,
+        position: oteryn_session::ActorPosition { x: 0, y: 0, floor },
+        target: oteryn_session::EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        },
+        attacker: None,
+        primary: oteryn_session::PresentationValue {
+            value: u64::MAX,
+            color: oteryn_session::PresentationColor::LightGreen,
+        },
+        secondary: Some(oteryn_session::PresentationValue {
+            value: 12,
+            color: oteryn_session::PresentationColor::Blue,
+        }),
+    }
+}
+
+#[test]
+fn combat_values_float_keep_secondary_and_cull_other_floors()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?;
+    let base = view.scene().sprites().len();
+    let now = std::time::Instant::now();
+    view.receive_presentation(&[value_event(1)], now);
+    view.project_presentation(now)?;
+    assert_eq!(view.scene().sprites().len(), base);
+    view.receive_presentation(&[value_event(0)], now);
+    view.project_presentation(now)?;
+    let before = view.scene().sprites().instances()[base..].to_vec();
+    assert!(!before.is_empty());
+    assert!(
+        before
+            .iter()
+            .any(|quad| quad.position[1] < before[0].position[1])
+    );
+    view.advance_presentation(now + std::time::Duration::from_millis(250))?;
+    let after = &view.scene().sprites().instances()[base..];
+    assert_eq!(before.len(), after.len());
+    for (a, b) in before.iter().zip(after) {
+        assert_eq!(a.position[0], b.position[0]);
+        assert_eq!(a.position[1] - 8.0, b.position[1]);
+    }
+    view.advance_presentation(now + VISUAL_LIFETIME)?;
+    assert_eq!(view.scene().sprites().len(), base);
+    Ok(())
+}
+
+#[test]
+fn combat_visual_queues_are_bounded_across_mailbox_coalescing()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = crate::play::play_channel();
+    for sequence in 1..=3 {
+        outbox.push(vec![oteryn_session::SessionEvent::Presentation(
+            AppliedDelta {
+                server_sequence: sequence,
+                base_revision: sequence - 1,
+                new_revision: sequence,
+                value: (1..=MAX_VISUAL_CUES)
+                    .map(|ordinal| PresentationEvent {
+                        decision_ordinal: 1,
+                        emission_ordinal: ordinal as u32,
+                        kind: value_event(0),
+                    })
+                    .collect(),
+            },
+        )]);
+    }
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?;
+    assert!(view.tick(&link).is_ok());
+    assert_eq!(view.visuals.len(), MAX_VISUAL_CUES);
+    view.receive_presentation(&[value_event(0)], std::time::Instant::now());
+    assert_eq!(view.visuals.len(), MAX_VISUAL_CUES);
+    assert!(view.scene().sprites().len() < oteryn_renderer::MAX_BATCH_QUADS);
+    Ok(())
+}
+
+#[test]
+fn combat_visuals_keep_world_position_when_camera_moves_and_cull_offscreen()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?;
+    let base = view.scene().sprites().len();
+    let now = std::time::Instant::now();
+    view.receive_presentation(&[value_event(0)], now);
+    view.project_presentation(now)?;
+    let before = view.scene().sprites().instances()[base].position[0];
+    view.apply_pushed(&crate::play::Pushed {
+        own: Some(oteryn_session::ActorPosition {
+            x: 1,
+            y: 0,
+            floor: 0,
+        }),
+        ..Default::default()
+    })?;
+    view.project_presentation(now)?;
+    assert_eq!(
+        view.scene().sprites().instances()[base].position[0],
+        before - crate::scene::SCENE_TILE_PX as f32
+    );
+    view.apply_pushed(&crate::play::Pushed {
+        own: Some(oteryn_session::ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 0,
+        }),
+        ..Default::default()
+    })?;
+    assert_eq!(view.scene().sprites().len(), base);
+    Ok(())
+}
+
+fn numbered_value(value: u64) -> PresentationEventKind {
+    let mut event = value_event(0);
+    if let PresentationEventKind::ValueText {
+        primary, secondary, ..
+    } = &mut event
+    {
+        primary.value = value;
+        *secondary = None;
+    }
+    event
+}
+
+#[test]
+fn combat_review_overflow_keeps_newest_in_mailbox_and_view()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = crate::play::play_channel();
+    for sequence in 1..=2 {
+        outbox.push(vec![oteryn_session::SessionEvent::Presentation(
+            AppliedDelta {
+                server_sequence: sequence,
+                base_revision: sequence - 1,
+                new_revision: sequence,
+                value: (1..=MAX_VISUAL_CUES + 1)
+                    .map(|ordinal| PresentationEvent {
+                        decision_ordinal: 1,
+                        emission_ordinal: ordinal as u32,
+                        kind: numbered_value(
+                            (sequence - 1) * (MAX_VISUAL_CUES as u64 + 1) + ordinal as u64,
+                        ),
+                    })
+                    .collect(),
+            },
+        )]);
+    }
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?;
+    assert!(view.tick(&link).is_ok());
+    assert_eq!(view.visuals.len(), MAX_VISUAL_CUES);
+    assert_eq!(
+        view.visuals[0].kind,
+        numbered_value(MAX_VISUAL_CUES as u64 + 3)
+    );
+    assert_eq!(
+        view.visuals[MAX_VISUAL_CUES - 1].kind,
+        numbered_value(2 * (MAX_VISUAL_CUES as u64 + 1))
+    );
+    let now = std::time::Instant::now();
+    view.receive_presentation(&[numbered_value(999)], now);
+    assert_eq!(view.visuals.len(), MAX_VISUAL_CUES);
+    assert_eq!(
+        view.visuals[0].kind,
+        numbered_value(MAX_VISUAL_CUES as u64 + 4)
+    );
+    assert_eq!(view.visuals[MAX_VISUAL_CUES - 1].kind, numbered_value(999));
+    Ok(())
+}
+
+#[test]
+fn combat_review_same_tile_values_reserve_separate_lines_in_order()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?;
+    let base = view.scene().sprites().len();
+    let now = std::time::Instant::now();
+    view.receive_presentation(&[numbered_value(8)], now);
+    view.project_presentation(now)?;
+    let first = view.scene().sprites().instances()[base..].to_vec();
+    // The middle cue has a secondary number: it must reserve two lines.
+    let mut middle = numbered_value(8);
+    if let PresentationEventKind::ValueText {
+        secondary, primary, ..
+    } = &mut middle
+    {
+        *secondary = Some(*primary);
+    }
+    view.receive_presentation(&[middle, numbered_value(8)], now);
+    view.project_presentation(now)?;
+    let quads = &view.scene().sprites().instances()[base..];
+    assert_eq!(quads.len(), first.len() * 4);
+    for (line, group) in quads.chunks_exact(first.len()).enumerate() {
+        for (a, b) in first.iter().zip(group) {
+            assert_eq!(
+                b.position,
+                [a.position[0], a.position[1] - 12.0 * line as f32]
+            );
+        }
+    }
+    Ok(())
+}

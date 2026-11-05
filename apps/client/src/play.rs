@@ -29,6 +29,7 @@ pub struct PlayView {
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
     vitals: Option<oteryn_session::ActorVitals>,
     sounds: Vec<SoundCue>,
+    visuals: Vec<VisualCue>,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
     facing: StepDir,
@@ -70,6 +71,7 @@ impl PlayView {
             world_clock: None,
             vitals: None,
             sounds: Vec::new(),
+            visuals: Vec::new(),
             own,
             facing: StepDir::South,
             floor,
