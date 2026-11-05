@@ -44,6 +44,8 @@ fn default_panels() -> Vec<String> {
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub audio: crate::play::AudioSettings,
+    #[serde(default)]
     pub english: bool,
     /// Interface scale as an integral percentage.
     #[serde(default = "default_scale")]
@@ -55,6 +57,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            audio: crate::play::AudioSettings::default(),
             english: false,
             ui_scale: default_scale(),
             visible_panels: default_panels(),
@@ -64,7 +67,8 @@ impl Default for ReferencePreferences {
 
 impl ReferencePreferences {
     fn validate(&self) -> Result<(), PreferenceError> {
-        if !(80..=180).contains(&self.ui_scale)
+        if self.audio.master_volume > 100
+            || !(80..=180).contains(&self.ui_scale)
             || self.visible_panels.len() > PANEL_IDS.len()
             || self.visible_panels.iter().enumerate().any(|(index, id)| {
                 PANEL_IDS.binary_search(&id.as_str()).is_err()

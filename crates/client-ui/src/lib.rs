@@ -16,6 +16,9 @@ pub mod cyclopedia_tracker;
 pub mod daily_boost;
 #[path = "features/0153-depot-search/mod.rs"]
 pub mod depot_search;
+/// Live server highscores panel.
+#[path = "features/0009-highscores/mod.rs"]
+pub mod highscores;
 #[path = "features/0179-hotkey-equip/mod.rs"]
 pub mod hotkey_equip;
 #[path = "features/0152-item-forge/mod.rs"]
@@ -26,6 +29,9 @@ pub mod store;
 pub mod vip_presence;
 #[path = "features/0195-weapon-proficiency/mod.rs"]
 pub mod weapon_proficiency;
+
+#[path = "features/0053-world-event/mod.rs"]
+pub mod world_event;
 
 /// Completed species and bounded Animus mastery pages.
 #[path = "features/0168-animus-mastery/mod.rs"]
@@ -74,6 +80,10 @@ pub mod bestiary_charms;
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
 
+/// Boss encounter status and Bosstiary progress.
+#[path = "features/0117-boss-encounter/mod.rs"]
+pub mod boss_encounter;
+
 /// Personal boss reward browsing and custody collection.
 #[path = "features/0224-boss-rewards/mod.rs"]
 pub mod boss_rewards;
@@ -98,6 +108,13 @@ pub mod prey;
 /// Wheel allocation, vessels and Gem Atelier controls.
 #[path = "features/0148-wheel-allocation/mod.rs"]
 pub mod wheel_allocation;
+
+/// Tutorial notices and their shared server-save history.
+#[path = "features/0031-tutorial-notices/mod.rs"]
+pub mod tutorial_notices;
+
+#[path = "features/0075-server-save-countdown/protocol.rs"]
+pub mod server_save_countdown;
 
 /// Weekly Task Board state and controls.
 #[path = "features/0072-task-board/mod.rs"]

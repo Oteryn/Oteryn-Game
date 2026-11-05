@@ -81,7 +81,7 @@ mod tests {
             },
         )
         .unwrap();
-        assert_eq!(c.payload, []);
+        assert!(c.payload.is_empty());
         let mut wire = 9u64.to_be_bytes().to_vec();
         wire.extend([3, b'r', b'a', b't', 4, b'b', b'o', b's', b's']);
         apply_result(

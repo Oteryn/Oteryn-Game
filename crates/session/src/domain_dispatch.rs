@@ -63,7 +63,9 @@ impl<S: SessionStream> Session<S> {
                 }
                 Ok(event)
             }
+            19 | 20 => crate::presentation::apply(self, server_sequence, payload),
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
+            40 => crate::server_save_countdown::apply(self, server_sequence, payload),
             23 => crate::tutorial_notices::apply(self, server_sequence, payload),
             oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES => {
                 crate::achievement_notices::apply(self, server_sequence, payload)

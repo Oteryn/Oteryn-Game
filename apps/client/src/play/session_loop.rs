@@ -298,8 +298,7 @@ fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpa
     }
 }
 
-/// Initializes the live map and serves shell commands and idle liveness.
-/// Ends on the first session error (with its public class) or when the shell drops its link.
+/// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
     mut session: T,
     mut commands: UnboundedReceiver<PlayCommand>,
@@ -329,12 +328,15 @@ pub async fn run_session<T: Stepper>(
     outbox.market_initialize(session.market_selected());
     outbox.chat_public_initialize(session.chat_public_selected(), session.chat_state());
     outbox.player_typing_initialize(session.player_typing_selected());
+    outbox.boss_encounter_initialize(session.feature_selected(117));
     outbox.boss_difficulty_initialize(session.feature_selected(225));
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
+    outbox.world_event_initialize(session.feature_selected(53));
     outbox.daily_boost_initialize(session.feature_selected(151));
+    outbox.highscores_initialize(session.server_mechanic_selected(9));
     outbox.depot_search_initialize(session.server_mechanic_selected(153));
     outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
@@ -347,6 +349,8 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {
+                        53 => outbox.world_event_result(&result),
+                        117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
                         195 => outbox.weapon_proficiency_result(&result),
                         197 => outbox.cyclopedia_tracker_result(&result),
@@ -363,6 +367,7 @@ pub async fn run_session<T: Stepper>(
                 match session.server_mechanic(&request).await {
                     Ok(response) => {
                         match request.capability {
+                            9 => outbox.highscores_result(&response),
                             152 => outbox.item_forge_result(&response),
                             153 => outbox.depot_search_result(&response),
                             154 => outbox.store_result(&response),
@@ -392,29 +397,14 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Exiva(payload)) => {
-                let result = session.exiva(&payload).await;
-                match result {
-                    Ok(result) => {
-                        // An accepted edit is followed by a fresh server read, including
-                        // mode changes and UUID removal. Never infer the list locally.
-                        let result = if payload != [5] && result.payload == [1] {
-                            session.exiva(&[5]).await
-                        } else {
-                            Ok(result)
-                        };
-                        match result {
-                            Ok(result) => {
-                                outbox.exiva_result(&result);
-                                publish(&mut session, &outbox, &mut held);
-                                continue;
-                            }
-                            Err(error) => error,
-                        }
-                    }
-                    Err(error) => error,
+            Ok(PlayCommand::Exiva(payload)) => match outbox.exiva_run(&mut session, &payload).await
+            {
+                Ok(()) => {
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
+                Err(error) => error,
+            },
             Ok(PlayCommand::QuestLog(payload)) => match session.quest_log(&payload).await {
                 Ok(result) => {
                     outbox.quest_result(&result);

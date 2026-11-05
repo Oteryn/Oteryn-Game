@@ -14,7 +14,7 @@ use oteryn_client_runtime::connection::AdmissionAttempt;
 use oteryn_foundation::CancellationToken;
 use oteryn_identity::{IdentityFlow, LoopbackRedirect, PkceMaterial, StateNonce};
 use oteryn_platform_client::PlatformClientConfig;
-use oteryn_platform_client::gameplay_entry::{check_world, login_client};
+use oteryn_platform_client::gameplay_entry::login_client;
 use oteryn_platform_client::native_login::{
     AttemptRef, GatewayLogin, NativeLoginClient, NativeLoginError, NativeLoginGrant, NativeTicket,
     PublicClass, parse_uuid_v7, secure_random,
@@ -60,30 +60,29 @@ pub(crate) async fn enter(
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
     let gateway = PlatformClientConfig::new(&config.gateway_url)
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
-    let character_id = parse_uuid_v7(&config.character_id)
-        .and_then(|bytes| CharacterId::decode(&bytes).ok())
-        .ok_or(GameplayEntryError::InvalidConfiguration)?;
-
-    // 1. Availability before any credential.
-    check_world(&platform, &config.world_ref, cancellation.clone()).await?;
     let root = load_root_certificate(&config.dev_root)
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
 
-    // 2-3. OAuth code + PKCE in the system browser, then the native ticket.
+    // OAuth code + PKCE, owner character selection, then the consuming ticket.
     let client = login_client(
         &platform,
         &gateway,
         &config.oauth_client_id,
         config.retry_unit,
     )?;
-    let ticket = authorize::authorize(&client, config, cancellation.clone()).await?;
+    let (ticket, selected_character, selected_channel) =
+        authorize::authorize(&client, config, cancellation.clone()).await?;
+    let character_id = parse_uuid_v7(&selected_character)
+        .and_then(|bytes| CharacterId::decode(&bytes).ok())
+        .ok_or(GameplayEntryError::InvalidConfiguration)?;
 
     // 4. Gateway login: one attempt_ref for this whole attempt.
     let attempt_ref =
         AttemptRef::generate().map_err(|_error| rejected(PublicClass::TemporarilyUnavailable))?;
     let login = GatewayLogin {
         attempt_ref: &attempt_ref,
-        character_id: &config.character_id,
+        character_id: &selected_character,
+        channel_id: selected_channel.as_deref(),
         client_build: &config.client_build,
     };
     let grant = client

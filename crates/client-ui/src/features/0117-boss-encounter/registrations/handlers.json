@@ -3,9 +3,8 @@
   "kind": "handlers",
   "id": "0117-boss-encounter-unsupported",
   "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "reason": "Encounter mutations, rewards and slots are outside the read-only status flow.",
   "commands": [
-    133,
     169,
     178,
     179,

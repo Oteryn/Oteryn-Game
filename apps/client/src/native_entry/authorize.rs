@@ -4,7 +4,7 @@ pub(super) async fn authorize(
     client: &NativeLoginClient,
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
-) -> Result<NativeTicket, GameplayEntryError> {
+) -> Result<(NativeTicket, String, Option<String>), GameplayEntryError> {
     let mut entropy = [0_u8; 32];
     secure_random(&mut entropy).map_err(retry_login)?;
     let pkce = PkceMaterial::from_entropy(&entropy).map_err(retry_login)?;
@@ -39,8 +39,61 @@ pub(super) async fn authorize(
         )
         .await
         .map_err(login_rejected)?;
-    client
+    let platform = PlatformClientConfig::new(&config.platform_url)
+        .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
+    let directory_client = oteryn_platform_client::PlatformClient::new(platform)
+        .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
+    let (character_id, channel_id) = loop {
+        let characters = client
+            .owner_characters(&token, cancellation.clone())
+            .await
+            .map_err(login_rejected)?;
+        let directory = directory_client
+            .fetch_directory(cancellation.clone())
+            .await
+            .map_err(retry_login)?;
+        let rows = crate::character_selection::join(characters, &directory);
+        let selector = config.select_character.clone();
+        let preselect = config.character_id.clone();
+        let cancel = cancellation.clone();
+        let shown = rows.clone();
+        let action = tokio::task::spawn_blocking(move || selector(&shown, &preselect, cancel))
+            .await
+            .map_err(retry_login)?;
+        use crate::character_selection::SelectionAction;
+        match action {
+            SelectionAction::Play {
+                character_id,
+                channel_id,
+            } => {
+                let valid = rows.iter().any(|row| {
+                    row.available
+                        && row.character.character_id == character_id
+                        && channel_id
+                            .as_ref()
+                            .is_none_or(|id| row.channels.iter().any(|channel| &channel.0 == id))
+                });
+                if !valid {
+                    return Err(rejected(PublicClass::RetryLogin));
+                }
+                break (character_id, channel_id);
+            }
+            SelectionAction::Create => {
+                let url = format!(
+                    "{}/account/characters/create",
+                    config.platform_url.trim_end_matches('/')
+                );
+                if !(config.open_browser)(&url) {
+                    return Err(rejected(PublicClass::RetryLogin));
+                }
+            }
+            SelectionAction::Refresh => {}
+            SelectionAction::Cancel => return Err(rejected(PublicClass::RetryLogin)),
+        }
+    };
+    let ticket = client
         .issue_native_ticket(token, cancellation)
         .await
-        .map_err(login_rejected)
+        .map_err(login_rejected)?;
+    Ok((ticket, character_id, channel_id))
 }

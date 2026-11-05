@@ -72,6 +72,14 @@ impl Stack {
         refusals: Vec<u32>,
         admitted_frames: Vec<Vec<u8>>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_with_account(refusals, admitted_frames, false)
+    }
+
+    pub(super) fn start_with_account(
+        refusals: Vec<u32>,
+        admitted_frames: Vec<Vec<u8>>,
+        empty: bool,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let servers = ClientRuntime::new()?;
         let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
         let root = generated.cert.der().clone();
@@ -128,7 +136,7 @@ impl Stack {
         let log = Arc::clone(&requests);
         servers.spawn(async move {
             while let Ok((stream, _peer)) = http.accept().await {
-                serve_http(stream, game_port, &log).await;
+                serve_http(stream, game_port, &log, empty).await;
             }
         })?;
         Ok(Self {
@@ -153,6 +161,12 @@ impl Stack {
             callback_timeout: Duration::from_secs(10),
             retry_unit: Duration::from_millis(10),
             open_browser: Arc::new(complete_browser_sign_in),
+            select_character: Arc::new(|rows, _, _| {
+                crate::character_selection::SelectionAction::Play {
+                    character_id: rows[0].character.character_id.clone(),
+                    channel_id: Some(rows[0].channels[0].0.clone()),
+                }
+            }),
         }
     }
 
@@ -211,7 +225,12 @@ fn complete_browser_sign_in(url: &str) -> bool {
     true
 }
 
-async fn serve_http(mut stream: tokio::net::TcpStream, game_port: u16, log: &Mutex<Vec<String>>) {
+async fn serve_http(
+    mut stream: tokio::net::TcpStream,
+    game_port: u16,
+    log: &Mutex<Vec<String>>,
+    empty: bool,
+) {
     let mut request = Vec::new();
     let mut chunk = [0_u8; 4096];
     let (head, body) = loop {
@@ -241,10 +260,14 @@ async fn serve_http(mut stream: tokio::net::TcpStream, game_port: u16, log: &Mut
     let target = line.split(' ').take(2).collect::<Vec<_>>().join(" ");
     let response = match target.as_str() {
         "GET /v1/client/directory" => format!(
-            r#"{{"epoch":1,"worlds":[{{"id":"{WORLD_REF}","name":"Alpha","channels":[],"characters":[]}}]}}"#
+            r#"{{"epoch":1,"worlds":[{{"id":"{WORLD}","name":"Alpha","channels":[{{"id":"{CHANNEL}","name":"First"}}],"characters":[]}}]}}"#
+        ),
+        "GET /api/v1/game-auth/native-characters" if empty => r#"{"protocol_version":2,"characters":[]}"#.to_owned(),
+        "GET /api/v1/game-auth/native-characters" => format!(
+            r#"{{"protocol_version":2,"characters":[{{"character_id":"{CHARACTER}","world_id":"{WORLD}","name":"Ari","availability":"AVAILABLE"}}]}}"#
         ),
         "POST /oauth/token" => r#"{"token_type":"Bearer","access_token":"access-1","expires_in":300,"scope":"game:ticket"}"#.to_owned(),
-        "POST /v1/game-auth/tickets" => {
+        "POST /api/v1/game-auth/tickets" => {
             r#"{"protocol_version":1,"ticket":"ticket-1","expires_in":60}"#.to_owned()
         }
         "POST /v1/login" => {

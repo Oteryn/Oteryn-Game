@@ -1,5 +1,21 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
+    /// Refresh after an accepted edit rather than inferring the server-owned list.
+    pub(in crate::play) async fn exiva_run(
+        &self,
+        session: &mut impl crate::play::Stepper,
+        payload: &[u8],
+    ) -> Result<(), oteryn_session::SessionError> {
+        let result = session.exiva(payload).await?;
+        let result = if payload != [5] && result.payload == [1] {
+            session.exiva(&[5]).await?
+        } else {
+            result
+        };
+        self.exiva_result(&result);
+        Ok(())
+    }
+
     pub(in crate::play) fn exiva_initialize(&self, selected: bool) {
         lock(&self.0).exiva.selected = selected;
     }
