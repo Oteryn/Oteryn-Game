@@ -21,6 +21,8 @@ super::feature_0011_world_interaction::protocol::session_trait! {
         async { Err(SessionError::CapabilityNotSelected { capability: 64 }) }
     }
     fn inventory(&self) -> Option<oteryn_session::CharacterInventory> { None }
+    fn battle_floor(&self) -> Option<i16> { None }
+    fn battle_state(&self) -> Option<oteryn_session::ActorCombatState> { None }
     fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
         None
     }
@@ -461,9 +463,8 @@ pub async fn run_session<T: Stepper>(
                     Err(error) => error,
                 }
             }
-            Ok(PlayCommand::Combat(command)) => match session.combat(command).await {
-                Ok(report) => {
-                    outbox.combat(report);
+            Ok(command @ (PlayCommand::Combat(_) | PlayCommand::Battle(_))) => match outbox.battle_run(&mut session, command).await {
+                Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
