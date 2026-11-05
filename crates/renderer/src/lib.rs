@@ -15,12 +15,11 @@ pub mod world;
 
 pub use batch::{
     AtlasImage, AtlasPage, BatchError, CellKey, CellSlot, MAX_ATLAS_DIMENSION, MAX_BATCH_QUADS,
-    MAX_VIEW_PIXELS, PAGE_CELL_PX, PAGE_CELLS, PAGE_CELLS_PER_ROW, PlacedCell, QUAD_INSTANCE_BYTES,
-    QuadBatches, QuadInstance, SpriteBatch, SpriteFrame, TileBatch, TileView, VERTICES_PER_QUAD,
-    instance_bytes, lit_atlas, weather_atlas,
+    MAX_PAGE_UPLOAD_BYTES, MAX_PAGE_UPLOAD_CELLS, MAX_VIEW_PIXELS, PAGE_CELL_PX, PAGE_CELLS,
+    PAGE_CELLS_PER_ROW, PlacedCell, QUAD_INSTANCE_BYTES, QuadBatches, QuadInstance, SpriteBatch,
+    SpriteFrame, TileBatch, TileView, VERTICES_PER_QUAD, instance_bytes, lit_atlas, weather_atlas,
 };
 pub use oteryn_client_domain::TileCoord;
-pub use resources::ResourceCache;
 
 #[cfg(windows)]
 pub use windows::WindowsRenderer;

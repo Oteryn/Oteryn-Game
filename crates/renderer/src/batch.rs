@@ -362,6 +362,10 @@ pub const PAGE_CELL_PX: u32 = 32;
 /// Cells along one edge of the sprite page.
 pub const PAGE_CELLS_PER_ROW: u32 = 64;
 /// Sprite cells one page holds: 2048 x 2048 pixels of 32 x 32 cells.
+/// Maximum new cell uploads per frame (16 MiB, 1/16 of the 256 MiB floor).
+pub const MAX_PAGE_UPLOAD_CELLS: usize = 4096;
+/// Maximum RGBA8 upload payload per frame.
+pub const MAX_PAGE_UPLOAD_BYTES: usize = 16 * 1024 * 1024;
 pub const PAGE_CELLS: usize = (PAGE_CELLS_PER_ROW * PAGE_CELLS_PER_ROW) as usize;
 
 /// One 32 x 32 sprite cell: the sprite and which cell of it.
@@ -392,6 +396,9 @@ struct PageSlot {
 /// still has somewhere to draw an overflow cell from.
 #[derive(Debug, Clone)]
 pub struct AtlasPage {
+    generation: Option<oteryn_foundation::ProcessGeneration>,
+    uploaded_cells: usize,
+    uploaded_bytes: usize,
     slots: Vec<Option<PageSlot>>,
     index: std::collections::HashMap<CellKey, u16>,
     frame_first_tick: u64,
@@ -409,11 +416,22 @@ impl AtlasPage {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            generation: None,
+            uploaded_cells: 0,
+            uploaded_bytes: 0,
             slots: vec![None; PAGE_CELLS],
             index: std::collections::HashMap::with_capacity(PAGE_CELLS),
             frame_first_tick: 1,
             tick: 0,
             placeholders: 0,
+        }
+    }
+
+    /// Releases every resident slot when the owning process generation changes.
+    pub fn set_generation(&mut self, generation: oteryn_foundation::ProcessGeneration) {
+        if self.generation != Some(generation) {
+            *self = Self::new();
+            self.generation = Some(generation);
         }
     }
 
@@ -428,6 +446,8 @@ impl AtlasPage {
 
     /// Starts a frame. Cells drawn in this frame are not evicted until the next one.
     pub fn begin_frame(&mut self) {
+        self.uploaded_cells = 0;
+        self.uploaded_bytes = 0;
         self.frame_first_tick = self.tick.saturating_add(1);
     }
 
@@ -462,6 +482,13 @@ impl AtlasPage {
                 upload: false,
             };
         }
+        let bytes = PAGE_CELL_PX as usize * PAGE_CELL_PX as usize * RGBA_BYTES_PER_PIXEL;
+        if self.uploaded_cells >= MAX_PAGE_UPLOAD_CELLS
+            || self.uploaded_bytes + bytes > MAX_PAGE_UPLOAD_BYTES
+        {
+            self.count_placeholder();
+            return CellSlot::Placeholder;
+        }
         let free = self.slots.iter().position(Option::is_none);
         let victim = free.or_else(|| {
             self.slots
@@ -486,6 +513,8 @@ impl AtlasPage {
             last_drawn: stamp,
         });
         self.index.insert(key, slot);
+        self.uploaded_cells += 1;
+        self.uploaded_bytes += bytes;
         CellSlot::Resident { slot, upload: true }
     }
 
@@ -1006,7 +1035,7 @@ mod tests {
     }
 
     #[test]
-    fn a_frame_of_4097_distinct_cells_draws_one_placeholder() {
+    fn atlas_page_max_and_max_plus_one_admission() {
         let mut page = AtlasPage::new();
         page.begin_frame();
         let mut placeholders = 0;
@@ -1084,6 +1113,37 @@ mod tests {
         );
         assert_eq!(quad.size, [32.0 * scale; 2]);
         Ok(())
+    }
+    #[test]
+    fn atlas_page_admits_at_most_n_uploads_per_frame_then_placeholders() {
+        let mut page = AtlasPage::new();
+        for id in 0..PAGE_CELLS as u32 {
+            assert!(matches!(
+                page.acquire(key(id)),
+                CellSlot::Resident { upload: true, .. }
+            ));
+        }
+        page.begin_frame();
+        for id in 0..PAGE_CELLS as u32 {
+            assert!(matches!(
+                page.acquire(key(id + 10_000)),
+                CellSlot::Resident { upload: true, .. }
+            ));
+        }
+        assert_eq!(page.acquire(key(99_999)), CellSlot::Placeholder);
+    }
+
+    #[test]
+    fn atlas_page_generation_change_releases_all_slots() {
+        let mut page = AtlasPage::new();
+        page.acquire(key(1));
+        page.set_generation(oteryn_foundation::ProcessGeneration::new(2));
+        assert_eq!(page.resident_cells(), 0);
+        assert!(page.slots.iter().all(Option::is_none));
+        assert!(matches!(
+            page.acquire(key(1)),
+            CellSlot::Resident { upload: true, .. }
+        ));
     }
 }
 
