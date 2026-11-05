@@ -21,7 +21,7 @@ fn live_ground_item_identity_reaches_click_and_is_removed_with_tile() -> Result<
     let selected = view.scene().target().and_then(|target| target.item);
     assert_eq!(selected.map(|item| item.definition()), Some(1));
     assert_eq!(selected.map(|item| item.quantity()), Some(7));
-    assert_eq!(view.walk.goal(), None);
+    assert!(!view.inputs.iter().any(|input| matches!(input, Input::TargetWalk(_))));
     let mut cleared = Pushed::default();
     coalesce_pushed(
         &mut cleared,
@@ -30,7 +30,14 @@ fn live_ground_item_identity_reaches_click_and_is_removed_with_tile() -> Result<
     view.apply_pushed(&cleared)?;
     assert_eq!(view.scene().target(), None);
     view.click(TileCoord::new(101, 200))?;
-    assert_eq!(view.walk.goal(), Some(TileCoord::new(101, 200)));
+    assert_eq!(
+        view.inputs.back(),
+        Some(&Input::TargetWalk(oteryn_session::ActorPosition {
+            x: 101,
+            y: 200,
+            floor: 0
+        }))
+    );
     // Terrain has its own reference family and must never become an item target.
     map.tiles[0].items[0].definition = MapDefinition::Terrain(NonZeroU32::MIN);
     view.set_live_map(&map)?;
