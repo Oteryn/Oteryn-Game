@@ -87,6 +87,10 @@ pub(super) struct Mailbox {
     pub(super) containers: oteryn_client_ui::container_tree::ContainerPanel,
     pub(super) inventory: oteryn_client_ui::inventory::InventoryPanel,
     pub(super) inventory_shutdown: bool,
+    pub(super) item_movement: oteryn_client_ui::inventory::movement::Movement,
+    pub(super) item_count_selected: bool,
+    #[cfg(windows)]
+    pub(super) item_drag_native: super::feature_0004_item_view_move::view::DragNative,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,

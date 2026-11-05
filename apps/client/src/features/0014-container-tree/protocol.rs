@@ -33,7 +33,7 @@ impl PlayLink {
 
 macro_rules! session_trait {
     ($($methods:tt)*) => {
-        super::feature_local_account_achievements::protocol::session_trait! {
+        super::feature_0004_item_view_move::protocol::session_trait! {
             $($methods)*
             fn container_views(&self) -> Option<oteryn_client_runtime::container_tree::ContainerViews> { None }
             fn container_view(&mut self, _intent: oteryn_client_runtime::container_tree::ContainerViewIntent) -> impl std::future::Future<Output = Result<Option<oteryn_client_runtime::container_tree::ContainerViewOutcome>, oteryn_session::SessionError>> + Send {
@@ -46,7 +46,7 @@ pub(in crate::play) use session_trait;
 
 macro_rules! dispatch {
     ($command:expr, $session:ident, $outbox:ident, $held:ident, $publish:ident; $($arms:tt)*) => {
-        super::feature_local_account_achievements::protocol::dispatch! {
+        super::feature_0004_item_view_move::protocol::dispatch! {
             $command, $session, $outbox, $held, $publish;
             Ok(crate::combat_input::PlayCommand::ContainerView(intent)) => {
                 match $session.container_view(intent).await {

@@ -11,6 +11,15 @@ use std::future::Future;
 use std::time::Duration;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn item_count_selected(&self) -> bool {
+        self.is_selected(61)
+    }
+    async fn move_item(
+        &mut self,
+        request: oteryn_client_runtime::inventory::MoveRequest,
+    ) -> Result<Option<oteryn_client_runtime::inventory::MoveResponse>, SessionError> {
+        oteryn_client_runtime::inventory::send(self, request).await
+    }
     fn container_views(&self) -> Option<oteryn_client_runtime::container_tree::ContainerViews> {
         oteryn_client_runtime::container_tree::initial(self)
     }

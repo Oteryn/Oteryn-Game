@@ -63,7 +63,8 @@ impl super::Application {
     pub(super) fn update_hud(&mut self) {
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
             let audio = self.audio.status(&mut play.view);
-            let status = format!("{} — {audio}", play.view.hud_status());
+            let movement = play.link.item_movement_status();
+            let status = format!("{movement} — {} — {audio}", play.view.hud_status());
             if status != play.status {
                 window.set_title(&format!(
                     "Oteryn — {status} — Ctrl+G: Guild — Ctrl+Shift+A: achievements"

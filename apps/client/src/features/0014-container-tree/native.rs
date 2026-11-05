@@ -251,6 +251,28 @@ pub(in crate::play) fn open_shared(
                             );
                             held = Some(panel.clone());
                         }
+                        if let Some(panel) = &held
+                            && let Some(view) = panel.current()
+                        {
+                            super::super::super::feature_0004_item_view_move::view::list_surface(
+                                &mut mailbox,
+                                entries,
+                                panel.rows(),
+                                oteryn_session::ItemMoveDestination::Container(
+                                    view.container_handle,
+                                ),
+                            );
+                            super::super::super::feature_0004_item_view_move::view::view_surfaces(
+                                &mut mailbox,
+                                views,
+                                panel,
+                            );
+                        } else {
+                            super::super::super::feature_0004_item_view_move::view::clear_surfaces(
+                                &mut mailbox,
+                                &[entries, views],
+                            );
+                        }
                         drop(mailbox);
                         std::thread::sleep(Duration::from_millis(30));
                     }

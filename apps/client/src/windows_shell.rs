@@ -356,6 +356,9 @@ impl ApplicationHandler for Application {
                 PlayEnd::LoggedOut => self.return_to_character_selection(),
             }
         }
+        if let (Some(play), Some(window)) = (&self.play, &self.window) {
+            play.link.item_drag_tick(&play.view, window);
+        }
         self.update_hud();
         if let Some(window) = &self.window
             && redraw_eligible(
