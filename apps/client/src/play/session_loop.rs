@@ -15,7 +15,7 @@ use tokio::sync::mpsc::UnboundedReceiver;
 /// server's probe cadence.
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
-super::feature_local_account_achievements::protocol::session_trait! {
+super::feature_0037_depot::protocol::session_trait! {
     fn target_walk(&mut self, _position: oteryn_session::ActorPosition) -> impl Future<Output = Result<oteryn_client_runtime::target_move::WalkResponse, SessionError>> + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 64 }) }
     }
@@ -339,10 +339,11 @@ pub async fn run_session<T: Stepper>(
     outbox.store_initialize(session.server_mechanic_selected(154));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
+    outbox.depot_initialize(session.feature_selected(37));
     outbox.achievements_initialize();
     let mut held = Vec::new();
     loop {
-        let ended = super::feature_local_account_achievements::protocol::dispatch! {
+        let ended = super::feature_0037_depot::protocol::dispatch! {
             commands.try_recv(), session, outbox, held, publish;
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {

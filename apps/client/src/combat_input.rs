@@ -5,6 +5,8 @@ pub use oteryn_client_runtime::combat::{CombatCommand, CombatReport, run_combat}
 /// What the shell asks of the session task.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayCommand {
+    Depot(oteryn_session::DepotIntent),
+    DepotContainer(oteryn_session::ItemHandle),
     AccountAchievements(u32),
     Animus(Vec<u8>),
     /// Capability-16 query encoded by its feature controls.

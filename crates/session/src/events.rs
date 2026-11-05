@@ -5,6 +5,8 @@ use super::*;
 /// session's domain store (FND-02 §14, §15), in the order it was applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
+    /// Live bag sources used by the depot browser; the session retains the complete view.
+    ContainerViews(AppliedDelta<container_tree::ContainerViews>),
     WorldClock(AppliedDelta<world_clock::WorldClock>),
     Presentation(AppliedDelta<Vec<PresentationEvent>>),
     ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
@@ -55,6 +57,7 @@ impl SessionEvent {
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
+            Self::ContainerViews(_) => 14,
             Self::NpcConversation(_) => npc_service::STATE_DOMAIN_NPC_CONVERSATION,
             Self::NpcTradeWindow(_) => npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW,
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,

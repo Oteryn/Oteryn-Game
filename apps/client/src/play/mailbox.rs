@@ -84,6 +84,8 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) depot: oteryn_client_ui::depot::DepotPanel,
+    pub(super) depot_shutdown: bool,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,
@@ -276,6 +278,8 @@ impl Outbox {
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
         let mut mailbox = lock(&self.0);
+        mailbox.depot = Default::default();
+        mailbox.depot_shutdown = true;
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -287,6 +291,8 @@ impl Outbox {
 
     pub(super) fn logged_out(&self) {
         let mut mailbox = lock(&self.0);
+        mailbox.depot = Default::default();
+        mailbox.depot_shutdown = true;
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -367,6 +373,7 @@ impl Drop for PlayLink {
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
         mailbox.prey_shutdown = true;
+        mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
         mailbox.hireling_shutdown = true;

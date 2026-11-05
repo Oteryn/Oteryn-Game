@@ -11,6 +11,22 @@ use std::future::Future;
 use std::time::Duration;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    async fn depot_open_container(
+        &mut self,
+        handle: oteryn_session::ItemHandle,
+    ) -> Result<Option<oteryn_client_runtime::depot::ContainerViewOutcome>, SessionError> {
+        oteryn_client_runtime::depot::open_container(self, handle).await
+    }
+    fn depot_items(&self) -> oteryn_client_runtime::depot::Items {
+        oteryn_client_runtime::depot::items(self)
+    }
+    async fn depot(
+        &mut self,
+        intent: oteryn_session::DepotIntent,
+    ) -> Result<Option<oteryn_session::DepotReply>, SessionError> {
+        oteryn_client_runtime::depot::send(self, intent).await
+    }
+
     async fn target_walk(
         &mut self,
         position: oteryn_session::ActorPosition,
@@ -290,6 +306,7 @@ pub(super) fn publish<T: Stepper>(
     held: &mut Vec<WorldSpatialEntity>,
 ) {
     outbox.achievement_notices_publish(session);
+    outbox.depot_publish(session);
     outbox.vitals(session.actor_vitals());
     if let Some(payload) = session.feature_snapshot(98) {
         outbox.cyclopedia_tracker_push(payload);

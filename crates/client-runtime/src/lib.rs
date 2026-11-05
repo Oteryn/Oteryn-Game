@@ -7,6 +7,8 @@ pub mod account_achievements;
 pub mod achievement_notices;
 
 pub mod connection;
+#[path = "features/0037-depot/protocol.rs"]
+pub mod depot;
 pub mod hotkey_equip;
 #[path = "features/0053-world-event/protocol.rs"]
 pub mod world_event;

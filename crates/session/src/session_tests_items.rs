@@ -36,7 +36,7 @@ fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxErr
                 selected,
                 &[],
                 item_snapshot(vec![])?,
-                &[(9, 1, 1, payload)],
+                &[(9, 1, 1, payload), (14, 1, 1, vec![])],
             )
             .await?;
             let command = read_frame(&mut server).await?;
