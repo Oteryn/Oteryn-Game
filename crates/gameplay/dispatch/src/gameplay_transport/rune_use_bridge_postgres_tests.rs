@@ -407,6 +407,11 @@ async fn serve_cast(
     case: Case,
     original: Option<UseIntent>,
 ) -> TestResult<(AdmittedSession, UseIntent)> {
+    // The direct fixture has no node maintenance loop. A cancelled/expired pass
+    // may have retired the sole holder before this connection's snapshot reads.
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
     let first_id = admitted.continuity.next_command_id;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     if let Some(intent) = &original {
@@ -438,6 +443,9 @@ async fn serve_cast(
         ),
     )
     .await;
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
     Ok((admitted?, cast?))
 }
 
@@ -791,6 +799,16 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             sqlx::query("UPDATE game_item_instances SET state_revision=state_revision+1 WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(id(71).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
+        }
+        // A cancelled/expired pass can retire the sole holder before the next
+        // connection's inventory snapshot. Exercise that state deterministically.
+        if case == Case::BeforeCommit {
+            owner.root.request_ready();
+            assert!(owner.root.maintain_ready_once().await.map_err(debug)?);
+            let holder = owner.root.try_acquire_ready().map_err(debug)?;
+            holder.close().await?;
+            owner.root.request_ready();
+            assert!(!owner.root.is_ready());
         }
         let (refused, _) = tokio::time::timeout(
             std::time::Duration::from_secs(30),

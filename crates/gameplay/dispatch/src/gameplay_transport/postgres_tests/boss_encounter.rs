@@ -21,6 +21,15 @@ mod activity_handoff;
 #[path = "boss_encounter/staged_room.rs"]
 mod staged_room;
 
+// Direct connections have no node maintenance task. A bounded pass can retire
+// its holder on return; service the resulting demand before the next fixture pass.
+async fn maintain_ready(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
+    Ok(())
+}
+
 async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -37,6 +46,7 @@ pub(super) async fn exchange_kind(
     kind: u32,
     payload: &[u8],
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
+    maintain_ready(owner).await?;
     let before = *admitted;
     let (mut server, mut client) = tokio::io::duplex(4096);
     let serving = async move {
@@ -84,6 +94,7 @@ pub(super) async fn exchange_kind(
         fixture::join_two(serving, driving),
     )
     .await?;
+    maintain_ready(owner).await?;
     if let ConnectionEnd::AdmittedThenDisconnected(current)
     | ConnectionEnd::AdmittedThenClosed(current, _) = &ended
     {
@@ -113,6 +124,7 @@ async fn qualify_fence_changes(
     h: &Harness,
     history_probe: HistoryProbe,
 ) -> TestResult {
+    maintain_ready(owner).await?;
     let pool = &h.pool;
     let activity = prepare_unadmitted_activity(h).await?;
     let before = *admitted;
@@ -228,6 +240,17 @@ async fn qualify_fence_changes(
                 .execute(pool)
                 .await?;
                 assert_eq!(updated.rows_affected(), 1, "{label}");
+                // A cancelled pass can retire the sole holder. Make that load-dependent
+                // state deterministic while the admitted connection is still live.
+                if label == "Character eligibility" && expected == CommandStatus::Rejected {
+                    owner.root.request_ready();
+                    assert!(owner.root.maintain_ready_once().await.map_err(debug)?);
+                    let holder = owner.root.try_acquire_ready().map_err(debug)?;
+                    holder.close().await?;
+                    owner.root.request_ready();
+                    assert!(!owner.root.is_ready());
+                }
+                maintain_ready(owner).await?;
                 let durable = owner
                     .root
                     .read_boss_cooldown_list(owner.character, owner.holder, fence, &[])
@@ -259,6 +282,7 @@ async fn qualify_fence_changes(
                 .bind(revisions[3])
                 .execute(pool)
                 .await?;
+            maintain_ready(owner).await?;
             assert!(
                 owner
                     .root
@@ -404,6 +428,7 @@ async fn qualify_fence_changes(
             let (status, payload) = query(&mut client, generation, command_id).await?;
             assert_eq!(status, CommandStatus::Rejected, "{label}");
             assert!(payload.is_empty());
+            maintain_ready(owner).await?;
             assert!(
                 owner
                     .root
@@ -428,6 +453,7 @@ async fn qualify_fence_changes(
         fixture::join_two(serving, driving),
     )
     .await?;
+    maintain_ready(owner).await?;
     result?;
     let ConnectionEnd::AdmittedThenDisconnected(current) = ended else {
         return Err(format!("participant/interpretation connection ended {ended:?}").into());
@@ -637,6 +663,14 @@ async fn query(
     loop {
         let frame = read_frame(client).await?;
         let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        if envelope.message_type() == MessageType::LivenessProbe {
+            let probe = oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())
+                .map_err(debug)?;
+            let ack = oteryn_protocol_oteryn::encode_liveness_ack(generation, probe, 0)
+                .map_err(debug)?;
+            write_frame(client, &ack).await?;
+            continue;
+        }
         if envelope.message_type() == MessageType::CommandResult {
             let result = decode_command_result(envelope.payload()).map_err(debug)?;
             assert_eq!(result.command_id, command_id);
@@ -654,6 +688,7 @@ async fn refuse_live_instance_scope(
     admitted: AdmittedSession,
     pool: &sqlx::PgPool,
 ) -> TestResult {
+    maintain_ready(owner).await?;
     let (mut server, mut client) = tokio::io::duplex(4096);
     let serving = async {
         let ended = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
@@ -706,6 +741,7 @@ async fn refuse_live_instance_scope(
         fixture::join_two(serving, driving),
     )
     .await?;
+    maintain_ready(owner).await?;
     result.map_err(|error| format!("live Instance scope ended {ended:?}: {error}"))?;
     assert!(
         matches!(ended, ConnectionEnd::AdmittedThenDisconnected(_)),
