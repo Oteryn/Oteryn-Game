@@ -86,8 +86,16 @@ pub(super) async fn prepare_channel(
     // MAP-CUTOVER-1b: a bundle World's Channel moves over the bundle from its configured start,
     // carries its map view in the movement cells and has no entry room: no door, chest, spell
     // or field qualification of the fixture room applies to it (§1.2).
+    // SP02 projects the committed reset day's physical map before any map owner is built.
+    let unix_ms = crate::world_clock::now_utc_ms()
+        .and_then(|now| i64::try_from(now).ok())
+        .unwrap_or(0);
+    let daily = daily_world_changes::roll(material.world, reset_epoch, unix_ms);
     let bundle = bundle
-        .map(|checked| boot_bundle_world(checked, material.world, material.channel, gameplay))
+        .map(|checked| {
+            let checked = daily_world_changes::prepare_map(checked, material.world, &daily);
+            boot_bundle_world(checked, material.world, material.channel, gameplay)
+        })
         .transpose()?;
     if let Some(world) = &bundle {
         activate_floor_changes(world)?;
@@ -248,11 +256,8 @@ pub(super) async fn prepare_channel(
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
     bundle_npcs::place(&mut channel_runtime, npc_boot)?;
     // W05b: the server save's daily world changes, rolled once per reset epoch.
-    let unix_ms = crate::world_clock::now_utc_ms()
-        .and_then(|now| i64::try_from(now).ok())
-        .unwrap_or(0);
-    let daily = daily_world_changes::roll(material.world, reset_epoch, unix_ms);
-    let daily_npcs = daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily);
+    let daily_npcs =
+        daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily, bundle.as_ref());
     event(&format!(
         "event=daily_world_change reset_epoch={} thawing={} their_masters_voice={} \
          oriental_trader={:?} grimvale_full_moon={} flower_month={} npcs={daily_npcs}",
