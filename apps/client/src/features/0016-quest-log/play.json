@@ -5,6 +5,7 @@
     "view"
   ],
   "events": {
+    "GatedSnapshotReplaced": "snapshot_replaced",
     "QuestLog": "quest_log"
   }
 }

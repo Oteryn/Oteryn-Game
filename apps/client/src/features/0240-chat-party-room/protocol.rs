@@ -30,3 +30,18 @@ pub(in crate::play) fn chat_line(pushed: &mut Pushed, delta: AppliedDelta<ChatLi
 pub(in crate::play) fn chat_rooms(pushed: &mut Pushed, delta: AppliedDelta<ChatRoomSet>) {
     pushed.chat_rooms = Some(delta.value);
 }
+
+pub(in crate::play) fn chat_snapshot(
+    pushed: &mut Pushed,
+    snapshot: AppliedDelta<oteryn_session::ChatLog>,
+) {
+    pushed.chat_reset = true;
+    pushed.chat_rooms = Some(snapshot.value.rooms());
+    pushed.chat_lines = snapshot.value.lines().cloned().collect();
+}
+
+pub(in crate::play) fn reset_if_replaced(mailbox: &mut crate::play::mailbox::Mailbox) {
+    if std::mem::take(&mut mailbox.pushed.chat_reset) {
+        mailbox.chat_party_room.lines.clear();
+    }
+}

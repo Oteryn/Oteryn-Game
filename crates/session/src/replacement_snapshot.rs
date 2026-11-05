@@ -32,6 +32,31 @@ impl<S: SessionStream> Session<S> {
         )?;
         let mut events = next.events.clone();
         for domain in decode_snapshot_body(&body)? {
+            let base = match domain.domain_id {
+                1 => old.spatial_revision,
+                2 => old.overlay_revision,
+                3 => old.vitals_revision,
+                9 => old.inventory_revision,
+                10 => old.combat_revision,
+                11 => old.container_revision,
+                12 => old.chat_revision,
+                id => old
+                    .gated_revisions
+                    .iter()
+                    .find(|(domain, _)| *domain == id)
+                    .map_or(0, |(_, revision)| *revision),
+            };
+            events.push(SessionEvent::GatedSnapshotReplaced(applied(
+                expected,
+                base,
+                domain.revision,
+                GatedSnapshot {
+                    domain_id: domain.domain_id,
+                    snapshot_type: domain.snapshot_type,
+                    revision: domain.revision,
+                    payload: domain.payload.to_vec(),
+                },
+            )));
             let event = match domain.domain_id {
                 17 => {
                     let base = old
@@ -50,6 +75,22 @@ impl<S: SessionStream> Session<S> {
                     SessionEvent::WorldSpatial(applied(
                         expected,
                         old.spatial_revision,
+                        domain.revision,
+                        value,
+                    ))
+                }),
+                2 => next.world_object_overlay.clone().map(|value| {
+                    SessionEvent::WorldObjectOverlaySnapshot(applied(
+                        expected,
+                        old.overlay_revision,
+                        domain.revision,
+                        value,
+                    ))
+                }),
+                12 => next.chat.clone().map(|value| {
+                    SessionEvent::ChatSnapshot(applied(
+                        expected,
+                        old.chat_revision,
                         domain.revision,
                         value,
                     ))

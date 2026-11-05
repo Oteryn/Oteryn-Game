@@ -5,6 +5,12 @@ use super::*;
 /// session's domain store (FND-02 §14, §15), in the order it was applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
+    /// Every replaced domain, including those with a typed projection event.
+    GatedSnapshotReplaced(AppliedDelta<GatedSnapshot>),
+    /// Domain 2's whole placement set, including an empty set that removes old markers.
+    WorldObjectOverlaySnapshot(AppliedDelta<Vec<WorldObjectOverlayEntry>>),
+    /// Domain 12's complete room and retained-line state.
+    ChatSnapshot(AppliedDelta<ChatLog>),
     Presentation(AppliedDelta<Vec<PresentationEvent>>),
     ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
     NpcConversation(AppliedDelta<npc_service::NpcConversation>),
@@ -57,6 +63,9 @@ impl SessionEvent {
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
+            Self::GatedSnapshotReplaced(snapshot) => snapshot.value.domain_id,
+            Self::WorldObjectOverlaySnapshot(_) => 2,
+            Self::ChatSnapshot(_) => STATE_DOMAIN_CHAT,
             Self::NpcConversation(_) => npc_service::STATE_DOMAIN_NPC_CONVERSATION,
             Self::NpcTradeWindow(_) => npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW,
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,

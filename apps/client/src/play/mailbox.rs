@@ -36,7 +36,7 @@ pub struct Pushed {
     /// Latest complete live map window, reduced before publication.
     pub map: Option<Box<oteryn_session::world_map::WorldMapViewSnapshot>>,
     /// Transient domain-16 updates, reduced before publication to the shell.
-    pub quests: Vec<oteryn_session::AppliedDelta<oteryn_client_runtime::quest_log::QuestLog>>,
+    pub quests: Vec<oteryn_client_runtime::quest_log::QuestUpdate>,
     /// Transient domain-57 messages retained in order; they are never coalesced to one value.
     pub server_messages: ServerMessageInbox,
     /// The latest own-actor position pushed by domain 1.
@@ -45,6 +45,8 @@ pub struct Pushed {
     pub entities: Option<Vec<WorldSpatialEntity>>,
     /// The latest domain-2 entry per placement, in first-pushed order of placement.
     pub markers: Vec<WorldObjectOverlayEntry>,
+    pub markers_reset: bool,
+    pub chat_reset: bool,
     pub chat_lines: Vec<oteryn_session::ChatLine>,
     pub chat_rooms: Option<oteryn_session::ChatRoomSet>,
     pub vip_presence: Option<oteryn_session::VipPresenceBatch>,
@@ -67,9 +69,18 @@ impl Pushed {
         self.entities = newer.entities.or(self.entities.take());
         self.server_messages.append(newer.server_messages);
         self.achievements.extend(newer.achievements);
+        if newer.chat_reset {
+            self.chat_lines.clear();
+            self.chat_reset = true;
+        }
         self.chat_lines.extend(newer.chat_lines);
         self.chat_rooms = newer.chat_rooms.or(self.chat_rooms);
         self.vip_presence = newer.vip_presence.or(self.vip_presence.take());
+        if newer.markers_reset {
+            self.markers.clear();
+            self.markers_reset = true;
+        }
+        self.quests.extend(newer.quests);
         for entry in newer.markers {
             self.set_marker(entry);
         }
@@ -220,6 +231,7 @@ impl Outbox {
         }
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
+        super::feature_0240_chat_party_room::protocol::reset_if_replaced(&mut mailbox);
         for line in std::mem::take(&mut mailbox.pushed.chat_lines) {
             oteryn_client_ui::chat_party_room::push_line(&mut mailbox.chat_party_room, line);
         }

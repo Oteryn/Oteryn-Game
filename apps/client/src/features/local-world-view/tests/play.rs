@@ -308,3 +308,21 @@ fn replacement_snapshot_discards_overlapping_old_tiles_before_later_deltas()
     assert!(view.local.world().tile(101, 200).is_none());
     Ok(())
 }
+
+#[test]
+fn failed_live_map_install_preserves_position_world_scene_and_walk() -> Result<(), BatchError> {
+    let mut view = view()?;
+    view.set_live_map(&live_snapshot(100))?;
+    view.walk.set_goal(TileCoord::new(110, 200));
+    let world = view.local.world();
+    let sprites = view.scene().sprites().instances().to_vec();
+    let mut invalid = live_snapshot(i32::MAX);
+    invalid.header.origin.floor = -8;
+    invalid.tiles.clear();
+    assert!(view.set_live_map(&invalid).is_err());
+    assert_eq!(view.map_center(), (100, 200, 0));
+    assert!(Arc::ptr_eq(&world, &view.local.world()));
+    assert_eq!(view.scene().sprites().instances(), sprites);
+    assert_eq!(view.walk.goal(), Some(TileCoord::new(110, 200)));
+    Ok(())
+}

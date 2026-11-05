@@ -184,6 +184,64 @@ mod tests {
     use std::num::NonZeroU32;
 
     #[test]
+    fn dense_visible_floors_keep_deepest_draws_within_one_batch() -> Result<(), BatchError> {
+        use crate::scene::Scene;
+        use oteryn_renderer::{MAX_BATCH_QUADS, TileCoord};
+        use std::sync::Arc;
+        let mut world = World::builtin()?;
+        world.center = (100, 200, -8);
+        for floor in -10..=-8 {
+            let shift = i32::from(floor + 8);
+            for y in 195..=205 {
+                for x in 93..=107 {
+                    world.insert_floor_tile(
+                        ActorPosition {
+                            x: x + shift,
+                            y: y + shift,
+                            floor,
+                        },
+                        crate::map::MapTile {
+                            under: vec![
+                                Draw {
+                                    cell: if floor == -10 {
+                                        MARKER_CELL
+                                    } else {
+                                        TARGET_CELL
+                                    },
+                                    offset: [0, 0]
+                                };
+                                MAX_TILE_DRAWS
+                            ],
+                            ..crate::map::MapTile::default()
+                        },
+                    );
+                }
+            }
+        }
+        let mut scene = Scene::centered_on(
+            Arc::new(world),
+            Some(TileCoord::new(0, 0)),
+            TileCoord::new(100, 200),
+            StepDir::South,
+            &[],
+        )?;
+        assert_eq!(scene.sprites().len(), MAX_BATCH_QUADS);
+        let deep_uv = scene.atlas().uv_rect(MARKER_CELL)?;
+        assert!(
+            scene.sprites().instances()[..165 * MAX_TILE_DRAWS]
+                .iter()
+                .all(|quad| quad.uv == deep_uv)
+        );
+        scene.select_tile(TileCoord::new(100, 200))?;
+        assert_eq!(scene.sprites().len(), MAX_BATCH_QUADS);
+        assert_eq!(
+            scene.sprites().instances().last().map(|quad| quad.uv),
+            Some(scene.atlas().uv_rect(TARGET_CELL)?)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn live_appearance_uses_native_floor_and_server_placements_only() -> Result<(), String> {
         let position = ActorPosition {
             x: 100,

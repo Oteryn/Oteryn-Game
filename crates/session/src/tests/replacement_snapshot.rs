@@ -346,3 +346,72 @@ fn replacement_snapshot_between_result_and_claimed_delta_rebases_spatial_state()
         .join()
         .map_err(|_| "in-flight replacement thread failed")?
 }
+
+#[test]
+fn replacement_snapshot_notifies_overlay_and_gated_consumers() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                let (client, mut server) = tokio::io::duplex(256 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[1], &[1], &[(GATED_DOMAIN, 1)]).await?;
+                    let overlay =
+                        encode_world_object_overlay_snapshot(&[]).map_err(|e| format!("{e:?}"))?;
+                    for frame in encode_single_chunk_snapshot(
+                        1,
+                        2,
+                        41,
+                        &[
+                            DomainSnapshot {
+                                domain_id: 2,
+                                revision: 9,
+                                snapshot_type: 1,
+                                payload: &overlay,
+                            },
+                            DomainSnapshot {
+                                domain_id: GATED_DOMAIN,
+                                revision: 12,
+                                snapshot_type: 1,
+                                payload: b"replacement",
+                            },
+                        ],
+                    )? {
+                        write_frame(&mut server, &frame).await?;
+                    }
+                    let mut rest = vec![];
+                    let _ = server.read_to_end(&mut rest).await;
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(&[1])?).await?;
+                let events = session.wait_for_events(DEADLINE).await?;
+                let replaced = events
+                    .iter()
+                    .filter_map(|event| match event {
+                        SessionEvent::GatedSnapshotReplaced(snapshot) => {
+                            Some((snapshot.value.domain_id, snapshot.value.revision))
+                        }
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(replaced, vec![(2, 9), (GATED_DOMAIN, 12)]);
+                assert!(events.iter().any(|event| matches!(
+                    event,
+                    SessionEvent::WorldObjectOverlaySnapshot(snapshot) if snapshot.value.is_empty()
+                )));
+                assert!(
+                    events.iter().any(|event| event.domain_id() == 2),
+                    "overlay replacement was silent"
+                );
+                assert!(
+                    events.iter().any(|event| event.domain_id() == GATED_DOMAIN),
+                    "gated replacement was silent"
+                );
+                drop(session);
+                peer.await??;
+                Ok::<(), BoxError>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "replacement notification thread failed")?
+}

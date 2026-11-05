@@ -30,12 +30,15 @@ impl PlayView {
         map: &oteryn_session::world_map::WorldMapViewSnapshot,
     ) -> Result<(), BatchError> {
         let world = World::from_live_map(map)?;
-        self.place(map.header.origin);
-        self.map_floor = Some(map.header.origin.floor);
-        self.anchor = TileCoord::new(0, 0);
-        self.local.set_world(Arc::new(world));
-        self.live_map = true;
-        self.rebuild()
+        let mut next = self.clone();
+        next.place(map.header.origin);
+        next.map_floor = Some(map.header.origin.floor);
+        next.anchor = TileCoord::new(0, 0);
+        next.local.set_world(Arc::new(world));
+        next.live_map = true;
+        next.rebuild()?;
+        *self = next;
+        Ok(())
     }
 
     pub(in crate::play) fn rebuild(&mut self) -> Result<(), BatchError> {
@@ -77,6 +80,9 @@ impl PlayView {
         }
         if let Some(entities) = &pushed.entities {
             self.entities.clone_from(entities);
+        }
+        if pushed.markers_reset {
+            self.markers.clear();
         }
         for entry in &pushed.markers {
             self.set_marker(entry);
