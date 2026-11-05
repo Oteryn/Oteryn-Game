@@ -20,7 +20,25 @@ pub struct QuestState {
     pub refusal: Option<QuestRefusal>,
 }
 
+/// Ordered updates: a replacement discards the entire old projection before later deltas.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum QuestUpdate {
+    Snapshot(GatedSnapshot),
+    Delta(AppliedDelta<QuestLog>),
+}
+
 impl QuestState {
+    pub fn apply_update(&mut self, update: &QuestUpdate) -> Result<(), QuestRefusal> {
+        match update {
+            QuestUpdate::Delta(delta) => self.apply(delta),
+            QuestUpdate::Snapshot(snapshot) => {
+                self.require_selected()?;
+                *self = Self::from_snapshot(&[CAPABILITY_QUEST_LOG_V1], Some(snapshot))?;
+                Ok(())
+            }
+        }
+    }
+
     pub fn from_snapshot(
         selected: &[u32],
         snapshot: Option<&GatedSnapshot>,

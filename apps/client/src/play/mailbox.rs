@@ -1,6 +1,6 @@
 //! Bounded, non-blocking mailbox between the session task and the shell.
 
-use super::{ServerMessageInbox, StepDir, coalesce_pushed};
+use super::{ServerMessageInbox, StepDir};
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_session::{
@@ -39,15 +39,18 @@ pub struct Pushed {
     /// Latest complete live map window, reduced before publication.
     pub map: Option<Box<oteryn_session::world_map::WorldMapViewSnapshot>>,
     /// Transient domain-16 updates, reduced before publication to the shell.
-    pub quests: Vec<oteryn_session::AppliedDelta<oteryn_client_runtime::quest_log::QuestLog>>,
+    pub quests: Vec<oteryn_client_runtime::quest_log::QuestUpdate>,
     /// Transient domain-57 messages retained in order; they are never coalesced to one value.
     pub server_messages: ServerMessageInbox,
     /// The latest own-actor position pushed by domain 1.
     pub own: Option<ActorPosition>,
     /// The latest full list of the other visible entities, when it changed.
     pub entities: Option<Vec<WorldSpatialEntity>>,
+    pub appearances: Option<Vec<oteryn_session::VisibleAppearance>>,
     /// The latest domain-2 entry per placement, in first-pushed order of placement.
     pub markers: Vec<WorldObjectOverlayEntry>,
+    pub markers_reset: bool,
+    pub chat_reset: bool,
     pub chat_lines: Vec<oteryn_session::ChatLine>,
     pub chat_rooms: Option<oteryn_session::ChatRoomSet>,
     pub vip_presence: Option<oteryn_session::VipPresenceBatch>,
@@ -74,11 +77,21 @@ impl Pushed {
         self.map = newer.map.or(self.map.take());
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
+        self.appearances = newer.appearances.or(self.appearances.take());
         self.server_messages.append(newer.server_messages);
         self.achievements.extend(newer.achievements);
+        if newer.chat_reset {
+            self.chat_lines.clear();
+            self.chat_reset = true;
+        }
         self.chat_lines.extend(newer.chat_lines);
         self.chat_rooms = newer.chat_rooms.or(self.chat_rooms);
         self.vip_presence = newer.vip_presence.or(self.vip_presence.take());
+        if newer.markers_reset {
+            self.markers.clear();
+            self.markers_reset = true;
+        }
+        self.quests.extend(newer.quests);
         for entry in newer.markers {
             self.set_marker(entry);
         }
@@ -141,6 +154,8 @@ pub(super) struct Mailbox {
     pub(super) quest_shutdown: bool,
     pub(super) stash: oteryn_client_ui::stash::StashPanel,
     pub(super) guild: oteryn_client_ui::guild::GuildPanel,
+    /// Last published connection-local presentation, including appearance-only updates.
+    pub(super) appearance_state: Vec<oteryn_session::VisibleAppearance>,
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
@@ -247,16 +262,7 @@ impl Outbox {
                 );
             }
         }
-        let has_map = events
-            .iter()
-            .any(|event| matches!(event, SessionEvent::WorldMap(_)));
-        if has_map && mailbox.pushed.map.is_none() {
-            mailbox.pushed.map = mailbox.map.clone();
-        }
-        coalesce_pushed(&mut mailbox.pushed, events);
-        if has_map {
-            mailbox.map = mailbox.pushed.map.clone();
-        }
+        mailbox.coalesce_events(events);
         mailbox.check_server_messages();
         let notices = std::mem::take(&mut mailbox.pushed.achievements);
         mailbox.reduce_achievement_notices(notices);
@@ -274,6 +280,7 @@ impl Outbox {
         }
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
+        super::feature_0240_chat_party_room::protocol::reset_if_replaced(&mut mailbox);
         for line in std::mem::take(&mut mailbox.pushed.chat_lines) {
             oteryn_client_ui::party::push_feedback(&mut mailbox.party, &line);
             oteryn_client_ui::chat_party_room::push_line(&mut mailbox.chat_party_room, line);

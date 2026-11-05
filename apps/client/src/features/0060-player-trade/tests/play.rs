@@ -186,6 +186,7 @@ fn player_trade_world_context_only_targets_visible_players_on_this_floor() -> Re
     use oteryn_renderer::TileCoord;
     use oteryn_session::{ActorPosition, EntityDetail, EntityKind, WorldSpatialEntity};
     let player = WorldSpatialEntity {
+        display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {
             identity: [4; 16],
@@ -286,6 +287,7 @@ fn player_trade_secondary_click_uses_pointer_and_focus_loss_clears_it() -> Resul
     };
     let view = crate::play::PlayView::new(TileCoord::new(0, 0), 0, &[])?.with_entities(vec![
         WorldSpatialEntity {
+            display_name: None,
             kind: EntityKind::Player,
             entity: partner,
             position: ActorPosition {

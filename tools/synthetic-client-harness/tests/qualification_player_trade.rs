@@ -55,6 +55,7 @@ fn reference(side: u8) -> entities::EntityRef {
 }
 fn actor(side: u8) -> entities::WorldSpatialEntity {
     entities::WorldSpatialEntity {
+        display_name: None,
         kind: entities::EntityKind::Player,
         entity: reference(side),
         position: world_spatial::ActorPosition {
