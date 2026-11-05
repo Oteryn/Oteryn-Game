@@ -74,6 +74,7 @@ fn same_client_enters_again_after_server_drops_the_session() -> TestResult {
                         }
                         std::thread::yield_now();
                     };
+                    assert_eq!(link.party_panel().own_character_name, "Ari");
                     loop {
                         if let Err(end) = view.tick(&link) {
                             assert_eq!(

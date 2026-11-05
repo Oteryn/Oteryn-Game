@@ -4,7 +4,7 @@ pub(super) async fn authorize(
     client: &NativeLoginClient,
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
-) -> Result<(NativeTicket, String, Option<String>), GameplayEntryError> {
+) -> Result<(NativeTicket, String, Option<String>, String), GameplayEntryError> {
     let mut entropy = [0_u8; 32];
     secure_random(&mut entropy).map_err(retry_login)?;
     let pkce = PkceMaterial::from_entropy(&entropy).map_err(retry_login)?;
@@ -43,7 +43,7 @@ pub(super) async fn authorize(
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
     let directory_client = oteryn_platform_client::PlatformClient::new(platform)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
-    let (character_id, channel_id) = loop {
+    let (character_id, channel_id, character_name) = loop {
         let characters = client
             .owner_characters(&token, cancellation.clone())
             .await
@@ -66,17 +66,15 @@ pub(super) async fn authorize(
                 character_id,
                 channel_id,
             } => {
-                let valid = rows.iter().any(|row| {
+                let selected = rows.iter().find(|row| {
                     row.available
                         && row.character.character_id == character_id
                         && channel_id
                             .as_ref()
                             .is_none_or(|id| row.channels.iter().any(|channel| &channel.0 == id))
                 });
-                if !valid {
-                    return Err(rejected(PublicClass::RetryLogin));
-                }
-                break (character_id, channel_id);
+                let selected = selected.ok_or_else(|| rejected(PublicClass::RetryLogin))?;
+                break (character_id, channel_id, selected.character.name.clone());
             }
             SelectionAction::Create => {
                 let url = format!(
@@ -95,5 +93,5 @@ pub(super) async fn authorize(
         .issue_native_ticket(token, cancellation)
         .await
         .map_err(login_rejected)?;
-    Ok((ticket, character_id, channel_id))
+    Ok((ticket, character_id, channel_id, character_name))
 }

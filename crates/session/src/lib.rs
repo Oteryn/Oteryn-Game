@@ -83,9 +83,8 @@ pub use oteryn_protocol_oteryn::chat::guild_room::{GuildChatLine, GuildRoomState
 pub use oteryn_protocol_oteryn::chat::private_channel::{
     ChatChannelList, InvitedChannel, PrivateChannelIntent, PrivateChannelLine,
 };
-use oteryn_protocol_oteryn::chat::{
-    self, CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT,
-};
+use oteryn_protocol_oteryn::chat::{self, STATE_DOMAIN_CHAT};
+pub use oteryn_protocol_oteryn::chat::{CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT};
 /// The capability-7 chat types a client sends and draws from, re-exported so it needs no direct
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::chat::{
