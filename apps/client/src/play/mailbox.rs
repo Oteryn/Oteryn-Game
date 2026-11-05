@@ -30,6 +30,7 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    pub served_channel: Option<Option<oteryn_client_runtime::channel_list::ServedChannel>>,
     pub world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     pub world_clock: Option<oteryn_session::world_clock::WorldClock>,
     pub achievements: Vec<oteryn_client_ui::achievement_notices::AchievementEarned>,
@@ -72,6 +73,7 @@ impl Pushed {
                 ));
         }
         self.notices.save_minutes = newer.notices.save_minutes.or(self.notices.save_minutes);
+        self.served_channel = newer.served_channel.or(self.served_channel);
         self.world_clock = newer.world_clock.or(self.world_clock);
         self.world_weather = newer.world_weather.or(self.world_weather);
         self.map = newer.map.or(self.map.take());
@@ -104,6 +106,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
     pub(super) discovery: oteryn_client_ui::quick_loot::Discovery,
     pub(super) properties: super::feature_0115_mail::protocol::Panels,
     pub(super) containers: oteryn_client_ui::container_tree::ContainerPanel,
@@ -249,6 +252,7 @@ impl Outbox {
 
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, events: Vec<SessionEvent>) {
+        self.channel_list_events(&events);
         self.appearance_events(&events);
         self.pvp_expert_events(&events);
         self.inventory_events(&events);

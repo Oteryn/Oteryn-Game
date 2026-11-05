@@ -23,6 +23,8 @@ pub mod account_achievements;
 mod achievement_notices_transport;
 pub use oteryn_protocol_oteryn::achievement_notices;
 mod appearance_state;
+#[path = "features/0083-channel-list/protocol.rs"]
+pub mod channel_list;
 mod depot;
 #[path = "features/0037-depot/protocol.rs"]
 mod depot_containers;
@@ -55,6 +57,8 @@ mod session_transport;
 mod snapshot_install;
 mod snapshot_state;
 mod snapshot_transfer;
+#[path = "features/0287-actor-spell-catalog/protocol.rs"]
+pub mod spell_catalog;
 pub use oteryn_protocol_oteryn::presentation::{
     PresentationColor, PresentationEvent, PresentationEventKind, PresentationSource,
     PresentationValue, PresentationValueKind,

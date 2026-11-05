@@ -179,6 +179,23 @@ impl SnapshotState {
                 // Unselected is a server violation; an unregistered domain is ignored.
                 (domain_id, snapshot_type) => match capability_of_domain(domain_id) {
                     Some(capability) if selected_capabilities.contains(&capability) => {
+                        if domain_id == spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG {
+                            spell_catalog::validate_snapshot(
+                                &GatedSnapshot {
+                                    domain_id,
+                                    snapshot_type,
+                                    revision: domain.revision,
+                                    payload: domain.payload.to_vec(),
+                                },
+                                previous.and_then(|state| {
+                                    state
+                                        .gated_revisions
+                                        .iter()
+                                        .find(|(id, _)| *id == domain_id)
+                                        .map(|(_, revision)| *revision)
+                                }),
+                            )?;
+                        }
                         state.gated_revisions.retain(|(id, _)| *id != domain_id);
                         state.gated_revisions.push((domain_id, domain.revision));
                         state
@@ -230,6 +247,17 @@ impl SnapshotState {
         }
         state.container_views =
             container_tree::initial(selected_capabilities, &state.gated_snapshots)?;
+        channel_list::validate_join(selected_capabilities, &state.gated_snapshots)?;
+        if selected_capabilities.contains(&spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1)
+            && !state
+                .gated_snapshots
+                .iter()
+                .any(|row| row.domain_id == spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
+        {
+            return Err(SessionError::MissingDomain(
+                spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG,
+            ));
+        }
         weather::validate_join(selected_capabilities, &state.gated_snapshots)?;
         quest_log_transport::validate_join(selected_capabilities, &state.gated_snapshots)?;
         tutorial_notices::validate_join(selected_capabilities, &state.gated_snapshots)?;

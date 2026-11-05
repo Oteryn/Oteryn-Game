@@ -31,6 +31,7 @@ pub async fn run_session<T: Stepper>(
     outbox.container_initialize(session.container_views());
     outbox.target_walk_initialize(session.feature_selected(64));
     outbox.vitals(session.actor_vitals());
+    outbox.channel_list_initialize(session.feature_snapshot(48));
     outbox.world_light_initialize(session.feature_snapshot(18));
     outbox.world_weather_initialize(session.feature_snapshot(22));
     outbox.map_initialize(session.feature_snapshot(17));
