@@ -153,6 +153,7 @@ pub struct ChannelSpellStates {
         >,
     >,
     pub presentations: Option<super::spell_presentations::SpellPresentationOwner>,
+    pub(super) sounds: super::spell_presentation_publisher::SoundPublisher,
     /// One bounded Channel pass per second, shared by all present actors.
     pub(in crate::gameplay_transport) next_item_deadline_pass_us: u64,
     pub(in crate::gameplay_transport) source_map_initialized:
@@ -309,6 +310,7 @@ impl Default for ChannelSpellStates {
             pending_world_items: Default::default(),
             pending_parameters: Default::default(),
             presentations: Default::default(),
+            sounds: Default::default(),
             next_item_deadline_pass_us: Default::default(),
             source_map_initialized: Default::default(),
             next_map_initialization_pass_us: Default::default(),

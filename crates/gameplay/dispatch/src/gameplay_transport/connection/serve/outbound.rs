@@ -438,6 +438,7 @@ where
         | Dispatch::House(_)
         | Dispatch::Unregistered => {}
     }
+    refresh::sounds(stream, authority, session).await?;
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
     if let Some(observer) = committed_step
@@ -460,6 +461,12 @@ where
                 let payload =
                     oteryn_protocol_oteryn::presentation::encode_presentation_batch(&events)
                         .map_err(|_| ServeEnd::Disconnected)?;
+                let presentation_revision = session
+                    .admitted
+                    .continuity
+                    .presentation_revision
+                    .checked_add(1)
+                    .ok_or(ServeEnd::Disconnected)?;
                 let sequence = session
                     .sequence
                     .checked_add(1)
@@ -468,8 +475,8 @@ where
                     session.generation,
                     sequence,
                     oteryn_protocol_oteryn::presentation::STATE_DOMAIN_WORLD_PRESENTATION,
-                    session.movement_effect_revision,
-                    revision,
+                    session.admitted.continuity.presentation_revision,
+                    presentation_revision,
                     oteryn_protocol_oteryn::presentation::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
                     &payload,
                 )
@@ -477,6 +484,7 @@ where
                 write_frame(stream, &frame)
                     .await
                     .map_err(|_| ServeEnd::Disconnected)?;
+                session.admitted.continuity.presentation_revision = presentation_revision;
                 session.sequence = sequence;
                 session.admitted.continuity.server_sequence = sequence;
             }

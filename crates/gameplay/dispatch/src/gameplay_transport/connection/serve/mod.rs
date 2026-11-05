@@ -61,6 +61,7 @@ struct ServeState {
     commands: crate::gameplay_transport::session_ingress::SessionCommandStream,
     sequence: u64,
     movement_effect_revision: u64,
+    sound_cursor: u64,
     weather_sent: Option<WorldWeather>,
     world_clock_pacer: WorldClockDeltaPacer,
     world_clock: WorldClockSource,

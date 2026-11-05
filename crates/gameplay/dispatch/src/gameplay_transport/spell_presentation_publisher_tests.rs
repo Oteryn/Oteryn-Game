@@ -204,3 +204,118 @@ fn real_outbox_replay_emits_no_new_decision_or_sequence() {
     assert_eq!(first.events[0].emission_sequence, 1);
     assert!(second.events.is_empty());
 }
+
+#[test]
+fn production_sound_fans_out_hits_and_capability_gates() {
+    use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationSource};
+    let (runtime, caster, other, session) = runtime();
+    let position = runtime.read_actor_position(caster).unwrap().position();
+    let other_session = runtime
+        .positioned_actor_census()
+        .unwrap()
+        .into_iter()
+        .find(|(a, _, _)| *a == other)
+        .unwrap()
+        .2
+        .unwrap();
+    let mut publisher = SoundPublisher::default();
+    publisher.record(&runtime, caster, position, 3, 0);
+    let (revision, own) = publisher
+        .observe(&runtime, caster, session, 0, true)
+        .unwrap();
+    assert_eq!(own.len(), 1);
+    assert!(matches!(
+        own[0].kind,
+        PresentationEventKind::Sound {
+            cue_id: 3,
+            source: PresentationSource::Own,
+            ..
+        }
+    ));
+    let (_, others) = publisher
+        .observe(&runtime, other, other_session, 0, true)
+        .unwrap();
+    assert!(matches!(
+        others[0].kind,
+        PresentationEventKind::Sound {
+            source: PresentationSource::Others,
+            ..
+        }
+    ));
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, 0, false)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, revision, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+}
+
+#[test]
+fn production_sound_emits_committed_spell_cast() {
+    let (mut runtime, caster, _, session) = runtime();
+    let mut owner = SpellPresentationOwner::new(&runtime);
+    super::super::spell_presentations::tests::commit_sound_fixture(
+        &mut owner,
+        &mut runtime,
+        caster,
+        session,
+    );
+    let mut publisher = SoundPublisher::default();
+    publisher.capture(&mut owner, &runtime).unwrap();
+    let (_, events) = publisher
+        .observe(&runtime, caster, session, 0, true)
+        .unwrap();
+    assert_eq!(events.len(), 1);
+    assert!(matches!(
+        events[0].kind,
+        oteryn_protocol_oteryn::presentation::PresentationEventKind::Sound { cue_id: 1080, .. }
+    ));
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, 0, false)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+}
+
+#[test]
+fn production_sound_normalizes_native_floors_for_the_allocated_wire() {
+    let (runtime, caster, _, session) = runtime();
+    let mut publisher = SoundPublisher::default();
+    publisher.record(
+        &runtime,
+        caster,
+        MovementLocalPosition {
+            x: -7,
+            y: -7,
+            floor: -7,
+        },
+        1,
+        0,
+    );
+    let (_, events) = publisher
+        .observe(&runtime, caster, session, 0, true)
+        .unwrap();
+    assert_eq!(events.len(), 1);
+    let bytes = oteryn_protocol_oteryn::presentation::encode_presentation_batch(&events).unwrap();
+    assert_eq!(
+        oteryn_protocol_oteryn::presentation::decode_presentation_batch(&bytes).unwrap(),
+        events
+    );
+    assert!(matches!(
+        events[0].kind,
+        oteryn_protocol_oteryn::presentation::PresentationEventKind::Sound {
+            position: ActorPosition { floor: 7, .. },
+            ..
+        }
+    ));
+}

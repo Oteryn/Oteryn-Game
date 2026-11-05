@@ -389,17 +389,21 @@ fn unix_now() -> i64 {
 }
 
 /// PREM-WIRE-1 production composition (PREMIUM-ACTIVATION-0 §1.1-§1.2): the one Premium fence,
-/// the system trusted clock, the durable activation latch and no activation.
+/// the system trusted clock, the durable latch and an optional operator activation record.
 fn production_premium_reads(
     root: &DurabilityRoot,
+    activation: Option<&super::config::PremiumActivationConfig>,
 ) -> crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator {
     use crate::gameplay_transport::spell_premium_coordinator::{
-        SpellPremiumCoordinator, SystemTrustedClock,
+        PremiumActivation, SpellPremiumCoordinator, SystemTrustedClock,
     };
     SpellPremiumCoordinator::new(
         std::sync::Arc::default(),
         Some(std::sync::Arc::new(SystemTrustedClock)),
-        None,
+        activation.map(|record| PremiumActivation {
+            activation_id: record.activation_id.clone(),
+            switch_over_us: record.switch_over_us,
+        }),
         Some(root.clone()),
     )
 }
@@ -2699,9 +2703,9 @@ async fn boot_and_serve(
     };
     let last_position_flush = crate::gameplay_transport::LastPositionFlush::default();
     // PREM-WIRE-1: the one Premium fence every Premium gate reads, the system trusted clock
-    // (PREMIUM-ACTIVATION-0 §1.1) and the durable activation latch. No activation is configured
-    // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
-    let premium_reads = production_premium_reads(root);
+    // (PREMIUM-ACTIVATION-0 §1.1), durable latch and optional activation record (§1.2).
+    // The serving path pulls into this coordinator's consumer using the existing client gate.
+    let premium_reads = production_premium_reads(root, config.premium_activation.as_ref());
     // Local operator mode; the Platform runtime-status payload has a closed contract.
     eprintln!(
         "event=store_configuration store_purchases={}",
@@ -2803,9 +2807,9 @@ mod tests {
         runtime.block_on(async {
             let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
                 .expect("lazy root");
-            let reads = production_premium_reads(&root);
-            // PREMIUM-ACTIVATION-0 §1.2: no activation record in production, so Premium is
-            // never delivered and every account reads Free, without a latch write.
+            let reads = production_premium_reads(&root, None);
+            // PREMIUM-ACTIVATION-0 §1.2: without an activation record, every account
+            // reads Free, without a latch write.
             assert!(reads.activation().is_none());
             assert!(reads.reads_latch());
             assert!(reads.has_clock());
@@ -2813,6 +2817,30 @@ mod tests {
                 reads.premium_gate([1; 16]).await,
                 crate::domain::premium::PremiumGate::CLOSED
             );
+        });
+    }
+
+    #[test]
+    fn production_premium_reads_start_the_configured_coordinator() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
+                .expect("lazy root");
+            let activation = super::super::config::PremiumActivationConfig {
+                activation_id: "fixture-activation".to_owned(),
+                switch_over_us: 1_790_769_600_000_000,
+            };
+            let reads = production_premium_reads(&root, Some(&activation));
+            let configured = reads.activation().expect("configured activation");
+            assert_eq!(configured.activation_id, activation.activation_id);
+            assert_eq!(configured.switch_over_us, activation.switch_over_us);
+            assert!(reads.reads_latch());
+            assert!(reads.has_clock());
+            // Configuration alone never proves an entitlement.
+            assert!(!reads.consumer().premium_current([1; 16], None));
         });
     }
 

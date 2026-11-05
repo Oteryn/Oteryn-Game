@@ -25,6 +25,20 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    fn observe_sounds(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _after: u64,
+    ) -> impl Future<
+        Output = Option<(
+            u64,
+            Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+        )>,
+    > {
+        async { None }
+    }
+
     /// Native movement effects committed by special-tile entry after `after`.
     fn observe_movement_effects(
         &self,
@@ -576,6 +590,24 @@ pub trait FreshAdmissionAuthority {
         _visible: bool,
     ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
         async { Ok(None) }
+    }
+
+    fn observe_house_destroy(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _source: [u8; 16],
+        _target: [u8; 16],
+    ) -> impl Future<Output = Option<super::super::house_destroy::Candidate>> {
+        async { None }
+    }
+    fn destroy_house_furniture(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _input: crate::durability::house_furniture_destroy::HouseDestroyCommand,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
     }
 
     /// MINING-1: original USE is retained for replay before either handle is resolved.

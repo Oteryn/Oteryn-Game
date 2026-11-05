@@ -14,6 +14,7 @@ where
     let changed = authority
         .tick_vitals(session.actor, session.admitted.game_session_id)
         .await;
+    sounds(stream, authority, session).await?;
     let current = authority
         .observe_vitals(session.actor, session.admitted.game_session_id)
         .await;
@@ -269,6 +270,7 @@ where
     else {
         return Ok(());
     };
+    sounds(stream, authority, session).await?;
     if session.chase_due.is_none()
         && state.target.is_some()
         && state.modes.chase == ChaseMode::Chase
@@ -382,6 +384,7 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    sounds(stream, authority, session).await?;
     if let Some(view) = session.item_view.as_mut()
         && view.inventory_refresh_pending
     {
@@ -528,5 +531,64 @@ where
             session.weather_sent = Some(observed);
         }
     }
+    Ok(())
+}
+pub(super) async fn sounds<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    use oteryn_protocol_oteryn::presentation as wire;
+    if !session
+        .selected_capabilities
+        .contains(wire::CAPABILITY_PRESENTATION_V1)
+    {
+        return Ok(());
+    }
+    let Some((cursor, events)) = authority
+        .observe_sounds(
+            session.actor,
+            session.admitted.game_session_id,
+            session.sound_cursor,
+        )
+        .await
+    else {
+        return Ok(());
+    };
+    if !events.is_empty() {
+        let payload =
+            wire::encode_presentation_batch(&events).map_err(|_| ServeEnd::Disconnected)?;
+        let revision = session
+            .admitted
+            .continuity
+            .presentation_revision
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let sequence = session
+            .sequence
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let frame = encode_state_delta(
+            session.generation,
+            sequence,
+            wire::STATE_DOMAIN_WORLD_PRESENTATION,
+            session.admitted.continuity.presentation_revision,
+            revision,
+            wire::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
+            &payload,
+        )
+        .map_err(|_| ServeEnd::Disconnected)?;
+        write_frame(stream, &frame)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
+        session.sequence = sequence;
+        session.admitted.continuity.server_sequence = sequence;
+        session.admitted.continuity.presentation_revision = revision;
+    }
+    session.sound_cursor = cursor;
     Ok(())
 }
