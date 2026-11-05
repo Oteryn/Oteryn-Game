@@ -1,0 +1,65 @@
+//! Carried/ground container adapter. Depot browsing is not covered.
+use crate::play::{Outbox, PlayLink, mailbox::lock};
+use oteryn_client_runtime::container_tree::{ContainerViewOutcome, ContainerViews};
+use oteryn_session::SessionEvent;
+
+impl Outbox {
+    pub(in crate::play) fn container_initialize(&self, views: Option<ContainerViews>) {
+        lock(&self.0).containers.apply(views);
+    }
+    pub(in crate::play) fn container_events(&self, events: &[SessionEvent]) {
+        let mut mailbox = lock(&self.0);
+        for event in events {
+            if let SessionEvent::ContainerViews(delta) = event {
+                mailbox.containers.apply(Some(delta.value.clone()));
+            }
+        }
+    }
+    pub(in crate::play) fn container_result(&self, outcome: Option<ContainerViewOutcome>) {
+        oteryn_client_ui::container_tree::protocol::apply_result(
+            &mut lock(&self.0).containers,
+            outcome,
+        );
+    }
+    pub(in crate::play) fn container_end(&self) {
+        lock(&self.0).containers.end();
+    }
+}
+impl PlayLink {
+    pub fn container_panel(&self) -> oteryn_client_ui::container_tree::ContainerPanel {
+        lock(&self.mailbox).containers.clone()
+    }
+}
+
+macro_rules! session_trait {
+    ($($methods:tt)*) => {
+        super::feature_local_account_achievements::protocol::session_trait! {
+            $($methods)*
+            fn container_views(&self) -> Option<oteryn_client_runtime::container_tree::ContainerViews> { None }
+            fn container_view(&mut self, _intent: oteryn_client_runtime::container_tree::ContainerViewIntent) -> impl std::future::Future<Output = Result<Option<oteryn_client_runtime::container_tree::ContainerViewOutcome>, oteryn_session::SessionError>> + Send {
+                async { Err(oteryn_session::SessionError::CapabilityNotSelected { capability: 14 }) }
+            }
+        }
+    };
+}
+pub(in crate::play) use session_trait;
+
+macro_rules! dispatch {
+    ($command:expr, $session:ident, $outbox:ident, $held:ident, $publish:ident; $($arms:tt)*) => {
+        super::feature_local_account_achievements::protocol::dispatch! {
+            $command, $session, $outbox, $held, $publish;
+            Ok(crate::combat_input::PlayCommand::ContainerView(intent)) => {
+                match $session.container_view(intent).await {
+                    Ok(outcome) => {
+                        $outbox.container_result(outcome);
+                        $publish(&mut $session, &$outbox, &mut $held);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
+            $($arms)*
+        }
+    };
+}
+pub(in crate::play) use dispatch;

@@ -12,7 +12,8 @@ impl Application {
             if play.view.audio_input(events) {
                 return;
             }
-            if play.link.inventory_input(events)
+            if play.view.container_input(&play.link, events)
+                || play.link.inventory_input(events)
                 || play.link.achievement_notices_input(events)
                 || play.link.achievements_input(events)
                 || play.link.chat_input(events)

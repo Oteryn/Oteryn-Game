@@ -30,6 +30,7 @@ pub use events::SessionEvent;
 mod gated_command;
 /// Server-owned highscores query and result codecs.
 pub use oteryn_protocol_oteryn::highscores;
+pub mod container_tree;
 mod hotkey_equip_transport;
 mod join;
 mod map_transport;
@@ -734,9 +735,7 @@ pub struct ChatOutcome {
 }
 
 /// Outcome of `Session::move_item` (ITEM-MOVE-WIRE-1, command type 9). The command returns at its
-/// result: a `Moved` result's domain 9 and domain 11 deltas arrive as pushed deltas, through
-/// [`Session::take_events`], [`Session::inventory`] and [`Session::open_container`]. Every other
-/// outcome (`Stale` included) changes no local state.
+/// result; authoritative inventory and container updates arrive through [`Session::take_events`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemMoveOutcomeResult {
     pub command_id: u64,
@@ -907,6 +906,7 @@ pub struct Session<S> {
     container_revision: u64,
     inventory: Option<CharacterInventory>,
     open_container: Option<OpenContainer>,
+    container_views: Option<container_tree::ContainerViews>,
     /// `Some` exactly when capability 7 is selected.
     chat: Option<ChatLog>,
     vip_presence: Option<vip_presence::VipPresenceStore>,
@@ -1315,9 +1315,8 @@ impl<S: SessionStream> Session<S> {
     }
 
     /// Sends the FND-02 `ClientCommand` type 2 `USE_INTENT` with the field 2 item target
-    /// (capability 4), which opens a corpse. Refused before anything is sent when capability 4 is
-    /// not selected. It returns at its result; the domain 11 and 9 deltas it causes go through
-    /// the domain store and the event queue.
+    /// (capability 4), opening a corpse or a capability-14 container. Refused when capability 4 is
+    /// not selected. Contents arrive through the domain store and event queue.
     pub async fn use_item(&mut self, handle: ItemHandle) -> Result<UseOutcome, SessionError> {
         self.ensure_usable()?;
         self.ensure_item_view()?;
