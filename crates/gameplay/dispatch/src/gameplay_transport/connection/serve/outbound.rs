@@ -113,7 +113,8 @@ where
         outcome.npc_relocation,
         outcome.training_logged_out,
     )
-    .await
+    .await?;
+    super::analyser::emit(stream, authority, session).await
 }
 
 async fn emit<S, A>(

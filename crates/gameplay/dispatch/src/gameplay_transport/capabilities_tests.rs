@@ -596,11 +596,11 @@ fn fresh_admission_echoes_and_keeps_the_selection() -> Result<(), Box<dyn Error>
 }
 
 #[test]
-fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
+fn production_admission_selects_capabilities_6_7_10_13_and_17_and_nothing_else()
 -> Result<(), Box<dyn Error>> {
     run(async {
         // SPEED-1, VIS-3, CHAT-WIRE-1 and ATTACK-1b (§1.9): the production offered set selects
-        // capabilities 6, 7, 13 and 17 for a client that supports them, and only them.
+        // capabilities 6, 7, 10, 13 and 17 for a client that supports them, and only them.
         let authority = NegotiatingAuthority::new(None);
         let (admitted, frames) = admit(
             &authority,
@@ -618,6 +618,7 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
         let expected = [
             6,  // WORLD_SPATIAL_ENTITIES
             7,  // CHAT_V1
+            10, // ANALYSER_V1
             13, // PACED_MOVEMENT_V1
             17, // ATTACK_V1
         ];
@@ -626,6 +627,7 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
         let expected = [
             6,  // WORLD_SPATIAL_ENTITIES
             7,  // CHAT_V1
+            10, // ANALYSER_V1
             13, // PACED_MOVEMENT_V1
             17, // ATTACK_V1
         ];
@@ -669,13 +671,15 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
         // CHAT-WIRE-1: 7 requires nothing and is selected alone.
         let (_, frames) = admit(&authority, &bootstrap(&[7])?).await?;
         assert_eq!(accepted_selection(&frames)?, [7]);
+        // ANALYSER-1: 10 requires nothing and is selected alone.
+        let (_, frames) = admit(&authority, &bootstrap(&[10])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [10]);
         // A client without them selects nothing.
         let (admitted, frames) = admit(
             &authority,
             &bootstrap(&[
-                1,  // BESTIARY_CHARMS_V1
-                8,  // ACHIEVEMENT_NOTICES_V1
-                10, // ANALYSER_V1
+                1, // BESTIARY_CHARMS_V1
+                8, // ACHIEVEMENT_NOTICES_V1
             ])?,
         )
         .await?;

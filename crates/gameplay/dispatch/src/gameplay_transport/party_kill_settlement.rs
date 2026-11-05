@@ -232,6 +232,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         entry: &PendingKillSettlement,
     ) -> Result<SettledPartyXp, CharacterProgressionError> {
         let plan = self.discover_party_xp(permit, entry).await?;
+        let analyser_receipts = self.analyser_receipts(entry.target).await;
+        if let Ok(mut receipts) = analyser_receipts.lock() {
+            receipts.recipients.get_or_insert_with(|| {
+                plan.members
+                    .iter()
+                    .map(|m| (m.character, m.actor, m.session))
+                    .collect()
+            });
+        }
         if !plan
             .members
             .iter()
@@ -533,6 +542,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut principal = None;
         let mut leveled = Vec::new();
         for award in awards {
+            if award.raw > 0
+                && let Ok(mut receipts) = analyser_receipts.lock()
+                && let Some((_, actor, session)) = receipts
+                    .recipients
+                    .as_ref()
+                    .and_then(|recipients| {
+                        recipients
+                            .iter()
+                            .find(|(character, _, _)| *character == award.character)
+                    })
+                    .copied()
+                && receipts.xp.insert(award.character)
+            {
+                self.states.analyser.push(
+                    actor,
+                    session,
+                    oteryn_protocol_oteryn::analyser::AnalyserFact::Experience {
+                        raw: u64::try_from(award.raw).unwrap_or(0),
+                        gained: u64::try_from(award.gained).unwrap_or(0),
+                    },
+                );
+            }
             if let Some(xp) = award.xp {
                 leveled.extend(super::level_up_live::leveled_character(&xp));
                 if let Some(slot) = slots

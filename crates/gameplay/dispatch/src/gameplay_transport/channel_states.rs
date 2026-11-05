@@ -11,6 +11,7 @@ use tokio::sync::Mutex;
 /// Channel-local session state; keep fields sorted by name.
 #[derive(Default)]
 pub struct ChannelSessionStates {
+    pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     /// APP-3: the appearance-change command state of each session, forgotten with the session.
     pub appearance_commands: appearance_change::AppearanceCommands,
     /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
@@ -119,6 +120,7 @@ impl ChannelSessionStates {
     /// connection recipients, and its existing node shutdown/input gate.
     pub(super) fn for_activity(&self) -> Self {
         Self {
+            analyser: std::sync::Arc::clone(&self.analyser),
             gameplay_idle_policy: self.gameplay_idle_policy,
             input_gate: std::sync::Arc::clone(&self.input_gate),
             server_messages: std::sync::Arc::clone(&self.server_messages),
@@ -128,6 +130,7 @@ impl ChannelSessionStates {
 
     /// Forget exactly the state retired after the runtime removes a terminal session.
     pub(super) fn forget_session(&self, session: GameSessionId) {
+        self.analyser.forget(session);
         self.fence_holders.forget(session);
         self.appearance_commands.forget(session);
         self.chat.forget(session);

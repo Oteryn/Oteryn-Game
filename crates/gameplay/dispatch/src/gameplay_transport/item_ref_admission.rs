@@ -101,6 +101,7 @@ pub(super) fn visible_corpses(
                 &corpse.item.revision_ref,
             )?;
             Some(ChannelEntity {
+                display_name: None,
                 health_percent: 100,
                 direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                 kind: VisibleKind::Corpse {

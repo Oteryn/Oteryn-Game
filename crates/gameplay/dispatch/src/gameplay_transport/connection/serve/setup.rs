@@ -120,8 +120,7 @@ where
     items.appearances.domain(&mut domains);
     domains.extend(server_save_countdown_transport::snapshot(admitted));
     domains.extend(tutorial_notices_transport::snapshot(admitted));
-    let snapshot =
-        encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
+    let snapshot = encode_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
     let Ok(snapshot) = snapshot else {
         return Err(ServeEnd::Disconnected);
     };
@@ -185,6 +184,7 @@ async fn live<A: FreshAdmissionAuthority>(
         world,
     } = setup;
     let snapshot::InitialSnapshot {
+        spell_catalog,
         overlay_served,
         notices_selected,
         achievement_notices,
@@ -244,7 +244,7 @@ async fn live<A: FreshAdmissionAuthority>(
     );
     cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     // SPELL-D8 §8.2: only an actor with `ACTOR_VITALS` has a Serene evaluation to run.
-    let serene = has_vitals.then(|| {
+    let serene = (has_vitals || spell_catalog.is_some()).then(|| {
         let mut serene = tokio::time::interval_at(
             tokio::time::Instant::now() + SERENE_EVALUATION,
             SERENE_EVALUATION,
@@ -318,6 +318,7 @@ async fn live<A: FreshAdmissionAuthority>(
     // runs that step first, so non-step traffic never postpones it indefinitely.
     let chase_yielded = false;
     Ok(ServeState {
+        spell_catalog,
         integrity,
         stash_rows: None,
         stash_revision: 0,

@@ -82,7 +82,6 @@ fn bestiary() -> Option<&'static Bestiary> {
 }
 
 /// The canonical Bestiary races in wire index order (index = position + 1).
-#[cfg(test)]
 pub(super) fn canonical_races() -> Option<&'static [BestiaryRace]> {
     bestiary().map(|b| b.races.as_slice())
 }

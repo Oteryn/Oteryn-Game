@@ -885,3 +885,38 @@ fn floor_exhaust_spell_relocation_staging_commits_with_dispatch_batch() {
         Some(SemanticTimeMicros::from_micros(100_000 + STAIRHOP_MICROS))
     );
 }
+
+#[test]
+fn analyser_committed_combat_emits_applied_damage_and_healing_once() {
+    use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact, decode_analyser_facts};
+    let mut f = fixture();
+    assert_eq!(
+        f.states.analyser.snapshot(f.caster, f.session, 1, None),
+        Some(false)
+    );
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("physical stage");
+    let proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
+        .expect("player stage");
+    let receipt = commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+        .expect("real commit");
+    assert!(receipt.applied);
+    let facts = decode_analyser_facts(
+        &f.states
+            .analyser
+            .next(f.caster, f.session, 1)
+            .expect("live facts"),
+    )
+    .expect("typed");
+    assert!(facts.iter().any(|fact| matches!(fact, AnalyserFact::Impact(AnalyserImpact::Damage { value, .. }) if value.get() == 3)));
+    assert!(facts.iter().any(|fact| matches!(fact, AnalyserFact::Impact(AnalyserImpact::Healing(value)) if value.get() == 9)));
+    let replay = f.runtime.stage_spell_batch(&f.batch).expect("replay stage");
+    assert!(
+        !commit_owner_batch(&mut f.runtime, &mut f.states, replay, None)
+            .expect("replay")
+            .applied
+    );
+    assert!(f.states.analyser.next(f.caster, f.session, 1).is_none());
+}

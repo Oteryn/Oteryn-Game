@@ -607,6 +607,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start(kind, self.owner_ms())?;
         }
+        let analyser_supply =
+            matches!(kind, ItemUseKind::Potion).then(|| request.source_definition.clone());
         let commit = self
             .root
             .commit_item_use(self.character, self.holder, fence, request);
@@ -628,6 +630,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if known_commit {
+            if let Some(definition) = &analyser_supply {
+                states.analyser.supply(actor, session, definition, 1);
+            }
             apply_effect(
                 &runtime,
                 &mut states,
@@ -973,6 +978,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start_drink(self.owner_ms())?;
         }
+        let analyser_supply = restore.as_ref().map(|_| request.change.definition.clone());
         let commit =
             self.root
                 .commit_item_fluid_at(self.character, self.holder, fence, request, splash);
@@ -990,6 +996,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if known_commit && let Some(restore) = restore {
+            if let Some(definition) = &analyser_supply {
+                states.analyser.supply(actor, session, definition, 1);
+            }
             apply_effect(
                 &runtime,
                 &mut states,
