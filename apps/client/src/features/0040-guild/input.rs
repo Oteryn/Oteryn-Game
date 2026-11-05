@@ -2,6 +2,14 @@ use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::guild::{Intent, request};
 impl PlayLink {
+    pub fn guild_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+        if !oteryn_client_ui::guild::open_key(events) {
+            return false;
+        }
+        self.open_guild();
+        true
+    }
+
     pub fn guild_request(&self, intent: Intent) {
         let mut mailbox = lock(&self.mailbox);
         if let Some(command) = request(&mut mailbox.guild, intent)
