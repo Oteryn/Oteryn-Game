@@ -521,6 +521,13 @@ impl DurabilityRoot {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
+                    // No allocation means there is nothing to reset, including for a
+                    // bootstrap Character whose optional progression row does not exist yet.
+                    // The gameplay fence above still locks and validates the Character root.
+                    let Some(stored) = lock_wheel_state(&mut tx, fence.character_id).await? else {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(WheelResetOutcome::Current));
+                    };
                     let state = match lock_progression_state(&mut tx, fence.character_id).await? {
                         Some(state) => state,
                         None => {
@@ -533,10 +540,6 @@ impl DurabilityRoot {
                     if !state_matches_root(&state, &root) {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
-                    let Some(stored) = lock_wheel_state(&mut tx, fence.character_id).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
-                        return Ok(Ok(WheelResetOutcome::Current));
-                    };
                     let outcome =
                         match currency(&mut tx, &stored.wheel_ruleset_revision, &ruleset).await? {
                             Currency::Current => WheelResetOutcome::Current,

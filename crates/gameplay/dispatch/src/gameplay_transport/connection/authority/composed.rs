@@ -367,7 +367,20 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        let mut outcome = npc_command::resume_npc_talk(self, actor, command).await?;
+        // Retained-work lookups use the same non-blocking holder as background passes.
+        // A busy lookup proves neither an absent original nor a terminal result. Retry the
+        // idempotent reconciliation under the existing command budget before closing.
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let mut outcome = loop {
+            let outcome = npc_command::resume_npc_talk(self, actor, command).await?;
+            if !outcome.unknown
+                || !budget
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
+            {
+                break outcome;
+            }
+        };
         if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
             && let Some(conversation) = &mut outcome.conversation
         {
@@ -1059,7 +1072,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
     ) -> Option<AchievementNoticeObservation> {
-        self.observe_current_achievement_facts(admitted).await
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.observe_current_achievement_facts(admitted)
+                    .await
+                    .ok_or(AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()
     }
 
     async fn account_achievements(
@@ -1137,7 +1157,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes> {
-        self.observe_expert_fight_modes(actor, session).await
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.observe_expert_fight_modes(actor, session)
+                    .await
+                    .ok_or(AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()
     }
 
     async fn observe_combat_state(

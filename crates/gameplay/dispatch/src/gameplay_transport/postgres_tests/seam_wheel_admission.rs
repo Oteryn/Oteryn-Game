@@ -64,7 +64,16 @@ fn scenario(initialized: bool) -> TestResult {
                         .lock()
                         .map_err(debug)?
                         .get(&session)
-                        .is_some_and(Option::is_none)
+                        .is_some_and(|allocation| if initialized {
+                            allocation.is_none()
+                        } else {
+                            allocation.as_ref().is_some_and(|allocation| {
+                                allocation.current
+                                    && allocation.wheel_revision == 0
+                                    && allocation.slots
+                                        == crate::durability::character_wheel::WheelSlots::ZERO
+                            })
+                        })
                 );
                 if let Some(held) = held {
                     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
