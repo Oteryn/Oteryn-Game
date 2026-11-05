@@ -45,6 +45,7 @@ pub mod player_report;
 pub mod timed_item;
 
 pub mod connection;
+mod cursor_spell;
 #[path = "features/0037-depot/protocol.rs"]
 pub mod depot;
 #[path = "features/0098-quick-loot/protocol.rs"]

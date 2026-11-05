@@ -1,3 +1,5 @@
+#[path = "protocol/stamina.rs"]
+mod stamina;
 use super::CyclopediaCharacterPanel;
 use oteryn_client_runtime::{
     CommandStatus,
@@ -133,8 +135,8 @@ fn decode_tab(b: &[u8], requested: cyclopedia_character::CharacterTab) -> Option
                 rows.push(format!("{label}: {}", r.u16()?));
             }
             rows.push(format!(
-                "Stamina: {} minutes\nOffline training: {} minutes",
-                r.u16()?,
+                "{}\nOffline training: {} minutes",
+                stamina::display(r.u16()?),
                 r.u16()?
             ));
             let known = r.u8()?;

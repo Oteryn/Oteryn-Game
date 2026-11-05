@@ -7,6 +7,7 @@ impl PlayView {
     /// at most one press per bar slot waits for the next tick.
     pub fn cast(&mut self, spell: NonZeroU32) {
         if spell.get() <= u32::from(SPELL_SLOTS) {
+            self.cursor_spell = None;
             self.queue(Input::Cast(spell));
         }
     }

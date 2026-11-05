@@ -45,6 +45,7 @@ impl PlayView {
         };
         if state.deaths != self.death.deaths {
             self.inputs.clear();
+            self.cursor_spell = None;
             self.in_flight = false;
             self.scene.clear_target()?;
             self.target_walk_feedback = None;

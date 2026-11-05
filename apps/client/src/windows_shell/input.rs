@@ -90,6 +90,7 @@ impl Application {
             {
                 return;
             }
+            play.view.cursor_spell_input(events);
             if play.link.player_trade_input(events) {
                 return;
             }
