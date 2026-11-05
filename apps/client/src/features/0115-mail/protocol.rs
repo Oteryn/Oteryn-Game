@@ -28,6 +28,9 @@ impl Panels {
             ..Default::default()
         };
         self.character_info = oteryn_client_ui::character_info::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
         self.guildhall = oteryn_client_ui::guildhall::Panel {
             feedback: "The session has ended".into(),
             ..Default::default()
@@ -197,6 +200,9 @@ impl Outbox {
             ),
             97 => super::super::feature_0097_character_info::protocol::apply(
                 &mut shared.properties.character_info,
+                command,
+                result,
+            ),
             99 => super::super::feature_0099_guildhall::protocol::apply(
                 &mut shared.properties.guildhall,
                 command,
