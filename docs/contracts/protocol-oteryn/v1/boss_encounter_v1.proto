@@ -8,6 +8,9 @@ message BossCooldownQueryV1 {
   // Empty starts the list. Otherwise the previous page's next_after_boss_key.
   // Strictly bounded to a production key (512 UTF-8 bytes), in C sort order.
   string after_boss_key = 1;
+  // SRX-3 opt-in; encode true last. Older requests retain their exact reply.
+  // 517 bytes maximum with the full cursor; explicit false/duplicate fields refuse.
+  bool include_taints = 2;
 }
 message BossCooldownEntryV1 {
   string boss_key = 1;
@@ -28,6 +31,16 @@ message BossCooldownListV1 {
   uint64 boss_points = 5;
   // Empty if exhausted; otherwise the last progress key returned.
   string next_after_progress_key = 6;
+  // Present only when explicitly requested. Same Character and transaction.
+  BossTaintsV1 taints = 7;
+}
+// Four required bounded scalars in canonical field order, including zeros.
+// Counts are calculated by Quest owners using server time, never by the client.
+message BossTaintsV1 {
+  uint32 soul_war = 1; // 0..5, after fourteen-day expiry
+  uint32 rotten_blood = 2; // 0..4 regular taints
+  uint32 rotten_blood_flags = 3; // 0..15: Ichgahal, Murcion, Vemiath, Chagorz
+  bool rotten_blood_final = 4;
 }
 message BosstiaryProgressEntryV1 {
   string boss_key = 1;
