@@ -298,6 +298,7 @@ pub async fn run_session<T: Stepper>(
     outbox: Outbox,
 ) {
     outbox.inventory_initialize(session.inventory(), session.item_count_selected());
+    outbox.equipment_initialize(session.equipment_selected());
     outbox.container_initialize(session.container_views());
     outbox.target_walk_initialize(session.feature_selected(64));
     outbox.vitals(session.actor_vitals());

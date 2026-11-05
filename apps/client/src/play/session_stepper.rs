@@ -11,6 +11,9 @@ use std::future::Future;
 use std::time::Duration;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn equipment_selected(&self) -> bool {
+        self.is_selected(12)
+    }
     fn item_count_selected(&self) -> bool {
         self.is_selected(61)
     }

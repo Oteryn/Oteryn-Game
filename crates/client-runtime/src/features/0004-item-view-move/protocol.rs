@@ -28,7 +28,8 @@ pub async fn send<S: oteryn_session::SessionStream>(
     session: &mut oteryn_session::Session<S>,
     request: MoveRequest,
 ) -> Result<Option<MoveResponse>, oteryn_session::SessionError> {
-    if !session.is_selected(4)
+    if !crate::equipment::available(request.destination, session.is_selected(12))
+        || !session.is_selected(4)
         || (request.count.is_some() && !session.is_selected(61))
         || (matches!(request.destination, ItemMoveDestination::Container(_))
             && !session.is_selected(14))
@@ -57,9 +58,9 @@ pub fn feedback(response: Option<MoveResponse>) -> &'static str {
         ItemMoveOutcome::NotPickupable => "You cannot take this object",
         ItemMoveOutcome::NotSupported => "This item cannot be moved there",
         ItemMoveOutcome::Rejected => "Item move refused",
-        ItemMoveOutcome::SlotMismatch
-        | ItemMoveOutcome::RequirementNotMet
-        | ItemMoveOutcome::Blocked => "Cannot move this item there",
+        ItemMoveOutcome::SlotMismatch => "This item does not fit this slot",
+        ItemMoveOutcome::RequirementNotMet => "You do not meet this item’s requirements",
+        ItemMoveOutcome::Blocked => "Cannot move this item there",
     }
 }
 

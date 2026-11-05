@@ -71,6 +71,7 @@ pub(in crate::play) fn list_surface(
                         bounds.top + row.bottom + 1,
                     ],
                     DragItem {
+                        equipped: matches!(destination, ItemMoveDestination::Equipment(_)),
                         handle: item.handle,
                         count: item.count.get(),
                     },

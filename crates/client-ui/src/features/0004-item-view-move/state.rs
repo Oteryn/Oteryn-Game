@@ -3,6 +3,7 @@ use oteryn_client_runtime::inventory::{ItemHandle, ItemMoveDestination, MoveRequ
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DragItem {
+    pub equipped: bool,
     pub handle: ItemHandle,
     pub count: u32,
 }
@@ -30,10 +31,16 @@ impl Movement {
         let item = self.dragged.take()?;
         self.feedback = None;
         let Some(destination) = destination else {
-            self.feedback = Some("Move cancelled: choose inventory, an open container or map tile");
+            self.feedback = Some(
+                "Move cancelled: choose inventory, an equipment slot, an open container or map tile",
+            );
             return None;
         };
-        if item.count > 1 && counted {
+        if item.count > 1
+            && counted
+            && !item.equipped
+            && !matches!(destination, ItemMoveDestination::Equipment(_))
+        {
             self.prompt = Some((item, destination));
             return None;
         }
@@ -75,6 +82,7 @@ mod tests {
     fn split_requires_valid_count_and_retains_identity() -> Result<(), Box<dyn std::error::Error>> {
         let mut state = Movement::default();
         let item = DragItem {
+            equipped: false,
             handle: 9.try_into()?,
             count: 20,
         };
@@ -97,6 +105,7 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         let mut state = Movement::default();
         state.begin(DragItem {
+            equipped: false,
             handle: 2.try_into()?,
             count: 10,
         });
@@ -112,6 +121,7 @@ mod tests {
             ..Default::default()
         };
         assert!(state.begin(DragItem {
+            equipped: false,
             handle: 2.try_into()?,
             count: 10
         }));
@@ -132,6 +142,7 @@ mod tests {
     {
         let mut state = Movement::default();
         let item = DragItem {
+            equipped: false,
             handle: 2.try_into()?,
             count: 10,
         };

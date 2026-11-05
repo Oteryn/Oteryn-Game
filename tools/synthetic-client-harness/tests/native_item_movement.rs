@@ -113,6 +113,7 @@ fn scenario() -> Result<(), String> {
     let task = runtime.spawn(run_session(session, commands, outbox));
     wait_for(|| link.inventory_panel().inventory.is_some())?;
     assert!(link.item_drag_begin(DragItem {
+        equipped: false,
         handle: entry.handle,
         count: 20
     }));
@@ -131,6 +132,7 @@ fn scenario() -> Result<(), String> {
     })?;
     assert_eq!(link.item_movement().feedback, Some("Item moved"));
     assert!(link.item_drag_begin(DragItem {
+        equipped: false,
         handle: entry.handle,
         count: 13
     }));
@@ -152,6 +154,7 @@ fn scenario() -> Result<(), String> {
     runtime.block_on(task).map_err(|e| e.to_string())?;
     assert_eq!(link.item_movement(), Default::default());
     assert!(!link.item_drag_begin(DragItem {
+        equipped: false,
         handle: entry.handle,
         count: 13
     }));

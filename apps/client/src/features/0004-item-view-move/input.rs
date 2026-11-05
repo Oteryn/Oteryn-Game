@@ -101,6 +101,7 @@ impl crate::play::PlayView {
             .find_map(|item| {
                 super::super::feature_0014_container_tree::input::ground_handle(item).map(
                     |handle| oteryn_client_ui::inventory::movement::DragItem {
+                        equipped: false,
                         handle,
                         count: item.quantity(),
                     },
