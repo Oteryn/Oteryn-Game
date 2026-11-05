@@ -1,4 +1,6 @@
+#[cfg(any(windows, test))]
 use crate::RendererError;
+#[cfg(any(windows, test))]
 use oteryn_foundation::ProcessGeneration;
 // Keep physical acquisition behind the same testable entry boundary on every backend.
 #[cfg(any(windows, test))]
