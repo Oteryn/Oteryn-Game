@@ -2884,6 +2884,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Phase 2: no awaited work, allocation, new random draw or fallible branch.
             let mut attempt=window.install();
             let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+            if batch.applied { states.analyser.supplies(actor,session,&attempt.request.operations); }
             // Only this actual applied receipt can credit a positive attack/heal. The
             // retained original batch supplies event time; a retry never renews it.
             attack.record_committed_shared_experience_batch(&runtime,content,

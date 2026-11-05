@@ -88,6 +88,7 @@ pub struct PlayerSpellState {
     /// Character-owner maxima before temporary Wheel dedication is projected.
     pub(crate) base_max_health: u32,
     pub(crate) base_max_mana: u32,
+    pub(super) learned: std::collections::BTreeSet<String>,
     pub(super) premium_current: bool,
     /// Fenced permanent promotion retained when Premium expires.
     pub(super) stored_promotion: bool,
@@ -202,6 +203,7 @@ impl PlayerSpellState {
                 regen_mana_carry: 0,
                 regeneration_next_tick_us: None,
                 resting_streak: 0,
+                learned: Default::default(),
                 premium_current: false,
                 stored_promotion: false,
                 premium_valid_until_micros: None,

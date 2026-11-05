@@ -1,0 +1,17 @@
+{
+  "id": 287,
+  "name": "ACTOR_SPELL_CATALOG_V1",
+  "constant": "actor_spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [
+    100
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

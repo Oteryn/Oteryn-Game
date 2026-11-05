@@ -52,6 +52,7 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
         assert_eq!(
             ended.continuity,
             SessionContinuity {
+                analyser_revision: 0,
                 server_message_revision: 0,
                 server_motd_sent: false,
                 gameplay_idle: ended.continuity.gameplay_idle,

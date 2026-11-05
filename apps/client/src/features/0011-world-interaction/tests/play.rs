@@ -25,6 +25,7 @@ fn click_on_empty_ground_queues_a_server_target() -> Result<(), BatchError> {
 #[test]
 fn only_a_creature_click_queues_an_attack() -> Result<(), BatchError> {
     let actor = |kind, x, id: u8| WorldSpatialEntity {
+        display_name: None,
         kind,
         entity: EntityRef {
             identity: [id; 16],
@@ -62,6 +63,7 @@ fn creature_click_dispatches_attack_and_reduces_the_report() -> Result<(), Batch
         generation: 1,
     };
     let entity = WorldSpatialEntity {
+        display_name: None,
         entity: target,
         kind: EntityKind::Creature,
         position: ActorPosition {

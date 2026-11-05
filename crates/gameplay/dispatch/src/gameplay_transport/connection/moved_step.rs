@@ -28,7 +28,12 @@ where
     A: FreshAdmissionAuthority,
 {
     let (frames_out, delta_sequence, new_revision) = if let Some(view) = visibility {
-        let mut channel = authority.observe_visible_entities(actor).await?;
+        let mut channel = crate::gameplay_transport::entity_names::observe(
+            authority,
+            actor,
+            admitted.continuity.selected_capabilities,
+        )
+        .await?;
         // The step's committed position is the observer's own.
         let observer = channel.observer;
         for own in channel
@@ -114,13 +119,15 @@ where
         }
     }
     if let (Some(view), Some(items)) = (world_map, item_view) {
-        let update = world_map_delta(authority, actor, generation, *sequence, view, items).await;
+        let update = world_map_frames(authority, actor, generation, *sequence, view, items).await;
         admitted.continuity.item_view = items.continuity();
-        if let Some((delta_sequence, frame)) = update? {
-            *sequence = delta_sequence;
+        if let Some((next_sequence, frames)) = update? {
+            *sequence = next_sequence;
             admitted.continuity.server_sequence = *sequence;
             admitted.continuity.world_map_revision = view.revision();
-            write_frame(stream, &frame).await.ok()?;
+            for frame in frames {
+                write_frame(stream, &frame).await.ok()?;
+            }
         }
     }
     Some(())

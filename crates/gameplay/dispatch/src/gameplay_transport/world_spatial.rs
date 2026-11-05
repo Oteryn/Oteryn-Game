@@ -12,6 +12,7 @@ use crate::movement::interest::{
     InterestChange, InterestDiff, InterestEntity, InterestIndex, VisibilityPosition,
     VisibilityQuery, VisibilitySettings, diff_interest,
 };
+pub use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
 pub use oteryn_protocol_oteryn::world_spatial::*;
 pub use oteryn_protocol_oteryn::world_spatial_entities::*;
 
@@ -138,6 +139,7 @@ pub enum VisibleKind {
 /// VIS-3: one entity of the session's Channel, before the interest query.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChannelEntity {
+    pub display_name: Option<EntityDisplayName>,
     pub health_percent: u8,
     pub direction: StepDirection,
     pub kind: VisibleKind,
@@ -192,6 +194,7 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
         ),
     };
     WorldSpatialEntity {
+        display_name: entity.display_name,
         kind,
         entity: EntityRef {
             identity: entity.identity,
@@ -469,8 +472,8 @@ impl SessionVisibility {
                 ),
             }
         }
-        // HP changes do not advance a creature's position revision. Keep the same
-        // interest selection, but publish stationary HP through the existing actor detail.
+        // Health and display-name changes do not advance a position revision. Publish
+        // stationary changes through the same interest selection and entity record.
         for entity in &selected {
             let identity = entity.entity.identity;
             let Some(prior) = self.entities.get(&identity) else {
@@ -478,7 +481,7 @@ impl SessionVisibility {
             };
             let health_changed = matches!((&prior.detail, &entity.detail),
                 (EntityDetail::Actor { health_percent: before, .. }, EntityDetail::Actor { health_percent: after, .. }) if before != after);
-            if health_changed
+            if (health_changed || prior.display_name != entity.display_name)
                 && !delta
                     .enter
                     .iter()
@@ -591,6 +594,7 @@ mod tests {
         let mut identity = [0_u8; ENTITY_IDENTITY_BYTES];
         identity[15] = n;
         WorldSpatialEntity {
+            display_name: None,
             kind,
             entity: EntityRef {
                 identity,
@@ -829,6 +833,7 @@ mod tests {
 
     fn at(n: u32, kind: VisibleKind, x: i32, y: i32, floor: i16) -> ChannelEntity {
         ChannelEntity {
+            display_name: None,
             health_percent: 100,
             direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
             kind,

@@ -28,7 +28,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
-        let now = self.owner_now();
+        self.drain_monster_melee_with_permit(permit, self.owner_now())
+            .await;
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn drain_monster_melee_at(
+        &self,
+        now: oteryn_simulation_determinism::SemanticTimeMicros,
+    ) {
+        let Some(permit) = self.spell_lane_permit().await else {
+            return;
+        };
+        self.drain_monster_melee_with_permit(permit, now).await;
+    }
+
+    async fn drain_monster_melee_with_permit(
+        &self,
+        permit: crate::durability::spell_owner_commit::SpellLanePermit,
+        now: oteryn_simulation_determinism::SemanticTimeMicros,
+    ) {
         let mut runtime = self.runtime.lock().await;
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.
