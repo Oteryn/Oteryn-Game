@@ -19,6 +19,9 @@ impl Application {
             if play.view.container_input(&play.link, events)
                 || play.link.inventory_input(events)
             if play.link.battle_input(events)
+            if play
+                .link
+                .party_input(events, &play.view, &mut self.party_input)
                 || play.link.achievement_notices_input(events)
                 || play.link.achievements_input(events)
                 || play.link.chat_input(events)

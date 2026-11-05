@@ -335,7 +335,10 @@ pub async fn run_session<T: Stepper>(
     );
     outbox.vip_initialize(session.vip_selected());
     outbox.guild_initialize(session.guild_selected());
-    outbox.party_initialize(session.party_selected());
+    outbox.party_initialize(
+        session.party_selected(),
+        session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1),
+    );
     outbox.hireling_initialize(session.hireling_selected());
     outbox.market_initialize(session.market_selected());
     outbox.chat_public_initialize(session.chat_public_selected(), session.chat_state());
@@ -346,6 +349,7 @@ pub async fn run_session<T: Stepper>(
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
     outbox.chat_initialize(session.feature_selected(7));
     outbox.guild_chat_publish(&session);
+    outbox.chat_initialize(session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1));
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
@@ -561,9 +565,8 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Party(request)) => match session.party(&request).await {
-                Ok(response) => {
-                    outbox.party_result(&response);
+            Ok(PlayCommand::Party(request)) => match outbox.party_run(&mut session, &request).await {
+                Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

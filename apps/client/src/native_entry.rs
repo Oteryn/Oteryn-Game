@@ -70,7 +70,7 @@ pub(crate) async fn enter(
         &config.oauth_client_id,
         config.retry_unit,
     )?;
-    let (ticket, selected_character, selected_channel) =
+    let (ticket, selected_character, selected_channel, character_name) =
         authorize::authorize(&client, config, cancellation.clone()).await?;
     let character_id = parse_uuid_v7(&selected_character)
         .and_then(|bytes| CharacterId::decode(&bytes).ok())
@@ -97,6 +97,7 @@ pub(crate) async fn enter(
         grant,
         root,
         character_id,
+        character_name,
         config,
     };
     oteryn_client_runtime::connection::enter(&mut attempt, config.retry_unit, cancellation).await
@@ -109,6 +110,7 @@ struct NativeAttempt<'a> {
     grant: NativeLoginGrant,
     root: CertificateDer<'static>,
     character_id: CharacterId,
+    character_name: String,
     config: &'a NativeLoginConfig,
 }
 
@@ -134,6 +136,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         )
         .await?;
         Ok(AdmittedSession {
+            character_name: self.character_name.clone(),
             session,
             world_id: self.grant.world_id.clone(),
             channel_id: self.grant.channel_id.clone(),

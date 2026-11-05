@@ -263,6 +263,7 @@ impl Outbox {
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
         for line in std::mem::take(&mut mailbox.pushed.chat_lines) {
+            oteryn_client_ui::party::push_feedback(&mut mailbox.party, &line);
             oteryn_client_ui::chat_party_room::push_line(&mut mailbox.chat_party_room, line);
         }
         if let Some(rooms) = mailbox.pushed.chat_rooms.take() {
