@@ -131,7 +131,7 @@ fn cp01_training_scenario() -> Result<(), Error> {
                     ));
                     ready(&link).await.checked()?;
                     let event = oteryn_input_actions::NormalizedInputEvent::Key {
-                        code: oteryn_input_actions::KeyCode::new(23).checked()?,
+                        code: oteryn_input_actions::KeyCode::new(17).checked()?,
                         state: oteryn_input_actions::ButtonState::Pressed,
                         modifiers: oteryn_input_actions::Modifiers::one(
                             oteryn_input_actions::Modifier::Control,
