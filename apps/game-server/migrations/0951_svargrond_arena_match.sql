@@ -60,7 +60,9 @@ CREATE TABLE game_arena_entry_receipts (
         DEFERRABLE INITIALLY DEFERRED
 );
 CREATE INDEX game_arena_entry_command ON game_arena_entry_receipts(game_session_id,command_id);
-CREATE OR REPLACE VIEW game_character_revision_chain_arena WITH (security_invoker=true) AS
+-- Preserve the current chain and its name anchor for historical migration replay.
+-- Only arena receipts are added; the live guard definition retains every later branch.
+CREATE OR REPLACE VIEW game_character_hazard_revision_chain_rotten_blood_arena WITH (security_invoker=true) AS
     SELECT * FROM game_character_hazard_revision_chain_rotten_blood
     UNION ALL SELECT character_id,original_character_revision,committed_character_revision,
         level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,
@@ -73,7 +75,7 @@ BEGIN
     IF position('game_character_hazard_revision_chain_rotten_blood' IN body)=0 THEN
         RAISE EXCEPTION 'arena requires the current Character receipt-chain anchor';
     END IF;
-    EXECUTE replace(body,'game_character_hazard_revision_chain_rotten_blood','game_character_revision_chain_arena');
+    EXECUTE replace(body,'game_character_hazard_revision_chain_rotten_blood','game_character_hazard_revision_chain_rotten_blood_arena');
     SELECT pg_get_constraintdef(oid) INTO STRICT body FROM pg_constraint
         WHERE conrelid='game_item_fee_burns'::regclass AND conname='game_item_fee_burns_cause_kind_check';
     ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_cause_kind_check;
@@ -141,10 +143,10 @@ BEGIN
         EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime',signature);
     END LOOP;
 END $migration$;
-REVOKE ALL ON game_character_arena_matches,game_arena_match_receipts,game_arena_entry_receipts,game_character_revision_chain_arena FROM PUBLIC;
+REVOKE ALL ON game_character_arena_matches,game_arena_match_receipts,game_arena_entry_receipts,game_character_hazard_revision_chain_rotten_blood_arena FROM PUBLIC;
 GRANT SELECT,INSERT,UPDATE ON game_character_arena_matches TO oteryn_game_runtime;
 GRANT SELECT,INSERT ON game_arena_match_receipts,game_arena_entry_receipts TO oteryn_game_runtime;
-GRANT SELECT ON game_character_revision_chain_arena TO oteryn_game_runtime;
+GRANT SELECT ON game_character_hazard_revision_chain_rotten_blood_arena TO oteryn_game_runtime;
 GRANT SELECT ON game_character_arena_matches,game_arena_match_receipts,game_arena_entry_receipts TO oteryn_game_control;
 
 REVOKE ALL ON game_arena_victories FROM PUBLIC;

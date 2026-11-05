@@ -428,9 +428,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition = D::ContentUnavailable;
             }
         }
-        let response = self
-            .root
+        let response = slot
             .commit_arena_match(
+                self.root,
                 self.character,
                 self.holder,
                 fence,
@@ -459,7 +459,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             )
             .await;
-        slot.observe_home_town();
         let bytes = match response {
             Ok(bytes) => bytes,
             Err(error) => {
