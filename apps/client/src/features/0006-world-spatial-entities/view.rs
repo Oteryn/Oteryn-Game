@@ -4,6 +4,9 @@ use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{ActorPosition, WorldSpatialEntity};
 
 impl PlayView {
+    pub fn set_own_identity(&mut self, identity: [u8; 16]) {
+        self.scene.set_own_identity(identity);
+    }
     pub fn from_join(snapshot: &oteryn_session::JoinSnapshot) -> Result<Self, BatchError> {
         let position = snapshot.world_spatial.actor_position;
         Self::new(

@@ -244,14 +244,14 @@ fn native_live_appearance_snapshot_reaches_visible_scene()
                         Ok::<_, String>(())
                     })
                     .await??;
-                    assert!(view.scene().sprites().len() >= 9);
+                    assert_eq!(view.scene().sprites().len(), 10);
                     let mut renamed = entity;
                     renamed.display_name = Some(
                         oteryn_session::EntityDisplayName::new("Rat")
                             .map_err(|e| format!("{e:?}"))?,
                     );
                     for (sequence, update, leave, expected_names, expected_sprites) in [
-                        (2, vec![renamed], vec![], 1, 4),
+                        (2, vec![renamed], vec![], 1, 5),
                         (3, vec![], vec![entity.entity], 0, 1),
                     ] {
                         send.send(SessionEvent::WorldSpatialEntities(AppliedDelta {

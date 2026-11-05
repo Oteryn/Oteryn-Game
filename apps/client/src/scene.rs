@@ -35,7 +35,10 @@ pub struct Scene {
     sprites: SpriteBatch,
     visible: Vec<Targetable>,
     target: Option<Targetable>,
-    presentation_atlas: Option<AtlasImage>,
+    presentation_atlas: Option<Arc<AtlasImage>>,
+    cache: appearance_cache::PresentationCache,
+    own_identity: Option<[u8; 16]>,
+    own_draws: Option<Vec<Draw>>,
     actor_draws: Vec<(TileCoord, Vec<Draw>)>,
     names: Vec<(TileCoord, Vec<u16>)>,
 }
@@ -95,6 +98,9 @@ impl Scene {
             visible,
             target: None,
             presentation_atlas: None,
+            cache: appearance_cache::PresentationCache::default(),
+            own_identity: None,
+            own_draws: None,
             actor_draws: Vec::new(),
             names: Vec::new(),
         };
@@ -145,39 +151,31 @@ impl Scene {
                     self.anchor.map(|anchor| (anchor.x, anchor.y)),
                     (
                         (self.own.x, self.own.y),
-                        if self.actor_draws.iter().any(|(tile, _)| *tile == self.own) {
-                            &[]
-                        } else {
-                            self.world.player(self.facing)
-                        },
+                        self.own_draws
+                            .as_deref()
+                            .unwrap_or_else(|| self.world.player(self.facing)),
                     ),
                     |x, y| self.world.tile(x, y),
                     |x, y| {
-                        let actors: Vec<_> = self
-                            .actor_draws
-                            .iter()
-                            .filter(|(tile, _)| *tile == TileCoord::new(x, y))
-                            .flat_map(|(_, draws)| draws.iter().copied())
-                            .collect();
-                        if self
-                            .actor_draws
-                            .iter()
-                            .any(|(tile, _)| *tile == TileCoord::new(x, y))
-                        {
-                            return actors;
-                        }
-                        // One glyph per tile however many markers and entities stand on it.
-                        self.visible
-                            .iter()
-                            .any(|v| {
-                                v.tile == TileCoord::new(x, y)
-                                    && (v.kind == TargetKind::Object || v.glyph)
-                            })
+                        let tile = TileCoord::new(x, y);
+                        let has_actor = self.actor_draws.iter().any(|(at, _)| *at == tile);
+                        // Object markers remain below actors. Entity fallback glyphs are replaced.
+                        let marker = self.visible.iter().any(|v| {
+                            v.tile == tile
+                                && (v.kind == TargetKind::Object || (v.glyph && !has_actor))
+                        });
+                        marker
                             .then_some(Draw {
                                 cell: MARKER_CELL,
                                 offset: [0, 0],
                             })
                             .into_iter()
+                            .chain(
+                                self.actor_draws
+                                    .iter()
+                                    .filter(|(at, _)| *at == tile)
+                                    .flat_map(|(_, draws)| draws.iter().copied()),
+                            )
                             .collect()
                     },
                     emit,
@@ -209,7 +207,7 @@ impl Scene {
     #[must_use]
     pub fn atlas(&self) -> &AtlasImage {
         self.presentation_atlas
-            .as_ref()
+            .as_deref()
             .unwrap_or_else(|| self.world.atlas())
     }
 
@@ -234,3 +232,6 @@ mod tests;
 
 #[path = "features/0006-world-spatial-entities/scene.rs"]
 mod live_entities;
+
+#[path = "features/0006-world-spatial-entities/cache.rs"]
+mod appearance_cache;

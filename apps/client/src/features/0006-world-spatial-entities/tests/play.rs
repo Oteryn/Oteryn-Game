@@ -93,3 +93,51 @@ fn live_names_reach_scene_and_disappear_with_visibility() -> Result<(), BatchErr
     assert_eq!(view.scene().name_count(), 0);
     Ok(())
 }
+
+#[test]
+fn own_identity_draws_once_between_step_and_appearance_publish() -> Result<(), BatchError> {
+    let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
+    view.set_own_identity([1; 16]);
+    let own = oteryn_session::VisibleAppearance {
+        entity: oteryn_session::WorldSpatialEntity {
+            display_name: None,
+            kind: oteryn_session::EntityKind::Player,
+            entity: oteryn_session::EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            position: ActorPosition {
+                x: 100,
+                y: 200,
+                floor: 0,
+            },
+            detail: oteryn_session::EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        },
+        look: None,
+    };
+    let mut other = own.clone();
+    other.entity.entity.identity = [8; 16];
+    other.entity.kind = oteryn_session::EntityKind::Creature;
+    other.look = Some(oteryn_session::Look::EmptyOutfit);
+    view.set_presentations(vec![own.clone(), other.clone()])?;
+    assert_eq!(view.scene().sprites().len(), 1);
+    view.apply(&moved_to(101, 200, 0))?;
+    assert_eq!(
+        view.scene().sprites().len(),
+        1,
+        "stale own position must not leave a ghost"
+    );
+    assert_eq!(
+        view.scene().sprites().instances()[0].position,
+        view.scene().view().tile_to_screen(TileCoord::new(101, 200))
+    );
+    let mut updated = own;
+    updated.entity.position.x = 101;
+    view.set_presentations(vec![updated, other])?;
+    assert_eq!(view.scene().sprites().len(), 1);
+    Ok(())
+}

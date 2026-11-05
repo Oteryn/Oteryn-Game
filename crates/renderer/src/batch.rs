@@ -345,7 +345,7 @@ impl TileBatch {
 /// Alpha-blended sprite batch: one tile-sized quad per sprite, in draw order.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct SpriteBatch {
-    pub(crate) instances: Vec<QuadInstance>,
+    instances: Vec<QuadInstance>,
 }
 
 impl SpriteBatch {
@@ -1180,3 +1180,6 @@ mod tests {
         Ok(())
     }
 }
+
+#[path = "name_text.rs"]
+pub mod name_text;

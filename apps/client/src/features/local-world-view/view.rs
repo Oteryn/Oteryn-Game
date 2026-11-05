@@ -54,7 +54,7 @@ impl PlayView {
                 entity: matches!(entity.kind, EntityKind::Creature).then_some(entity.entity),
             })
             .collect::<Vec<_>>();
-        self.scene = Scene::centered_with(
+        self.scene.recenter_with(
             self.local.world(),
             (self.map_floor == Some(self.floor)).then_some(self.anchor),
             self.own,
