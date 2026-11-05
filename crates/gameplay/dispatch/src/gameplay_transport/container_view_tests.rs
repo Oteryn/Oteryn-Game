@@ -745,6 +745,7 @@ mod connection {
         let world_id = WorldId::decode(&uuid_v7(0x33)).expect("world");
         let channel_id = ChannelId::decode(&uuid_v7(0x44)).expect("channel");
         let own = WorldSpatialEntity {
+            display_name: None,
             kind: EntityKind::Player,
             entity: EntityRef {
                 identity: ExactActorRef::transport_fixture(world_id, channel_id)

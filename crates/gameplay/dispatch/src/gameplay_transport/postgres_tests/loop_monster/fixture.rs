@@ -66,7 +66,7 @@ pub(super) fn cell(x: i32) -> MovementLocalPosition {
     }
 }
 
-pub(super) fn dependencies(
+pub(in super::super::super) fn dependencies(
     active: &crate::content::ActiveGeneration,
     pin: &crate::content::NativeEntryContentPin,
 ) -> TestResult<(Dependencies, ExactActorRef)> {

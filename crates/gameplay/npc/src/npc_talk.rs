@@ -93,9 +93,11 @@ impl NpcTalkEntry {
     }
 }
 
-/// The talk of every NPC of the catalogue, by NPC key.
+/// Catalogue display names and the qualified native talk entries, by NPC key.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcTalkBook {
+    /// S-ENTNAME: all admitted catalogue names, including NPCs without native dialogue.
+    display_names: HashMap<String, String>,
     npcs: HashMap<String, NpcTalkEntry>,
     /// The revision the trade windows carry: derived from the catalogue's source tree digest, so
     /// it changes exactly when the content the offers come from changes. Never 0.
@@ -115,6 +117,8 @@ impl NpcTalkBook {
             ..Self::default()
         };
         for (reference, npc) in model.npcs() {
+            book.display_names
+                .insert(reference.key.clone(), npc.name.clone());
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
                 &npc.services,
@@ -287,6 +291,14 @@ impl NpcTalkBook {
 
     pub fn get(&self, key: &str) -> Option<&NpcTalkEntry> {
         self.npcs.get(key)
+    }
+
+    /// The catalogue's display name, even when this NPC has no qualified native dialogue.
+    pub fn display_name(&self, key: &str) -> Option<&str> {
+        self.npcs
+            .get(key)
+            .map(|entry| entry.name.as_str())
+            .or_else(|| self.display_names.get(key).map(String::as_str))
     }
 
     pub fn catalogue_revision(&self) -> u64 {
@@ -840,3 +852,7 @@ mod grizzly_dialogue_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "npc_talk/entity_names_tests.rs"]
+mod entity_names_tests;

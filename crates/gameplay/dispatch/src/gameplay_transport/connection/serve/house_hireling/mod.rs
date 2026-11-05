@@ -329,10 +329,13 @@ impl State {
         admitted: &mut AdmittedSession,
     ) -> Result<(), ServeEnd> {
         if let Some(view) = self.visibility.as_mut() {
-            let entities = authority
-                .observe_visible_entities(self.actor)
-                .await
-                .ok_or(ServeEnd::Disconnected)?;
+            let entities = crate::gameplay_transport::entity_names::observe(
+                authority,
+                self.actor,
+                admitted.continuity.selected_capabilities,
+            )
+            .await
+            .ok_or(ServeEnd::Disconnected)?;
             let sequence = admitted.continuity.server_sequence;
             let (_, revision) = self
                 .appearances

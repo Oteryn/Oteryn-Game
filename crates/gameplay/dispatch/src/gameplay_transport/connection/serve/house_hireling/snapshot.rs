@@ -50,10 +50,10 @@ impl State {
         let mut visibility = None;
         let mut spatial_revision = admitted.continuity.spatial_revision;
         if selected.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES) {
-            let entities = authority
-                .observe_visible_entities(actor)
-                .await
-                .ok_or(ServeEnd::Disconnected)?;
+            let entities =
+                crate::gameplay_transport::entity_names::observe(authority, actor, selected)
+                    .await
+                    .ok_or(ServeEnd::Disconnected)?;
             let mut view = SessionVisibility::with_objects(items.is_some())
                 .lit(selected.contains(CAPABILITY_WORLD_LIGHT_V1));
             let (snapshot_type, payload) = appearances

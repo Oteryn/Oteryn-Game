@@ -7,6 +7,7 @@ fn delta_lights_cover_entered_and_updated_entries_and_views_gate_on_capability_1
     change.update[0] = actor(EntityKind::Player, 2);
     let lights = lit(&[&change.enter[0], &change.update[0]], BRIGHTEST);
     let both = EntityFields {
+        display_names: false,
         item_handles: true,
         light: true,
         party_icons: false,
@@ -52,6 +53,7 @@ fn delta_lights_cover_entered_and_updated_entries_and_views_gate_on_capability_1
     assert_eq!(
         EntityFields::selected(&with),
         EntityFields {
+            display_names: false,
             item_handles: true,
             light: true,
             party_icons: false,

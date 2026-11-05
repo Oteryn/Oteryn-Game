@@ -581,6 +581,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one
     /// owner work item, and (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same
     /// read.
+    async fn observe_named_visible_entities(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<world_spatial::ChannelEntities> {
+        self.named_channel_entities(actor).await
+    }
+
     async fn observe_visible_entities(
         &self,
         actor: ExactActorRef,

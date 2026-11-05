@@ -56,6 +56,7 @@ pub mod damage_element;
 mod decoder_fuzz_support;
 pub mod depot;
 pub mod depot_search;
+pub mod entity_names;
 pub mod exiva;
 pub mod fishing;
 pub mod guild;
@@ -1024,6 +1025,24 @@ pub fn encode_single_chunk_snapshot(
     target_server_sequence: u64,
     domains: &[DomainSnapshot<'_>],
 ) -> Result<[Vec<u8>; 3], FoundationProtocolError> {
+    encode_snapshot(
+        connection_generation,
+        snapshot_id,
+        target_server_sequence,
+        domains,
+    )?
+    .try_into()
+    .map_err(|_| FoundationProtocolError::PayloadLimitExceeded)
+}
+
+/// A bounded snapshot transfer (FND-02 §16), sharing the admission producer with replacement
+/// map views that can span multiple chunks. The body is encoded once and split at byte offsets.
+pub fn encode_snapshot(
+    connection_generation: u64,
+    snapshot_id: u64,
+    target_server_sequence: u64,
+    domains: &[DomainSnapshot<'_>],
+) -> Result<Vec<Vec<u8>>, FoundationProtocolError> {
     if connection_generation == 0 || snapshot_id == 0 || domains.is_empty() {
         return Err(FoundationProtocolError::MalformedEnvelope);
     }
@@ -1041,36 +1060,58 @@ pub fn encode_single_chunk_snapshot(
         {
             return Err(FoundationProtocolError::MalformedEnvelope);
         }
+        if domain.payload.len() as u64 > MAX_SNAPSHOT_ASSEMBLED_BYTES {
+            return Err(FoundationProtocolError::PayloadLimitExceeded);
+        }
         let mut entry = Vec::with_capacity(domain.payload.len() + 24);
         push_scalar(&mut entry, 1, u64::from(domain.domain_id));
         push_scalar(&mut entry, 2, domain.revision);
         push_scalar(&mut entry, 3, u64::from(domain.snapshot_type));
         push_bytes(&mut entry, 4, domain.payload);
         push_bytes(&mut body, 1, &entry);
+        if body.len() as u64 > MAX_SNAPSHOT_ASSEMBLED_BYTES {
+            return Err(FoundationProtocolError::PayloadLimitExceeded);
+        }
     }
-    if body.len() > MAX_SNAPSHOT_CHUNK_BYTES {
+    let chunk_count = body.len().div_ceil(MAX_SNAPSHOT_CHUNK_BYTES);
+    if chunk_count > MAX_SNAPSHOT_CHUNKS as usize {
         return Err(FoundationProtocolError::PayloadLimitExceeded);
     }
     let mut begin = Vec::new();
     push_scalar(&mut begin, 1, snapshot_id);
-    push_scalar(&mut begin, 2, 1);
+    push_scalar(&mut begin, 2, chunk_count as u64);
     push_scalar(&mut begin, 3, body.len() as u64);
     push_scalar(&mut begin, 4, target_server_sequence);
-    let mut chunk = Vec::with_capacity(body.len() + 16);
-    push_scalar(&mut chunk, 1, snapshot_id);
-    push_bytes(&mut chunk, 3, &body);
-    let mut commit = Vec::new();
-    push_scalar(&mut commit, 1, snapshot_id);
-    Ok([
-        server_frame(MessageType::SnapshotBegin, connection_generation, 0, &begin),
-        server_frame(MessageType::SnapshotChunk, connection_generation, 0, &chunk),
-        server_frame(
-            MessageType::SnapshotCommit,
+    let mut frames = Vec::with_capacity(chunk_count + 2);
+    frames.push(server_frame(
+        MessageType::SnapshotBegin,
+        connection_generation,
+        0,
+        &begin,
+    ));
+    for (index, data) in body.chunks(MAX_SNAPSHOT_CHUNK_BYTES).enumerate() {
+        let mut chunk = Vec::with_capacity(data.len() + 24);
+        push_scalar(&mut chunk, 1, snapshot_id);
+        if index != 0 {
+            push_scalar(&mut chunk, 2, index as u64);
+        }
+        push_bytes(&mut chunk, 3, data);
+        frames.push(server_frame(
+            MessageType::SnapshotChunk,
             connection_generation,
             0,
-            &commit,
-        ),
-    ])
+            &chunk,
+        ));
+    }
+    let mut commit = Vec::new();
+    push_scalar(&mut commit, 1, snapshot_id);
+    frames.push(server_frame(
+        MessageType::SnapshotCommit,
+        connection_generation,
+        0,
+        &commit,
+    ));
+    Ok(frames)
 }
 
 pub fn encode_protocol_error(

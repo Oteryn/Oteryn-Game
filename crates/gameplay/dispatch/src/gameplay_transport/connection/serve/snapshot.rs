@@ -264,7 +264,13 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
     let mut appearances = SessionAppearance::new(selected_capabilities);
     let mut visibility = None;
     if selected_capabilities.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES) {
-        let Some(channel) = authority.observe_visible_entities(actor).await else {
+        let Some(channel) = crate::gameplay_transport::entity_names::observe(
+            authority,
+            actor,
+            selected_capabilities,
+        )
+        .await
+        else {
             return Err(ServeEnd::Disconnected);
         };
         let mut view = SessionVisibility::with_objects(item_view.is_some())
@@ -541,7 +547,7 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
     baseline: WorldSpatialObservation,
 ) -> Result<WorldSnapshot, ServeEnd> {
     // MAP-WIRE-2: with capability 18 (which requires 4), domain 17 above every revision the
-    // session has seen, with fresh map handles. It must fit the single snapshot chunk.
+    // session has seen, with fresh map handles. It uses the bounded snapshot transfer.
     let mut world_map = None;
     let map_snapshot;
     if let Some(items) = item_view.as_mut().filter(|_| {

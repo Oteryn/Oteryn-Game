@@ -74,6 +74,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
         .map(|(kind, entry)| world_spatial::ChannelEntity {
+            display_name: None,
             health_percent: runtime
                 .companion_snapshot(entry.actor)
                 .ok()

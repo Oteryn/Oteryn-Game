@@ -209,6 +209,14 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// S-ENTNAME: the same visibility read enriched with names for capability 286.
+    fn observe_named_visible_entities(
+        &self,
+        actor: ExactActorRef,
+    ) -> impl Future<Output = Option<ChannelEntities>> {
+        self.observe_visible_entities(actor)
+    }
+
     /// VIS-3 (MOVE-RL-11 §4): every entity of the admitted actor's Channel with the actor's own
     /// identity among them, read in one Channel-owner work item, for domain 1 under capability 6.
     /// `None` when it cannot be read: a session that selected capability 6 then fails closed.
@@ -225,6 +233,7 @@ pub trait FreshAdmissionAuthority {
                 content_generation: own.content_generation,
                 observer: identity,
                 entities: vec![ChannelEntity {
+                    display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                     kind: VisibleKind::Player,
