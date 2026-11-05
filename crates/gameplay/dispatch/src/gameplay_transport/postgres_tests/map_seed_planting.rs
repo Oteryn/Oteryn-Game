@@ -1,6 +1,5 @@
 //! W19: seed USE and AddItem enter existing wire, custody, terrain and audit owners atomically.
 use super::fixture::{Harness, debug, id, run};
-use super::item_craft::exchange as use_exchange;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::ComposedFreshAdmission;
@@ -15,6 +14,29 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 use tokio::io::AsyncWriteExt;
+
+// Direct connections have no node maintenance task. Service demand from a
+// bounded pass that retired its holder before the next fixture pass.
+async fn maintain_ready(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
+    Ok(())
+}
+
+async fn use_exchange(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    current_source: Option<std::num::NonZeroU32>,
+) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    maintain_ready(owner).await?;
+    let result =
+        super::item_craft::exchange(owner, admitted, command_id, payload, current_source).await;
+    maintain_ready(owner).await?;
+    result
+}
 
 #[derive(Clone, Copy)]
 enum Case {
@@ -271,6 +293,7 @@ fn scenario(case: Case) -> TestResult {
         sqlx::query("CREATE FUNCTION test_seed_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'seed rollback probe'; END $$")
             .execute(&harness.pool).await?;
         sqlx::query(create_trigger).execute(&harness.pool).await?;
+        maintain_ready(&owner).await?;
         if dropping {
             let (_, result, _) = drop_exchange(
                 &owner,
@@ -295,6 +318,7 @@ fn scenario(case: Case) -> TestResult {
             )
             .await?;
         }
+        maintain_ready(&owner).await?;
         assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(id(71).as_slice()).fetch_one(&harness.pool).await?,i64::from(carried));
         assert_eq!(
@@ -339,6 +363,14 @@ fn scenario(case: Case) -> TestResult {
         owner.active_generation = Some(active);
         owner.movement_cells = &cells;
         deps.initialize(&owner).await;
+        // A bounded pass can retire the sole holder before the reconnect snapshot.
+        // Exercise that load-dependent state deterministically in every seed case.
+        owner.root.request_ready();
+        assert!(owner.root.maintain_ready_once().await.map_err(debug)?);
+        let holder = owner.root.try_acquire_ready().map_err(debug)?;
+        holder.close().await?;
+        owner.root.request_ready();
+        assert!(!owner.root.is_ready());
         let actual = if dropping {
             let (_, result, actual) = drop_exchange(
                 &owner,
@@ -358,6 +390,22 @@ fn scenario(case: Case) -> TestResult {
             assert_eq!(result, UseDisposition::Committed);
             actual
         };
+        if !dropping {
+            let receipt: (String, serde_json::Value, bool, String) = sqlx::query_as(
+                "SELECT recipe,outputs,consume_source,before_item->>'definition_production_key' FROM game_item_craft_records",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(
+                receipt,
+                (
+                    "oteryn:planting.crystal".into(),
+                    serde_json::json!([]),
+                    true,
+                    seed_key.clone(),
+                )
+            );
+        }
         let live:i64=sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
             .bind(&seed_key).fetch_one(&harness.pool).await?;
         assert_eq!(live, i64::from(carried) - 1);
@@ -458,12 +506,14 @@ fn scenario(case: Case) -> TestResult {
                     .into(),
                 sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
             };
+            maintain_ready(&owner).await?;
             let mut candidate = owner
                 .root
                 .freeze_map_item_mint(owner.character, owner.holder, fence, request)
                 .await
                 .map_err(debug)?;
             let permit = owner.spell_lane_permit().await.ok_or("pot lane")?;
+            maintain_ready(&owner).await?;
             let minted = owner
                 .root
                 .commit_map_item_mint(
@@ -486,6 +536,7 @@ fn scenario(case: Case) -> TestResult {
                 vec![(1, original_deadline), (2, original_deadline + 72000000)]
             );
             if ground_first {
+                maintain_ready(&owner).await?;
                 assert_eq!(
                     owner
                         .root
@@ -500,6 +551,7 @@ fn scenario(case: Case) -> TestResult {
                         .map_err(debug)?,
                     1
                 );
+                maintain_ready(&owner).await?;
                 let actual_ground = owner
                     .root
                     .read_item_loop_ground_for_scope(fence.runtime_scope)
@@ -519,6 +571,7 @@ fn scenario(case: Case) -> TestResult {
                     "a movable plant cannot become an immovable spell field"
                 );
             }
+            maintain_ready(&owner).await?;
             let movement = crate::durability::item_loop_move::LoopMoveRequest {
                 item: minted.item_instance_id,
                 count: None,
@@ -548,6 +601,7 @@ fn scenario(case: Case) -> TestResult {
                     .map_err(debug)?
                     .is_ok()
             );
+            maintain_ready(&owner).await?;
             assert_eq!(
                 owner
                     .root
@@ -562,6 +616,7 @@ fn scenario(case: Case) -> TestResult {
                     .map_err(debug)?,
                 if ground_first { 0 } else { 2 }
             );
+            maintain_ready(&owner).await?;
             assert_eq!(
                 owner
                     .root
@@ -618,6 +673,7 @@ fn scenario(case: Case) -> TestResult {
         restored.active_generation = Some(active);
         restored.movement_cells = &restored_cells;
         deps.initialize(&restored).await;
+        maintain_ready(&restored).await?;
         restored.refresh_terrain_tools().await;
         assert_eq!(restored_map.facts().pinned().object_revision(key), 1);
         if dropping {
@@ -649,6 +705,7 @@ fn scenario(case: Case) -> TestResult {
             sqlx::query("UPDATE game_terrain_tool_transforms SET decay_at_unix_ms=0")
                 .execute(&harness.pool)
                 .await?;
+            maintain_ready(&restored).await?;
             restored.refresh_terrain_tools().await;
             assert_eq!(restored_map.facts().pinned().object_revision(key), 2);
             assert!(
@@ -660,6 +717,7 @@ fn scenario(case: Case) -> TestResult {
                     .any(|entry| entry.facts.appearance_id == mature)
             );
             // The second immutable deadline restores the real empty pot after restart.
+            maintain_ready(&restored).await?;
             restored.refresh_terrain_tools().await;
             assert_eq!(restored_map.facts().pinned().object_revision(key), 3);
             assert!(
@@ -691,6 +749,7 @@ async fn drop_exchange(
     count: u8,
     expect_disconnect: bool,
 ) -> TestResult<(AdmittedSession, Option<ItemMoveOutcome>, Vec<u8>)> {
+    maintain_ready(owner).await?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
         let mut source = None;
@@ -807,6 +866,7 @@ async fn drop_exchange(
         }),
     )
     .await?;
+    maintain_ready(owner).await?;
     let ConnectionEnd::AdmittedThenDisconnected(admitted) =
         end.ok_or("drop server did not finish")?
     else {

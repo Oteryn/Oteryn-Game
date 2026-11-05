@@ -92,36 +92,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn w19_reward_effects_preserve_source_origin_and_per_reward_multiplicity() {
-        assert!(
-            effects("oteryn:item.tibia.i6570", None)
-                .expect("present")
-                .cues
-                .is_empty()
-        );
-        let tile = GroundEffect {
-            x: 6,
-            y: 0,
-            floor: 7,
-        };
-        let ground =
-            effects("oteryn:item.tibia.i6570", Some(tile.clone())).expect("ground present");
-        assert_eq!(ground.ground, Some(tile));
-        assert_eq!(ground.cues[0].effect_id, 28);
-        for (id, count, effect) in [
-            (6506, 1, 28),
-            (39704, 8, 203),
-            (39705, 13, 203),
-            (39706, 10, 203),
-            (39710, 14, 203),
-            (37461, 1, 203),
-        ] {
-            let value = effects(&format!("oteryn:item.tibia.i{id}"), None).expect("source rule");
-            assert_eq!(value.cues.len(), count);
-            assert!(value.cues.iter().all(|cue| cue.effect_id == effect));
+    fn sp04_bags_have_no_w19_route_or_presentation() {
+        for rule in crate::reward_bag::event_containers::event_container_rules().expect("catalogue")
+        {
+            let key = format!("oteryn:item.tibia.i{}", rule.item_id);
+            assert!(crate::reward_bag::is_reward_bag(&key));
+            assert!(!is_event_reward(&key));
+            assert!(!ground_output_at_source(&key));
+            assert!(effects(&key, None).is_none());
+            assert!(
+                effects(
+                    &key,
+                    Some(GroundEffect {
+                        x: 6,
+                        y: 0,
+                        floor: 7
+                    })
+                )
+                .is_none()
+            );
         }
-        assert!(ground_output_at_source("oteryn:item.tibia.i37461"));
-        assert!(!ground_output_at_source("oteryn:item.tibia.i39704"));
         assert!(!is_event_reward("oteryn:item.tibia.i3600"));
     }
 }

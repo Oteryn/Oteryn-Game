@@ -15,6 +15,9 @@ pub(super) async fn exchange_nested(
     container_definition: std::num::NonZeroU32,
     source_definition: std::num::NonZeroU32,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let exercise = async {
         let mut container = None;
@@ -130,9 +133,13 @@ pub(super) async fn exchange_nested(
     let mut exercise = std::pin::pin!(exercise);
     let mut end = None;
     let mut result = None;
+    let mut maintenance = std::pin::pin!(super::super::item_craft::maintain_ready(owner));
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         std::future::poll_fn(|context| {
+            if let Poll::Ready(result) = maintenance.as_mut().poll(context) {
+                return Poll::Ready(result);
+            }
             if end.is_none()
                 && let Poll::Ready(value) = serving.as_mut().poll(context)
             {
@@ -144,13 +151,13 @@ pub(super) async fn exchange_nested(
                 result = Some(value);
             }
             if end.is_some() && result.is_some() {
-                Poll::Ready(())
+                Poll::Ready(Ok(()))
             } else {
                 Poll::Pending
             }
         }),
     )
-    .await?;
+    .await??;
     let end = end.ok_or("nested event server did not finish")?;
     let ConnectionEnd::AdmittedThenDisconnected(next) = end else {
         return Err(format!("nested event connection: {end:?}").into());

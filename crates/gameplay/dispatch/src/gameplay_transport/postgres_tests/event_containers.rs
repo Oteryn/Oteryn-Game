@@ -238,7 +238,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
                         reward_bag_draw(*fence.game_session_id.as_bytes(), command_id, *source);
                     reward_bag_conversion(native, &bag_definition, draw).is_some_and(|plan| {
                         plan.outputs.iter().any(|(definition, count)| {
-                            definition.production_key == "oteryn:item.tibia.i6529" && *count == 1
+                            definition.production_key == "oteryn:item.tibia.i3549" && *count == 1
                         })
                     })
                 })
@@ -266,13 +266,15 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             .iter()
             .map(|(definition, count)| (definition.production_key.clone(), *count))
             .collect();
-        // Anniversary remove() burns the entire source stack for one bundle;
-        // special-box remove(1) leaves the other unit of its stack in custody.
-        let remaining_quantity = if bag_key == "oteryn:item.tibia.i39710" {
-            0
-        } else {
-            source_quantity - 1
-        };
+        let source_id = bag_key
+            .strip_prefix("oteryn:item.tibia.i")
+            .ok_or("source id")?;
+        assert_eq!(
+            expected.recipe,
+            format!("oteryn:reward-bag.event_{source_id}")
+        );
+        // SP04 consumes one unit, including anniversary boxes.
+        let remaining_quantity = source_quantity - 1;
         if remaining_quantity > 0 && !nested {
             expected_items.push((bag_key.to_string(), remaining_quantity));
         }
@@ -297,20 +299,28 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             command_id,
             item_fence: Some(fence),
         };
+        assert!(
+            owner
+                .use_reward_bag_intent(
+                    deps.actor,
+                    command(fence),
+                    &intent,
+                    Some(ItemKey::Instance(source))
+                )
+                .await
+                .map_err(debug)?
+                .is_none(),
+            "W19 pre-routing must defer to SP04"
+        );
         // Changing only the current connection generation cannot consume the source.
         let mut stale = fence;
         stale.connection_generation =
             crate::foundation::ConnectionGeneration::new(fence.connection_generation.get() + 1)
                 .map_err(debug)?;
         let refused = owner
-            .use_reward_bag_intent(
-                deps.actor,
-                command(stale),
-                &intent,
-                Some(ItemKey::Instance(source)),
-            )
+            .use_reward_bag(deps.actor, command(stale), ItemKey::Instance(source))
             .await
-            .map_err(debug)?
+            .ok_or("SP04 route")?
             .ok_or("stale result")?;
         assert_eq!(refused.disposition, UseDisposition::Rejected);
         assert_eq!(craft_count().await?, 0);
@@ -318,6 +328,30 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             "SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
         ).bind(source.as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(unchanged, (i64::from(source_quantity), 1));
+
+        if nested {
+            let before = ground::durable_state(&harness).await?;
+            let (next, result, raw) = wire::exchange_nested(
+                &owner,
+                admitted,
+                command_id,
+                &intent,
+                reference(bag).ok_or("nested bag definition")?,
+                reference(bag_key).ok_or("nested reward definition")?,
+            )
+            .await?;
+            assert_eq!(result, UseDisposition::NothingToUse);
+            assert_eq!(ground::durable_state(&harness).await?, before);
+            let (_, replayed, same) = exchange(&owner, next, command_id, &raw, None).await?;
+            assert_eq!(replayed, UseDisposition::NothingToUse);
+            assert_eq!(same, raw);
+            assert_eq!(ground::durable_state(&harness).await?, before);
+            assert_eq!(craft_count().await?, 0);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
 
         // Nineteen real, heavy native items exhaust both slots and capacity. A
         // multi-output recipe refuses slots; the one-output recipe reaches weight.
@@ -334,14 +368,9 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         }
         tx.commit().await?;
         let refused = owner
-            .use_reward_bag_intent(
-                deps.actor,
-                command(fence),
-                &intent,
-                Some(ItemKey::Instance(source)),
-            )
+            .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
             .await
-            .map_err(debug)?
+            .ok_or("SP04 route")?
             .ok_or("resource refusal")?;
         assert_eq!(
             refused.disposition,
@@ -370,6 +399,26 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             .await?;
         tx.commit().await?;
 
+        if bag_key == "oteryn:item.tibia.i6506" {
+            // A fixture has no node driver to replenish retired ready holders.
+            // Without maintenance this unknown USE outcome disconnects the wire.
+            let mut holders = Vec::new();
+            while let Ok(holder) = owner.root.try_acquire_ready() {
+                holders.push(holder);
+            }
+            for holder in holders {
+                holder.close().await?;
+            }
+            assert!(owner.root.has_ready_demand());
+            assert!(!owner.root.is_ready());
+            assert!(matches!(
+                owner
+                    .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
+                    .await,
+                Some(None)
+            ));
+            assert_eq!(craft_count().await?, 0);
+        }
         admitted.continuity.next_command_id = if nested { command_id - 1 } else { command_id };
         let (next, result, payload) = if nested {
             wire::exchange_nested(
@@ -384,7 +433,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         } else {
             exchange(&owner, admitted, command_id, &payload, reference(bag_key)).await?
         };
-        let intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+        oteryn_protocol_oteryn::world_object::decode_use_intent_target(
             next.continuity.selected_capabilities.as_slice(),
             &payload,
         )
@@ -450,17 +499,15 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         restarted.movement_cells = &cells;
         deps.initialize(&restarted).await;
         let replayed = restarted
-            .use_reward_bag_intent(deps.actor, command(fence), &intent, None)
+            .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
             .await
-            .map_err(debug)?
+            .ok_or("SP04 route")?
             .ok_or("restart replay without retired view handle")?;
         assert_eq!(replayed.disposition, UseDisposition::Committed);
-        let mut changed_intent = intent.clone();
-        changed_intent.target = UseTarget::Item(std::num::NonZeroU64::MAX);
         let changed = restarted
-            .use_reward_bag_intent(deps.actor, command(fence), &changed_intent, None)
+            .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(id(99)))
             .await
-            .map_err(debug)?
+            .ok_or("SP04 route")?
             .ok_or("changed-intent replay")?;
         assert_eq!(changed.disposition, UseDisposition::Rejected);
         let recorded_intent: Vec<u8> =
@@ -468,8 +515,9 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
                 .fetch_one(&harness.pool)
                 .await?;
         assert_eq!(
-            recorded_intent, payload,
-            "receipt binds the original wire bytes"
+            recorded_intent,
+            [b"oteryn:reward-bag-use:v1".as_slice(), source.as_slice()].concat(),
+            "SP04 receipt binds the historical instance tag"
         );
         assert_eq!(craft_count().await?, 1);
         let replay_outputs: serde_json::Value =
@@ -488,7 +536,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             let boot = durable
                 .entries
                 .iter()
-                .find(|entry| entry.item.definition.production_key == "oteryn:item.tibia.i6529")
+                .find(|entry| entry.item.definition.production_key == "oteryn:item.tibia.i3549")
                 .ok_or("source soft-boots reward")?;
             let timed_rows: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid",
@@ -539,9 +587,9 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
                 "the existing equipment clock spent the fresh reward's budget: {remaining}"
             );
             let replayed = restarted
-                .use_reward_bag_intent(deps.actor, command(fence), &intent, None)
+                .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
                 .await
-                .map_err(debug)?
+                .ok_or("SP04 route")?
                 .ok_or("timed reward replay")?;
             assert_eq!(replayed.disposition, UseDisposition::Committed);
             let after_replay: i64 = sqlx::query_scalar(

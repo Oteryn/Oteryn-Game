@@ -441,6 +441,9 @@ async fn exchange_selected_source(
     current_target: Option<std::num::NonZeroU32>,
     latest_source: bool,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
         let mut source = None;
@@ -645,9 +648,13 @@ async fn exchange_selected_source(
     let mut client_task = std::pin::pin!(client_task);
     let mut end = None;
     let mut result = None;
+    let mut maintenance = std::pin::pin!(super::item_craft::maintain_ready(owner));
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         std::future::poll_fn(|context| {
+            if let Poll::Ready(result) = maintenance.as_mut().poll(context) {
+                return Poll::Ready(result);
+            }
             if end.is_none()
                 && let Poll::Ready(value) = serving.as_mut().poll(context)
             {
@@ -659,13 +666,13 @@ async fn exchange_selected_source(
                 result = Some(value);
             }
             if end.is_some() && result.is_some() {
-                Poll::Ready(())
+                Poll::Ready(Ok(()))
             } else {
                 Poll::Pending
             }
         }),
     )
-    .await?;
+    .await??;
     let end = end.ok_or("server did not finish")?;
     let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else {
         return Err(format!("{end:?}; client_result={result:?}").into());

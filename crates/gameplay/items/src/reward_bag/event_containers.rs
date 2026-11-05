@@ -82,6 +82,11 @@ pub fn event_container_rules() -> Option<&'static [EventContainerRule]> {
 }
 
 pub fn event_container_rule(key: &str) -> Option<&'static EventContainerRule> {
+    // SP04 owns generated playable bags, including their historical receipts.
+    // Keep the captured W19 tables as evidence without claiming those sources.
+    if super::playable_bag(super::reward_bags()?, key).is_some() {
+        return None;
+    }
     let id: u32 = key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
     event_container_rules()?.iter().find(|rule| {
         rule.item_id == id && (rule.selection != Selection::Weighted || rule.item_id == 12045)
@@ -281,7 +286,24 @@ mod tests {
     use std::collections::BTreeSet;
 
     fn rule(id: u32) -> &'static EventContainerRule {
-        event_container_rule(&format!("oteryn:item.tibia.i{id}")).expect("source rule")
+        event_container_rules()
+            .expect("captured catalogue")
+            .iter()
+            .find(|rule| rule.item_id == id)
+            .expect("source rule")
+    }
+
+    #[test]
+    fn reward_bag_and_event_container_routes_have_disjoint_owners() {
+        for bag in super::super::reward_bags().expect("reward bags") {
+            if bag.playable {
+                assert!(
+                    event_container_rule(&bag.bag).is_none(),
+                    "dual owner: {}",
+                    bag.bag
+                );
+            }
+        }
     }
 
     #[test]
@@ -299,7 +321,7 @@ mod tests {
                 37463, 37465, 37466, 37467, 37468, 37469, 37614, 39704, 39705, 39706, 39710,
             ]
         );
-        assert!(event_container_rule("oteryn:item.tibia.i12045").is_some());
+        assert!(event_container_rule("oteryn:item.tibia.i12045").is_none());
         assert!(event_container_rule("oteryn:item.tibia.i21203").is_none());
         assert!(event_container_rule("oteryn:item.tibia.i3600").is_none());
         assert!(event_container_rule("oteryn:creature.tibia.i6570").is_none());
@@ -500,8 +522,12 @@ mod tests {
 
     #[test]
     fn w19_empty_container_permission_is_bound_to_the_source_table() {
-        assert!(permits_empty_container(
+        assert!(!permits_empty_container(
             "oteryn:event-container.39710",
+            "oteryn:item.tibia.i39693"
+        ));
+        assert!(super::super::is_reward_bag_output(
+            "oteryn:reward-bag.event_39710",
             "oteryn:item.tibia.i39693"
         ));
         assert!(!permits_empty_container(

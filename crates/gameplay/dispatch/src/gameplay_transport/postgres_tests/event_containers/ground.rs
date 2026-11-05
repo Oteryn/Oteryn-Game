@@ -1,6 +1,5 @@
-//! Ground reward receipts use actual map handles and the shared consume-transform owner.
+//! SP04-owned bags must not gain a W19 ground route, receipt or presentation.
 use super::*;
-use oteryn_gameplay_items::novelty_items::{GroundEffect, NoveltyPlan};
 use serde_json::Value;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -18,12 +17,12 @@ impl Case {
 }
 
 #[test]
-fn w19_ground_event_container_anniversary_atomic_inventory_bundle_and_replay() -> TestResult {
+fn w19_ground_event_container_anniversary_defers_to_sp04() -> TestResult {
     run_case(Case::Anniversary)
 }
 
 #[test]
-fn w19_ground_event_container_special_exact_cell_limit_and_replay() -> TestResult {
+fn w19_ground_event_container_special_defers_to_sp04() -> TestResult {
     run_case(Case::Special)
 }
 
@@ -178,11 +177,8 @@ fn scenario(case: Case) -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         super::super::item_look::seed_main_backpack(&harness, &[(key, 2)]).await?;
         let source = id(71);
-        let used = crate::gameplay_transport::item_look::typed_definition(
-            index,
-            reference(key).ok_or("reward source reference")?,
-        )
-        .ok_or("reward source definition")?;
+        assert!(oteryn_gameplay_items::reward_bag::is_reward_bag(key));
+        assert!(!oteryn_gameplay_items::event_items::is_event_reward(key));
         let target = {
             let runtime = owner.runtime.lock().await;
             crate::durability::item_loop_move::LoopGround::from_native_owner(
@@ -265,8 +261,8 @@ fn scenario(case: Case) -> TestResult {
         .await?;
         assert_eq!(
             refused,
-            UseDisposition::NoRoom,
-            "the actual inventory/Ground destination cannot admit an extra reward"
+            UseDisposition::StaleState,
+            "SP04 bags have no W19 ground route"
         );
         assert_eq!(
             durable_state(&harness).await?,
@@ -275,8 +271,7 @@ fn scenario(case: Case) -> TestResult {
         );
         admitted = next;
 
-        // Free exactly one real Ground root for Special. Anniversary needs all14
-        // inventory slots, so remove its seven historical slot fillers.
+        // Free the former W19 destination capacity. SP04 still has no ground route.
         let removed = if case == Case::Special {
             &fillers[..1]
         } else {
@@ -302,23 +297,7 @@ fn scenario(case: Case) -> TestResult {
         if case == Case::Special {
             assert_eq!(ground_count(&harness).await?, 63);
         }
-        let expected = oteryn_gameplay_items::event_items::plan(
-            native,
-            &used,
-            *fence.game_session_id.as_bytes(),
-            2,
-            source,
-            Some(GroundEffect {
-                x: 6,
-                y: 0,
-                floor: 7,
-            }),
-        )
-        .ok_or("admitted Ground reward plan")?;
-        assert_eq!(
-            expected.outputs.len(),
-            if case == Case::Anniversary { 14 } else { 1 }
-        );
+        let before = durable_state(&harness).await?;
         let (next, outcome, actual) = super::super::rust_lottery::exchange(
             &owner,
             admitted,
@@ -328,168 +307,55 @@ fn scenario(case: Case) -> TestResult {
             None,
         )
         .await?;
-        assert_eq!(outcome, UseDisposition::Committed);
+        assert_eq!(outcome, UseDisposition::StaleState);
+        assert_eq!(durable_state(&harness).await?, before);
+        assert_eq!(source_row(&harness).await?, source_before);
+        let retained: Value = sqlx::query_scalar("SELECT to_jsonb(g) FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(source.as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(retained, source_location);
         admitted = next;
-        verify_receipt(
-            &harness,
-            case,
-            2,
-            &expected,
-            &actual,
-            &source_before,
-            &source_location,
-        )
-        .await?;
-        let first_after = source_row(&harness).await?;
-        assert_eq!(
-            first_after["quantity"],
-            if case == Case::Anniversary { 0 } else { 1 }
-        );
-        assert_eq!(
-            first_after["lifecycle"],
-            if case == Case::Anniversary { 2 } else { 1 }
-        );
-        assert_eq!(
-            first_after["minted_transaction_id"],
-            source_before["minted_transaction_id"]
-        );
-        assert_eq!(
-            first_after["definition_production_key"],
-            source_before["definition_production_key"]
-        );
-        // The transport retains only its latest terminal result. Replay this
-        // command before accepting the next; durable replay of both receipts is
-        // checked again below after the owner restarts.
-        let first_settled = durable_state(&harness).await?;
-        let (next, replayed, same) =
+        let (_, replayed, same) =
             super::super::rust_lottery::exchange(&owner, admitted, 2, &actual, None, None).await?;
-        assert_eq!(replayed, UseDisposition::Committed);
+        assert_eq!(replayed, UseDisposition::StaleState);
         assert_eq!(same, actual);
-        admitted = next;
-        assert_eq!(durable_state(&harness).await?, first_settled);
-        let mut replays = vec![(2, actual)];
-        if case == Case::Anniversary {
-            assert_eq!(ground_count(&harness).await?, 0);
-            let children: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_item_nested_entries e JOIN game_item_instances i ON i.item_instance_id=e.parent_item_instance_id WHERE i.definition_production_key='oteryn:item.tibia.i39693') + (SELECT count(*) FROM game_item_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.parent_item_instance_id WHERE i.definition_production_key='oteryn:item.tibia.i39693')")
-                .fetch_one(&harness.pool).await?;
-            assert_eq!(children, 0, "birthday backpack39693 is minted empty");
-        } else {
-            assert_eq!(ground_count(&harness).await?, 64);
-            let retained: Value = sqlx::query_scalar("SELECT to_jsonb(g) FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
-                .bind(source.as_slice()).fetch_one(&harness.pool).await?;
-            assert_eq!(
-                retained, source_location,
-                "partial debit retains exact Ground custody"
-            );
-            let expected = oteryn_gameplay_items::event_items::plan(
-                native,
-                &used,
-                *fence.game_session_id.as_bytes(),
-                3,
-                source,
-                Some(GroundEffect {
-                    x: 6,
-                    y: 0,
-                    floor: 7,
-                }),
-            )
-            .ok_or("second Special plan")?;
-            // At64 roots qty1 must retire its actual source before reserving the
-            // one replacement root. A blanket full-cell rejection is incorrect.
-            let (next, outcome, actual) = super::super::rust_lottery::exchange(
-                &owner,
-                admitted,
-                3,
-                &payload,
-                reference(key),
-                None,
-            )
-            .await?;
-            assert_eq!(
-                outcome,
-                UseDisposition::Committed,
-                "retiring source frees its one actual root"
-            );
-            admitted = next;
-            verify_receipt(
-                &harness,
-                case,
-                3,
-                &expected,
-                &actual,
-                &first_after,
-                &source_location,
-            )
-            .await?;
-            assert_eq!(ground_count(&harness).await?, 64);
-            let source = source_row(&harness).await?;
-            assert_eq!(source["quantity"], 0);
-            assert_eq!(source["lifecycle"], 2);
-            let second_settled = durable_state(&harness).await?;
-            let (next, replayed, same) =
-                super::super::rust_lottery::exchange(&owner, admitted, 3, &actual, None, None)
-                    .await?;
-            assert_eq!(replayed, UseDisposition::Committed);
-            assert_eq!(same, actual);
-            admitted = next;
-            assert_eq!(durable_state(&harness).await?, second_settled);
-            replays.push((3, actual));
-        }
-        let expected_receipts = if case == Case::Anniversary { 1 } else { 2 };
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>(
-                "SELECT count(*) FROM game_item_consume_transform_records"
-            )
-            .fetch_one(&harness.pool)
-            .await?,
-            expected_receipts
-        );
-        assert_eq!(
-            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
-                .fetch_one(&harness.pool)
-                .await?,
-            0
-        );
-        let settled = durable_state(&harness).await?;
+        assert_eq!(durable_state(&harness).await?, before);
         drop(owner);
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
         restarted.movement_cells = &cells;
         restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&bundle_room));
         deps.initialize(&restarted).await;
-        for (command, raw) in &replays {
-            let original = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
-                admitted.continuity.selected_capabilities.as_slice(),
-                raw,
-            )
-            .map_err(debug)?;
-            let request = UseCommand {
-                game_session_id: fence.game_session_id,
-                command_id: *command,
-                item_fence: Some(fence),
-            };
-            let replayed = restarted
-                .use_event_item(deps.actor, request, original.clone(), None, false)
+        let request = UseCommand {
+            game_session_id: fence.game_session_id,
+            command_id: 3,
+            item_fence: Some(fence),
+        };
+        assert!(
+            restarted
+                .use_event_item(
+                    deps.actor,
+                    request,
+                    intent.clone(),
+                    Some(ItemKey::Instance(source)),
+                    false
+                )
                 .await
-                .map_err(|_| "Ground reward restart replay unavailable")?
-                .ok_or("Ground reward immutable receipt")?;
-            assert_eq!(replayed.disposition, UseDisposition::Committed);
-            let mut changed = original;
-            changed.target = UseTarget::Item(std::num::NonZeroU64::MAX);
-            let refused = restarted
-                .use_event_item(deps.actor, request, changed, None, false)
-                .await
-                .map_err(|_| "Ground reward conflict unavailable")?
-                .ok_or("Ground reward intent conflict")?;
-            assert_eq!(refused.disposition, UseDisposition::Rejected);
-        }
-        assert_eq!(
-            durable_state(&harness).await?,
-            settled,
-            "restart/raw-intent replay preserves exact receipts, output UUIDs and custody"
+                .map_err(|_| "restarted W19 ground probe")?
+                .is_none()
         );
+        assert!(
+            restarted
+                .use_reward_bag(deps.actor, request, ItemKey::Instance(source))
+                .await
+                .is_none()
+        );
+        assert_eq!(durable_state(&harness).await?, before);
+        let counts: (i64, i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_item_consume_transform_records), (SELECT count(*) FROM game_item_craft_records), (SELECT count(*) FROM game_item_audit_outbox)",
+        ).fetch_one(&harness.pool).await?;
+        assert_eq!(counts, (0, 0, 0), "no ground receipts or audit rows");
         eprintln!(
-            "W19 POSTGRES_CASE_COMPLETED ground_reward case={case:?} source_kind=3 real_map_handle=true refusal=true replay=true"
+            "W19 POSTGRES_CASE_COMPLETED mode=POSTGRES ground_reward case={case:?} sp04_owner=true refusal=true replay=true"
         );
         drop(restarted);
         drop(authority);
@@ -508,110 +374,7 @@ async fn ground_count(h: &Harness) -> TestResult<i64> {
         .fetch_one(&h.pool).await?)
 }
 
-async fn durable_state(h: &Harness) -> TestResult<Value> {
+pub(super) async fn durable_state(h: &Harness) -> TestResult<Value> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_object('items',(SELECT coalesce(jsonb_agg(to_jsonb(i) ORDER BY item_instance_id),'[]') FROM game_item_instances i),'ground',(SELECT coalesce(jsonb_agg(to_jsonb(g) ORDER BY item_instance_id),'[]') FROM game_item_ground_locations g),'carried',(SELECT coalesce(jsonb_agg(to_jsonb(e) ORDER BY item_instance_id),'[]') FROM game_item_container_entries e),'nested',(SELECT coalesce(jsonb_agg(to_jsonb(e) ORDER BY item_instance_id),'[]') FROM game_item_nested_entries e),'receipts',(SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY command_id),'[]') FROM game_item_consume_transform_records r),'craft',(SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY command_id),'[]') FROM game_item_craft_records r),'audit',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY event_id),'[]') FROM game_item_audit_outbox a))")
         .fetch_one(&h.pool).await?)
-}
-
-async fn verify_receipt(
-    h: &Harness,
-    case: Case,
-    command: u64,
-    expected: &NoveltyPlan,
-    raw: &[u8],
-    source_before: &Value,
-    source_location: &Value,
-) -> TestResult {
-    let record: Value = sqlx::query_scalar("SELECT to_jsonb(r) FROM game_item_consume_transform_records r WHERE command_id=$1::text::numeric")
-        .bind(command.to_string()).fetch_one(&h.pool).await?;
-    assert_eq!(record["source_kind"], 3);
-    assert_eq!(record["recipe"], expected.recipe);
-    assert_eq!(
-        record["source_count"],
-        if case == Case::Anniversary { 2 } else { 1 }
-    );
-    assert_eq!(&record["before_item"], source_before);
-    assert_eq!(&record["source_location"], source_location);
-    assert_eq!(record["effects"], expected.effects);
-    assert_eq!(
-        record["parent_item_instance_id"].is_null(),
-        case == Case::Special
-    );
-    let (source, intent, hash_ok): (Vec<u8>, Vec<u8>, bool) = sqlx::query_as("SELECT uuid_send(r.source_item_instance_id),r.intent,a.envelope_sha256=sha256(a.envelope) AND a.envelope_sha256=r.envelope_sha256 FROM game_item_consume_transform_records r JOIN game_item_audit_outbox a USING(event_id) WHERE r.command_id=$1::text::numeric")
-        .bind(command.to_string()).fetch_one(&h.pool).await?;
-    assert_eq!(source.as_slice(), id(71).as_slice());
-    assert_eq!(intent, raw);
-    assert!(hash_ok);
-    let outputs = record["outputs"]
-        .as_array()
-        .ok_or("reward receipt outputs")?;
-    assert_eq!(outputs.len(), expected.outputs.len());
-    let mut expected_items: Vec<_> = expected
-        .outputs
-        .iter()
-        .map(|(definition, count)| (definition.production_key.clone(), i64::from(*count)))
-        .collect();
-    let mut actual_items = Vec::new();
-    for output in outputs {
-        let uuid = output["item"].as_str().ok_or("output UUID")?;
-        let (item, ground, carried): (Value, Option<Value>, Option<Value>) = sqlx::query_as(
-            "SELECT to_jsonb(i),(SELECT to_jsonb(g) FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id),(SELECT to_jsonb(e) FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=$1::uuid",
-        ).bind(uuid).fetch_one(&h.pool).await?;
-        assert_eq!(item["minted_transaction_id"], record["transaction_id"]);
-        assert_eq!(item["definition_production_key"], output["key"]);
-        assert_eq!(item["definition_revision_ref"], output["revision"]);
-        assert_eq!(item["quantity"], output["count"]);
-        assert_eq!(item["lifecycle"], 1);
-        assert_ne!(item["item_instance_id"], record["source_item_instance_id"]);
-        let ordinal: i64 = output["ordinal"]
-            .as_str()
-            .ok_or("output ordinal")?
-            .parse()?;
-        if case == Case::Special {
-            assert!(carried.is_none());
-            let ground = ground.ok_or("actual Ground reward custody")?;
-            for field in [
-                "world_id",
-                "channel_id",
-                "runtime_scope_ownership_generation",
-                "spatial_position",
-                "corpse_ref",
-                "map_revision",
-                "content_revision",
-                "native_room_placement_context",
-            ] {
-                assert_eq!(
-                    ground[field], source_location[field],
-                    "Ground output field {field}"
-                );
-            }
-            assert_eq!(ground["stack_ordinal"].as_i64(), Some(ordinal));
-            assert!(
-                ordinal
-                    > source_location["stack_ordinal"]
-                        .as_i64()
-                        .ok_or("source ordinal")?
-            );
-        } else {
-            assert!(ground.is_none());
-            let carried = carried.ok_or("actual inventory reward custody")?;
-            assert_eq!(carried["character_id"], record["character_id"]);
-            assert_eq!(
-                carried["parent_item_instance_id"],
-                record["parent_item_instance_id"]
-            );
-            assert_eq!(carried["placement_ordinal"].as_i64(), Some(ordinal));
-        }
-        actual_items.push((
-            item["definition_production_key"]
-                .as_str()
-                .ok_or("reward key")?
-                .to_owned(),
-            item["quantity"].as_i64().ok_or("reward count")?,
-        ));
-    }
-    expected_items.sort();
-    actual_items.sort();
-    assert_eq!(actual_items, expected_items);
-    Ok(())
 }
