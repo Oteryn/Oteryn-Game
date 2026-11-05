@@ -7,6 +7,9 @@ use oteryn_session::property_services::mail::{self, MailIntent};
 pub(in crate::play) struct Panels {
     pub appearance: oteryn_client_ui::appearance::Panel,
     pub charm_progression: oteryn_client_ui::charm_progression::Panel,
+    pub container_sort: oteryn_client_ui::container_sort::Panel,
+    pub guild_war: oteryn_client_ui::guild_war::Panel,
+    pub player_report: oteryn_client_ui::player_report::Panel,
     pub pvp_expert: oteryn_client_ui::pvp_expert::Panel,
     pub mail: Panel,
     pub house_podium: oteryn_client_ui::house_podium::Panel,
@@ -15,6 +18,18 @@ pub(in crate::play) struct Panels {
 }
 impl Panels {
     pub fn end(&mut self) {
+        self.container_sort = oteryn_client_ui::container_sort::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.guild_war = oteryn_client_ui::guild_war::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.player_report = oteryn_client_ui::player_report::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
         for (open, pending, feedback) in [
             (
                 &mut self.mail.open,
@@ -62,6 +77,18 @@ impl Panels {
 impl Outbox {
     pub(in crate::play) fn properties_initialize<T: Stepper>(&self, session: &T) {
         let mut shared = lock(&self.0);
+        shared.properties.container_sort = oteryn_client_ui::container_sort::Panel {
+            selected: session.feature_selected(146),
+            ..Default::default()
+        };
+        shared.properties.guild_war = oteryn_client_ui::guild_war::Panel {
+            selected: session.feature_selected(103),
+            ..Default::default()
+        };
+        shared.properties.player_report = oteryn_client_ui::player_report::Panel {
+            selected: session.feature_selected(76),
+            ..Default::default()
+        };
         shared.properties.appearance = oteryn_client_ui::appearance::Panel {
             selected: session.feature_selected(25),
             ..Default::default()
@@ -106,12 +133,27 @@ impl Outbox {
                 command,
                 result,
             ),
+            76 => super::super::feature_0076_player_report::protocol::apply(
+                &mut shared.properties.player_report,
+                command,
+                result,
+            ),
             87 => super::super::feature_0087_pvp_expert::protocol::apply(
                 &mut shared.properties.pvp_expert,
                 command,
                 result,
             ),
+            103 => super::super::feature_0103_guild_war::protocol::apply(
+                &mut shared.properties.guild_war,
+                command,
+                result,
+            ),
             115 => apply(&mut shared.properties.mail, command, result),
+            146 => super::super::feature_0146_container_sort::protocol::apply(
+                &mut shared.properties.container_sort,
+                command,
+                result,
+            ),
             150 => super::super::feature_0150_house_podium::protocol::apply(
                 &mut shared.properties.house_podium,
                 command,
