@@ -118,6 +118,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // C78 adds 8 (live achievement notices).
     // C89 adds server-save countdown notices (75, domain 40).
     // P-C01 already advertises 67 (charm progression) and 87 (PvP expert).
+    // P-C05 exposes the existing 117 routes (133, 169, 178-180, 340, 491); no table change.
     // P-C06 adds 39, 57 and 134; their prerequisites 4, 6 and 42 are already advertised.
     // P-C03 adds 97 (character info) and 149 (raid schedule query).
     // P-C04 adds 59 (house move-out), 86 (house transfer) and 99 (guildhall).

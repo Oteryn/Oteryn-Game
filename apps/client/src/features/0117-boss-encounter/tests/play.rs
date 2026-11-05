@@ -105,3 +105,6 @@ fn boss_encounter_play_input_queries_and_displays_server_snapshot() -> Result<()
         .join()
         .map_err(|_| "boss status test thread panicked")?
 }
+
+#[path = "activity.rs"]
+mod activity;
