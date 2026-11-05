@@ -29,7 +29,8 @@ impl Stepper for Peer {
             command_id: 1,
             server_sequence: 1,
             status: CommandStatus::Accepted,
-            payload: vec![8, 100, 34, 7, 10, 3, b'a', b':', b'b', 16, 3, 40, 5],
+            payload: vec![8, 100, 34, 7, 10, 3, b'a', b':', b'b', 16, 3, 40, 5,
+                58, 8, 8, 5, 16, 3, 24, 15, 32, 1],
         })
     }
     async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {
@@ -92,10 +93,13 @@ fn boss_encounter_play_input_queries_and_displays_server_snapshot() -> Result<()
                 let text = panel_text(&link.boss_encounter_panel());
                 assert!(text.contains("a:b: 3 kills"));
                 assert!(text.contains("Boss points: 5"));
+                assert!(text.contains("Soul War taints: 5"));
+                assert!(text.contains("Rotten Blood taints: 3; final taint: yes"));
+                assert!(text.contains("Rotten Blood bosses defeated: Ichgahal Murcion Vemiath Chagorz"));
                 assert!(link.boss_encounter_panel().open);
                 assert_eq!(
                     *commands.lock().unwrap_or_else(PoisonError::into_inner),
-                    vec![(133, vec![])]
+                    vec![(133, vec![16, 1])]
                 );
                 drop(link);
                 task.await?;
