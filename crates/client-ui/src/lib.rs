@@ -2,6 +2,8 @@
 
 #[path = "features/0025-appearance/mod.rs"]
 pub mod appearance;
+#[path = "features/0097-character-info/mod.rs"]
+pub mod character_info;
 #[path = "features/0067-bestiary-charm-progression/mod.rs"]
 pub mod charm_progression;
 #[path = "features/0146-container-sort/mod.rs"]
@@ -18,6 +20,8 @@ pub mod mail;
 pub mod player_report;
 #[path = "features/0087-pvp-expert/mod.rs"]
 pub mod pvp_expert;
+#[path = "features/0149-raid-schedule/mod.rs"]
+pub mod raid_schedule;
 #[path = "features/0054-training/mod.rs"]
 pub mod training;
 
