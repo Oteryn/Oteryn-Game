@@ -6,6 +6,9 @@ impl PlayView {
     /// A click on `tile`: a drawn object or actor is selected, any other tile becomes the walk
     /// goal.
     pub fn click(&mut self, tile: TileCoord) -> Result<(), BatchError> {
+        if self.death.dead {
+            return Ok(());
+        }
         match self.scene.select_tile(tile)? {
             None => self.walk_to(tile),
             Some(Targetable {

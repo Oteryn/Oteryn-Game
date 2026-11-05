@@ -365,6 +365,8 @@ pub async fn run_session<T: Stepper>(
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
         let ended = super::feature_0011_world_interaction::protocol::dispatch! {
             commands.try_recv(), session, outbox, held, publish;
+        let ended = super::feature_local_account_achievements::protocol::dispatch! {
+            outbox.death_command(&mut commands), session, outbox, held, publish;
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {

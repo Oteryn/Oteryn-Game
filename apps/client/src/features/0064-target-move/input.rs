@@ -16,6 +16,9 @@ impl PlayView {
 impl PlayLink {
     pub(in crate::play) fn request_target_walk(&self, position: ActorPosition) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        if mailbox.world_input_blocked() {
+            return true;
+        }
         if mailbox.target_walk.pending {
             return false;
         }

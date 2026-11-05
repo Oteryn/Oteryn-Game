@@ -32,6 +32,7 @@ impl PlayView {
         self.advance_presentation(std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;
         self.world_context_feedback = link.world_context_feedback();
+        self.project_death(link).map_err(|_error| UNAVAILABLE)?;
         self.vitals = link.actor_vitals();
         self.target_walk_feedback = link.target_walk_feedback();
         // One chronological queue: each input goes out in the order it was given. A step still
