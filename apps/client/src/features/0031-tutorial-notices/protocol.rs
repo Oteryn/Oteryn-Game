@@ -1,6 +1,16 @@
-use crate::play::{Outbox, Pushed, mailbox::lock};
+use crate::combat_input::PlayCommand;
+use crate::play::{Outbox, Pushed, Stepper, mailbox::lock};
 use oteryn_client_runtime::tutorial_notices::{self, ServerSaveCountdown, TutorialNotice};
 use oteryn_session::AppliedDelta;
+/// Initialize transient notices before entering the shared session loop.
+pub async fn run_session<T: Stepper>(
+    session: T,
+    commands: tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
+    outbox: Outbox,
+) {
+    outbox.notices_initialize(session.feature_selected(31), session.feature_selected(75));
+    crate::play::session_loop::run_session(session, commands, outbox).await;
+}
 impl Outbox {
     pub(in crate::play) fn notices_initialize(&self, tutorial: bool, save: bool) {
         let mut mailbox = lock(&self.0);

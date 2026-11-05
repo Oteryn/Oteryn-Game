@@ -163,9 +163,10 @@ include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 pub use end::{PlayEnd, public_class};
 use feature_0013_paced_movement::protocol::step_direction;
 pub use feature_0021_logout::protocol::logout_refusal_text;
+pub use feature_0031_tutorial_notices::protocol::run_session;
 pub use feature_0092_zones_nologout::state::ServerMessageInbox;
 pub use mailbox::{Outbox, PlayEvent, PlayLink, Pushed, play_channel};
-pub use session_loop::{Stepper, run_session};
+pub use session_loop::Stepper;
 
 #[cfg(test)]
 mod tests;
