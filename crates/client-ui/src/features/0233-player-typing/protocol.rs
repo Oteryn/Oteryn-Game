@@ -12,7 +12,10 @@ pub fn request(panel: &mut PlayerTypingPanel, typing: bool) -> Option<PlayerTypi
     }
     panel.pending = true;
     panel.feedback = None;
-    Some(PlayerTypingCommand { typing })
+    Some(PlayerTypingCommand {
+        typing,
+        origin: PlayerTypingOrigin::Manual,
+    })
 }
 
 pub fn apply_result(
@@ -20,15 +23,25 @@ pub fn apply_result(
     command: PlayerTypingCommand,
     response: PlayerTypingResponse,
 ) {
-    panel.pending = false;
-    if matches!(
+    let accepted = matches!(
         response.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
-        panel.own_typing = command.typing;
-        panel.feedback = None;
-    } else {
-        panel.feedback = Some("The server refused the typing state");
+    );
+    match command.origin {
+        PlayerTypingOrigin::Composer => {
+            if accepted {
+                panel.own_typing = command.typing;
+            }
+        }
+        PlayerTypingOrigin::Manual => {
+            panel.pending = false;
+            if accepted {
+                panel.own_typing = command.typing;
+                panel.feedback = None;
+            } else {
+                panel.feedback = Some("The server refused the typing state");
+            }
+        }
     }
 }
 

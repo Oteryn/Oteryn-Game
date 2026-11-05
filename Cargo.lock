@@ -2913,6 +2913,7 @@ version = "0.1.0"
 dependencies = [
  "oteryn-client",
  "oteryn-client-domain",
+ "oteryn-client-runtime",
  "oteryn-client-simulation",
  "oteryn-client-ui",
  "oteryn-dev-client",

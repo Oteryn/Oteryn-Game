@@ -2,7 +2,7 @@ use crate::play::{Outbox, mailbox::lock};
 pub use oteryn_client_runtime::player_typing::{PlayerTypingCommand, PlayerTypingResponse};
 impl Outbox {
     pub(in crate::play) fn player_typing_initialize(&self, selected: bool) {
-        lock(&self.0).player_typing.selected = selected;
+        lock(&self.0).player_typing.initialize(selected);
     }
     pub(in crate::play) fn player_typing_result(
         &self,
