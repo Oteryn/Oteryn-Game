@@ -68,7 +68,7 @@ pub fn request(panel: &mut BossEncounterPanel, intent: Intent) -> Option<Feature
         }
         _ => return None,
     };
-    let command = boss_encounter::query(after)?;
+    let command = boss_encounter::query_taints(after)?;
     panel.pending = true;
     panel.pending_kind = command.kind;
     panel.feedback = None;
