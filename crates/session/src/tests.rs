@@ -177,6 +177,8 @@ include!("session_tests_recovery.rs");
 include!("session_tests_combat_logout.rs");
 include!("session_tests_vitals.rs");
 include!("session_tests_capabilities.rs");
+#[path = "property_services/house_transfer_tests.rs"]
+mod pc04_house_transfer;
 include!("session_tests_capability_movement.rs");
 include!("session_tests_capability_native.rs");
 include!("session_tests_push.rs");

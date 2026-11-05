@@ -19,6 +19,21 @@ pub mod world_interaction;
 #[path = "features/0015-item-use/protocol.rs"]
 pub mod item_use;
 
+#[path = "features/0097-character-info/protocol.rs"]
+pub mod character_info_panel;
+#[path = "features/0146-container-sort/protocol.rs"]
+pub mod container_sort;
+#[path = "features/0103-guild-war/protocol.rs"]
+pub mod guild_war;
+#[path = "features/0099-guildhall/protocol.rs"]
+pub mod guildhall;
+#[path = "features/0059-house-move-out/protocol.rs"]
+pub mod house_move_out;
+#[path = "features/0086-house-transfer/protocol.rs"]
+pub mod house_transfer;
+#[path = "features/0076-player-report/protocol.rs"]
+pub mod player_report;
+
 pub mod connection;
 #[path = "features/0037-depot/protocol.rs"]
 pub mod depot;
@@ -27,6 +42,8 @@ pub mod discovery;
 pub mod hotkey_equip;
 #[path = "features/0003-npc-service/protocol.rs"]
 pub mod npc_dialogue;
+#[path = "features/0149-raid-schedule/protocol.rs"]
+pub mod raid_schedule;
 #[path = "features/0053-world-event/protocol.rs"]
 pub mod world_event;
 #[path = "features/0019-world-light/protocol.rs"]

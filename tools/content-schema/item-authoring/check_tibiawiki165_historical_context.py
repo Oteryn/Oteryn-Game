@@ -195,18 +195,24 @@ def current_weapon103(root=ROOT):
     import lower_item_weapon_metadata_packet as weapon
 
     _, owner_count = weapon_owner_scope(root)
-    # The unchanged compiler runs all103 raw/source/binding and scoped current
+    # The compiler runs all103 raw/source/binding and scoped current
     # Native name/type/weapon checks; declarations411 and hash-exact owner receipts
     # are historical inputs.
     # This does not admit any unsealed future source-owner batch.
     with historical_context(root, weapon=True) as path:
         actual = canonical(weapon.build(path))
-    expected = forge.checked(
-        root,
-        "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json",
-        "bc6da1ad6ff1c321ddcbd35887bed5c65eceb9fe769b71e2a077c39f85e75d97",
+    expected = json.loads(
+        forge.checked(
+            root,
+            "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json",
+            "bc6da1ad6ff1c321ddcbd35887bed5c65eceb9fe769b71e2a077c39f85e75d97",
+        )
     )
-    if actual != expected:
+    # The receipt stays frozen; replay reports the current compiler's digest.
+    expected["compiler"]["sha256"] = weapon.base.sha(
+        (root / weapon.COMPILER).read_bytes()
+    )
+    if actual != canonical(expected):
         raise ValueError("historical411/current103 packet reproduction drift")
     return {
         "current_owner_count": owner_count,

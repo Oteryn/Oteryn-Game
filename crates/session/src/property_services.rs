@@ -5,6 +5,23 @@ pub use oteryn_protocol_oteryn::{
     loop_training, mail, pvp_expert,
 };
 
+pub use oteryn_protocol_oteryn::house_move_out;
+#[path = "property_services/house_handoff.rs"]
+mod house_handoff;
+#[path = "property_services/house_transfer.rs"]
+pub mod house_transfer;
+pub mod guildhall {
+    pub use oteryn_protocol_oteryn::guild::{
+        GuildIntentResult, decode_guild_intent_result, encode_guild_intent_result,
+    };
+    pub use oteryn_protocol_oteryn::house::{
+        CAPABILITY_GUILDHALL_V1, COMMAND_TYPE_GUILDHALL_LEADERSHIP, GuildhallLeadershipIntent,
+        decode_guildhall_leadership, encode_guildhall_leadership,
+    };
+}
+
+pub use oteryn_protocol_oteryn::{container_sort, guild_war, player_report};
+
 pub fn offline_payload(target: ItemHandle) -> Vec<u8> {
     let mut out = vec![8];
     varint(&mut out, target.get());
@@ -77,3 +94,7 @@ pub fn training_result(bytes: &[u8]) -> Option<loop_training::TrainingResult> {
     loop_training::encode_training_result(result).ok()?;
     Some(result)
 }
+
+#[path = "features/0097-character-info/protocol.rs"]
+pub mod character_info;
+pub use oteryn_protocol_oteryn::raid_schedule;

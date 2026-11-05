@@ -7,6 +7,14 @@ use oteryn_session::property_services::mail::{self, MailIntent};
 pub(in crate::play) struct Panels {
     pub appearance: oteryn_client_ui::appearance::Panel,
     pub charm_progression: oteryn_client_ui::charm_progression::Panel,
+    pub character_info: oteryn_client_ui::character_info::Panel,
+    pub raid_schedule: oteryn_client_ui::raid_schedule::Panel,
+    pub container_sort: oteryn_client_ui::container_sort::Panel,
+    pub guild_war: oteryn_client_ui::guild_war::Panel,
+    pub guildhall: oteryn_client_ui::guildhall::Panel,
+    pub house_move_out: oteryn_client_ui::house_move_out::Panel,
+    pub house_transfer: oteryn_client_ui::house_transfer::Panel,
+    pub player_report: oteryn_client_ui::player_report::Panel,
     pub pvp_expert: oteryn_client_ui::pvp_expert::Panel,
     pub mail: Panel,
     pub house_podium: oteryn_client_ui::house_podium::Panel,
@@ -15,6 +23,38 @@ pub(in crate::play) struct Panels {
 }
 impl Panels {
     pub fn end(&mut self) {
+        self.raid_schedule = oteryn_client_ui::raid_schedule::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.character_info = oteryn_client_ui::character_info::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.guildhall = oteryn_client_ui::guildhall::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.house_transfer = oteryn_client_ui::house_transfer::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.house_move_out = oteryn_client_ui::house_move_out::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.container_sort = oteryn_client_ui::container_sort::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.guild_war = oteryn_client_ui::guild_war::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.player_report = oteryn_client_ui::player_report::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
         for (open, pending, feedback) in [
             (
                 &mut self.mail.open,
@@ -62,6 +102,38 @@ impl Panels {
 impl Outbox {
     pub(in crate::play) fn properties_initialize<T: Stepper>(&self, session: &T) {
         let mut shared = lock(&self.0);
+        shared.properties.character_info = oteryn_client_ui::character_info::Panel {
+            selected: session.feature_selected(97),
+            ..Default::default()
+        };
+        shared.properties.raid_schedule = oteryn_client_ui::raid_schedule::Panel {
+            selected: session.feature_selected(149),
+            ..Default::default()
+        };
+        shared.properties.container_sort = oteryn_client_ui::container_sort::Panel {
+            selected: session.feature_selected(146),
+            ..Default::default()
+        };
+        shared.properties.guild_war = oteryn_client_ui::guild_war::Panel {
+            selected: session.feature_selected(103),
+            ..Default::default()
+        };
+        shared.properties.house_move_out = oteryn_client_ui::house_move_out::Panel {
+            selected: session.feature_selected(59),
+            ..Default::default()
+        };
+        shared.properties.house_transfer = oteryn_client_ui::house_transfer::Panel {
+            selected: session.feature_selected(86),
+            ..Default::default()
+        };
+        shared.properties.guildhall = oteryn_client_ui::guildhall::Panel {
+            selected: session.feature_selected(99),
+            ..Default::default()
+        };
+        shared.properties.player_report = oteryn_client_ui::player_report::Panel {
+            selected: session.feature_selected(76),
+            ..Default::default()
+        };
         shared.properties.appearance = oteryn_client_ui::appearance::Panel {
             selected: session.feature_selected(25),
             ..Default::default()
@@ -101,8 +173,23 @@ impl Outbox {
                 command,
                 result,
             ),
+            59 => super::super::feature_0059_house_move_out::protocol::apply(
+                &mut shared.properties.house_move_out,
+                command,
+                result,
+            ),
             67 => super::super::feature_0067_bestiary_charm_progression::protocol::apply(
                 &mut shared.properties.charm_progression,
+                command,
+                result,
+            ),
+            76 => super::super::feature_0076_player_report::protocol::apply(
+                &mut shared.properties.player_report,
+                command,
+                result,
+            ),
+            86 => super::super::feature_0086_house_transfer::protocol::apply(
+                &mut shared.properties.house_transfer,
                 command,
                 result,
             ),
@@ -111,7 +198,32 @@ impl Outbox {
                 command,
                 result,
             ),
+            97 => super::super::feature_0097_character_info::protocol::apply(
+                &mut shared.properties.character_info,
+                command,
+                result,
+            ),
+            99 => super::super::feature_0099_guildhall::protocol::apply(
+                &mut shared.properties.guildhall,
+                command,
+                result,
+            ),
+            103 => super::super::feature_0103_guild_war::protocol::apply(
+                &mut shared.properties.guild_war,
+                command,
+                result,
+            ),
             115 => apply(&mut shared.properties.mail, command, result),
+            146 => super::super::feature_0146_container_sort::protocol::apply(
+                &mut shared.properties.container_sort,
+                command,
+                result,
+            ),
+            149 => super::super::feature_0149_raid_schedule::protocol::apply(
+                &mut shared.properties.raid_schedule,
+                command,
+                result,
+            ),
             150 => super::super::feature_0150_house_podium::protocol::apply(
                 &mut shared.properties.house_podium,
                 command,
