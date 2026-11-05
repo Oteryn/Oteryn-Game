@@ -9,6 +9,8 @@ mod depot_map_tests;
 mod item_movement_tests;
 #[path = "quest_log_transport/tests.rs"]
 mod quest_log_tests;
+#[path = "tests/replacement_snapshot.rs"]
+mod replacement_snapshot_tests;
 #[path = "features/0064-target-move/tests.rs"]
 mod target_move_tests;
 include!("tutorial_notices_tests.rs");

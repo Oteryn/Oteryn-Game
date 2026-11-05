@@ -115,6 +115,7 @@ super::feature_0014_container_tree::protocol::session_trait! {
     ) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn visible_appearances(&self) -> Vec<oteryn_session::VisibleAppearance> { Vec::new() }
     fn task_board_selected(&self) -> bool {
         false
     }

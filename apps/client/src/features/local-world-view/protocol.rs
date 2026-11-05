@@ -28,3 +28,32 @@ impl crate::play::Outbox {
             .map(Box::new);
     }
 }
+
+/// A replacement discards every tile from the old window, including overlapping coordinates.
+pub(in crate::play) fn world_map_snapshot(
+    pushed: &mut Pushed,
+    snapshot: AppliedDelta<WorldMapViewSnapshot>,
+) {
+    pushed.own = Some(snapshot.value.header.origin);
+    pushed.map = Some(Box::new(snapshot.value));
+}
+
+impl crate::play::mailbox::Mailbox {
+    /// Retain the current window across polls, while reducing replacements in wire order.
+    pub(in crate::play) fn coalesce_events(&mut self, events: Vec<oteryn_session::SessionEvent>) {
+        use oteryn_session::SessionEvent;
+        let has_map = events.iter().any(|event| {
+            matches!(
+                event,
+                SessionEvent::WorldMap(_) | SessionEvent::WorldMapSnapshot(_)
+            )
+        });
+        if has_map && self.pushed.map.is_none() {
+            self.pushed.map = self.map.clone();
+        }
+        crate::play::coalesce_pushed(&mut self.pushed, events);
+        if has_map {
+            self.map = self.pushed.map.clone();
+        }
+    }
+}

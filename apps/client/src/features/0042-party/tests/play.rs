@@ -8,6 +8,7 @@ fn world_party_target_uses_live_player_kind_floor_and_generation() -> Result<(),
         ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
     };
     let player = WorldSpatialEntity {
+        display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {
             identity: [4; 16],

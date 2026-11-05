@@ -15,7 +15,6 @@ use tokio::sync::mpsc::UnboundedReceiver;
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 pub use super::stepper::Stepper;
-
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
     mut session: T,

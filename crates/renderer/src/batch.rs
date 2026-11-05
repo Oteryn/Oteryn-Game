@@ -1086,3 +1086,6 @@ mod tests {
         Ok(())
     }
 }
+
+#[path = "name_text.rs"]
+pub mod name_text;
