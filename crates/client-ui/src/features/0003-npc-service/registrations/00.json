@@ -1,0 +1,15 @@
+{
+  "mechanic": "0003-npc-service",
+  "kind": "handlers",
+  "id": "0003-npc-service-talk",
+  "status": "supported",
+  "commands": [
+    7
+  ],
+  "capability": 3,
+  "direction": "client_to_server",
+  "entry": "mod.rs::request",
+  "not_applicable": {
+    "settings": "No local settings."
+  }
+}

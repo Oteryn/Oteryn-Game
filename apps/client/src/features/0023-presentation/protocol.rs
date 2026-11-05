@@ -7,6 +7,12 @@ pub(in crate::play) fn presentation(
     delta: AppliedDelta<Vec<PresentationEvent>>,
 ) {
     for event in delta.value {
+        if matches!(
+            event.kind,
+            PresentationEventKind::ValueText { .. } | PresentationEventKind::MagicEffect { .. }
+        ) {
+            absorb_visuals(&mut pushed.visuals, [event.kind]);
+        }
         if let PresentationEventKind::Sound {
             cue_id,
             source,
@@ -20,5 +26,17 @@ pub(in crate::play) fn presentation(
                 }
             }
         }
+    }
+}
+
+/// Keep transient visuals bounded even when the shell stops polling.
+pub(in crate::play) fn absorb_visuals(
+    pending: &mut Vec<PresentationEventKind>,
+    newer: impl IntoIterator<Item = PresentationEventKind>,
+) {
+    for cue in newer {
+        pending.push(cue);
+        let excess = pending.len().saturating_sub(super::state::MAX_VISUAL_CUES);
+        pending.drain(..excess);
     }
 }

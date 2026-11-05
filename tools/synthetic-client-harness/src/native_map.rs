@@ -89,6 +89,15 @@ fn native_live_map_snapshot_then_delta_changes_the_scene_and_item_selection()
                     let empty_sprites = view.scene().sprites().len();
                     view.set_live_map(&initial)?;
                     assert!(view.scene().sprites().len() > empty_sprites);
+                    assert_eq!(
+                        view.scene()
+                            .sprites()
+                            .instances()
+                            .iter()
+                            .filter(|q| q.size == [4.0; 2] || q.size == [12.0; 2])
+                            .count(),
+                        31 * 25 + 2
+                    );
                     let (link, commands, outbox) = play_channel();
                     let (send, incoming) = mpsc::unbounded_channel();
                     let task = tokio::spawn(run_session(
@@ -131,7 +140,15 @@ fn native_live_map_snapshot_then_delta_changes_the_scene_and_item_selection()
                         tokio::time::timeout(Duration::from_secs(5), async {
                             loop {
                                 view.tick(&link).map_err(|error| format!("{error:?}"))?;
-                                if view.scene().sprites().len() == expected {
+                                if view
+                                    .scene()
+                                    .sprites()
+                                    .instances()
+                                    .iter()
+                                    .filter(|q| q.size != [4.0; 2] && q.size != [12.0; 2])
+                                    .count()
+                                    == expected
+                                {
                                     break;
                                 }
                                 tokio::task::yield_now().await;
@@ -139,6 +156,15 @@ fn native_live_map_snapshot_then_delta_changes_the_scene_and_item_selection()
                             Ok::<_, String>(())
                         })
                         .await??;
+                        assert_eq!(
+                            view.scene()
+                                .sprites()
+                                .instances()
+                                .iter()
+                                .filter(|q| q.size == [4.0; 2] || q.size == [12.0; 2])
+                                .count(),
+                            31 * 25 + 1 + if revision == 2 { 2 } else { 0 }
+                        );
                         if revision == 2 {
                             view.click(TileCoord::new(added_position.x, added_position.y))?;
                             let item = view

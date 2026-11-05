@@ -10,11 +10,12 @@ impl PlayView {
     #[must_use]
     pub fn hud_status(&self) -> String {
         format!(
-            "{}   {}   {}   {}",
+            "{}   {}   {}   {}   {}",
             self.world_clock_text().unwrap_or_default(),
             oteryn_client_ui::spell_action_bar::vitals_text(self.actor_vitals()),
             self.combat_status(),
-            self.target_walk_feedback().unwrap_or("")
+            self.target_walk_feedback().unwrap_or(""),
+            self.world_context_feedback.as_deref().unwrap_or("")
         )
     }
 
@@ -26,9 +27,12 @@ impl PlayView {
             .as_deref()
             .or(self.combat_line)
             .unwrap_or("");
-        let status = format!("spells 1-{SPELL_SLOTS} {line}")
+        let mut status = format!("spells 1-{SPELL_SLOTS} {line}")
             .trim_end()
             .to_owned();
+        if let Some(notice) = self.death_notice() {
+            status = format!("{notice} — {status}");
+        }
         match self.server_message_status() {
             Some(message) => format!("{status} — {message}"),
             None => status,

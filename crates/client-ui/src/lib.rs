@@ -1,9 +1,26 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+#[path = "features/0014-container-tree/mod.rs"]
+pub mod container_tree;
+#[path = "features/0012-item-equip-drop/mod.rs"]
+pub mod equipment;
+#[path = "features/0004-item-view-move/mod.rs"]
+pub mod inventory;
+
+#[path = "features/0017-attack/mod.rs"]
+pub mod battle;
+#[path = "features/0015-item-use/mod.rs"]
+pub mod item_use;
+
 #[path = "features/0019-world-light/mod.rs"]
 pub mod world_light;
+#[path = "features/0026-world-weather/mod.rs"]
+pub mod world_weather;
 
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
+
+#[path = "features/local-reference-preferences/input.rs"]
+pub mod reference_preferences;
 
 /// Account achievement pages from core command 10.
 #[path = "features/local-account-achievements/mod.rs"]
@@ -18,6 +35,8 @@ pub mod browse_field;
 /// Local speech and named private messages.
 #[path = "features/0007-chat/mod.rs"]
 pub mod chat;
+#[path = "features/0036-chat-guild-room/mod.rs"]
+pub mod chat_guild_room;
 #[path = "features/0240-chat-party-room/mod.rs"]
 pub mod chat_party_room;
 #[path = "features/0199-cyclopedia-character/mod.rs"]
@@ -26,6 +45,8 @@ pub mod cyclopedia_character;
 pub mod cyclopedia_tracker;
 #[path = "features/0151-daily-boost/mod.rs"]
 pub mod daily_boost;
+#[path = "features/0037-depot/mod.rs"]
+pub mod depot;
 #[path = "features/0153-depot-search/mod.rs"]
 pub mod depot_search;
 /// Live server highscores panel.
@@ -35,6 +56,8 @@ pub mod highscores;
 pub mod hotkey_equip;
 #[path = "features/0152-item-forge/mod.rs"]
 pub mod item_forge;
+#[path = "features/0003-npc-service/mod.rs"]
+pub mod npc_dialogue;
 #[path = "features/0154-store/mod.rs"]
 pub mod store;
 #[path = "features/0258-vip-presence/mod.rs"]
@@ -51,6 +74,13 @@ pub mod animus_mastery;
 
 /// World-interaction click intent mapping.
 pub mod world_interaction {
+    pub use oteryn_client_runtime::world_interaction as protocol;
+    pub mod menu {
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/features/0011-world-interaction/state.rs"
+        ));
+    }
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/src/features/0011-world-interaction/input.rs"
@@ -133,6 +163,10 @@ pub mod task_board;
 #[path = "features/0062-stash/mod.rs"]
 pub mod stash;
 
+/// Native current-floor minimap geometry.
+#[path = "features/local-minimap/mod.rs"]
+pub mod minimap;
+
 /// Target-walk input and receipt projection.
 #[path = "features/0064-target-move/mod.rs"]
 pub mod target_move;
@@ -157,6 +191,9 @@ pub mod hireling;
 #[path = "features/0063-market/mod.rs"]
 pub mod market;
 
+/// Private-channel membership controls and live transcript.
+#[path = "features/0080-chat-private-channel/mod.rs"]
+pub mod chat_private_channel;
 /// Negotiated public chat rooms, their live lines, and room controls.
 #[path = "features/0259-chat-public-channels/mod.rs"]
 pub mod chat_public_channels;

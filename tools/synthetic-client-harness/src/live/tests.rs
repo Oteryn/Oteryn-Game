@@ -2034,3 +2034,6 @@ fn live_controller_opens_a_corpse_and_loots_one_entry_through_both_deltas() -> R
             Ok::<(), BoxError>(())
         })
 }
+
+#[path = "../native_typing.rs"]
+mod native_typing;

@@ -8,6 +8,8 @@ pub struct StashPanel {
     pub has_more: bool,
     pub rows: Vec<stash::StashRow>,
     pub row: Option<usize>,
+    /// Live carried inventory and connected bag views, shared with the depot grid.
+    pub carried: Vec<oteryn_client_runtime::depot::ItemEntry>,
     pub pending: bool,
     pub feedback: Option<String>,
 }

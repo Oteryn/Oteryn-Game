@@ -5,9 +5,11 @@ use super::*;
 /// session's domain store (FND-02 §14, §15), in the order it was applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
+    WorldWeather(AppliedDelta<world_weather::WorldWeather>),
     WorldClock(AppliedDelta<world_clock::WorldClock>),
     Presentation(AppliedDelta<Vec<PresentationEvent>>),
     ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
+    PlayerTrade(AppliedDelta<player_trade::State>),
     NpcConversation(AppliedDelta<npc_service::NpcConversation>),
     NpcTradeWindow(AppliedDelta<npc_service::NpcTradeWindow>),
     /// Domain 16: the requested view and tracked lines, replaced whole.
@@ -46,6 +48,8 @@ pub enum SessionEvent {
     /// Domain 9 `CHARACTER_INVENTORY`: the inventory, replaced whole.
     /// [`Session::inventory`] already holds it.
     Inventory(AppliedDelta<CharacterInventory>),
+    /// Live bags shared by container, depot, trade and NPC shop projections.
+    ContainerViews(AppliedDelta<container_tree::ContainerViews>),
     /// Domain 11 `OPEN_CONTAINER`: the open corpse, replaced whole (the default means closed).
     /// [`Session::open_container`] already holds it.
     OpenContainer(AppliedDelta<OpenContainer>),
@@ -55,12 +59,14 @@ impl SessionEvent {
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
+            Self::PlayerTrade(_) => player_trade::STATE_DOMAIN_PLAYER_TRADE,
             Self::NpcConversation(_) => npc_service::STATE_DOMAIN_NPC_CONVERSATION,
             Self::NpcTradeWindow(_) => npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW,
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
             Self::TutorialNotice(_) => 23,
             Self::WorldClock(_) => 18,
+            Self::WorldWeather(_) => 22,
             Self::Presentation(_) => 19,
             Self::ActorCooldowns(_) => 20,
             Self::ServerSaveCountdown(_) => 40,
@@ -83,6 +89,7 @@ impl SessionEvent {
             | Self::PlayerTyping(_) => STATE_DOMAIN_CHAT,
             Self::ChatChannelList(_) => STATE_DOMAIN_CHAT,
             Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
+            Self::ContainerViews(_) => container_tree::STATE_DOMAIN_CONTAINER_VIEWS,
             Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,
         }
     }

@@ -119,3 +119,12 @@ pub mod native;
 
 #[cfg(windows)]
 pub use native::{AudioOutput, NativeAudio};
+
+pub const MAX_VISUAL_CUES: usize = 64;
+pub const VISUAL_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1000);
+
+#[derive(Debug, Clone)]
+pub struct VisualCue {
+    pub kind: oteryn_session::PresentationEventKind,
+    pub received: std::time::Instant,
+}

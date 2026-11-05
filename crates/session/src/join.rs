@@ -314,9 +314,11 @@ impl<S: SessionStream> Session<S> {
                 attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             ));
         }
+        let container_views = container_tree::initial(&selected_capabilities, &gated_snapshots)?;
         quest_log_transport::validate_join(&selected_capabilities, &gated_snapshots)?;
         tutorial_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
         world_light::validate_join(&selected_capabilities, &gated_snapshots)?;
+        weather::validate_join(&selected_capabilities, &gated_snapshots)?;
         presentation::validate_join(&selected_capabilities, &gated_snapshots)?;
         server_save_countdown::validate_join(&selected_capabilities, &gated_snapshots)?;
         achievement_notices_transport::validate_join(&selected_capabilities, &gated_snapshots)?;
@@ -382,6 +384,7 @@ impl<S: SessionStream> Session<S> {
             container_revision,
             inventory,
             open_container,
+            container_views,
             chat,
             vip_presence: None,
         })

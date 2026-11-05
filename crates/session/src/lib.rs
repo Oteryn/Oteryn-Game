@@ -24,23 +24,33 @@ mod achievement_notices_transport;
 pub use oteryn_protocol_oteryn::achievement_notices;
 mod appearance_state;
 mod depot;
+#[path = "features/0037-depot/protocol.rs"]
+mod depot_containers;
 mod domain_dispatch;
 mod events;
 pub use events::SessionEvent;
 mod gated_command;
+pub use gated_command::world_context;
 /// Server-owned highscores query and result codecs.
 pub use oteryn_protocol_oteryn::highscores;
+pub mod container_tree;
 mod hotkey_equip_transport;
+#[path = "features/0004-item-view-move/protocol.rs"]
+pub mod item_movement;
 mod join;
 mod map_transport;
+mod player_trade_transport;
 mod presentation;
 mod quest_log_transport;
 pub use oteryn_protocol_oteryn::presentation::{
-    PresentationEvent, PresentationEventKind, PresentationSource,
+    PresentationColor, PresentationEvent, PresentationEventKind, PresentationSource,
+    PresentationValue, PresentationValueKind,
 };
 mod recovery;
 use join::JoinAcceptance;
-pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
+pub use oteryn_protocol_oteryn::depot::{
+    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply,
+};
 /// Guild command and query wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::guild;
 /// Hireling wire values for the selected client feature.
@@ -54,6 +64,9 @@ pub use oteryn_protocol_oteryn::quest_log;
 pub use oteryn_protocol_oteryn::world_clock;
 #[path = "features/0019-world-light/protocol.rs"]
 mod world_light;
+pub use oteryn_protocol_oteryn::world_weather;
+#[path = "features/0026-world-weather/protocol.rs"]
+mod weather;
 pub use oteryn_protocol_oteryn::world_event;
 /// Live map snapshot and delta value types and codecs.
 pub use oteryn_protocol_oteryn::world_map;
@@ -83,9 +96,8 @@ pub use oteryn_protocol_oteryn::chat::guild_room::{GuildChatLine, GuildRoomState
 pub use oteryn_protocol_oteryn::chat::private_channel::{
     ChatChannelList, InvitedChannel, PrivateChannelIntent, PrivateChannelLine,
 };
-use oteryn_protocol_oteryn::chat::{
-    self, CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT,
-};
+use oteryn_protocol_oteryn::chat::{self, STATE_DOMAIN_CHAT};
+pub use oteryn_protocol_oteryn::chat::{CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT};
 /// The capability-7 chat types a client sends and draws from, re-exported so it needs no direct
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::chat::{
@@ -734,9 +746,7 @@ pub struct ChatOutcome {
 }
 
 /// Outcome of `Session::move_item` (ITEM-MOVE-WIRE-1, command type 9). The command returns at its
-/// result: a `Moved` result's domain 9 and domain 11 deltas arrive as pushed deltas, through
-/// [`Session::take_events`], [`Session::inventory`] and [`Session::open_container`]. Every other
-/// outcome (`Stale` included) changes no local state.
+/// result; authoritative inventory and container updates arrive through [`Session::take_events`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemMoveOutcomeResult {
     pub command_id: u64,
@@ -907,6 +917,7 @@ pub struct Session<S> {
     container_revision: u64,
     inventory: Option<CharacterInventory>,
     open_container: Option<OpenContainer>,
+    container_views: Option<container_tree::ContainerViews>,
     /// `Some` exactly when capability 7 is selected.
     chat: Option<ChatLog>,
     vip_presence: Option<vip_presence::VipPresenceStore>,
@@ -1083,12 +1094,17 @@ impl<S: SessionStream> Session<S> {
             Some(entry) => entry.1 = delta.new_revision,
             None => self.gated_revisions.push((domain_id, delta.new_revision)),
         }
-        Ok(GatedDelta {
+        let delta = GatedDelta {
             server_sequence: delta.server_sequence,
             base_revision: delta.base_revision,
             new_revision: delta.new_revision,
             payload: delta.payload,
-        })
+        };
+        if domain_id == player_trade::STATE_DOMAIN_PLAYER_TRADE {
+            let recorded = self.record_player_trade_delta(&delta);
+            self.poison_on_error(recorded)?;
+        }
+        Ok(delta)
     }
 
     pub fn join_snapshot(&self) -> &JoinSnapshot {
@@ -1315,9 +1331,8 @@ impl<S: SessionStream> Session<S> {
     }
 
     /// Sends the FND-02 `ClientCommand` type 2 `USE_INTENT` with the field 2 item target
-    /// (capability 4), which opens a corpse. Refused before anything is sent when capability 4 is
-    /// not selected. It returns at its result; the domain 11 and 9 deltas it causes go through
-    /// the domain store and the event queue.
+    /// (capability 4), opening a corpse or a capability-14 container. Refused when capability 4 is
+    /// not selected. Contents arrive through the domain store and event queue.
     pub async fn use_item(&mut self, handle: ItemHandle) -> Result<UseOutcome, SessionError> {
         self.ensure_usable()?;
         self.ensure_item_view()?;
@@ -1358,8 +1373,15 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(COMMAND_TYPE_ITEM_MOVE_INTENT, payload)
             .await?;
-        let outcome =
-            item_view::decode_item_move_result(&result.payload).map_err(SessionError::ItemView)?;
+        let outcome = item_view::decode_item_move_result_for(
+            self.item_result_payload(&result.payload)?.0,
+            item_view::ItemMoveSelection {
+                equip_drop: self.is_selected(12),
+                container_tree: self.is_selected(14),
+                world_interaction: self.is_selected(11),
+            },
+        )
+        .map_err(SessionError::ItemView)?;
         check_status_pairing(
             result.command_id,
             result.status,
@@ -1575,7 +1597,7 @@ impl<S: SessionStream> Session<S> {
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
         let disposition = world_spatial::decode_step_result_paced(
-            &result.payload,
+            self.item_result_payload(&result.payload)?.0,
             self.is_selected(CAPABILITY_PACED_MOVEMENT_V1),
         )?;
         check_status_pairing(
@@ -1633,8 +1655,9 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(world_object::COMMAND_TYPE_USE_INTENT, payload)
             .await?;
-        let (disposition, gate_message_id) =
-            world_object::decode_use_result_with_gate(&result.payload)?;
+        let (disposition, gate_message_id) = world_object::decode_use_result_with_gate(
+            self.item_result_payload(&result.payload)?.0,
+        )?;
         // Dispositions 11 to 17 and the gate message id exist only under capability 11, and
         // dispositions 18 and 19 only under capability 22.
         check_use_result_negotiated(
@@ -1829,6 +1852,7 @@ impl<S: SessionStream> Session<S> {
                     domain_id,
                     npc_service::STATE_DOMAIN_NPC_CONVERSATION
                         | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW
+                        | player_trade::STATE_DOMAIN_PLAYER_TRADE
                 ) {
                     return Err(SessionError::UnexpectedDomain {
                         expected: domain_id,

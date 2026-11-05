@@ -18,14 +18,14 @@ const SHARED: usize = 107;
 const REFRESH: usize = 108;
 
 #[derive(Default)]
-struct Actions(Vec<usize>);
+struct Actions(Vec<(usize, usize)>);
 unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     // SAFETY: userdata points to the live Actions box owned by this window thread.
     unsafe {
         if msg == WM_COMMAND {
             let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
             if !actions.is_null() && (*actions).0.len() < 16 {
-                (*actions).0.push(w & 0xffff);
+                (*actions).0.push((w & 0xffff, (w >> 16) & 0xffff));
             }
             return 0;
         }
@@ -96,11 +96,11 @@ fn run(
         let members = control(hwnd, "LISTBOX", "", MEMBERS, [10, 10, 300, 220], list);
         let invitations = control(hwnd, "LISTBOX", "", INVITATIONS, [330, 10, 300, 220], list);
         for (id, label, x) in [
-            (JOIN, "Join", 10),
-            (LEAVE, "Leave", 110),
-            (PASS, "Pass leadership", 210),
-            (KICK, "Kick", 360),
-            (SHARED, "Toggle shared XP", 460),
+            (JOIN, "Accept", 10),
+            (LEAVE, "Leave", 210),
+            (PASS, "Pass leadership", 310),
+            (KICK, "Kick", 460),
+            (SHARED, "Toggle shared XP", 120),
             (REFRESH, "Refresh", 10),
         ] {
             control(
@@ -110,14 +110,18 @@ fn run(
                 id,
                 [
                     x,
-                    if id == REFRESH { 280 } else { 240 },
-                    if id == REFRESH { 100 } else { 140 },
+                    if id == REFRESH || id == SHARED {
+                        280
+                    } else {
+                        240
+                    },
+                    if id == PASS || id == SHARED { 140 } else { 90 },
                     30,
                 ],
                 WS_TABSTOP,
             );
         }
-        let status = control(hwnd, "STATIC", "", 109, [120, 280, 510, 160], 0);
+        let status = control(hwnd, "STATIC", "", 109, [10, 320, 620, 140], 0);
         let mut held: Option<PartyPanel> = None;
         let mut message: MSG = std::mem::zeroed();
         loop {
@@ -132,15 +136,15 @@ fn run(
                 break;
             };
             let mut mailbox = lock(&shared);
-            for id in std::mem::take(&mut actions.0) {
-                if id == MEMBERS && (message.wParam >> 16) & 0xffff == LBN_SELCHANGE as usize {
+            for (id, notification) in std::mem::take(&mut actions.0) {
+                if id == MEMBERS && notification == LBN_SELCHANGE as usize {
                     let row = usize::try_from(SendMessageW(members, LB_GETCURSEL, 0, 0)).ok();
                     mailbox.party.selected_member = row
                         .and_then(|row| mailbox.party.state.as_ref()?.members.get(row))
                         .map(|entry| entry.handle);
                     continue;
                 }
-                if id == INVITATIONS && (message.wParam >> 16) & 0xffff == LBN_SELCHANGE as usize {
+                if id == INVITATIONS && notification == LBN_SELCHANGE as usize {
                     let row = usize::try_from(SendMessageW(invitations, LB_GETCURSEL, 0, 0)).ok();
                     mailbox.party.selected_invitation = row
                         .and_then(|row| mailbox.party.state.as_ref()?.invitations.get(row))
@@ -165,24 +169,39 @@ fn run(
                 }
             }
             if held.as_ref() != Some(&mailbox.party) {
+                let enabled = i32::from(mailbox.party.can_manage_member());
+                windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
+                    GetDlgItem(hwnd, KICK as i32),
+                    enabled,
+                );
+                windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
+                    GetDlgItem(hwnd, PASS as i32),
+                    enabled,
+                );
                 SendMessageW(members, LB_RESETCONTENT, 0, 0);
                 SendMessageW(invitations, LB_RESETCONTENT, 0, 0);
                 if let Some(state) = &mailbox.party.state {
-                    for entry in &state.members {
+                    for (row, entry) in state.members.iter().enumerate() {
                         SendMessageW(
                             members,
                             LB_ADDSTRING,
                             0,
                             wide(&entry.name).as_ptr() as isize,
                         );
+                        if mailbox.party.selected_member == Some(entry.handle) {
+                            SendMessageW(members, LB_SETCURSEL, row, 0);
+                        }
                     }
-                    for entry in &state.invitations {
+                    for (row, entry) in state.invitations.iter().enumerate() {
                         SendMessageW(
                             invitations,
                             LB_ADDSTRING,
                             0,
                             wide(&entry.name).as_ptr() as isize,
                         );
+                        if mailbox.party.selected_invitation == Some(entry.handle) {
+                            SendMessageW(invitations, LB_SETCURSEL, row, 0);
+                        }
                     }
                 }
                 SetWindowTextW(status, wide(&panel_text(&mailbox.party)).as_ptr());
@@ -223,5 +242,42 @@ unsafe fn control(
 fn close(weak: &Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>) {
     if let Some(mailbox) = weak.upgrade() {
         lock(&mailbox).party.open = false;
+    }
+}
+
+/// Runs synchronously on the play window thread; the menu never owns session authority.
+pub(in crate::play) fn context_menu(link: &PlayLink, target: oteryn_session::EntityRef) {
+    // SAFETY: all menu/window resources are created, used, and destroyed on this thread.
+    unsafe {
+        let owner = GetForegroundWindow();
+        if owner.is_null() {
+            return;
+        }
+        let menu = CreatePopupMenu();
+        if menu.is_null() {
+            return;
+        }
+        AppendMenuW(menu, MF_STRING, 1, wide("Invite to party").as_ptr());
+        AppendMenuW(menu, MF_STRING, 2, wide("Party (Ctrl+Shift+G)").as_ptr());
+        let mut point = std::mem::zeroed();
+        windows_sys::Win32::UI::WindowsAndMessaging::GetCursorPos(&mut point);
+        let chosen = TrackPopupMenu(
+            menu,
+            TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON,
+            point.x,
+            point.y,
+            0,
+            owner,
+            null(),
+        );
+        DestroyMenu(menu);
+        match chosen {
+            1 => {
+                link.party_request(Intent::Invite(target));
+                open_window(link);
+            }
+            2 => link.open_party(),
+            _ => {}
+        }
     }
 }

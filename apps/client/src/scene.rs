@@ -15,16 +15,19 @@ use std::sync::Arc;
 /// Compatibility exports for the deterministic viewport policy.
 pub use oteryn_client_simulation::scene::{SCENE_COLUMNS, SCENE_ROWS, SCENE_TILE_PX};
 
-// A full view (map cells, a marker per tile, the player and the target) fits one sprite batch.
+// A full view plus the minimap (background, terrain, creature per cell and own marker)
+// fits one sprite batch.
 const _: () = assert!(
     ((SCENE_COLUMNS + SCAN_MARGIN as u32) * (SCENE_ROWS + SCAN_MARGIN as u32)) as usize
         * (MAX_TILE_DRAWS + 1)
         + MAX_TILE_DRAWS
+        + (31 * 25 * 3 + 1)
         < MAX_BATCH_QUADS
 );
 
 #[derive(Debug, Clone)]
 pub struct Scene {
+    minimap: bool,
     world: Arc<World>,
     lit_atlas: Option<AtlasImage>,
     /// `None` draws no map: the session is on a floor the loaded map does not cover.
@@ -85,6 +88,7 @@ impl Scene {
             }])
             .collect();
         let mut scene = Self {
+            minimap: false,
             world,
             lit_atlas: None,
             anchor,
@@ -100,15 +104,53 @@ impl Scene {
         Ok(scene)
     }
 
+    pub fn set_weather(&mut self, color: [u8; 3], strength: u8) {
+        self.lit_atlas = Some(oteryn_renderer::weather_atlas(
+            self.atlas(),
+            color,
+            strength,
+        ));
+    }
+    pub fn set_tile_px(&mut self, tile_px: u32) -> Result<(), BatchError> {
+        if self.view.tile_px() == tile_px {
+            return Ok(());
+        }
+        self.view = TileView::new(self.view.origin(), tile_px, SCENE_COLUMNS, SCENE_ROWS)?;
+        let cells = vec![BLACK_CELL; (SCENE_COLUMNS * SCENE_ROWS) as usize];
+        self.tiles = TileBatch::from_cells(&self.view, self.world.atlas(), &cells)?;
+        self.rebuild_sprites()
+    }
+
     pub fn set_ambient(&mut self, ambient: [u8; 3]) -> Result<(), BatchError> {
         self.lit_atlas = Some(oteryn_renderer::lit_atlas(self.world.atlas(), ambient));
         Ok(())
+    }
+
+    /// Rebuilds base sprites before appending this frame's transient visual quads.
+    pub(crate) fn presentation_base(
+        &mut self,
+    ) -> Result<(&TileView, &mut SpriteBatch), BatchError> {
+        self.rebuild_sprites()?;
+        Ok((&self.view, &mut self.sprites))
     }
 
     /// Current target, if any.
     #[must_use]
     pub const fn target(&self) -> Option<Targetable> {
         self.target
+    }
+
+    pub(crate) fn target_at(&self, tile: TileCoord) -> Option<Targetable> {
+        // The own-actor highlight has no command identity; it must not hide an item below it.
+        let on_tile = || {
+            self.visible.iter().rev().filter(|target| {
+                target.tile == tile && (target.entity.is_some() || target.item.is_some())
+            })
+        };
+        on_tile()
+            .find(|target| target.kind == TargetKind::Entity)
+            .or_else(|| on_tile().find(|target| target.kind == TargetKind::Object))
+            .copied()
     }
 
     /// Selects what is drawn on `tile` (entity before object). Returns the new target; a tile
@@ -174,6 +216,9 @@ impl Scene {
             self.target.map(|target| target.tile),
         )?;
         self.sprites = sprites;
+        if self.minimap {
+            self.draw_minimap()?;
+        }
         Ok(())
     }
 
@@ -207,3 +252,6 @@ impl Scene {
 
 #[cfg(test)]
 mod tests;
+
+#[path = "features/local-minimap/scene.rs"]
+mod minimap;

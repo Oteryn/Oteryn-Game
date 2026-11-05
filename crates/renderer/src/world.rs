@@ -5,7 +5,9 @@ use oteryn_client_domain::world::{CELL_PX, Draw, DrawCell};
 use std::collections::BTreeMap;
 
 /// Builtin cells preceding sprite cells in the static map atlas.
-pub const BUILTIN_CELLS: usize = 3;
+pub const BUILTIN_CELLS: usize = 4;
+/// A 6 × 6 × 6 RGB palette, one opaque colour per pixel (index r*36+g*6+b).
+pub const PALETTE_CELL: u16 = 3;
 pub const BLACK_CELL: u16 = 0;
 pub const TARGET_CELL: u16 = 1;
 pub const MARKER_CELL: u16 = 2;
@@ -29,7 +31,7 @@ pub fn atlas_from_cells(cells: Vec<u8>, count: usize) -> Result<AtlasImage, Batc
     AtlasImage::new(CELL_PX, columns as u32, rows as u32, rgba)
 }
 
-/// The builtin cells, one after another: black, a yellow outline, a red square.
+/// The builtin cells: black, a yellow outline, a red square and a solid pixel palette.
 pub fn builtin_rgba() -> Vec<u8> {
     let px = CELL_PX as usize;
     let mut rgba = Vec::with_capacity(BUILTIN_CELLS * px * px * 4);
@@ -39,6 +41,15 @@ pub fn builtin_rgba() -> Vec<u8> {
                 let edge = x.min(y).min(px - 1 - x).min(px - 1 - y);
                 rgba.extend_from_slice(&match cell {
                     0 => [0, 0, 0, 255],
+                    3 => {
+                        let index = y * px + x;
+                        [
+                            ((index / 36) % 6) as u8 * 51,
+                            ((index / 6) % 6) as u8 * 51,
+                            (index % 6) as u8 * 51,
+                            255,
+                        ]
+                    }
                     1 if edge < 2 => [255, 220, 40, 255],
                     2 if edge >= 10 => [220, 40, 40, 255],
                     _ => [0, 0, 0, 0],

@@ -80,13 +80,19 @@ impl PlayView {
             &markers,
             &entities,
         )?;
+        self.apply_preference_scale()?;
         self.scene.retain_target(target)?;
-        self.light_scene()
+        self.light_scene()?;
+        self.weather_scene();
+        self.scene
+            .set_minimap(self.live_map && self.preferences().panel_visible("minimap"))?;
+        self.project_presentation(std::time::Instant::now())
     }
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
         self.world_clock = pushed.world_clock.or(self.world_clock);
+        self.world_weather = pushed.world_weather.or(self.world_weather);
         self.apply_server_messages(&pushed.server_messages);
         if let Some(map) = &pushed.map {
             self.set_live_map(map)?;
@@ -100,6 +106,7 @@ impl PlayView {
         for entry in &pushed.markers {
             self.set_marker(entry);
         }
+        self.receive_presentation(&pushed.visuals, std::time::Instant::now());
         self.rebuild()
     }
 }

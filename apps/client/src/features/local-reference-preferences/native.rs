@@ -1,0 +1,390 @@
+//! Native settings controls and menu, with preferences shared only on the shell thread boundary.
+// SAFETY: HWNDs and subclass data are created, used and destroyed on their owning thread.
+#![allow(unsafe_code)]
+use oteryn_client::play::{PlayView, PreferenceStore, SettingsState, preference_bindings};
+use std::{
+    ptr::{null, null_mut},
+    sync::{Arc, Mutex, MutexGuard},
+    time::Duration,
+};
+use windows_sys::Win32::{
+    Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM},
+    UI::{
+        Shell::{DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass},
+        WindowsAndMessaging::*,
+    },
+};
+use winit::{
+    raw_window_handle::{HasWindowHandle, RawWindowHandle},
+    window::Window,
+};
+
+type Shared = SettingsState;
+fn lock(shared: &Mutex<Shared>) -> MutexGuard<'_, Shared> {
+    shared
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+fn wide(text: &str) -> Vec<u16> {
+    text.replace('\0', "\u{fffd}")
+        .encode_utf16()
+        .chain(Some(0))
+        .collect()
+}
+
+pub(super) struct Settings {
+    // Win32 borrows the Arc handle address; Box keeps it stable when Settings moves.
+    #[allow(clippy::redundant_allocation)]
+    shared: Box<Arc<Mutex<Shared>>>,
+    parent: HWND,
+}
+impl Settings {
+    pub(super) fn new() -> Self {
+        Self {
+            shared: Box::new(Arc::new(Mutex::new(SettingsState::new(
+                PreferenceStore::path(),
+            )))),
+            parent: null_mut(),
+        }
+    }
+    pub(super) fn attach(&mut self, window: &Window) {
+        let Ok(handle) = window.window_handle() else {
+            return;
+        };
+        let RawWindowHandle::Win32(handle) = handle.as_raw() else {
+            return;
+        };
+        self.parent = handle.hwnd.get() as HWND;
+        unsafe {
+            let menu = CreateMenu();
+            if !menu.is_null() {
+                AppendMenuW(menu, MF_STRING, 25001, wide("Settings...").as_ptr());
+                if SetMenu(self.parent, menu) == 0 {
+                    DestroyMenu(menu);
+                }
+                DrawMenuBar(self.parent);
+            }
+            SetWindowSubclass(
+                self.parent,
+                Some(menu_proc),
+                25001,
+                (&*self.shared as *const Arc<Mutex<Shared>>) as usize,
+            );
+        }
+    }
+    pub(super) fn input(
+        &mut self,
+        events: &[oteryn_input_actions::NormalizedInputEvent],
+    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+        let (events, requested) = lock(&self.shared).input(events);
+        if requested {
+            spawn_window(Arc::clone(&self.shared));
+        }
+        events
+    }
+    pub(super) fn restore(&self, view: &mut PlayView) {
+        let mut viewport = [960, 540];
+        unsafe {
+            let mut rect: RECT = std::mem::zeroed();
+            if !self.parent.is_null() && GetClientRect(self.parent, &mut rect) != 0 {
+                viewport = [rect.right.max(0) as u32, rect.bottom.max(0) as u32];
+            }
+        }
+        let mut state = lock(&self.shared);
+        if let Err(error) = state.restore(view, viewport) {
+            state.feedback = error.to_string();
+        }
+    }
+    pub(super) fn capture(&self, view: &mut PlayView) {
+        let mut state = lock(&self.shared);
+        if let Err(error) = state.capture(view) {
+            state.feedback = error.to_string();
+        }
+    }
+}
+impl Drop for Settings {
+    fn drop(&mut self) {
+        lock(&self.shared).shutdown = true;
+        unsafe {
+            if !self.parent.is_null() && IsWindow(self.parent) != 0 {
+                RemoveWindowSubclass(self.parent, Some(menu_proc), 25001);
+                let menu = GetMenu(self.parent);
+                SetMenu(self.parent, null_mut());
+                if !menu.is_null() {
+                    DestroyMenu(menu);
+                }
+            }
+        }
+    }
+}
+unsafe extern "system" fn menu_proc(
+    hwnd: HWND,
+    msg: u32,
+    w: WPARAM,
+    l: LPARAM,
+    _id: usize,
+    data: usize,
+) -> LRESULT {
+    unsafe {
+        if msg == WM_COMMAND && w & 0xffff == 25001 {
+            let shared = &*(data as *const Arc<Mutex<Shared>>);
+            open(Arc::clone(shared));
+            return 0;
+        }
+        DefSubclassProc(hwnd, msg, w, l)
+    }
+}
+fn open(shared: Arc<Mutex<Shared>>) {
+    if lock(&shared).request_open() {
+        spawn_window(shared);
+    }
+}
+fn spawn_window(shared: Arc<Mutex<Shared>>) {
+    let fallback = Arc::clone(&shared);
+    if std::thread::Builder::new()
+        .name("local-settings".into())
+        .spawn(move || run(shared))
+        .is_err()
+    {
+        let mut state = lock(&fallback);
+        state.open = false;
+        state.feedback = "Could not create settings window".into();
+    }
+}
+#[derive(Default)]
+struct Actions(Vec<usize>);
+unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
+    unsafe {
+        if msg == WM_COMMAND {
+            let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
+            let id = w & 0xffff;
+            if !actions.is_null()
+                && (*actions).0.len() < 16
+                && matches!(id, 103 | 106)
+                && w >> 16 == BN_CLICKED as usize
+            {
+                (*actions).0.push(id);
+            }
+            return 0;
+        }
+        DefWindowProcW(hwnd, msg, w, l)
+    }
+}
+unsafe fn control(
+    parent: HWND,
+    class: &str,
+    text: &str,
+    id: usize,
+    rect: [i32; 4],
+    style: u32,
+) -> HWND {
+    unsafe {
+        CreateWindowExW(
+            0,
+            wide(class).as_ptr(),
+            wide(text).as_ptr(),
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | style,
+            rect[0],
+            rect[1],
+            rect[2],
+            rect[3],
+            parent,
+            id as *mut _,
+            null_mut(),
+            null(),
+        )
+    }
+}
+unsafe fn text(hwnd: HWND) -> String {
+    let mut buffer = [0u16; 256];
+    unsafe {
+        let length = GetWindowTextW(hwnd, buffer.as_mut_ptr(), buffer.len() as i32);
+        String::from_utf16_lossy(&buffer[..length.max(0) as usize])
+    }
+}
+fn run(shared: Arc<Mutex<Shared>>) {
+    unsafe {
+        let hwnd = CreateWindowExW(
+            0,
+            wide("STATIC").as_ptr(),
+            wide("Oteryn Settings").as_ptr(),
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            760,
+            400,
+            null_mut(),
+            null_mut(),
+            null_mut(),
+            null(),
+        );
+        if hwnd.is_null() {
+            lock(&shared).open = false;
+            return;
+        }
+        let mut actions = Box::<Actions>::default();
+        SetWindowLongPtrW(
+            hwnd,
+            GWLP_USERDATA,
+            (&mut *actions as *mut Actions) as isize,
+        );
+        SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
+        let help = control(
+            hwnd,
+            "STATIC",
+            "Key bindings: select an action, enter e.g. ALT+H, then Rebind.\nMouse1 is fixed. Conflicts include all registered actions.",
+            0,
+            [10, 10, 720, 45],
+            0,
+        );
+        let list = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            101,
+            [10, 65, 440, 280],
+            CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
+        );
+        let chord = control(
+            hwnd,
+            "EDIT",
+            "",
+            102,
+            [460, 65, 140, 26],
+            WS_BORDER | ES_AUTOHSCROLL as u32,
+        );
+        let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 65, 110, 26], 0);
+        let label = control(
+            hwnd,
+            "STATIC",
+            "World zoom % (80–180, fitted to window) / Master volume % (0–100)",
+            0,
+            [10, 110, 700, 25],
+            0,
+        );
+        let scale = control(
+            hwnd,
+            "EDIT",
+            "",
+            104,
+            [10, 145, 100, 26],
+            WS_BORDER | ES_NUMBER as u32,
+        );
+        let volume = control(
+            hwnd,
+            "EDIT",
+            "",
+            105,
+            [130, 145, 100, 26],
+            WS_BORDER | ES_NUMBER as u32,
+        );
+        let mute = control(
+            hwnd,
+            "BUTTON",
+            "Mute",
+            107,
+            [250, 145, 100, 26],
+            BS_AUTOCHECKBOX as u32,
+        );
+        let apply = control(hwnd, "BUTTON", "Apply", 106, [380, 145, 110, 26], 0);
+        let feedback = control(hwnd, "STATIC", "", 0, [10, 200, 710, 100], 0);
+        if [
+            help, list, chord, rebind, label, scale, volume, mute, apply, feedback,
+        ]
+        .iter()
+        .any(|h| h.is_null())
+        {
+            DestroyWindow(hwnd);
+            lock(&shared).open = false;
+            return;
+        }
+        let bindings = preference_bindings().unwrap_or_default();
+        let mut held = None;
+        let mut selected = -1;
+        let mut message: MSG = std::mem::zeroed();
+        loop {
+            while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
+                if IsDialogMessageW(hwnd, &message) == 0 {
+                    TranslateMessage(&message);
+                    DispatchMessageW(&message);
+                }
+            }
+            if IsWindow(hwnd) == 0 {
+                break;
+            }
+            let mut state = lock(&shared);
+            if state.shutdown {
+                break;
+            }
+            let index = SendMessageW(list, CB_GETCURSEL, 0, 0);
+            if index != selected && index >= 0 {
+                selected = index;
+                if let Some(binding) = bindings.get(index as usize) {
+                    SetWindowTextW(
+                        chord,
+                        wide(state.preferences.binding_chord(binding)).as_ptr(),
+                    );
+                }
+            }
+            for action in std::mem::take(&mut actions.0) {
+                let mut preferences = state.preferences.clone();
+                if action == 103 {
+                    if let Some(binding) = bindings.get(selected.max(0) as usize) {
+                        match preferences.rebind(binding.id, &text(chord)) {
+                            Ok(()) => state.apply(preferences),
+                            Err(error) => {
+                                state.feedback = format!("{error}. Choose a different chord.")
+                            }
+                        }
+                    }
+                } else {
+                    match (text(scale).parse::<u16>(), text(volume).parse::<u8>()) {
+                        (Ok(scale), Ok(volume)) => {
+                            preferences.ui_scale = scale;
+                            preferences.audio.master_volume = volume;
+                            preferences.audio.muted = SendMessageW(mute, BM_GETCHECK, 0, 0) == 1;
+                            state.apply(preferences);
+                        }
+                        _ => state.feedback = "Enter valid zoom and volume percentages".into(),
+                    }
+                }
+            }
+            if held.as_ref() != Some(&state.preferences) {
+                let selection = selected.max(0) as usize;
+                SendMessageW(list, CB_RESETCONTENT, 0, 0);
+                for binding in &bindings {
+                    let label = format!(
+                        "{}: {}",
+                        binding.id,
+                        state.preferences.binding_chord(binding)
+                    );
+                    SendMessageW(list, CB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                }
+                SendMessageW(list, CB_SETCURSEL, selection, 0);
+                SetWindowTextW(
+                    scale,
+                    wide(&state.preferences.ui_scale.to_string()).as_ptr(),
+                );
+                SetWindowTextW(
+                    volume,
+                    wide(&state.preferences.audio.master_volume.to_string()).as_ptr(),
+                );
+                SendMessageW(
+                    mute,
+                    BM_SETCHECK,
+                    usize::from(state.preferences.audio.muted),
+                    0,
+                );
+                selected = -1;
+                held = Some(state.preferences.clone());
+            }
+            SetWindowTextW(feedback, wide(&state.feedback).as_ptr());
+            drop(state);
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        if IsWindow(hwnd) != 0 {
+            DestroyWindow(hwnd);
+        }
+        lock(&shared).open = false;
+    }
+}

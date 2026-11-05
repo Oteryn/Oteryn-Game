@@ -29,6 +29,9 @@ pub(in crate::play) fn enqueue(
     commands: &UnboundedSender<PlayCommand>,
     intent: Intent,
 ) {
+    if mailbox.world_input_blocked() {
+        return;
+    }
     if let Some(command) = request(&mut mailbox.daily_reward, intent)
         && commands.send(PlayCommand::DailyReward(command)).is_err()
     {

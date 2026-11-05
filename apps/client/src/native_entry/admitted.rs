@@ -4,12 +4,18 @@ use oteryn_session_tcp::TcpTlsStream;
 /// An admitted game session on the routed World and Channel.
 #[derive(Debug)]
 pub struct AdmittedSession {
+    pub(super) character_name: String,
     pub(super) session: Session<TcpTlsStream>,
     pub(super) world_id: String,
     pub(super) channel_id: String,
 }
 
 impl AdmittedSession {
+    #[must_use]
+    pub fn character_name(&self) -> &str {
+        &self.character_name
+    }
+
     #[must_use]
     pub fn world_id(&self) -> &str {
         &self.world_id

@@ -7,9 +7,8 @@
 
 use crate::input::StepDir;
 use oteryn_client_assets::window::{ResolvedWindow, within_draw_cap};
-use oteryn_client_domain::world::CELL_PX;
 use oteryn_client_simulation::world::{project_cell, project_tile};
-use oteryn_renderer::world::{BUILTIN_CELLS, WorldAtlas, builtin_rgba};
+use oteryn_renderer::world::{BUILTIN_CELLS, WorldAtlas, atlas_from_cells, builtin_rgba};
 use oteryn_renderer::{AtlasImage, BatchError};
 use std::collections::HashMap;
 use std::path::Path;
@@ -41,7 +40,7 @@ pub struct World {
 impl World {
     /// Only the builtin cells: no map, and the player drawn as the marker glyph.
     pub fn builtin() -> Result<Self, BatchError> {
-        let atlas = AtlasImage::new(CELL_PX, BUILTIN_CELLS as u32, 1, builtin_rgba())?;
+        let atlas = atlas_from_cells(builtin_rgba(), BUILTIN_CELLS)?;
         Ok(Self {
             center: (START.0, START.1, i16::from(START_FLOOR)),
             atlas,

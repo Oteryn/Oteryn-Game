@@ -6,6 +6,7 @@ use oteryn_client_ui::guild::{Intent, panel_text, request};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 #[derive(Default)]
 struct Actions(Vec<usize>);
@@ -99,6 +100,7 @@ fn run(weak: WeakMailbox, commands: tokio::sync::mpsc::UnboundedSender<PlayComma
             (18, "Found", 200, 495),
             (19, "Invite", 330, 495),
             (20, "Set rank", 540, 455),
+            (21, "Guild chat", 490, 415),
         ] {
             control(hwnd, "BUTTON", label, id, [x, y, 120, 30], WS_TABSTOP);
         }
@@ -133,6 +135,12 @@ fn run(weak: WeakMailbox, commands: tokio::sync::mpsc::UnboundedSender<PlayComma
             };
             let mut mailbox = lock(&shared);
             for id in std::mem::take(&mut actions.0) {
+                if id == 21 {
+                    drop(mailbox);
+                    crate::play::feature_0036_chat_guild_room::input::open(&shared, &commands);
+                    mailbox = lock(&shared);
+                    continue;
+                }
                 let row = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0)).ok();
                 let intent = match id {
                     10 => Some(Intent::RefreshOwn),
@@ -169,6 +177,10 @@ fn run(weak: WeakMailbox, commands: tokio::sync::mpsc::UnboundedSender<PlayComma
                     mailbox.guild.feedback = Some("The session has ended".into());
                 }
             }
+            EnableWindow(
+                GetDlgItem(hwnd, 21),
+                i32::from(oteryn_client_ui::chat_guild_room::available(&mailbox.chat)),
+            );
             if held.as_ref() != Some(&mailbox.guild) {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
                 for m in &mailbox.guild.roster {
