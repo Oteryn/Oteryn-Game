@@ -25,6 +25,12 @@ pub mod character_info_panel;
 pub mod container_sort;
 #[path = "features/0103-guild-war/protocol.rs"]
 pub mod guild_war;
+#[path = "features/0099-guildhall/protocol.rs"]
+pub mod guildhall;
+#[path = "features/0059-house-move-out/protocol.rs"]
+pub mod house_move_out;
+#[path = "features/0086-house-transfer/protocol.rs"]
+pub mod house_transfer;
 #[path = "features/0076-player-report/protocol.rs"]
 pub mod player_report;
 

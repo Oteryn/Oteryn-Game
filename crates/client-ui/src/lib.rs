@@ -12,8 +12,14 @@ pub mod container_sort;
 pub mod guild_bank;
 #[path = "features/0103-guild-war/mod.rs"]
 pub mod guild_war;
+#[path = "features/0099-guildhall/mod.rs"]
+pub mod guildhall;
+#[path = "features/0059-house-move-out/mod.rs"]
+pub mod house_move_out;
 #[path = "features/0150-house-podium/mod.rs"]
 pub mod house_podium;
+#[path = "features/0086-house-transfer/mod.rs"]
+pub mod house_transfer;
 #[path = "features/0115-mail/mod.rs"]
 pub mod mail;
 #[path = "features/0076-player-report/mod.rs"]
