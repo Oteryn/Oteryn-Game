@@ -96,6 +96,7 @@ pub use oteryn_protocol_oteryn::{
     store,
 };
 pub use oteryn_protocol_oteryn::{atelier, prey, wheel};
+pub use oteryn_protocol_oteryn::{creature_push, target_move};
 /// Player-trade wire values for the selected native-client feature.
 pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 pub use recovery::{Recovery, RecoveryState, check_resume_selection};

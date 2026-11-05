@@ -332,6 +332,33 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         self.gated_snapshot(domain)
             .map(|snapshot| snapshot.payload.clone())
     }
+    fn hotkey_equip_items(&self) -> Vec<u32> {
+        let mut items = Vec::new();
+        if let Some(inventory) = self.inventory() {
+            items.extend(
+                inventory
+                    .entries
+                    .iter()
+                    .map(|item| item.item_definition_ref.get()),
+            );
+            items.extend(
+                inventory
+                    .equipment
+                    .iter()
+                    .map(|entry| entry.item.item_definition_ref.get()),
+            );
+        }
+        if let Some(views) = Session::container_views(self) {
+            for view in &views.views {
+                items.extend(
+                    view.entries
+                        .iter()
+                        .map(|item| item.item_definition_ref.get()),
+                );
+            }
+        }
+        items
+    }
     fn server_mechanic_selected(&self, capability: u32) -> bool {
         self.is_selected(capability)
     }
@@ -380,6 +407,7 @@ pub(super) fn publish<T: Stepper>(
     outbox: &Outbox,
     held: &mut Vec<WorldSpatialEntity>,
 ) {
+    outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.chat_private_publish(session);
     outbox.targeting_refresh(session);
     outbox.achievement_notices_publish(session);

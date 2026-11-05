@@ -106,6 +106,10 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) target_move_selected: bool,
+    pub(super) movement_turn: Option<StepDir>,
+    pub(super) creature_push_selected: bool,
+    pub(super) movement_feedback: Option<&'static str>,
     pub(super) analyser: oteryn_client_ui::analyser::Panel,
     pub(super) spell_catalog: oteryn_client_ui::spell_catalog::Panel,
     pub(super) spell_bar: oteryn_client_ui::spell_action_bar::ActionBarPanel,
@@ -251,6 +255,7 @@ pub struct Outbox(pub(super) SharedMailbox);
 impl Outbox {
     pub(super) fn stepped(&self, outcome: StepOutcome) {
         let mut mailbox = lock(&self.0);
+        mailbox.movement_turn = None;
         let older = std::mem::take(&mut mailbox.pushed);
         mailbox.before.absorb(older);
         mailbox.check_server_messages();

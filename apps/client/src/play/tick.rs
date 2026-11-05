@@ -29,6 +29,7 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
+        self.apply_target_turn(link).map_err(|_error| UNAVAILABLE)?;
         self.advance_presentation(std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;
         self.world_context_feedback = link.world_context_feedback();
