@@ -1,0 +1,9 @@
+{
+  "mechanic": "0098-quick-loot",
+  "status": "supported",
+  "kind": "keybindings",
+  "id": "0098-quick-loot-open",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+Q",
+  "entry": "input.rs::open_key"
+}

@@ -19,6 +19,7 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.discovery_initialize(&session);
     outbox.properties_initialize(&session);
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
@@ -106,6 +107,7 @@ pub async fn run_session<T: Stepper>(
                 match session.server_mechanic(&request).await {
                     Ok(response) => {
                         match request.capability {
+                            98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
                             9 => outbox.highscores_result(&response),
                             152 => outbox.item_forge_result(&response),
                             153 => outbox.depot_search_result(&response),

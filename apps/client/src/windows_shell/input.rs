@@ -42,6 +42,7 @@ impl Application {
                 || play.link.prey_input(events)
                 || play.link.task_board_input(events)
                 || play.link.wheel_input(events)
+                || play.link.discovery_input(events)
                 || play.link.exiva_input(events)
                 || play.link.loyalty_skills_input(events)
                 || play.link.guild_input(events)

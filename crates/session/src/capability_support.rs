@@ -66,9 +66,11 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
-    property_services::mail::CAPABILITY_MAIL_V1 as u32,
     // CL26s4: boss encounter prerequisite of boss rewards (224).
+    oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1,
+    property_services::mail::CAPABILITY_MAIL_V1 as u32,
     oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+    oteryn_protocol_oteryn::inspection::CAPABILITY_INSPECTION_V1,
     prey::CAPABILITY_PREY_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
@@ -83,9 +85,11 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     oteryn_protocol_oteryn::daily_reward::CAPABILITY_DAILY_REWARD_V2,
     // CL26s4: personal boss reward commands.
+    oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
     boss_rewards::CAPABILITY_BOSS_REWARDS_V1,
     // CL26s2: native player typing command and CHAT delta support.
     oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1,
+    oteryn_protocol_oteryn::team_finder_members::CAPABILITY_TEAM_FINDER_MEMBERS_V1,
     player_typing::CAPABILITY_PLAYER_TYPING_V1,
     // CL26s1: public channels.
     chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1,
@@ -94,6 +98,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_EMPTY_OUTFIT_V1,
+    oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
     oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
 ];
 
@@ -135,6 +140,8 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     property_services::mail::CAPABILITY_MAIL_V1 as u32,
     oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+    oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1,
+    oteryn_protocol_oteryn::inspection::CAPABILITY_INSPECTION_V1,
     prey::CAPABILITY_PREY_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
@@ -151,10 +158,13 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::cyclopedia_tracker::CAPABILITY_CYCLOPEDIA_TRACKER_V1,
     oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
     oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_V1,
+    oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
     oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1,
+    oteryn_protocol_oteryn::team_finder_members::CAPABILITY_TEAM_FINDER_MEMBERS_V1,
     player_typing::CAPABILITY_PLAYER_TYPING_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
+    oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

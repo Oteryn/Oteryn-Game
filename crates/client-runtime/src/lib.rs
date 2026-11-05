@@ -22,6 +22,8 @@ pub mod item_use;
 pub mod connection;
 #[path = "features/0037-depot/protocol.rs"]
 pub mod depot;
+#[path = "features/0098-quick-loot/protocol.rs"]
+pub mod discovery;
 pub mod hotkey_equip;
 #[path = "features/0003-npc-service/protocol.rs"]
 pub mod npc_dialogue;
