@@ -42,6 +42,7 @@ impl State {
             command.command_type,
             store::COMMAND_TYPE_STORE_CATALOGUE_PAGE
                 | store::COMMAND_TYPE_STORE_HISTORY_PAGE
+                | store::COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE
                 | store::COMMAND_TYPE_STORE_PURCHASE
                 | store::COMMAND_TYPE_STORE_INBOX_CLAIM
         ) {

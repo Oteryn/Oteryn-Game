@@ -783,6 +783,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/rotten_blood_progression.rs",
         1,
     ),
+    // I14 special-potion fixture supplies only combat; its qualified room stays None.
+    ("gameplay_transport/postgres_tests/special_potions.rs", 1),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
     ("gameplay_transport/postgres_tests/vertical_move.rs", 2),
     ("gameplay_transport/postgres_tests/utility_runes.rs", 3),

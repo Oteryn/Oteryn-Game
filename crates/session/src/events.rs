@@ -11,6 +11,8 @@ pub enum SessionEvent {
     QuestLog(AppliedDelta<quest_log::QuestLog>),
     Appearance(AppliedDelta<AppearanceUpdate>),
     TutorialNotice(AppliedDelta<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice>),
+    /// Domain 13: a newly earned account achievement; a duplicate grant produces no delta.
+    AchievementEarned(AppliedDelta<AchievementEarned>),
     /// Domain 57: one server status, warning or advance message, retained in wire order.
     ServerMessage(AppliedDelta<ServerMessage>),
     /// Domain 1 `WORLD_SPATIAL_VISIBILITY`.
@@ -54,6 +56,9 @@ impl SessionEvent {
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
             Self::TutorialNotice(_) => 23,
+            Self::AchievementEarned(_) => {
+                oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES
+            }
             Self::ServerMessage(_) => {
                 oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
             }

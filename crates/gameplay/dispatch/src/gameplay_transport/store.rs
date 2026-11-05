@@ -8,7 +8,7 @@ use super::{ComposedFreshAdmission, FreshAdmissionStore};
 use crate::durability::character_inbox::{RewardClaimInboxMintOutput, RewardClaimInboxMintRequest};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::store::{DeliveryIdentity,DeliveryPlan,HirelingServiceDeliveryPlan,HirelingStoreAction,HirelingStorePurchase,PurchaseRequest,PurchaseRequestState};
+use crate::durability::store::{DeliveryIdentity,DeliveryPlan,HirelingServiceDeliveryPlan,HirelingStoreAction,HirelingStorePurchase,PurchaseRequest,PurchaseRequestState,StorePurchaseHistoryEntry};
 use crate::foundation::{CommandId, CommandRef};
 use crate::native_admission_source::store::{ProtocolError, PurchaseResult, PurchaseStoreOffer, StoreClient};
 use oteryn_gameplay_economy::store as rules;
@@ -61,8 +61,14 @@ pub fn with_store_offer(
     let mut set = base.to_vec();
     if !set.iter().any(|row| row.id == wire::CAPABILITY_STORE_V1) {
         set.push(super::capabilities::OfferedCapability { id: wire::CAPABILITY_STORE_V1, requires: &[] });
-        set.sort_by_key(|row| row.id);
     }
+    if !set.iter().any(|row| row.id == wire::CAPABILITY_STORE_PURCHASE_HISTORY_V1) {
+        set.push(super::capabilities::OfferedCapability {
+            id: wire::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
+            requires: &[wire::CAPABILITY_STORE_V1],
+        });
+    }
+    set.sort_by_key(|row| row.id);
     let set: Set = Box::leak(set.into_boxed_slice());
     cache.push((base, set));
     set
@@ -161,6 +167,53 @@ pub(super) async fn execute(
                 return REJECTED;
             };
             wire::encode_purchase_result(&result)
+        }
+        wire::COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE => {
+            if !admitted
+                .continuity
+                .selected_capabilities
+                .contains(wire::CAPABILITY_STORE_PURCHASE_HISTORY_V1)
+            {
+                return REJECTED;
+            }
+            let Ok(request) = wire::decode_history_request(payload) else {
+                return REJECTED;
+            };
+            let after = if request.page_cursor.is_empty() {
+                None
+            } else {
+                let Some(cursor) = parse_history_cursor(&request.page_cursor) else {
+                    return REJECTED;
+                };
+                Some(cursor)
+            };
+            let Some(account) = admitted.controller.map(|controller| controller.account_id) else {
+                return REJECTED;
+            };
+            let Ok(mut rows) = owner.root.store_purchase_history_page(account, after, 33).await
+            else {
+                return REJECTED;
+            };
+            let next_page_cursor = if rows.len() == 33 {
+                format_history_cursor(rows[31].purchased_at_ms, &rows[31].purchase_request_id)
+            } else {
+                String::new()
+            };
+            rows.truncate(32);
+            wire::encode_history_page(&wire::StoreHistoryPage {
+                entries: rows
+                    .into_iter()
+                    .map(|row| wire::StoreHistoryEntry {
+                        order_id: row.entry.order_id,
+                        offer_key: row.entry.offer_key,
+                        catalog_revision: row.entry.catalog_revision,
+                        price: row.entry.price,
+                        currency: row.entry.currency,
+                        purchased_at_unix_ms: row.purchased_at_ms,
+                    })
+                    .collect(),
+                next_page_cursor,
+            })
         }
         _ => return REJECTED,
     };
@@ -408,8 +461,23 @@ async fn purchase_retained_or_new(
             } else {
                 PurchaseResult::OfferUnavailable
             };
+            let history = match &answer {
+                PurchaseResult::Accepted { order_id, .. } => {
+                    uuid_bytes(order_id).map(|order_id| StorePurchaseHistoryEntry {
+                        order_id,
+                        offer_key: binding.offer_key.clone(),
+                        catalog_revision: binding.catalog_revision.clone(),
+                        price: binding.price,
+                        currency: currency_text(binding.currency).into(),
+                    })
+                }
+                _ => None,
+            };
             let bytes = serde_json::to_vec(&RetainedAnswer::of(&answer)).ok()?;
-            owner.root.record_store_answer(journal.clone(), bytes).await.ok()?
+            owner.root
+                .record_store_answer_with_history(journal.clone(), bytes, history)
+                .await
+                .ok()?
         }
     };
     let answer: RetainedAnswer = serde_json::from_slice(&saved).ok()?;
@@ -615,6 +683,33 @@ fn uuid_text(bytes: &[u8; 16]) -> String {
         &hex[16..20],
         &hex[20..]
     )
+}
+
+fn parse_history_cursor(text: &str) -> Option<(u64, [u8; 16])> {
+    let (milliseconds, identifier) = text.split_once('.')?;
+    if milliseconds.is_empty()
+        || !milliseconds.bytes().all(|byte| byte.is_ascii_digit())
+        || identifier.len() != 32
+        || !identifier
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return None;
+    }
+    let milliseconds = milliseconds.parse().ok()?;
+    let mut id = [0; 16];
+    for (index, byte) in id.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(identifier.get(index * 2..index * 2 + 2)?, 16).ok()?;
+    }
+    Some((milliseconds, id))
+}
+
+fn format_history_cursor(purchased_at_ms: u64, purchase_request_id: &[u8; 16]) -> String {
+    let identifier: String = purchase_request_id
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    format!("{purchased_at_ms}.{identifier}")
 }
 
 pub(super) fn uuid_bytes(text: &str) -> Option<[u8; 16]> {

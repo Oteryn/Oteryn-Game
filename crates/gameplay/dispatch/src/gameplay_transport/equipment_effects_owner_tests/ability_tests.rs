@@ -188,6 +188,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // IDS from Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml.
     // None has a speed override, so all five keep speed_bonus=0.
     ("M08-M10-SEWER-HARVEST", 5),
+    // I14 special potions: antidote potion 7644 and magic shield potion 35563, added to
+    // tools/content-migration/condition_potion_profiles.py IDS from Crystal potions.lua.
+    // Neither has a speed override, so both keep speed_bonus=0.
+    ("I14-POTIONS", 2),
 ];
 
 #[test]

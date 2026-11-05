@@ -130,6 +130,11 @@ pub use oteryn_session::exiva;
 /// Loyalty skills wire values owned by the admitted session.
 pub use oteryn_session::loyalty_skills;
 
+/// Achievement notice values validated by the session transport (capability 8).
+pub mod achievement_notices {
+    pub use oteryn_session::{AchievementEarned, AchievementWatermark};
+}
+
 /// Personal boss reward commands through the admitted session.
 #[path = "features/0224-boss-rewards/protocol.rs"]
 pub mod boss_rewards;

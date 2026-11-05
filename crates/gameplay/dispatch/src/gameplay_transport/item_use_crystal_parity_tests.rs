@@ -324,16 +324,16 @@ fn i14_global_consumables_are_admitted() {
 }
 
 /// The hireling Trader and W15b chest rewards admit physical Great Mana with
-/// canonical potion facts. The condition-effect potion 7644 remains unadmitted.
+/// canonical potion facts. Crystal potions.lua:21-42,57,62 also admits antidote and shield
+/// through the reserved condition owner, never through invented HP/MP consumption facts.
 #[test]
-fn i14_unresolved_crystal_consumables_remain_unadmitted() {
+fn i14_crystal_consumables_have_source_qualified_owners() {
     let controller = native();
     let state = controller
         .active()
         .and_then(|active| active.native_gameplay())
         .expect("native gameplay");
     // W15b admits 238 as an exact chest child with its canonical potion facts.
-    // The condition-effect potion 7644 still has no native admission.
     assert!(matches!(
         &policy_of(state, 238)
             .expect("W15b chest child")
@@ -342,7 +342,22 @@ fn i14_unresolved_crystal_consumables_remain_unadmitted() {
             .consumption,
         ReferenceItemField::Known(ReferenceItemConsumption::Potion(_))
     ));
-    assert!(policy_of(state, 7644).is_none(), "item 7644");
+    for id in [7644, 35563] {
+        let policy = policy_of(state, id).expect("implemented condition potion");
+        assert!(
+            !matches!(
+                policy.record().semantics.consumption,
+                ReferenceItemField::Known(_)
+            ),
+            "condition potion {id} has no fabricated HP/MP restore"
+        );
+        assert!(
+            oteryn_gameplay_progression::condition_potions::PotionCondition::from_key(&format!(
+                "oteryn:item.tibia.i{id}"
+            ))
+            .is_some()
+        );
+    }
 }
 
 /// I03: Crystal `data/scripts/actions/items/spellbook.lua:55` registers these spellbook ids; using
