@@ -1,7 +1,7 @@
 # FND-04B-AMEND-1 — Game fast-reconnect proof delivery
 
 - Decision: `FND-04B-AMEND-1`
-- Status: **PROPOSED — NOT ACCEPTED**
+- Status: **ACCEPTED** (owner, 2026-11-05)
 - Owner: FND-04B, with protocol and native-client owners
 - Scope: Game-issued fast reconnect and its acceptance-message delivery only
 - `IMPLEMENTATION_AUTHORITY: NONE`; `PRODUCTION_AUTHORITY: NONE`
