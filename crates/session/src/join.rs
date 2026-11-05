@@ -315,7 +315,6 @@ impl<S: SessionStream> Session<S> {
             ));
         }
         let container_views = container_tree::initial(&selected_capabilities, &gated_snapshots)?;
-        depot_containers::validate_join(&selected_capabilities, &gated_snapshots)?;
         quest_log_transport::validate_join(&selected_capabilities, &gated_snapshots)?;
         tutorial_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
         world_light::validate_join(&selected_capabilities, &gated_snapshots)?;

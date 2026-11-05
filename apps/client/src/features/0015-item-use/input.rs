@@ -12,7 +12,14 @@ impl PlayLink {
         self.inventory_use(false)
     }
     fn inventory_use(&self, rune: bool) -> bool {
-        let mut mailbox = lock(&self.mailbox);
+        Self::inventory_use_shared(&self.mailbox, &self.commands, rune)
+    }
+    pub(in crate::play) fn inventory_use_shared(
+        shared: &crate::play::mailbox::SharedMailbox,
+        commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
+        rune: bool,
+    ) -> bool {
+        let mut mailbox = lock(shared);
         if mailbox.inventory_shutdown || mailbox.world_context.pending {
             return false;
         }
@@ -43,8 +50,7 @@ impl PlayLink {
                 action: Action::UseOn(origin),
                 selection: None,
             };
-            if self
-                .commands
+            if commands
                 .send(crate::combat_input::PlayCommand::WorldContext(command))
                 .is_err()
             {
@@ -66,7 +72,13 @@ impl PlayLink {
     }
 
     pub fn use_with_cancel_input(&self, events: &[NormalizedInputEvent]) -> bool {
-        if !events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, repeat: false, .. } if *code == oteryn_input_actions::KeyCode::ESCAPE)) {
+        if !events.iter().any(|event| {
+            matches!(event,
+                NormalizedInputEvent::Key {
+                    code, state: ButtonState::Pressed, repeat: false, ..
+                } if *code == oteryn_input_actions::KeyCode::ESCAPE
+            )
+        }) {
             return false;
         }
         lock(&self.mailbox).world_context.cancel_targeting()

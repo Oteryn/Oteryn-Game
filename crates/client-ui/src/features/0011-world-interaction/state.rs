@@ -36,6 +36,50 @@ impl Menu {
         }
     }
 }
+/// Stable composition of the world, NPC, trade and party actions for one clicked target.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ContextAction {
+    World(Action),
+    Talk,
+    NpcTrade,
+    PlayerTrade,
+    Invite,
+    Party,
+}
+
+pub fn context_entries(
+    world: Option<&Menu>,
+    npc: bool,
+    trade: bool,
+    party: bool,
+) -> Vec<(&'static str, ContextAction)> {
+    let mut entries = Vec::new();
+    if let Some(world) = world {
+        entries.extend(
+            world
+                .entries
+                .iter()
+                .map(|(label, action)| (*label, ContextAction::World(*action))),
+        );
+    }
+    if npc {
+        entries.extend([
+            ("Talk", ContextAction::Talk),
+            ("Trade", ContextAction::NpcTrade),
+        ]);
+    }
+    if trade {
+        entries.push(("Trade with this player", ContextAction::PlayerTrade));
+    }
+    if party {
+        entries.extend([
+            ("Invite to party", ContextAction::Invite),
+            ("Party (Ctrl+Shift+G)", ContextAction::Party),
+        ]);
+    }
+    entries
+}
+
 #[derive(Debug, Default)]
 pub struct State {
     pub targeting: Option<oteryn_client_runtime::inventory::ItemHandle>,

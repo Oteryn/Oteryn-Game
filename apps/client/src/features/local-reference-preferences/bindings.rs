@@ -95,7 +95,7 @@ impl ReferencePreferences {
         if self.keybindings.keys().any(|id| {
             !REGISTERED_BINDINGS
                 .iter()
-                .any(|(known, default)| known == id && *default != "MOUSE1")
+                .any(|(known, default)| known == id && !default.starts_with("MOUSE"))
         }) {
             return Err(PreferenceError);
         }
@@ -110,7 +110,7 @@ impl ReferencePreferences {
         }
         let mut used = Vec::new();
         for &(id, default) in REGISTERED_BINDINGS {
-            if default == "MOUSE1" {
+            if default.starts_with("MOUSE") {
                 continue;
             }
             let chord = parse(self.keybindings.get(id).map_or(default, String::as_str))?;
@@ -144,7 +144,7 @@ impl ReferencePreferences {
             let mut target = None;
             let mut suppressed = false;
             for &(id, default) in REGISTERED_BINDINGS {
-                if default == "MOUSE1" {
+                if default.starts_with("MOUSE") {
                     continue;
                 }
                 let original = parse(default)?;

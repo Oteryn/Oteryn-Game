@@ -83,12 +83,10 @@ impl PlayView {
         self.apply_preference_scale()?;
         self.scene.retain_target(target)?;
         self.light_scene()?;
-        self.project_presentation(std::time::Instant::now())
         self.weather_scene();
-        Ok(())
         self.scene
             .set_minimap(self.live_map && self.preferences().panel_visible("minimap"))?;
-        self.light_scene()
+        self.project_presentation(std::time::Instant::now())
     }
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.

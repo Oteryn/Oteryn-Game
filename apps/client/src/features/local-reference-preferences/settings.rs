@@ -170,11 +170,6 @@ impl PlayView {
         preferences: ReferencePreferences,
     ) -> Result<(), PreferenceError> {
         preferences.validate()?;
-        let old = std::mem::replace(&mut self.local.preferences, preferences);
-        if self.rebuild().is_err() {
-            self.local.preferences = old;
-            return Err(PreferenceError);
-        }
         let mut candidate = self.clone();
         candidate.local.preferences = preferences;
         candidate.rebuild().map_err(|_| PreferenceError)?;

@@ -39,6 +39,10 @@ fn preferences_are_restored_when_scene_rebuild_fails() -> Result<(), BatchError>
     play.map_floor = Some(play.floor);
     assert!(play.set_preferences(changed).is_err());
     assert_eq!(play.preferences(), &old);
+    Ok(())
+}
+
+#[test]
 fn settings_rebind_conflicts_routes_and_survives_restart() -> Result<(), Box<dyn std::error::Error>>
 {
     use crate::play::{PreferenceStore, preference_bindings};

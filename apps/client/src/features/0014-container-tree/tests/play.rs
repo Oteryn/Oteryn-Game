@@ -27,7 +27,7 @@ fn ground_container_projection_uses_only_the_selected_live_handle()
     let (link, mut commands, outbox) = play_channel();
     outbox.container_initialize(Some(Default::default()));
     let key = oteryn_input_actions::NormalizedInputEvent::Key {
-        code: oteryn_input_actions::KeyCode::new(18)?,
+        code: oteryn_input_actions::KeyCode::new(14)?,
         state: oteryn_input_actions::ButtonState::Pressed,
         modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
             .with(oteryn_input_actions::Modifier::Shift),

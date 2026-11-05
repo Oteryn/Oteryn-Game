@@ -41,11 +41,19 @@ impl PlayLink {
 
 macro_rules! session_trait {
     ($($methods:tt)*) => {
-        super::feature_local_account_achievements::protocol::session_trait! {
+        super::feature_0011_world_interaction::protocol::session_trait! {
             $($methods)*
             fn equipment_selected(&self) -> bool { false }
             fn item_count_selected(&self) -> bool { false }
-            fn move_item(&mut self, _request: oteryn_client_runtime::inventory::MoveRequest) -> impl std::future::Future<Output = Result<Option<oteryn_client_runtime::inventory::MoveResponse>, oteryn_session::SessionError>> + Send {
+            fn move_item(
+                &mut self,
+                _request: oteryn_client_runtime::inventory::MoveRequest,
+            ) -> impl std::future::Future<
+                Output = Result<
+                    Option<oteryn_client_runtime::inventory::MoveResponse>,
+                    oteryn_session::SessionError,
+                >,
+            > + Send {
                 async { Ok(None) }
             }
         }
@@ -54,7 +62,7 @@ macro_rules! session_trait {
 pub(in crate::play) use session_trait;
 macro_rules! dispatch {
     ($command:expr, $session:ident, $outbox:ident, $held:ident, $publish:ident; $($arms:tt)*) => {
-        super::feature_local_account_achievements::protocol::dispatch! {
+        super::feature_0011_world_interaction::protocol::dispatch! {
             $command, $session, $outbox, $held, $publish;
             Ok(crate::combat_input::PlayCommand::MoveItem(request)) => {
                 match $session.move_item(request).await {

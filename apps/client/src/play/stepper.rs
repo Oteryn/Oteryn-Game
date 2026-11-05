@@ -1,12 +1,29 @@
 //! Session seam and feature defaults used by the production driver and synthetic scenarios.
 use crate::combat_input::{CombatCommand, CombatReport};
+use oteryn_client_runtime::{
+    imbue::ImbueResponse, party::PartyResponse, prey::PreyResponse, stash::StashResponse,
+};
 use oteryn_session::{
     LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome, WorldSpatialEntity,
 };
 use std::{future::Future, time::Duration};
-super::feature_local_account_achievements::protocol::session_trait! {
-    fn target_walk(&mut self, _position: oteryn_session::ActorPosition) -> impl Future<Output = Result<oteryn_client_runtime::target_move::WalkResponse, SessionError>> + Send {
+super::feature_0014_container_tree::protocol::session_trait! {
+    fn target_walk(
+        &mut self,
+        _position: oteryn_session::ActorPosition,
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::target_move::WalkResponse, SessionError>,
+    > + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 64 }) }
+    }
+    fn inventory(&self) -> Option<oteryn_session::CharacterInventory> {
+        None
+    }
+    fn battle_floor(&self) -> Option<i16> {
+        None
+    }
+    fn battle_state(&self) -> Option<oteryn_session::ActorCombatState> {
+        None
     }
     fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
         None
@@ -17,7 +34,8 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn animus(
         &mut self,
         _payload: &[u8],
-    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send
+    {
         async {
             Err(SessionError::CapabilityNotSelected {
                 capability: oteryn_session::animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
@@ -41,7 +59,8 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn exiva(
         &mut self,
         _payload: &[u8],
-    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send
+    {
         async { Err(SessionError::CapabilityNotSelected { capability: 147 }) }
     }
     fn quest_state(&self) -> oteryn_client_runtime::quest_log::QuestState {
@@ -53,7 +72,8 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn loyalty_skills(
         &mut self,
         _payload: &[u8],
-    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send
+    {
         async {
             Err(SessionError::CapabilityNotSelected {
                 capability: oteryn_session::loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
@@ -63,7 +83,8 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn quest_log(
         &mut self,
         _payload: &[u8],
-    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send
+    {
         async { Err(SessionError::CapabilityNotSelected { capability: 16 }) }
     }
     fn step(
@@ -84,10 +105,14 @@ super::feature_local_account_achievements::protocol::session_trait! {
     ) -> impl Future<Output = Result<CombatReport, SessionError>> + Send;
     /// Sends one logout: the server's result, `None` when it refused the command before its
     /// logout authority.
-    fn logout(&mut self)
-    -> impl Future<Output = Result<Option<LogoutResult>, SessionError>> + Send;
+    fn logout(
+        &mut self,
+    ) -> impl Future<Output = Result<Option<LogoutResult>, SessionError>> + Send;
     /// The other visible entities when they differ from `held`.
-    fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
+    fn entities_changed(
+        &self,
+        _held: &[WorldSpatialEntity],
+    ) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
     fn task_board_selected(&self) -> bool {
@@ -107,19 +132,9 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn stash(
         &mut self,
         _command: &oteryn_client_runtime::stash::StashCommand,
-    ) -> impl Future<Output = Result<oteryn_client_runtime::stash::StashResponse, SessionError>> + Send
+    ) -> impl Future<Output = Result<StashResponse, SessionError>> + Send
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 62 }) }
-    }
-    fn npc_talk(&mut self, _intent: &oteryn_session::npc_service::NpcTalkIntent) -> impl Future<Output = Result<oteryn_session::NpcIntentDisposition, SessionError>> + Send {
-        async { Err(SessionError::CapabilityNotSelected { capability: 3 }) }
-    }
-    fn npc_resources(&mut self) -> impl Future<Output = Result<Option<oteryn_client_runtime::npc_shop::resources::ResourceBalances>, SessionError>> + Send {
-        async { Ok(None) }
-    }
-    fn npc_inventory(&self) -> Option<oteryn_session::CharacterInventory> { None }
-    fn npc_trade(&mut self, _intent: &oteryn_session::npc_service::NpcTradeIntent) -> impl Future<Output = Result<oteryn_session::NpcIntentDisposition, SessionError>> + Send {
-        async { Err(SessionError::CapabilityNotSelected { capability: 3 }) }
     }
     fn npc_shop_selected(&self) -> bool {
         false
@@ -127,8 +142,9 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn npc_shop(
         &mut self,
         _command: &oteryn_client_runtime::npc_shop::NpcShopCommand,
-    ) -> impl Future<Output = Result<oteryn_client_runtime::npc_shop::NpcShopResponse, SessionError>>
-    + Send {
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::npc_shop::NpcShopResponse, SessionError>,
+    > + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 81 }) }
     }
     fn boss_rewards_selected(&self) -> bool {
@@ -148,7 +164,7 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn prey(
         &mut self,
         _command: &oteryn_client_runtime::prey::prey::Request,
-    ) -> impl Future<Output = Result<oteryn_client_runtime::prey::PreyResponse, SessionError>> + Send
+    ) -> impl Future<Output = Result<PreyResponse, SessionError>> + Send
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 140 }) }
     }
@@ -169,9 +185,12 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn imbue(
         &mut self,
         _command: &oteryn_client_runtime::imbue::ImbueCommand,
-    ) -> impl Future<Output = Result<oteryn_client_runtime::imbue::ImbueResponse, SessionError>> + Send
+    ) -> impl Future<Output = Result<ImbueResponse, SessionError>> + Send
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 68 }) }
+    }
+    fn player_trade_items(&self) -> oteryn_client_runtime::player_trade::TradeItems {
+        Default::default()
     }
     fn player_trade_selected(&self) -> bool {
         false
@@ -213,7 +232,7 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn party(
         &mut self,
         _request: &oteryn_client_runtime::party::PartyCommand,
-    ) -> impl Future<Output = Result<oteryn_client_runtime::party::PartyResponse, SessionError>> + Send
+    ) -> impl Future<Output = Result<PartyResponse, SessionError>> + Send
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 42 }) }
     }
@@ -234,7 +253,8 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn feature(
         &mut self,
         _command: &oteryn_client_runtime::raw_feature::FeatureCommand,
-    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send
+    {
         async { Err(SessionError::CapabilityNotSelected { capability: 0 }) }
     }
     fn feature_snapshot(&self, _domain: u32) -> Option<Vec<u8>> {
@@ -260,14 +280,23 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn market(
         &mut self,
         _request: &oteryn_client_runtime::market::MarketCommand,
-    ) -> impl Future<Output = Result<oteryn_client_runtime::market::MarketResponse, SessionError>> + Send
-    {
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::market::MarketResponse, SessionError>,
+    > + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 63 }) }
+    }
+    fn chat_private_state(&self) -> (bool, Option<oteryn_session::ChatChannelList>) {
+        (false, None)
+    }
+    fn guild_chat_state(&self) -> oteryn_session::GuildRoomState {
+        Default::default()
     }
     fn chat_public_selected(&self) -> bool {
         false
     }
-    fn chat_state(&self) -> Option<(oteryn_session::ChatRoomSet, Vec<oteryn_session::ChatLine>)> {
+    fn chat_state(
+        &self,
+    ) -> Option<(oteryn_session::ChatRoomSet, Vec<oteryn_session::ChatLine>)> {
         None
     }
     fn chat_public(
@@ -283,8 +312,39 @@ super::feature_local_account_achievements::protocol::session_trait! {
         &mut self,
         _command: &oteryn_client_runtime::player_typing::PlayerTypingCommand,
     ) -> impl Future<
-        Output = Result<oteryn_client_runtime::player_typing::PlayerTypingResponse, SessionError>,
+        Output = Result<
+            oteryn_client_runtime::player_typing::PlayerTypingResponse,
+            SessionError,
+        >,
     > + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 233 }) }
+    }
+
+    fn npc_talk(
+        &mut self,
+        _intent: &oteryn_session::npc_service::NpcTalkIntent,
+    ) -> impl Future<Output = Result<oteryn_session::NpcIntentDisposition, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 3 }) }
+    }
+    fn npc_resources(
+        &mut self,
+    ) -> impl Future<
+        Output = Result<
+            Option<oteryn_client_runtime::npc_shop::resources::ResourceBalances>,
+            SessionError,
+        >,
+    > + Send {
+        async { Ok(None) }
+    }
+    fn npc_inventory(&self) -> Option<oteryn_session::CharacterInventory> {
+        None
+    }
+    fn npc_trade(
+        &mut self,
+        _intent: &oteryn_session::npc_service::NpcTradeIntent,
+    ) -> impl Future<Output = Result<oteryn_session::NpcIntentDisposition, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 3 }) }
     }
 }

@@ -6,13 +6,10 @@ use super::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
     WorldWeather(AppliedDelta<world_weather::WorldWeather>),
-    /// Live bag sources used by the depot browser; the session retains the complete view.
-    ContainerViews(AppliedDelta<container_tree::ContainerViews>),
     WorldClock(AppliedDelta<world_clock::WorldClock>),
     Presentation(AppliedDelta<Vec<PresentationEvent>>),
     ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
     PlayerTrade(AppliedDelta<player_trade::State>),
-    TradeContainers(AppliedDelta<container_tree::ContainerViews>),
     NpcConversation(AppliedDelta<npc_service::NpcConversation>),
     NpcTradeWindow(AppliedDelta<npc_service::NpcTradeWindow>),
     /// Domain 16: the requested view and tracked lines, replaced whole.
@@ -51,6 +48,7 @@ pub enum SessionEvent {
     /// Domain 9 `CHARACTER_INVENTORY`: the inventory, replaced whole.
     /// [`Session::inventory`] already holds it.
     Inventory(AppliedDelta<CharacterInventory>),
+    /// Live bags shared by container, depot, trade and NPC shop projections.
     ContainerViews(AppliedDelta<container_tree::ContainerViews>),
     /// Domain 11 `OPEN_CONTAINER`: the open corpse, replaced whole (the default means closed).
     /// [`Session::open_container`] already holds it.
@@ -62,8 +60,6 @@ impl SessionEvent {
     pub const fn domain_id(&self) -> u32 {
         match self {
             Self::PlayerTrade(_) => player_trade::STATE_DOMAIN_PLAYER_TRADE,
-            Self::TradeContainers(_) => container_tree::STATE_DOMAIN_CONTAINER_VIEWS,
-            Self::ContainerViews(_) => 14,
             Self::NpcConversation(_) => npc_service::STATE_DOMAIN_NPC_CONVERSATION,
             Self::NpcTradeWindow(_) => npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW,
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
@@ -92,7 +88,6 @@ impl SessionEvent {
             | Self::VipPresence(_)
             | Self::PlayerTyping(_) => STATE_DOMAIN_CHAT,
             Self::ChatChannelList(_) => STATE_DOMAIN_CHAT,
-            Self::ContainerViews(_) => 14,
             Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
             Self::ContainerViews(_) => container_tree::STATE_DOMAIN_CONTAINER_VIEWS,
             Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,

@@ -32,8 +32,15 @@ fn player_trade_and_container_pushes_are_typed_revision_checked_and_selected()
                 continue;
             }
             outcome?;
+            assert_eq!(session.gated_snapshot(14).ok_or("container snapshot missing")?.revision, 2);
+            assert!(session.container_views().is_some());
+            let stale = encode_state_delta(1, 44, 14, 1, 3, 1, &[])?;
+            assert!(session
+                .apply_state_delta(44, decode_wire_envelope(&stale)?.payload()).is_err());
             let events = session.take_events();
-            assert!(matches!(&events[..], [SessionEvent::PlayerTrade(update), SessionEvent::TradeContainers(_)]
+            assert!(matches!(&events[..], [
+                SessionEvent::PlayerTrade(update), SessionEvent::ContainerViews(_)
+            ]
                 if update.base_revision == 1 && update.new_revision == 2 && update.value.phase == 1));
             assert_eq!(session.player_trade_state().ok_or("state missing")?.phase, 1);
             let payload = player_trade::encode_state(&Default::default()).map_err(|e| format!("{e:?}"))?;

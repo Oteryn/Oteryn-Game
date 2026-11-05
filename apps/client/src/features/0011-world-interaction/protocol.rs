@@ -37,16 +37,23 @@ impl Outbox {
 
 macro_rules! session_trait {
     ($($methods:tt)*) => {
-        super::feature_local_account_achievements::protocol::session_trait! {
+        super::feature_0037_depot::protocol::session_trait! {
             $($methods)*
             fn targeting_source_current(&self, source: oteryn_session::ItemHandle) -> bool {
-                self.inventory().is_some_and(|inventory| inventory.main_backpack.iter().chain(&inventory.entries).any(|item| item.handle == source))
+                self.inventory().is_some_and(|inventory| {
+                    inventory.main_backpack.iter().chain(&inventory.entries)
+                        .any(|item| item.handle == source)
+                })
             }
             fn world_context(
                 &mut self,
                 _command: &oteryn_client_runtime::world_interaction::Command,
-            ) -> impl std::future::Future<Output = Result<String, oteryn_session::SessionError>> + Send {
-                async { Err(oteryn_session::SessionError::CapabilityNotSelected { capability: 28 }) }
+            ) -> impl std::future::Future<
+                Output = Result<String, oteryn_session::SessionError>,
+            > + Send {
+                async {
+                    Err(oteryn_session::SessionError::CapabilityNotSelected { capability: 28 })
+                }
             }
         }
     };
@@ -55,7 +62,7 @@ pub(in crate::play) use session_trait;
 
 macro_rules! dispatch {
     ($command:expr, $session:ident, $outbox:ident, $held:ident, $publish:ident; $($arms:tt)*) => {
-        super::feature_local_account_achievements::protocol::dispatch! {
+        super::feature_0037_depot::protocol::dispatch! {
             $command, $session, $outbox, $held, $publish;
             Ok(crate::combat_input::PlayCommand::WorldContext(command)) => {
                 match $outbox.world_context_run(&mut $session, &command).await {

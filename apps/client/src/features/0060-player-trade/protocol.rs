@@ -47,7 +47,7 @@ pub(in crate::play) fn reduce(panel: &mut PlayerTradePanel, events: &[SessionEve
         match event {
             SessionEvent::Inventory(update) => panel.items.inventory = update.value.clone(),
             SessionEvent::OpenContainer(update) => panel.items.corpse = update.value.clone(),
-            SessionEvent::TradeContainers(update) => panel.items.containers = update.value.clone(),
+            SessionEvent::ContainerViews(update) => panel.items.containers = update.value.clone(),
             SessionEvent::PlayerTrade(update) => {
                 if matches!(update.value.phase, 1..=3)
                     && !panel

@@ -36,12 +36,7 @@ impl<S: SessionStream> Session<S> {
         delta: oteryn_protocol_oteryn::StateDeltaView<'_>,
     ) -> Result<SessionEvent, SessionError> {
         let domain_id = delta.domain_id;
-        let capability = if domain_id == player_trade::STATE_DOMAIN_PLAYER_TRADE {
-            60
-        } else {
-            14
-        };
-        if !self.is_selected(capability) {
+        if !self.is_selected(60) {
             return Err(SessionError::UnselectedDomain { domain_id });
         }
         let revision = self
@@ -56,23 +51,9 @@ impl<S: SessionStream> Session<S> {
             new_revision: delta.new_revision,
             value,
         };
-        let event = if capability == 60 {
-            SessionEvent::PlayerTrade(applied(
-                player_trade::decode_state(delta.payload)
-                    .map_err(|_| SessionError::SessionUnusable)?,
-            ))
-        } else {
-            SessionEvent::TradeContainers(AppliedDelta {
-                server_sequence: sequence,
-                base_revision: delta.base_revision,
-                new_revision: delta.new_revision,
-                value: container_tree::decode_container_views_for(
-                    delta.payload,
-                    self.is_selected(230),
-                )
-                .map_err(SessionError::ItemView)?,
-            })
-        };
+        let event = SessionEvent::PlayerTrade(applied(
+            player_trade::decode_state(delta.payload).map_err(|_| SessionError::SessionUnusable)?,
+        ));
         match self
             .gated_revisions
             .iter_mut()

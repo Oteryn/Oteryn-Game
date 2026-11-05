@@ -110,6 +110,7 @@ impl Scene {
             color,
             strength,
         ));
+    }
     pub fn set_tile_px(&mut self, tile_px: u32) -> Result<(), BatchError> {
         if self.view.tile_px() == tile_px {
             return Ok(());

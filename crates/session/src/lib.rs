@@ -71,12 +71,12 @@ pub use oteryn_protocol_oteryn::world_event;
 /// Live map snapshot and delta value types and codecs.
 pub use oteryn_protocol_oteryn::world_map;
 pub use oteryn_protocol_oteryn::{
-    animus_mastery, browse_field, container_tree, daily_boost, daily_reward, depot_search,
-    item_forge, item_view, store,
+    animus_mastery, browse_field, daily_boost, daily_reward, depot_search, item_forge, item_view,
+    store,
 };
 pub use oteryn_protocol_oteryn::{atelier, prey, wheel};
 /// Player-trade wire values for the selected native-client feature.
-pub use oteryn_protocol_oteryn::{container_tree, player_trade, player_typing};
+pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 pub use recovery::{Recovery, RecoveryState, check_resume_selection};
 mod guild_chat;
 mod private_channels;
@@ -130,6 +130,7 @@ pub use oteryn_protocol_oteryn::imbuement;
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
 pub use oteryn_protocol_oteryn::loyalty_skills;
 pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide};
+pub use oteryn_protocol_oteryn::npc_shop;
 /// Prey slot wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::vip_presence::{
     PresenceBatch as VipPresenceBatch, PresenceEntry as VipPresenceEntry,
@@ -182,7 +183,6 @@ pub use oteryn_protocol_oteryn::{
         CharmUnlockStageIntent, CharmView,
     },
 };
-pub use oteryn_protocol_oteryn::{container_tree, npc_shop};
 pub use oteryn_protocol_oteryn::{npc_service, staff};
 use std::collections::{BTreeMap, VecDeque};
 use std::error::Error as StdError;

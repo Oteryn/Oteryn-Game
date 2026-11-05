@@ -1,59 +1,9 @@
 //! Live container sources required by the native depot browser.
 use crate::*;
 
-pub(crate) fn validate_join(
-    selected: &[u32],
-    snapshots: &[GatedSnapshot],
-) -> Result<(), SessionError> {
-    if !selected.contains(&14) {
-        return Ok(());
-    }
-    let snapshot = snapshots
-        .iter()
-        .find(|s| s.domain_id == 14)
-        .ok_or(SessionError::MissingDomain(14))?;
-    if snapshot.snapshot_type != 1 {
-        return Err(SessionError::UnregisteredSnapshotType {
-            domain_id: 14,
-            snapshot_type: snapshot.snapshot_type,
-        });
-    }
-    container_tree::decode_container_views_for(&snapshot.payload, selected.contains(&230))
-        .map_err(SessionError::ItemView)?;
-    Ok(())
-}
-
-pub(crate) fn apply<S: SessionStream>(
-    session: &mut Session<S>,
-    sequence: u64,
-    payload: &[u8],
-) -> Result<SessionEvent, SessionError> {
-    if !session.is_selected(14) {
-        return Err(SessionError::UnselectedDomain { domain_id: 14 });
-    }
-    let delta = decode_state_delta(payload)?;
-    let snapshot = session
-        .gated_snapshots
-        .iter_mut()
-        .find(|s| s.domain_id == 14)
-        .ok_or(SessionError::MissingDomain(14))?;
-    check_delta(&delta, 1, snapshot.revision)?;
-    let value = container_tree::decode_container_views_for(
-        delta.payload,
-        session.selected_capabilities.contains(&230),
-    )
-    .map_err(SessionError::ItemView)?;
-    snapshot.revision = delta.new_revision;
-    snapshot.payload = delta.payload.to_vec();
-    if let Some((_, revision)) = session.gated_revisions.iter_mut().find(|(id, _)| *id == 14) {
-        *revision = delta.new_revision;
-    }
-    Ok(SessionEvent::ContainerViews(AppliedDelta {
-        server_sequence: sequence,
-        base_revision: delta.base_revision,
-        new_revision: delta.new_revision,
-        value,
-    }))
+#[cfg(test)]
+fn validate_join(selected: &[u32], snapshots: &[GatedSnapshot]) -> Result<(), SessionError> {
+    container_tree::initial(selected, snapshots).map(|_| ())
 }
 
 impl<S: SessionStream> Session<S> {

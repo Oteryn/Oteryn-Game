@@ -1,6 +1,6 @@
 //! Native inventory list. Window handles stay on their creating thread.
 #![allow(unsafe_code)]
-use crate::play::{PlayLink, mailbox::lock};
+use crate::play::{PlayLink, feature_0014_container_tree as containers, mailbox::lock};
 use std::ptr::{null, null_mut};
 use std::sync::Arc;
 use std::time::Duration;
@@ -10,19 +10,8 @@ use windows_sys::Win32::UI::WindowsAndMessaging::*;
 unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     // SAFETY: userdata points to the live selection flag on this window's thread.
     unsafe {
-        if msg == WM_COMMAND && w & 0xffff == 102 {
-            let flag = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut u8;
-            if !flag.is_null() {
-                *flag = 2;
-            }
-            return 0;
-        }
-        if msg == WM_COMMAND && w & 0xffff == 101 && (w >> 16) & 0xffff == LBN_SELCHANGE as usize {
-            let flag = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut u8;
-            if !flag.is_null() {
-                *flag = 1;
         if msg == WM_COMMAND
-            && (matches!(w & 0xffff, 102 | 103)
+            && (matches!(w & 0xffff, 102 | 103 | 104)
                 || w & 0xffff == 101 && (w >> 16) & 0xffff == LBN_SELCHANGE as usize)
         {
             let flag = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut u8;
@@ -30,6 +19,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 *flag = match w & 0xffff {
                     102 => 2,
                     103 => 3,
+                    104 => 4,
                     _ => 1,
                 };
             }
@@ -67,9 +57,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
                     750,
-                    420,
-                    460,
-                    460,
+                    520,
                     null_mut(),
                     null_mut(),
                     null_mut(),
@@ -98,7 +86,20 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         null_mut(),
                         null(),
                     );
-                    CreateWindowExW(0, wide("BUTTON").as_ptr(), wide("Open container").as_ptr(), WS_CHILD | WS_VISIBLE | WS_TABSTOP, 10, 295, 160, 30, hwnd, 102_usize as _, null_mut(), null());
+                    CreateWindowExW(
+                        0,
+                        wide("BUTTON").as_ptr(),
+                        wide("Open container").as_ptr(),
+                        WS_CHILD | WS_VISIBLE | WS_TABSTOP,
+                        10,
+                        364,
+                        160,
+                        30,
+                        hwnd,
+                        104_usize as _,
+                        null_mut(),
+                        null(),
+                    );
                     CreateWindowExW(
                         0,
                         wide("BUTTON").as_ptr(),
@@ -133,8 +134,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         wide("").as_ptr(),
                         WS_CHILD | WS_VISIBLE,
                         10,
-                        330,
-                        366,
+                        402,
                         420,
                         70,
                         hwnd,
@@ -142,7 +142,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         null_mut(),
                         null(),
                     );
-                    let mut equipment = super::super::super::feature_0012_item_equip_drop::view::Slots::create(hwnd);
+                    let mut equipment =
+                        crate::play::feature_0012_item_equip_drop::view::Slots::create(hwnd);
                     let mut held: Option<oteryn_client_ui::inventory::InventoryPanel> = None;
                     let mut status_text = String::new();
                     let mut message: MSG = std::mem::zeroed();
@@ -166,7 +167,6 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         let Some(mailbox) = weak.upgrade() else {
                             break;
                         };
-                        let action = std::mem::take(&mut *changed);
                         let shared = mailbox.clone();
                         let mut mailbox = lock(&shared);
                         if mailbox.inventory_shutdown {
@@ -176,29 +176,27 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         let mut show_containers = false;
                         let mut selected = false;
                         if action != 0 {
-                            // Resolve the row against the displayed snapshot, then validate its handle
-                            // against current state. A concurrent removal cannot select another item.
+                            // Resolve the displayed row and validate its current handle.
+                            // A concurrent removal cannot select another item.
                             let row = SendMessageW(list, LB_GETCURSEL, 0, 0);
                             if let Some(item) = usize::try_from(row)
                                 .ok()
                                 .and_then(|i| held.as_ref()?.rows().get(i).copied())
-                                && mailbox.inventory.select(item.handle) && action == 2
+                                && mailbox.inventory.select(item.handle)
                             {
-                                show_containers = super::super::super::feature_0014_container_tree::input::inventory_native_open(&mut mailbox, &commands, item.handle);
+                                if action == 4 {
+                                    show_containers = containers::input::inventory_native_open(
+                                        &mut mailbox,
+                                        &commands,
+                                        item.handle,
+                                    );
+                                }
                                 selected = mailbox.inventory.select(item.handle);
                             }
                         }
                         if matches!(action, 2 | 3) && selected {
                             drop(mailbox);
-                            let link = PlayLink {
-                                commands: commands.clone(),
-                                mailbox: shared.clone(),
-                            };
-                            if action == 3 {
-                                link.inventory_use_rune();
-                            } else {
-                                link.inventory_use_with();
-                            }
+                            PlayLink::inventory_use_shared(&shared, &commands, action == 3);
                             mailbox = lock(&shared);
                         }
                         let panel = &mailbox.inventory;
@@ -230,11 +228,19 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             }
                             held = Some(panel.clone());
                         }
-                        super::list_surface(&mut mailbox, list, held.as_ref().map(|p| p.rows()).as_deref().unwrap_or(&[]), oteryn_session::ItemMoveDestination::MainBackpack);
+                        super::list_surface(
+                            &mut mailbox,
+                            list,
+                            held.as_ref().map(|p| p.rows()).as_deref().unwrap_or(&[]),
+                            oteryn_session::ItemMoveDestination::MainBackpack,
+                        );
                         equipment.refresh(&mut mailbox);
                         drop(mailbox);
                         if show_containers {
-                            super::super::super::feature_0014_container_tree::view::open_shared(weak.clone(), commands.clone());
+                            crate::play::feature_0014_container_tree::view::open_shared(
+                                weak.clone(),
+                                commands.clone(),
+                            );
                         }
                         std::thread::sleep(Duration::from_millis(30));
                     }

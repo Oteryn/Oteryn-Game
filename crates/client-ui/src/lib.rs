@@ -7,10 +7,10 @@ pub mod equipment;
 #[path = "features/0004-item-view-move/mod.rs"]
 pub mod inventory;
 
-#[path = "features/0015-item-use/mod.rs"]
-pub mod item_use;
 #[path = "features/0017-attack/mod.rs"]
 pub mod battle;
+#[path = "features/0015-item-use/mod.rs"]
+pub mod item_use;
 
 #[path = "features/0019-world-light/mod.rs"]
 pub mod world_light;

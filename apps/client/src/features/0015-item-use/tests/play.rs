@@ -128,10 +128,13 @@ fn rune_uses_position_on_item_tiles_including_own_tile_and_tools_keep_items()
         let (link, mut commands, outbox) = play_channel();
         outbox.targeting_initialize(true);
         let item = carried(2)?;
-        outbox.inventory_initialize(Some(oteryn_session::CharacterInventory {
-            main_backpack: Some(item),
-            ..Default::default()
-        }));
+        outbox.inventory_initialize(
+            Some(oteryn_session::CharacterInventory {
+                main_backpack: Some(item),
+                ..Default::default()
+            }),
+            false,
+        );
         assert!(link.inventory_select(item.handle));
         assert!(if rune {
             link.inventory_use_rune()
@@ -170,11 +173,14 @@ fn self_target_keeps_mode_and_inventory_destination_consumes_once()
     let mut view = item_map_view()?;
     let (link, mut commands, outbox) = play_channel();
     outbox.targeting_initialize(true);
-    outbox.inventory_initialize(Some(oteryn_session::CharacterInventory {
-        main_backpack: Some(carried(1)?),
-        entries: vec![carried(2)?],
-        equipment: vec![],
-    }));
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            main_backpack: Some(carried(1)?),
+            entries: vec![carried(2)?],
+            equipment: vec![],
+        }),
+        false,
+    );
     assert!(link.inventory_select(std::num::NonZeroU64::MIN));
     assert!(link.inventory_use_with());
     assert!(!link.inventory_use_with());
@@ -199,10 +205,13 @@ fn self_target_keeps_mode_and_inventory_destination_consumes_once()
 fn published_source_removal_cancels_targeting() -> Result<(), Box<dyn std::error::Error>> {
     let (link, _, outbox) = play_channel();
     outbox.targeting_initialize(true);
-    outbox.inventory_initialize(Some(oteryn_session::CharacterInventory {
-        main_backpack: Some(carried(1)?),
-        ..Default::default()
-    }));
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            main_backpack: Some(carried(1)?),
+            ..Default::default()
+        }),
+        false,
+    );
     assert!(link.inventory_select(std::num::NonZeroU64::MIN));
     assert!(link.inventory_use_with());
     let session = Fake {
@@ -225,5 +234,32 @@ fn published_source_removal_cancels_targeting() -> Result<(), Box<dyn std::error
         link.world_context_feedback()
             .is_some_and(|text| text.contains("disappeared"))
     );
+    Ok(())
+}
+
+#[test]
+fn native_inventory_targeting_keeps_other_panels_alive() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = play_channel();
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            main_backpack: Some(carried(1)?),
+            ..Default::default()
+        }),
+        false,
+    );
+    outbox.targeting_initialize(true);
+    assert!(link.inventory_select(1.try_into()?));
+    assert!(PlayLink::inventory_use_shared(
+        &link.mailbox,
+        &link.commands,
+        false
+    ));
+    let mailbox = super::super::mailbox::lock(&link.mailbox);
+    assert_eq!(mailbox.world_context.targeting, Some(1.try_into()?));
+    assert!(!mailbox.inventory_shutdown);
+    assert!(!mailbox.depot_shutdown);
+    assert!(!mailbox.market_shutdown);
+    assert!(!mailbox.quest_shutdown);
+    assert!(!mailbox.wheel_shutdown);
     Ok(())
 }

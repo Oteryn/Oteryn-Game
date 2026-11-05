@@ -110,7 +110,7 @@ fn a_new_ground_view_becomes_active_even_when_result_precedes_delta()
 fn ground_open_chord_requires_control_shift_and_a_fresh_press()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-    let code = KeyCode::new(18)?;
+    let code = KeyCode::new(14)?;
     let key = |state, modifiers, repeat| NormalizedInputEvent::Key {
         code,
         state,

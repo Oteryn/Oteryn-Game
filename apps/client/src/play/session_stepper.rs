@@ -32,12 +32,14 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<Option<oteryn_client_runtime::container_tree::ContainerViewOutcome>, SessionError>
     {
         oteryn_client_runtime::container_tree::send(self, intent).await
+    }
     fn battle_floor(&self) -> Option<i16> {
         Some(self.world_spatial().actor_position.floor)
     }
 
     fn battle_state(&self) -> Option<oteryn_session::ActorCombatState> {
         Session::combat_state(self).copied()
+    }
     async fn depot_open_container(
         &mut self,
         handle: oteryn_session::ItemHandle,
@@ -348,6 +350,7 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     }
     fn chat_private_state(&self) -> (bool, Option<oteryn_session::ChatChannelList>) {
         (self.is_selected(80), self.private_channel_list().cloned())
+    }
     fn guild_chat_state(&self) -> oteryn_session::GuildRoomState {
         self.chat_log()
             .map(|log| log.guild_room().clone())

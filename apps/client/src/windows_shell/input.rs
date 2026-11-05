@@ -11,10 +11,10 @@ impl Application {
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
         let clicks = self.actions.route(events);
         if let Some(play) = &mut self.play {
-            let trade_clicks = play.link.player_trade_track_pointer(events);
             if play.link.use_with_cancel_input(events) {
                 return;
             }
+        }
         let routed = self.settings.input(events);
         let events = routed.as_slice();
         if let Some(play) = &mut self.play {
@@ -25,11 +25,11 @@ impl Application {
             }
             if play.view.container_input(&play.link, events)
                 || play.link.inventory_input(events)
-            if play.link.battle_input(events)
-            if play
-                .link
-                .party_input(events, &play.view, &mut self.party_input)
-            if play.link.npc_context_input(events, &play.view)
+                || play.link.battle_input(events)
+                || (oteryn_client_ui::party::open_key(events) && {
+                    play.link.open_party();
+                    true
+                })
                 || play.link.npc_dialogue_input(events, &play.view)
                 || play.link.achievement_notices_input(events)
                 || play.link.achievements_input(events)
@@ -68,11 +68,7 @@ impl Application {
             {
                 return;
             }
-            if play.link.player_trade_input(events)
-                || play
-                    .view
-                    .player_trade_context_input(&play.link, &trade_clicks)
-            {
+            if play.link.player_trade_input(events) {
                 return;
             }
             if let Some(direction) = arrow_step(events) {
@@ -86,19 +82,17 @@ impl Application {
             }
             let mut render_failed = false;
             for click in clicks {
+                if !click.secondary && play.view.minimap_click(click.x, click.y) {
+                    continue;
+                }
                 if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
                     if click.secondary {
-                        if let Some(menu) = play.view.world_context(tile, &play.link) {
-                            oteryn_client::play::open_world_context_menu(
-                                &play.view, &play.link, &menu,
-                            );
-                            self.actions.context_closed();
-                        }
+                        oteryn_client::play::open_context_menu(&play.view, &play.link, tile);
+                        self.actions.context_closed();
                     } else {
                         render_failed |= play.view.primary_click(tile, &play.link).is_err();
                     }
                 }
-                render_failed |= play.view.click_screen(click.x, click.y).is_err();
             }
             if render_failed {
                 self.fail(event_loop, ShellError::RendererRender);

@@ -2,20 +2,18 @@
 #![allow(unsafe_code)]
 use crate::combat_input::PlayCommand;
 use crate::play::feature_0080_chat_private_channel::view::Controls as PrivateControls;
-use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::chat::{Mode, panel_text};
 use crate::play::{
     PlayLink,
     mailbox::{SharedMailbox, lock},
 };
-use oteryn_client_ui::chat::{ChatPanel, Mode, panel_text};
+use oteryn_client_ui::chat::{Mode, panel_text};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedSender;
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
-use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetFocus;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetFocus;
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
 const MODES: usize = 101;
@@ -153,7 +151,6 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
         let mut private = PrivateControls::new(hwnd);
-        let mut held: Option<ChatPanel> = None;
         let mut held = String::new();
         let mut msg: MSG = std::mem::zeroed();
         loop {
@@ -205,9 +202,6 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 }
             }
             private.render(&mailbox.chat_private);
-            if held.as_ref() != Some(&mailbox.chat) {
-                SetWindowTextW(transcript, wide(&panel_text(&mailbox.chat)).as_ptr());
-                held = Some(mailbox.chat.clone());
             let text = format!(
                 "{}\n{}",
                 panel_text(&mailbox.chat),

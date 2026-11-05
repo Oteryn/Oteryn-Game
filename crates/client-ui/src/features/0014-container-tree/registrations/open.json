@@ -4,6 +4,6 @@
   "id": "0014-container-tree-ground-open",
   "status": "supported",
   "context": "gameplay",
-  "chord": "CTRL+SHIFT+O",
+  "chord": "CTRL+SHIFT+K",
   "entry": "input.rs::open_key"
 }

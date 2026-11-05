@@ -81,7 +81,6 @@ struct Application {
     generation: ProcessGeneration,
     input: InputPlatformAdapter,
     actions: MouseActions,
-    party_input: oteryn_client_ui::party::PartyInput,
     hotkeys: SpellHotkeys,
     fatal_error: Option<ShellError>,
 }
@@ -103,7 +102,6 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
-            party_input: Default::default(),
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),

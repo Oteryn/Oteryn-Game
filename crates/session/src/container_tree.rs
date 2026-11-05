@@ -1,9 +1,7 @@
 //! Typed transport for existing capability 14. Depot browsing is a separate server task.
 use super::*;
 use oteryn_protocol_oteryn::container_tree as wire;
-pub use oteryn_protocol_oteryn::container_tree::{
-    ContainerView, ContainerViewIntent, ContainerViewOutcome, ContainerViews,
-};
+pub use oteryn_protocol_oteryn::container_tree::*;
 
 pub(super) fn initial(
     selected: &[u32],
@@ -45,6 +43,14 @@ pub(super) fn apply<S: SessionStream>(
     let value = wire::decode_container_views_for(delta.payload, session.is_selected(230))
         .map_err(SessionError::ItemView)?;
     session.container_views = Some(value.clone());
+    if let Some(snapshot) = session
+        .gated_snapshots
+        .iter_mut()
+        .find(|s| s.domain_id == 14)
+    {
+        snapshot.revision = delta.new_revision;
+        snapshot.payload = delta.payload.to_vec();
+    }
     if let Some((_, revision)) = session.gated_revisions.iter_mut().find(|(id, _)| *id == 14) {
         *revision = delta.new_revision;
     }

@@ -142,8 +142,8 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
                 [470, 76, 440, 20],
             ),
         ];
-        let stash = control(hwnd, "BUTTON", "Stash items…", 36, [10, 490, 440, 28]);
-        control(hwnd, "BUTTON", "Market (Ctrl+M)", 36, [10, 490, 200, 28]);
+        let stash = control(hwnd, "BUTTON", "Stash items…", 36, [10, 490, 215, 28]);
+        let market = control(hwnd, "BUTTON", "Market (Ctrl+M)", 37, [235, 490, 215, 28]);
         let status = control(hwnd, "STATIC", "", 300, [10, 530, 900, 100]);
         if boxes
             .iter()
@@ -151,7 +151,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
             .chain(&carried)
             .chain(&controls)
             .chain(&labels)
-            .chain([&status, &stash])
+            .chain([&status, &stash, &market])
             .any(|h| h.is_null())
         {
             DestroyWindow(hwnd);
@@ -181,6 +181,11 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
                 if id == 36 {
                     drop(m);
                     PlayLink::stash_open(&shared, &commands);
+                    m = lock(&shared);
+                    continue;
+                }
+                if id == 37 {
+                    drop(m);
                     crate::play::feature_0063_market::input::open_from_depot(&shared, &commands);
                     m = lock(&shared);
                     continue;
