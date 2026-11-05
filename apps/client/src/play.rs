@@ -103,54 +103,6 @@ impl PlayView {
             self.inputs.push_back(input);
         }
     }
-
-    /// One shell tick, never waiting on the network: applies every outcome the session task has
-    /// delivered, then hands it the next step if one is due. A session end returns to login with
-    /// its public class, a committed logout to character selection; a view error is a render
-    /// failure.
-    pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
-        const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
-        while let Some(event) = link.poll() {
-            match event {
-                PlayEvent::Stepped(outcome) => {
-                    self.apply(&outcome).map_err(|_error| UNAVAILABLE)?;
-                }
-                PlayEvent::Pushed(pushed) => {
-                    self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
-                    self.enqueue(pushed.sounds);
-                }
-                PlayEvent::Combat(report) => self.apply_combat(report),
-                PlayEvent::LogoutRefused(result) => self.apply_logout_refusal(result),
-                PlayEvent::LoggedOut => return Err(PlayEnd::LoggedOut),
-                PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
-            }
-        }
-        self.vitals = link.actor_vitals();
-        // One chronological queue: each input goes out in the order it was given. A step still
-        // in flight holds back the arrow and what was given after it.
-        while let Some(&input) = self.inputs.front() {
-            match input {
-                Input::Cast(spell) => feature_local_spell_action_bar::input::send_cast(link, spell),
-                Input::Attack(target) => {
-                    feature_0011_world_interaction::input::send_attack(link, target)
-                }
-                Input::Logout => link.request_logout(),
-                Input::Arrow(_) => match self.send_step().map_err(|_error| UNAVAILABLE)? {
-                    Some(direction) => link.request(direction),
-                    None => break,
-                },
-            }
-            if !matches!(input, Input::Arrow(_)) {
-                self.inputs.pop_front();
-            }
-        }
-        if self.inputs.is_empty()
-            && let Some(direction) = self.send_step().map_err(|_error| UNAVAILABLE)?
-        {
-            link.request(direction);
-        }
-        Ok(())
-    }
 }
 
 mod end;

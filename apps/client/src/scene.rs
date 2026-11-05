@@ -113,7 +113,7 @@ impl Scene {
     }
 
     pub fn set_ambient(&mut self, ambient: [u8; 3]) -> Result<(), BatchError> {
-        self.lit_atlas = Some(oteryn_renderer::lit_atlas(self.world.atlas(), ambient));
+        self.lit_atlas = Some(oteryn_renderer::lit_atlas(self.unlit_atlas(), ambient));
         Ok(())
     }
 
@@ -177,17 +177,10 @@ impl Scene {
                         // Object markers remain below actors. Entity fallback glyphs are replaced.
                         let marker = self.visible.iter().any(|v| {
                             v.tile == tile
-                                && (v.kind == TargetKind::Object || (v.glyph && !has_actor))
+                                && ((v.kind == TargetKind::Object && (v.glyph || v.item.is_none()))
+                                    || (v.glyph && !has_actor))
                         });
                         marker
-                        // One glyph per tile however many markers and entities stand on it.
-                        self.visible
-                            .iter()
-                            .any(|v| {
-                                v.tile == TileCoord::new(x, y)
-                                    && (v.glyph
-                                        || (v.kind == TargetKind::Object && v.item.is_none()))
-                            })
                             .then_some(Draw {
                                 cell: MARKER_CELL,
                                 offset: [0, 0],
@@ -227,13 +220,17 @@ impl Scene {
         self.facing
     }
 
-    #[must_use]
-    pub fn atlas(&self) -> &AtlasImage {
+    fn unlit_atlas(&self) -> &AtlasImage {
         self.presentation_atlas
             .as_deref()
+            .unwrap_or_else(|| self.world.atlas())
+    }
+
+    #[must_use]
+    pub fn atlas(&self) -> &AtlasImage {
         self.lit_atlas
             .as_ref()
-            .unwrap_or_else(|| self.world.atlas())
+            .unwrap_or_else(|| self.unlit_atlas())
     }
 
     #[must_use]

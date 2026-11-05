@@ -547,7 +547,7 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
     baseline: WorldSpatialObservation,
 ) -> Result<WorldSnapshot, ServeEnd> {
     // MAP-WIRE-2: with capability 18 (which requires 4), domain 17 above every revision the
-    // session has seen, with fresh map handles. It uses the bounded snapshot transfer.
+    // session has seen, with fresh map handles. It must fit the single snapshot chunk.
     let mut world_map = None;
     let map_snapshot;
     if let Some(items) = item_view.as_mut().filter(|_| {

@@ -10,15 +10,11 @@ use oteryn_session::{
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-struct MapSession {
-    initial: WorldMapViewSnapshot,
-    incoming: mpsc::UnboundedReceiver<SessionEvent>,
-    pending: Vec<SessionEvent>,
-    appearances: Vec<oteryn_session::VisibleAppearance>,
 pub(super) struct MapSession {
     pub(super) initial: WorldMapViewSnapshot,
     pub(super) incoming: mpsc::UnboundedReceiver<SessionEvent>,
     pub(super) pending: Vec<SessionEvent>,
+    pub(super) appearances: Vec<oteryn_session::VisibleAppearance>,
 }
 
 impl Stepper for MapSession {
@@ -251,7 +247,7 @@ fn native_live_appearance_snapshot_reaches_visible_scene()
                         outbox,
                     ));
                     let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
-                    // Wake the production session loop to publish its current presentation snapshot.
+                    // Wake the production loop to publish its presentation snapshot.
                     send.send(SessionEvent::WorldSpatial(oteryn_session::AppliedDelta {
                         server_sequence: 1,
                         base_revision: 1,

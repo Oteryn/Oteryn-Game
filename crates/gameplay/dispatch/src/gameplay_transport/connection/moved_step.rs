@@ -119,15 +119,13 @@ where
         }
     }
     if let (Some(view), Some(items)) = (world_map, item_view) {
-        let update = world_map_frames(authority, actor, generation, *sequence, view, items).await;
+        let update = world_map_delta(authority, actor, generation, *sequence, view, items).await;
         admitted.continuity.item_view = items.continuity();
-        if let Some((next_sequence, frames)) = update? {
-            *sequence = next_sequence;
+        if let Some((delta_sequence, frame)) = update? {
+            *sequence = delta_sequence;
             admitted.continuity.server_sequence = *sequence;
             admitted.continuity.world_map_revision = view.revision();
-            for frame in frames {
-                write_frame(stream, &frame).await.ok()?;
-            }
+            write_frame(stream, &frame).await.ok()?;
         }
     }
     Some(())

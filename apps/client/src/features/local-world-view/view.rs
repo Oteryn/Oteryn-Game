@@ -82,7 +82,6 @@ impl PlayView {
         )?;
         self.scene
             .set_presentations(&self.appearances, self.floor)?;
-        Ok(())
         self.scene.retain_target(target)?;
         self.light_scene()
     }

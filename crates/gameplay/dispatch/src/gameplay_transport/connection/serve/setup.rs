@@ -120,7 +120,8 @@ where
     items.appearances.domain(&mut domains);
     domains.extend(server_save_countdown_transport::snapshot(admitted));
     domains.extend(tutorial_notices_transport::snapshot(admitted));
-    let snapshot = encode_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
+    let snapshot =
+        encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
     let Ok(snapshot) = snapshot else {
         return Err(ServeEnd::Disconnected);
     };

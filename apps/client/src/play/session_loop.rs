@@ -297,7 +297,6 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
-    outbox.vitals(session.actor_vitals());
     outbox.target_walk_initialize(session.feature_selected(64));
     outbox.vitals(session.actor_vitals());
     outbox.world_light_initialize(session.feature_snapshot(18));
