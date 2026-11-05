@@ -165,6 +165,7 @@ fn derived_gated_routes_match_previous_table() {
         (199, &[387, 388], &[]),
         (225, &[431], &[]),
         (230, &[440], &[]),
+        (233, &[447], &[]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();

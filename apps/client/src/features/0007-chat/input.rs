@@ -8,7 +8,7 @@ use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
     pub fn chat_text(&self, text: String) {
-        lock(&self.mailbox).chat.text = text;
+        self.chat_composer(true, text);
     }
     pub fn chat_request(&self, mode: Mode, recipient: &str) {
         enqueue(&mut lock(&self.mailbox), &self.commands, mode, recipient);
@@ -32,10 +32,11 @@ pub(in crate::play) fn enqueue(
     mode: Mode,
     recipient: &str,
 ) {
-    if let Some(intent) = request(&mut mailbox.chat, mode, recipient)
-        && commands.send(PlayCommand::ChatPublic(intent)).is_err()
-    {
-        mailbox.chat.pending = false;
-        mailbox.chat.feedback = Some("The session has ended".into());
+    if let Some(intent) = request(&mut mailbox.chat, mode, recipient) {
+        super::super::feature_0233_player_typing::input::composer(mailbox, commands, false);
+        if commands.send(PlayCommand::ChatPublic(intent)).is_err() {
+            mailbox.chat.pending = false;
+            mailbox.chat.feedback = Some("The session has ended".into());
+        }
     }
 }

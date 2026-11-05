@@ -3,12 +3,13 @@
 use crate::combat_input::PlayCommand;
 use crate::play::feature_0080_chat_private_channel::view::Controls as PrivateControls;
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::chat::{ChatPanel, Mode, panel_text};
+use oteryn_client_ui::chat::{Mode, panel_text};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedSender;
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetFocus;
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
 const MODES: usize = 101;
@@ -140,6 +141,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         );
         let mut private = PrivateControls::new(hwnd);
         let mut held: Option<ChatPanel> = None;
+        let mut held = String::new();
         let mut msg: MSG = std::mem::zeroed();
         loop {
             while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -154,6 +156,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             if mailbox.chat_public_shutdown {
                 break;
             }
+            mailbox.chat.text = read_text(message);
+            super::super::super::feature_0233_player_typing::input::composer(
+                &mut mailbox,
+                &commands,
+                GetForegroundWindow() == hwnd && GetFocus() == message,
+            );
             for action in std::mem::take(&mut actions.0) {
                 if private.action(action, &mut mailbox, &commands) {
                     continue;
@@ -169,17 +177,35 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 };
                 mailbox.chat.text = read_text(message);
                 super::super::input::enqueue(&mut mailbox, &commands, mode, &read_text(recipient));
+                if mailbox.chat.pending {
+                    SetWindowTextW(message, wide("").as_ptr());
+                }
             }
             private.render(&mailbox.chat_private);
             if held.as_ref() != Some(&mailbox.chat) {
                 SetWindowTextW(transcript, wide(&panel_text(&mailbox.chat)).as_ptr());
                 held = Some(mailbox.chat.clone());
+            let text = format!(
+                "{}\n{}",
+                panel_text(&mailbox.chat),
+                oteryn_client_ui::player_typing::panel_text(&mailbox.player_typing)
+            );
+            if held != text {
+                SetWindowTextW(transcript, wide(&text).as_ptr());
+                held = text;
             }
             drop(mailbox);
             std::thread::sleep(Duration::from_millis(30));
         }
         if IsWindow(hwnd) != 0 {
             let _ = DestroyWindow(hwnd);
+        }
+        if let Some(shared) = weak.upgrade() {
+            super::super::super::feature_0233_player_typing::input::composer(
+                &mut lock(&shared),
+                &commands,
+                false,
+            );
         }
         close(&weak);
     }
