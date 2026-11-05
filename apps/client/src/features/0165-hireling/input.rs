@@ -8,6 +8,10 @@ impl PlayLink {
         if !oteryn_client_ui::hireling::open_key(events) {
             return false;
         }
+        if lock(&self.mailbox).hireling_management.selected {
+            self.hireling_management_open();
+            return true;
+        }
         self.hireling_request(Intent::Refresh);
         #[cfg(windows)]
         self.open_hireling_panel();

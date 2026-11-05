@@ -28,10 +28,13 @@ pub(super) fn submit(
     if id == 111 {
         return request(p, Intent::Badges);
     }
-    let tab = id
-        .checked_sub(100)
-        .and_then(|v| u8::try_from(v).ok())
-        .and_then(oteryn_client_runtime::cyclopedia_character::CharacterTab::from_id)?;
+    let tab = if matches!(id, 112 | 113) {
+        Some(p.tab)
+    } else {
+        id.checked_sub(100)
+            .and_then(|v| u8::try_from(v).ok())
+            .and_then(oteryn_client_runtime::cyclopedia_character::CharacterTab::from_id)
+    }?;
     let parsed = (|| {
         let offset = values[0].trim().parse::<u16>().ok()?;
         let limit = values[1].trim().parse::<u8>().ok()?;
@@ -51,7 +54,14 @@ pub(super) fn submit(
     p.offset = offset;
     p.limit = limit;
     p.target = target;
-    request(p, Intent::Tab)
+    request(
+        p,
+        match id {
+            112 => Intent::Previous,
+            113 => Intent::Next,
+            _ => Intent::Tab,
+        },
+    )
 }
 
 fn parse_target(text: &str) -> Option<[u8; 16]> {
@@ -95,7 +105,11 @@ mod window {
                 let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
                 let id = w & 0xffff;
                 let note = (w >> 16) & 0xffff;
-                if !actions.is_null() && matches!(id, 101..=111) && note == BN_CLICKED as usize {
+                if !actions.is_null()
+                    && (*actions).0.len() < 32
+                    && matches!(id, 101..=113)
+                    && note == BN_CLICKED as usize
+                {
                     (*actions).0.push(id);
                 }
                 return 0;
@@ -117,6 +131,7 @@ mod window {
             }
             m.cyclopedia_character.open = true;
         }
+        link.cyclopedia_character_request(Intent::Tab);
         let weak = Arc::downgrade(&link.mailbox);
         let rollback = weak.clone();
         let commands = link.commands.clone();
@@ -203,6 +218,9 @@ mod window {
                     WS_TABSTOP,
                 );
             }
+            for (id, label, x) in [(112, "Previous page", 10), (113, "Next page", 190)] {
+                control(hwnd, "BUTTON", label, id, [x, 112, 165, 28], WS_TABSTOP);
+            }
             let output = control(
                 hwnd,
                 "EDIT",
@@ -222,6 +240,9 @@ mod window {
                 }
                 let Some(shared) = weak.upgrade() else { break };
                 let mut mailbox = lock(&shared);
+                if mailbox.cyclopedia_character_shutdown {
+                    break;
+                }
                 for action in std::mem::take(&mut actions.0) {
                     let values = edits.map(read_text);
                     if let Some(command) = submit(
@@ -233,6 +254,10 @@ mod window {
                         mailbox.cyclopedia_character.pending = false;
                         mailbox.cyclopedia_character.feedback = Some("The session has ended");
                     }
+                    SetWindowTextW(
+                        edits[0],
+                        wide(&mailbox.cyclopedia_character.offset.to_string()).as_ptr(),
+                    );
                 }
                 SetWindowTextW(
                     output,

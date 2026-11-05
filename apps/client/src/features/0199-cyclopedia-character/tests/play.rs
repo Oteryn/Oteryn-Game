@@ -375,3 +375,23 @@ fn gap_cl1_session_loop_delivers_combat_modifiers_and_stamina()
         .join()
         .map_err(|_| "session loop thread panicked")?
 }
+
+#[test]
+fn gap_cl6_native_character_paging_preserves_cl5_controls_and_pending_fence() {
+    use oteryn_client_runtime::cyclopedia_character::CharacterTab;
+    let mut p = CyclopediaCharacterPanel {
+        selected: true,
+        tab: CharacterTab::RecentDeaths,
+        ..Default::default()
+    };
+    let next = native_controls::submit(&mut p, 113, ["0", "20", ""]);
+    assert_eq!(next.map(|c| c.payload), Some(vec![2, 20, 0, 20]));
+    assert!(native_controls::submit(&mut p, 112, ["20", "20", ""]).is_none());
+    assert_eq!(p.offset, 20);
+    p.pending = false;
+    let previous = native_controls::submit(&mut p, 112, ["20", "20", ""]);
+    assert_eq!(previous.map(|c| c.payload), Some(vec![2, 0, 0, 20]));
+    p.pending = false;
+    let bounded = native_controls::submit(&mut p, 113, ["65530", "20", ""]);
+    assert_eq!(bounded.map(|c| c.payload), Some(vec![2, 255, 255, 20]));
+}

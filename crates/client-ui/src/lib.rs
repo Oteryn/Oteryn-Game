@@ -244,6 +244,8 @@ pub mod vip;
 /// House banker hireling status and controls.
 #[path = "features/0165-hireling/mod.rs"]
 pub mod hireling;
+#[path = "features/0250-hireling-management/mod.rs"]
+pub mod hireling_management;
 
 /// Market offer browsing and settlement controls.
 #[path = "features/0063-market/mod.rs"]

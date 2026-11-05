@@ -144,6 +144,7 @@ pub(super) struct Mailbox {
     pub(super) chat_party_room: oteryn_client_ui::chat_party_room::ChatPartyRoomPanel,
     pub(super) cyclopedia_character:
         oteryn_client_ui::cyclopedia_character::CyclopediaCharacterPanel,
+    pub(super) cyclopedia_character_shutdown: bool,
     pub(super) cyclopedia_tracker: oteryn_client_ui::cyclopedia_tracker::CyclopediaTrackerPanel,
     pub(super) world_event: oteryn_client_ui::world_event::WorldEventPanel,
     pub(super) world_event_shutdown: bool,
@@ -199,6 +200,7 @@ pub(super) struct Mailbox {
     pub(super) party: oteryn_client_ui::party::PartyPanel,
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) hireling_shutdown: bool,
+    pub(super) hireling_management: oteryn_client_ui::hireling_management::Panel,
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
     // CL26s1
@@ -506,6 +508,7 @@ impl Drop for PlayLink {
         mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
         mailbox.hireling_shutdown = true;
+        mailbox.cyclopedia_character_shutdown = true;
         // CL26s1
         mailbox.chat_public_shutdown = true;
         // CL26s2: stop the player-typing native panel with the session.

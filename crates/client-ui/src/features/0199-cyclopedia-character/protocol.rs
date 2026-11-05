@@ -10,6 +10,9 @@ use oteryn_client_runtime::{
 pub enum Intent {
     Badges,
     Tab,
+    SelectTab(cyclopedia_character::CharacterTab),
+    Next,
+    Previous,
 }
 pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<FeatureCommand> {
     if !p.selected {
@@ -20,9 +23,18 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         p.feedback = Some("Waiting for the server");
         return None;
     }
+    match intent {
+        Intent::SelectTab(tab) => {
+            p.tab = tab;
+            p.offset = 0;
+        }
+        Intent::Next => p.offset = p.offset.saturating_add(u16::from(p.limit)),
+        Intent::Previous => p.offset = p.offset.saturating_sub(u16::from(p.limit)),
+        _ => {}
+    }
     let (kind, payload) = match intent {
         Intent::Badges => (387, Vec::new()),
-        Intent::Tab => {
+        Intent::Tab | Intent::SelectTab(_) | Intent::Next | Intent::Previous => {
             let mut v = vec![p.tab as u8];
             v.extend_from_slice(&p.offset.to_le_bytes());
             v.push(p.limit);
@@ -71,7 +83,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
     let text = if p.command_kind == 387 {
         decode_badges(&r.payload)
     } else {
-        tab.and_then(|tab| decode_tab(&r.payload, tab))
+        tab.and_then(|tab| decode_tab(&r.payload, tab, p.limit))
     };
     match text {
         Some(v) => {
@@ -104,7 +116,11 @@ fn decode_badges(b: &[u8]) -> Option<String> {
 }
 // Crystal 201189f protocolgame.cpp:4341-5265 supplies the tab facts. The accepted
 // native layout/unknown-field differences are recorded in cyclopedia-character-v1.md.
-fn decode_tab(b: &[u8], requested: cyclopedia_character::CharacterTab) -> Option<String> {
+fn decode_tab(
+    b: &[u8],
+    requested: cyclopedia_character::CharacterTab,
+    limit: u8,
+) -> Option<String> {
     use cyclopedia_character::{
         CharacterTab as Tab,
         combat::{CombatStat, CombatStatUnit, CombatStats},
@@ -148,7 +164,7 @@ fn decode_tab(b: &[u8], requested: cyclopedia_character::CharacterTab) -> Option
             });
         }
         Tab::RecentDeaths | Tab::RecentPvpKills => {
-            let count = r.count()?;
+            let count = r.count(limit)?;
             for _ in 0..count {
                 let at = i64::from_le_bytes(r.bytes()?);
                 let status = if requested == Tab::RecentPvpKills {
@@ -165,7 +181,7 @@ fn decode_tab(b: &[u8], requested: cyclopedia_character::CharacterTab) -> Option
         }
         Tab::Achievements | Tab::Appearances => {
             let total = r.u16()?;
-            let count = r.count()?;
+            let count = r.count(limit)?;
             if count > total {
                 return None;
             }
@@ -248,9 +264,9 @@ impl<'a> Reader<'a> {
     fn u64(&mut self) -> Option<u64> {
         Some(u64::from_le_bytes(self.bytes()?))
     }
-    fn count(&mut self) -> Option<u16> {
+    fn count(&mut self, limit: u8) -> Option<u16> {
         let count = self.u16()?;
-        (count <= 50).then_some(count)
+        (count <= u16::from(limit.min(50))).then_some(count)
     }
     fn text(&mut self) -> Option<&'a str> {
         let len = usize::from(self.u8()?);

@@ -67,6 +67,7 @@ pub async fn run_session<T: Stepper>(
         session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1),
     );
     outbox.hireling_initialize(session.hireling_selected());
+    outbox.hireling_management_initialize(session.feature_selected(250));
     outbox.market_initialize(session.market_selected());
     outbox.chat_public_initialize(session.chat_public_selected(), session.chat_state());
     outbox.chat_private_publish(&session);
@@ -124,6 +125,7 @@ pub async fn run_session<T: Stepper>(
                         197 => outbox.cyclopedia_tracker_result(&result),
                         199 => outbox.cyclopedia_character_result(&result),
                         225 => outbox.boss_difficulty_result(&result),
+                        250 => outbox.hireling_management_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
