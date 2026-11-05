@@ -22,9 +22,41 @@ pub(in crate::play) fn presentation(
         {
             for id in [cue_id, secondary_cue_id] {
                 if id != 0 && pushed.sounds.len() < MAX_PENDING_SOUNDS {
-                    pushed.sounds.push(SoundCue { id, source });
+                    pushed.sounds.push(SoundCue {
+                        id,
+                        source,
+                        ambient: false,
+                    });
                 }
             }
+        }
+        if let Some(cue_id) = oteryn_client_ui::ambient_sound::protocol::cue(event.kind) {
+            absorb_sounds(
+                &mut pushed.sounds,
+                [SoundCue {
+                    id: cue_id,
+                    source: oteryn_session::PresentationSource::Global,
+                    ambient: true,
+                }],
+            );
+        }
+    }
+}
+
+/// Keep the latest loop/stop even behind a full queue of transient effects.
+pub(in crate::play) fn absorb_sounds(
+    pending: &mut Vec<SoundCue>,
+    newer: impl IntoIterator<Item = SoundCue>,
+) {
+    for cue in newer {
+        if cue.ambient {
+            pending.retain(|held| !held.ambient);
+            if pending.len() == MAX_PENDING_SOUNDS {
+                pending.pop();
+            }
+        }
+        if pending.len() < MAX_PENDING_SOUNDS {
+            pending.push(cue);
         }
     }
 }

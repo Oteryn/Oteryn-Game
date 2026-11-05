@@ -6,6 +6,15 @@ pub(super) fn validate_join(
     selected: &[u32],
     snapshots: &[GatedSnapshot],
 ) -> Result<(), SessionError> {
+    if selected.contains(&CAPABILITY_AMBIENT_SOUND_V1) {
+        let row = snapshots
+            .iter()
+            .find(|row| row.domain_id == STATE_DOMAIN_AMBIENT_SOUND)
+            .ok_or(SessionError::MissingDomain(STATE_DOMAIN_AMBIENT_SOUND))?;
+        if row.snapshot_type != 1 || !row.payload.is_empty() {
+            return Err(SessionError::SessionUnusable);
+        }
+    }
     if !selected.contains(&CAPABILITY_PRESENTATION_V1) {
         return Ok(());
     }
@@ -36,7 +45,15 @@ pub(super) fn apply<S: SessionStream>(
     payload: &[u8],
 ) -> Result<SessionEvent, SessionError> {
     let delta = decode_state_delta(payload)?;
-    if !session.is_selected(CAPABILITY_PRESENTATION_V1) {
+    let ambient = delta.domain_id == STATE_DOMAIN_AMBIENT_SOUND;
+    if ambient && delta.payload.len() > MAX_PRESENTATION_EVENT_BYTES {
+        return Err(SessionError::SessionUnusable);
+    }
+    if !session.is_selected(if ambient {
+        CAPABILITY_AMBIENT_SOUND_V1
+    } else {
+        CAPABILITY_PRESENTATION_V1
+    }) {
         return Err(SessionError::UnselectedDomain {
             domain_id: delta.domain_id,
         });
@@ -47,13 +64,27 @@ pub(super) fn apply<S: SessionStream>(
         .find(|(id, _)| *id == delta.domain_id)
         .ok_or(SessionError::MissingDomain(delta.domain_id))?;
     check_delta(&delta, 1, row.1)?;
-    let event = if delta.domain_id == STATE_DOMAIN_WORLD_PRESENTATION {
+    let event = if ambient || delta.domain_id == STATE_DOMAIN_WORLD_PRESENTATION {
+        let value =
+            decode_presentation_batch(delta.payload).map_err(|_| SessionError::SessionUnusable)?;
+        if ambient
+            && (value.len() != 1
+                || !matches!(value[0].kind, PresentationEventKind::AmbientSound { .. }))
+        {
+            return Err(SessionError::SessionUnusable);
+        }
+        if !ambient
+            && value
+                .iter()
+                .any(|event| matches!(event.kind, PresentationEventKind::AmbientSound { .. }))
+        {
+            return Err(SessionError::SessionUnusable);
+        }
         SessionEvent::Presentation(AppliedDelta {
             server_sequence: sequence,
             base_revision: delta.base_revision,
             new_revision: delta.new_revision,
-            value: decode_presentation_batch(delta.payload)
-                .map_err(|_| SessionError::SessionUnusable)?,
+            value,
         })
     } else {
         SessionEvent::ActorCooldowns(AppliedDelta {

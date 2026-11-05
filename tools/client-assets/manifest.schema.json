@@ -22,6 +22,14 @@
         }
       }
     },
+    "ambient_cues": {
+      "type": "object", "maxProperties": 65535,
+      "propertyNames": {"pattern": "^[1-9][0-9]{0,4}$"},
+      "additionalProperties": {
+        "type": "array", "minItems": 1, "maxItems": 128,
+        "items": {"$ref": "#/$defs/name"}
+      }
+    },
     "sound_data": {"$ref": "#/$defs/name"},
     "sound_cues": {
       "type": "object", "minProperties": 1, "maxProperties": 65535,
@@ -32,7 +40,7 @@
       }
     }
   },
-  "dependentRequired": {"sound_data": ["sound_cues"], "sound_cues": ["sound_data"]},
+  "dependentRequired": {"ambient_cues": ["sound_data"], "sound_data": ["sound_cues"], "sound_cues": ["sound_data"]},
   "$defs": {
     "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "name": {"type": "string", "minLength": 1, "pattern": "^[^/\\\\:\\u0000]+$", "not": {"enum": [".", ".."]}}

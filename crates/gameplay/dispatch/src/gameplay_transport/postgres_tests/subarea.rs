@@ -25,7 +25,7 @@ impl compile::KeyResolver for Ground {
     }
 }
 
-fn world(
+pub(super) fn world(
     deps: &Dependencies,
     generation: &crate::content::ActiveGeneration,
 ) -> TestResult<crate::map::boot::BundleWorld> {

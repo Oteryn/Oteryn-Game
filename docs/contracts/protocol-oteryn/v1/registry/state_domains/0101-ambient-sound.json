@@ -1,0 +1,20 @@
+{
+  "id": 101,
+  "name": "AMBIENT_SOUND",
+  "owner_decision": "SRVGAP-B24",
+  "owner": "current ChannelRuntime sound-zone observer",
+  "capability": 288,
+  "revision": "Connection-local: empty snapshot at revision 0; each private replacement increments it. Reconnect starts at 0 and observes the current zone again.",
+  "delta_types": [{
+    "id": 1,
+    "name": "AMBIENT_SOUND_REPLACE_V1",
+    "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#WorldPresentationBatchV1",
+    "max_payload_bytes": 128
+  }],
+  "snapshot_types": [{
+    "id": 1,
+    "name": "AMBIENT_SOUND_SNAPSHOT_V1",
+    "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#WorldPresentationSnapshotV1",
+    "max_payload_bytes": 0
+  }]
+}

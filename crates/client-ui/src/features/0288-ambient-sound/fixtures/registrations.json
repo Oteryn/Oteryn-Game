@@ -1,0 +1,29 @@
+[
+  {
+    "mechanic": "0288-ambient-sound",
+    "kind": "handlers",
+    "id": "0288-ambient-sound-push",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "not_applicable": {
+      "state": "The native audio owner holds one private loop.",
+      "input": "Zone and period transitions are server-owned.",
+      "settings": "The existing audio preferences control the ambient loop."
+    },
+    "capability": 288,
+    "entry": "protocol.rs::cue",
+    "reducer": "protocol.rs::cue",
+    "push_messages": [
+      "AmbientSound"
+    ],
+    "test": "tests/state.rs::replacement_and_silence_are_explicit"
+  },
+  {
+    "mechanic": "0288-ambient-sound",
+    "kind": "panels",
+    "id": "0288-ambient-sound-status",
+    "status": "supported",
+    "entry": "view.rs::status"
+  }
+]

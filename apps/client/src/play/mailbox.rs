@@ -64,8 +64,7 @@ impl Pushed {
             &mut self.visuals,
             newer.visuals,
         );
-        let room = super::MAX_PENDING_SOUNDS.saturating_sub(self.sounds.len());
-        self.sounds.extend(newer.sounds.into_iter().take(room));
+        super::feature_0023_presentation::protocol::absorb_sounds(&mut self.sounds, newer.sounds);
         for text in newer.notices.tutorial {
             self.notices
                 .apply(oteryn_client_runtime::tutorial_notices::Notice::Tutorial(

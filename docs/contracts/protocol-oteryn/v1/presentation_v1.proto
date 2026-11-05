@@ -99,6 +99,13 @@ message PresentationValueTextV1 {
   PresentationValueV1 secondary = 6;
 }
 
+// B24 additive private ambient channel; ids never share the positional sound namespace.
+// AmbientSound is carried only by independently negotiated capability 288/domain 101.
+message PresentationAmbientSoundV1 {
+  // Zero stops the current loop, otherwise replaces it.
+  uint32 cue_id = 1;
+}
+
 message PresentationSoundV1 {
   oteryn.protocol.v1.world_spatial.ActorPositionV1 position = 1;
   uint32 cue_id = 2;
@@ -119,6 +126,7 @@ message PresentationEventV1 {
     PresentationSpellWordsV1 spell_words = 5;
     PresentationValueTextV1 value_text = 6;
     PresentationSoundV1 sound = 7;
+    PresentationAmbientSoundV1 ambient_sound = 8;
   }
 }
 

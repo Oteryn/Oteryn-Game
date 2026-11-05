@@ -53,6 +53,8 @@ pub mod battle;
 #[path = "features/0015-item-use/mod.rs"]
 pub mod item_use;
 
+#[path = "features/0288-ambient-sound/mod.rs"]
+pub mod ambient_sound;
 #[path = "features/0019-world-light/mod.rs"]
 pub mod world_light;
 #[path = "features/0026-world-weather/mod.rs"]
