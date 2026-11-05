@@ -648,7 +648,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "ae76b5b4198b48ad5e679016b66013d911c6160830f5b5d292e2119e7a694db5",
+    "content/items/definitions/spell-native-profiles.json": "bc00e254be61d27fad1e38a88a26c6d4e3ecfeeb499a25b7aa59d6ca57dcc33c",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
