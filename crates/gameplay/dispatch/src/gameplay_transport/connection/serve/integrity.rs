@@ -206,6 +206,26 @@ pub(super) fn refusal(session: &ServeState, command_type: u32) -> Dispatch {
     Dispatch::Reply(CommandStatus::Rejected, payload)
 }
 
+// Test-only access to the real observer; no detector API is exposed to production callers.
+#[cfg(test)]
+impl Dispatch {
+    pub(in crate::gameplay_transport::connection) fn sec1_detect_probe()
+    -> impl FnMut(&Dispatch) -> ([bool; 3], usize) {
+        let mut gate = Integrity::default();
+        // Retain the coalesced report for assertions rather than writing it to stderr.
+        gate.emitted_at = Some(Instant::now());
+        move |dispatch| {
+            gate.observe(dispatch);
+            (
+                gate.counts.signals,
+                std::mem::size_of_val(&gate)
+                    + std::mem::size_of_val(&*gate.recent)
+                    + std::mem::size_of_val(&*gate.detector),
+            )
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -279,25 +299,5 @@ mod tests {
         );
         assert!(gate.take(now + WINDOW + WINDOW).is_none());
         Ok(())
-    }
-}
-
-// Test-only access to the real observer; no detector API is exposed to production callers.
-#[cfg(test)]
-impl Dispatch {
-    pub(in crate::gameplay_transport::connection) fn sec1_detect_probe()
-    -> impl FnMut(&Dispatch) -> ([bool; 3], usize) {
-        let mut gate = Integrity::default();
-        // Retain the coalesced report for assertions rather than writing it to stderr.
-        gate.emitted_at = Some(Instant::now());
-        move |dispatch| {
-            gate.observe(dispatch);
-            (
-                gate.counts.signals,
-                std::mem::size_of_val(&gate)
-                    + std::mem::size_of_val(&*gate.recent)
-                    + std::mem::size_of_val(&*gate.detector),
-            )
-        }
     }
 }
