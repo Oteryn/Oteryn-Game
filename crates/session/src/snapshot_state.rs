@@ -1,5 +1,6 @@
 //! Atomic domain decoding shared by admission and replacement snapshots.
 use super::*;
+use world_spatial_entities::decode_world_spatial_entities_snapshot_with_item_handles;
 
 #[derive(Clone, Default)]
 pub(super) struct SnapshotState {
@@ -53,9 +54,7 @@ impl SnapshotState {
                     world_spatial_entities::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
                 ) if entities_selected => {
                     let snapshot = if item_selected {
-                        world_spatial_entities::decode_world_spatial_entities_snapshot_with_item_handles(
-                            domain.payload,
-                        )?
+                        decode_world_spatial_entities_snapshot_with_item_handles(domain.payload)?
                     } else {
                         world_spatial_entities::decode_world_spatial_entities_snapshot(
                             domain.payload,
@@ -178,8 +177,8 @@ impl SnapshotState {
                         snapshot_type,
                     });
                 }
-                // A gated domain is kept raw for its capability's own packet. Unselected is a server
-                // violation; an unregistered domain is ignored.
+                // A gated domain is kept raw for its capability's own packet.
+                // Unselected is a server violation; an unregistered domain is ignored.
                 (domain_id, snapshot_type) => match capability_of_domain(domain_id) {
                     Some(capability) if selected_capabilities.contains(&capability) => {
                         state.gated_revisions.retain(|(id, _)| *id != domain_id);
@@ -233,6 +232,7 @@ impl SnapshotState {
         }
         quest_log_transport::validate_join(selected_capabilities, &state.gated_snapshots)?;
         tutorial_notices::validate_join(selected_capabilities, &state.gated_snapshots)?;
+        world_light::validate_join(selected_capabilities, &state.gated_snapshots)?;
         presentation::validate_join(selected_capabilities, &state.gated_snapshots)?;
         server_save_countdown::validate_join(selected_capabilities, &state.gated_snapshots)?;
         achievement_notices_transport::validate_join(

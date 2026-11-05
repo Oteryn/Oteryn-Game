@@ -62,7 +62,8 @@ impl<S: SessionStream> Session<S> {
         )
         .await?;
         let accepted_envelope = decode_wire_envelope(&accepted)?;
-        // Pre-admission server traffic: direction, phase (Bootstrap), sequencing (unsequenced) and a
+        // Pre-admission server traffic: direction, phase (Bootstrap), sequencing
+        // (unsequenced) and a
         // zero envelope `connection_generation` (FND-02 §8/§11/§12/§14) are checked before this
         // frame's payload is consumed at all.
         accepted_envelope.validate(Direction::ServerToClient, false)?;

@@ -40,7 +40,12 @@ impl PlayView {
     ) -> Result<(), BatchError> {
         let world = World::from_live_map(map)?;
         let mut next = self.clone();
-        next.place(map.header.origin);
+        next.ground_items =
+            super::super::feature_0004_item_view_move::state::map_targets(map);
+        // Incremental windows do not replace same-floor spatial observations.
+        if next.floor != map.header.origin.floor {
+            next.place(map.header.origin);
+        }
         next.map_floor = Some(map.header.origin.floor);
         next.anchor = TileCoord::new(0, 0);
         next.local.set_world(Arc::new(world));
@@ -48,12 +53,6 @@ impl PlayView {
         next.rebuild()?;
         *self = next;
         Ok(())
-        self.ground_items = super::super::feature_0004_item_view_move::state::map_targets(map);
-        self.map_floor = Some(map.header.origin.floor);
-        self.anchor = TileCoord::new(0, 0);
-        self.local.set_world(Arc::new(world));
-        self.live_map = true;
-        self.rebuild()
     }
 
     pub(in crate::play) fn rebuild(&mut self) -> Result<(), BatchError> {

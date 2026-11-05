@@ -228,13 +228,17 @@ fn floor_replacement_follows_origin_and_draws_visible_floors() -> Result<(), Bat
 #[test]
 fn floor_transition_cancels_the_previous_floor_click_walk() -> Result<(), BatchError> {
     let mut view = view()?;
-    view.walk.set_goal(TileCoord::new(110, 200));
+    view.queue(Input::TargetWalk(ActorPosition {
+        x: 110,
+        y: 200,
+        floor: 0,
+    }));
     let mut map = live_snapshot(100);
     map.header.origin.floor = -8;
     map.header.first_visible_floor = -8;
     map.tiles.clear();
     view.set_live_map(&map)?;
-    assert_eq!(view.walk.goal(), None);
+    assert!(view.inputs.is_empty());
     Ok(())
 }
 
@@ -313,7 +317,11 @@ fn replacement_snapshot_discards_overlapping_old_tiles_before_later_deltas()
 fn failed_live_map_install_preserves_position_world_scene_and_walk() -> Result<(), BatchError> {
     let mut view = view()?;
     view.set_live_map(&live_snapshot(100))?;
-    view.walk.set_goal(TileCoord::new(110, 200));
+    view.queue(Input::TargetWalk(ActorPosition {
+        x: 110,
+        y: 200,
+        floor: 0,
+    }));
     let world = view.local.world();
     let sprites = view.scene().sprites().instances().to_vec();
     let mut invalid = live_snapshot(i32::MAX);
@@ -323,6 +331,39 @@ fn failed_live_map_install_preserves_position_world_scene_and_walk() -> Result<(
     assert_eq!(view.map_center(), (100, 200, 0));
     assert!(Arc::ptr_eq(&world, &view.local.world()));
     assert_eq!(view.scene().sprites().instances(), sprites);
-    assert_eq!(view.walk.goal(), Some(TileCoord::new(110, 200)));
+    assert_eq!(
+        view.inputs.back(),
+        Some(&Input::TargetWalk(ActorPosition { x: 110, y: 200, floor: 0 }))
+    );
+    Ok(())
+}
+
+#[test]
+fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs()
+-> Result<(), BatchError> {
+    use oteryn_session::world_map::MapOrigin;
+    let mut view = view()?;
+    let mut map = live_snapshot(101);
+    map.header.origin.floor = -8;
+    map.header.first_visible_floor = -8;
+    map.tiles[0].position.floor = -8;
+    map.tiles[0].position.x += 1;
+    map.tiles[0].items[0].origin = MapOrigin::BaseOrdinal {
+        ordinal: 3,
+        object_revision: 9,
+    };
+    map.tiles[0].items[0].count = 7;
+    view.apply_pushed(&Pushed {
+        map: Some(Box::new(map)),
+        ..Pushed::default()
+    })?;
+    assert_eq!(view.map_center(), (101, 200, -8));
+    // The map placeholder and player are drawn; item targets add no marker glyph.
+    assert_eq!(view.scene().sprites().len(), 2);
+    view.click(TileCoord::new(102, 200))?;
+    let selected = view.scene().target().and_then(|target| target.item);
+    assert_eq!(selected.map(|item| item.floor()), Some(-8));
+    assert_eq!(selected.map(|item| item.quantity()), Some(7));
+    assert!(!view.inputs.iter().any(|input| matches!(input, Input::TargetWalk(_))));
     Ok(())
 }

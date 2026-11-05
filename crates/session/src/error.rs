@@ -193,7 +193,8 @@ impl fmt::Display for SessionError {
             ),
             Self::ConnectionGenerationMismatch { expected, actual } => write!(
                 formatter,
-                "connection generation mismatch: admitted session is {expected}, frame carried {actual}"
+                "connection generation mismatch: admitted session is {expected}, \
+                frame carried {actual}"
             ),
             Self::SnapshotIdMismatch { expected, actual } => write!(
                 formatter,
@@ -212,7 +213,8 @@ impl fmt::Display for SessionError {
             ),
             Self::AssembledLengthMismatch { expected, actual } => write!(
                 formatter,
-                "assembled snapshot length mismatch: SnapshotBegin declared {expected} bytes, chunks totaled {actual}"
+                "assembled snapshot length mismatch: SnapshotBegin declared \
+                {expected} bytes, chunks totaled {actual}"
             ),
             Self::MissingDomain(domain_id) => {
                 write!(formatter, "join snapshot did not carry domain {domain_id}")
@@ -252,7 +254,8 @@ impl fmt::Display for SessionError {
                 actual_base,
             } => write!(
                 formatter,
-                "domain {domain_id} delta base revision mismatch: applied {expected_base}, delta based on {actual_base}"
+                "domain {domain_id} delta base revision mismatch: applied \
+                {expected_base}, delta based on {actual_base}"
             ),
             Self::ContentGenerationMismatch { domain_id } => write!(
                 formatter,
@@ -263,7 +266,8 @@ impl fmt::Display for SessionError {
                 entry_revision,
             } => write!(
                 formatter,
-                "overlay delta new_revision {new_revision} differs from its entry revision {entry_revision}"
+                "overlay delta new_revision {new_revision} differs from its entry \
+                revision {entry_revision}"
             ),
             Self::InconsistentCommandResult { command_id, status } => write!(
                 formatter,

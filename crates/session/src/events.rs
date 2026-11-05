@@ -86,7 +86,9 @@ impl SessionEvent {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
             }
             Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-            Self::WorldMap(_) | Self::WorldMapSnapshot(_) => oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+            Self::WorldMap(_) | Self::WorldMapSnapshot(_) => {
+                world_map::STATE_DOMAIN_WORLD_MAP_VIEW
+            }
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
             Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             Self::ChatLine(_)

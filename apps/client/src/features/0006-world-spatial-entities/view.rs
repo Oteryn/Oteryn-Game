@@ -27,7 +27,10 @@ impl PlayView {
 
     pub(in crate::play) fn place(&mut self, position: ActorPosition) {
         if self.floor != position.floor {
-            self.walk.cancel();
+            self.inputs.retain(|input| {
+                !matches!(input, crate::play::Input::TargetWalk(target)
+                    if target.floor != position.floor)
+            });
         }
         self.own = TileCoord::new(position.x, position.y);
         self.floor = position.floor;

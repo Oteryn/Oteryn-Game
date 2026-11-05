@@ -171,7 +171,8 @@ impl Scene {
                                 .any(|v| {
                                     own_floor
                                         && v.tile == TileCoord::new(x, y)
-                                        && (v.kind == TargetKind::Object || v.glyph)
+                                        && (v.glyph
+                                            || (v.kind == TargetKind::Object && v.item.is_none()))
                                 })
                                 .then_some(Draw {
                                     cell: MARKER_CELL,
@@ -182,27 +183,6 @@ impl Scene {
                     )?;
                 }
                 Ok(())
-                visit_scene(
-                    (origin.x, origin.y),
-                    self.anchor.map(|anchor| (anchor.x, anchor.y)),
-                    ((self.own.x, self.own.y), self.world.player(self.facing)),
-                    |x, y| self.world.tile(x, y),
-                    |x, y| {
-                        // One glyph per tile however many markers and entities stand on it.
-                        self.visible
-                            .iter()
-                            .any(|v| {
-                                v.tile == TileCoord::new(x, y)
-                                    && (v.glyph
-                                        || (v.kind == TargetKind::Object && v.item.is_none()))
-                            })
-                            .then_some(Draw {
-                                cell: MARKER_CELL,
-                                offset: [0, 0],
-                            })
-                    },
-                    emit,
-                )
             },
             self.target.map(|target| target.tile),
         )?;
