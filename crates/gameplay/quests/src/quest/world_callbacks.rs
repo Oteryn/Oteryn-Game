@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-// The merged quest batches contain 224 static callbacks plus the dynamic altar.
-pub const MAX_CALLBACKS: usize = 256;
+// The merged quest batches contain 302 static callbacks plus the dynamic altar.
+pub const MAX_CALLBACKS: usize = 512;
 pub const MAX_EFFECTS: usize = 8;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -303,6 +303,10 @@ fn extend_callbacks(
 
 #[cfg(test)]
 mod batch4_tests;
+
+#[cfg(test)]
+#[path = "world_callbacks/quests6_tests.rs"]
+mod quests6_tests;
 
 #[cfg(test)]
 mod tests {

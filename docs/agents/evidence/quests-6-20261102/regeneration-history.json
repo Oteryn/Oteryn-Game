@@ -1,0 +1,21 @@
+{
+  "evidence_class": "EXECUTED_LOCAL_REGENERATION_HISTORY",
+  "rejected_candidate": {
+    "new_callbacks": 79,
+    "error": "QUEST_CALLBACK_ITEM_NOT_ADMITTED",
+    "subprocess_exit": 1,
+    "log_excerpt": "  File \"<checkout>/tools/content-migration/world_project_v2_to_tree.py\", line 693, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"<checkout>/tools/content-migration/world_project_v2_to_tree.py\", line 674, in main\n    prey_difficulty.regenerate(ROOT)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"<checkout>/tools/content-migration/prey_difficulty.py\", line 443, in regenerate\n    profiles = fresh_profiles(root)\n  File \"<checkout>/tools/content-migration/prey_difficulty.py\", line 426, in fresh_profiles\n    generated = register_spell_families.outputs(root, include_prey=False)\n  File \"<checkout>/tools/content-migration/register_spell_families.py\", line 352, in outputs\n    quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<checkout>/tools/content-migration/quest_callback_profiles.py\", line 182, in admit\n    raise ValueError('QUEST_CALLBACK_ITEM_NOT_ADMITTED')\nValueError: QUEST_CALLBACK_ITEM_NOT_ADMITTED\nTraceback (most recent call last):\n  File \"<checkout>/tools/content-migration/regenerate_content.py\", line 550, in <module>\n    sys.exit(main())\n             ~~~~^^\n  File \"<checkout>/tools/content-migration/regenerate_content.py\", line 522, in main\n    run([\"python3\", \"tools/content-migration/world_project_v2_to_tree.py\"])\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<checkout>/tools/content-migration/regenerate_content.py\", line 124, in run\n    subprocess.run(command, cwd=ROOT, check=True)\n    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.14/subprocess.py\", line 578, in run\n    raise CalledProcessError(retcode, process.args,\n                             output=stdout, stderr=stderr)\nsubprocess.CalledProcessError: Command '['python3', 'tools/content-migration/world_project_v2_to_tree.py']' returned non-zero exit status 1.",
+    "resolution": "Removed new druid-ceiron-water-sample callback; kept i5938/i5939 admission holds."
+  },
+  "resumed_candidate": {
+    "new_callbacks": 78,
+    "command": [
+      "python3",
+      "tools/content-migration/world_project_v2_to_tree.py"
+    ],
+    "exit": 0,
+    "elapsed_seconds": 122.29,
+    "log": "PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked\nPASS item_conversion records=129 check=False\nPASS items=34111 creatures=1863 creature_records=28758 creature_profiles=27616 item_shards=69 mounts=252 authoring=700 taxonomy=12252 relation_sources=880 relations=1093 npcs=1282 encounters=108 npc_bindings=2747 dialogues=836 service_trade=324 service_travel=56"
+  },
+  "remaining_public_pipeline": "See validation.json: authoring, regenerate_content.py --check, pin-refresh, required checks and pin-check."
+}

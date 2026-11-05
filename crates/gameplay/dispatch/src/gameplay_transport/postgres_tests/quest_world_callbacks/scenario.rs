@@ -378,6 +378,24 @@ fn scenario_case(
                 .await
                 .map_err(debug)?;
             assert_eq!(copy.tracks().get(&callback.storage[0].track), Some(&5));
+        } else if callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn
+            && callback.storage.is_empty()
+            && callback.teleport.is_some()
+        {
+            let step = oteryn_protocol_oteryn::world_spatial::encode_step_intent(
+                oteryn_protocol_oteryn::world_spatial::StepDirection::East,
+            );
+            wire(&owner, &mut admitted, 1, 1, step.clone()).await?;
+            let arrived = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
+            assert_eq!(arrived.position(), local(callback.teleport.ok_or("teleport")?));
+            assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
+            let receipts: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+            ).bind(&callback.key).fetch_one(&h.pool).await?;
+            assert_eq!(receipts, 0, "stateless access must not invent progress");
+            wire(&owner, &mut admitted, 1, 1, step).await?;
+            assert_eq!(deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?, arrived,
+                "a repeated command must not execute another movement");
         } else {
             let key =
                 oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, 1)

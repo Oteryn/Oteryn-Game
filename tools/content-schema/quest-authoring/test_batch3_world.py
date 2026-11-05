@@ -28,7 +28,7 @@ class Batch3WorldTests(unittest.TestCase):
 
     def test_existing_runtime_altar_keeps_its_reserved_slot(self):
         empty = {'schema': tool.SCHEMA, 'sources': []}
-        for count, valid in [(255, True), (256, False)]:
+        for count, valid in [(511, True), (512, False)]:
             existing = {'schema': 1, 'callbacks': [{'key': str(i)} for i in range(count)]}
             if valid:
                 self.assertEqual(len(tool.compile_callbacks(existing, empty, {})[0]['callbacks']), count)

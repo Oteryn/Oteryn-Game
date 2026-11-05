@@ -1,0 +1,244 @@
+{
+  "schema": "TK_Q6_LOCAL_MERGE_VALIDATION/v1",
+  "task": "TK-Q6",
+  "base": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+  "branch_head": "9c22b82b52ad4c037b6c6b83929537748fe2f918",
+  "state": "UNCOMMITTED_LOCAL_MERGE; no push or PR mutation",
+  "crystal_reference": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "resolution": {
+    "remaining_conflicts": 33,
+    "callbacks_main": 224,
+    "callbacks_branch": 98,
+    "callbacks_union": 302,
+    "static_capacity": 511,
+    "runtime_capacity_including_dynamic_altar": 512,
+    "callback_preservation": "All callbacks from both heads retained byte-for-byte",
+    "native_item_profiles_main": 3552,
+    "native_item_profiles_final": 3553,
+    "new_native_item": "oteryn:item.tibia.i12784",
+    "existing_native_profiles_changed": 0,
+    "migrations_capability_or_command_ids_added": false
+  },
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.739,
+      "exit": 0
+    },
+    {
+      "name": "architecture",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-architecture-check",
+        "--",
+        "workspace",
+        "."
+      ],
+      "seconds": 2.336,
+      "exit": 0
+    },
+    {
+      "name": "clippy-quests",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--all-targets",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 2.075,
+      "exit": 0
+    },
+    {
+      "name": "unit-quests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "--quiet"
+      ],
+      "seconds": 8.515,
+      "exit": 0
+    },
+    {
+      "name": "clippy-dispatch",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 46.776,
+      "exit": 0
+    },
+    {
+      "name": "unit-dispatch",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "--quiet"
+      ],
+      "seconds": 992.57,
+      "exit": 0
+    },
+    {
+      "name": "postgres-quests6",
+      "command": [
+        "cargo",
+        "nextest",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "quests6_",
+        "--no-fail-fast",
+        "--test-threads",
+        "1",
+        "--success-output",
+        "immediate"
+      ],
+      "seconds": 309.09,
+      "exit": 0
+    },
+    {
+      "name": "content-integration",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_",
+        "--quiet"
+      ],
+      "seconds": 36.694,
+      "exit": 0
+    },
+    {
+      "name": "content-world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository",
+        "--quiet"
+      ],
+      "seconds": 51.858,
+      "exit": 0
+    }
+  ],
+  "unit_tests": {
+    "quests": [
+      "test result: ok. 230 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.29s"
+    ],
+    "dispatch": [
+      "test result: ok. 2364 passed; 0 failed; 18 ignored; 0 measured; 0 filtered out; finished in 949.01s"
+    ]
+  },
+  "postgres": {
+    "version": "18.6",
+    "filter": "quests6_",
+    "proof": [
+      "        PASS [ 154.752s] (1/4) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::quest_container_chests::quests6_behemoth_all_four_source_rewards_use_the_existing_claim_owner",
+      "    QUESTS6_BEHEMOTH_BAG POSTGRES_CASE_COMPLETED",
+      "    QUESTS6_BEHEMOTH_HALBERD POSTGRES_CASE_COMPLETED",
+      "    QUESTS6_BEHEMOTH_SHIELD POSTGRES_CASE_COMPLETED",
+      "    QUESTS6_BEHEMOTH_ARMOR POSTGRES_CASE_COMPLETED",
+      "        PASS [  38.987s] (2/4) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::quest_container_chests::quests6_desert_fixed_coin_reward_preserves_quantity_and_once_claim",
+      "    QUESTS6_DESERT_COINS POSTGRES_CASE_COMPLETED",
+      "        PASS [  39.173s] (3/4) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::quest_container_chests::quests6_waterfall_source_bag_is_atomic_and_replayable",
+      "    QUESTS6_WATERFALL_BAG POSTGRES_CASE_COMPLETED",
+      "        PASS [  75.520s] (4/4) oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::quests6::quests6_stateless_portals_run_through_literal_step_ingress",
+      "    QUESTS6_STATELESS_PORTALS POSTGRES_CASE_COMPLETED",
+      "     Summary [ 308.437s] 4 tests run: 4 passed (2 slow), 2378 skipped"
+    ]
+  },
+  "pins": [
+    {
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--release",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 95.357,
+      "exit": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--release",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/tk-q6-world-bundle"
+      ],
+      "seconds": 46.086,
+      "exit": 0
+    }
+  ],
+  "additional_checks": [
+    "Merge gate governance and repository-policy validators",
+    "Merge gate lifecycle and PR gate regression scripts",
+    "Merge-group gate regression script",
+    "Production closure negatives and migration JSON checks",
+    "Offline Quest checks lane",
+    "Materialized content validation",
+    "Batch 3 and batch 4 generator freshness",
+    "18 callback authoring unit tests",
+    "Grizzly generator freshness and regression",
+    "Two pinned Sandomo source integrity tests"
+  ],
+  "failures_and_repairs": [
+    "Merge conflicts resolved with both sides preserved and repository generators",
+    "pwsh initially absent; temporary local PowerShell supplied for native gate regression canaries"
+  ],
+  "left_out": "Existing per-quest Left out entries remain unchanged by this merge repair; no new runtime placement, NPC adapter, unsupported operation or presentation claim",
+  "prohibited_paths_changed": []
+}

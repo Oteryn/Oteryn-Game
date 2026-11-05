@@ -15,6 +15,12 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 #[derive(Clone, Copy)]
 enum Case {
     Bear,
+    DesertCoins,
+    Waterfall,
+    BehemothBag,
+    BehemothHalberd,
+    BehemothShield,
+    BehemothArmor,
     Key,
     Choice,
     Text,
@@ -39,6 +45,32 @@ fn execute(case: Case, marker: &'static str) -> TestResult {
         .map_err(|_| "reward container scenario panicked")??;
     println!("{marker} POSTGRES_CASE_COMPLETED");
     Ok(())
+}
+
+// Crystal 201189f startup/tables/chest.lua:970-990,1150-1158.
+// These go through literal USE, the embedded binder and actual durable MINT,
+// including stale authority, duplicate replay and a reconstructed owner.
+#[test]
+fn quests6_behemoth_all_four_source_rewards_use_the_existing_claim_owner() -> TestResult {
+    execute(Case::BehemothBag, "QUESTS6_BEHEMOTH_BAG")?;
+    execute(Case::BehemothHalberd, "QUESTS6_BEHEMOTH_HALBERD")?;
+    execute(Case::BehemothShield, "QUESTS6_BEHEMOTH_SHIELD")?;
+    execute(Case::BehemothArmor, "QUESTS6_BEHEMOTH_ARMOR")
+}
+
+// Crystal 201189f startup/tables/chest.lua:2591-2598.
+#[test]
+fn quests6_waterfall_source_bag_is_atomic_and_replayable() -> TestResult {
+    execute(Case::Waterfall, "QUESTS6_WATERFALL_BAG")
+}
+
+// Crystal 201189f startup/tables/chest.lua:1806-1812.
+// Crystal's fixed 100 platinum coins follow Q6-D05 and the coordinator's ANSWER.
+// https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589439756
+// https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589532280
+#[test]
+fn quests6_desert_fixed_coin_reward_preserves_quantity_and_once_claim() -> TestResult {
+    execute(Case::DesertCoins, "QUESTS6_DESERT_COINS")
 }
 
 #[test]
@@ -122,6 +154,57 @@ fn scenario(case: Case) -> TestResult {
             (33313, 31576, -15),
             6031,
             "oteryn:item.tibia.i3420",
+            vec![],
+        ),
+        Case::DesertCoins => (
+            "oteryn:reward-claim.kv.desert1",
+            (32668, 32069, -8),
+            6157,
+            "oteryn:item.tibia.i3035",
+            vec![],
+        ),
+        Case::Waterfall => (
+            "oteryn:reward-claim.quest.u8_1.waterfall_quest",
+            (32970, 32646, -8),
+            6258,
+            "oteryn:item.tibia.i5926",
+            vec![
+                ("oteryn:item.tibia.i6096", 1_i64, 0_i32),
+                ("oteryn:item.tibia.i3097", 1, 0),
+            ],
+        ),
+        Case::BehemothBag => (
+            "oteryn:reward-claim.kv.behemothquest1",
+            (33294, 31658, -13),
+            6075,
+            "oteryn:item.tibia.i2853",
+            vec![
+                ("oteryn:item.tibia.i3028", 3_i64, 0_i32),
+                ("oteryn:item.tibia.i3029", 4, 0),
+                ("oteryn:item.tibia.i3007", 1, 0),
+                ("oteryn:item.tibia.i3052", 1, 0),
+                ("oteryn:item.tibia.i3055", 1, 0),
+            ],
+        ),
+        Case::BehemothHalberd => (
+            "oteryn:reward-claim.kv.behemothquest2",
+            (33295, 31658, -13),
+            6052,
+            "oteryn:item.tibia.i3315",
+            vec![],
+        ),
+        Case::BehemothShield => (
+            "oteryn:reward-claim.kv.behemothquest3",
+            (33297, 31658, -13),
+            6053,
+            "oteryn:item.tibia.i3420",
+            vec![],
+        ),
+        Case::BehemothArmor => (
+            "oteryn:reward-claim.kv.behemothquest4",
+            (33298, 31658, -13),
+            6054,
+            "oteryn:item.tibia.i3360",
             vec![],
         ),
         Case::RootText => (
@@ -521,7 +604,10 @@ fn scenario(case: Case) -> TestResult {
                     .ok_or("backpack")?;
                 assert_eq!(bag.entries.len(), 1);
                 let root = &bag.entries[0].item;
-                assert_eq!(root.quantity, 1);
+                assert_eq!(
+                    root.quantity,
+                    if matches!(case, Case::DesertCoins) { 100 } else { 1 }
+                );
                 assert_eq!(root.definition.production_key, root_key);
                 if let Some(original) = first_root {
                     assert_eq!(root.item_instance_id, original)

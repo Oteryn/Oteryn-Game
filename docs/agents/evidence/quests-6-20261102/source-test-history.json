@@ -1,0 +1,33 @@
+{
+  "scope": "Real loader/evaluator tests. Item consumption and XP are descriptor assertions, not executed inventory/XP transactions. Host paths redacted.",
+  "entries": [
+    {
+      "phase": "RED_BEFORE_DATA",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "quests6_",
+        "--lib"
+      ],
+      "exit": 101,
+      "log": "   Compiling oteryn-gameplay-quests v0.1.0 (<checkout>/crates/gameplay/quests)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.08s\n     Running unittests src/lib.rs (<target>/debug/deps/oteryn_gameplay_quests-9a3e8935d4dc84e8)\n\nrunning 3 tests\ntest quest::world_callbacks::quests6_tests::quests6_shadows_inkwell_needs_eight_successes_and_resets_the_same_counter ... FAILED\ntest quest::world_callbacks::quests6_tests::quests6_rookie_water_uses_the_real_poison_and_advances_only_stage_seven ... FAILED\ntest quest::world_callbacks::quests6_tests::quests6_galthen_literal_exits_do_not_create_a_progress_track ... FAILED\n\nfailures:\n\n---- quest::world_callbacks::quests6_tests::quests6_shadows_inkwell_needs_eight_successes_and_resets_the_same_counter stdout ----\nError: \"missing source callback shadows-inkwell\"\n\n---- quest::world_callbacks::quests6_tests::quests6_rookie_water_uses_the_real_poison_and_advances_only_stage_seven stdout ----\nError: \"missing source callback rookie-poisoned-water\"\n\n---- quest::world_callbacks::quests6_tests::quests6_galthen_literal_exits_do_not_create_a_progress_track stdout ----\nError: \"missing source callback galthen-iksupan-exit-1\"\n\n\nfailures:\n    quest::world_callbacks::quests6_tests::quests6_galthen_literal_exits_do_not_create_a_progress_track\n    quest::world_callbacks::quests6_tests::quests6_rookie_water_uses_the_real_poison_and_advances_only_stage_seven\n    quest::world_callbacks::quests6_tests::quests6_shadows_inkwell_needs_eight_successes_and_resets_the_same_counter\n\ntest result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 121 filtered out; finished in 0.01s\n\nerror: test failed, to rerun pass `-p oteryn-gameplay-quests --lib`"
+    },
+    {
+      "phase": "GREEN_AFTER_FINAL_78_CALLBACKS",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "quests6_",
+        "--lib"
+      ],
+      "exit": 0,
+      "log": "   Compiling oteryn-gameplay-quests v0.1.0 (<checkout>/crates/gameplay/quests)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.59s\n     Running unittests src/lib.rs (<target>/debug/deps/oteryn_gameplay_quests-9a3e8935d4dc84e8)\n\nrunning 4 tests\ntest quest::world_callbacks::quests6_tests::quests6_unqualified_position_uses_are_not_active_on_ground ... ok\ntest quest::world_callbacks::quests6_tests::quests6_galthen_literal_exits_do_not_create_a_progress_track ... ok\ntest quest::world_callbacks::quests6_tests::quests6_rookie_water_uses_the_real_poison_and_advances_only_stage_seven ... ok\ntest quest::world_callbacks::quests6_tests::quests6_shadows_inkwell_needs_eight_successes_and_resets_the_same_counter ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 121 filtered out; finished in 0.48s\n"
+    }
+  ]
+}
