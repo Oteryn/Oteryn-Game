@@ -1,0 +1,9 @@
+{
+  "mechanic": "0285-store-purchase-history",
+  "status": "supported",
+  "kind": "keybindings",
+  "id": "0285-store-purchase-history-open",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+H",
+  "entry": "input.rs::open_key"
+}

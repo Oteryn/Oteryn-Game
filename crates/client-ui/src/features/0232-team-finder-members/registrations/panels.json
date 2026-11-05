@@ -1,0 +1,7 @@
+{
+  "mechanic": "0232-team-finder-members",
+  "status": "supported",
+  "kind": "panels",
+  "id": "0232-team-finder-members-panel",
+  "entry": "view.rs::panel_text"
+}

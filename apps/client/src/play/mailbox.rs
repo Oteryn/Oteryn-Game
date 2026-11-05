@@ -104,6 +104,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) discovery: oteryn_client_ui::quick_loot::Discovery,
     pub(super) properties: super::feature_0115_mail::protocol::Panels,
     pub(super) containers: oteryn_client_ui::container_tree::ContainerPanel,
     pub(super) world_context: oteryn_client_ui::world_interaction::menu::State,
@@ -321,6 +322,7 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.discovery.end();
         mailbox.properties.end();
         mailbox.player_trade = Default::default();
         mailbox.battle_end();

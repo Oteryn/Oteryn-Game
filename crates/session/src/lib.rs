@@ -197,6 +197,7 @@ pub use oteryn_protocol_oteryn::{
         CharmUnlockStageIntent, CharmView,
     },
 };
+pub use oteryn_protocol_oteryn::{inspection, quick_loot, team_finder, team_finder_members};
 pub use oteryn_protocol_oteryn::{npc_service, staff};
 use std::collections::{BTreeMap, VecDeque};
 use std::error::Error as StdError;
