@@ -29,6 +29,7 @@ impl Application {
                 || play.link.hotkey_equip_input(events)
                 || play.link.item_forge_input(events)
                 || play.link.store_input(events)
+                || play.link.vip_input(events)
                 || play.link.vip_presence_input(events)
                 || play.link.weapon_proficiency_input(events)
             {

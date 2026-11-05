@@ -306,6 +306,7 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
+        mailbox.vip.open = false;
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
         mailbox.prey_shutdown = true;
