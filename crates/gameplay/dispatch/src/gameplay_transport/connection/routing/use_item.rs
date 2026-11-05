@@ -23,6 +23,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
+    if let Ok(intent) = &decoded
+        && matches!(intent.target, UseTarget::Item(_) | UseTarget::ItemByDefinition(_))
+    {
+        let source = match intent.target { UseTarget::Item(handle) => item_view.as_ref().and_then(|v| v.resolve(handle)), _ => None };
+        if let Some(outcome) = tokio::time::timeout(std::time::Duration::from_secs(10), authority.use_usable_action(
+            actor, UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence },
+            intent.clone(), source, intent.use_with.is_some_and(|target| visibility.as_ref().is_some_and(|v| v.shows(target))),
+        )).await.ok()?.ok()? { return Some(Dispatch::Use(outcome)); }
+    }
     // W09: a committed Cube may have consumed the last source unit. Its original
     // command still resolves from a receipt even when the view handle no longer exists.
     // Preserve the same timeout/unknown close used by receipt-backed Item actions.

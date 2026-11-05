@@ -190,6 +190,7 @@ mod timed_item_wire;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
+mod usable_item_use;
 mod vip_presence;
 mod vocation_choice;
 pub mod weapon_proficiency;

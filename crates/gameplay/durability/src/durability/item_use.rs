@@ -54,6 +54,7 @@ pub mod condition_potions;
 pub mod fluid;
 pub mod mining;
 pub mod mount_taming;
+pub mod novelty_appearance;
 pub mod proficiency_catalyst;
 pub mod proficiency_orb;
 
@@ -69,6 +70,8 @@ pub enum ItemUseKind {
     Food,
     Potion,
     MountTaming,
+    /// SRVGAP-C4: only the dedicated receipt/grant owner may issue this cause.
+    UsableAction,
     /// P08: one unit composed with its `catalyst` proficiency receipt.
     ProficiencyCatalyst,
     /// P08: one Lunar Ascension Orb composed with its `ORB_RANK` modification line.
@@ -93,6 +96,7 @@ impl ItemUseKind {
         match self {
             Self::Food => ITEM_USE_CAUSE_FOOD,
             Self::Potion => ITEM_USE_CAUSE_POTION,
+            Self::UsableAction => oteryn_gameplay_items::usable_actions::CAUSE,
             Self::MountTaming => mount_taming::TAMING_CAUSE,
             Self::ProficiencyCatalyst => proficiency_catalyst::CATALYST_CAUSE,
             Self::ProficiencyOrb => proficiency_orb::ORB_CAUSE,
@@ -220,6 +224,7 @@ impl ItemUseRequest {
             (
                 ItemUseFlaskPlan::None,
                 ItemUseKind::Food
+                | ItemUseKind::UsableAction
                 | ItemUseKind::Potion
                 | ItemUseKind::MountTaming
                 | ItemUseKind::Concoction
@@ -247,6 +252,7 @@ impl ItemUseRequest {
                 },
                 ItemUseKind::Potion
                 | ItemUseKind::PickRefine { .. }
+                | ItemUseKind::UsableAction
                 | ItemUseKind::DromeCube { .. },
             ) => {
                 check_uuid_v7(item_instance_id).is_ok()
@@ -263,6 +269,7 @@ impl ItemUseRequest {
                 },
                 ItemUseKind::Potion
                 | ItemUseKind::PickRefine { .. }
+                | ItemUseKind::UsableAction
                 | ItemUseKind::DromeCube { .. },
             ) => {
                 check_uuid_v7(item_instance_id).is_ok()
@@ -271,7 +278,7 @@ impl ItemUseRequest {
                     && *definition != self.source_definition
                     && *placement_ordinal != 0
             }
-            (_, ItemUseKind::PickRefine { .. } | ItemUseKind::DromeCube { .. }) => false,
+            (_, ItemUseKind::UsableAction | ItemUseKind::PickRefine { .. } | ItemUseKind::DromeCube { .. }) => false,
         };
         if !flask_valid
             || self.command_id == 0
@@ -396,7 +403,8 @@ impl DurabilityRoot {
     ) -> Result<ItemUseOutcome> {
         if matches!(
             request.kind,
-            ItemUseKind::PickRefine { .. }
+            ItemUseKind::UsableAction
+                | ItemUseKind::PickRefine { .. }
                 | ItemUseKind::DromeCube { .. }
                 | ItemUseKind::HirelingLamp { .. }
                 | ItemUseKind::HirelingFood { .. }
@@ -540,6 +548,7 @@ impl DurabilityRoot {
                                     Some(item_use_achievement::PETROLOGIST)
                                 }
                                 ItemUseKind::Food
+                                | ItemUseKind::UsableAction
                                 | ItemUseKind::MountTaming
                                 | ItemUseKind::ProficiencyCatalyst
                                 | ItemUseKind::ProficiencyOrb

@@ -878,6 +878,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_usable_action_instance(actor, command, item).await {
+            return outcome;
+        }
         if let Some(outcome) = self.use_coin(actor, command, item).await {
             return outcome;
         }
@@ -906,6 +909,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .pending_hireling_lamps
                 .iter()
                 .any(|pending| pending.actor == actor && pending.session == session)
+            || states.has_pending_usable_action(actor, session)
             || states.pending_item_effects.iter().any(|pending| {
                 pending.actor == actor && pending.request.command.game_session_id() == session
             })
@@ -940,6 +944,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome));
         }
         self.use_event_item_impl(actor, command, intent, source, visible_target)
+            .await
+    }
+
+    async fn use_usable_action(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        visible_target: bool,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_usable_action(actor, command, &intent, source, visible_target, false)
             .await
     }
 

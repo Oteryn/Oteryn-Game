@@ -120,7 +120,8 @@ impl ItemUseGate {
                 self.in_flight_since_ms = Some(now_ms);
                 return Ok(());
             }
-            ItemUseKind::PickRefine { .. }
+            ItemUseKind::UsableAction
+            | ItemUseKind::PickRefine { .. }
             | ItemUseKind::DromeCube { .. }
             | ItemUseKind::MountTaming
             | ItemUseKind::ProficiencyCatalyst
@@ -194,6 +195,20 @@ impl ItemUseGates {
                 gate.last = None;
             }
         }
+    }
+
+    /// Dedicated action leaves share ordinary item-use admission, including refused attempts.
+    pub(super) fn admit_usable(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command: u64,
+        now_ms: u64,
+    ) -> Result<(), UseDisposition> {
+        self.gate(runtime, actor, session)
+            .ok_or(UseDisposition::StaleState)?
+            .admit(command, now_ms)
     }
 
     /// The gate of the committed player of `session`. Gates of actors no longer present go.

@@ -30,7 +30,11 @@ impl std::ops::Deref for NativeCosmeticsView {
 }
 impl AppearanceContent<String> for NativeCosmeticsView {
     fn earned_grant_keys(&self) -> Vec<String> {
-        self.content.earned_grant_keys()
+        let mut keys = self.content.earned_grant_keys();
+        keys.extend(super::item_action_grants::keys());
+        keys.sort();
+        keys.dedup();
+        keys
     }
     fn earned_unlock(
         &self,
@@ -38,7 +42,12 @@ impl AppearanceContent<String> for NativeCosmeticsView {
         provenance: &str,
         target: EarnedCosmetic<'_>,
     ) -> UnlockFact {
-        self.content.earned_unlock(grant_key, provenance, target)
+        match self.content.earned_unlock(grant_key, provenance, target) {
+            UnlockFact::Absent => {
+                super::item_action_grants::resolve(self, grant_key, provenance, target)
+            }
+            result => result,
+        }
     }
     fn palette_size(&self) -> u16 {
         self.content.palette_size()
