@@ -51,11 +51,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 let hwnd = CreateWindowExW(
                     0,
                     wide("STATIC").as_ptr(),
-                    wide("Inventory — backpack and items").as_ptr(),
+                    wide("Inventory and equipment — drag items to equip or remove").as_ptr(),
                     WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
-                    460,
+                    750,
                     420,
                     null_mut(),
                     null_mut(),
@@ -100,6 +100,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         null_mut(),
                         null(),
                     );
+                    let mut equipment = super::super::super::feature_0012_item_equip_drop::view::Slots::create(hwnd);
                     let mut held: Option<oteryn_client_ui::inventory::InventoryPanel> = None;
                     let mut message: MSG = std::mem::zeroed();
                     while !list.is_null() && !status.is_null() && IsWindow(hwnd) != 0 {
@@ -155,6 +156,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             held = Some(panel.clone());
                         }
                         super::list_surface(&mut mailbox, list, held.as_ref().map(|p| p.rows()).as_deref().unwrap_or(&[]), oteryn_session::ItemMoveDestination::MainBackpack);
+                        equipment.refresh(&mut mailbox);
                         drop(mailbox);
                         if show_containers {
                             super::super::super::feature_0014_container_tree::view::open_shared(weak.clone(), commands.clone());

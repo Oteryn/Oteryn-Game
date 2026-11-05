@@ -13,7 +13,7 @@ impl crate::play::PlayLink {
     pub fn item_movement_status(&self) -> &'static str {
         let movement = self.item_movement();
         if movement.dragged.is_some() {
-            "Dragging item: release over inventory, a container or map tile"
+            "Dragging item: release over inventory, an equipment slot, a container or map tile"
         } else if movement.prompt.is_some() {
             "Choose the item count in the Move stack window"
         } else if movement.pending {
@@ -21,7 +21,7 @@ impl crate::play::PlayLink {
         } else {
             movement
                 .feedback
-                .unwrap_or("Drag items between inventory, containers and map")
+                .unwrap_or("Drag items between inventory, equipment, containers and map")
         }
     }
 }

@@ -8,6 +8,8 @@ pub mod achievement_notices;
 
 #[path = "features/0014-container-tree/protocol.rs"]
 pub mod container_tree;
+#[path = "features/0012-item-equip-drop/protocol.rs"]
+pub mod equipment;
 #[path = "features/0004-item-view-move/protocol.rs"]
 pub mod inventory;
 

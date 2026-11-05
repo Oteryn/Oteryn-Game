@@ -22,6 +22,7 @@ impl Outbox {
     }
 
     pub(in crate::play) fn inventory_end(&self) {
+        self.equipment_initialize(false);
         let mut mailbox = lock(&self.0);
         mailbox.inventory = Default::default();
         mailbox.item_movement = Default::default();
@@ -41,6 +42,7 @@ macro_rules! session_trait {
     ($($methods:tt)*) => {
         super::feature_local_account_achievements::protocol::session_trait! {
             $($methods)*
+            fn equipment_selected(&self) -> bool { false }
             fn item_count_selected(&self) -> bool { false }
             fn move_item(&mut self, _request: oteryn_client_runtime::inventory::MoveRequest) -> impl std::future::Future<Output = Result<Option<oteryn_client_runtime::inventory::MoveResponse>, oteryn_session::SessionError>> + Send {
                 async { Ok(None) }

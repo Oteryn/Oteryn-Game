@@ -1,6 +1,6 @@
 //! Existing item-move selection, stack-count and refusal-detail client adapter.
 use crate::*;
-pub use oteryn_protocol_oteryn::item_view::WorldTilePosition;
+pub use oteryn_protocol_oteryn::item_view::{EquipmentSlot, EquippedItem, WorldTilePosition};
 use oteryn_protocol_oteryn::{item_view as wire, refusal_detail};
 pub use refusal_detail::RefusalDetail;
 
