@@ -1543,7 +1543,7 @@ impl PlayerSpellState {
         if !self.conditions.accepts_time(now_us) {
             return rejected();
         }
-        Ok(self.conditions.invisible_at(now_us))
+        Ok(self.equipped_invisible || self.conditions.invisible_at(now_us))
     }
 }
 

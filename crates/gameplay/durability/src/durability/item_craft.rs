@@ -15,7 +15,7 @@ use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_items::item_craft::{
     carried_cooking_conversion_with_sub_type, cooking_conversion, fishing_conversion,
 };
-use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
+use oteryn_gameplay_items::reward_bag::{is_reward_bag_output, reward_bag_conversion, reward_bag_draw};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use serde_json::{Value, json};
 use sqlx::Row;
@@ -350,16 +350,16 @@ async fn write<C: ItemLoopContent>(
         let Some(weight) = facts.weight else {
             return Ok(UseDisposition::NotPossible);
         };
-        // Empty containers are granted only by the existing Primal Bag rule or
-        // an exact W19 source reward table (including the birthday backpack).
-        // The same writer creates no children and all custody checks still apply.
+        // Mint only an empty container admitted by the Primal Bag, W19 source
+        // table, or captured reward catalogue; the writer creates no children.
         let empty_container = request.station.is_none()
             && *count == 1
             && (definition.production_key == "oteryn:item.tibia.i39150"
                 || oteryn_gameplay_items::reward_bag::event_containers::permits_empty_container(
                     &conversion.recipe,
                     &definition.production_key,
-                ));
+                )
+                || is_reward_bag_output(&conversion.recipe, &definition.production_key));
         if (facts.container_capacity.is_some() && !empty_container)
             || *count
                 > stack_maximum(facts.stack)

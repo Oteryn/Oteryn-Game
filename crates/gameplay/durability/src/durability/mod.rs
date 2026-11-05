@@ -3,6 +3,7 @@
 include!("core_modules.rs");
 
 // Keep sorted by module name; insert in order, never append.
+pub mod arena_match;
 pub mod bed_regen;
 pub mod bed_sleep;
 pub mod boss_difficulty;

@@ -127,6 +127,7 @@ mod windows {
             }
             mailbox.store.open = true;
         }
+        link.discovery_open(285);
         let weak = std::sync::Arc::downgrade(&link.mailbox);
         let rollback = weak.clone();
         let commands = link.commands.clone();

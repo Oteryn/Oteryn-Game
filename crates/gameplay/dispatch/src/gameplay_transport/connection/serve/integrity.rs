@@ -9,12 +9,35 @@ use tokio::time::Instant;
 const COMMANDS_PER_SECOND: usize = 100;
 const WINDOW: Duration = Duration::from_secs(1);
 
+// REPORT_ONLY: eight existing refusals in a sliding second suggest a burst.
+// These thresholds never decide command admission, outcomes or sanctions.
+const DETECT_WINDOW: Duration = Duration::from_secs(1);
+const DETECT_THRESHOLDS: [usize; 3] = [8, 8, 8]; // cadence, use/cast exhaust, reach
+const DETECT_SLOTS: usize = 8;
+
+#[derive(Default)]
+struct Detector {
+    recent: [[Option<Instant>; DETECT_SLOTS]; 3],
+    cursors: [usize; 3],
+}
+
+impl Detector {
+    fn observe(&mut self, kind: usize, now: Instant) -> bool {
+        let cursor = self.cursors[kind];
+        self.recent[kind][cursor] = Some(now);
+        self.cursors[kind] = (cursor + 1) % DETECT_THRESHOLDS[kind];
+        self.recent[kind][self.cursors[kind]]
+            .is_some_and(|oldest| now.saturating_duration_since(oldest) < DETECT_WINDOW)
+    }
+}
+
 #[derive(Clone, Copy, Default)]
 struct Counts {
     flood: u64,
     cadence: u64,
     exhaust: u64,
     reach: u64,
+    signals: [bool; 3],
 }
 
 impl Counts {
@@ -24,10 +47,16 @@ impl Counts {
 
     fn emit(&self) {
         // Closed numeric schema: no account, actor, session, command payload, coordinates,
-        // name or other player-supplied text. At most one line/window plus a final flush.
+        // name or other player-supplied text. At most one line per sliding second, including connection teardown.
         crate::gameplay_transport::operator_event(&format!(
-            "event=command_integrity flood={} cadence={} exhaust={} reach={}",
-            self.flood, self.cadence, self.exhaust, self.reach
+            "event=command_integrity mode=REPORT_ONLY flood={} cadence={} exhaust={} reach={} cadence_signal={} exhaust_signal={} reach_signal={}",
+            self.flood,
+            self.cadence,
+            self.exhaust,
+            self.reach,
+            u8::from(self.signals[0]),
+            u8::from(self.signals[1]),
+            u8::from(self.signals[2])
         ));
     }
 }
@@ -37,7 +66,9 @@ pub(super) struct Integrity {
     recent: Box<[Option<Instant>; COMMANDS_PER_SECOND]>,
     cursor: usize,
     counts: Counts,
+    detector: Box<Detector>,
     emitted_at: Option<Instant>,
+    observed_at: Option<Instant>,
 }
 
 impl Default for Integrity {
@@ -46,7 +77,9 @@ impl Default for Integrity {
             recent: Box::new([None; COMMANDS_PER_SECOND]),
             cursor: 0,
             counts: Counts::default(),
+            detector: Box::default(),
             emitted_at: None,
+            observed_at: None,
         }
     }
 }
@@ -78,36 +111,49 @@ impl Integrity {
     }
 
     pub(super) fn observe(&mut self, dispatch: &Dispatch) {
-        let counter = match dispatch {
+        let (counter, kind) = match dispatch {
             Dispatch::Step(outcome, _) if outcome.disposition == StepDisposition::TooEarly => {
-                &mut self.counts.cadence
+                (&mut self.counts.cadence, 0)
             }
             Dispatch::Use(outcome) if outcome.disposition == UseDisposition::Exhausted => {
-                &mut self.counts.exhaust
+                (&mut self.counts.exhaust, 1)
             }
             Dispatch::Spell(outcome) | Dispatch::Chat(_, Some(outcome))
                 if outcome.disposition == SpellCastDisposition::CoolingDown =>
             {
-                &mut self.counts.exhaust
+                (&mut self.counts.exhaust, 1)
             }
             Dispatch::Use(outcome) if outcome.disposition == UseDisposition::TooFar => {
-                &mut self.counts.reach
+                (&mut self.counts.reach, 2)
             }
             Dispatch::Spell(outcome) | Dispatch::Chat(_, Some(outcome))
                 if outcome.disposition == SpellCastDisposition::TargetIllegal =>
             {
-                &mut self.counts.reach
+                (&mut self.counts.reach, 2)
             }
             Dispatch::Attack(AttackIntentDisposition::TargetNotVisible)
             | Dispatch::ItemMove(ItemMoveOutcome::TooFar, _, _)
-            | Dispatch::UseItem(OpenDecision::TooFar, _) => &mut self.counts.reach,
+            | Dispatch::UseItem(OpenDecision::TooFar, _) => (&mut self.counts.reach, 2),
             _ => return,
         };
         *counter = counter.saturating_add(1);
-        self.flush(Instant::now());
+        let now = Instant::now();
+        self.observed_at.get_or_insert(now);
+        self.counts.signals[kind] |= self.detector.observe(kind, now);
+        self.flush(now);
     }
 
     fn take(&mut self, now: Instant) -> Option<Counts> {
+        // Coalesce the initial refusal burst so its signal can accompany the first line.
+        if self.emitted_at.is_none()
+            && self.counts.flood == 0
+            && !self.counts.signals.into_iter().any(|signal| signal)
+            && self
+                .observed_at
+                .is_some_and(|at| now.saturating_duration_since(at) < WINDOW)
+        {
+            return None;
+        }
         if !self.counts.any()
             || self
                 .emitted_at
@@ -128,8 +174,11 @@ impl Integrity {
 
 impl Drop for Integrity {
     fn drop(&mut self) {
-        if self.counts.any() {
+        // Flush a short first burst, but never bypass a previous line's rate cap.
+        if self.emitted_at.is_none() && self.counts.any() {
             self.counts.emit();
+        } else {
+            self.flush(Instant::now());
         }
     }
 }
@@ -155,6 +204,26 @@ pub(super) fn refusal(session: &ServeState, command_type: u32) -> Dispatch {
         _ => Vec::new(),
     };
     Dispatch::Reply(CommandStatus::Rejected, payload)
+}
+
+// Test-only access to the real observer; no detector API is exposed to production callers.
+#[cfg(test)]
+impl Dispatch {
+    pub(in crate::gameplay_transport::connection) fn sec1_detect_probe()
+    -> impl FnMut(&Dispatch) -> ([bool; 3], usize) {
+        let mut gate = Integrity::default();
+        // Retain the coalesced report for assertions rather than writing it to stderr.
+        gate.emitted_at = Some(Instant::now());
+        move |dispatch| {
+            gate.observe(dispatch);
+            (
+                gate.counts.signals,
+                std::mem::size_of_val(&gate)
+                    + std::mem::size_of_val(&*gate.recent)
+                    + std::mem::size_of_val(&*gate.detector),
+            )
+        }
+    }
 }
 
 #[cfg(test)]

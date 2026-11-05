@@ -1,0 +1,9 @@
+{
+  "mechanic": "0115-mail",
+  "kind": "keybindings",
+  "id": "0115-mail-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+M",
+  "entry": "input.rs::open_key"
+}

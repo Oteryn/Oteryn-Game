@@ -1,5 +1,20 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+#[path = "features/0025-appearance/mod.rs"]
+pub mod appearance;
+#[path = "features/0067-bestiary-charm-progression/mod.rs"]
+pub mod charm_progression;
+#[path = "features/0055-guild-bank/mod.rs"]
+pub mod guild_bank;
+#[path = "features/0150-house-podium/mod.rs"]
+pub mod house_podium;
+#[path = "features/0115-mail/mod.rs"]
+pub mod mail;
+#[path = "features/0087-pvp-expert/mod.rs"]
+pub mod pvp_expert;
+#[path = "features/0054-training/mod.rs"]
+pub mod training;
+
 #[path = "features/0014-container-tree/mod.rs"]
 pub mod container_tree;
 #[path = "features/0012-item-equip-drop/mod.rs"]
@@ -17,6 +32,16 @@ pub mod world_light;
 #[path = "features/0026-world-weather/mod.rs"]
 pub mod world_weather;
 
+#[path = "features/0132-inspection/mod.rs"]
+pub mod inspection;
+#[path = "features/0285-store-purchase-history/mod.rs"]
+pub mod purchase_history;
+#[path = "features/0098-quick-loot/mod.rs"]
+pub mod quick_loot;
+#[path = "features/0232-team-finder-members/mod.rs"]
+pub mod team_finder;
+#[path = "features/0200-team-finder-leader/mod.rs"]
+pub mod team_finder_leader;
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
 #[path = "features/local-reference-preferences/input.rs"]

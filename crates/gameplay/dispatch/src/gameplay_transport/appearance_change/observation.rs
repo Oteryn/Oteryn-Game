@@ -163,7 +163,9 @@ pub(in crate::gameplay_transport) async fn observe(
         // invisible player remains observable, but other players receive no outfit.
         if empty_outfit
             && target_session != session
-            && (spell.invisible_at(now) || owned.invisible_at(now))
+            && (player.equipped_invisible()
+                || spell.invisible_at(now)
+                || owned.invisible_at(now))
         {
             look = wire::Look::EmptyOutfit;
         } else if let Some(temporary) = spell_look.or(owned_look) {

@@ -22,6 +22,8 @@ pub mod item_use;
 pub mod connection;
 #[path = "features/0037-depot/protocol.rs"]
 pub mod depot;
+#[path = "features/0098-quick-loot/protocol.rs"]
+pub mod discovery;
 pub mod hotkey_equip;
 #[path = "features/0003-npc-service/protocol.rs"]
 pub mod npc_dialogue;
@@ -207,9 +209,16 @@ pub mod cl25a_protocol {
     };
 }
 
+#[path = "features/0025-appearance/protocol.rs"]
+pub mod appearance;
+#[path = "features/0067-bestiary-charm-progression/protocol.rs"]
+pub mod charm_progression;
 /// Highscores through the admitted session command adapter.
 #[path = "features/0009-highscores/protocol.rs"]
 pub mod highscores;
+#[path = "features/0087-pvp-expert/protocol.rs"]
+pub mod pvp_expert;
+
 /// Admitted command transport for feature-local protocol adapters.
 pub mod raw_feature;
 /// Command and result vocabulary for server-owned mechanic panels.

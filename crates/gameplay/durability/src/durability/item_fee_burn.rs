@@ -65,6 +65,7 @@ pub mod test_support;
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeBurnCause {
+    ArenaEntry { occurrence: [u8; 16] },
     BosstiarySlot {
         occurrence: [u8; 16],
     },

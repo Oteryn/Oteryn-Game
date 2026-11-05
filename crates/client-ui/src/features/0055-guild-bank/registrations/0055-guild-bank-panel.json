@@ -1,0 +1,7 @@
+{
+  "mechanic": "0055-guild-bank",
+  "kind": "panels",
+  "id": "0055-guild-bank-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

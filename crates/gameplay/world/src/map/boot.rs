@@ -20,7 +20,6 @@ use crate::content::{
 };
 use crate::foundation::{ChannelId, WorldId};
 use crate::movement::speed::{EngineeringGroundSpeed, GroundSpeedSource};
-use oteryn_world_bundle::bundle;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::fmt;
@@ -104,6 +103,7 @@ impl From<FactsRefusal> for BootRefusal {
 /// the walkable tiles a wall or a solid item blocks.
 #[derive(Debug)]
 pub struct BundleWorld {
+    daily: Option<super::daily::DailyMap>,
     base: Arc<WorldBase>,
     map: Arc<BundleMap>,
     map_revision: String,
@@ -116,7 +116,8 @@ pub struct BundleWorld {
 /// Channel; the overlays are both empty.
 impl PartialEq for BundleWorld {
     fn eq(&self, other: &Self) -> bool {
-        self.base.digest() == other.base.digest()
+        self.daily == other.daily
+            && self.base.digest() == other.base.digest()
             && self.base.content_revision() == other.base.content_revision()
             && self.base.tile_count() == other.base.tile_count()
             && self.base.entry_count() == other.base.entry_count()
@@ -164,12 +165,16 @@ pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal
         map_revision: revision,
         start: pins.start,
         spawns,
+        daily: None,
+        pins: pins.bundle.clone(),
     })
 }
 
 /// A bundle that passed [`check`] and waits for the served item definitions.
 #[derive(Debug)]
 pub struct CheckedBundle {
+    daily: Option<super::daily::DailyMap>,
+    pins: BundlePins,
     data: Vec<u8>,
     base: Arc<WorldBase>,
     map_revision: String,
@@ -178,17 +183,39 @@ pub struct CheckedBundle {
 }
 
 impl CheckedBundle {
+    /// Builds the reset day's physical map before any collision or presentation owner exists.
+    pub fn with_daily_map(mut self, daily: super::daily::DailyMap) -> Self {
+        self.daily = Some(daily);
+        self
+    }
+
     /// Builds the World. `item` serves the definition of the Item a palette key names; a palette
     /// Item key it does not serve at its palette `id` refuses the boot (§1.6), and so does a
     /// start tile a solid item blocks.
     pub fn boot(
-        self,
+        mut self,
         world_id: WorldId,
         channel_id: ChannelId,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<BundleWorld, BootRefusal> {
+        let projection = self
+            .daily
+            .as_ref()
+            .map(|daily| super::daily::Projection::new(&self.data, daily, &item))
+            .transpose()
+            .map_err(LoadError::from)?;
+        if let Some(projection) = &projection {
+            let (base, _) = super::load_daily_spawns(
+                &self.data,
+                &self.pins,
+                super::LOAD_LIMITS,
+                Some(projection),
+            )?;
+            self.base = Arc::new(base);
+        }
         let mut spell_tiles = SpellTilesBuilder::new(Arc::clone(&self.base));
-        let (facts, blocked, floors) = scan(&self.data, &item, &mut spell_tiles)?;
+        let (facts, blocked, floors) =
+            scan(&self.data, &item, &mut spell_tiles, projection.as_ref())?;
         let spell_tiles = Arc::new(spell_tiles.finish(facts.doors())?);
         let blocked = Arc::new(blocked);
         if !enterable(&self.base, &blocked, self.start) || facts.doors().blocks(self.start) {
@@ -216,6 +243,7 @@ impl CheckedBundle {
             })
             .map_err(BootRefusal::FloorChain)?;
         Ok(BundleWorld {
+            daily: self.daily,
             map: Arc::new(BundleMap {
                 entry_start: self.start,
                 overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
@@ -241,13 +269,14 @@ fn scan(
     data: &[u8],
     item: &impl Fn(&str) -> Option<ItemDefinition>,
     spell_tiles: &mut SpellTilesBuilder,
+    daily: Option<&super::daily::Projection>,
 ) -> Result<(BundleFacts, BTreeSet<TilePos>, FloorTable), BootRefusal> {
     let mut facts = None;
     let mut masks: Vec<u8> = Vec::new();
     let mut floors = FloorTable::default();
     let mut refused = None;
     let mut blocked = BTreeSet::new();
-    let visited = bundle::visit(data, |manifest, sector| {
+    let visited = super::daily::visit(data, super::LOAD_LIMITS, daily, |manifest, sector| {
         if facts.is_none() {
             match BundleFacts::palette(manifest, item) {
                 Ok(palette) => {
@@ -412,7 +441,11 @@ impl BundleWorld {
         &self,
         profile: impl Fn(&str) -> Option<(u64, bool)>,
     ) -> Option<Vec<BundleSpawnFacts>> {
-        table_activation_spawns(&self.spawns, profile)
+        let mut sources = table_activation_spawns(&self.spawns, &profile)?;
+        if let Some(daily) = &self.daily {
+            sources.extend(super::daily::grimvale_spawns(self, daily, profile)?);
+        }
+        Some(sources)
     }
 
     /// Boss placements are kept separate from ordinary activation/respawn sources.

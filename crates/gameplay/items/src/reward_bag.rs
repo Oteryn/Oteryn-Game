@@ -1,8 +1,10 @@
-//! REWARD-CHEST-WIRE-1: one weighted reward per used reward bag.
+//! REWARD-CHEST-WIRE-1 / SV11: source-derived bag, present and box outcomes.
 //! Lists and weights come from the generated Canary/Crystal overlay; unplayable bags fail closed.
 use crate::item_craft::{CookingConversion, output_definition};
+use oteryn_gameplay_content::content::ReferenceItemTarget;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
+use oteryn_gameplay_domain::domain::timed_item_host::resolve_timed_definition;
 use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
 
@@ -13,6 +15,11 @@ const DRAW_TAG: &[u8] = b"oteryn:reward-bag-draw:v1";
 
 #[derive(Debug, serde::Deserialize)]
 pub struct RewardBag {
+    #[serde(default)]
+    selection: Selection,
+    #[serde(default = "one")]
+    picks: u32,
+    roll_max: Option<u64>,
     pub constant: String,
     pub bag: String,
     pub playable: bool,
@@ -21,9 +28,27 @@ pub struct RewardBag {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Reward {
+    #[serde(default = "one")]
+    minimum: u32,
+    #[serde(default = "one")]
+    maximum: u32,
     pub item: String,
     pub name: String,
     pub weight: u64,
+}
+
+fn one() -> u32 {
+    1
+}
+
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum Selection {
+    #[default]
+    Weighted,
+    One,
+    All,
+    WithoutReplacement,
 }
 
 /// Every bag of the overlay in source order; `None` if the bundled overlay does not parse.
@@ -35,12 +60,23 @@ pub fn reward_bags() -> Option<&'static [RewardBag]> {
     static BAGS: OnceLock<Option<Vec<RewardBag>>> = OnceLock::new();
     BAGS.get_or_init(|| {
         serde_json::from_str::<Overlay>(include_str!(
-            "../../../../tools/content-schema/native-gameplay/reward-bag-profiles.json"
+            "../../../../tools/content-schema/native-gameplay/reward-bag-catalogue.json"
         ))
         .ok()
         .map(|o| o.bags)
     })
     .as_deref()
+}
+
+/// The craft owner may mint a captured container reward empty, never with children.
+pub fn is_reward_bag_output(recipe: &str, key: &str) -> bool {
+    reward_bags().is_some_and(|bags| {
+        bags.iter().any(|bag| {
+            bag.playable
+                && recipe == format!("oteryn:reward-bag.{}", bag.constant.to_ascii_lowercase())
+                && bag.rewards.iter().any(|reward| reward.item == key)
+        })
+    })
 }
 
 /// The existing USE route recognizes the same generated bags and W19 source tables
@@ -123,21 +159,91 @@ pub fn reward_bag_conversion(
         return event_containers::conversion(native, used, draw);
     }
     let bag = playable_bag(reward_bags()?, &used.production_key)?;
-    let reward = select_reward(&bag.rewards, draw)?;
-    let id = reward
-        .item
-        .strip_prefix("oteryn:item.tibia.i")?
-        .parse()
-        .ok()?;
-    let target = &native
-        .item_policy_for_source_id(id)?
-        .record()
-        .production_binding
-        .target;
-    Some(CookingConversion {
+    let mut outputs = Vec::new();
+    let mut available: Vec<_> = bag.rewards.iter().collect();
+    let picks = match bag.selection {
+        Selection::All => u32::try_from(available.len()).ok()?,
+        Selection::WithoutReplacement => bag.picks,
+        _ => 1,
+    };
+    for pick in 0..picks {
+        let reward = match bag.selection {
+            Selection::All => *available.get(usize::try_from(pick).ok()?)?,
+            Selection::WithoutReplacement => {
+                let index = outcome_draw(draw, pick, 0, u64::try_from(available.len()).ok()?)?;
+                available.remove(usize::try_from(index).ok()?)
+            }
+            Selection::One => {
+                let index = outcome_draw(draw, pick, 0, u64::try_from(available.len()).ok()?)?;
+                *available.get(usize::try_from(index).ok()?)?
+            }
+            Selection::Weighted => {
+                // Legacy bags keep their exact receipt draw. W19's explicit roll bound
+                // preserves music-box thresholds, including the unreachable tail.
+                let roll = bag
+                    .roll_max
+                    .map_or(Some(draw), |upper| outcome_draw(draw, pick, 0, upper))?;
+                select_reward(&bag.rewards, roll)?
+            }
+        };
+        let count = reward.minimum.checked_add(
+            u32::try_from(outcome_draw(
+                draw,
+                pick,
+                1,
+                u64::from(reward.maximum.checked_sub(reward.minimum)?.checked_add(1)?),
+            )?)
+            .ok()?,
+        )?;
+        let id = reward
+            .item
+            .strip_prefix("oteryn:item.tibia.i")?
+            .parse()
+            .ok()?;
+        let record = native.item_policy_for_source_id(id)?.record();
+        let target = &record.production_binding.target;
+        let definition = output_definition(native, target).or_else(|| {
+            // A newly minted active-time reward has no checkpoint row: TIMED-ITEM-0
+            // interprets revision zero as full values when the item becomes live.
+            // Validate that definition through the existing timed owner first.
+            let reference = ReferenceItemTarget::new(&target.key, &target.revision).ok()?;
+            resolve_timed_definition(&reference, &record.semantics).ok()??;
+            record.admission.materializable.then(|| TypedDefinitionRef {
+                family: record.production_definition.family.clone(),
+                production_key: record.production_definition.production_key.clone(),
+                revision_ref: record.production_definition.revision_ref.clone(),
+            })
+        })?;
+        outputs.push((definition, count));
+    }
+    (!outputs.is_empty()).then(|| CookingConversion {
         recipe: format!("oteryn:reward-bag.{}", bag.constant.to_ascii_lowercase()),
-        outputs: vec![(output_definition(native, target)?, 1)],
+        outputs,
     })
+}
+
+/// Independent selection/quantity streams, with rejection to avoid modulo bias.
+fn outcome_draw(seed: u64, pick: u32, domain: u8, upper: u64) -> Option<u64> {
+    if upper == 0 {
+        return None;
+    }
+    let zone = u64::MAX - u64::MAX % upper;
+    for counter in 0_u32..=u32::MAX {
+        let mut hasher = Sha256::new();
+        hasher.update(b"oteryn:event-bag-outcome:v1");
+        hasher.update(seed.to_be_bytes());
+        hasher.update(pick.to_be_bytes());
+        hasher.update([domain]);
+        hasher.update(counter.to_be_bytes());
+        let digest = hasher.finalize();
+        let mut first = [0; 8];
+        first.copy_from_slice(&digest[..8]);
+        let value = u64::from_be_bytes(first);
+        if value < zone {
+            return Some(value % upper);
+        }
+    }
+    None
 }
 
 fn playable_bag<'a>(bags: &'a [RewardBag], key: &str) -> Option<&'a RewardBag> {
@@ -167,6 +273,8 @@ mod tests {
 
     fn reward(weight: u64) -> Reward {
         Reward {
+            minimum: 1,
+            maximum: 1,
             item: String::new(),
             name: String::new(),
             weight,
@@ -176,7 +284,7 @@ mod tests {
     #[test]
     fn overlay_admits_all_three_bags_with_canary_weights() {
         let bags = reward_bags().expect("overlay parses");
-        assert_eq!(bags.len(), 3);
+        assert_eq!(bags.len(), 27);
         for (bag, (constant, key, count, total)) in bags.iter().zip([
             ("BAG_YOU_DESIRE", "oteryn:item.tibia.i34109", 21, 81_000),
             ("PRIMAL_BAG", "oteryn:item.tibia.i39546", 14, 54_000),
@@ -194,6 +302,9 @@ mod tests {
     fn unplayable_reward_bag_stays_closed_even_with_valid_rewards() {
         let key = "oteryn:item.tibia.i34109";
         let bags = [RewardBag {
+            selection: Selection::Weighted,
+            picks: 1,
+            roll_max: None,
             constant: "SYNTHETIC_UNPLAYABLE".into(),
             bag: key.into(),
             playable: false,
