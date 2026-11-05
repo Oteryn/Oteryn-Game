@@ -9,7 +9,7 @@ include!("character_core.rs");
 include!("floor_journey.rs");
 #[path = "map_journey.rs"]
 mod map_journey;
-#[path = "provision.rs"]
+#[path = "full_e2ef1.rs"]
 mod provisioning;
 include!("quest_journal.rs");
 
