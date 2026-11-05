@@ -239,6 +239,7 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     ));
     // Keep the high-level fixture on the other Character: the original
     // progression/death journey must retain its ordinary starter build.
+    include!("full_e2ef4_mount.rs");
     let profile_result = profile_journey(clients, &world, &bytes, &metadata.spawns).await;
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
