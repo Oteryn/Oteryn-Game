@@ -117,3 +117,119 @@ fn gap_character_tabs_render_and_reject_malformed_replies() {
         assert_eq!(p.result, confirmed);
     }
 }
+
+/// Exercise the production command loop, result routing and mailbox-backed panel reader.
+#[test]
+fn gap_cl1_session_loop_delivers_combat_modifiers_and_stamina()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    use crate::combat_input::{CombatCommand, CombatReport};
+    use crate::play::{Stepper, play_channel, run_session};
+    use oteryn_client_runtime::cyclopedia_character::{
+        CharacterTab, GeneralStats, TabView,
+        combat::{CombatStat, CombatStats},
+    };
+    use oteryn_client_runtime::raw_feature::FeatureCommand;
+    use oteryn_session::{LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome};
+    use std::time::Duration;
+
+    struct Peer;
+    impl Stepper for Peer {
+        fn feature_selected(&self, capability: u32) -> bool {
+            capability == 199
+        }
+        async fn feature(
+            &mut self,
+            command: &FeatureCommand,
+        ) -> Result<GatedCommandResult, SessionError> {
+            assert_eq!((command.capability, command.kind), (199, 388));
+            let tab =
+                oteryn_client_runtime::cyclopedia_character::decode_tab_request(&command.payload)
+                    .map_err(|_| SessionError::SessionUnusable)?
+                    .tab;
+            let view = if tab == CharacterTab::GeneralStats {
+                TabView::GeneralStats(GeneralStats {
+                    stamina_minutes: 2520,
+                    ..Default::default()
+                })
+            } else {
+                let mut stats =
+                    CombatStats::new(tab, 123, 1, 1).map_err(|_| SessionError::SessionUnusable)?;
+                let key = *CombatStat::for_tab(tab)
+                    .first()
+                    .ok_or(SessionError::SessionUnusable)?;
+                stats
+                    .set(key, 250_000)
+                    .map_err(|_| SessionError::SessionUnusable)?;
+                TabView::Combat(stats)
+            };
+            Ok(GatedCommandResult {
+                command_id: 1,
+                status: CommandStatus::Accepted,
+                server_sequence: 1,
+                payload: view.encode().map_err(|_| SessionError::SessionUnusable)?,
+            })
+        }
+        async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+            Err(SessionError::SessionUnusable)
+        }
+        async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {
+            tokio::time::sleep(duration).await;
+            Ok(())
+        }
+        fn drain(&mut self) -> Vec<SessionEvent> {
+            vec![]
+        }
+        async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+            Err(SessionError::SessionUnusable)
+        }
+        async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
+            Ok(None)
+        }
+    }
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?;
+            runtime.block_on(async {
+                let (link, commands, outbox) = play_channel();
+                let task = tokio::spawn(run_session(Peer, commands, outbox));
+                tokio::time::timeout(Duration::from_secs(2), async {
+                    while !link.cyclopedia_character_panel().selected {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await?;
+                for (tab, expected) in [
+                    (CharacterTab::Offence, "CriticalChance: 25.0000%"),
+                    (CharacterTab::Defence, "Dodge: 25.0000%"),
+                    (CharacterTab::Misc, "Momentum: 25.0000%"),
+                    (CharacterTab::GeneralStats, "Stamina: 42:00"),
+                ] {
+                    crate::play::mailbox::lock(&link.mailbox)
+                        .cyclopedia_character
+                        .tab = tab;
+                    link.cyclopedia_character_request(Intent::Tab);
+                    tokio::time::timeout(Duration::from_secs(2), async {
+                        loop {
+                            let panel = link.cyclopedia_character_panel();
+                            if !panel.pending
+                                && oteryn_client_ui::cyclopedia_character::panel_text(&panel)
+                                    .contains(expected)
+                            {
+                                break;
+                            }
+                            tokio::task::yield_now().await;
+                        }
+                    })
+                    .await?;
+                }
+                drop(link);
+                task.await?;
+                Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
+            })
+        })?
+        .join()
+        .map_err(|_| "session loop thread panicked")?
+}

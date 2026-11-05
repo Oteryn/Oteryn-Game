@@ -4,6 +4,7 @@ use crate::spell::{SpellFeedback, run_cast};
 pub use oteryn_session::EntityRef;
 use oteryn_session::{
     AttackIntentDisposition, Session, SessionError, SessionStream, SpellCastDisposition,
+    SpellTargetPosition,
 };
 use std::num::NonZeroU32;
 
@@ -15,6 +16,11 @@ pub enum CombatCommand {
     Modes(oteryn_session::FightModes),
     /// Cast the 1-based spell-book entry, aimed at the attack target when there is one.
     Cast(NonZeroU32),
+    /// Cast an ordinary spell at the tile selected by the cursor.
+    CastAt {
+        spell: NonZeroU32,
+        position: SpellTargetPosition,
+    },
 }
 
 /// What the task reports back for one combat command.
@@ -52,5 +58,8 @@ pub async fn run_combat<S: SessionStream>(
         CombatCommand::Stop => crate::attack::stop(session).await,
         CombatCommand::Modes(modes) => crate::attack::modes(session, modes).await,
         CombatCommand::Cast(spell) => run_cast(session, feedback, spell).await,
+        CombatCommand::CastAt { spell, position } => {
+            crate::cursor_spell::cast_at(session, feedback, spell, position).await
+        }
     }
 }
