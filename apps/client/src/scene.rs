@@ -26,6 +26,7 @@ const _: () = assert!(
 #[derive(Debug, Clone)]
 pub struct Scene {
     world: Arc<World>,
+    lit_atlas: Option<AtlasImage>,
     /// `None` draws no map: the session is on a floor the loaded map does not cover.
     anchor: Option<TileCoord>,
     own: TileCoord,
@@ -72,6 +73,7 @@ impl Scene {
                 kind: TargetKind::Object,
                 glyph: false,
                 entity: None,
+                item: None,
             })
             .chain(entities.iter().copied())
             .chain([Targetable {
@@ -79,10 +81,12 @@ impl Scene {
                 kind: TargetKind::Entity,
                 glyph: false,
                 entity: None,
+                item: None,
             }])
             .collect();
         let mut scene = Self {
             world,
+            lit_atlas: None,
             anchor,
             own,
             facing,
@@ -94,6 +98,11 @@ impl Scene {
         };
         scene.rebuild_sprites()?;
         Ok(scene)
+    }
+
+    pub fn set_ambient(&mut self, ambient: [u8; 3]) -> Result<(), BatchError> {
+        self.lit_atlas = Some(oteryn_renderer::lit_atlas(self.world.atlas(), ambient));
+        Ok(())
     }
 
     /// Current target, if any.
@@ -111,6 +120,12 @@ impl Scene {
         self.target = Some(picked);
         self.rebuild_sprites()?;
         Ok(Some(picked))
+    }
+
+    /// Keeps a selection only while that exact visible identity still exists.
+    pub(crate) fn retain_target(&mut self, target: Option<Targetable>) -> Result<(), BatchError> {
+        self.target = target.filter(|target| self.visible.contains(target));
+        self.rebuild_sprites()
     }
 
     /// Turns the player to `facing`, keeping the target.
@@ -145,7 +160,8 @@ impl Scene {
                             .iter()
                             .any(|v| {
                                 v.tile == TileCoord::new(x, y)
-                                    && (v.kind == TargetKind::Object || v.glyph)
+                                    && (v.glyph
+                                        || (v.kind == TargetKind::Object && v.item.is_none()))
                             })
                             .then_some(Draw {
                                 cell: MARKER_CELL,
@@ -168,7 +184,9 @@ impl Scene {
 
     #[must_use]
     pub fn atlas(&self) -> &AtlasImage {
-        self.world.atlas()
+        self.lit_atlas
+            .as_ref()
+            .unwrap_or_else(|| self.world.atlas())
     }
 
     #[must_use]

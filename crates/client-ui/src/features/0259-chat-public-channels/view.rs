@@ -32,12 +32,7 @@ pub fn line_text(line: &ChatLine) -> Option<String> {
 #[must_use]
 pub fn panel_text(panel: &ChatPanel) -> String {
     let mut text = String::from("Public Channels\n");
-    for room in [
-        ChatRoom::AdvertisingRookgaard,
-        ChatRoom::Tutor,
-        ChatRoom::Gamemaster,
-        ChatRoom::GuildLeaders,
-    ] {
+    for room in ChatRoom::ALL {
         let state = if panel.rooms.contains(room) {
             "open"
         } else {

@@ -4,6 +4,9 @@
 //! same space as window cursor positions. Everything here is plain data and integer or float math
 //! so batch shape, counts and tile/screen conversion are testable without a GPU.
 
+#[path = "ambient.rs"]
+mod ambient;
+pub use ambient::lit_atlas;
 use oteryn_client_domain::TileCoord;
 use std::fmt::{self, Display, Formatter};
 

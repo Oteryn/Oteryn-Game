@@ -2,11 +2,18 @@ use super::*;
 use oteryn_session::EntityKind;
 
 #[test]
-fn click_on_empty_ground_becomes_a_step_toward_it() -> Result<(), BatchError> {
+fn click_on_empty_ground_queues_a_server_target() -> Result<(), BatchError> {
     let mut view = view()?;
     view.click(TileCoord::new(98, 200))?;
-    assert_eq!(view.next_step(), Some(StepDir::West));
-    // One outstanding step: nothing more until its outcome.
+    assert_eq!(
+        view.inputs.front(),
+        Some(&Input::TargetWalk(ActorPosition {
+            x: 98,
+            y: 200,
+            floor: 0
+        }))
+    );
+    // Target walking never generates a client step.
     assert_eq!(view.next_step(), None);
     // A click on the marker selects it and sets no goal.
     let mut other = self::view()?;

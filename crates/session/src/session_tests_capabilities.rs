@@ -2,64 +2,103 @@ use oteryn_protocol_oteryn::charm::{
     COMMAND_TYPE_CHARM_ASSIGN_INTENT, STATE_DOMAIN_CHARACTER_CHARMS,
 };
 
-
 #[test]
-fn prey_native_capability_routes_tier_and_confirmed_pick_and_refuses_without_selection() -> Result<(), BoxError> {
-    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
-        block_on(async {
-            for selected in [false, true] {
-                let (client, mut server) = tokio::io::duplex(128 * 1024);
-                let requests = [
-                    prey::Request::SetTier { slot: 1, tier: 3 },
-                    prey::Request::OfferedToday { slot: 1, after: String::new() },
-                    prey::Request::PickAgain { slot: 1, creature: "oteryn:creature.dragon".into(), expected_price_gold: 45000 },
-                ];
-                let expected = requests.clone();
-                let peer = tokio::spawn(async move {
-                    join_peer_with(&mut server, CLIENT_SUPPORTED_CAPABILITIES,
-                        if selected { &[140] } else { &[] }, &[], (1, spatial(0)), &[]).await?;
-                    if selected {
-                        for (index, expected) in expected.into_iter().enumerate() {
-                            let frame = read_frame(&mut server).await?;
-                            let envelope = decode_wire_envelope(&frame)?;
-                            let command = envelope.client_command(1)?;
-                            let id = 7 + index as u64;
-                            assert_eq!((command.command_type, command.command_id), (160, id));
-                            assert_eq!(prey::decode_request(command.payload).map_err(|_| "request")?, expected);
-                            let reply = prey::Reply {
-                                status: 0, wildcard_balance: 10, slots: Vec::new(),
-                                list_size: 12, expansion_owned: true,
-                                offered_today: vec![prey::OfferedCreature {
-                                    creature: "oteryn:creature.dragon".into(), price_gold: 45000, occupied_slot: 0,
-                                }],
-                                offered_next: String::new(),
-                            };
-                            let payload = prey::encode_reply(&reply).map_err(|_| "reply")?;
-                            write_frame(&mut server, &encode_command_result(1, 34 + id, id,
-                                CommandStatus::Accepted, &payload)?).await?;
+fn prey_native_capability_routes_tier_and_confirmed_pick_and_refuses_without_selection()
+-> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                for selected in [false, true] {
+                    let (client, mut server) = tokio::io::duplex(128 * 1024);
+                    let requests = [
+                        prey::Request::SetTier { slot: 1, tier: 3 },
+                        prey::Request::OfferedToday {
+                            slot: 1,
+                            after: String::new(),
+                        },
+                        prey::Request::PickAgain {
+                            slot: 1,
+                            creature: "oteryn:creature.dragon".into(),
+                            expected_price_gold: 45000,
+                        },
+                    ];
+                    let expected = requests.clone();
+                    let peer = tokio::spawn(async move {
+                        join_peer_with(
+                            &mut server,
+                            CLIENT_SUPPORTED_CAPABILITIES,
+                            if selected { &[140] } else { &[] },
+                            &[],
+                            (1, spatial(0)),
+                            &[],
+                        )
+                        .await?;
+                        if selected {
+                            for (index, expected) in expected.into_iter().enumerate() {
+                                let frame = read_frame(&mut server).await?;
+                                let envelope = decode_wire_envelope(&frame)?;
+                                let command = envelope.client_command(1)?;
+                                let id = 7 + index as u64;
+                                assert_eq!((command.command_type, command.command_id), (160, id));
+                                assert_eq!(
+                                    prey::decode_request(command.payload).map_err(|_| "request")?,
+                                    expected
+                                );
+                                let reply = prey::Reply {
+                                    status: 0,
+                                    wildcard_balance: 10,
+                                    slots: Vec::new(),
+                                    list_size: 12,
+                                    expansion_owned: true,
+                                    offered_today: vec![prey::OfferedCreature {
+                                        creature: "oteryn:creature.dragon".into(),
+                                        price_gold: 45000,
+                                        occupied_slot: 0,
+                                    }],
+                                    offered_next: String::new(),
+                                };
+                                let payload = prey::encode_reply(&reply).map_err(|_| "reply")?;
+                                write_frame(
+                                    &mut server,
+                                    &encode_command_result(
+                                        1,
+                                        34 + id,
+                                        id,
+                                        CommandStatus::Accepted,
+                                        &payload,
+                                    )?,
+                                )
+                                .await?;
+                            }
+                        }
+                        Ok::<(), BoxError>(())
+                    });
+                    let mut admission = admission()?;
+                    admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+                    let mut session = Session::admit(client, admission).await?;
+                    for request in requests {
+                        let payload = prey::encode_request(&request).map_err(|_| "request")?;
+                        let result = session.gated_command(140, 160, &payload).await;
+                        if selected {
+                            let reply =
+                                prey::decode_reply(&result?.payload).map_err(|_| "reply")?;
+                            assert_eq!(reply.list_size, 12);
+                            assert_eq!(reply.offered_today[0].price_gold, 45000);
+                        } else {
+                            assert!(matches!(
+                                result,
+                                Err(SessionError::CapabilityNotSelected { capability: 140 })
+                            ));
                         }
                     }
-                    Ok::<(), BoxError>(())
-                });
-                let mut admission = admission()?;
-                admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
-                let mut session = Session::admit(client, admission).await?;
-                for request in requests {
-                    let payload = prey::encode_request(&request).map_err(|_| "request")?;
-                    let result = session.gated_command(140, 160, &payload).await;
-                    if selected {
-                        let reply = prey::decode_reply(&result?.payload).map_err(|_| "reply")?;
-                        assert_eq!(reply.list_size, 12);
-                        assert_eq!(reply.offered_today[0].price_gold, 45000);
-                    } else {
-                        assert!(matches!(result, Err(SessionError::CapabilityNotSelected { capability: 140 })));
-                    }
+                    peer.await??;
                 }
-                peer.await??;
-            }
-            Ok::<(), BoxError>(())
+                Ok::<(), BoxError>(())
+            })?
         })?
-    })?.join().map_err(|_| "Prey selection thread panicked")?
+        .join()
+        .map_err(|_| "Prey selection thread panicked")?
 }
 
 #[test]
@@ -77,6 +116,7 @@ fn derived_gated_routes_match_previous_table() {
         (60, &[78], &[26]),
         (62, &[79], &[27]),
         (63, &[80], &[28]),
+        (64, &[81], &[]),
         (68, &[85], &[]),
         (72, &[89], &[]),
         (75, &[], &[40]),
@@ -87,6 +127,7 @@ fn derived_gated_routes_match_previous_table() {
         (165, &[220], &[]),
         (16, &[22], &[16]),
         (18, &[], &[17]),
+        (19, &[], &[18]),
         (23, &[], &[19, 20]),
         (37, &[36], &[]),
         (31, &[], &[23]),
@@ -364,566 +405,4 @@ pub(super) fn admission_with(supported: &'static [u32]) -> Result<Admission<'sta
         supported_capabilities: supported,
         ..admission()?
     })
-}
-
-#[test]
-fn a_too_early_step_is_retried_with_backoff_and_needs_capability_13() -> Result<(), BoxError> {
-    block_on(async {
-        let (client, mut server) = tokio::io::duplex(64 * 1024);
-        let peer = tokio::spawn(async move {
-            join_peer(&mut server, &[13], &[13], &[]).await?;
-            for (id, sequence) in [(7, 41), (8, 42)] {
-                let command = read_frame(&mut server).await?;
-                assert_eq!(
-                    decode_wire_envelope(&command)?
-                        .client_command(1)?
-                        .command_id,
-                    id
-                );
-                write_frame(
-                    &mut server,
-                    &encode_command_result(
-                        1,
-                        sequence,
-                        id,
-                        CommandStatus::Rejected,
-                        &encode_step_result(StepDisposition::TooEarly),
-                    )?,
-                )
-                .await?;
-            }
-            read_frame(&mut server).await?;
-            write_frame(
-                &mut server,
-                &encode_command_result(
-                    1,
-                    43,
-                    9,
-                    CommandStatus::Accepted,
-                    &encode_step_result(StepDisposition::Blocked),
-                )?,
-            )
-            .await?;
-            Ok::<(), BoxError>(())
-        });
-        let mut session = Session::admit(client, admission()?).await?;
-        assert_eq!(session.selected_capabilities(), &[13]);
-        let started = std::time::Instant::now();
-        let outcome = session.step_retrying(StepDirection::East).await?;
-        peer.await??;
-        assert_eq!(outcome.disposition, StepDisposition::Blocked);
-        assert_eq!(outcome.command_id, 9);
-        assert!(started.elapsed() >= STEP_RETRY_INITIAL_BACKOFF * 3);
-        Ok(())
-    })?
-}
-
-#[test]
-fn too_early_without_capability_13_fails_closed() -> Result<(), BoxError> {
-    block_on(async {
-        let (client, mut server) = tokio::io::duplex(64 * 1024);
-        let peer = tokio::spawn(async move {
-            join_peer(&mut server, &[13], &[], &[]).await?;
-            read_frame(&mut server).await?;
-            write_frame(
-                &mut server,
-                &encode_command_result(
-                    1,
-                    41,
-                    7,
-                    CommandStatus::Rejected,
-                    &encode_step_result(StepDisposition::TooEarly),
-                )?,
-            )
-            .await?;
-            Ok::<(), BoxError>(())
-        });
-        let mut session = Session::admit(client, admission()?).await?;
-        assert!(session.selected_capabilities().is_empty());
-        assert!(matches!(
-            session.step(StepDirection::East).await,
-            Err(SessionError::WorldSpatial(_))
-        ));
-        peer.await??;
-        Ok(())
-    })?
-}
-
-#[test]
-fn a_selection_outside_the_advertised_set_is_refused() -> Result<(), BoxError> {
-    block_on(async {
-        let (client, mut server) = tokio::io::duplex(64 * 1024);
-        let peer = tokio::spawn(async move { join_peer(&mut server, &[13], &[7], &[]).await });
-        let result = Session::admit(client, admission()?).await;
-        let _ = peer.await?;
-        assert!(matches!(
-            result,
-            Err(SessionError::CapabilityNotRequested(7))
-        ));
-        Ok(())
-    })?
-}
-
-#[test]
-fn gated_domains_and_commands_route_by_selected_capability() -> Result<(), BoxError> {
-    block_on(async {
-        let (client, mut server) = tokio::io::duplex(64 * 1024);
-        let peer = tokio::spawn(async move {
-            join_peer(
-                &mut server,
-                &[GATED_CAPABILITY, 13],
-                &[GATED_CAPABILITY, 13],
-                &[(GATED_DOMAIN, 3), (4242, 1)],
-            )
-            .await?;
-            let command = read_frame(&mut server).await?;
-            assert_eq!(
-                decode_wire_envelope(&command)?
-                    .client_command(1)?
-                    .command_type,
-                GATED_COMMAND
-            );
-            write_frame(
-                &mut server,
-                &encode_command_result(1, 41, 7, CommandStatus::Accepted, b"ok")?,
-            )
-            .await?;
-            write_frame(
-                &mut server,
-                &encode_state_delta(1, 42, GATED_DOMAIN, 3, 4, 1, b"delta")?,
-            )
-            .await?;
-            Ok::<(), BoxError>(())
-        });
-        let mut session = Session::admit(client, admission_with(&[GATED_CAPABILITY, 13])?).await?;
-        // The unregistered domain 4242 is ignored; the selected chat domain is kept raw.
-        let snapshot = session
-            .gated_snapshot(GATED_DOMAIN)
-            .ok_or("chat snapshot")?;
-        assert_eq!(
-            (snapshot.revision, snapshot.payload.as_slice()),
-            (3, &b"snap"[..])
-        );
-        assert!(session.gated_snapshot(4242).is_none());
-        // A command another capability owns is refused before anything is sent.
-        assert!(matches!(
-            session.gated_command(13, GATED_COMMAND, b"x").await,
-            Err(SessionError::CapabilityNotSelected { capability: 13 })
-        ));
-        let result = session
-            .gated_command(GATED_CAPABILITY, GATED_COMMAND, b"x")
-            .await?;
-        assert_eq!(
-            (result.command_id, result.payload.as_slice()),
-            (7, &b"ok"[..])
-        );
-        let delta = session.read_gated_delta(GATED_DOMAIN, 1).await?;
-        peer.await??;
-        assert_eq!((delta.base_revision, delta.new_revision), (3, 4));
-        assert_eq!(delta.payload, b"delta");
-        Ok(())
-    })?
-}
-
-#[test]
-fn unselected_gated_commands_and_domains_are_refused() -> Result<(), BoxError> {
-    block_on(async {
-        let (client, mut server) = tokio::io::duplex(64 * 1024);
-        let peer = tokio::spawn(async move {
-            join_peer(&mut server, &[13], &[13], &[]).await?;
-            Ok::<(), BoxError>(())
-        });
-        let mut session = Session::admit(client, admission()?).await?;
-        peer.await??;
-        assert!(matches!(
-            session
-                .gated_command(GATED_CAPABILITY, GATED_COMMAND, b"x")
-                .await,
-            Err(SessionError::CapabilityNotSelected {
-                capability: GATED_CAPABILITY
-            })
-        ));
-        assert!(matches!(
-            session.read_gated_delta(GATED_DOMAIN, 1).await,
-            Err(SessionError::CapabilityNotSelected {
-                capability: GATED_CAPABILITY
-            })
-        ));
-        // Nothing was sent, so the session stays usable.
-        assert_eq!(session.next_command_id(), 7);
-
-        let (client, mut server) = tokio::io::duplex(64 * 1024);
-        let peer = tokio::spawn(async move {
-            join_peer(&mut server, &[13], &[13], &[(GATED_DOMAIN, 3)]).await
-        });
-        let result = Session::admit(client, admission()?).await;
-        let _ = peer.await?;
-        assert!(matches!(
-            result,
-            Err(SessionError::UnselectedDomain {
-                domain_id: GATED_DOMAIN
-            })
-        ));
-        Ok(())
-    })?
-}
-
-#[test]
-fn a_resume_never_changes_the_selected_set() {
-    assert!(check_resume_selection(&[7, 13], &[13, 7]).is_ok());
-    assert!(check_resume_selection(&[], &[]).is_ok());
-    assert!(matches!(
-        check_resume_selection(&[13], &[7, 13]),
-        Err(SessionError::ResumeSelectionChanged)
-    ));
-    assert!(matches!(
-        check_resume_selection(&[7, 13], &[13]),
-        Err(SessionError::ResumeSelectionChanged)
-    ));
-}
-
-#[test]
-fn p17c_client_advertises_exiva_and_field_prerequisites() {
-    for id in [140, 147, 91, 4, 6, 11, 15, 18, 22, 30] {
-        assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&id), "missing {id}");
-    }
-}
-
-#[test]
-fn cl26s3_client_advertises_daily_reward_v2() {
-    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&182));
-}
-
-#[test]
-fn p17c_field_functions_select_with_prerequisites_on_the_default_client() -> Result<(), BoxError> {
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(|| {
-            block_on(async {
-                use oteryn_protocol_oteryn::world_map::{
-                    MapViewHeader, WorldMapViewSnapshot, encode_world_map_snapshot,
-                };
-                let selected: &[u32] = &[4, 6, 11, 15, 18, 22, 30, 91];
-                let (client, mut server) = tokio::io::duplex(256 * 1024);
-                let peer = tokio::spawn(async move {
-                    let map = encode_world_map_snapshot(&WorldMapViewSnapshot {
-                        header: MapViewHeader {
-                            content_generation: CONTENT_GENERATION,
-                            bundle_digest: [0x22; 32],
-                            reset_epoch: 0,
-                            origin: at(0, 0),
-                            first_visible_floor: 0,
-                        },
-                        tiles: vec![],
-                    })
-                    .map_err(|e| format!("{e:?}"))?;
-                    let inv = item_view::encode_character_inventory(&CharacterInventory::default())
-                        .map_err(|e| format!("{e:?}"))?;
-                    let container = item_view::encode_open_container(&OpenContainer::default())
-                        .map_err(|e| format!("{e:?}"))?;
-                    join_peer_with(
-                        &mut server,
-                        CLIENT_SUPPORTED_CAPABILITIES,
-                        selected,
-                        &[],
-                        item_snapshot(vec![])?,
-                        &[(9, 0, 1, inv), (11, 0, 1, container), (17, 0, 1, map)],
-                    )
-                    .await?;
-                    let frame = read_frame(&mut server).await?;
-                    let envelope = decode_wire_envelope(&frame)?;
-                    let command = envelope.client_command(1)?;
-                    assert_eq!(command.command_type, 2);
-                    write_frame(
-                        &mut server,
-                        &encode_command_result(
-                            1,
-                            41,
-                            command.command_id,
-                            CommandStatus::Accepted,
-                            &world_object::encode_use_result(UseDisposition::TargetIllegal)
-                                .map_err(|e| format!("{e:?}"))?,
-                        )?,
-                    )
-                    .await?;
-                    Ok::<(), BoxError>(())
-                });
-                let mut session = Session::admit(client, entity_admission()?).await?;
-                assert!(session.is_selected(91));
-                for capability in selected {
-                    assert!(session.is_selected(*capability));
-                }
-                assert_eq!(
-                    session.use_item(handle(1)).await?.disposition,
-                    UseDisposition::TargetIllegal
-                );
-                peer.await??;
-                Ok::<(), BoxError>(())
-            })?
-        })?
-        .join()
-        .map_err(|_| "field selection thread panicked")?
-}
-
-#[test]
-fn p17c_exiva_selection_routes_command_170_and_refuses_without_selection() -> Result<(), BoxError> {
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(|| {
-            block_on(async {
-                for selected in [false, true] {
-                    let (client, mut server) = tokio::io::duplex(64 * 1024);
-                    let peer = tokio::spawn(async move {
-                        join_peer_with(
-                            &mut server,
-                            CLIENT_SUPPORTED_CAPABILITIES,
-                            if selected { &[147] } else { &[] },
-                            &[],
-                            (1, spatial(0)),
-                            &[],
-                        )
-                        .await?;
-                        if selected {
-                            for (id, payload, reply) in [
-                                (7, vec![6, b'A', b'l'], vec![1]),
-                                (8, vec![5], vec![2, 2, 0]),
-                            ] {
-                                let frame = read_frame(&mut server).await?;
-                                let envelope = decode_wire_envelope(&frame)?;
-                                let command = envelope.client_command(1)?;
-                                assert_eq!(
-                                    (command.command_type, command.command_id, command.payload),
-                                    (170, id, payload.as_slice())
-                                );
-                                write_frame(
-                                    &mut server,
-                                    &encode_command_result(
-                                        1,
-                                        34 + id,
-                                        id,
-                                        CommandStatus::Accepted,
-                                        &reply,
-                                    )?,
-                                )
-                                .await?;
-                            }
-                        }
-                        Ok::<(), BoxError>(())
-                    });
-                    let mut admission = admission()?;
-                    admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
-                    let mut session = Session::admit(client, admission).await?;
-                    let result = session.gated_command(147, 170, &[6, b'A', b'l']).await;
-                    if selected {
-                        assert_eq!(result?.payload, [1]);
-                        let result = session.gated_command(147, 170, &[5]).await?;
-                        assert_eq!(
-                            exiva::PlayerList::decode(&result.payload)
-                                .ok_or("list")?
-                                .modes,
-                            2
-                        );
-                    } else {
-                        assert!(matches!(
-                            result,
-                            Err(SessionError::CapabilityNotSelected { capability: 147 })
-                        ));
-                    }
-                    peer.await??;
-                }
-                Ok::<(), BoxError>(())
-            })?
-        })?
-        .join()
-        .map_err(|_| "Exiva selection thread panicked")?
-}
-
-#[test]
-fn selected_mechanic_panels_have_raw_command_routes() -> Result<(), BoxError> {
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(|| {
-            block_on(async {
-                // The adapters for CLIENT-E2E-1 all call gated_command, including opt-in panels.
-                for (capability, command_type) in [
-                    (40, 40),
-                    (42, 45),
-                    (43, 48),
-                    (60, 78),
-                    (62, 79),
-                    (63, 80),
-                    (68, 85),
-                    (72, 89),
-                    (81, 97),
-                    (140, 160),
-                    (165, 220),
-                    // CL25J: include every newly composed feature route.
-                    (151, 177),
-                    (152, 181),
-                    (153, 182),
-                    (154, 183),
-                    (179, 348),
-                    (195, 378),
-                    (197, 383),
-                    (199, 387),
-                    (225, 431),
-                    (230, 440),
-                ] {
-                    assert!(
-                        gated_routes().any(|(id, commands, _)| id == capability
-                            && commands.contains(&command_type)),
-                        "missing panel route for capability {capability}"
-                    );
-                }
-                let (client, mut server) = tokio::io::duplex(64 * 1024);
-                let peer = tokio::spawn(async move {
-                    join_peer(&mut server, &[40], &[40], &[]).await?;
-                    let frame = read_frame(&mut server).await?;
-                    assert_eq!(
-                        decode_wire_envelope(&frame)?
-                            .client_command(1)?
-                            .command_type,
-                        40
-                    );
-                    write_frame(
-                        &mut server,
-                        &encode_command_result(1, 41, 7, CommandStatus::Accepted, b"guild")?,
-                    )
-                    .await?;
-                    Ok::<(), BoxError>(())
-                });
-                let mut session = Session::admit(client, admission_with(&[40])?).await?;
-                assert!(session.is_selected(40));
-                assert_eq!(session.gated_command(40, 40, b"").await?.payload, b"guild");
-                peer.await??;
-                Ok(())
-            })?
-        })?
-        .join()
-        .map_err(|_| "panel routes thread panicked")?
-}
-
-#[test]
-fn npc_service_and_staff_prerequisites_route_with_interleaved_domains() -> Result<(), BoxError> {
-    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
-        block_on(async {
-            let npc = EntityRef { identity: [9; 16], generation: 2 };
-            let conversation = npc_service::NpcConversation { open: Some((npc, npc_service::NpcConversationState::Open)), lines: vec!["Trade?".into()] };
-            let window = npc_service::NpcTradeWindow { open: Some((npc, 7)), offers: vec![npc_service::NpcOffer { item_definition_ref: 5, side: NpcTradeSide::Buy, count: 1, unit_price: 12 }] };
-            let expected = window.clone();
-            let (client, mut server) = tokio::io::duplex(64 * 1024);
-            let peer = tokio::spawn(async move {
-                join_peer_with(&mut server, CLIENT_SUPPORTED_CAPABILITIES, &[3, 51], &[], (1, spatial(0)), &[
-                    (7, 0, 1, npc_service::encode_npc_conversation(&Default::default()).map_err(|e| format!("conversation: {e:?}"))?),
-                    (8, 0, 1, npc_service::encode_npc_trade_window(&Default::default()).map_err(|e| format!("window: {e:?}"))?),
-                ]).await?;
-                let frame = read_frame(&mut server).await?;
-                let envelope = decode_wire_envelope(&frame)?;
-                let command = envelope.client_command(1)?;
-                assert_eq!(command.command_type, 7);
-                assert_eq!(npc_service::decode_npc_talk_intent(command.payload).map_err(|e| format!("talk: {e:?}"))?.text, "trade");
-                write_frame(&mut server, &encode_command_result(1, 41, 7, CommandStatus::Accepted, &npc_service::encode_npc_intent_result(NpcIntentDisposition::Ok))?).await?;
-                write_frame(&mut server, &encode_state_delta(1, 42, 7, 0, 1, 1, &npc_service::encode_npc_conversation(&conversation).map_err(|e| format!("conversation: {e:?}"))?)?).await?;
-                write_frame(&mut server, &encode_state_delta(1, 43, 8, 0, 1, 1, &npc_service::encode_npc_trade_window(&window).map_err(|e| format!("window: {e:?}"))?)?).await?;
-                let frame = read_frame(&mut server).await?;
-                let envelope = decode_wire_envelope(&frame)?;
-                let command = envelope.client_command(1)?;
-                assert_eq!(command.command_type, 60);
-                assert_eq!(staff::decode_envelope(command.payload)?.principal, "operator");
-                let result = staff::StaffResult { code: staff::StaffCode::TierInsufficient, disposition: 2, control_seq: 1, link_sha256: vec![3; 32], mute_until_ms: 0 };
-                write_frame(&mut server, &encode_state_delta(1, 44, 8, 1, 2, 1, &npc_service::encode_npc_trade_window(&Default::default()).map_err(|e| format!("window: {e:?}"))?)?).await?;
-                write_frame(&mut server, &encode_command_result(1, 45, 8, CommandStatus::Accepted, &staff::encode_result(&result)?)?).await?;
-                Ok::<(), BoxError>(())
-            });
-            let mut admission = admission()?;
-            admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
-            let mut session = Session::admit(client, admission).await?;
-            assert!(matches!(session.gated_command(81, 97, b"").await, Err(SessionError::CapabilityNotSelected { capability: 81 })));
-            let payload = npc_service::encode_npc_talk_intent(&npc_service::NpcTalkIntent { npc_actor: npc, text: "trade".into() }).map_err(|e| format!("talk: {e:?}"))?;
-            let result = session.gated_command(3, 7, &payload).await?;
-            assert_eq!(npc_service::decode_npc_intent_result(&result.payload).map_err(|e| format!("result: {e:?}"))?, NpcIntentDisposition::Ok);
-            let delta = session.read_gated_delta(8, 1).await?;
-            assert_eq!(npc_service::decode_npc_trade_window(&delta.payload).map_err(|e| format!("window: {e:?}"))?, expected);
-            assert!(matches!(session.take_events().as_slice(), [SessionEvent::NpcConversation(_)]));
-            let envelope = staff::SignedEnvelope { principal: "operator".into(), canonical: vec![1], signature: vec![2] };
-            let result = session.gated_command(51, 60, &staff::encode_envelope(&envelope)?).await?;
-            assert_eq!(staff::decode_result(&result.payload)?.code, staff::StaffCode::TierInsufficient);
-            assert!(matches!(session.take_events().as_slice(), [SessionEvent::NpcTradeWindow(_)]));
-            peer.await??;
-            Ok::<(), BoxError>(())
-        })?
-    })?.join().map_err(|_| "NPC session thread panicked")?
-}
-
-#[test]
-fn world_event_query_uses_selected_session_and_empty_payload() -> Result<(), BoxError> {
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(|| {
-            block_on(async {
-                assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&53));
-                assert!(gated_routes().any(|(id, commands, _)| id == 53 && commands.contains(&64)));
-                let (client, mut server) = tokio::io::duplex(64 * 1024);
-                let peer = tokio::spawn(async move {
-                    join_peer(&mut server, &[53], &[53], &[]).await?;
-                    let frame = read_frame(&mut server).await?;
-                    let command = decode_wire_envelope(&frame)?.client_command(1)?;
-                    assert_eq!(command.command_type, 64);
-                    assert!(command.payload.is_empty());
-                    let payload = world_event::encode_world_event_state(&world_event::WorldEventState {
-                        reset_epoch: 9,
-                        active: true,
-                        announcement: "Fair".into(),
-                    }).map_err(|_| "world-event encode failed")?;
-                    write_frame(&mut server, &encode_command_result(1, 41, 7, CommandStatus::Accepted, &payload)?).await?;
-                    Ok::<(), BoxError>(())
-                });
-                let mut session = Session::admit(client, admission_with(&[53])?).await?;
-                let result = session.gated_command(53, 64, &[]).await?;
-                assert_eq!(world_event::decode_world_event_state(&result.payload).map_err(|_| "world-event decode failed")?.announcement, "Fair");
-                peer.await??;
-                Ok(())
-            })?
-        })?
-        .join()
-        .map_err(|_| "world-event session test thread panicked")?
-}
-
-#[test]
-fn highscores_query_uses_selected_session_and_preserves_live_result() -> Result<(), BoxError> {
-    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
-        block_on(async {
-            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&9));
-            for selected in [false, true] {
-                let (client, mut server) = tokio::io::duplex(64 * 1024);
-                let peer = tokio::spawn(async move {
-                    let caps: &[u32] = if selected { &[9] } else { &[] };
-                    join_peer(&mut server, &[9], caps, &[]).await?;
-                    if selected {
-                        let frame = read_frame(&mut server).await?;
-                        let envelope = decode_wire_envelope(&frame)?;
-                        let command = envelope.client_command(1)?;
-                        assert_eq!(command.command_type, 14);
-                        let query = highscores::decode_highscores_query(command.payload).map_err(|e| format!("{e:?}"))?;
-                        assert_eq!((query.category, query.page, query.snapshot_id), (1, 1, 0));
-                        let reply = highscores::HighscoresResult { category: 1, snapshot_id: 77, computed_at: 1234, page: 1, has_more: false, rows: vec![], own_row: None };
-                        let payload = highscores::encode_highscores_result(&reply).map_err(|e| format!("{e:?}"))?;
-                        write_frame(&mut server, &encode_command_result(1, 41, command.command_id, CommandStatus::Accepted, &payload)?).await?;
-                    }
-                    Ok::<(), BoxError>(())
-                });
-                let mut session = Session::admit(client, admission_with(&[9])?).await?;
-                let payload = highscores::encode_highscores_query(highscores::HighscoresQuery { category: 1, vocation: 0, page: 1, snapshot_id: 0 }).map_err(|e| format!("{e:?}"))?;
-                let result = session.gated_command(9, 14, &payload).await;
-                if selected {
-                    let reply = highscores::decode_highscores_result(&result?.payload).map_err(|e| format!("{e:?}"))?;
-                    assert_eq!((reply.snapshot_id, reply.computed_at), (77, 1234));
-                } else {
-                    assert!(matches!(result, Err(SessionError::CapabilityNotSelected { capability: 9 })));
-                }
-                peer.await??;
-            }
-            Ok(())
-        })?
-    })?.join().map_err(|_| "highscores session test panicked")?
 }

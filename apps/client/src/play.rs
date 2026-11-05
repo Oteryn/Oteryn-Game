@@ -2,15 +2,12 @@
 //!
 //! The view projects server-owned positions, overlays and live map tiles.
 
-use crate::input::{ClickWalk, StepDir};
+use crate::input::StepDir;
 use crate::map::World;
 use crate::scene::Scene;
 use feature_local_reference_preferences::settings::LocalPlayState;
-use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
-use oteryn_session::{
-    EntityRef, JoinSnapshot, SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity,
-};
+use oteryn_session::{EntityRef, SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity};
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
 
@@ -20,6 +17,7 @@ enum Input {
     Arrow(StepDir),
     Cast(NonZeroU32),
     Attack(EntityRef),
+    TargetWalk(oteryn_session::ActorPosition),
     Logout,
 }
 
@@ -27,6 +25,8 @@ const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    target_walk_feedback: Option<&'static str>,
+    world_clock: Option<oteryn_session::world_clock::WorldClock>,
     vitals: Option<oteryn_session::ActorVitals>,
     sounds: Vec<SoundCue>,
     own: TileCoord,
@@ -42,13 +42,13 @@ pub struct PlayView {
     /// The session floor the map is anchored to; on any other floor no map is drawn.
     map_floor: Option<i16>,
     scene: Scene,
-    walk: ClickWalk,
     /// A step sent to the session task whose outcome has not arrived.
     in_flight: bool,
     /// Arrow, hotkey and click input not yet sent, in the order it was given.
     inputs: VecDeque<Input>,
     /// The other entities the server reports as visible.
     entities: Vec<WorldSpatialEntity>,
+    ground_items: Vec<crate::input::Targetable>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
     /// The last refused logout's line, shown until the next combat line or logout answer.
@@ -58,15 +58,6 @@ pub struct PlayView {
 }
 
 impl PlayView {
-    pub fn from_join(snapshot: &JoinSnapshot) -> Result<Self, BatchError> {
-        let position = snapshot.world_spatial.actor_position;
-        Self::new(
-            TileCoord::new(position.x, position.y),
-            position.floor,
-            &snapshot.world_object_overlay,
-        )
-    }
-
     pub fn new(
         own: TileCoord,
         floor: i16,
@@ -75,6 +66,8 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            target_walk_feedback: None,
+            world_clock: None,
             vitals: None,
             sounds: Vec::new(),
             own,
@@ -86,10 +79,10 @@ impl PlayView {
             live_map: false,
             anchor,
             map_floor: None,
-            walk: ClickWalk::new(),
             in_flight: false,
             inputs: VecDeque::new(),
             entities: Vec::new(),
+            ground_items: Vec::new(),
             combat_line: None,
             logout_line: None,
             server_messages: VecDeque::new(),
@@ -108,62 +101,17 @@ impl PlayView {
             self.inputs.push_back(input);
         }
     }
-
-    /// One shell tick, never waiting on the network: applies every outcome the session task has
-    /// delivered, then hands it the next step if one is due. A session end returns to login with
-    /// its public class, a committed logout to character selection; a view error is a render
-    /// failure.
-    pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
-        const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
-        while let Some(event) = link.poll() {
-            match event {
-                PlayEvent::Stepped(outcome) => {
-                    self.apply(&outcome).map_err(|_error| UNAVAILABLE)?;
-                }
-                PlayEvent::Pushed(pushed) => {
-                    self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
-                    self.enqueue(pushed.sounds);
-                }
-                PlayEvent::Combat(report) => self.apply_combat(report),
-                PlayEvent::LogoutRefused(result) => self.apply_logout_refusal(result),
-                PlayEvent::LoggedOut => return Err(PlayEnd::LoggedOut),
-                PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
-            }
-        }
-        self.vitals = link.actor_vitals();
-        // One chronological queue: each input goes out in the order it was given. A step still
-        // in flight holds back the arrow and what was given after it.
-        while let Some(&input) = self.inputs.front() {
-            match input {
-                Input::Cast(spell) => feature_local_spell_action_bar::input::send_cast(link, spell),
-                Input::Attack(target) => {
-                    feature_0011_world_interaction::input::send_attack(link, target)
-                }
-                Input::Logout => link.request_logout(),
-                Input::Arrow(_) => match self.send_step().map_err(|_error| UNAVAILABLE)? {
-                    Some(direction) => link.request(direction),
-                    None => break,
-                },
-            }
-            if !matches!(input, Input::Arrow(_)) {
-                self.inputs.pop_front();
-            }
-        }
-        if self.inputs.is_empty()
-            && let Some(direction) = self.send_step().map_err(|_error| UNAVAILABLE)?
-        {
-            link.request(direction);
-        }
-        Ok(())
-    }
 }
 
 mod end;
 mod mailbox;
 mod session_loop;
 mod session_stepper;
+mod tick;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
+
+pub use feature_0004_item_view_move::state::GroundItem;
 
 pub use feature_0023_presentation::state::*;
 

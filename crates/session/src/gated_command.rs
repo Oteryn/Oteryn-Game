@@ -1,6 +1,9 @@
 //! Optional capability command exchange through the existing command sequencing owner.
 use super::*;
 
+#[path = "features/0064-target-move/protocol.rs"]
+mod target_move;
+
 impl<S: SessionStream> Session<S> {
     /// Sends a command type owned by `capability` and returns its raw `CommandResult`. Refused
     /// before anything is sent when the capability is not selected or does not own the type.

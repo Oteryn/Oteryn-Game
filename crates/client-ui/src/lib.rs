@@ -1,5 +1,8 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+#[path = "features/0019-world-light/mod.rs"]
+pub mod world_light;
+
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
 /// Account achievement pages from core command 10.
@@ -129,6 +132,10 @@ pub mod task_board;
 /// Server-owned stash browsing and conversion controls.
 #[path = "features/0062-stash/mod.rs"]
 pub mod stash;
+
+/// Target-walk input and receipt projection.
+#[path = "features/0064-target-move/mod.rs"]
+pub mod target_move;
 
 /// NPC shop look and sell-all panel state.
 #[path = "features/0081-npc-shop/mod.rs"]
