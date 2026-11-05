@@ -79,6 +79,9 @@ pub mod account_achievements;
 #[path = "features/0008-achievement-notices/mod.rs"]
 pub mod achievement_notices;
 
+#[path = "features/0170-arena/mod.rs"]
+pub mod arena;
+
 #[path = "features/0225-boss-difficulty/mod.rs"]
 pub mod boss_difficulty;
 #[path = "features/0230-browse-field/mod.rs"]

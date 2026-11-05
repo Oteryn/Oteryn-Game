@@ -40,6 +40,7 @@ impl Application {
                 || play.link.highscores_input(events)
                 || play.link.notices_input(events)
                 || play.link.animus_input(events)
+                || play.link.arena_input(events)
                 || play.link.prey_input(events)
                 || play.link.task_board_input(events)
                 || play.link.wheel_input(events)

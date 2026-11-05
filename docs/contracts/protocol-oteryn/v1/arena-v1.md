@@ -41,4 +41,4 @@ The successful or refused transition and its exact reply are recorded with the f
 
 ## Native client
 
-The arena panel opens on Ctrl+Shift+A and provides catalogue/status refresh, entry, pit advancement, leaving and the four independent reward claims. Combat remains on the normal attack/spell path; the panel has no kill-report control. Capability 170 is selected only when offered. The panel shows gameplay refusals and does not apply predicted rewards or progression.
+The arena panel opens on Ctrl+Shift+Z (Ctrl+Shift+A remains assigned to account achievements) and provides catalogue/status refresh, entry, pit advancement, leaving and the four independent reward claims. Combat remains on the normal attack/spell path; the panel has no kill-report control. Capability 170 is selected only when offered. The panel shows gameplay refusals and does not apply predicted rewards or progression.

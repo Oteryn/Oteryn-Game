@@ -71,6 +71,7 @@ pub async fn run_session<T: Stepper>(
     outbox.chat_public_initialize(session.chat_public_selected(), session.chat_state());
     outbox.chat_private_publish(&session);
     outbox.player_typing_initialize(session.player_typing_selected());
+    outbox.arena_initialize(session.feature_selected(170));
     outbox.boss_encounter_initialize(session.feature_selected(117));
     outbox.boss_difficulty_initialize(session.feature_selected(225));
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
@@ -118,6 +119,7 @@ pub async fn run_session<T: Stepper>(
                         76 | 103 | 146 => outbox.properties_result(&command, &result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
+                        170 => outbox.arena_result(&result),
                         195 => outbox.weapon_proficiency_result(&result),
                         197 => outbox.cyclopedia_tracker_result(&result),
                         199 => outbox.cyclopedia_character_result(&result),

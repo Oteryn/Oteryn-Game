@@ -112,6 +112,7 @@ pub(super) struct Mailbox {
     pub(super) creature_push_selected: bool,
     pub(super) movement_feedback: Option<&'static str>,
     pub(super) analyser: oteryn_client_ui::analyser::Panel,
+    pub(super) arena: oteryn_client_ui::arena::ArenaPanel,
     pub(super) spell_catalog: oteryn_client_ui::spell_catalog::Panel,
     pub(super) spell_bar: oteryn_client_ui::spell_action_bar::ActionBarPanel,
     pub(super) served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
