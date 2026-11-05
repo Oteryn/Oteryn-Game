@@ -8,6 +8,14 @@ pub struct Menu {
     pub entries: Vec<(&'static str, Action)>,
 }
 impl Menu {
+    pub fn with_targeting(mut self, enabled: bool) -> Self {
+        if enabled && matches!(self.target, Target::Item(_)) {
+            self.entries.push(("Use with…", Action::UseWith));
+            self.entries.push(("Use rune…", Action::UseRune));
+        }
+        self
+    }
+
     pub fn new(target: Target, look: bool, bed: bool) -> Self {
         let mut entries = Vec::new();
         if look {
@@ -30,6 +38,9 @@ impl Menu {
 }
 #[derive(Debug, Default)]
 pub struct State {
+    pub targeting: Option<oteryn_client_runtime::inventory::ItemHandle>,
+    pub rune_targeting: bool,
+    pub use_with: bool,
     pub look: bool,
     pub bed: bool,
     pub pending: bool,
@@ -43,9 +54,13 @@ impl State {
         self.feedback_at = Some(now);
     }
     pub fn feedback(&self, now: std::time::Instant) -> Option<String> {
-        let at = self.feedback_at?;
-        if now.saturating_duration_since(at) >= std::time::Duration::from_secs(10) {
-            return None;
+        let fresh = self.feedback_at.is_some_and(|at| {
+            now.saturating_duration_since(at) < std::time::Duration::from_secs(10)
+        });
+        if !fresh {
+            return self
+                .targeting
+                .map(|_| crate::item_use::view::targeting_hint());
         }
         // Both the HUD and its window-title projection are bounded, single-line text.
         self.feedback.as_ref().map(|text| {
@@ -168,5 +183,67 @@ mod feedback_tests {
         );
         state.set_feedback("Waiting for server".into(), now);
         assert_eq!(state.feedback(now).as_deref(), Some("Waiting for server"));
+    }
+}
+
+#[cfg(test)]
+mod targeting_tests {
+    use super::*;
+    #[test]
+    fn targeting_can_be_cancelled_and_consumed_only_once() {
+        let mut state = State::default();
+        let source = std::num::NonZeroU64::MIN;
+        state.begin_targeting(source);
+        assert_eq!(state.targeting, Some(source));
+        assert!(
+            state
+                .feedback(std::time::Instant::now() + std::time::Duration::from_secs(30))
+                .is_some_and(|text| text.contains("Escape"))
+        );
+        assert!(state.cancel_targeting());
+        assert!(!state.cancel_targeting());
+        state.begin_targeting(source);
+        state.set_feedback("Use refused".into(), std::time::Instant::now());
+        assert_eq!(
+            state.feedback(std::time::Instant::now()).as_deref(),
+            Some("Use refused")
+        );
+        crate::item_use::source_current(&mut state, false);
+        assert_eq!(state.targeting, None);
+    }
+}
+
+#[cfg(test)]
+mod use_with_menu_tests {
+    use super::*;
+    #[test]
+    fn use_with_requires_negotiation_and_a_handle_source() {
+        let item = Target::Item(std::num::NonZeroU64::MIN);
+        assert!(
+            Menu::new(item.clone(), false, false)
+                .with_targeting(true)
+                .entries
+                .contains(&("Use with…", Action::UseWith))
+        );
+        assert!(
+            !Menu::new(item, false, false)
+                .with_targeting(false)
+                .entries
+                .iter()
+                .any(|(_, action)| *action == Action::UseWith)
+        );
+        assert!(
+            Menu::new(
+                Target::Creature(oteryn_client_runtime::world_interaction::EntityRef {
+                    identity: [1; 16],
+                    generation: 1
+                }),
+                false,
+                false
+            )
+            .with_targeting(true)
+            .entries
+            .is_empty()
+        );
     }
 }

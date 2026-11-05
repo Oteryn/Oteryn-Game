@@ -239,6 +239,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_client_runtime::hireling::HirelingResponse, SessionError> {
         oteryn_client_runtime::hireling::send(self, request).await
     }
+    fn targeting_source_current(&self, source: oteryn_session::ItemHandle) -> bool {
+        oteryn_client_runtime::world_interaction::item_current(self, source)
+    }
     async fn world_context(
         &mut self,
         command: &oteryn_client_runtime::world_interaction::Command,
@@ -298,6 +301,7 @@ pub(super) fn publish<T: Stepper>(
     outbox: &Outbox,
     held: &mut Vec<WorldSpatialEntity>,
 ) {
+    outbox.targeting_refresh(session);
     outbox.achievement_notices_publish(session);
     outbox.vitals(session.actor_vitals());
     if let Some(payload) = session.feature_snapshot(98) {

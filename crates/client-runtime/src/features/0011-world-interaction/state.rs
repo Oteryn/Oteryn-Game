@@ -6,6 +6,14 @@ use oteryn_session::{
 };
 
 pub(super) fn current<S: SessionStream>(session: &Session<S>, command: &Command) -> bool {
+    if let super::Action::UseOn(source) = command.action {
+        if !item_current(session, source) {
+            return false;
+        }
+        if command.selection.is_none() {
+            return matches!(command.target, Target::Item(handle) if inventory_has(session, handle));
+        }
+    }
     let Some(selection) = &command.selection else {
         return false;
     };
@@ -20,6 +28,10 @@ pub(super) fn current<S: SessionStream>(session: &Session<S>, command: &Command)
         }) != Some(binding)
     {
         return false;
+    }
+    if let Target::Position(position) = command.target {
+        return position == selection.position
+            && map.is_some_and(|map| map.tiles.iter().any(|tile| tile.position == position));
     }
     if let Target::Creature(reference) = command.target {
         return session.world_entities().is_some_and(|entities| {
@@ -78,4 +90,25 @@ fn placement(
     let mut placement = header.bundle_digest.to_vec();
     placement.extend(key.to_be_bytes());
     Some(placement)
+}
+
+fn inventory_has<S: SessionStream>(
+    session: &Session<S>,
+    handle: oteryn_session::ItemHandle,
+) -> bool {
+    session.inventory().is_some_and(|inventory| {
+        inventory
+            .main_backpack
+            .iter()
+            .chain(&inventory.entries)
+            .any(|item| item.handle == handle)
+    })
+}
+pub fn item_current<S: SessionStream>(
+    session: &Session<S>,
+    handle: oteryn_session::ItemHandle,
+) -> bool {
+    inventory_has(session, handle)
+        || session.world_map_snapshot().is_some_and(|map| map.tiles.iter().flat_map(|tile| &tile.items).any(|item| item.origin == MapOrigin::Handle(handle)))
+        || session.world_entities().is_some_and(|entities| entities.others().any(|entity| matches!(entity.detail, EntityDetail::Object { item_handle: Some(current), .. } if current == handle)))
 }

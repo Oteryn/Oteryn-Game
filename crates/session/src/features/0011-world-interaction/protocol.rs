@@ -1,4 +1,5 @@
 //! Existing world-context codecs exposed at the client session boundary.
+pub use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
 pub use oteryn_protocol_oteryn::{bed, item_look, world_object};
 
 impl<S: crate::SessionStream> crate::Session<S> {

@@ -17,6 +17,7 @@ impl Outbox {
 
     pub(in crate::play) fn inventory_end(&self) {
         let mut mailbox = lock(&self.0);
+        mailbox.world_context.targeting = None;
         mailbox.inventory = Default::default();
         mailbox.inventory_shutdown = true;
     }
