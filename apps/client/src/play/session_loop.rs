@@ -601,14 +601,15 @@ pub async fn run_session<T: Stepper>(
                 }
             }
             Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => return,
-            Ok(PlayCommand::Market(request)) => match session.market(&request).await {
-                Ok(response) => {
-                    outbox.market_result(&response);
-                    publish(&mut session, &outbox, &mut held);
-                    continue;
+            Ok(PlayCommand::Market(request)) => {
+                match outbox.market_execute(&mut session, &request).await {
+                    Ok(()) => {
+                        publish(&mut session, &outbox, &mut held);
+                        continue;
+                    }
+                    Err(error) => error,
                 }
-                Err(error) => error,
-            },
+            }
             Ok(PlayCommand::ChatPublic(intent)) => match session.chat_public(&intent).await {
                 Ok(outcome) => {
                     outbox.chat_result(&intent, &outcome);

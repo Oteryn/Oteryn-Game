@@ -25,6 +25,7 @@ mod native_trade;
 mod native_weather;
 mod native_minimap;
 mod native_stash;
+mod native_market;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
