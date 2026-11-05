@@ -33,18 +33,16 @@
   {
     "mechanic": "0003-npc-service",
     "kind": "handlers",
-    "id": "0003-npc-service-trade-unsupported",
-    "status": "unsupported",
+    "id": "0003-npc-service-trade",
+    "status": "supported",
     "commands": [
       8
     ],
-    "reason": "C16 trade window is separate.",
     "not_applicable": {
-      "state": "Trade window is outside C15.",
-      "protocol": "Trade window is outside C15.",
-      "view": "Trade window is outside C15.",
-      "input": "Trade window is outside C15.",
-      "settings": "Trade window is outside C15."
-    }
+      "settings": "The server owns NPC quotes and carried items."
+    },
+    "capability": 3,
+    "direction": "client_to_server",
+    "entry": "mod.rs::trade_request"
   }
 ]

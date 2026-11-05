@@ -326,7 +326,7 @@ pub async fn run_session<T: Stepper>(
     outbox.task_board_initialize(session.task_board_selected());
     outbox.stash_initialize(session.stash_selected());
     outbox.dialogue_initialize(&session);
-    outbox.npc_shop_initialize(session.npc_shop_selected());
+    outbox.npc_shop_initialize(&session);
     outbox.prey_initialize(session.prey_selected());
     outbox.daily_reward_initialize(session.daily_reward_selected());
     outbox.boss_rewards_initialize(session.boss_rewards_selected());
@@ -509,9 +509,12 @@ pub async fn run_session<T: Stepper>(
                 Ok(()) => { publish(&mut session, &outbox, &mut held); continue; }
                 Err(error) => error,
             },
-            Ok(PlayCommand::NpcShop(command)) => match session.npc_shop(&command).await {
-                Ok(result) => {
-                    outbox.npc_shop_result(&result);
+            Ok(PlayCommand::NpcTrade(intent)) => match outbox.npc_trade_run(&mut session, &intent).await {
+                Ok(()) => { publish(&mut session, &outbox, &mut held); continue; }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::NpcShop(command)) => match outbox.npc_shop_run(&mut session, &command).await {
+                Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

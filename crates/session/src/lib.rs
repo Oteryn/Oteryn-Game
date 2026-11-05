@@ -130,7 +130,6 @@ pub use oteryn_protocol_oteryn::imbuement;
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
 pub use oteryn_protocol_oteryn::loyalty_skills;
 pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide};
-pub use oteryn_protocol_oteryn::npc_shop;
 /// Prey slot wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::vip_presence::{
     PresenceBatch as VipPresenceBatch, PresenceEntry as VipPresenceEntry,
@@ -183,6 +182,7 @@ pub use oteryn_protocol_oteryn::{
         CharmUnlockStageIntent, CharmView,
     },
 };
+pub use oteryn_protocol_oteryn::{container_tree, npc_shop};
 pub use oteryn_protocol_oteryn::{npc_service, staff};
 use std::collections::{BTreeMap, VecDeque};
 use std::error::Error as StdError;

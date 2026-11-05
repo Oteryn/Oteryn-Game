@@ -94,6 +94,7 @@ impl SessionEvent {
             Self::ChatChannelList(_) => STATE_DOMAIN_CHAT,
             Self::ContainerViews(_) => 14,
             Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
+            Self::ContainerViews(_) => container_tree::STATE_DOMAIN_CONTAINER_VIEWS,
             Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,
         }
     }
