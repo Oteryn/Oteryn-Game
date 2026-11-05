@@ -4,6 +4,6 @@
   "id": "0054-training-open",
   "status": "supported",
   "context": "gameplay",
-  "chord": "CTRL+ALT+T",
+  "chord": "CTRL+ALT+N",
   "entry": "input.rs::open_key"
 }

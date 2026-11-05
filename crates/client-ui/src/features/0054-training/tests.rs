@@ -2,7 +2,7 @@ use super::*;
 use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
 #[test]
 fn cp01_training_shortcut_and_request_gate() -> Result<(), Box<dyn std::error::Error>> {
-    let code = KeyCode::new(23)?;
+    let code = KeyCode::new(17)?;
     let modifiers = Modifiers::one(Modifier::Control).with(Modifier::Alt);
     let event = |state, modifiers, repeat| NormalizedInputEvent::Key {
         code,

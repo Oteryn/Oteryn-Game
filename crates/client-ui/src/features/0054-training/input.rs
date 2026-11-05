@@ -4,6 +4,6 @@ pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
     events.iter().any(|event| {
         matches!(event,
         NormalizedInputEvent::Key {code, state: ButtonState::Pressed, modifiers, repeat: false}
-        if code.get() == 23 && *modifiers == chord)
+        if code.get() == 17 && *modifiers == chord)
     })
 }
