@@ -35,6 +35,7 @@ fn a_visible_entity_is_drawn_and_a_click_selects_it_with_its_reference() -> Resu
         kind: TargetKind::Entity,
         glyph: true,
         entity: Some(entity),
+        item: None,
     };
     let mut scene = Scene::centered_with(
         world,

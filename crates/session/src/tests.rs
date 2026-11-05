@@ -7,8 +7,12 @@ mod depot_map_tests;
 mod quest_log_tests;
 #[path = "tests/replacement_snapshot.rs"]
 mod replacement_snapshot_tests;
+#[path = "features/0064-target-move/tests.rs"]
+mod target_move_tests;
 include!("tutorial_notices_tests.rs");
 include!("presentation_tests.rs");
+#[path = "features/0019-world-light/tests.rs"]
+mod world_light_tests;
 include!("achievement_notices_tests.rs");
 include!("server_messages_tests.rs");
 use super::*;
@@ -161,6 +165,8 @@ include!("session_tests_recovery.rs");
 include!("session_tests_combat_logout.rs");
 include!("session_tests_vitals.rs");
 include!("session_tests_capabilities.rs");
+include!("session_tests_capability_movement.rs");
+include!("session_tests_capability_native.rs");
 include!("session_tests_push.rs");
 include!("session_tests_entities.rs");
 include!("session_tests_chat.rs");

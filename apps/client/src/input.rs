@@ -27,6 +27,7 @@ pub struct Targetable {
     pub glyph: bool,
     /// The server entity drawn there, when it is one a click may attack.
     pub entity: Option<EntityRef>,
+    pub item: Option<crate::play::GroundItem>,
 }
 /// Selects an entity before an object; the last candidate of a kind wins, matching draw order.
 #[must_use]
@@ -181,18 +182,21 @@ mod tests {
                 kind: TargetKind::Object,
                 glyph: false,
                 entity: None,
+                item: None,
             },
             Targetable {
                 tile: t(1, 1),
                 kind: TargetKind::Entity,
                 glyph: false,
                 entity: None,
+                item: None,
             },
             Targetable {
                 tile: t(2, 2),
                 kind: TargetKind::Object,
                 glyph: false,
                 entity: None,
+                item: None,
             },
         ];
         assert_eq!(

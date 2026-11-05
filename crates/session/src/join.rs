@@ -77,6 +77,200 @@ impl<S: SessionStream> Session<S> {
             events,
         } = snapshot_state::SnapshotState::decode(
             &assembled_body,
+        let entities_selected = selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES);
+        let mut world_spatial_observation = None;
+        let mut entities = None;
+        let mut world_object_overlay = None;
+        let mut actor_vitals = None;
+        let mut combat_state = None;
+        let mut combat_revision = 0;
+        let attack_selected = selected_capabilities.contains(&CAPABILITY_ATTACK_V1);
+        let (mut spatial_revision, mut overlay_revision, mut vitals_revision) = (0, 0, 0);
+        guild_chat::check_selection(&selected_capabilities)?;
+        vip_presence::check_selection(&selected_capabilities)?;
+        let chat_selected = selected_capabilities.contains(&CAPABILITY_CHAT_V1);
+        let mut chat = chat_selected.then(ChatLog::default);
+        let mut chat_revision = 0;
+        let item_selected = selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1);
+        let mut inventory = item_selected.then(CharacterInventory::default);
+        let mut open_container = item_selected.then(OpenContainer::default);
+        let (mut inventory_revision, mut container_revision) = (0, 0);
+        let mut gated_snapshots = Vec::new();
+        let mut gated_revisions = Vec::new();
+        for domain in decode_snapshot_body(&assembled_body)? {
+            match (domain.domain_id, domain.snapshot_type) {
+                (
+                    world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    world_spatial_entities::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                ) if entities_selected => {
+                    let snapshot = if item_selected {
+                        world_spatial_entities::decode_world_spatial_entities_snapshot_with_item_handles(
+                            domain.payload,
+                        )?
+                    } else {
+                        world_spatial_entities::decode_world_spatial_entities_snapshot(
+                            domain.payload,
+                        )?
+                    };
+                    world_spatial_observation = Some(WorldSpatialObservation {
+                        content_generation: snapshot.content_generation,
+                        actor_position: snapshot.actor_position,
+                    });
+                    entities = Some(WorldEntities::from_snapshot(&snapshot));
+                    spatial_revision = domain.revision;
+                }
+                (
+                    world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    world_spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                ) if !entities_selected => {
+                    world_spatial_observation =
+                        Some(world_spatial::decode_world_spatial(domain.payload)?);
+                    spatial_revision = domain.revision;
+                }
+                (
+                    world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                ) => {
+                    world_object_overlay = Some(
+                        world_object::decode_world_object_overlay_snapshot(domain.payload)?,
+                    );
+                    overlay_revision = domain.revision;
+                }
+                (
+                    actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                    actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                ) => {
+                    actor_vitals = Some(actor_spell::decode_actor_vitals(domain.payload)?);
+                    vitals_revision = domain.revision;
+                }
+                (
+                    attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+                    attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
+                ) if attack_selected => {
+                    combat_state = Some(
+                        attack::decode_actor_combat_state(domain.payload)
+                            .map_err(SessionError::Attack)?,
+                    );
+                    combat_revision = domain.revision;
+                }
+                (attack::STATE_DOMAIN_ACTOR_COMBAT_STATE, snapshot_type) if attack_selected => {
+                    return Err(SessionError::UnregisteredSnapshotType {
+                        domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+                        snapshot_type,
+                    });
+                }
+                (attack::STATE_DOMAIN_ACTOR_COMBAT_STATE, _) => {
+                    return Err(SessionError::UnselectedDomain {
+                        domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+                    });
+                }
+                (
+                    STATE_DOMAIN_CHARACTER_INVENTORY,
+                    item_view::SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
+                ) if item_selected => {
+                    inventory = Some(
+                        item_view::decode_character_inventory_with_equip_drop(
+                            domain.payload,
+                            selected_capabilities
+                                .contains(&item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                        )
+                        .map_err(SessionError::ItemView)?,
+                    );
+                    inventory_revision = domain.revision;
+                }
+                (STATE_DOMAIN_OPEN_CONTAINER, item_view::SNAPSHOT_TYPE_OPEN_CONTAINER_V1)
+                    if item_selected =>
+                {
+                    open_container = Some(
+                        item_view::decode_open_container(domain.payload)
+                            .map_err(SessionError::ItemView)?,
+                    );
+                    container_revision = domain.revision;
+                }
+                (
+                    domain_id @ (STATE_DOMAIN_CHARACTER_INVENTORY | STATE_DOMAIN_OPEN_CONTAINER),
+                    snapshot_type,
+                ) if item_selected => {
+                    return Err(SessionError::UnregisteredSnapshotType {
+                        domain_id,
+                        snapshot_type,
+                    });
+                }
+                (
+                    domain_id @ (STATE_DOMAIN_CHARACTER_INVENTORY | STATE_DOMAIN_OPEN_CONTAINER),
+                    _,
+                ) => {
+                    return Err(SessionError::UnselectedDomain { domain_id });
+                }
+                (STATE_DOMAIN_CHAT, snapshot_type) if chat_selected => {
+                    chat = Some(guild_chat::load_snapshot(
+                        snapshot_type,
+                        domain.payload,
+                        &selected_capabilities,
+                    )?);
+                    chat_revision = domain.revision;
+                }
+                (STATE_DOMAIN_CHAT, _) => {
+                    return Err(SessionError::UnselectedDomain {
+                        domain_id: STATE_DOMAIN_CHAT,
+                    });
+                }
+                // PROTOCOL_OTERYN_V1_REGISTRY.json registers exactly one snapshot_type (1) for
+                // domains 1, 2 and 3; anything else naming one of those domains is a registry
+                // violation, not a domain this client merely doesn't need.
+                (
+                    domain_id @ world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    snapshot_type,
+                )
+                | (domain_id @ world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, snapshot_type)
+                | (domain_id @ actor_spell::STATE_DOMAIN_ACTOR_VITALS, snapshot_type) => {
+                    return Err(SessionError::UnregisteredSnapshotType {
+                        domain_id,
+                        snapshot_type,
+                    });
+                }
+                // A gated domain is kept raw for its capability's own packet. Unselected is a server
+                // violation; an unregistered domain is ignored.
+                (domain_id, snapshot_type) => match capability_of_domain(domain_id) {
+                    Some(capability) if selected_capabilities.contains(&capability) => {
+                        gated_revisions.push((domain_id, domain.revision));
+                        gated_snapshots.push(GatedSnapshot {
+                            domain_id,
+                            snapshot_type,
+                            revision: domain.revision,
+                            payload: domain.payload.to_vec(),
+                        });
+                    }
+                    Some(_) => return Err(SessionError::UnselectedDomain { domain_id }),
+                    None => {}
+                },
+            }
+        }
+
+        let appearance = appearance_state::from_snapshots(
+            &selected_capabilities,
+            &gated_snapshots,
+            world_spatial_observation
+                .as_ref()
+                .ok_or(SessionError::MissingDomain(1))?
+                .content_generation,
+            appearance_items,
+        )?;
+        appearance_state::validate_entities(appearance.as_ref(), entities.as_ref())?;
+        if attack_selected && combat_state.is_none() {
+            return Err(SessionError::MissingDomain(
+                attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+            ));
+        }
+        quest_log_transport::validate_join(&selected_capabilities, &gated_snapshots)?;
+        tutorial_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
+        world_light::validate_join(&selected_capabilities, &gated_snapshots)?;
+        presentation::validate_join(&selected_capabilities, &gated_snapshots)?;
+        server_save_countdown::validate_join(&selected_capabilities, &gated_snapshots)?;
+        achievement_notices_transport::validate_join(&selected_capabilities, &gated_snapshots)?;
+        let events = server_messages::validate_join(
+            &selected_capabilities,
+            &gated_snapshots,
             begin.target_server_sequence,
             &selected_capabilities,
             appearance_items,

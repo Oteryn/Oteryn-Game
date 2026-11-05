@@ -15,6 +15,7 @@ mod live;
 
 #[cfg(test)]
 mod native_floor_transition;
+mod native_light;
 #[cfg(test)]
 mod native_map;
 

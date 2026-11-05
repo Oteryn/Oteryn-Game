@@ -63,6 +63,9 @@ pub use oteryn_protocol_oteryn::market;
 /// Party wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::party;
 pub use oteryn_protocol_oteryn::quest_log;
+pub use oteryn_protocol_oteryn::world_clock;
+#[path = "features/0019-world-light/protocol.rs"]
+mod world_light;
 pub use oteryn_protocol_oteryn::world_event;
 /// Live map snapshot and delta value types and codecs.
 pub use oteryn_protocol_oteryn::world_map;
