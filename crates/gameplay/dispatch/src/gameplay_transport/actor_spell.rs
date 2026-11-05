@@ -2433,8 +2433,6 @@ impl ChannelSpellStates {
                         },
                     )),
                 );
-                self.analyser
-                    .impact_amount(source, *session, impact.healing, None);
             }
         }
         Ok(receipt)

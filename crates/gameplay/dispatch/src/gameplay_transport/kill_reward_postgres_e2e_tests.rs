@@ -1478,20 +1478,21 @@ fn scenario_with_creature_observed(
         assert_eq!(xp_receipts(&harness).await?, 0);
         assert_eq!(corpse_receipts(&harness).await?, 0);
 
-        let replay = if settle_radiant || boss_policy.is_some() || daily_target.is_some() {
-            let attack = owner.states.attack.lock().await;
-            let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
-                attack.kills().take(session, 2)
-            else {
-                return Err("queued real kill".into());
+        let replay =
+            if analyser || settle_radiant || boss_policy.is_some() || daily_target.is_some() {
+                let attack = owner.states.attack.lock().await;
+                let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
+                    attack.kills().take(session, 2)
+                else {
+                    return Err("queued real kill".into());
+                };
+                let entry = taken.entry().ok_or("captured kill")?;
+                let replay = (entry.facts, entry.target, entry.activity_observed_at);
+                taken.requeue();
+                Some(replay)
+            } else {
+                None
             };
-            let entry = taken.entry().ok_or("captured kill")?;
-            let replay = (entry.facts, entry.target, entry.activity_observed_at);
-            taken.requeue();
-            Some(replay)
-        } else {
-            None
-        };
         if boss_policy.is_some() {
             let held = owner.root.try_issue_semantic_pass().map_err(debug)?;
             assert!(
@@ -1559,11 +1560,12 @@ fn scenario_with_creature_observed(
             "{creature_key} commits a positive native loot plan"
         );
 
+        let mut analyser_facts = Vec::new();
         if analyser {
             use oteryn_protocol_oteryn::analyser::{
                 AnalyserFact, AnalyserImpact, decode_analyser_facts,
             };
-            let mut facts = Vec::new();
+            let facts = &mut analyser_facts;
             while let Some(payload) = owner.analyser_next(admitted).await {
                 facts.extend(decode_analyser_facts(&payload).map_err(debug)?);
             }
@@ -1626,14 +1628,19 @@ fn scenario_with_creature_observed(
             );
         }
 
+        assert!(
+            !analyser || replay.is_some(),
+            "analyser scenario must exercise the replay"
+        );
         if let Some((facts, target, observed)) = replay {
             {
                 let mut runtime = owner.runtime.lock().await;
                 let attack = owner.states.attack.lock().await;
+                let states = owner.states.spell_states.lock().await;
                 crate::gameplay_transport::kill_reward::record_creature_kill(
                     &mut runtime,
                     crate::gameplay_transport::kill_reward::KillSink {
-                        prey: None,
+                        prey: analyser.then_some(&states),
                         activity: &[],
                         queue: attack.kills(),
                         rewards: native.reward_table(),
@@ -1668,6 +1675,18 @@ fn scenario_with_creature_observed(
                     owner.analyser_next(admitted).await.is_none(),
                     "retry emits no new facts"
                 );
+                assert_eq!(
+                    analyser_facts
+                        .iter()
+                        .filter(|fact| matches!(
+                            fact,
+                            oteryn_protocol_oteryn::analyser::AnalyserFact::Kill { .. }
+                        ))
+                        .count(),
+                    1,
+                    "Kill count stays one after replay with the live producer enabled"
+                );
+                eprintln!("S_ANALYSER_LIVE_REPLAY_PASS kills=1 retry_facts=0");
             }
         }
         if settle_radiant {

@@ -187,12 +187,6 @@ impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
                     let healing = healing
                         .min(maximum.saturating_sub(health.health_before))
                         .max(0);
-                    self.analyser.impact_amount(
-                        batch.caster,
-                        batch.command.game_session_id(),
-                        u64::try_from(healing).unwrap_or(0),
-                        None,
-                    );
                     parts[0].0 = u64::try_from(
                         health
                             .health_before
