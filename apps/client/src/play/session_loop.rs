@@ -174,6 +174,7 @@ super::feature_local_account_achievements::protocol::session_trait! {
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 68 }) }
     }
+    fn player_trade_items(&self) -> oteryn_client_runtime::player_trade::TradeItems { Default::default() }
     fn player_trade_selected(&self) -> bool {
         false
     }
@@ -340,6 +341,7 @@ pub async fn run_session<T: Stepper>(
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
     outbox.achievements_initialize();
+    outbox.player_trade_items(session.player_trade_items());
     let mut held = Vec::new();
     loop {
         let ended = super::feature_local_account_achievements::protocol::dispatch! {
@@ -347,6 +349,7 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {
+                        14 => outbox.player_trade_container_result(&result),
                         53 => outbox.world_event_result(&result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
@@ -516,8 +519,8 @@ pub async fn run_session<T: Stepper>(
             },
             Ok(PlayCommand::PlayerTrade(request)) => match session.player_trade(&request).await {
                 Ok(response) => {
-                    outbox.player_trade_result(&response);
                     publish(&mut session, &outbox, &mut held);
+                    outbox.player_trade_result(&response);
                     continue;
                 }
                 Err(error) => error,

@@ -196,6 +196,7 @@ impl Outbox {
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, events: Vec<SessionEvent>) {
         let mut mailbox = lock(&self.0);
+        super::feature_0060_player_trade::protocol::reduce(&mut mailbox.player_trade, &events);
         super::feature_local_spell_action_bar::protocol::vitals_events(&mut mailbox, &events);
         for event in &events {
             if let SessionEvent::PlayerTyping(update) = event {
@@ -276,6 +277,7 @@ impl Outbox {
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
         let mut mailbox = lock(&self.0);
+        mailbox.player_trade = Default::default();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -287,6 +289,7 @@ impl Outbox {
 
     pub(super) fn logged_out(&self) {
         let mut mailbox = lock(&self.0);
+        mailbox.player_trade = Default::default();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -361,6 +364,7 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
+        mailbox.player_trade = Default::default();
         mailbox.world_event_shutdown = true;
         mailbox.highscores_shutdown = true;
         mailbox.vip.open = false;

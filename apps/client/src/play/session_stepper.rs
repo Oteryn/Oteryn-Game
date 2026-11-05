@@ -187,12 +187,14 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_client_runtime::imbue::ImbueResponse, SessionError> {
         oteryn_client_runtime::imbue::send(self, command).await
     }
+    fn player_trade_items(&self) -> oteryn_client_runtime::player_trade::TradeItems {
+        super::feature_0060_player_trade::protocol::initial_items(self)
+    }
     fn player_trade_selected(&self) -> bool {
         self.is_selected(oteryn_session::player_trade::CAPABILITY_PLAYER_TRADE_V1)
     }
     fn player_trade_state(&self) -> Option<oteryn_session::player_trade::State> {
-        self.gated_snapshot(oteryn_session::player_trade::STATE_DOMAIN_PLAYER_TRADE)
-            .and_then(|snapshot| oteryn_session::player_trade::decode_state(&snapshot.payload).ok())
+        oteryn_session::Session::player_trade_state(self)
     }
     async fn player_trade(
         &mut self,

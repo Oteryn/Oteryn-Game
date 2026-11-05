@@ -11,6 +11,8 @@ impl PlayView {
     /// its public class, a committed logout to character selection; a view error is a render
     /// failure.
     pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
+        #[cfg(windows)]
+        link.player_trade_present();
         const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
         while let Some(event) = link.poll() {
             match event {
