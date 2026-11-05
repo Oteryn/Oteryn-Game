@@ -1,11 +1,11 @@
 //! Disposable qualification Character setup through the real fenced writers.
-//! Compile only below the test-only qualification module. This does not install
+//! Shared by qualification tests and the explicitly opted-in node-boot fixture. This does not install
 //! actor vitals, issue entitlements, or bypass the ordinary client admission.
 
 use crate::domain::CharacterId;
-use crate::domain::progression::{
-    FiniteProgressionPolicy, LevelThreshold, ProgressionRevisionContext,
-};
+#[cfg(test)]
+use crate::domain::progression::LevelThreshold;
+use crate::domain::progression::{FiniteProgressionPolicy, ProgressionRevisionContext};
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_build::{
@@ -18,6 +18,7 @@ use crate::durability::character_progression::{
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionAuthoritySnapshot};
+#[cfg(test)]
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -29,6 +30,7 @@ fn debug(error: impl std::fmt::Debug) -> String {
 /// The caller must own the actual node proof and independently resolve the
 /// current admitted session. Re-admission after setup loads normal full vitals.
 /// A fresh disposable Character is required; existing builds are never reset.
+#[cfg(test)]
 pub(super) async fn prepare_free_sorcerer(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -64,11 +66,13 @@ pub(super) struct QualificationBuildSpec<'a> {
     pub build_occurrence: [u8; 16],
 }
 
+#[cfg(test)]
 const QUALIFICATION_LEVELS: usize = 1000;
 const PLAYABLE_VOCATIONS: [&str; 5] = ["sorcerer", "druid", "paladin", "knight", "monk"];
 
 /// Canary Player::getExpForLevel polynomial, a finite qualification policy.
 /// Bounded signed arithmetic avoids underflow in the early-level polynomial.
+#[cfg(test)]
 fn source_experience(level: u32) -> TestResult<i64> {
     if !(1..=1001).contains(&level) {
         return Err("qualification level outside source fixture".into());
@@ -77,6 +81,7 @@ fn source_experience(level: u32) -> TestResult<i64> {
     Ok(100 * (n - 1) * (n * n - 5 * n + 12) / 6)
 }
 
+#[cfg(test)]
 fn fixture_policy(
     context: ProgressionRevisionContext<String>,
 ) -> TestResult<FiniteProgressionPolicy<String, QUALIFICATION_LEVELS>> {
@@ -104,12 +109,26 @@ fn fixture_policy(
     })
 }
 
+#[cfg(test)]
 pub(super) async fn prepare_free_character(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
     current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
     spec: QualificationBuildSpec<'_>,
+) -> TestResult {
+    let policy = fixture_policy(spec.context.clone())?;
+    prepare_character_with_policy(root, authority, node, current, spec, policy).await
+}
+
+/// Use the served policy so later kill awards and death writes remain compatible.
+pub(super) async fn prepare_character_with_policy<const N: usize>(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    spec: QualificationBuildSpec<'_>,
+    policy: FiniteProgressionPolicy<String, N>,
 ) -> TestResult {
     if !PLAYABLE_VOCATIONS.contains(&spec.vocation) || !(1..=1000).contains(&spec.level) {
         return Err("qualification requires a base vocation and source level 1..1000".into());
@@ -143,7 +162,15 @@ pub(super) async fn prepare_free_character(
     {
         return Err("spell fixture requires a fresh disposable Character".into());
     }
-    let policy = fixture_policy(context.clone())?;
+    if policy.context != context {
+        return Err("qualification policy context mismatch".into());
+    }
+    let experience = policy
+        .thresholds
+        .iter()
+        .find(|threshold| threshold.level == level)
+        .ok_or("qualification level absent from the served progression policy")?
+        .minimum_experience;
     let mut fence = CurrentCharacterGameplayFence {
         character_id: character,
         game_session_id: current.current_game_session_id(),
@@ -178,7 +205,7 @@ pub(super) async fn prepare_free_character(
             fence,
             ExperienceAwardRequest {
                 occurrence: xp_occurrence,
-                amount: ExactI64::new(source_experience(level)?),
+                amount: experience,
                 context: context.clone(),
                 policy_revision: policy.policy_revision.clone(),
                 reward_revision: policy.reward_revision.clone(),
@@ -228,6 +255,7 @@ pub(super) async fn prepare_free_character(
 
 /// Advance an already classed disposable Character using its existing bound XP
 /// policy. This is an award, not a replacement of the Character or actor facts.
+#[cfg(test)]
 pub(super) async fn advance_source_level(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
