@@ -14,8 +14,8 @@ from lower_client_market_packet import WORLD_FLAGS
 
 ROOT = base.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_item_use_observation_packet.py"
-PROOF = "docs/agents/evidence/OTV2-20261002-item-use-observation-source-qualification-v1.json"
-PROOF_SHA = "b4bf2c87cc5c3b81c66521023775ac499dcd7d64fb1f10f4210fb682935dbd8a"
+PROOF = "docs/agents/evidence/OTV2-20261002-item-use-observation-source-qualification-v2.json"
+PROOF_SHA = "e91ed9cf72da9224958a659e8615bbde4e67912bd273148504d7d159e1bcb4d3"
 OUTPUT = (
     ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json"
 )
@@ -190,6 +190,9 @@ def build(root=ROOT, prospective=False):
                 raise ValueError("duplicate current native Item")
             records[key] = record
     routed, maps = set(), {}
+
+    # Verify the pinned historical receipt against the exact qualified promotion;
+    # all current routed owners are still collected and screened below.
     for source in proof["world_owner_baseline"]["input_digests"]:
         base.checked(root, source["path"], source["sha256"])
     for family in ("objects", "terrain"):

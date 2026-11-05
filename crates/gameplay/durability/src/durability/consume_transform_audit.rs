@@ -4,7 +4,7 @@ use super::item_mint_audit::{
     Type2EventTuple,
 };
 use super::consume_transform::ConsumeTransformRequest;
-use super::item_transfer::{CurrentCharacterItemFence, scope_of};
+use super::item_transfer::CurrentCharacterItemFence;
 use super::{DurabilityError, character_authority, item_mint};
 use serde_json::{Value, json};
 use prost::Message;
@@ -13,7 +13,7 @@ use sha2::{Digest, Sha256};
 use super::item_craft::audit::OneItemCraftV1;
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn encode(
+pub(super) fn action_proof(
     fence: CurrentCharacterItemFence,
     request: &ConsumeTransformRequest,
     recipe: &str,
@@ -21,18 +21,57 @@ pub(super) fn encode(
     before: &Value,
     before_secondary: Option<&Value>,
     outputs: &[Value],
+    consume_source: bool,
+    source_count: u32,
+    effects: &Value,
+    extra_inputs: &[Value],
+    source_kind: i32,
+    source_location: &Value,
+) -> Result<Vec<u8>, DurabilityError> {
+    let mut proof = json!({"recipe": recipe, "intent": request.intent,
+        "character": fence.character_id.as_bytes(), "before": before, "outputs": outputs,
+        "secondary": request.target, "before_secondary": before_secondary,
+        "consume_source": consume_source, "effects": effects, "extra_inputs": extra_inputs, "source_kind": source_kind, "source_location": source_location,
+        "scope_generation": fence.scope_ownership_generation.get(),
+        "content_digest": content_digest,
+        "lease_generation": fence.character_lease_generation});
+    proof["source_count"] = json!(source_count);
+    serde_json::to_vec(&proof).map_err(|_| DurabilityError::InvalidStoredState)
+}
+
+pub(super) fn payload_fits(proof: &[u8]) -> bool {
+    OneItemTransactionV1 {
+        interpretation_revision: mint::INTERPRETATION_REVISION,
+        operation: Some(OneItemOperationV1::Craft(OneItemCraftV1 { proof: proof.to_vec() })),
+    }.encoded_len() <= mint::RL07_PAYLOAD_BYTES_MAX
+}
+
+pub(super) fn compact_proof(transaction: &str, digest: &[u8]) -> Result<Vec<u8>, DurabilityError> {
+    if digest.len() != 32 { return Err(DurabilityError::InvalidStoredState); }
+    let digest = digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+    serde_json::to_vec(&json!({
+        "schema": "OTERYN_ITEM_ACTION_RECEIPT_COMMITMENT/v1",
+        "encoding": "postgresql-jsonb-text-utf8/v1",
+        "transaction_id": transaction,
+        "receipt_sha256": digest,
+    })).map_err(|_| DurabilityError::InvalidStoredState)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn encode(
+    fence: CurrentCharacterItemFence,
+    request: &ConsumeTransformRequest,
+    proof: Vec<u8>,
     transaction: &str,
     event: &str,
     occurred: i64,
     tuple: Type2EventTuple,
 ) -> Result<Vec<u8>, DurabilityError> {
-    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let proof = serde_json::to_vec(&json!({"recipe": recipe, "intent": request.intent,
-        "character": fence.character_id.as_bytes(), "before": before, "outputs": outputs,
-        "secondary": request.target, "before_secondary": before_secondary,
-        "scope_generation": fence.scope_ownership_generation.get(),
-        "content_digest": content_digest,
-        "lease_generation": fence.character_lease_generation})).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let world = fence.runtime_scope.world_id();
+    let channel = match fence.runtime_scope {
+        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => Some(channel_id),
+        crate::foundation::RuntimeScopeRefV1::Instance { .. } => None,
+    };
     let payload = mint::encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: mint::INTERPRETATION_REVISION,
@@ -51,7 +90,7 @@ pub(super) fn encode(
         retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: occurred,
         world_id: Some(world.as_bytes().to_vec()),
-        channel_id: Some(channel.as_bytes().to_vec()),
+        channel_id: channel.map(|channel| channel.as_bytes().to_vec()),
         game_session_id: Some(fence.game_session_id.as_bytes().to_vec()),
         connection_generation: Some(fence.connection_generation.get()),
         command_id: Some(request.command.command_id().get()),

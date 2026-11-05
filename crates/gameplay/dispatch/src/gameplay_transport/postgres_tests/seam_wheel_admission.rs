@@ -64,7 +64,16 @@ fn scenario(initialized: bool) -> TestResult {
                         .lock()
                         .map_err(debug)?
                         .get(&session)
-                        .is_some_and(Option::is_none)
+                        .is_some_and(|allocation| if initialized {
+                            allocation.is_none()
+                        } else {
+                            allocation.as_ref().is_some_and(|allocation| {
+                                allocation.current
+                                    && allocation.wheel_revision == 0
+                                    && allocation.slots
+                                        == crate::durability::character_wheel::WheelSlots::ZERO
+                            })
+                        })
                 );
                 if let Some(held) = held {
                     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
@@ -88,7 +97,7 @@ fn scenario(initialized: bool) -> TestResult {
                     vessels: None,
                 })
                 .map_err(debug)?;
-                query_then_command(&owner, admitted, &query).await?;
+                query_then_command(&owner, admitted, &query, !initialized).await?;
                 drop(owner);
                 drop(seal);
                 h.cleanup().await
@@ -104,6 +113,7 @@ async fn query_then_command(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
     query: &[u8],
+    query_has_allocation: bool,
 ) -> TestResult {
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
@@ -153,8 +163,22 @@ async fn query_then_command(
                 if envelope.message_type() == MessageType::CommandResult {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(result.command_id, command_id);
-                    assert_eq!(result.status, CommandStatus::Rejected);
-                    assert!(result.payload.is_empty());
+                    if command_id == 1 && query_has_allocation {
+                        // A query reads the known empty allocation; progression eligibility
+                        // gates mutations, not this read-only projection (WHEEL-0 §4 Load).
+                        assert_eq!(result.status, CommandStatus::Accepted);
+                        let expected = wire::encode_wheel_reply(&wire::WheelAllocationReply {
+                            refused: false,
+                            revision: 0,
+                            points: [0; 36],
+                            vessels: None,
+                        })
+                        .map_err(debug)?;
+                        assert_eq!(result.payload, expected.as_slice());
+                    } else {
+                        assert_eq!(result.status, CommandStatus::Rejected);
+                        assert!(result.payload.is_empty());
+                    }
                     break;
                 }
             }

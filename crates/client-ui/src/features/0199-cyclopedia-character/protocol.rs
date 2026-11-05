@@ -42,6 +42,7 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
             (388, v)
         }
     };
+    p.requested_tab = (kind == 388).then_some(p.tab);
     p.pending = true;
     p.command_kind = kind;
     p.feedback = None;
@@ -52,7 +53,12 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     })
 }
 pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool {
+    let pending = p.pending;
     p.pending = false;
+    let tab = p.requested_tab.take();
+    if !pending {
+        return false;
+    }
     if !matches!(
         r.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
@@ -63,7 +69,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
     let text = if p.command_kind == 387 {
         decode_badges(&r.payload)
     } else {
-        decode_tab(&r.payload)
+        tab.and_then(|tab| decode_tab(&r.payload, tab))
     };
     match text {
         Some(v) => {
@@ -94,7 +100,163 @@ fn decode_badges(b: &[u8]) -> Option<String> {
         )
     })
 }
-fn decode_tab(b: &[u8]) -> Option<String> {
-    let tab = cyclopedia_character::CharacterTab::from_id(*b.first()?)?;
-    Some(format!("{tab:?} server page: {} bytes", b.len() - 1))
+// Crystal 201189f protocolgame.cpp:4341-5265 supplies the tab facts. The accepted
+// native layout/unknown-field differences are recorded in cyclopedia-character-v1.md.
+fn decode_tab(b: &[u8], requested: cyclopedia_character::CharacterTab) -> Option<String> {
+    use cyclopedia_character::{
+        CharacterTab as Tab,
+        combat::{CombatStat, CombatStatUnit, CombatStats},
+    };
+    if b.len() > cyclopedia_character::MAX_TAB_RESULT_BYTES || b.first() != Some(&(requested as u8))
+    {
+        return None;
+    }
+    let mut r = Reader(&b[1..]);
+    let mut rows = vec![format!("{requested:?}")];
+    match requested {
+        Tab::GeneralStats => {
+            rows.push(format!(
+                "Experience: {}\nLevel: {}\nMagic level: {}",
+                r.u64()?,
+                r.u32()?,
+                r.u16()?
+            ));
+            for label in [
+                "Fist",
+                "Club",
+                "Sword",
+                "Axe",
+                "Distance",
+                "Shielding",
+                "Fishing",
+            ] {
+                rows.push(format!("{label}: {}", r.u16()?));
+            }
+            rows.push(format!(
+                "Stamina: {} minutes\nOffline training: {} minutes",
+                r.u16()?,
+                r.u16()?
+            ));
+            let known = r.u8()?;
+            let (health, mana) = (r.u32()?, r.u32()?);
+            rows.push(match known {
+                0 if health == 0 && mana == 0 => "Health: unavailable\nMana: unavailable".into(),
+                1 => format!("Health: {health}\nMana: {mana}"),
+                _ => return None,
+            });
+        }
+        Tab::RecentDeaths | Tab::RecentPvpKills => {
+            let count = r.count()?;
+            for _ in 0..count {
+                let at = i64::from_le_bytes(r.bytes()?);
+                let status = if requested == Tab::RecentPvpKills {
+                    match r.u8()? {
+                        1 => "Unjustified: ",
+                        2 => "Guild war: ",
+                        _ => return None,
+                    }
+                } else {
+                    ""
+                };
+                rows.push(format!("{at}: {status}{}", r.text()?));
+            }
+        }
+        Tab::Achievements | Tab::Appearances => {
+            let total = r.u16()?;
+            let count = r.count()?;
+            if count > total {
+                return None;
+            }
+            rows.push(format!("Total: {total}"));
+            for _ in 0..count {
+                rows.push(r.text()?.into());
+            }
+        }
+        Tab::StoreSummary => {
+            let count = r.u8()?;
+            for _ in 0..count {
+                rows.push(format!("Blessing: {}", r.text()?));
+            }
+            rows.push(format!(
+                "Permanent prey slots: {}\nPrey wildcards: {}\nHirelings: {}",
+                r.u8()?,
+                r.u8()?,
+                r.u8()?
+            ));
+        }
+        Tab::Inspection => {
+            let count = r.u8()?;
+            for _ in 0..count {
+                let slot = r.u8()?;
+                let len = usize::from(r.u16()?);
+                if len > 512 {
+                    return None;
+                }
+                let definition = r.string(len)?;
+                rows.push(format!("Slot {slot}: {definition} × {}", r.u32()?));
+            }
+        }
+        Tab::Offence | Tab::Defence | Tab::Misc => {
+            let stats = CombatStats::decode(b).ok()?;
+            rows.push(format!(
+                "Observed at: {} ms\nCharacter revision: {}\nEquipment revision: {}",
+                stats.observed_at_unix_ms, stats.character_revision, stats.equipment_revision
+            ));
+            for key in CombatStat::for_tab(requested) {
+                let value = match stats.get(*key) {
+                    None => "unavailable".into(),
+                    Some(v) => match key.unit() {
+                        CombatStatUnit::PartsPerMillion => {
+                            let magnitude = v.unsigned_abs();
+                            format!(
+                                "{}{}.{:04}%",
+                                if v < 0 { "-" } else { "" },
+                                magnitude / 10_000,
+                                magnitude % 10_000
+                            )
+                        }
+                        CombatStatUnit::Seconds => format!("{v} seconds"),
+                        _ => v.to_string(),
+                    },
+                };
+                rows.push(format!("{key:?}: {value}"));
+            }
+            return Some(rows.join("\n"));
+        }
+    }
+    r.0.is_empty().then(|| rows.join("\n"))
+}
+
+struct Reader<'a>(&'a [u8]);
+impl<'a> Reader<'a> {
+    fn bytes<const N: usize>(&mut self) -> Option<[u8; N]> {
+        let bytes = self.0.get(..N)?.try_into().ok()?;
+        self.0 = &self.0[N..];
+        Some(bytes)
+    }
+    fn u8(&mut self) -> Option<u8> {
+        Some(u8::from_le_bytes(self.bytes()?))
+    }
+    fn u16(&mut self) -> Option<u16> {
+        Some(u16::from_le_bytes(self.bytes()?))
+    }
+    fn u32(&mut self) -> Option<u32> {
+        Some(u32::from_le_bytes(self.bytes()?))
+    }
+    fn u64(&mut self) -> Option<u64> {
+        Some(u64::from_le_bytes(self.bytes()?))
+    }
+    fn count(&mut self) -> Option<u16> {
+        let count = self.u16()?;
+        (count <= 50).then_some(count)
+    }
+    fn text(&mut self) -> Option<&'a str> {
+        let len = usize::from(self.u8()?);
+        self.string(len)
+    }
+    fn string(&mut self, len: usize) -> Option<&'a str> {
+        let text = std::str::from_utf8(self.0.get(..len)?).ok()?;
+        self.0 = &self.0[len..];
+        Some(text)
+    }
 }

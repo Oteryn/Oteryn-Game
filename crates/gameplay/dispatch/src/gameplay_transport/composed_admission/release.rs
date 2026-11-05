@@ -150,6 +150,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.stop_timed_actor(actor, session).await {
             return ReleaseAttempt::Retry;
         }
+        // Settle committed item successors while this owner still holds its live lease.
+        if !self.reconcile_pending_item_effects(actor, session).await {
+            return ReleaseAttempt::Retry;
+        }
         match self
             .fence_transition(actor, hold, matches!(release, TerminalRelease::Logout(_)))
             .await

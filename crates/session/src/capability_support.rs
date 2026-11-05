@@ -24,6 +24,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_CHAT_V1,
     CAPABILITY_ACHIEVEMENT_NOTICES_V1,
     highscores::CAPABILITY_HIGHSCORES_V1,
+    CAPABILITY_ANALYSER_V1,
     oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
     oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_EQUIP_DROP_V1,
     CAPABILITY_PACED_MOVEMENT_V1,
@@ -68,6 +69,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     // CL26s1: private-channel prerequisite of public channels (259); ids stay ascending.
     chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
+    oteryn_protocol_oteryn::channel_list::CAPABILITY_CHANNEL_LIST_V1,
     oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1,
     property_services::pvp_expert::CAPABILITY_PVP_EXPERT_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
@@ -110,6 +112,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::appearance::CAPABILITY_EMPTY_OUTFIT_V1,
     oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
     oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+    spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -151,6 +154,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     task_board::CAPABILITY_TASK_BOARD_V1,
     oteryn_protocol_oteryn::server_save_countdown::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1,
     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
+    oteryn_protocol_oteryn::channel_list::CAPABILITY_CHANNEL_LIST_V1,
     oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1,
     property_services::pvp_expert::CAPABILITY_PVP_EXPERT_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
@@ -185,6 +189,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
     oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
+    spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

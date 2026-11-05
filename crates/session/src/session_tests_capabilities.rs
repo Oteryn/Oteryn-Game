@@ -145,6 +145,7 @@ fn derived_gated_routes_match_previous_table() {
         (200, &[390, 391], &[]),
         (232, &[444, 445, 446], &[]),
         (285, &[501], &[]),
+        (287, &[], &[100]),
         (115, &[124], &[]),
         // P-C05 exposes the existing 117 routes (133, 169, 178-180, 340, 491); no table change.
         // C49: the boss status panel uses the registry-owned capability 117 route.
@@ -196,6 +197,7 @@ fn derived_gated_routes_match_previous_table() {
         // P-C01: native Bestiary/Charms (command 84) and PvP expert (command 103,
         // confirmed-mode domain 52) panels use their existing gated routes.
         (67, &[84], &[]),
+        (83, &[], &[48]),
         (87, &[103], &[52]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();

@@ -153,6 +153,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
             }
+            // The local release fence closes the live lease used to install a successor.
+            if !self.reconcile_pending_item_effects(actor, session).await {
+                tokio::time::sleep(next_backoff()).await;
+                continue;
+            }
             match self.fence_transition(actor, hold, false).await {
                 FenceStep::Fenced => {}
                 FenceStep::Wait => {

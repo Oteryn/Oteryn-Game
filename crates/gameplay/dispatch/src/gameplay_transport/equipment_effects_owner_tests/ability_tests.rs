@@ -201,6 +201,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // P18 Forge shares that existing core profile and adds no duplicate.
     ("W06-ECHO", 24),
     ("W07-SOULPIT", 821),
+    // W15c debris 6475..=6483 and 6485/6486, captured by
+    // tools/content-schema/native-gameplay/build_grizzly_debris_profiles.py from Crystal
+    // 201189f items.xml:17891-17893 (no speed override). src/items/items.hpp:38 defaults
+    // speed to zero; all eleven profiles preserve that qualified speed_bonus=0.
+    ("W15C-GRIZZLY-DEBRIS", 11),
     // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
     // 3477..=3480 (tools/content-migration/fluid_container_profiles.py). All have speed_bonus=0.
     ("W18-FLUID", 20),
@@ -254,6 +259,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // tools/content-migration/condition_potion_profiles.py IDS from Crystal potions.lua.
     // Neither has a speed override, so both keep speed_bonus=0.
     ("I14-POTIONS", 2),
+    // SV16 Echo catalysts 51588, 51589 and 54266, added to the W06/W07 overlay
+    // (tools/content-migration/soulpit_echo_item_profiles.py EXTRA_IDS) from Crystal
+    // 201189f871d23597b82caf88fd611454a2ddefb8 items.xml. All three keep speed_bonus=0.
+    ("SV16-ECHO-CATALYSTS", 3),
 ];
 
 #[test]

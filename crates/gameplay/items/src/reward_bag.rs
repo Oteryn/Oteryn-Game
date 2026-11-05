@@ -8,6 +8,8 @@ use oteryn_gameplay_domain::domain::timed_item_host::resolve_timed_definition;
 use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
 
+pub mod event_containers;
+
 /// Its own tag, so no combat or world-item draw shifts.
 const DRAW_TAG: &[u8] = b"oteryn:reward-bag-draw:v1";
 
@@ -75,6 +77,13 @@ pub fn is_reward_bag_output(recipe: &str, key: &str) -> bool {
                 && bag.rewards.iter().any(|reward| reward.item == key)
         })
     })
+}
+
+/// The existing USE route recognizes the same generated bags and W19 source tables
+/// that the durable conversion resolves again under the item fence.
+pub fn is_reward_bag(key: &str) -> bool {
+    event_containers::event_container_rule(key).is_some()
+        || reward_bags().is_some_and(|bags| playable_bag(bags, key).is_some())
 }
 
 /// The draw for one command on one source; a receipt replay never redraws.
@@ -146,6 +155,9 @@ pub fn reward_bag_conversion(
     if record.production_definition.family != used.family || !record.admission.materializable {
         return None;
     }
+    if event_containers::event_container_rule(&used.production_key).is_some() {
+        return event_containers::conversion(native, used, draw);
+    }
     let bag = playable_bag(reward_bags()?, &used.production_key)?;
     let mut outputs = Vec::new();
     let mut available: Vec<_> = bag.rewards.iter().collect();
@@ -183,11 +195,15 @@ pub fn reward_bag_conversion(
             )?)
             .ok()?,
         )?;
-        let id = reward
-            .item
-            .strip_prefix("oteryn:item.tibia.i")?
-            .parse()
-            .ok()?;
+        // Generated bags deliver through the same Crystal Item::CreateItem factory
+        // as the captured W19 tables (music box 3549 grants base soft boots 6529).
+        let id = event_containers::created_reward_item_id(
+            reward
+                .item
+                .strip_prefix("oteryn:item.tibia.i")?
+                .parse()
+                .ok()?,
+        );
         let record = native.item_policy_for_source_id(id)?.record();
         let target = &record.production_binding.target;
         let definition = output_definition(native, target).or_else(|| {

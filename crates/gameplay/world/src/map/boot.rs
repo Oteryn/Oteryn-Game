@@ -851,6 +851,15 @@ pub mod tests {
         bundle_with_house(boxed, boxed_id, coin, coin_id, 0)
     }
 
+    /// Existing bundle fixture with admitted, initially unplaced plant states.
+    pub fn bundle_with_item_states(
+        (boxed, boxed_id): (&str, u32),
+        (coin, coin_id): (&str, u32),
+        states: &[(&str, u32)],
+    ) -> (Vec<u8>, BundlePins) {
+        bundle_with_grass(boxed, boxed_id, coin, coin_id, 0, None, states)
+    }
+
     /// [`bundle_with_item_ids`] with the house marker `door_house` on the tile at x 6.
     fn bundle_with_house(
         boxed: &str,
@@ -859,13 +868,21 @@ pub mod tests {
         coin_id: u32,
         door_house: u32,
     ) -> (Vec<u8>, BundlePins) {
-        bundle_with_grass(boxed, boxed_id, coin, coin_id, door_house, None)
+        bundle_with_grass(boxed, boxed_id, coin, coin_id, door_house, None, &[])
     }
 
     /// [`bundle`] whose grass is the Item key `item:grass` at Item id 2, routed to its walkable
     /// `ground` Terrain record, as the real World routes every ground (BOOT_WORLD_BUNDLE_REFUSED).
     pub fn bundle_with_item_grass() -> (Vec<u8>, BundlePins) {
-        bundle_with_grass("item:box", 0, "item:coin", 1, 0, Some(("item:grass", 2)))
+        bundle_with_grass(
+            "item:box",
+            0,
+            "item:coin",
+            1,
+            0,
+            Some(("item:grass", 2)),
+            &[],
+        )
     }
 
     fn bundle_with_grass(
@@ -875,6 +892,7 @@ pub mod tests {
         coin_id: u32,
         door_house: u32,
         item_grass: Option<(&str, u32)>,
+        states: &[(&str, u32)],
     ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
@@ -897,7 +915,7 @@ pub mod tests {
             id,
             terrain: None,
         };
-        let manifest = Manifest {
+        let mut manifest = Manifest {
             subareas: Default::default(),
             format: bundle::FORMAT.into(),
             min_reader_version: bundle::VERSION,
@@ -936,6 +954,9 @@ pub mod tests {
             spawns: Default::default(),
             npcs: Default::default(),
         };
+        manifest
+            .palette
+            .extend(states.iter().map(|&(key, id)| item(key, id)));
         let entry = |palette| Item {
             palette,
             depth: 0,

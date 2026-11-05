@@ -2,16 +2,28 @@
   {
     "mechanic": "0083-channel-list",
     "kind": "handlers",
-    "id": "0083-channel-list-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0083-channel-list-snapshot",
+    "status": "supported",
     "commands": [],
+    "direction": "server_to_client",
+    "capability": 83,
+    "entry": "protocol.rs::apply",
+    "push_messages": [
+      "ChannelListV1"
+    ],
+    "reducer": "protocol.rs::apply",
+    "test": "tests.rs::gap_world_channel_list",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "input": "Read-only served Channel; no switch command.",
+      "settings": "Server-owned static configuration.",
+      "state": "The admitted optional ServedChannel is owned by the play view and mailbox."
     }
+  },
+  {
+    "mechanic": "0083-channel-list",
+    "kind": "panels",
+    "id": "0083-channel-list-status",
+    "status": "supported",
+    "entry": "view.rs::channel_text"
   }
 ]

@@ -23,7 +23,7 @@ pub(super) async fn read(
             .filter(|fact| {
                 matches!(
                     fact.source_kind.as_str(),
-                    "quest" | "npc" | "mount_taming" | "task_board"
+                    "quest" | "npc" | "mount_taming" | "item_action" | "task_board"
                 )
             })
             .map(|fact| (fact.unlock_key, fact.content_revision))

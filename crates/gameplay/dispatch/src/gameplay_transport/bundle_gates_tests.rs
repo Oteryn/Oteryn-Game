@@ -222,6 +222,18 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/postgres_tests/field_runes.rs", 2),
         ],
     },
+    Entry {
+        gate: "ground item actions",
+        plan: "ground item actions",
+        accessor: "gate_ground_item_action",
+        key: "",
+        state: Gate::AllocatedOpen { task: "TK-W19" },
+        calls: &[
+            ("gameplay_transport/cosmetic_item_use.rs", 1),
+            ("gameplay_transport/item_craft/planting.rs", 1),
+            ("gameplay_transport/novelty_ground_use.rs", 1),
+        ],
+    },
     // The durable custody of the map's Items; on a bundle World that is its Ground persistence.
     Entry {
         gate: "source map initialization",
@@ -609,6 +621,11 @@ fn every_gate_names_its_opener_or_owner() -> Result<(), Box<dyn std::error::Erro
                     assert_eq!(entry.key, "creature_appearance");
                     continue;
                 }
+                if task == "TK-W19" {
+                    assert_eq!(entry.accessor, "gate_ground_item_action");
+                    assert_eq!(entry.key, "");
+                    continue;
+                }
                 assert_eq!(task, "FIELD-RUNES-1");
                 let contract: serde_json::Value = serde_json::from_str(include_str!(
                     "../../../../../docs/contracts/protocol-oteryn/v1/registry/capabilities/0091-field-runes-v1.json"
@@ -765,8 +782,19 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/condition_potions.rs", 1),
     ("gameplay_transport/postgres_tests/cyclopedia_tracker.rs", 1),
+    // W19 fixtures supply only combat; bundle Worlds still have no qualified room.
+    (
+        "gameplay_transport/postgres_tests/event_containers/ground.rs",
+        2,
+    ),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
+    ("gameplay_transport/postgres_tests/item_cosmetics.rs", 1),
+    ("gameplay_transport/postgres_tests/item_seed_planting.rs", 1),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
+    (
+        "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/party_buffs.rs", 1),
     ("gameplay_transport/postgres_tests/party_xp.rs", 1),
     ("gameplay_transport/postgres_tests/player_trade.rs", 2),

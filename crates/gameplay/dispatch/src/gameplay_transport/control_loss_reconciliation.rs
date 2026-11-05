@@ -11,7 +11,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         // These sealed native owners retain uncertain Item work, including its
         // original CommandRef and audit identity, until a known durable result.
-        if !super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await {
+        if !self.reconcile_pending_item_effects(actor, session).await
+            || !super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await
+        {
             return false;
         }
         let access = self.refresh_spell_access(actor, session).await;

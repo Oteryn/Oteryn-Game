@@ -45,6 +45,10 @@ fn world_event_shell_query_crosses_the_session_loop()
                 fn feature_selected(&self, _: u32) -> bool {
                     true
                 }
+                // oteryn-choice: the all-capability fixture must provide the selected catalogue.
+                fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
+                    (domain == 100).then(Vec::new)
+                }
                 fn server_mechanic_selected(&self, _: u32) -> bool {
                     true
                 }

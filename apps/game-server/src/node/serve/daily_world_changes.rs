@@ -7,6 +7,7 @@
 use super::bundle_npcs::NpcBoot;
 use super::event;
 use crate::foundation::{ChannelRuntimeV1, MovementFacing, NpcPlacement, WorldId};
+use crate::map::overlay::TilePos;
 use oteryn_gameplay_world_change::daily::DailyWorldChanges;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -88,6 +89,29 @@ pub(super) fn apply(
             Err(error) => event(&format!(
                 "event=daily_world_change_npc state=refused npc_key={key} reason={error:?}"
             )),
+        }
+    }
+    placed
+}
+
+/// Places the day's Items on the bundle map's callback layer; one that cannot be placed is
+/// logged. A World without a bundle map places nothing.
+pub(super) fn apply_items(
+    map: Option<&crate::map::facts::BundleFacts>,
+    changes: &DailyWorldChanges,
+) -> usize {
+    let Some(map) = map else {
+        return 0;
+    };
+    let mut placed = 0;
+    for (appearance, (x, y, z)) in changes.items() {
+        let pos = TilePos { x, y, floor: -z };
+        if map.create_world_change_item(pos, appearance) {
+            placed += 1;
+        } else {
+            event(&format!(
+                "event=daily_world_change_item state=refused appearance={appearance} x={x} y={y} z={z}"
+            ));
         }
     }
     placed
@@ -685,5 +709,12 @@ mod tests {
     #[test]
     fn sp02_sv07_postgres_epoch_and_restart() -> crate::bestiary_postgres_harness::TestResult {
         pg_physical("sp02_sv07", exercise_grimvale)
+    }
+
+    #[test]
+    fn w05b_apply_items_without_a_bundle_places_nothing() {
+        let day = DailyWorldChanges::roll(1, 1, 1, |_| 0);
+        assert!(day.thawing);
+        assert_eq!(apply_items(None, &day), 0);
     }
 }

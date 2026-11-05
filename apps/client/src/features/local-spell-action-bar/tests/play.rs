@@ -55,3 +55,55 @@ fn undrained_vitals_keep_only_the_latest_value() -> Result<(), BatchError> {
     assert_eq!(view.actor_vitals().map(|v| v.health), Some(4_999));
     Ok(())
 }
+
+#[test]
+fn configured_slot_dispatches_server_index_and_invalid_edit_is_atomic()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, _) = play_channel();
+    let mut view = view()?;
+    assert!(link.spell_bar_bind(&["71".into(), "".into(), "3".into(), "4".into()]));
+    assert!(!link.spell_bar_bind(&["12".into(), "bad".into(), "3".into(), "4".into()]));
+    view.cast(std::num::NonZeroU32::new(1).ok_or("slot")?);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
+    );
+    view.cast(std::num::NonZeroU32::new(2).ok_or("slot")?);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn native_bar_cast_uses_binding_and_obeys_death_gate() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, _) = play_channel();
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    crate::play::feature_local_spell_action_bar::input::submit(
+        &mut mailbox,
+        &link.commands,
+        0,
+        &["71".into(), "".into(), "3".into(), "4".into()],
+    );
+    crate::play::feature_local_spell_action_bar::input::submit(
+        &mut mailbox,
+        &link.commands,
+        1,
+        &[],
+    );
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
+    );
+    mailbox.apply_death_vitals(ActorVitals {
+        health: 0,
+        max_health: 100,
+        ..Default::default()
+    });
+    crate::play::feature_local_spell_action_bar::input::submit(
+        &mut mailbox,
+        &link.commands,
+        1,
+        &[],
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

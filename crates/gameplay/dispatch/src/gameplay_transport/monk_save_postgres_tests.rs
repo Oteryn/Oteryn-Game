@@ -57,6 +57,25 @@ use {
 };
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+async fn maintain_ready(root: &crate::durability::DurabilityRoot) -> TestResult {
+    // Direct test owners have no node maintenance loop to replace a retired holder.
+    if root.has_ready_demand() {
+        root.maintain_ready_once().await.map_err(debug)?;
+    }
+    Ok(())
+}
+
+pub async fn maintain_authority_ready<
+    A: crate::gameplay_transport::connection::FreshAdmissionAuthority,
+>(
+    authority: &A,
+) {
+    if let Some(root) = authority.test_durability_root() {
+        maintain_ready(root).await.expect("direct serve readiness");
+    }
+}
+
 thread_local! {
     static HOST_NOW: Cell<Option<i64>> = const { Cell::new(None) };
     static SAVES: Cell<usize> = const { Cell::new(0) };
@@ -846,6 +865,7 @@ mod death_ml_loss_composed {
         owner: &ComposedFreshAdmission<'_, '_, '_>,
         session: GameSessionId,
     ) -> TestResult<CurrentCharacterGameplayFence> {
+        super::maintain_ready(owner.root).await?;
         Ok(owner
             .current_quest_fence(session)
             .await

@@ -82,6 +82,12 @@ impl<'a> SeamRooms<'a> {
         self.combat
     }
 
+    /// W19: source-authored Ground item actions qualify the actual durable location
+    /// against the current native or bundle room. This opens no spell or map-init gate.
+    pub fn gate_ground_item_action(&self) -> Option<&'a QualifiedNativeEntryRoom> {
+        self.combat
+    }
+
     /// The source map initialization: the durable custody of the map's Items.
     pub fn gate_source_map_initialization(&self) -> Option<&'a QualifiedNativeEntryRoom> {
         self.qualified

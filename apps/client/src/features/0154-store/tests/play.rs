@@ -81,3 +81,53 @@ fn native_store_confirmation_and_server_quote() -> Result<(), Box<dyn std::error
     );
     Ok(())
 }
+
+#[test]
+fn gap_store_confirmation_retry_keeps_transaction_and_quote()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cui3::store::*;
+    let mut p = oteryn_client_ui::store::StorePanel {
+        selected: true,
+        catalogue: Some(StoreCataloguePage {
+            catalog_revision: "server-revision".into(),
+            offers: vec![StoreOffer {
+                offer_key: "mount".into(),
+                title: "Mount".into(),
+                price: 77,
+                currency: "coins".into(),
+            }],
+            next_page_cursor: String::new(),
+            total_coins: 100,
+            transferable_coins: 0,
+        }),
+        ..Default::default()
+    };
+    native::customization(&mut p, "Alex", "2", "01010101-0101-7001-8001-010101010101");
+    assert_eq!(p.hireling_sex, 2);
+    assert!(p.hireling_id.is_some());
+    native::customization(&mut p, "Alex", "bad", "invalid");
+    assert!(p.hireling_id.is_none());
+    let first = native::purchase(&mut p, 0, true).ok_or("first confirmation")?;
+    p.pending = false; // Lost response: retry the same explicit confirmation.
+    let retry = native::purchase(&mut p, 0, true).ok_or("retry")?;
+    assert_eq!(first.payload, retry.payload);
+    let quote = decode_purchase_request(&first.payload).map_err(|_| "quote")?;
+    oteryn_client_ui::store::apply_result(
+        &mut p,
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            status: oteryn_client_runtime::server_mechanic::CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: encode_purchase_result(&StorePurchaseResult {
+                code: StorePurchaseCode::Accepted,
+                order_id: Some(quote.purchase_request_id),
+                operation_id: Some(quote.purchase_request_id),
+            })
+            .map_err(|_| "result")?,
+        },
+    );
+    assert!(p.confirmed_purchase.is_none());
+    let next = native::purchase(&mut p, 0, true).ok_or("new transaction")?;
+    assert_ne!(first.payload, next.payload);
+    Ok(())
+}

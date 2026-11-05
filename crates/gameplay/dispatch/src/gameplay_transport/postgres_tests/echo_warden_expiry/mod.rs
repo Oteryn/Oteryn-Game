@@ -5,7 +5,9 @@ pub(super) async fn verify(
     player: (ExactActorRef, GameSessionId),
     h: &Harness,
 ) -> TestResult {
+    let started = std::time::Instant::now();
     let before = scrolls(h).await?;
+    let catalysts_before = catalysts(h).await?;
     {
         let mut runtime = owner.runtime.lock().await;
         let warden = raid(&mut runtime, player, 1_000_000, 100)?;
@@ -24,6 +26,11 @@ pub(super) async fn verify(
     drain(owner, player.1).await?;
     assert_eq!(scrolls(h).await?, before, "expiry cannot mint a scroll");
     assert_eq!(
+        catalysts(h).await?,
+        catalysts_before,
+        "expiry cannot mint a catalyst"
+    );
+    assert_eq!(
         sqlx::query_scalar::<_, i64>(
             "SELECT count(*) FROM game_character_echo_warden_kill_receipts"
         )
@@ -33,7 +40,8 @@ pub(super) async fn verify(
         "expiry cannot credit a Warden kill"
     );
     eprintln!(
-        "ECHO_EXPIRY POSTGRES_CASE_COMPLETED: live Warden expiry, unchanged scroll custody and kill receipts"
+        "ECHO_EXPIRY POSTGRES_CASE_COMPLETED duration={:?}: live Warden expiry, unchanged scroll/catalyst custody and kill receipts",
+        started.elapsed()
     );
     Ok(())
 }

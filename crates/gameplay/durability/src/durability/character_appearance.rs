@@ -153,6 +153,8 @@ pub struct AppearanceValidationContext<C> {
 mod character_sex;
 mod current_appearance;
 mod earned_unlocks;
+mod grant_lock;
+pub(crate) use grant_lock::{item_action_sex, lock_account_grants};
 mod quest_grants;
 pub(crate) use quest_grants::{QuestOutfitGrant, grant_quest_outfit};
 pub use current_appearance::CurrentCharacterAppearance;

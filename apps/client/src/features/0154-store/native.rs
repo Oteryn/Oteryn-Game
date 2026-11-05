@@ -12,8 +12,9 @@ pub(super) fn purchase(
     }
     panel.selected_offer = selection;
     panel.purchase_confirmed = confirmed;
-    if confirmed {
-        // A fresh local transaction identity for each explicit confirmation.
+    if confirmed && panel.confirmed_purchase.is_none() {
+        // CLIGAP-W09 accepted transport difference: retries reuse the confirmed
+        // Game transaction and quote until a decoded terminal result.
         use sha2::{Digest, Sha256};
         use std::sync::atomic::{AtomicU64, Ordering};
         static SEQUENCE: AtomicU64 = AtomicU64::new(0);
@@ -32,6 +33,22 @@ pub(super) fn purchase(
         panel.purchase_request_id[8] = (panel.purchase_request_id[8] & 63) | 0x80;
     }
     store::purchase(panel)
+}
+
+// Game identities replace Crystal's modal selection of an owned Hireling.
+pub(super) fn customization(panel: &mut StorePanel, name: &str, sex: &str, identity: &str) {
+    panel.hireling_name = name.into();
+    panel.hireling_sex = sex.parse().unwrap_or(0);
+    let hex: String = identity.chars().filter(|c| *c != '-').collect();
+    panel.hireling_id = (hex.len() == 32 && hex.is_ascii())
+        .then(|| {
+            let mut id = [0; 16];
+            for (i, byte) in id.iter_mut().enumerate() {
+                *byte = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).ok()?;
+            }
+            Some(id)
+        })
+        .flatten();
 }
 
 pub(super) fn panel_text(panel: &StorePanel) -> String {
@@ -143,7 +160,7 @@ mod windows {
                         CW_USEDEFAULT,
                         CW_USEDEFAULT,
                         480,
-                        420,
+                        630,
                         null_mut(),
                         null_mut(),
                         null_mut(),
@@ -174,8 +191,13 @@ mod windows {
                         );
                         let buy =
                             control(hwnd, "BUTTON", "Purchase selected offer…", 4, 235, 35, 0);
+                        let next = control(hwnd, "BUTTON", "Next catalogue page", 5, 275, 30, 0);
+                        control(hwnd, "STATIC", "Hireling name / sex (1 male, 2 female) / identity (UUID)", 0, 310, 35, 0);
+                        let name = control(hwnd, "EDIT", "", 6, 350, 25, WS_BORDER);
+                        let sex = control(hwnd, "EDIT", "1", 7, 380, 25, WS_BORDER);
+                        let identity = control(hwnd, "EDIT", "", 8, 410, 25, WS_BORDER);
                         let mut displayed = None;
-                        let status = control(hwnd, "STATIC", "", 0, 310, 65, 0);
+                        let status = control(hwnd, "STATIC", "", 0, 450, 100, 0);
                         let mut message: MSG = std::mem::zeroed();
                         loop {
                             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -193,7 +215,7 @@ mod windows {
                                 let panel = &mut mailbox.store;
                                 let command = {
                                     match action {
-                                        2 if !panel.pending => {
+                                        2 | 5 if !panel.pending => {
                                             let mut text = [0u16; 256];
                                             let len = GetWindowTextW(
                                                 category,
@@ -202,9 +224,18 @@ mod windows {
                                             );
                                             panel.category =
                                                 String::from_utf16_lossy(&text[..len as usize]);
+                                            if action == 2 {
+                                                panel.catalogue = None;
+                                            }
                                             store::catalogue(panel)
                                         }
                                         4 if !panel.pending && panel.selected => {
+                                            let read = |hwnd| {
+                                                let mut text = [0u16; 64];
+                                                let len = GetWindowTextW(hwnd, text.as_mut_ptr(), 64);
+                                                String::from_utf16_lossy(&text[..len.max(0) as usize])
+                                            };
+                                            customization(panel, &read(name), &read(sex), &read(identity));
                                             let index = SendMessageW(offers, LB_GETCURSEL, 0, 0);
                                             if let Ok(index) = usize::try_from(index)
                                                 && let Some(offer) = panel
@@ -212,10 +243,18 @@ mod windows {
                                                     .as_ref()
                                                     .and_then(|page| page.offers.get(index))
                                             {
-                                                let question = format!(
-                                                    "Purchase {} for {} {}?",
-                                                    offer.title, offer.price, offer.currency
-                                                );
+                                                let question = if panel.confirmed_purchase.is_some() {
+                                                    "Retry the previously confirmed purchase with the same transaction identity?".into()
+                                                } else {
+                                                    let mut question = format!("Purchase {} for {} {}?", offer.title, offer.price, offer.currency);
+                                                    match offer.offer_key.as_str() {
+                                                        "store:hireling:25440" => question.push_str(&format!("\nName: {}; sex: {}", read(name), read(sex))),
+                                                        "store:hireling:25438" => question.push_str(&format!("\nHireling: {}; new name: {}", read(identity), read(name))),
+                                                        "store:hireling:25437" => question.push_str(&format!("\nChange sex of Hireling: {}", read(identity))),
+                                                        _ => {}
+                                                    }
+                                                    question
+                                                };
                                                 // Do not hold the mailbox while the modal dialog pumps messages.
                                                 let snapshot = panel.catalogue.clone();
                                                 drop(mailbox);
@@ -273,6 +312,7 @@ mod windows {
                                 }
                                 displayed = panel.catalogue.clone();
                             }
+                            EnableWindow(next, i32::from(panel.selected && !panel.pending && panel.catalogue.as_ref().is_some_and(|p| !p.next_page_cursor.is_empty())));
                             EnableWindow(refresh, i32::from(panel.selected && !panel.pending));
                             EnableWindow(
                                 buy,

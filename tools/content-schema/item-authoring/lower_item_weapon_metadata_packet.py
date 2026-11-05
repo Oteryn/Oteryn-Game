@@ -6,6 +6,7 @@ import re
 from collections import Counter
 
 import appearance_membership
+import historical_world_owner_context as world_context
 import lower_wiki_movable_packet as movable
 import lower_wiki_stack_default_packet as base
 from engine_items import decode_appearance_object, protobuf_fields
@@ -82,9 +83,18 @@ def check_parent_receipt(root, proof):
     # The full reference digest is an immutable actual-parent observation.
     # Current identity/class/name/whole-weapon guards below allow unrelated
     # NativeStack successors without rewriting that historical receipt.
-    packet = json.loads(
-        base.checked(root, receipt["hit_packet_path"], receipt["hit_packet_sha256"])
-    )
+    path, digest = receipt["hit_packet_path"], receipt["hit_packet_sha256"]
+    raw = (root / path).read_bytes()
+    if (
+        base.sha(raw) != digest
+        and path == world_context.HIT_PACKET
+        and digest == world_context.HIT_SHA
+    ):
+        # Only the hash-exact pre-W15c receipt may explain live World drift.
+        raw = world_context.original_hit_packet(root)
+    if base.sha(raw) != digest:
+        raise ValueError(f"source digest drift: {path}")
+    packet = json.loads(raw)
     hits = {
         r["target"]["key"]: r
         for r in packet["promotions"]

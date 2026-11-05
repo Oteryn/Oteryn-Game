@@ -78,7 +78,7 @@ opinion is skipped, not turned into a question.
 
 When a review is covered: only the coordinator (the review-dispatch owner)
 starts it, once per frozen head, after the local checks pass, with `codex
-exec` in a read-only sandbox at reasoning effort medium (an `@codex review`
+exec` in a read-only sandbox with model gpt-6.1-sol at reasoning effort high (an `@codex review`
 PR comment has gone unanswered since 2026-10-20, so it is not used), with the diff, `CODEX-CHECKLIST.md` and
 the instruction to report findings only. Its output is findings to verify
 with step 3, not a verdict; a failed or empty run means "not reviewed".
