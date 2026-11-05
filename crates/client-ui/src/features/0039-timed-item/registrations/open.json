@@ -1,0 +1,9 @@
+{
+  "mechanic": "0039-timed-item",
+  "kind": "keybindings",
+  "id": "0039-timed-item-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+Y",
+  "entry": "input.rs::open_key"
+}

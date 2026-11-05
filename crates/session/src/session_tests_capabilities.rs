@@ -109,6 +109,10 @@ fn derived_gated_routes_match_previous_table() {
     let expected: &[(u32, &[u32], &[u32])] = &[
         (3, &[7, 8], &[7, 8]),
         (51, &[60, 61], &[]),
+        // P-C06 routes existing timed-item, cyclopedia-map and party-skull queries/intents.
+        (39, &[38], &[]),
+        (57, &[72, 73], &[]),
+        (134, &[155], &[]),
         (40, &[40, 41], &[]),
         (42, &[45, 46], &[]),
         (43, &[48, 49, 50], &[]),

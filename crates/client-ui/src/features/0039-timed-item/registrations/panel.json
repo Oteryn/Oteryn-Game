@@ -1,0 +1,7 @@
+{
+  "mechanic": "0039-timed-item",
+  "kind": "panels",
+  "id": "0039-timed-item-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}
