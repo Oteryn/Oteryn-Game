@@ -19,9 +19,7 @@ class GrizzlyGroundTests(unittest.TestCase):
         self.assertEqual(self.record["identity"]["key"], grizzly_ground.KEY)
         self.assertEqual(self.record["kind"], {"state": "KNOWN", "value": "ground"})
         self.assertEqual(self.record["walkable"], {"state": "KNOWN", "value": True})
-        self.assertEqual(
-            self.record["ground_speed"], {"state": "KNOWN", "value": 100}
-        )
+        self.assertEqual(self.record["ground_speed"], {"state": "KNOWN", "value": 100})
         self.assertNotIn("item_pointer", self.record["provenance"])
 
     def test_generated_files_are_current(self):

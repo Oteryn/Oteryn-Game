@@ -512,9 +512,7 @@ def validate_record(record):
             if record["provenance"]["source_item_id"] == grizzly_ground.IDENTIFIER
             else summer_ground
         )
-        expected = json.loads(ground.outputs()[ground.SHARD])["records"][
-            0
-        ]
+        expected = json.loads(ground.outputs()[ground.SHARD])["records"][0]
         return (
             []
             if record == expected
