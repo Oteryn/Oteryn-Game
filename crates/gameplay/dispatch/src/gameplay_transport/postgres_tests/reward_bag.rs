@@ -36,7 +36,7 @@ fn surprise_bag_quantity_endpoints_and_special_rewards_use_wire() -> TestResult 
         run_scenario("oteryn:item.tibia.i6570", Some(("oteryn:item.tibia.i3598", count)))?;
     }
     run_scenario("oteryn:item.tibia.i6507", Some(("oteryn:item.tibia.i6505", 1)))?;
-    run_scenario("oteryn:item.tibia.i12045", Some(("oteryn:item.tibia.i3549", 1)))?;
+    run_scenario("oteryn:item.tibia.i12045", Some(("oteryn:item.tibia.i6529", 1)))?;
     run_scenario("oteryn:item.tibia.i21203", Some(("oteryn:item.tibia.i21295", 1)))?;
     run_scenario("oteryn:item.tibia.i8853", Some(("oteryn:item.tibia.i7377", 1)))
 }

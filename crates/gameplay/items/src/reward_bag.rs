@@ -195,11 +195,15 @@ pub fn reward_bag_conversion(
             )?)
             .ok()?,
         )?;
-        let id = reward
-            .item
-            .strip_prefix("oteryn:item.tibia.i")?
-            .parse()
-            .ok()?;
+        // Generated bags deliver through the same Crystal Item::CreateItem factory
+        // as the captured W19 tables (music box 3549 grants base soft boots 6529).
+        let id = event_containers::created_reward_item_id(
+            reward
+                .item
+                .strip_prefix("oteryn:item.tibia.i")?
+                .parse()
+                .ok()?,
+        );
         let record = native.item_policy_for_source_id(id)?.record();
         let target = &record.production_binding.target;
         let definition = output_definition(native, target).or_else(|| {
