@@ -45,6 +45,9 @@ pub mod paced_movement {
         "/src/features/0013-paced-movement/input.rs"
     ));
 }
+/// Achievement advancement pop-up and session advancement log.
+#[path = "features/0008-achievement-notices/mod.rs"]
+pub mod achievement_notices;
 /// Native skills window with the account Loyalty projection.
 #[path = "features/0274-loyalty-skills/mod.rs"]
 pub mod loyalty_skills;

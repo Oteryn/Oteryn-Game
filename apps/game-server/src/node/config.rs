@@ -261,6 +261,9 @@ pub struct PremiumActivationConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    /// Explicit disposable node-boot fixture opt-in; never enabled by default.
+    #[serde(default)]
+    pub qualification_fixture: bool,
     /// Optional message shown once after login in this configured World (NOLOGOUT-RL-01).
     #[serde(default)]
     pub server_motd: String,
@@ -440,6 +443,12 @@ impl NodeConfig {
             if activation.switch_over_us < 0 {
                 return reject("premium_activation.switch_over_us");
             }
+        }
+        if self.qualification_fixture
+            && (self.database.database != "oteryn_node_boot"
+                || self.readiness.source_authority != "oteryn:runtime:node-boot")
+        {
+            return reject("qualification_fixture");
         }
         if self.server_motd.len() > oteryn_protocol_oteryn::zones_nologout::MAX_SERVER_MOTD_BYTES {
             return reject("server_motd");
@@ -977,6 +986,19 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
             config.platform.runtime_status.map(|s| s.assignment_epoch),
             Some(1)
         );
+    }
+
+    #[test]
+    fn qualification_fixture_requires_the_disposable_node_boot_configuration() {
+        let enabled = format!("qualification_fixture = true\n{NODE}");
+        assert!(NodeConfig::parse(enabled.as_bytes()).is_err());
+        let disposable = enabled
+            .replace("database = \"oteryn\"", "database = \"oteryn_node_boot\"")
+            .replace(
+                "oteryn:runtime:world-1:channel-1",
+                "oteryn:runtime:node-boot",
+            );
+        assert!(NodeConfig::parse(disposable.as_bytes()).is_ok());
     }
 
     #[test]

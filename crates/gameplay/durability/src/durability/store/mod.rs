@@ -11,9 +11,11 @@ mod outbox;
 mod prey_expansion;
 mod prey_purchase;
 mod purchase;
+mod purchase_history;
 mod storage;
 pub use codec::{DeliveryIdentity, DeliveryPlan, DeliveryReceipt, PurchaseRequest, StoreValidationError};
 pub use hireling_model::{HirelingServiceDeliveryPlan, HirelingStoreAction, HirelingStorePurchase, canonical_hireling_name};
+pub use purchase_history::{StorePurchaseHistoryEntry, StorePurchaseHistoryRow};
 pub(crate) use prey_expansion::write_prey_expansion_receipt;
 pub use storage::{PurchaseRequestState, StoreDurabilityError};
 #[cfg(test)]

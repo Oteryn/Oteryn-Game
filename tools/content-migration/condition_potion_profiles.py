@@ -1,4 +1,4 @@
-"""Admit the four Crystal condition potions without inventing HP/MP restores.
+"""Admit Crystal condition and dispel potions without inventing HP/MP restores.
 
 Crystal 201189f potions.lua:1-31,52-54,63,125-129 owns their runtime
 conditions. The existing exact identity binding and physical Item importer
@@ -24,11 +24,12 @@ CRYSTAL_INPUTS = {
     'data/items/appearances.dat': '17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1',
     'data/scripts/actions/items/potions.lua': '6eb180d90f8bfa8d14480b5703cf0b59dccc142caf1cbf5789219b61698d0527',
 }
-IDS = (7439, 7440, 7443, 49271)
-DONOR_RULE = 'crystal/data/scripts/actions/items/potions.lua:1-31,52-54,63,125-129'
+IDS = (7439, 7440, 7443, 49271, 7644, 35563)
+DONOR_RULE = 'crystal/data/scripts/actions/items/potions.lua:1-42,52-54,57,62-63,78-110,115-147'
 RUNTIME_OWNER = 'crates/gameplay/dispatch/src/gameplay_transport/condition_potions.rs'
-# Crystal potions.lua:52-54,63. No level or magic-level restriction.
-VOCATIONS = {7439: ['KNIGHT'], 7440: ['DRUID', 'SORCERER'], 7443: ['PALADIN'], 49271: None}
+# Crystal potions.lua:52-54,57,62-63. Only magic shield has a level restriction.
+VOCATIONS = {7439: ['KNIGHT'], 7440: ['DRUID', 'SORCERER'], 7443: ['PALADIN'], 49271: None,
+             7644: None, 35563: ['DRUID', 'SORCERER']}
 
 
 def digest(raw):
@@ -37,7 +38,7 @@ def digest(raw):
 
 def requirements(item):
     return source.K({
-        'min_level': dict(source.NA),
+        'min_level': source.K(14) if item == 35563 else dict(source.NA),
         'min_magic_level': dict(source.NA),
         'vocations': source.K(VOCATIONS[item]) if VOCATIONS[item] else dict(source.NA),
         'enforcement_mode': 'ON_USE',

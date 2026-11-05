@@ -54,7 +54,7 @@ pub(super) mod condition_potions;
 pub(super) const ITEMUSE0_RL_01_USES_PER_SECOND: usize = 5;
 /// `ITEMUSE0-RL-04`: the ambiguous-commit bound before the in-flight slot is freed.
 pub(super) const ITEMUSE0_RL_04_AMBIGUOUS_MS: u64 = 2_000;
-/// The `potion` cooldown, shared by every potion. `PARITY_PENDING`: no official value.
+/// Crystal 201189f config.lua.dist:455 / src/lua/creature/actions.cpp:624-627: shared potion delay.
 const POTION_COOLDOWN_MS: u64 = 1_000;
 /// The `food` cooldown. `PARITY_PENDING`: no official value.
 const FOOD_COOLDOWN_MS: u64 = 200;
@@ -497,7 +497,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(UseDisposition::StaleState)?;
         let record = record(native, &entry.item.definition);
         if let Some(potion) =
-            oteryn_gameplay_progression::condition_potions::ConditionPotion::from_key(
+            oteryn_gameplay_progression::condition_potions::PotionCondition::from_key(
                 &entry.item.definition.production_key,
             )
         {

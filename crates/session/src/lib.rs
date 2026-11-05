@@ -16,6 +16,7 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
+mod achievement_notices;
 mod appearance_state;
 mod depot;
 mod domain_dispatch;
@@ -89,6 +90,7 @@ pub use oteryn_protocol_oteryn::{
     weapon_proficiency, zones_nologout::ServerMessage,
 };
 mod vip_presence;
+pub use oteryn_protocol_oteryn::achievement_notices::{AchievementEarned, AchievementWatermark};
 pub use oteryn_protocol_oteryn::exiva;
 /// Imbuement shrine wire values used by the native client adapter.
 pub use oteryn_protocol_oteryn::imbuement;

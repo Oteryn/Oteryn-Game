@@ -31,6 +31,11 @@ readonly SERVICE_USER=oteryn-node-boot
 readonly BASE=/srv/oteryn-node-boot
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
+export NODE_BOOT_PROFILE="${NODE_BOOT_PROFILE:-sorcerer}"
+case "$NODE_BOOT_PROFILE" in
+  explorer|knight|paladin|sorcerer|druid|monk) ;;
+  *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_qualification_profile'; exit 2 ;;
+esac
 # Optional full spell input uses this same disposable topology and admission path.
 NODE_BOOT_SPELLS="${NODE_BOOT_SPELLS:-0}"
 case "$NODE_BOOT_SPELLS" in
@@ -318,6 +323,7 @@ sudo install -o root -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 write_node_config() { # launch-file
   cat > "$WORK/node.toml" <<TOML
+qualification_fixture = true
 [listener]
 address = "127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}"
 entry_deadline_ms = 20000
@@ -557,6 +563,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
   NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
+  NODE_BOOT_CONTROL_SOCKET="$BASE/run/control.sock" \
   NODE_BOOT_ADDRESS="127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}" \
   NODE_BOOT_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
   NODE_BOOT_DATABASE_URL="$ADMIN_URL" \
