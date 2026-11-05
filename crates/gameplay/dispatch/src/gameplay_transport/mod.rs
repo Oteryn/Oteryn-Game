@@ -168,6 +168,7 @@ mod source_item_cycle;
 mod source_pvp_expiry;
 pub mod spectate_session;
 mod spell_access_facts;
+mod spell_catalog;
 mod spell_character_facts;
 mod spell_magnitude_facts;
 mod spell_parameter_cast;

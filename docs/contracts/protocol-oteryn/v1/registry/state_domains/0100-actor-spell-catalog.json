@@ -1,0 +1,24 @@
+{
+  "id": 100,
+  "name": "ACTOR_SPELL_CATALOG",
+  "owner_decision": "S-SPELLBOOK",
+  "owner": "current ChannelRuntime",
+  "capability": 287,
+  "revision": "Connection-local: snapshot 1, incremented for each changed complete replacement; reconnect starts at 1.",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "ACTOR_SPELL_CATALOG_REPLACE_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_catalog_v1.proto#ActorSpellCatalogV1",
+      "max_payload_bytes": 262144
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "ACTOR_SPELL_CATALOG_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_catalog_v1.proto#ActorSpellCatalogV1",
+      "max_payload_bytes": 262144
+    }
+  ]
+}

@@ -1192,6 +1192,15 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    fn observe_spell_catalog(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<Vec<oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry>>>
+    {
+        async { None }
+    }
+
     /// The admitted actor's current `ACTOR_VITALS` revision and value for the initial snapshot,
     /// or `None` while it has no Character cast facts (spell cast §4).
     fn observe_vitals(

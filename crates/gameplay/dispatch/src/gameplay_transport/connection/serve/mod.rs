@@ -25,6 +25,7 @@ mod pvp_expert;
 mod refresh;
 mod setup;
 mod snapshot;
+mod spell_catalog;
 mod target_move;
 use command::CommandOutcome;
 mod effects;
@@ -36,6 +37,7 @@ mod use_effects;
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,
     target_walk: Option<target_move::PendingWalk>,
     target_move_window: crate::gameplay_transport::attack::IntentWindow,

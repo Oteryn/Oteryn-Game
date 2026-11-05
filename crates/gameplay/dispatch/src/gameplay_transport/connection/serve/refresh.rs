@@ -14,6 +14,17 @@ where
     let changed = authority
         .tick_vitals(session.actor, session.admitted.game_session_id)
         .await;
+    if let Some(catalog) = &mut session.spell_catalog {
+        catalog
+            .refresh(
+                stream,
+                authority,
+                session.actor,
+                &mut session.admitted,
+                &mut session.sequence,
+            )
+            .await?;
+    }
     sounds(stream, authority, session).await?;
     let current = authority
         .observe_vitals(session.actor, session.admitted.game_session_id)

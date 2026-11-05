@@ -148,8 +148,16 @@ impl State {
             });
             admitted.continuity.vitals_revision = revision;
         }
+        let spell_catalog = super::super::spell_catalog::SessionCatalog::initial(
+            authority,
+            actor,
+            admitted,
+            &mut payloads,
+        )
+        .await?;
         Ok((
             Self {
+                spell_catalog,
                 actor,
                 enabled,
                 items,

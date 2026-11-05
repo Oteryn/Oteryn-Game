@@ -1005,6 +1005,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_world_object(actor, command, target).await
     }
 
+    async fn observe_spell_catalog(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<Vec<oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry>> {
+        self.actor_spell_catalog(actor, session).await
+    }
+
     async fn observe_vitals(
         &self,
         actor: ExactActorRef,
