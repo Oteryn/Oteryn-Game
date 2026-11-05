@@ -17,6 +17,16 @@ pub mod world_light;
 #[path = "features/0026-world-weather/mod.rs"]
 pub mod world_weather;
 
+#[path = "features/0132-inspection/mod.rs"]
+pub mod inspection;
+#[path = "features/0285-store-purchase-history/mod.rs"]
+pub mod purchase_history;
+#[path = "features/0098-quick-loot/mod.rs"]
+pub mod quick_loot;
+#[path = "features/0232-team-finder-members/mod.rs"]
+pub mod team_finder;
+#[path = "features/0200-team-finder-leader/mod.rs"]
+pub mod team_finder_leader;
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
 #[path = "features/local-reference-preferences/input.rs"]
