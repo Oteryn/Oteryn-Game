@@ -26,6 +26,7 @@ const _: () = assert!(
 #[derive(Debug, Clone)]
 pub struct Scene {
     world: Arc<World>,
+    lit_atlas: Option<AtlasImage>,
     /// `None` draws no map: the session is on a floor the loaded map does not cover.
     anchor: Option<TileCoord>,
     own: TileCoord,
@@ -83,6 +84,7 @@ impl Scene {
             .collect();
         let mut scene = Self {
             world,
+            lit_atlas: None,
             anchor,
             own,
             facing,
@@ -94,6 +96,11 @@ impl Scene {
         };
         scene.rebuild_sprites()?;
         Ok(scene)
+    }
+
+    pub fn set_ambient(&mut self, ambient: [u8; 3]) -> Result<(), BatchError> {
+        self.lit_atlas = Some(oteryn_renderer::lit_atlas(self.world.atlas(), ambient));
+        Ok(())
     }
 
     /// Current target, if any.
@@ -168,7 +175,9 @@ impl Scene {
 
     #[must_use]
     pub fn atlas(&self) -> &AtlasImage {
-        self.world.atlas()
+        self.lit_atlas
+            .as_ref()
+            .unwrap_or_else(|| self.world.atlas())
     }
 
     #[must_use]

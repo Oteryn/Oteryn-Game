@@ -30,6 +30,7 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    pub world_clock: Option<oteryn_session::world_clock::WorldClock>,
     pub achievements: Vec<oteryn_client_ui::achievement_notices::AchievementEarned>,
     pub sounds: Vec<super::SoundCue>,
     pub notices: Box<oteryn_client_ui::tutorial_notices::NoticePanel>,
@@ -62,6 +63,7 @@ impl Pushed {
                 ));
         }
         self.notices.save_minutes = newer.notices.save_minutes.or(self.notices.save_minutes);
+        self.world_clock = newer.world_clock.or(self.world_clock);
         self.map = newer.map.or(self.map.take());
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
@@ -120,7 +122,7 @@ pub(super) struct Mailbox {
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
-    pushed: Pushed,
+    pub(super) pushed: Pushed,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
     /// The latest refused logout not yet polled.

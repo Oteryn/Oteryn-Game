@@ -3,10 +3,21 @@ use crate::map::World;
 use crate::play::{PlayView, Pushed};
 use crate::scene::Scene;
 use oteryn_renderer::{BatchError, TileCoord};
-use oteryn_session::EntityKind;
+use oteryn_session::{EntityKind, JoinSnapshot};
 use std::sync::Arc;
 
 impl PlayView {
+    pub fn from_join(snapshot: &JoinSnapshot) -> Result<Self, BatchError> {
+        let position = snapshot.world_spatial.actor_position;
+        Self::new(
+            TileCoord::new(position.x, position.y),
+            position.floor,
+            &snapshot.world_object_overlay,
+        )
+    }
+
+
+
     #[must_use]
     pub const fn scene(&self) -> &Scene {
         &self.scene
@@ -62,11 +73,12 @@ impl PlayView {
             &markers,
             &entities,
         )?;
-        Ok(())
+        self.light_scene()
     }
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
+        self.world_clock = pushed.world_clock.or(self.world_clock);
         self.apply_server_messages(&pushed.server_messages);
         if let Some(map) = &pushed.map {
             self.set_live_map(map)?;

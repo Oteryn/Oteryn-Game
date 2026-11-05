@@ -8,9 +8,7 @@ use crate::scene::Scene;
 use feature_local_reference_preferences::settings::LocalPlayState;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
-use oteryn_session::{
-    EntityRef, JoinSnapshot, SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity,
-};
+use oteryn_session::{EntityRef, SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity};
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
 
@@ -27,6 +25,7 @@ const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    world_clock: Option<oteryn_session::world_clock::WorldClock>,
     vitals: Option<oteryn_session::ActorVitals>,
     sounds: Vec<SoundCue>,
     own: TileCoord,
@@ -58,15 +57,6 @@ pub struct PlayView {
 }
 
 impl PlayView {
-    pub fn from_join(snapshot: &JoinSnapshot) -> Result<Self, BatchError> {
-        let position = snapshot.world_spatial.actor_position;
-        Self::new(
-            TileCoord::new(position.x, position.y),
-            position.floor,
-            &snapshot.world_object_overlay,
-        )
-    }
-
     pub fn new(
         own: TileCoord,
         floor: i16,
@@ -75,6 +65,7 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            world_clock: None,
             vitals: None,
             sounds: Vec::new(),
             own,

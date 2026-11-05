@@ -10,10 +10,10 @@ use oteryn_session::{
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-struct MapSession {
-    initial: WorldMapViewSnapshot,
-    incoming: mpsc::UnboundedReceiver<SessionEvent>,
-    pending: Vec<SessionEvent>,
+pub(super) struct MapSession {
+    pub(super) initial: WorldMapViewSnapshot,
+    pub(super) incoming: mpsc::UnboundedReceiver<SessionEvent>,
+    pub(super) pending: Vec<SessionEvent>,
 }
 
 impl Stepper for MapSession {

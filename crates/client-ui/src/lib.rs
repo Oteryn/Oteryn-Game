@@ -1,5 +1,8 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+#[path = "features/0019-world-light/mod.rs"]
+pub mod world_light;
+
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
 /// Account achievement pages from core command 10.
