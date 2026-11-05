@@ -1,5 +1,11 @@
 //! Application-owned Tokio runtime and deterministic shutdown boundary.
 
+/// Account achievement pages from core command 10.
+#[path = "features/local-account-achievements/mod.rs"]
+pub mod account_achievements;
+#[path = "features/0008-achievement-notices/protocol.rs"]
+pub mod achievement_notices;
+
 pub mod connection;
 pub mod hotkey_equip;
 #[path = "features/0053-world-event/protocol.rs"]
@@ -135,11 +141,6 @@ pub use oteryn_session::loyalty_skills;
 #[path = "features/0117-boss-encounter/protocol.rs"]
 pub mod boss_encounter;
 
-/// Achievement notice values validated by the session transport (capability 8).
-pub mod achievement_notices {
-    pub use oteryn_session::{AchievementEarned, AchievementWatermark};
-}
-
 /// Personal boss reward commands through the admitted session.
 #[path = "features/0224-boss-rewards/protocol.rs"]
 pub mod boss_rewards;
@@ -216,6 +217,9 @@ pub mod hireling;
 #[path = "features/0063-market/protocol.rs"]
 pub mod market;
 
+/// Local speech and named private messages.
+#[path = "features/0007-chat/protocol.rs"]
+pub mod chat;
 /// Existing chat command and state types extended by capability 259.
 #[path = "features/0259-chat-public-channels/protocol.rs"]
 pub mod chat_public_channels;

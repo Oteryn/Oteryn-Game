@@ -111,6 +111,8 @@ oteryn-gameplay-characters = ["oteryn-gameplay-content","oteryn-gameplay-domain"
 oteryn-gameplay-content-promotion = ["oteryn-gameplay-content"]
 
 [dev_edges]
+# C07 synthetic scenario drives the production native-client mailbox and projection.
+oteryn-synthetic-client-harness = ["oteryn-client","oteryn-session"]
 # C01 headless login scenario exercises the production client form.
 oteryn-gameplay-dispatch = ["oteryn-dev-client","oteryn-world-bundle-compiler"]
 oteryn-game-server = ["oteryn-dev-client","oteryn-world-bundle-compiler","oteryn-gameplay-content-promotion"]
@@ -125,5 +127,4 @@ oteryn-gameplay-progression = ["oteryn-test-support"]
 oteryn-gameplay-spell = ["oteryn-test-support"]
 oteryn-gameplay-spell-rules = ["oteryn-test-support"]
 oteryn-protocol-oteryn = ["oteryn-test-support"]
-oteryn-synthetic-client-harness = ["oteryn-client","oteryn-session"]
 oteryn-gameplay-world = ["oteryn-gameplay-content-promotion"]

@@ -1,3 +1,5 @@
+#[path = "features/local-spell-action-bar/native.rs"]
+mod hud;
 mod input;
 #[path = "features/local-native-login/shell.rs"]
 mod native_login_shell;
@@ -58,6 +60,7 @@ impl Display for ShellError {
 impl std::error::Error for ShellError {}
 
 struct Application {
+    hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
     smoke: bool,
     window: Option<Arc<Window>>,
@@ -96,6 +99,7 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
             smoke,
             window: None,
@@ -215,6 +219,11 @@ impl ApplicationHandler for Application {
         if self.smoke {
             self.window = Some(window);
             event_loop.exit();
+            return;
+        }
+        self.hud = hud::Hud::new(&window);
+        if self.hud.is_none() {
+            self.fail(event_loop, ShellError::WindowCreation);
             return;
         }
         let size = window.inner_size();
@@ -347,13 +356,7 @@ impl ApplicationHandler for Application {
                 PlayEnd::LoggedOut => self.return_to_character_selection(),
             }
         }
-        if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
-            let status = self.audio.status(&mut play.view);
-            if status != play.status {
-                window.set_title(&format!("Oteryn — {status} — Ctrl+G: Guild"));
-                play.status = status;
-            }
-        }
+        self.update_hud();
         if let Some(window) = &self.window
             && redraw_eligible(
                 self.renderer

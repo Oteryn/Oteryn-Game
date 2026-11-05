@@ -2,6 +2,20 @@ use crate::play::PlayView;
 use crate::spell::SPELL_SLOTS;
 
 impl PlayView {
+    #[must_use]
+    pub const fn actor_vitals(&self) -> Option<&oteryn_session::ActorVitals> {
+        self.vitals.as_ref()
+    }
+
+    #[must_use]
+    pub fn hud_status(&self) -> String {
+        format!(
+            "{}   {}",
+            oteryn_client_ui::spell_action_bar::vitals_text(self.actor_vitals()),
+            self.combat_status()
+        )
+    }
+
     /// The native status projection: spell hotkeys, combat/logout feedback and server notices.
     #[must_use]
     pub fn combat_status(&self) -> String {

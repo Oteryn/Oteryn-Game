@@ -30,6 +30,7 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    pub achievements: Vec<oteryn_client_ui::achievement_notices::AchievementEarned>,
     pub sounds: Vec<super::SoundCue>,
     pub notices: Box<oteryn_client_ui::tutorial_notices::NoticePanel>,
     /// Latest complete live map window, reduced before publication.
@@ -65,6 +66,7 @@ impl Pushed {
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
         self.server_messages.append(newer.server_messages);
+        self.achievements.extend(newer.achievements);
         self.chat_lines.extend(newer.chat_lines);
         self.chat_rooms = newer.chat_rooms.or(self.chat_rooms);
         self.vip_presence = newer.vip_presence.or(self.vip_presence.take());
@@ -80,6 +82,8 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
+    pub(super) vitals: Option<oteryn_session::ActorVitals>,
     pub(super) notices: oteryn_client_ui::tutorial_notices::NoticePanel,
     pub(super) boss_encounter: oteryn_client_ui::boss_encounter::BossEncounterPanel,
     pub(super) boss_encounter_shutdown: bool,
@@ -102,6 +106,7 @@ pub(super) struct Mailbox {
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
     pub(super) weapon_proficiency: oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel,
 
+    pub(super) achievements: oteryn_client_ui::account_achievements::AchievementsPanel,
     pub(super) animus: oteryn_client_ui::animus_mastery::AnimusPanel,
     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
     pub(super) wheel_shutdown: bool,
@@ -135,6 +140,7 @@ pub(super) struct Mailbox {
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
     // CL26s1
+    pub(super) chat: oteryn_client_ui::chat::ChatPanel,
     pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,
     pub(super) chat_public_shutdown: bool,
     // CL26s2: player-typing panel state and native-window shutdown.
@@ -187,6 +193,7 @@ impl Outbox {
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, events: Vec<SessionEvent>) {
         let mut mailbox = lock(&self.0);
+        super::feature_local_spell_action_bar::protocol::vitals_events(&mut mailbox, &events);
         for event in &events {
             if let SessionEvent::PlayerTyping(update) = event {
                 oteryn_client_ui::player_typing::protocol::reduce(
@@ -206,6 +213,8 @@ impl Outbox {
             mailbox.map = mailbox.pushed.map.clone();
         }
         mailbox.check_server_messages();
+        let notices = std::mem::take(&mut mailbox.pushed.achievements);
+        mailbox.reduce_achievement_notices(notices);
         for text in std::mem::take(&mut mailbox.pushed.notices.tutorial) {
             mailbox
                 .notices
@@ -264,6 +273,8 @@ impl Outbox {
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
         let mut mailbox = lock(&self.0);
+        mailbox.achievement_notices = Default::default();
+        mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
         mailbox.animus = Default::default();
@@ -273,6 +284,8 @@ impl Outbox {
 
     pub(super) fn logged_out(&self) {
         let mut mailbox = lock(&self.0);
+        mailbox.achievement_notices = Default::default();
+        mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
         mailbox.animus = Default::default();

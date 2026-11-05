@@ -12,7 +12,10 @@ impl Application {
             if play.view.audio_input(events) {
                 return;
             }
-            if play.link.boss_encounter_input(events)
+            if play.link.achievement_notices_input(events)
+                || play.link.achievements_input(events)
+                || play.link.chat_input(events)
+                || play.link.boss_encounter_input(events)
                 || play.link.highscores_input(events)
                 || play.link.notices_input(events)
                 || play.link.animus_input(events)
@@ -31,6 +34,7 @@ impl Application {
                 || play.link.cyclopedia_tracker_input(events)
                 || play.link.world_event_input(events)
                 || play.link.daily_boost_input(events)
+                || play.link.daily_reward_input(events)
                 || play.link.depot_search_input(events)
                 || play.link.hireling_input(events)
                 || play.link.hotkey_equip_input(events)

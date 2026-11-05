@@ -115,6 +115,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // 80); the set stays strictly ascending as the hello encoder requires.
     // CL25J adds daily boost, forge, depot search, store, hotkey equip, browse field,
     // party chat and VIP presence, including the equipment/container prerequisites 12/14.
+    // C78 adds 8 (live achievement notices).
     // C89 adds server-save countdown notices (75, domain 40).
     // C88 adds 53 (world-event query) through the admitted raw-command route.
     // C76 adds 9 (highscores), using the existing selected-session query route.
