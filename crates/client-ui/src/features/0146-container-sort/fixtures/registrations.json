@@ -2,18 +2,32 @@
   {
     "mechanic": "0146-container-sort",
     "kind": "handlers",
-    "id": "0146-container-sort-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0146-container-sort-command",
+    "status": "supported",
     "commands": [
       168
     ],
+    "direction": "client_to_server",
+    "capability": 146,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "This panel has no persistent client settings."
     }
+  },
+  {
+    "mechanic": "0146-container-sort",
+    "kind": "keybindings",
+    "id": "0146-container-sort-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+S",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0146-container-sort",
+    "kind": "panels",
+    "id": "0146-container-sort-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]
