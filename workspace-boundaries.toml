@@ -112,7 +112,6 @@ oteryn-gameplay-content-promotion = ["oteryn-gameplay-content"]
 
 [dev_edges]
 # C01 headless login scenario exercises the production client form.
-oteryn-synthetic-client-harness = ["oteryn-client"]
 oteryn-gameplay-dispatch = ["oteryn-dev-client","oteryn-world-bundle-compiler"]
 oteryn-game-server = ["oteryn-dev-client","oteryn-world-bundle-compiler","oteryn-gameplay-content-promotion"]
 oteryn-client-simulation = ["oteryn-foundation"]
