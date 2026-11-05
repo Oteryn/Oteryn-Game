@@ -5,6 +5,7 @@ fn live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels() -> Result<(
     let mut scene =
         Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
     let mut entry = VisibleAppearance {
+        light: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: Some(
                 oteryn_session::EntityDisplayName::new("Citizen")
@@ -78,6 +79,7 @@ fn other_actor_keeps_object_marker_and_local_player() -> Result<(), BatchError> 
         },
     };
     let mut appearance = VisibleAppearance {
+        light: None,
         entity,
         look: Some(oteryn_session::Look::EmptyOutfit),
     };
@@ -104,6 +106,7 @@ fn recenter_reuses_loaded_assets_outfits_glyphs_and_packed_atlas() -> Result<(),
     let mut scene = Scene::centered_on(world.clone(), None, tile, StepDir::South, &[])?;
     scene.set_own_identity([1; 16]);
     let entry = VisibleAppearance {
+        light: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: Some(
                 oteryn_session::EntityDisplayName::new("Citizen")
@@ -188,6 +191,7 @@ fn play_view_rebuild_retains_the_same_cached_image() -> Result<(), BatchError> {
     let mut view = crate::play::PlayView::new(TileCoord::new(100, 200), 0, &[])?;
     view.set_own_identity([1; 16]);
     let entry = VisibleAppearance {
+        light: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: Some(
                 oteryn_session::EntityDisplayName::new("Player")

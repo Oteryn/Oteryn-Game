@@ -2,6 +2,121 @@
 
 const OWN: [u8; 16] = [0xa0; 16];
 
+#[test]
+fn clxa_entity_light_survives_join_update_expiry_and_leave() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(clxa_entity_light_scenario)?
+        .join()
+        .map_err(|_| "CLX-A light session panicked")?
+}
+
+fn clxa_entity_light_scenario() -> Result<(), BoxError> {
+    block_on(async {
+        use oteryn_protocol_oteryn::world_spatial_entities::{
+            EntityFields, EntityLight, EntityLights,
+            encode_world_spatial_entities_delta_with_fields,
+            encode_world_spatial_entities_snapshot_with_fields,
+        };
+        let fields = EntityFields::selected(&[6, 19]);
+        let player = own(at(0, 0));
+        let rat = actor(EntityKind::Creature, 8, 1, at(1, 0));
+        let light = EntityLight {
+            level: 8,
+            color: 215,
+        };
+        let lights = EntityLights::from([(OWN, light), (rat.entity.identity, light)]);
+        let snapshot = WorldSpatialEntitiesSnapshot {
+            content_generation: CONTENT_GENERATION,
+            actor_position: at(0, 0),
+            own_identity: OWN,
+            entities: vec![player, rat],
+        };
+        let bytes = encode_world_spatial_entities_snapshot_with_fields(&snapshot, fields, &lights)
+            .map_err(|e| format!("{e:?}"))?;
+        let (client, mut server) = tokio::io::duplex(256 * 1024);
+        let peer = tokio::spawn(async move {
+            let clock = oteryn_protocol_oteryn::world_clock::encode_world_clock(
+                oteryn_protocol_oteryn::world_clock::WorldClock {
+                    tibian_minute: 0,
+                    light_level: 40,
+                    light_color: 215,
+                },
+            )
+            .map_err(|e| format!("{e:?}"))?;
+            join_peer_with(
+                &mut server,
+                CLIENT_SUPPORTED_CAPABILITIES,
+                &[6, 19],
+                &[],
+                (2, bytes),
+                &[(18, 0, 1, clock)],
+            )
+            .await?;
+            let mut rest = Vec::new();
+            let _ = server.read_to_end(&mut rest).await;
+            Ok::<_, BoxError>(())
+        });
+        let mut session = Session::admit(client, entity_admission()?).await?;
+        assert_eq!(
+            session.visible_appearances()[0].light,
+            Some((light.level, light.color))
+        );
+        for (sequence, update, lights) in [
+            (
+                41,
+                entities_delta(at(0, 0), vec![], vec![player], vec![]),
+                EntityLights::new(),
+            ),
+            (
+                42,
+                entities_delta(at(0, 0), vec![], vec![], vec![rat.entity]),
+                EntityLights::new(),
+            ),
+        ] {
+            let bytes = encode_world_spatial_entities_delta_with_fields(&update, fields, &lights)
+                .map_err(|e| format!("{e:?}"))?;
+            let frame = oteryn_protocol_oteryn::encode_state_delta(
+                1,
+                sequence,
+                1,
+                sequence - 36,
+                sequence - 35,
+                2,
+                &bytes,
+            )?;
+            session.apply_state_delta(
+                sequence,
+                oteryn_protocol_oteryn::decode_wire_envelope(&frame)?.payload(),
+            )?;
+            let entries = session.visible_appearances();
+            assert!(
+                entries
+                    .iter()
+                    .find(|e| e.entity.entity.identity == OWN)
+                    .ok_or("own")?
+                    .light
+                    .is_none()
+            );
+            if sequence == 41 {
+                assert_eq!(
+                    entries
+                        .iter()
+                        .find(|e| e.entity.entity == rat.entity)
+                        .ok_or("rat")?
+                        .light,
+                    Some((light.level, light.color))
+                );
+            } else {
+                assert_eq!(entries.len(), 1);
+            }
+        }
+        drop(session);
+        peer.await??;
+        Ok(())
+    })?
+}
+
 fn at(x: i32, y: i32) -> ActorPosition {
     ActorPosition { x, y, floor: 0 }
 }

@@ -85,6 +85,7 @@ fn live_names_reach_scene_and_disappear_with_visibility() -> Result<(), BatchErr
         },
     };
     view.set_presentations(vec![oteryn_session::VisibleAppearance {
+        light: None,
         entity,
         look: None,
     }])?;
@@ -99,6 +100,7 @@ fn own_identity_draws_once_between_step_and_appearance_publish() -> Result<(), B
     let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
     view.set_own_identity([1; 16]);
     let own = oteryn_session::VisibleAppearance {
+        light: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: None,
             kind: oteryn_session::EntityKind::Player,
@@ -154,7 +156,11 @@ fn live_presentations_keep_target_clock_and_light_through_rebuilds() -> Result<(
             identity: [8; 16],
             generation: 1,
         },
-        position: ActorPosition { x: 101, y: 200, floor: 0 },
+        position: ActorPosition {
+            x: 101,
+            y: 200,
+            floor: 0,
+        },
         detail: oteryn_session::EntityDetail::Actor {
             direction: StepDirection::South,
             appearance_ref: 1,
@@ -165,7 +171,11 @@ fn live_presentations_keep_target_clock_and_light_through_rebuilds() -> Result<(
     view.click(TileCoord::new(101, 200))?;
     let selected = view.scene().target();
     assert!(selected.is_some());
-    let appearance = oteryn_session::VisibleAppearance { entity, look: None };
+    let appearance = oteryn_session::VisibleAppearance {
+        light: None,
+        entity,
+        look: None,
+    };
     view.apply_pushed(&Pushed {
         appearances: Some(vec![appearance.clone()]),
         world_clock: Some(oteryn_session::world_clock::WorldClock {
@@ -175,16 +185,16 @@ fn live_presentations_keep_target_clock_and_light_through_rebuilds() -> Result<(
         }),
         ..Pushed::default()
     })?;
-    let lit = view.scene().atlas().clone();
+    let lit = view.scene().sprites().lighting.clone();
     let mut unlit = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
     unlit.set_presentations(vec![appearance])?;
-    assert_eq!(lit.cell_count(), unlit.scene().atlas().cell_count());
-    assert_ne!(lit.rgba(), unlit.scene().atlas().rgba());
+    assert_eq!(lit.ambient, [128, 0, 0]);
+    assert_ne!(lit, unlit.scene().sprites().lighting);
     assert_eq!(view.scene().name_count(), 1);
     assert!(view.hud_status().contains("23:59"));
     assert_eq!(view.scene().target(), selected);
     view.apply_pushed(&Pushed::default())?;
-    assert_eq!(view.scene().atlas(), &lit);
+    assert_eq!(view.scene().sprites().lighting, lit);
     assert_eq!(view.scene().target(), selected);
     Ok(())
 }

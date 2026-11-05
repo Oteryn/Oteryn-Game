@@ -2,6 +2,34 @@ use super::*;
 use oteryn_session::ActorVitals;
 
 #[test]
+fn clxa_soul_and_monk_vitals_reach_native_hud() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = play_channel();
+    let mut view = view()?;
+    for (vitals, expected) in [
+        (
+            ActorVitals {
+                soul: 100,
+                harmony: 5,
+                serene: true,
+                ..Default::default()
+            },
+            ["Soul: 100", "Harmony: 5/5", "Serene: active"],
+        ),
+        (
+            ActorVitals::default(),
+            ["Soul: 0", "Harmony: 0/5", "Serene: inactive"],
+        ),
+    ] {
+        outbox.vitals(Some(vitals));
+        view.tick(&link).map_err(|_| "tick")?;
+        for text in expected {
+            assert!(view.hud_status().contains(text), "{}", view.hud_status());
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn vitals_reach_the_play_projection_and_a_new_connection_starts_empty() -> Result<(), BatchError> {
     let (link, _commands, outbox) = play_channel();
     let mut view = view()?;

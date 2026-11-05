@@ -94,7 +94,7 @@ impl<S: SessionStream> Session<S> {
                 )?;
                 let fields =
                     world_spatial_entities::EntityFields::selected(self.selected_capabilities());
-                let (entities_delta, _) =
+                let (entities_delta, lights) =
                     world_spatial_entities::decode_world_spatial_entities_delta_with_fields(
                         delta.payload,
                         fields,
@@ -103,7 +103,7 @@ impl<S: SessionStream> Session<S> {
                     return Err(SessionError::ContentGenerationMismatch { domain_id });
                 }
                 let next = match &self.entities {
-                    Some(stored) => stored.after(&entities_delta)?,
+                    Some(stored) => stored.after(&entities_delta, &lights)?,
                     None => {
                         return Err(SessionError::UnselectedDomain { domain_id });
                     }
