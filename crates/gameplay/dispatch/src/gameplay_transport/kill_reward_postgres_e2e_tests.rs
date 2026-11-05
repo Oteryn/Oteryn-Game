@@ -523,6 +523,7 @@ fn scenario_with_creature_observed(
                         channel,
                         spawn: "boss_spawn1_fixture:0".into(),
                     },
+                    runtime.boss_spawns()[0].creature.clone(),
                     runtime.binding().scope_generation(),
                     policy,
                 )

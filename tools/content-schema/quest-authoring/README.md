@@ -380,3 +380,29 @@ NPC Source joins include direct function-local Storage aliases with declaration,
 scope, shadowing and assignment checks. Comparisons retain Lua errors, coercion and
 metamethod semantics without evaluating variable values. Additional associations
 follow exact caller/registration witnesses and retain shared ownership.
+
+Quest Item name enrichment is part of `quest_tree_authoring.py content`.
+`quest_item_keys.py` indexes only KNOWN Item presentation names, by exact
+case-insensitive equality, against `content/items/definitions/items-*.json`.
+Multiple definitions remain ambiguous even when their names differ only by case.
+The existing target string arrays stay intact; item/collect/use/use-with-item/
+deliver/delivery stages gain an ordered `target_items` array with `name` and
+an optional `item: {family, key, revision}`. Item reward intents gain `item`
+beside `name`. Missing matches carry `item_resolution`; only the explicit
+non-item classification `dead trees` receives `not_an_item`. Other missing
+matches remain `unresolved`, including objects in mixed `use` stages.
+Kill, talk, explore and completion stages and non-item rewards stay intact.
+
+`content/quests/item-key-resolution.json` counts occurrences and lists all
+unresolved, ambiguous and non-item names with occurrence counts and candidate
+keys. Counts cover canonical recipes plus the extra item actions introduced only
+by the reviewed candidate terminal normalization; repeated candidate copies are
+not counted again. It is a diagnostic artifact, outside the managed runtime manifest.
+The final tree validator adds the optional fields using
+`quest_item_keys.schema.json`; the reviewed SOURCE completion schema and
+SOURCE snapshots stay intact. Present canonical Item references are validated
+against catalogue identities (including revision). Donor references in SOURCE
+evidence retain their original identities; this projection does not admit
+native triggers or reward delivery. Regenerate with the tree command above;
+check reproducibility with `--check`. Resolver tests run with
+`python -m unittest discover -s . -p test_quest_item_keys.py`.

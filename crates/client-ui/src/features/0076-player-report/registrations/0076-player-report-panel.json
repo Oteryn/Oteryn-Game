@@ -1,0 +1,7 @@
+{
+  "mechanic": "0076-player-report",
+  "kind": "panels",
+  "id": "0076-player-report-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

@@ -7,6 +7,7 @@
 // only that owner-to-owner delegation is admitted outside the revision slot.
 #[rustfmt::skip]
 const SEQUENCED_WRITERS: &[(&str, &str)] = &[
+    (".commit_arena_match(", "durability/character_revision_sequencer/arena_match.rs"),
     (".commit_bestiary_kill(", "durability/character_revision_sequencer.rs"),
     (".commit_bestiary_kill_with_talisman(", "durability/character_revision_sequencer.rs|durability/bestiary_progress.rs"),
     (".commit_character_atelier(", "durability/character_revision_sequencer/atelier.rs"),
@@ -40,6 +41,8 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
 // Forge's fee cause retains CharacterRevision and shares its native item transaction.
 // WB2 boss-slot fees also retain CharacterRevision inside their fenced slot transaction.
 const FEE_WRITERS: &[&str] = &[
+    // Arena entry burns its fee inside the sequenced match transaction.
+    "durability/arena_match.rs",
     "durability/bosstiary/slots.rs",
     "durability/character_atelier/actions.rs",
     "durability/character_cyclopedia.rs",

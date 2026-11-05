@@ -20,6 +20,9 @@ pub async fn run_session<T: Stepper>(
     outbox: Outbox,
 ) {
     outbox.discovery_initialize(&session);
+    outbox.properties_initialize(&session);
+    outbox.appearance_initialize(&session);
+    outbox.pvp_expert_initialize(&session);
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
     outbox.targeting_initialize(session.feature_selected(15));
@@ -87,7 +90,11 @@ pub async fn run_session<T: Stepper>(
                 Ok(result) => {
                     match command.capability {
                         14 => outbox.player_trade_container_result(&result),
+                        25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
+                        54 | 55 | 115 | 150 => outbox.properties_result(&command, &result),
+                        97 | 149 => outbox.properties_result(&command, &result),
+                        76 | 103 | 146 => outbox.properties_result(&command, &result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
                         195 => outbox.weapon_proficiency_result(&result),

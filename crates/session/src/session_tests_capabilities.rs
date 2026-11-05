@@ -103,7 +103,7 @@ fn prey_native_capability_routes_tier_and_confirmed_pick_and_refuses_without_sel
 
 #[test]
 fn derived_gated_routes_match_previous_table() {
-    // Former GATED_ROUTES contents plus the PKG5 hotkey command and carried extension.
+    // Former routes plus PKG5 hotkeys and CP01 property/service commands.
     // Compare sets because
     // the protocol registry generates its entries in capability order.
     let expected: &[(u32, &[u32], &[u32])] = &[
@@ -113,19 +113,28 @@ fn derived_gated_routes_match_previous_table() {
         (42, &[45, 46], &[]),
         (43, &[48, 49, 50], &[]),
         (53, &[64], &[]),
+        (54, &[66, 67], &[]),
+        (55, &[68, 69], &[]),
         (60, &[78], &[26]),
         (62, &[79], &[27]),
         (63, &[80], &[28]),
         (64, &[81], &[]),
+        // P-C01 already enables charm progression and PvP expert; preserve that exact table.
+        (67, &[84], &[]),
+        (87, &[103], &[52]),
         (68, &[85], &[]),
         (72, &[89], &[]),
         (75, &[], &[40]),
         (81, &[97], &[]),
+        // P-C03 routes the existing character-info and raid-schedule commands.
+        (97, &[113], &[]),
+        (149, &[171, 172, 173], &[]),
         (98, &[114], &[63]),
         (132, &[153], &[97]),
         (200, &[390, 391], &[]),
         (232, &[444, 445, 446], &[]),
         (285, &[501], &[]),
+        (115, &[124], &[]),
         // C49: the boss status panel uses the registry-owned capability 117 route.
         (117, &[133, 169, 178, 179, 180, 340, 491], &[99]),
         (140, &[160], &[]),
@@ -153,6 +162,7 @@ fn derived_gated_routes_match_previous_table() {
         (147, &[170], &[]),
         // Wheel and Atelier are playable through the selected capability 148.
         (148, &[161, 308, 309, 424], &[]),
+        (150, &[174, 175, 176], &[]),
         // Live balances use their own selected capability without changing Atelier V1.
         (272, &[484], &[]),
         // pkg4 additions: raid server messages arrive on domain 57 under 92 zones_nologout;
@@ -171,6 +181,10 @@ fn derived_gated_routes_match_previous_table() {
         (225, &[431], &[]),
         (230, &[440], &[]),
         (233, &[447], &[]),
+        // P-C01: native Bestiary/Charms (command 84) and PvP expert (command 103,
+        // confirmed-mode domain 52) panels use their existing gated routes.
+        (67, &[84], &[]),
+        (87, &[103], &[52]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();

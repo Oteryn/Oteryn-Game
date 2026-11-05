@@ -142,6 +142,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.character,
                     self.holder,
                     key,
+                    spawn.creature.clone(),
                     binding.scope_generation(),
                     spawn.policy,
                 )

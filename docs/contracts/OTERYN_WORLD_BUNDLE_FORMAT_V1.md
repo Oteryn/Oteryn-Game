@@ -597,7 +597,7 @@ Runtime compatibility 3 extends the spawn point's previously invalid zero `respa
 Ordinary points retain the exact existing bytes and positive RL-13 delay. A boss point writes
 zero followed by a policy tag byte: 1 followed by `min_s`, `max_s` canonical varints; or 2
 followed by chance numerator and denominator canonical varints. Seconds must be positive,
-ordered and representable as signed database milliseconds. Chance is an exact ratio in (0,1],
+ordered and representable as signed database milliseconds. Chance is an exact ratio in [0,1],
 with denominator at most `i64::MAX`. Unknown tags and invalid ranges fail closed. Bosses do
 not have an ordinary respawn delay. Old readers reject the zero delay rather than realizing a
 boss as an ordinary creature; the bundle identity requires runtime compatibility 3.
@@ -609,6 +609,20 @@ for a boss. A policy on an ordinary or encounter-bound creature is invalid. Lega
 without policy are retained as held evidence outside active spawn shards; an active boss point
 without policy fails compilation.
 Scheduling provenance lives on the source declaration, outside the runtime payload.
+
+The BOSS-SPAWN-1 owner decision (2026-11-05) qualifies held open-world points with
+one deterministic roll per `(WorldId, reset_epoch, spawn key)`. The existing Channel
+clock still fences realization and death. Migration 0955 retains each World's
+outcomes and serializes live claims by creature key across Channels and fixed
+points. A live boss from an earlier epoch is recovered rather than replaced;
+that epoch's blocked outcome cannot activate later after its death. Encounter and
+quest room points remain held. A quest association alone does not turn an open
+world miniboss into an encounter. Missing pinned chances use the owner's 1/50
+default with `CHOSEN_OTERYN_APPROXIMATION` provenance.
+
+`spawned_bosses_for_epoch` is a read-only Game projection of committed spawn
+claims, including bosses subsequently killed. Occupancy may delay realization of
+a committed claim. It adds no wire payload or Platform authority.
 
 ## 16. Format v6 (C20d-W23)
 

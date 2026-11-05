@@ -233,6 +233,7 @@ impl SnapshotState {
         weather::validate_join(selected_capabilities, &state.gated_snapshots)?;
         quest_log_transport::validate_join(selected_capabilities, &state.gated_snapshots)?;
         tutorial_notices::validate_join(selected_capabilities, &state.gated_snapshots)?;
+        pvp_expert::validate_join(selected_capabilities, &state.gated_snapshots)?;
         world_light::validate_join(selected_capabilities, &state.gated_snapshots)?;
         presentation::validate_join(selected_capabilities, &state.gated_snapshots)?;
         server_save_countdown::validate_join(selected_capabilities, &state.gated_snapshots)?;

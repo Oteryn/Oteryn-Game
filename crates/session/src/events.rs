@@ -21,6 +21,7 @@ pub enum SessionEvent {
     /// Domain 16: the requested view and tracked lines, replaced whole.
     QuestLog(AppliedDelta<quest_log::QuestLog>),
     Appearance(AppliedDelta<AppearanceUpdate>),
+    ExpertFightModes(AppliedDelta<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes>),
     ServerSaveCountdown(AppliedDelta<ServerSaveCountdown>),
     TutorialNotice(AppliedDelta<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice>),
     /// Domain 13: a newly earned account achievement; a duplicate grant produces no delta.
@@ -75,6 +76,7 @@ impl SessionEvent {
             Self::NpcConversation(_) => npc_service::STATE_DOMAIN_NPC_CONVERSATION,
             Self::NpcTradeWindow(_) => npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW,
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
+            Self::ExpertFightModes(_) => oteryn_protocol_oteryn::pvp_expert::STATE_DOMAIN_EXPERT_FIGHT_MODES,
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
             Self::TutorialNotice(_) => 23,
             Self::WorldClock(_) => 18,

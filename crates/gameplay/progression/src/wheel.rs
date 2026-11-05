@@ -274,6 +274,9 @@ impl WheelRuleset {
 
     /// The allocation rules of a change from `before` to `after` (§4 "Validation", WHEEL0-PT-1),
     /// for an eligible Character with `available` points. The first failing rule is returned.
+    /// `at_temple` retains its compatibility name but means removal is permitted by the
+    /// runtime's logout combat-lock/PZ rule (Oteryn owner decision, 2026-11-05),
+    /// diverging from Crystal player_wheel.cpp:2151's temple requirement.
     pub fn validate(
         &self,
         before: &WheelSlots,
@@ -287,6 +290,7 @@ impl WheelRuleset {
     /// Crystal player_wheel.cpp:360 uses getWheelPoints for ring thresholds, while
     /// :881-894 adds Grade-IV modifiers only to the spendable budget. Quest/scroll
     /// points may unlock a ring; shared modifier grades never unlock it early.
+    /// `at_temple` carries the runtime's removal permission, as in [`Self::validate`].
     pub fn validate_with_unlock_points(
         &self,
         before: &WheelSlots,
@@ -599,6 +603,7 @@ pub enum WheelRefusal {
     OverCapacity,
     OverPoints,
     NotAdjacent,
+    /// Compatibility name for removal refused by the runtime combat-lock/PZ rule.
     RemovalNotAtTemple,
     RulesetNotCurrent,
     StaleRevision,

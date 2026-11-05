@@ -307,6 +307,15 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
             }),
         ),
         (
+            17,
+            "ArenaEntry",
+            FeeBurnCauseV1::ArenaEntry(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "oteryn:service.svargrond-arena.entry".into(),
+                occurrence: vec![0x81, 0x07],
+            }),
+        ),
+        (
             472,
             "HirelingService",
             FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 {
@@ -361,6 +370,7 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("MarketFee", "32080a02810712020809"),
         ("Imbuement", "3a070a028107208101"),
         ("NpcTravel", "420c0a0674726176656c12028107"),
+        ("ArenaEntry", "8a012a0a246f746572796e3a736572766963652e7376617267726f6e642d6172656e612e656e74727912028107"),
         // E12 adds reserved cause472; every earlier codec golden remains unchanged.
         ("HirelingService", "c21d360a226f746572796e3a736572766963652e686972656c696e672e666f6f642e3239343039121000000000000070008000000000000007"),
         ("EventId", "0a028107"),

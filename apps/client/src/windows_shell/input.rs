@@ -59,6 +59,18 @@ impl Application {
                 || play.link.market_input(events)
                 || play.link.depot_input(events)
                 || play.link.depot_search_input(events)
+                || play.link.mail_input(events)
+                || play.link.house_podium_input(events)
+                || play.link.appearance_input(events)
+                || play.link.charm_progression_input(events)
+                || play.link.pvp_expert_input(events)
+                || play.link.training_input(events)
+                || play.link.guild_bank_input(events)
+                || play.link.character_info_input(events)
+                || play.link.raid_schedule_input(events)
+                || play.link.container_sort_input(events)
+                || play.link.guild_war_input(events)
+                || play.link.player_report_input(events)
                 || play.link.hireling_input(events)
                 || play.link.hotkey_equip_input(events)
                 || play.link.item_forge_input(events)
@@ -88,7 +100,7 @@ impl Application {
                 }
                 if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
                     if click.secondary {
-                        oteryn_client::play::open_context_menu(&play.view, &play.link, tile);
+                        play.view.properties_context_menu(&play.link, tile);
                         self.actions.context_closed();
                     } else {
                         render_failed |= play.view.primary_click(tile, &play.link).is_err();

@@ -31,6 +31,7 @@ mod entities;
 mod error;
 mod events;
 mod framing;
+mod pvp_expert;
 pub use events::SessionEvent;
 mod gated_command;
 pub use gated_command::world_context;
@@ -399,6 +400,8 @@ pub use oteryn_protocol_oteryn::task_board;
 /// Server-owned stash wire types exposed to client feature adapters.
 pub use oteryn_protocol_oteryn::stash;
 
+/// Existing property and services command codecs for native feature adapters.
+pub mod property_services;
 pub use entities::WorldEntities;
 pub use error::SessionError;
 use framing::*;

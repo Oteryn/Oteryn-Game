@@ -202,6 +202,17 @@ does not run.
 
 ## 5. Open-world boss spawns (BOSS-1)
 
+**Owner amendment, BOSS-SPAWN-1 (2026-11-05):** world boss points roll once per
+World reset epoch, deterministically from World, epoch and spawn key, with durable
+outcomes. At most one live instance of a boss exists per World, across Channels
+and points. An earlier epoch's live boss survives and is recovered after a crash;
+it is not overwritten by the new epoch. An outcome blocked by that live boss
+remains blocked for its epoch. This supersedes the per-Channel reset draws and
+ALIVE-overwrite rule below. Channel clocks retain their actor generation, death
+and recovery fences. Encounter/quest rooms remain outside world scheduling. The
+implementation storage/projection contract is in
+`docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`, *Boss scheduling payload*.
+
 - A spawn whose creature has a `bosstiary` block or `reward_boss` is a **boss spawn**. Its content
   gives `respawn {min_s, max_s}` or `at_reset {chance}`.
 - `game_boss_spawn_clocks`: (World, ChannelId, spawn key) with `cycle`, state `DUE`, `ALIVE` or `INACTIVE`,
