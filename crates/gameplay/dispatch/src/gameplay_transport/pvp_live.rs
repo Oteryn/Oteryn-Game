@@ -108,6 +108,9 @@ async fn legal_player_at(
     field_destination: Option<crate::foundation::MovementLocalPosition>,
 ) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
     let reject = || SpellCastDisposition::TargetIllegal;
+    if runtime.is_tibiadrome(actor) || runtime.is_tibiadrome(target) {
+        return Err(reject());
+    }
     let source = states
         .get(runtime, actor, authority.game_session_id())
         .ok_or_else(reject)?;

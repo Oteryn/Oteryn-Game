@@ -52,6 +52,7 @@ pub mod drome_cube;
 pub mod gourmet;
 pub mod condition_potions;
 pub mod fluid;
+mod tibiadrome;
 pub mod mining;
 pub mod mount_taming;
 pub mod novelty_appearance;
@@ -459,6 +460,9 @@ impl DurabilityRoot {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
+                    if let Some(outcome)=tibiadrome::replay(&mut tx,&fence,&request).await.map_err(|_|DurabilityError::InvalidStoredState)? {
+                        tx.commit(deadline).await?;return Ok(Ok(outcome));
+                    }
                     match replay(&mut tx, &fence, &request).await {
                         Ok(Some(outcome)) => {
                             tx.commit(deadline).await?;
@@ -505,6 +509,9 @@ impl DurabilityRoot {
                         }
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
                         Err(_) => return Ok(Err(ItemUseError::AuthorityRejected.into())),
+                    }
+                    if let Some(outcome)=tibiadrome::preserve(&mut tx,&fence,&request).await.map_err(|_|DurabilityError::InvalidStoredState)? {
+                        tx.commit(deadline).await?;return Ok(Ok(outcome));
                     }
                     let tuple = tx.tuple();
                     if let ItemUseKind::PickRefine { .. } = request.kind {

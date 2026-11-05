@@ -33,6 +33,7 @@ macro_rules! test_support_pub {
 pub mod activity_transfer;
 mod actor_memos;
 mod arena_match;
+mod tibiadrome;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]

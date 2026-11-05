@@ -456,6 +456,9 @@ fn target_facts(
             target_reentry_protected: false,
         });
     }
+    if runtime.is_tibiadrome(attacker) != runtime.is_tibiadrome(target) {
+        return Some(absent);
+    }
     if !runtime.contains_live_creature(target) {
         return Some(absent);
     }

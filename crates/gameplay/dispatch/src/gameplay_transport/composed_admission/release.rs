@@ -140,6 +140,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return ReleaseAttempt::Done(GraceExpiryResult::NotApplicable);
         }
         let session = admitted.game_session_id;
+        if !self.drome_sync(session, true).await {
+            return ReleaseAttempt::Retry;
+        }
         let account_id = canonical_uuid(&account);
         if !self
             .settle_released_death(actor, session, settled_death)

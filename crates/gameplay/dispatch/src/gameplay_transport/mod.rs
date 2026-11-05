@@ -182,6 +182,7 @@ mod tcp_tls;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests;
+mod tibiadrome;
 mod timed_item;
 mod timed_item_clock;
 mod timed_item_content;

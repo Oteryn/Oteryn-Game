@@ -8,7 +8,7 @@ use crate::gameplay_transport::connection::{
 };
 use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction as A, ArenaDisposition as D};
 #[path = "arena_match/fixture.rs"]
-mod fixture;
+pub(super) mod fixture;
 
 #[test]
 fn arena_match_real_connection_status_and_full_match() -> TestResult {

@@ -89,6 +89,7 @@ pub struct ChannelSessionStates {
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
+    pub(super) tibiadrome: super::tibiadrome::Drome,
     pub(super) timed_items: super::timed_item::TimedRuntime,
     /// PAR-P12a: Characters whose level, tracked kill or boss kill may have changed a title
     /// predicate; refreshed on the actor's cadence like `level_refresh`. A leaf lock.

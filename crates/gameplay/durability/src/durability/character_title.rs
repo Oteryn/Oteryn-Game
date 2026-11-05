@@ -134,7 +134,13 @@ async fn read_title_facts(
         Some(source) => source.read(tx, character).await?,
         None => enhancements::Facts::default(),
     };
+    let rotation = now_unix_ms / 1000 / i64::from(super::tibiadrome::ROTATION_SECONDS);
+    super::tibiadrome::publish(tx,character,u32::try_from(rotation).map_err(|_|super::DurabilityError::InvalidStoredState)?).await?;
+    let drome_champion: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_tibiadrome_awards WHERE character_id=encode($1,'hex')::uuid AND rotation=$2 AND rank<=5)")
+        .bind(character.as_bytes().as_slice()).bind(rotation-1).fetch_one(&mut **tx).await?;
     Ok(TitleFacts {
+        drome_rota_top_five: drome_champion,
+        next_rotation_unix_ms: drome_champion.then_some((rotation+1)*i64::from(super::tibiadrome::ROTATION_SECONDS)*1000),
         monk_pilgrimage: row.try_get("monk_pilgrimage")?,
         weapon_mastery: enhancements.weapon_mastery,
         all_grade_three_mods: enhancements.all_grade_three_mods,

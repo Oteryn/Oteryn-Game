@@ -6,7 +6,7 @@ use crate::durability::arena_match::donor;
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
-pub(super) fn bundle(
+pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
@@ -74,7 +74,7 @@ pub(super) fn bundle(
     Ok((bytes, pins))
 }
 
-pub(super) fn runtime(
+pub(in super::super) fn runtime(
     deps: &mut Dependencies,
     active: &crate::content::ActiveGeneration,
     pin: &crate::content::NativeEntryContentPin,
@@ -147,7 +147,7 @@ pub(super) fn runtime(
     Ok(())
 }
 
-pub(super) async fn equip_sword(h: &super::Harness) -> TestResult {
+pub(in super::super) async fn equip_sword(h: &super::Harness) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -160,7 +160,7 @@ pub(super) async fn equip_sword(h: &super::Harness) -> TestResult {
     Ok(())
 }
 
-pub(super) async fn fight(
+pub(in super::super) async fn fight(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     actor: crate::foundation::ExactActorRef,
@@ -231,7 +231,7 @@ pub(super) async fn fight(
     Err("arena opponent survived 512 normal attack turns".into())
 }
 
-pub(super) async fn train_character(
+pub(in super::super) async fn train_character(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,
 ) -> TestResult {
