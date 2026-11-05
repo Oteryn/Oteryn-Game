@@ -4150,14 +4150,14 @@ mod pass_two_tests {
     }
     #[test]
     fn material_oracle_requires_exact_native_custody_decrements() -> TestResult {
-        let definitions=crate::content::item_ref::ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i1","definition-r1"]]}"#)?;
+        let definitions=crate::content::item_ref::ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i70001","definition-r1"]]}"#)?;
         let before = BTreeMap::from([(1, 25)]);
         assert!(
             verify_recipe_consumption(
                 &definitions,
                 &before,
                 &BTreeMap::from([(1, 5)]),
-                &[("oteryn:item.tibia.i1", 20)]
+                &[("oteryn:item.tibia.i70001", 20)]
             )
             .is_ok()
         );
@@ -4167,7 +4167,7 @@ mod pass_two_tests {
                     &definitions,
                     &before,
                     &BTreeMap::from([(1, quantity)]),
-                    &[("oteryn:item.tibia.i1", 20)]
+                    &[("oteryn:item.tibia.i70001", 20)]
                 )
                 .is_err()
             );
@@ -4177,7 +4177,7 @@ mod pass_two_tests {
                 &definitions,
                 &before,
                 &BTreeMap::new(),
-                &[("oteryn:item.tibia.i2", 20)]
+                &[("oteryn:item.tibia.i70002", 20)]
             )
             .is_err()
         );
