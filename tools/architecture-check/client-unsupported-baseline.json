@@ -14,10 +14,8 @@
   "0030-world-spatial-fields",
   "0032-daily-reward",
   "0033-spectate",
-  "0039-timed-item",
   "0049-house",
   "0051-staff",
-  "0057-cyclopedia-map",
   "0061-item-stack-count",
   "0066-refusal-detail",
   "0082-creature-push",
@@ -27,6 +25,5 @@
   "0093-subarea",
   "0104-forge-creature",
   "0117-boss-encounter",
-  "0134-party-skull",
   "0149-raid-schedule"
 ]

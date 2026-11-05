@@ -10,7 +10,9 @@ pub(in crate::play) struct Panels {
     pub character_info: oteryn_client_ui::character_info::Panel,
     pub raid_schedule: oteryn_client_ui::raid_schedule::Panel,
     pub container_sort: oteryn_client_ui::container_sort::Panel,
+    pub cyclopedia_map: oteryn_client_ui::cyclopedia_map::Panel,
     pub guild_war: oteryn_client_ui::guild_war::Panel,
+    pub party_skull: oteryn_client_ui::party_skull::Panel,
     pub guildhall: oteryn_client_ui::guildhall::Panel,
     pub house_move_out: oteryn_client_ui::house_move_out::Panel,
     pub house_transfer: oteryn_client_ui::house_transfer::Panel,
@@ -18,11 +20,24 @@ pub(in crate::play) struct Panels {
     pub pvp_expert: oteryn_client_ui::pvp_expert::Panel,
     pub mail: Panel,
     pub house_podium: oteryn_client_ui::house_podium::Panel,
+    pub timed_item: oteryn_client_ui::timed_item::Panel,
     pub training: oteryn_client_ui::training::Panel,
     pub guild_bank: oteryn_client_ui::guild_bank::Panel,
 }
 impl Panels {
     pub fn end(&mut self) {
+        self.party_skull = oteryn_client_ui::party_skull::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.cyclopedia_map = oteryn_client_ui::cyclopedia_map::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.timed_item = oteryn_client_ui::timed_item::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
         self.raid_schedule = oteryn_client_ui::raid_schedule::Panel {
             feedback: "The session has ended".into(),
             ..Default::default()
@@ -102,6 +117,18 @@ impl Panels {
 impl Outbox {
     pub(in crate::play) fn properties_initialize<T: Stepper>(&self, session: &T) {
         let mut shared = lock(&self.0);
+        shared.properties.party_skull = oteryn_client_ui::party_skull::Panel {
+            selected: session.feature_selected(134),
+            ..Default::default()
+        };
+        shared.properties.cyclopedia_map = oteryn_client_ui::cyclopedia_map::Panel {
+            selected: session.feature_selected(57),
+            ..Default::default()
+        };
+        shared.properties.timed_item = oteryn_client_ui::timed_item::Panel {
+            selected: session.feature_selected(39),
+            ..Default::default()
+        };
         shared.properties.character_info = oteryn_client_ui::character_info::Panel {
             selected: session.feature_selected(97),
             ..Default::default()
@@ -163,6 +190,11 @@ impl Outbox {
                 command,
                 result,
             ),
+            39 => super::super::feature_0039_timed_item::protocol::apply(
+                &mut shared.properties.timed_item,
+                command,
+                result,
+            ),
             54 => super::super::feature_0054_training::protocol::apply(
                 &mut shared.properties.training,
                 command,
@@ -170,6 +202,11 @@ impl Outbox {
             ),
             55 => super::super::feature_0055_guild_bank::protocol::apply(
                 &mut shared.properties.guild_bank,
+                command,
+                result,
+            ),
+            57 => super::super::feature_0057_cyclopedia_map::protocol::apply(
+                &mut shared.properties.cyclopedia_map,
                 command,
                 result,
             ),
@@ -214,6 +251,11 @@ impl Outbox {
                 result,
             ),
             115 => apply(&mut shared.properties.mail, command, result),
+            134 => super::super::feature_0134_party_skull::protocol::apply(
+                &mut shared.properties.party_skull,
+                command,
+                result,
+            ),
             146 => super::super::feature_0146_container_sort::protocol::apply(
                 &mut shared.properties.container_sort,
                 command,

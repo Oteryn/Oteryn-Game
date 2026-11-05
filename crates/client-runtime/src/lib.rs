@@ -23,6 +23,8 @@ pub mod item_use;
 pub mod character_info_panel;
 #[path = "features/0146-container-sort/protocol.rs"]
 pub mod container_sort;
+#[path = "features/0057-cyclopedia-map/protocol.rs"]
+pub mod cyclopedia_map;
 #[path = "features/0103-guild-war/protocol.rs"]
 pub mod guild_war;
 #[path = "features/0099-guildhall/protocol.rs"]
@@ -31,8 +33,12 @@ pub mod guildhall;
 pub mod house_move_out;
 #[path = "features/0086-house-transfer/protocol.rs"]
 pub mod house_transfer;
+#[path = "features/0134-party-skull/protocol.rs"]
+pub mod party_skull;
 #[path = "features/0076-player-report/protocol.rs"]
 pub mod player_report;
+#[path = "features/0039-timed-item/protocol.rs"]
+pub mod timed_item;
 
 pub mod connection;
 #[path = "features/0037-depot/protocol.rs"]

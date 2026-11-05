@@ -98,3 +98,7 @@ pub fn training_result(bytes: &[u8]) -> Option<loop_training::TrainingResult> {
 #[path = "features/0097-character-info/protocol.rs"]
 pub mod character_info;
 pub use oteryn_protocol_oteryn::raid_schedule;
+
+pub use oteryn_protocol_oteryn::{party_skull, timed_item};
+#[path = "features/0057-cyclopedia-map/protocol.rs"]
+pub mod cyclopedia_map;

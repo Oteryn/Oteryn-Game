@@ -118,6 +118,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // C78 adds 8 (live achievement notices).
     // C89 adds server-save countdown notices (75, domain 40).
     // P-C01 already advertises 67 (charm progression) and 87 (PvP expert).
+    // P-C06 adds 39, 57 and 134; their prerequisites 4, 6 and 42 are already advertised.
     // P-C03 adds 97 (character info) and 149 (raid schedule query).
     // P-C04 adds 59 (house move-out), 86 (house transfer) and 99 (guildhall).
     // CP01 adds 54, 55, 115, 150 and the podium prerequisite 49.
@@ -137,8 +138,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
         CLIENT_SUPPORTED_CAPABILITIES,
         &[
             3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 28, 30, 31,
-            36, 37, 40, 42, 43, 49, 51, 53, 54, 55, 59, 60, 61, 62, 63, 64, 66, 67, 68, 72, 75, 80, 81, 86, 87, 91,
-            92, 97, 98, 99, 115, 117, 132, 140, 147, 148, 149, 150, 151, 152, 153, 154, 165, 168, 179, 182, 200,
+            36, 37, 39, 40, 42, 43, 49, 51, 53, 54, 55, 57, 59, 60, 61, 62, 63, 64, 66, 67, 68, 72, 75, 80, 81, 86, 87, 91, 92, 97, 98, 99, 115, 117, 132, 134, 140, 147, 148, 149, 150, 151, 152, 153, 154, 165, 168, 179, 182, 200,
             224, 230, 232, 233, 240, 258, 259, 272, 274, 275, 285, 286
         ]
     );

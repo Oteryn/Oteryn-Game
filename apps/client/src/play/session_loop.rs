@@ -93,6 +93,7 @@ pub async fn run_session<T: Stepper>(
                         25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
                         54 | 55 | 115 | 150 => outbox.properties_result(&command, &result),
+                        39 | 57 | 134 => outbox.properties_result(&command, &result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
                         76 | 103 | 146 => outbox.properties_result(&command, &result),
