@@ -31,6 +31,7 @@ mod entities;
 mod error;
 mod events;
 mod framing;
+mod pvp_expert;
 pub use events::SessionEvent;
 mod gated_command;
 pub use gated_command::world_context;

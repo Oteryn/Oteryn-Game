@@ -5,6 +5,9 @@ use oteryn_session::property_services::mail::{self, MailIntent};
 
 #[derive(Debug, Default)]
 pub(in crate::play) struct Panels {
+    pub appearance: oteryn_client_ui::appearance::Panel,
+    pub charm_progression: oteryn_client_ui::charm_progression::Panel,
+    pub pvp_expert: oteryn_client_ui::pvp_expert::Panel,
     pub mail: Panel,
     pub house_podium: oteryn_client_ui::house_podium::Panel,
     pub training: oteryn_client_ui::training::Panel,
@@ -38,6 +41,18 @@ impl Panels {
             *pending = false;
             *feedback = "The session has ended".into();
         }
+        self.appearance = oteryn_client_ui::appearance::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.charm_progression = oteryn_client_ui::charm_progression::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.pvp_expert = oteryn_client_ui::pvp_expert::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
         self.mail.selected = false;
         self.house_podium.selected = false;
         self.training.selected = false;
@@ -47,6 +62,18 @@ impl Panels {
 impl Outbox {
     pub(in crate::play) fn properties_initialize<T: Stepper>(&self, session: &T) {
         let mut shared = lock(&self.0);
+        shared.properties.appearance = oteryn_client_ui::appearance::Panel {
+            selected: session.feature_selected(25),
+            ..Default::default()
+        };
+        shared.properties.charm_progression = oteryn_client_ui::charm_progression::Panel {
+            selected: session.feature_selected(67),
+            ..Default::default()
+        };
+        shared.properties.pvp_expert = oteryn_client_ui::pvp_expert::Panel {
+            selected: session.feature_selected(87),
+            ..Default::default()
+        };
         shared.properties.mail.selected = session.feature_selected(115);
         shared.properties.house_podium.selected = session.feature_selected(150);
         shared.properties.training.selected = session.feature_selected(54);
@@ -59,6 +86,11 @@ impl Outbox {
     ) {
         let mut shared = lock(&self.0);
         match command.capability {
+            25 => super::super::feature_0025_appearance::protocol::apply(
+                &mut shared.properties.appearance,
+                command,
+                result,
+            ),
             54 => super::super::feature_0054_training::protocol::apply(
                 &mut shared.properties.training,
                 command,
@@ -66,6 +98,16 @@ impl Outbox {
             ),
             55 => super::super::feature_0055_guild_bank::protocol::apply(
                 &mut shared.properties.guild_bank,
+                command,
+                result,
+            ),
+            67 => super::super::feature_0067_bestiary_charm_progression::protocol::apply(
+                &mut shared.properties.charm_progression,
+                command,
+                result,
+            ),
+            87 => super::super::feature_0087_pvp_expert::protocol::apply(
+                &mut shared.properties.pvp_expert,
                 command,
                 result,
             ),

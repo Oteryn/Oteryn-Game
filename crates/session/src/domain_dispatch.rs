@@ -66,6 +66,7 @@ impl<S: SessionStream> Session<S> {
                 }
                 Ok(event)
             }
+            52 => crate::pvp_expert::apply(self, server_sequence, payload),
             18 => crate::world_light::apply(self, server_sequence, payload),
             22 => crate::weather::apply(self, server_sequence, payload),
             19 | 20 => crate::presentation::apply(self, server_sequence, payload),

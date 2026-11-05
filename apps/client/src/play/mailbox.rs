@@ -249,6 +249,8 @@ impl Outbox {
 
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, events: Vec<SessionEvent>) {
+        self.appearance_events(&events);
+        self.pvp_expert_events(&events);
         self.inventory_events(&events);
         self.container_events(&events);
         let mut mailbox = lock(&self.0);

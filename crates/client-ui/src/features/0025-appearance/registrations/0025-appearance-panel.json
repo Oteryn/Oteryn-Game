@@ -1,0 +1,7 @@
+{
+  "mechanic": "0025-appearance",
+  "kind": "panels",
+  "id": "0025-appearance-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

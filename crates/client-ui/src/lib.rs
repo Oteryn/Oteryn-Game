@@ -1,11 +1,17 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+#[path = "features/0025-appearance/mod.rs"]
+pub mod appearance;
+#[path = "features/0067-bestiary-charm-progression/mod.rs"]
+pub mod charm_progression;
 #[path = "features/0055-guild-bank/mod.rs"]
 pub mod guild_bank;
 #[path = "features/0150-house-podium/mod.rs"]
 pub mod house_podium;
 #[path = "features/0115-mail/mod.rs"]
 pub mod mail;
+#[path = "features/0087-pvp-expert/mod.rs"]
+pub mod pvp_expert;
 #[path = "features/0054-training/mod.rs"]
 pub mod training;
 

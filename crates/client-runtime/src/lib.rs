@@ -209,9 +209,16 @@ pub mod cl25a_protocol {
     };
 }
 
+#[path = "features/0025-appearance/protocol.rs"]
+pub mod appearance;
+#[path = "features/0067-bestiary-charm-progression/protocol.rs"]
+pub mod charm_progression;
 /// Highscores through the admitted session command adapter.
 #[path = "features/0009-highscores/protocol.rs"]
 pub mod highscores;
+#[path = "features/0087-pvp-expert/protocol.rs"]
+pub mod pvp_expert;
+
 /// Admitted command transport for feature-local protocol adapters.
 pub mod raw_feature;
 /// Command and result vocabulary for server-owned mechanic panels.
