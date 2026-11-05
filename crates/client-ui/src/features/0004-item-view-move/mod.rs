@@ -64,3 +64,6 @@ pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
 
 #[cfg(test)]
 mod tests;
+
+#[path = "state.rs"]
+pub mod movement;

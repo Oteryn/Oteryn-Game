@@ -5,6 +5,8 @@ mod appearance_session_tests;
 mod container_tree_tests;
 #[path = "tests/depot_map_tests.rs"]
 mod depot_map_tests;
+#[path = "features/0004-item-view-move/tests.rs"]
+mod item_movement_tests;
 #[path = "quest_log_transport/tests.rs"]
 mod quest_log_tests;
 #[path = "features/0064-target-move/tests.rs"]

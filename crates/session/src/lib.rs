@@ -32,6 +32,8 @@ mod gated_command;
 pub use oteryn_protocol_oteryn::highscores;
 pub mod container_tree;
 mod hotkey_equip_transport;
+#[path = "features/0004-item-view-move/protocol.rs"]
+pub mod item_movement;
 mod join;
 mod map_transport;
 mod presentation;
@@ -1357,8 +1359,15 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(COMMAND_TYPE_ITEM_MOVE_INTENT, payload)
             .await?;
-        let outcome =
-            item_view::decode_item_move_result(&result.payload).map_err(SessionError::ItemView)?;
+        let outcome = item_view::decode_item_move_result_for(
+            self.item_result_payload(&result.payload)?.0,
+            item_view::ItemMoveSelection {
+                equip_drop: self.is_selected(12),
+                container_tree: self.is_selected(14),
+                world_interaction: self.is_selected(11),
+            },
+        )
+        .map_err(SessionError::ItemView)?;
         check_status_pairing(
             result.command_id,
             result.status,
@@ -1574,7 +1583,7 @@ impl<S: SessionStream> Session<S> {
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
         let disposition = world_spatial::decode_step_result_paced(
-            &result.payload,
+            self.item_result_payload(&result.payload)?.0,
             self.is_selected(CAPABILITY_PACED_MOVEMENT_V1),
         )?;
         check_status_pairing(
@@ -1632,8 +1641,9 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(world_object::COMMAND_TYPE_USE_INTENT, payload)
             .await?;
-        let (disposition, gate_message_id) =
-            world_object::decode_use_result_with_gate(&result.payload)?;
+        let (disposition, gate_message_id) = world_object::decode_use_result_with_gate(
+            self.item_result_payload(&result.payload)?.0,
+        )?;
         // Dispositions 11 to 17 and the gate message id exist only under capability 11, and
         // dispositions 18 and 19 only under capability 22.
         check_use_result_negotiated(

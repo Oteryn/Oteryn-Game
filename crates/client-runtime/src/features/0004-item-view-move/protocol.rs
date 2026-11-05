@@ -19,6 +19,50 @@ pub fn rows(inventory: &CharacterInventory) -> Vec<ItemEntry> {
         .collect()
 }
 
+pub use oteryn_session::item_movement::{
+    MoveRequest, MoveResponse, RefusalDetail, WorldTilePosition,
+};
+pub use oteryn_session::{ItemMoveDestination, ItemMoveOutcome};
+
+pub async fn send<S: oteryn_session::SessionStream>(
+    session: &mut oteryn_session::Session<S>,
+    request: MoveRequest,
+) -> Result<Option<MoveResponse>, oteryn_session::SessionError> {
+    if !session.is_selected(4)
+        || (request.count.is_some() && !session.is_selected(61))
+        || (matches!(request.destination, ItemMoveDestination::Container(_))
+            && !session.is_selected(14))
+        || (matches!(request.destination, ItemMoveDestination::Ground(_))
+            && !session.is_selected(12)
+            && !session.is_selected(11))
+    {
+        return Ok(None);
+    }
+    session.move_item_counted(request).await.map(Some)
+}
+pub fn feedback(response: Option<MoveResponse>) -> &'static str {
+    let Some(response) = response else {
+        return "Item movement unavailable for this session";
+    };
+    if let Some(detail) = response.detail {
+        return detail.reference_message();
+    }
+    match response.outcome {
+        ItemMoveOutcome::Moved => "Item moved",
+        ItemMoveOutcome::Stale => "Item is no longer available",
+        ItemMoveOutcome::TooFar => "Too far away",
+        ItemMoveOutcome::NoBackpack => "No backpack",
+        ItemMoveOutcome::NoRoom => "There is not enough room",
+        ItemMoveOutcome::NotOwner => "You do not own this item",
+        ItemMoveOutcome::NotPickupable => "You cannot take this object",
+        ItemMoveOutcome::NotSupported => "This item cannot be moved there",
+        ItemMoveOutcome::Rejected => "Item move refused",
+        ItemMoveOutcome::SlotMismatch
+        | ItemMoveOutcome::RequirementNotMet
+        | ItemMoveOutcome::Blocked => "Cannot move this item there",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

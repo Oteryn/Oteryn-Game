@@ -154,6 +154,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             SetWindowTextW(status, wide(&panel.text()).as_ptr());
                             held = Some(panel.clone());
                         }
+                        super::list_surface(&mut mailbox, list, held.as_ref().map(|p| p.rows()).as_deref().unwrap_or(&[]), oteryn_session::ItemMoveDestination::MainBackpack);
                         drop(mailbox);
                         if show_containers {
                             super::super::super::feature_0014_container_tree::view::open_shared(weak.clone(), commands.clone());
