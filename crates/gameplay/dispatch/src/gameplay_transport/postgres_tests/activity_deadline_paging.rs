@@ -139,22 +139,27 @@ async fn case(h: &Harness) -> TestResult {
                 format!("pager durability did not settle before room entry {member}").into(),
             );
         }
-        // A ready check above can still lose the race to a holder that takes the root right
-        // after it (seen on CI as a single Unavailable at entry 10). Unavailable means the root
-        // could not be acquired, so retry the same request until a bounded deadline; every
-        // other error, and Unavailable after the deadline, still fails the test.
+        let account: String = sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+            .bind(request.initiating_character_id.as_bytes().as_slice())
+            .fetch_one(&h.pool).await?;
+        // admit_member publishes synthetic security after its first real floor refresh.
+        // Across a clock-second boundary that floor is older than the guard, so claim
+        // transfer correctly rejects it as stale. Allocation can also age it past 5 s.
+        // Refresh after setup and on every retry; retrying entry alone cannot repair it.
         let retry_until = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
         let outcome = loop {
+            evidence.evidence.refresh_account(&h.root, &h.node, &account)
+                .await.map_err(debug)?;
             match owner
                 .enter_boss_room(&authority, &h.node, request.clone())
                 .await
             {
-                Err(crate::durability::DurabilityError::Unavailable)
+                Err(crate::durability::DurabilityError::Unavailable
+                    | crate::durability::DurabilityError::RootUnavailable)
                     if tokio::time::Instant::now() < retry_until =>
                 {
-                    // The refused checkout recorded ready demand. Serve it as the node's
-                    // maintenance loop would; otherwise a retired holder never comes back
-                    // (CI saw Unavailable for the whole 30 s at entry 15).
+                    // A refused checkout records ready demand. Serve it as the node's
+                    // maintenance loop would; this fixture has no maintenance loop.
                     if !h.root.maintain_ready_once().await.unwrap_or(false) {
                         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
                     }

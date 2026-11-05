@@ -335,7 +335,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<(u64, ActorVitals)> {
-        let now = self.owner_now();
+        self.tick_spell_periodic_at(actor, session, self.owner_now())
+            .await
+    }
+
+    // The transport samples wall time once; tests can drive the same owner at an
+    // exact condition deadline without changing the Channel's clock origin.
+    pub(in crate::gameplay_transport) async fn tick_spell_periodic_at(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: oteryn_simulation_determinism::SemanticTimeMicros,
+    ) -> Option<(u64, ActorVitals)> {
         // Lock order (§1.2): the lane before any Channel guard.
         let mut permit = self.spell_lane_permit().await?;
         let mut runtime = self.runtime.lock().await;
