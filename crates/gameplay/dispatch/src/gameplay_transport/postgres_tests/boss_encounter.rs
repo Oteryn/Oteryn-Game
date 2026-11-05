@@ -22,8 +22,12 @@ mod activity_handoff;
 mod staged_room;
 
 // Direct connections have no node maintenance task. A bounded pass can retire
-// its holder on return; service the resulting demand before the next fixture pass.
+// its holder, or the live server can still be using it without any demand yet.
+// Request and service readiness before a direct pass, without retrying that pass.
 async fn maintain_ready(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    if !owner.root.is_ready() {
+        owner.root.request_ready();
+    }
     if owner.root.has_ready_demand() {
         owner.root.maintain_ready_once().await.map_err(debug)?;
     }
@@ -282,15 +286,34 @@ async fn qualify_fence_changes(
                 .bind(revisions[3])
                 .execute(pool)
                 .await?;
+            // Model a periodic server observation holding the sole connection,
+            // without first provoking a failed checkout to request readiness.
+            // The join polls the reader before returning the borrowed holder.
             maintain_ready(owner).await?;
-            assert!(
+            let mut holder = owner.root.try_acquire_ready().map_err(debug)?;
+            assert!(!owner.root.is_ready());
+            let reading = async {
+                maintain_ready(owner).await?;
                 owner
                     .root
                     .read_boss_cooldown_list(owner.character, owner.holder, fence, &[])
-                    .await?
-                    .is_none(),
-                "interpretation column {index}"
+                    .await
+                    .map_err(Into::into)
+            };
+            let returning = async {
+                holder
+                    .return_to_pool_observed_until(
+                        std::time::Instant::now() + crate::durability::DB_PASS_DEADLINE,
+                    )
+                    .await
+            };
+            let (durable, returned): (TestResult<Option<Vec<u8>>>, _) =
+                fixture::join_two(reading, returning).await;
+            assert_eq!(
+                returned,
+                sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
             );
+            assert!(durable?.is_none(), "interpretation column {index}");
             let (status, payload) = query(&mut client, generation, command_id).await?;
             assert_eq!(
                 status,
