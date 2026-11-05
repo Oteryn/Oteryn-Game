@@ -1,5 +1,8 @@
 //! Application-owned Tokio runtime and deterministic shutdown boundary.
 
+#[path = "features/0288-ambient-sound/protocol.rs"]
+pub mod ambient_sound;
+
 /// Account achievement pages from core command 10.
 #[path = "features/local-account-achievements/mod.rs"]
 pub mod account_achievements;

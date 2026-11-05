@@ -105,6 +105,46 @@ def decode_cues(data):
     return cues
 
 
+def decode_ambient(data):
+    """mehah/otclient def57c15 sounds.proto:29-33: ambient id -> looping_sound_id.
+
+    oteryn-choice: admit the base loop only; delayed client-side embellishments
+    are not required to start/replace/stop the server-owned ambient channel.
+    """
+    if len(data) > MAX_DATA_BYTES:
+        raise ValueError('sound metadata exceeds 8 MiB')
+    sounds, streams = {}, {}
+    for field, record in fields(data):
+        if field == 1:
+            row = unique(record)
+            key = row.get(1)
+            if not isinstance(key, int) or key in sounds:
+                raise ValueError('invalid or duplicate sound ID')
+            name = row.get(2, b'').decode('utf-8')
+            if not plain(name) or Path(name).suffix not in ('.ogg', '.wav'):
+                raise ValueError('unsafe or unsupported sound filename')
+            sounds[key] = name
+        elif field == 3:
+            row = {}
+            for key, value in fields(record):
+                if key in (1, 2):
+                    if key in row:
+                        raise ValueError('duplicate ambient field')
+                    row[key] = value
+            key = row.get(1)
+            if not isinstance(key, int) or not 1 <= key <= 65535 or key in streams:
+                raise ValueError('invalid or duplicate ambient ID')
+            streams[key] = row.get(2)
+    result = {}
+    for key, sound in streams.items():
+        if sound is None:
+            continue
+        if sound not in sounds:
+            raise ValueError('ambient references missing sound ID')
+        result[str(key)] = [sounds[sound]]
+    return result
+
+
 def inventory(source, archive_sha256, sound_data=None):
     rows = []
     for path in sorted(source.iterdir()):
@@ -124,11 +164,12 @@ def inventory(source, archive_sha256, sound_data=None):
         if metadata.stat().st_size > MAX_DATA_BYTES:
             raise ValueError('sound metadata exceeds 8 MiB')
         cues = decode_cues(metadata.read_bytes())
+        ambient = decode_ambient(metadata.read_bytes())
         names = {r['name'] for r in rows}
-        if any(name not in names for variants in cues.values() for name in variants):
+        if any(name not in names for variants in [*cues.values(), *ambient.values()] for name in variants):
             raise ValueError('missing official sound file')
         result.update(source='owner-supplied local Tibia client sounds folder (15.30 target)',
-                      sound_data=sound_data, sound_cues=cues)
+                      sound_data=sound_data, sound_cues=cues, ambient_cues=ambient)
     return result
 
 

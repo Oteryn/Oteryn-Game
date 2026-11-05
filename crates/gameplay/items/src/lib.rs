@@ -34,6 +34,7 @@ pub mod map_pickup;
 pub mod native_map_items_abi;
 pub mod native_world_items;
 pub mod reach;
+pub mod remaining_consumables;
 
 #[cfg(test)]
 mod stacking_property_tests;

@@ -220,6 +220,7 @@ fn dispatch_scenario() -> TestResult {
             };
             fence.expected_character_revision = receipt.committed_character_revision;
         }
+        super::reaudit_title_predicates::seed_mastery(&h).await?;
         let (status, payload) = exchange(&owner, &mut admitted, 3, 113, &[2, 1]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(payload, [2, 1]);

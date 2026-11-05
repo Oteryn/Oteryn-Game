@@ -150,7 +150,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     blocking,
                     destination,
                 ) {
-                    Ok(_) => Moved,
+                    Ok(snapshot) => {
+                        // Crystal tile.cpp:1605,1630 emits movement callbacks for forced moves
+                        // too; trap.lua:23-44,59-69 applies the same entry/exit rules to monsters.
+                        crate::movement::monster_map::apply_committed_step_in(
+                            &mut runtime,
+                            self.movement_cells,
+                            target,
+                            snapshot.position(),
+                        );
+                        if let Some(map) = self.bundle_map() {
+                            map.facts
+                                .record_monster_step(crate::map::facts::MonsterStep {
+                                    actor: target,
+                                    from,
+                                    to: snapshot.position(),
+                                });
+                            super::paced_movement::monster_trap::apply_monster_trap_steps(
+                                &mut runtime,
+                                &states,
+                                map,
+                                self.owner_now().get(),
+                            );
+                        }
+                        Moved
+                    }
                     Err(_) => NotEnoughRoom,
                 }
             }

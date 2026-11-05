@@ -5,7 +5,7 @@ use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::foundation::{CharacterLease, MovementLocalPosition};
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
-fn towns() -> oteryn_world_bundle::subarea::Table {
+pub(super) fn towns() -> oteryn_world_bundle::subarea::Table {
     use oteryn_world_bundle::subarea::{Area, Mask, Run, Table, Temple};
     let hash = "a".repeat(64);
     let area = |id, town, x| Area {

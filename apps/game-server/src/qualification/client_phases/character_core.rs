@@ -78,7 +78,7 @@ async fn character_core(
         let scenario = match mode {
             ChatSpeechMode::Say => "S18.say-echo",
             ChatSpeechMode::Whisper => "S18.whisper-echo",
-            ChatSpeechMode::Yell => unreachable!(),
+            ChatSpeechMode::Yell | ChatSpeechMode::MonsterSay => unreachable!(),
         };
         evidence(&format!(
             "e2e_all scenario={scenario} status=PASS seconds={:.3}",

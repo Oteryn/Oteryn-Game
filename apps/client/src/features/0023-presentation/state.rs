@@ -39,6 +39,8 @@ impl AudioSettings {
 pub struct SoundCue {
     pub id: u32,
     pub source: PresentationSource,
+    /// Ambient ids have their own namespace; zero stops the loop.
+    pub ambient: bool,
 }
 
 #[derive(Deserialize)]
@@ -46,6 +48,8 @@ struct SoundManifest {
     schema: String,
     sound_data: String,
     sound_cues: BTreeMap<u32, Vec<String>>,
+    #[serde(default)]
+    ambient_cues: BTreeMap<u32, Vec<String>>,
 }
 
 fn plain(name: &str) -> bool {
@@ -58,14 +62,18 @@ pub fn decode_mapping(bytes: &[u8]) -> Result<(String, BTreeMap<u32, Vec<String>
         || !plain(&manifest.sound_data)
         || manifest.sound_cues.is_empty()
         || manifest.sound_cues.len() > 65_535
-        || manifest.sound_cues.iter().any(|(id, files)| {
-            !(1..=65_535).contains(id)
-                || files.is_empty()
-                || files.len() > 128
-                || files
-                    .iter()
-                    .any(|name| !plain(name) || !(name.ends_with(".ogg") || name.ends_with(".wav")))
-        })
+        || manifest
+            .sound_cues
+            .iter()
+            .chain(manifest.ambient_cues.iter())
+            .any(|(id, files)| {
+                !(1..=65_535).contains(id)
+                    || files.is_empty()
+                    || files.len() > 128
+                    || files.iter().any(|name| {
+                        !plain(name) || !(name.ends_with(".ogg") || name.ends_with(".wav"))
+                    })
+            })
     {
         return Err("invalid official sound mapping".into());
     }
@@ -75,6 +83,7 @@ pub fn decode_mapping(bytes: &[u8]) -> Result<(String, BTreeMap<u32, Vec<String>
 pub struct SoundCatalog {
     store: AssetStore,
     cues: BTreeMap<u32, Vec<String>>,
+    ambient: BTreeMap<u32, Vec<String>>,
 }
 
 impl SoundCatalog {
@@ -98,12 +107,28 @@ impl SoundCatalog {
         store
             .read_verified(&metadata, 8 * 1024 * 1024)
             .map_err(|e| e.to_string())?;
-        Ok(Self { store, cues })
+        let ambient = serde_json::from_slice::<SoundManifest>(&bytes)
+            .map_err(|e| e.to_string())?
+            .ambient_cues;
+        Ok(Self {
+            store,
+            cues,
+            ambient,
+        })
     }
 
     /// Unknown cues are silent; no guessed filename fallback. Variants retain official order.
     pub fn read(&self, id: u32, variant: usize) -> Result<Option<Vec<u8>>, String> {
-        let Some(files) = self.cues.get(&id) else {
+        self.read_channel(id, variant, false)
+    }
+
+    pub fn read_channel(
+        &self,
+        id: u32,
+        variant: usize,
+        ambient: bool,
+    ) -> Result<Option<Vec<u8>>, String> {
+        let Some(files) = (if ambient { &self.ambient } else { &self.cues }).get(&id) else {
             return Ok(None);
         };
         self.store

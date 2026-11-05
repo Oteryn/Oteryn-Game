@@ -4,6 +4,29 @@ use chat::guild_room::{self, GuildChatSnapshot};
 use oteryn_protocol_oteryn::{encode_command_result, encode_state_delta};
 
 #[test]
+fn monster_mount_voice_requires_the_negotiated_capability() -> Result<(), BoxError> {
+    let line = ChatLine::Local {
+        speaker: ChatSpeaker {
+            identity: [1; 16],
+            generation: std::num::NonZeroU64::new(1).ok_or("generation")?,
+        },
+        speaker_name: "Aela".into(),
+        mode: ChatSpeechMode::MonsterSay,
+        text: "Groar".into(),
+        position: oteryn_protocol_oteryn::world_spatial::ActorPosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        },
+    };
+    let bytes =
+        oteryn_protocol_oteryn::chat::encode_chat_line(&line).map_err(|e| format!("{e:?}"))?;
+    assert!(crate::guild_chat::decode_line(&bytes, &[6, 7]).is_err());
+    assert_eq!(crate::guild_chat::decode_line(&bytes, &[6, 7, 288])?, line);
+    Ok(())
+}
+
+#[test]
 fn guild_chat_client_keeps_login_motd_and_send_rank_and_not_allowed_status() -> Result<(), BoxError>
 {
     block_on(async {

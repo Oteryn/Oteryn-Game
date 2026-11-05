@@ -50,6 +50,38 @@ impl AppearanceCommands {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn current_mount(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<u32> {
+        // oteryn-choice: the validated selected mount is the native riding fact; this
+        // runtime has no independent mount-toggle state to infer or persist.
+        let (_, content) = self.appearance_context()?;
+        let fence = super::character_gameplay_fence::current(self, session, false).await?;
+        let state = self
+            .root
+            .read_current_character_appearance_state(
+                self.character,
+                self.holder,
+                fence,
+                content.earned_grant_keys(),
+            )
+            .await
+            .ok()?;
+        let runtime = self.runtime.lock().await;
+        if !current_runtime(&runtime, actor, session, &fence, &content) {
+            return None;
+        }
+        let (base, _) = catalogue::base(&content, &state);
+        Some(
+            base.mount_key
+                .as_deref()
+                .and_then(|key| content.mount_metadata(key))
+                .map_or(0, |m| m.0),
+        )
+    }
+
     pub(super) fn appearance_context(&self) -> Option<(wire::Context, NativeCosmeticsView)> {
         let generation = self.active_generation?;
         let native = generation.native_gameplay()?;
