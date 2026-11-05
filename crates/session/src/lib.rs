@@ -53,8 +53,10 @@ mod outcomes;
 mod player_trade_transport;
 mod presentation;
 mod quest_log_transport;
+mod refusal_details;
 mod replacement_snapshot;
 mod session_access;
+pub use oteryn_protocol_oteryn::refusal_detail;
 mod session_commands;
 mod session_exchange;
 mod session_transport;
@@ -96,6 +98,7 @@ pub use oteryn_protocol_oteryn::{
     store,
 };
 pub use oteryn_protocol_oteryn::{atelier, prey, wheel};
+pub use oteryn_protocol_oteryn::{creature_push, target_move};
 /// Player-trade wire values for the selected native-client feature.
 pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 pub use recovery::{Recovery, RecoveryState, check_resume_selection};
@@ -143,7 +146,7 @@ mod tutorial_notices;
 pub use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
 pub use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
 pub use oteryn_protocol_oteryn::{
-    boss_difficulty, boss_rewards, character_info, cyclopedia_character, cyclopedia_tracker,
+    arena, boss_difficulty, boss_rewards, character_info, cyclopedia_character, cyclopedia_tracker,
     weapon_proficiency, zones_nologout::ServerMessage,
 };
 mod vip_presence;
@@ -353,6 +356,7 @@ pub struct Session<S> {
     world_object_overlay: Vec<WorldObjectOverlayEntry>,
     join_snapshot: JoinSnapshot,
     unusable: bool,
+    last_refusal_detail: Option<item_movement::RefusalDetail>,
     first_command_id: u64,
     duplicates: Vec<DuplicateOutcome>,
     last_probe_id: u64,

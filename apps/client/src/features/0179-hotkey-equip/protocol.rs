@@ -1,5 +1,10 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
+    pub(in crate::play) fn hotkey_equip_items(&self, mut items: Vec<u32>) {
+        items.sort_unstable();
+        items.dedup();
+        lock(&self.0).hotkey_equip.items = items;
+    }
     pub(in crate::play) fn hotkey_equip_initialize(&self, selected: bool) {
         lock(&self.0).hotkey_equip.selected = selected;
     }

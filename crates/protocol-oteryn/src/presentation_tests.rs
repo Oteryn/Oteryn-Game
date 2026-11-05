@@ -4,6 +4,28 @@ use serde_json::Value;
 
 use super::*;
 
+#[test]
+fn ambient_b24_wire_is_additive_and_zero_stops() -> Result<(), PresentationWireError> {
+    let events = [event(
+        1,
+        1,
+        PresentationEventKind::AmbientSound { cue_id: 0 },
+    )];
+    let bytes = encode_presentation_batch(&events)?;
+    assert_eq!(bytes, [0x0a, 8, 8, 1, 16, 1, 66, 2, 8, 0]);
+    assert_eq!(decode_presentation_batch(&bytes)?, events);
+    assert!(
+        encode_presentation_batch(&[event(
+            1,
+            1,
+            PresentationEventKind::AmbientSound { cue_id: 65_536 }
+        )])
+        .is_err()
+    );
+    assert!(decode_presentation_batch(&[0x0a, 6, 8, 1, 16, 1, 66, 0]).is_err());
+    Ok(())
+}
+
 const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
 const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 const MALFORMED: PresentationWireError = PresentationWireError::Malformed;

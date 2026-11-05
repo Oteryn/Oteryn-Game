@@ -21,6 +21,13 @@ def message(field, value):
 
 
 class ImportTests(unittest.TestCase):
+    def test_b24_ambient_ids_have_a_separate_namespace(self):
+        data = message(1, number(1, 7) + message(2, b'ambient.ogg'))
+        data += message(3, number(1, 25) + number(2, 7))
+        self.assertEqual(assets.decode_ambient(data), {'25': ['ambient.ogg']})
+        with self.assertRaises(ValueError):
+            assets.decode_ambient(data + message(3, number(1, 25) + number(2, 7)))
+
     def test_official_indirection_and_random_variants(self):
         # Synthetic protobuf records; no official audio bytes or guessed real cue IDs.
         sounds = b''.join(message(1, number(1, i) + message(2, name))

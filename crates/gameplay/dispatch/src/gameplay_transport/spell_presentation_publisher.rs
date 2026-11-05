@@ -556,6 +556,9 @@ impl CandidateSessionPublisher {
         self.pending.pop_front()
     }
 }
+#[path = "ambient_sounds.rs"]
+pub(super) mod ambient_sounds;
+
 #[cfg(test)]
 #[path = "spell_presentation_publisher_tests.rs"]
 mod tests;
@@ -569,6 +572,7 @@ pub struct SoundPublisher {
     revision: u64,
     binding: Option<ScopeContext>,
     sounds: VecDeque<SoundEntry>,
+    ambient: std::collections::BTreeMap<GameSessionId, (ExactActorRef, u8, u16, u64)>,
 }
 #[derive(Debug)]
 struct SoundEntry {
@@ -593,6 +597,7 @@ impl SoundPublisher {
         };
         if self.binding.as_ref() != Some(&binding) {
             self.sounds.clear();
+            self.ambient.clear();
             self.binding = Some(binding);
         }
         let (cue, secondary) = if cue == 0 {
@@ -634,6 +639,8 @@ impl SoundPublisher {
         }
         Ok(())
     }
+    /// The two independently negotiated domains retain their own bounds: at most
+    /// MAX_PRESENTATION_EVENTS positional sounds plus one private ambient replacement.
     pub fn observe(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -662,6 +669,19 @@ impl SoundPublisher {
         runtime.player_control_facts(actor, session).ok()?;
         let observer = view(runtime.read_actor_position(actor).ok()?.position()).ok()?;
         let mut events = Vec::new();
+        // The current private loop survives overflow of the transient journal.
+        if let Some((subject, _, cue, revision)) = self.ambient.get(&session)
+            && *subject == actor
+            && *revision > after
+        {
+            events.push(PresentationEvent {
+                decision_ordinal: 1,
+                emission_ordinal: 1,
+                kind: PresentationEventKind::AmbientSound {
+                    cue_id: u32::from(*cue),
+                },
+            });
+        }
         for sound in self.sounds.iter().filter(|sound| sound.revision > after) {
             let Ok(target) = view(sound.position) else {
                 continue;

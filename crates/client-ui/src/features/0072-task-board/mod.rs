@@ -1,9 +1,14 @@
 //! Server-owned weekly Task Board panel.
 mod input;
-pub use input::open_key;
+mod protocol;
+pub use input::{creature_choices, creature_name, open_key};
+#[path = "protocol/talisman.rs"]
+pub mod talisman;
+mod view;
 pub use oteryn_client_runtime::task_board::{
     CommandStatus, TaskBoardCommand, TaskBoardResponse, task_board,
 };
+pub use protocol::{FullIntent, apply_full_result, full_request};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -75,6 +80,7 @@ pub fn request(panel: &mut TaskBoardPanel, intent: Intent) -> Option<TaskBoardCo
 
 pub fn apply_result(panel: &mut TaskBoardPanel, response: &TaskBoardResponse) {
     panel.pending = false;
+    panel.weekly = None;
     panel.feedback = Some(if response.reply.refused {
         "The server refused the Task Board action"
     } else {
@@ -85,6 +91,9 @@ pub fn apply_result(panel: &mut TaskBoardPanel, response: &TaskBoardResponse) {
 
 #[must_use]
 pub fn panel_text(panel: &TaskBoardPanel) -> String {
+    if let Some(reply) = &panel.weekly {
+        return view::panel_text(reply, panel.feedback);
+    }
     let mut text = String::from("Task Board\n");
     if let Some(state) = &panel.state {
         text.push_str(&format!(

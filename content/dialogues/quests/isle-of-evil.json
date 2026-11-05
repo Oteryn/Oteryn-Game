@@ -1,0 +1,614 @@
+{
+  "schema": "OTERYN_ISLE_OF_EVIL_DIALOGUE_V1",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "data-global/npc/rapanaio.lua",
+      "sha256": "625b6bb2fa4b0027f2b99fd806ac2841f44a55bc38c72b76bb9f92b375b3426b"
+    },
+    {
+      "path": "data-global/npc/rapanaio_boat.lua",
+      "sha256": "00fb234a23a56d91cae7417bd81db23291c544421880f5266670c95539146632"
+    },
+    {
+      "path": "data-global/npc/rapanaio_isle_of_evil.lua",
+      "sha256": "b019e365ea9eebea4de89bda67d24b3778f75be58c884b02fc5a0a0ea1a0c257"
+    },
+    {
+      "path": "data-global/npc/scutty.lua",
+      "sha256": "fb449c7be939462d457617de853cecd66590d4c32af8399a1be9f8bf1f4361de"
+    },
+    {
+      "path": "data-global/npc/mortimer.lua",
+      "sha256": "faf48aefb54604c94216f6394ee3e3d6381a07840fdf666d9551f7ea1f822d2b"
+    },
+    {
+      "path": "data-global/npc/king_tibianus.lua",
+      "sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+    },
+    {
+      "path": "data/npclib/npc_system/npc_handler.lua",
+      "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+    }
+  ],
+  "npcs": [
+    {
+      "key": "oteryn:npc.rapanaio",
+      "greet": "rapanaio:265",
+      "farewell": "npc_handler:82",
+      "walkaway": "npc_handler:90"
+    },
+    {
+      "key": "oteryn:npc.rapanaio_boat",
+      "greet": "rapanaio_boat:156",
+      "farewell": "rapanaio_boat:157",
+      "walkaway": "rapanaio_boat:158"
+    },
+    {
+      "key": "oteryn:npc.rapanaio_isle_of_evil",
+      "greet": "rapanaio_isle_of_evil:123",
+      "farewell": "rapanaio_isle_of_evil:124",
+      "walkaway": "rapanaio_isle_of_evil:125"
+    },
+    {
+      "key": "oteryn:npc.scutty",
+      "greet": "scutty:136",
+      "farewell": "npc_handler:82",
+      "walkaway": "npc_handler:90"
+    },
+    {
+      "key": "oteryn:npc.mortimer",
+      "greet": "mortimer:650",
+      "farewell": "npc_handler:82",
+      "walkaway": "npc_handler:90"
+    }
+  ],
+  "replies": {
+    "rapanaio:48": {
+      "lines": [
+        "Me humble name is Rapanaio. Good old goblin name meaning honest, generous and nice person, I swear!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:48"
+    },
+    "rapanaio:57": {
+      "lines": [
+        "Mission you say? Well MY mission is to fight evil with every power at my disposal! Hm, perhaps you have it in you to join the {fight}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:57"
+    },
+    "rapanaio:60": {
+      "lines": [
+        "They say there's a positive side to everything! And in this case it is perfectly true! In order for you to reach the Isle of Evil and slay its unspeakable horrors we will first finish my latest invention! ...",
+        "As you might have guessed I am a highly talented inventor. Still, even inventors sometimes need some kind of .. inspiration. I can't tell you too much about your next mission since our enemies might capture and torture you for information. ...",
+        "I optimized my invention by studying fish. Suffice it to say, I need one further specimen to study to put the finishing touches on my machine. ...",
+        "I am afraid I need a specific fish, of course, as an ordinary fish just won't do the trick. Actually it is not a real fish but a kind of machine with the likeness of a fish! ...",
+        "Imagine what I could learn from such a fish! And imagine what harm could be done if this fish were to fall into the wrong hands! We must retrieve that fish! ...",
+        "Apparently, the people in the city of Yalahar had a mechanical fish, fish which are essential for my research. ...",
+        "Now those Yalahari are quite elusive and even if we could get in contact with one of them, buying a fish from them would surely cost a fortune which we don't posses. ...",
+        "But my sources have informed me that some of these fish might have escaped into the local sewers! Based on my knowledge of the fish I have designed a mechanical fishing rod which you can use. ...",
+        "You won't catch any other fish with it but without it you haven't a chance of catching a mechanical fish. You will need to use nails as bait. ...",
+        "Well perhaps I should mention a minor, insignificant problem that might occur. ...",
+        "Due to the metallic nature of the fishing rod there is the very remote possibility that you might get into contact with one of the electric eels thatalso live in the sewers. ...",
+        "In which case you might feel a little tingle from a teency tiny electric shock. I can't tell what effect that might have on your health but you should probably be careful that you are not badly wounded while fishing. ...",
+        "Hm, thinking about it, perhaps those eels are part of the evil plan to thwart our efforts, who knows? So are you ready for that mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:60"
+    },
+    "rapanaio:77": {
+      "lines": [
+        "Have you caught the mechanical fish?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:77"
+    },
+    "rapanaio:80": {
+      "lines": [
+        "The machines of the .. uhm my inventions need a potent fuel. I have run hundreds of tests and found that only the most potent rum makes the most powerful fuel ...",
+        "I did have enough rum to make the trip but .. well, you know .. the lads came over to celebrate my birthday and we ended up .. uhm testing the fuel.. Damn that tasty rum! Well its a risk of the job when the fuel tastes that good ...",
+        "However, we will need some new fuel. 10 vials of rum exactly. ...",
+        "Remember it has to be vials because after we got drunk one of the lads wandered of with my funnel thinking it was hat. Only vials will fit into my machine."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:80"
+    },
+    "rapanaio:90": {
+      "lines": [
+        "Do you have the rum .. erm the fuel with you?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:90"
+    },
+    "rapanaio:93": {
+      "lines": [
+        "Now that we have the rum, I still desperately need a vial of fruit juice to keep things going. Just get me one so we can proceed."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:93"
+    },
+    "rapanaio:98": {
+      "lines": [
+        "So you have brought me a vial of fruit juice?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:98"
+    },
+    "rapanaio:101": {
+      "lines": [
+        "My invention is only as good as the engine that powers it. I need a high quality steam machine from the technomancers guild. You should ask my old mate Scutty about one. ...",
+        "I have already sent him a request and some gold but chances are you will need to convince him somehow to lend us his precious machine."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:101"
+    },
+    "rapanaio:109": {
+      "lines": [
+        "Did you get the requested machine from Scutty?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:109"
+    },
+    "rapanaio:112": {
+      "lines": [
+        "The evil we are fighting has not chosen the Isle of Evil on a mere whim. Quite the contrary, it has shown strategic genius by selecting an isle surrounded by hidden reefs and treacherous waters. ...",
+        "This serves not only to conceal it from prying eyes, but it also poses a serious threat to anyone who wants to travel there. ...",
+        "The sea around that isle is as dangerous as the isle and its inhabitants themselves. ...",
+        "Without a proper map we are doomed! Doomed, I tell you! ...",
+        "I have found out that a ship from the Explorers' Society charted the sea around the isle some years ago, so they should have some decent maps of that area ...",
+        "According to my sources, the map is now being kept at one of their northern outposts. It is somewhere north east of Carlin, in a hamlet on the coast. Get that map and we'll soon be on our way to vanquish evil! ...",
+        "And be warned: if the servants of evil have learned about the map it means not only the map and the Explorers' Society are in grave danger but also you and your mission could be in peril. Trust no one. ...",
+        "Don't accept gifts from strangers and don't hitchhike in strangers' wagons. Don't sit with your back to the door in a tavern and what the heck would you be doing in a tavern while on an urgent mission anyway? ...",
+        "Rest assured in the unfortunate case of your death, you will be avenged. Well, only in the unlikely case that you die while on this mission, of course."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:112"
+    },
+    "rapanaio:127": {
+      "lines": [
+        "So did you get that nautical map?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:127"
+    },
+    "rapanaio:130": {
+      "lines": [
+        "While you were getting the map I put the finishing touches on our vessel. The machine works fine and with the improvements I have made, it should enable us to brave the seas to reach our destination. ...",
+        "Meet me downstairs where you will learn more about our secret weapon."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:130"
+    },
+    "rapanaio:142": {
+      "lines": [
+        "It is my calling to root out evil in all its forms and uphold the vigilant fight. It is a lonely fight, an unending fight, but someone has to do it! ...",
+        "I scour ancient texts and collect rumours in taverns in order to track the machinations of evil. ...",
+        "Often odd occurrences are overlooked by the public as strange coincidences or fate, but those who know what to look for see the foot prints of {evil} in history."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:142"
+    },
+    "rapanaio:149": {
+      "lines": [
+        "Evil lurks everywhere. It only takes some ignorant or cowardly people to turn their heads away once too often for it to spread its ugly seeds. I, however, am constantly vigilant and always prepared. ...",
+        "I {hunt} out the signs of evil everywhere. Even in the face of scorn and ridicule, I will not hide my head in the sand and I will be ready to fight!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:149"
+    },
+    "rapanaio:155": {
+      "lines": [
+        "It is my calling to root out evil in all its forms and uphold the vigilant fight. It is a lonely fight, an unending fight, but someone has to do it! ...",
+        "I scour ancient texts and collect rumours in taverns in order to track the machinations of evil. ...",
+        "Often odd occurrences are overlooked by the public as strange coincidences or fate, but those who know what to look for see the footprints of evil in history."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:155"
+    },
+    "rapanaio:162": {
+      "lines": [
+        "Ignorance is evil's most potent ally. The servants of evil are plotting to keep us ignorant and poke ridicule at those who come too close to the {truth}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:162"
+    },
+    "rapanaio:165": {
+      "lines": [
+        "When I found that ancient text, warning of the {Isle of Evil}, I tried to tell the world about it. But the forces of evil discovered my plans! They made people assume it was just another tale for children. ...",
+        "THEY distributed a book of children's bedtime stories with a copy of the text in it to undermine my message! Their despicable ruse worked and they made a laughing stock of me! Of course I knew it was a plot to discredit me. ...",
+        "On the other hand, it was obvious that THEY now knew about me and the text I possessed. I went into hiding in fear of my life! THEY have tried to assassinate me! I must be constantly vigilant!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:165"
+    },
+    "rapanaio:172": {
+      "lines": [
+        "I KNOW it's out there! And I have proof! You see, I have constructed an evil-o-meter! It is an invention that locates places of great evil, such as the Ghostlands, the Plains of Havoc and the Edron Ruins. ...",
+        "But then it registered another impulse. I tried my best to locate this impulse, believing it would probably point to another well known source of evil like the Hellgate. ...",
+        "I was alarmed to realise that it was pointing to a remote isle that had been previously assumed to be uninhabited. I know that some horrendous evil lurks there. Some unspeakable horror, waiting to kill and devour unsuspecting travellers. ...",
+        "I could not let that happen! So I did some research. Just as I was on the brink of giving up in desperation, I stumbled upon an ancient text that told of the Isle of Evil! ...",
+        "Immediately, the nature of the threat I had discovered became alarmingly clear! All I needed was a hero and some transport. But would they listen?! NO! They laughed at me. Ignorance is Evil's helper! ...",
+        "I still lack transport and a hero. Hmm .. seeing as I have no hero, you will have to do. What do you think? Are you willing to risk life and limb to save mankind? And womankind, of course?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:172"
+    },
+    "rapanaio:183": {
+      "lines": [
+        "Although my instincts tell me to be wary of you, stranger, turning up so conveniently, I have no choice but to accept your help. ...",
+        "Have a care! I have eyes like a hawk and am ever vigilant! If you even think about betraying me, I'll know! Well, I guess we had better talk about your first mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:183"
+    },
+    "rapanaio:190": {
+      "lines": [
+        "Great. Here is your fishing rod. Happy fishing. Don't return without the mechanical fish. Make sure you are not followed!."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:190"
+    },
+    "rapanaio:197": {
+      "lines": [
+        "Interesting, a most interesting construction. A marvel of science. While I try to figure out how it works you might as well continue with your next mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:197"
+    },
+    "rapanaio:203": {
+      "lines": [
+        "Come back after finishing your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:203"
+    },
+    "rapanaio:208": {
+      "lines": [
+        "You did it! Ye Gods, what a temptation! But I will not give in! I will put it into the machine as soon as possible. Oh and if you happen to see a dwarf wearing a funnel, please ask him to return it to me. ...",
+        "But now let's talk about your next mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:208"
+    },
+    "rapanaio:217": {
+      "lines": [
+        "You dont have what I ask for."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:217"
+    },
+    "rapanaio:222": {
+      "lines": [
+        "Ahhhh that juice was just what I needed. I haven't had any fruit juice for ages! You can't fight evil the whole day without allowing yourself a small treat! ...",
+        "Though I bet it would have tasted better in a glass with one of those amusing umbrellas on top! But I don't blame you. ...",
+        "I fear we hunters of evil must be content with the small pleasures life grants us. Now where were we? Oh, yes you are probably eager to learn about your next mission as part of our big plan!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:222"
+    },
+    "rapanaio:232": {
+      "lines": [
+        "You dont have what I ask for."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:232"
+    },
+    "rapanaio:237": {
+      "lines": [
+        "Ah, marvellous. That's the little beauty I was looking for. It will fit perfectly into my invention. Not much longer and we can start on our journey. However, I have another mission for you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:237"
+    },
+    "rapanaio:243": {
+      "lines": [
+        "You dont have what I ask for."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:243"
+    },
+    "rapanaio:248": {
+      "lines": [
+        "Hmm, what fine maps those explorers draw. Wouldn't it be a cunning idea to tattoo it on your back where evil would least expect to find it! I guess with a nail from my workshop and a bucket of old ship paint I could improvise that. ...",
+        "On the other hand the forces of evil probably know all too well that I am cunning, so I have to surprise them with the unexpected! I'll just hide it in my beard! There we go. Now lets talk about our final mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:248"
+    },
+    "rapanaio:257": {
+      "lines": [
+        "You dont have what I ask for."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:257"
+    },
+    "rapanaio:265": {
+      "lines": [
+        "Psht! Not that loud! Evil lurks everywhere."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:265"
+    },
+    "rapanaio_boat:59": {
+      "lines": [
+        "My name is Rapanaio from the Royal Tibia Line."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:59"
+    },
+    "rapanaio_boat:60": {
+      "lines": [
+        "I am the captain of this sailing-ship."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:60"
+    },
+    "rapanaio_boat:79": {
+      "lines": [
+        "Do you seek a passage to Evil Isle?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:79"
+    },
+    "rapanaio_boat:82": {
+      "lines": [
+        "Never heard about a place like this."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:82"
+    },
+    "rapanaio_boat:90": {
+      "lines": [
+        "I don't have any mission for you right now."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:90"
+    },
+    "rapanaio_boat:94": {
+      "lines": [
+        "Hello, my friend, what took you so long? Some sightseeing in my cavern, perhaps? You did not even notice me when I passed you in the cavern earlier. Tsk, you really should be more alert if you value your life. ...",
+        "This here is my secret. An underwater boat! Evil will not even see us coming! I hope you are prepared for a big battle on that isle! If not, you had better go and get some additional resources and then return. So, do you feel ready for our trip?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:94"
+    },
+    "rapanaio_boat:104": {
+      "lines": [
+        "You are aware that this could mean your death? I mean the evil is probably overpowering and .. and I will not be able to help you. I will have to stay with the boat to ensure the fight goes on even if you die.",
+        "So, do you still think it is a good idea?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:104"
+    },
+    "rapanaio_boat:110": {
+      "lines": [
+        "Now seriously, we .. I mean, you don't have to do this! I would not blame you at all. You probably have plans for your future which don't contain being chained up in some madman's dungeon for the rest of your life, being cruelly tortured. ...",
+        "Do you really want to take the risk upon yourself?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:110"
+    },
+    "rapanaio_boat:116": {
+      "lines": [
+        "Are you absolutely sure?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:116"
+    },
+    "rapanaio_boat:119": {
+      "lines": [
+        "Honestly?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:119"
+    },
+    "rapanaio_boat:122": {
+      "lines": [
+        "This is your last chance - do you really want to do this?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:122"
+    },
+    "rapanaio_boat:125": {
+      "lines": [
+        "Well .. I guess then it is time for us to depart, right?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:125"
+    },
+    "rapanaio_boat:128": {
+      "lines": [
+        "I really hope I won't regret what you are doing here. Uhm, I mean I hope that we will not regret what we are doing, of course. We had better talk about your future mission when we arrive. So .. shall we really depart?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:128"
+    },
+    "rapanaio_boat:131": {
+      "lines": [
+        "So be it!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:131"
+    },
+    "rapanaio_boat:146": {
+      "lines": [
+        "Very well. Come find me again when you are ready."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:146"
+    },
+    "rapanaio_boat:156": {
+      "lines": [
+        "Psht! Not that loud! Evil lurks everywhere."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:156"
+    },
+    "rapanaio_boat:157": {
+      "lines": [
+        "Good bye. Recommend us if you were satisfied with our service."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:157"
+    },
+    "rapanaio_boat:158": {
+      "lines": [
+        "Good bye then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_boat.lua:158"
+    },
+    "rapanaio_isle_of_evil:67": {
+      "lines": [
+        "My name is Rapanaio from the Royal Tibia Line."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:67"
+    },
+    "rapanaio_isle_of_evil:68": {
+      "lines": [
+        "I am the captain of this sailing-ship."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:68"
+    },
+    "rapanaio_isle_of_evil:85": {
+      "lines": [
+        "Now that we have arrived you should waste no time and fight your way to the lair of evil and destroy its master before it's too late!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:85"
+    },
+    "rapanaio_isle_of_evil:91": {
+      "lines": [
+        "You haven't finished destroying the evil master yet. Come back when you're done."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:91"
+    },
+    "rapanaio_isle_of_evil:94": {
+      "lines": [
+        "You made it?! Uhm, I mean of course you did! We did it! We have slain the master of all evil! The world will be a happier place from now on, thanks to our efforts. ...",
+        "Concerning this membership card you have found, I think you should take it to King Tibianus, perhaps you will get a reward! Well, nothing stopping us going {back}, now, eh?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:94"
+    },
+    "rapanaio_isle_of_evil:106": {
+      "lines": [
+        "Time to leave this unfriendly place, eh? So are you ready to depart?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:106"
+    },
+    "rapanaio_isle_of_evil:112": {
+      "lines": [
+        "I thought you were going to stay here forever. Let's go."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:112"
+    },
+    "rapanaio_isle_of_evil:123": {
+      "lines": [
+        "Psht! Not that loud! Evil lurks everywhere."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:123"
+    },
+    "rapanaio_isle_of_evil:124": {
+      "lines": [
+        "Good bye. Recommend us if you were satisfied with our service."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:124"
+    },
+    "rapanaio_isle_of_evil:125": {
+      "lines": [
+        "Good bye then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:125"
+    },
+    "scutty:74": {
+      "lines": [
+        "So Rapanaio thinks I'd just hand out one of my greatest creations for a few coins of gold? Wrong! It works like this: you help me, then I'll help you. ...",
+        "At the moment I'm tied up with an ongoing experiment and I could do with some help in a more mundane task. Are you in?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:74"
+    },
+    "scutty:82": {
+      "lines": [
+        "You let one of my precious drilling worms get hurt! I'll need 500 gold to cover the damages before you can go back out there. Will you pay?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:82"
+    },
+    "scutty:85": {
+      "lines": [
+        "Come back after finish your task."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:85"
+    },
+    "scutty:90": {
+      "lines": [
+        "Finally! I could have shaved off and grown a new beard in the time it has taken you to complate that task. However, here is your machine. Now leave me alone, I have experiments to carry out."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:90"
+    },
+    "scutty:96": {
+      "lines": [
+        "Fine. As for the problem: you might know that we dwarfs sometimes use tamed rotworms to help dig our tunnels. Actually the worms we use are specially bred for that purpose. ...",
+        "Though they are tame and docile they are still rotworms of course with their natural instincts. Recently some carrion worms dug their way into our drilling worm kennel. ...",
+        "Though they pose no actual danger they cause our tame rotworms to panic and become agitated. ...",
+        "If we leave this unchecked some of our worms might go feral and escape into the depths forever. Long story short, it's up to you to get rid of the carrion worms. Sadly, they are too cowardly to stay for a good fight. ...",
+        "Instead I will lend you this hammer - the legendary'worm punisher'. Now hitting them with that hammer might teach them a lesson but it won't keep them away for long. ...",
+        "Therefore you'll have to heat up the hammer on one of the ovens over there and hit a carrion worm while the hammer is still hot. That will make the silly beasts think they have hit a pocket of lava and they will retreat for good. ...",
+        "I think if you scare off six of those beasts the rest will follow them. But DON'T hit any of the ordinary worms! ...",
+        "If you scare them even more you will have to pay me 500 gold in compensation before I'll allow you to continue. ...",
+        "As soon as you have scared away six of the carrion worms talk to me about the worms and I'll give you that machine. Do we have a deal?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:96"
+    },
+    "scutty:109": {
+      "lines": [
+        "Good. Here is the 'Worm punisher'. Remember DO NOT hurt the drilling worms! If you do it will cost you 500 gold!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:109"
+    },
+    "scutty:118": {
+      "lines": [
+        "There we go. Now get back out there and be more careful with my drilling worms this time!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:118"
+    },
+    "scutty:120": {
+      "lines": [
+        "You don't even have 500 gold on you..."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:120"
+    },
+    "scutty:126": {
+      "lines": [
+        "Well, come back when you ahve the money then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:126"
+    },
+    "scutty:136": {
+      "lines": [
+        "Hello there."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:136"
+    },
+    "mortimer:627": {
+      "lines": [
+        "Now this is getting ridiculous. That map has been lying around, collecting dust for years and now after those madmen stole it, someone else shows up asking for it. ...",
+        "However, the map was completely useless because it only showed the waters around some remote piece of rock in the middle of the sea. We only stored it here for completeness. ...",
+        "Some days ago some wannabe pirates turned up and threatened to kill me if I did not give them a map. ...",
+        "As far as I could make out between their boasting and threatening they wanted to start out as pirates and thought it would be easier to start by stealing some maps before getting a whole ship. The only map I had here was that worthless nautical map. ...",
+        "Luckily enough they seemed to have no idea how to read such maps and were pleased to get a map with some water and lines on it. ...",
+        "So they took the map, but not before they had ruined the interior decorating and made me dance and sing pirate songs for them. ...",
+        "I tell you something: If you manage to find those bandits and teach them a lesson you can keep the map. It's worthless anyway. As far as I could make out their hideout is somewhere to the east. ...",
+        "They referred to it as 'the cave' and said the entrance is hidden. They also mentioned sand and two mossy stones. I hope that helps. I wish you luck."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:627"
+    },
+    "mortimer:650": {
+      "lines": [
+        "Greetings, what can I do for you?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:650"
+    },
+    "king_tibianus:221": {
+      "lines": [
+        "Ah, A fan club premium membership card! You must be that intelligent fellow who wrote me all those flattering letters! Nice to finally meet my greatest admirer in person. Here, take this little token of appreciation. ...",
+        "And now if you will excuse me, I have to attend urgent matters of state."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:221"
+    },
+    "npc_handler:81": {
+      "lines": [
+        "Greetings, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:81"
+    },
+    "npc_handler:82": {
+      "lines": [
+        "Good bye, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82"
+    },
+    "npc_handler:90": {
+      "lines": [
+        "Good bye."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:90"
+    }
+  },
+  "static_keywords": [
+    {
+      "npc": "rapanaio",
+      "keyword": "name",
+      "reply": "rapanaio:48"
+    },
+    {
+      "npc": "rapanaio_boat",
+      "keyword": "name",
+      "reply": "rapanaio_boat:59"
+    },
+    {
+      "npc": "rapanaio_boat",
+      "keyword": "job",
+      "reply": "rapanaio_boat:60"
+    },
+    {
+      "npc": "rapanaio_isle_of_evil",
+      "keyword": "name",
+      "reply": "rapanaio_isle_of_evil:67"
+    },
+    {
+      "npc": "rapanaio_isle_of_evil",
+      "keyword": "job",
+      "reply": "rapanaio_isle_of_evil:68"
+    }
+  ]
+}

@@ -19,8 +19,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         u64,
         Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
     )> {
-        let runtime = self.runtime.lock().await;
+        let mut runtime = self.runtime.lock().await;
         runtime.player_control_facts(actor, session).ok()?;
+        let zone = crate::gameplay_transport::spell_presentation_publisher::ambient_sounds::zone(
+            &mut runtime,
+            self.movement_cells,
+            actor,
+        );
+        let minute = self.world_clock_utc_ms().and_then(|now| {
+            crate::world_clock::WorldClockSource::new(
+                crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
+            )
+            .tibian_minute(now)
+        });
         let mut states = self.states.spell_states.lock().await;
         let actor_spell::ChannelSpellStates {
             presentations,
@@ -29,6 +40,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         } = &mut *states;
         if let Some(owner) = presentations {
             sounds.capture(owner, &runtime).ok()?;
+        }
+        if after == u64::MAX {
+            sounds.forget_ambient(session);
+        } else if let Some(minute) = minute {
+            sounds.ambient(&runtime, actor, session, zone, minute);
         }
         sounds.observe(&runtime, actor, session, after, true)
     }
@@ -349,6 +365,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         remaining: &mut usize,
     ) -> Option<oteryn_protocol_oteryn::chat::ChatLine> {
+        self.emit_mount_voice(admitted).await;
         self.guild_chat_next(admitted, remaining).await
     }
 

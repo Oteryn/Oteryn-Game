@@ -40,8 +40,7 @@ impl PlayView {
     ) -> Result<(), BatchError> {
         let world = World::from_live_map(map)?;
         let mut next = self.clone();
-        next.ground_items =
-            super::super::feature_0004_item_view_move::state::map_targets(map);
+        next.ground_items = super::super::feature_0004_item_view_move::state::map_targets(map);
         // Incremental windows do not replace same-floor spatial observations.
         if next.floor != map.header.origin.floor {
             next.place(map.header.origin);
@@ -71,7 +70,8 @@ impl PlayView {
                 },
                 glyph: true,
                 item: super::super::feature_0004_item_view_move::state::entity_item(entity),
-                entity: matches!(entity.kind, EntityKind::Creature).then_some(entity.entity),
+                entity: matches!(entity.kind, EntityKind::Player | EntityKind::Creature)
+                    .then_some(entity.entity),
             })
             .chain(
                 self.ground_items

@@ -87,14 +87,16 @@ fn audio_synthetic_flow_keeps_sources_secondary_cues_and_bounds_pending_events()
         cues[0],
         SoundCue {
             id: 41,
-            source: PresentationSource::Own
+            source: PresentationSource::Own,
+            ambient: false,
         }
     );
     assert_eq!(
         cues[7],
         SoundCue {
             id: 42,
-            source: PresentationSource::Global
+            source: PresentationSource::Global,
+            ambient: false,
         }
     );
     assert!(view.take_sound_cues().is_empty());

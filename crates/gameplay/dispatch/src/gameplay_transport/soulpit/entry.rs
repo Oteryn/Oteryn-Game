@@ -4,7 +4,7 @@ use super::super::{
     item_view::ItemKey,
 };
 use super::{SoulpitCoreSelection, SoulpitEntryIntent, outcome};
-use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
+use crate::foundation::ExactActorRef;
 use crate::map::view::{self, MapEntryKey};
 use oteryn_gameplay_domain::domain::soulpit::{
     self, OBELISK_ACTIVE_SOURCE_ID, OBELISK_INACTIVE_SOURCE_ID, OBELISK_POSITION,
@@ -237,22 +237,5 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await?
             .map(Some)
             .ok_or(())
-    }
-
-    pub(in crate::gameplay_transport) async fn soulpit_exit_step(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-        at: MovementLocalPosition,
-    ) -> Result<(), ()> {
-        let exit = soulpit::ARENA_EXIT_POSITION;
-        if at.x == i32::from(exit.x)
-            && at.y == i32::from(exit.y)
-            && at.floor.checked_neg() == Some(i16::from(exit.floor))
-            && let Some(owner) = self.states.boss_activity_handoff.get()
-        {
-            owner.return_from_soulpit(self, actor, session).await?;
-        }
-        Ok(())
     }
 }

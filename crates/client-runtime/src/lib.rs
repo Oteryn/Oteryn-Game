@@ -1,5 +1,8 @@
 //! Application-owned Tokio runtime and deterministic shutdown boundary.
 
+#[path = "features/0288-ambient-sound/protocol.rs"]
+pub mod ambient_sound;
+
 /// Account achievement pages from core command 10.
 #[path = "features/local-account-achievements/mod.rs"]
 pub mod account_achievements;
@@ -216,7 +219,8 @@ pub mod player_trade;
 pub mod player_typing;
 pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
 pub use oteryn_session::{
-    boss_difficulty, character_info, cyclopedia_character, cyclopedia_tracker, weapon_proficiency,
+    arena, boss_difficulty, character_info, cyclopedia_character, cyclopedia_tracker,
+    weapon_proficiency,
 };
 /// Prey command execution through the admitted session.
 #[path = "features/0140-prey/protocol.rs"]
@@ -297,6 +301,7 @@ pub mod chat_public_channels;
 /// Protocol codecs consumed by the native controls for the CUI-3 feature set.
 pub mod cui3 {
     pub use oteryn_session::{
-        browse_field, daily_boost, depot_search, hotkey_equip, item_forge, item_view, store,
+        browse_field, container_tree, daily_boost, depot_search, hotkey_equip, item_forge,
+        item_view, store,
     };
 }

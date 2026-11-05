@@ -528,7 +528,13 @@ def main() -> int:
     parser.add_argument("--no-stage", action="store_true", help="leave the git index untouched, including with --resolve")
     parser.add_argument("--skip-checks", action="store_true", help="regenerate only")
     parser.add_argument("--check", action="store_true", help="run the registered content checks without writing")
+    parser.add_argument("--capability-golden", help="regenerate only the named runtime capability golden")
     args = parser.parse_args()
+    if args.capability_golden:
+        if args.check or args.resolve or args.skip_checks or args.no_stage:
+            parser.error("--capability-golden cannot be combined with content options")
+        run(["python3", "tools/contracts/update_capability_golden.py", args.capability_golden, "--client-registrations"])
+        return 0
     if args.check:
         if args.resolve or args.skip_checks or args.no_stage:
             parser.error("--check cannot be combined with mutation options")

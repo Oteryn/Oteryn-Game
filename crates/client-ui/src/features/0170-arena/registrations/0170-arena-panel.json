@@ -1,0 +1,7 @@
+{
+  "mechanic": "0170-arena",
+  "kind": "panels",
+  "id": "0170-arena-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

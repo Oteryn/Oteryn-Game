@@ -1,0 +1,2042 @@
+[
+  {
+    "id": "C01",
+    "name_pl": "Walka wręcz, obrona, tryby i pościg",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:343; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/equipped_offence.rs:10",
+    "client_evidence": "apps/client/src/features/0017-attack/protocol.rs:23; test: apps/client/src/features/0017-attack/tests/play.rs:7"
+  },
+  {
+    "id": "C02",
+    "name_pl": "Broń dystansowa, amunicja, różdżki",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:542; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/ranged_attack.rs:21",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/protocol.rs:6; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:5"
+  },
+  {
+    "id": "C03",
+    "name_pl": "Krytyki, leech, odbicie i modyfikatory",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: brak prezentacji i testu pełnego zestawu modyfikatorów.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:238; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/equipment_mods.rs:14",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/protocol.rs:6; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:5"
+  },
+  {
+    "id": "C04",
+    "name_pl": "Rzucanie czarów i blokady",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2618; test: crates/gameplay/spell/src/spell/cast/gate_tests.rs:184",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/view.rs:47; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:78"
+  },
+  {
+    "id": "C05",
+    "name_pl": "Czary z parametrem i znajdowanie gracza",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/chat.rs:16; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell.rs:30",
+    "client_evidence": "apps/client/src/features/0007-chat/protocol.rs:6; test: apps/client/src/features/0007-chat/tests/play.rs:85"
+  },
+  {
+    "id": "C06",
+    "name_pl": "Runy bojowe, leczenie i tworzenie",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:316; test: crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:453",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "C07",
+    "name_pl": "Pola magiczne, obrażenia i wygasanie",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_world_item_cast.rs:365; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/field_runes.rs:219",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "C08",
+    "name_pl": "Stany, DoT, rozproszenia i regeneracja",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: pełny odczyt i widok aktywnych stanów oraz ich czasu.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/first_entry.rs:405; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_transfer.rs:1491",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/protocol.rs:6; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:5"
+  },
+  {
+    "id": "C09",
+    "name_pl": "Jedzenie i regeneracja HP/MP",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/spell_periodic.rs:453; test: crates/gameplay/dispatch/src/gameplay_transport/spell_access_facts.rs:929",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/protocol.rs:6; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:5"
+  },
+  {
+    "id": "C10",
+    "name_pl": "Punkty duszy i odpoczynek",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: licznik duszy i prezentacja regeneracji odpoczynku.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/vitals.rs:87; test: crates/gameplay/housing/src/house_bed_regen_tests.rs:4",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/protocol.rs:6; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:5"
+  },
+  {
+    "id": "C11",
+    "name_pl": "Mnich: Harmonia, Serene, Battle Instinct",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: licznik Harmonii oraz stan Serene i Battle Instinct.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2558; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monk_virtues.rs:10",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/view.rs:47; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:78"
+  },
+  {
+    "id": "C12",
+    "name_pl": "Modyfikatory czarów z ekwipunku",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:1292; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_spell_augments.rs:8",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/view.rs:47; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:78"
+  },
+  {
+    "id": "C13",
+    "name_pl": "Przywołańce, familiars i koniec właściciela",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/vitals.rs:224; test: crates/gameplay/spell/src/spell/companion_lifecycle/tests/lifecycle.rs:6",
+    "client_evidence": "apps/client/src/features/0017-attack/protocol.rs:44; test: apps/client/src/features/0011-world-interaction/tests/play.rs:26"
+  },
+  {
+    "id": "C14",
+    "name_pl": "Doświadczenie, umiejętności, nauka czarów",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: poziom, doświadczenie i postęp umiejętności; same wartości są dostępne.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:378; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/automatic_spell.rs:14",
+    "client_evidence": "crates/client-ui/src/features/0274-loyalty-skills/view.rs:19; test: crates/client-ui/src/features/0274-loyalty-skills/mod.rs:41"
+  },
+  {
+    "id": "C15",
+    "name_pl": "Stamina łowiecka i premie doświadczenia",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: dekodowanie i wyświetlanie staminy zamiast liczby bajtów.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:445; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hunting_stamina.rs:12",
+    "client_evidence": "crates/client-ui/src/features/0199-cyclopedia-character/protocol.rs:97 (odczytuje tylko numer zakładki i długość, bez staminy)"
+  },
+  {
+    "id": "C16a",
+    "name_pl": "Runy Magic Wall i Wild Growth",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2609; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/field_runes.rs:165",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "C16b",
+    "name_pl": "Runa paraliżu",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2618; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/paralyze_rune.rs:15",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "C16c",
+    "name_pl": "Convince Creature i Animate Dead",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2596; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:66",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "C16d",
+    "name_pl": "Runy Chameleon i Disintegrate",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2609; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:649",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "C17a",
+    "name_pl": "Czary przyspieszenia",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2611; test: crates/gameplay/foundation/src/foundation/condition_spell.rs:128",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/view.rs:47; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:78"
+  },
+  {
+    "id": "C17b",
+    "name_pl": "Niewidzialność i wybór celu",
+    "area": "walka",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Brak testu widoczności niewidzialnego gracza dla innych graczy.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2618; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/a4_invisible.rs:21",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/view.rs:47; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:78"
+  },
+  {
+    "id": "C17c",
+    "name_pl": "Iluzja postaci potwora",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs:388; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/creature_illusion.rs:20",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/view.rs:47; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:78"
+  },
+  {
+    "id": "C17d",
+    "name_pl": "Challenge: wymuszenie celu potwora",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2265; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/challenge_retarget.rs:20",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/view.rs:47; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:78"
+  },
+  {
+    "id": "C18a",
+    "name_pl": "Celowanie czaru w przeciwnika",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient celuje w przeciwnika; brak testu natywnego czaru kierunkowego.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat/prepare.rs:318; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pvp_live.rs:620",
+    "client_evidence": "crates/client-runtime/src/features/local-spell-action-bar/protocol.rs:59 (rzeczywisty caller; brak testu celowania)"
+  },
+  {
+    "id": "C18b",
+    "name_pl": "Czary wskazywane kursorem",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: wybór pozycji kursorem dla zwykłych czarów, poza runami.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat/prepare.rs:300; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell.rs:30",
+    "client_evidence": "crates/client-runtime/src/features/local-spell-action-bar/protocol.rs:38"
+  },
+  {
+    "id": "C19a",
+    "name_pl": "Pierwszy plecak startowy",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/first_entry.rs:191; test: apps/game-server/tests/support/item_loop_postgres_cases.rs:1095",
+    "client_evidence": "apps/client/src/features/0014-container-tree/protocol.rs:11; test: apps/client/src/features/0014-container-tree/tests/play.rs:6"
+  },
+  {
+    "id": "C19b",
+    "name_pl": "Startowy ekwipunek według profesji",
+    "area": "walka",
+    "server": "MISSING",
+    "client": "PARTIAL",
+    "missing": "Zestawy startowe profesji oraz ich grant przy pierwszym wejściu.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/first_entry.rs:196 (najbliższa granica: grant wyłącznie jednego plecaka)",
+    "client_evidence": "apps/client/src/features/0014-container-tree/protocol.rs:11; test: apps/client/src/features/0014-container-tree/tests/play.rs:6"
+  },
+  {
+    "id": "C20a",
+    "name_pl": "Śmierć: utrata doświadczenia",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/death.rs:107; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pvp_death.rs:9",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/view.rs:34; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:78"
+  },
+  {
+    "id": "C20b",
+    "name_pl": "Śmierć: utrata przedmiotów i AoL",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/player_death_items.rs:67; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_death_items.rs:286",
+    "client_evidence": "apps/client/src/features/0014-container-tree/protocol.rs:11; test: apps/client/src/features/0014-container-tree/tests/play.rs:6"
+  },
+  {
+    "id": "C20c",
+    "name_pl": "Śmierć: błogosławieństwa i Twist of Fate",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: informacja o zużytych błogosławieństwach i Twist of Fate.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/death.rs:107; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pvp_death.rs:9",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/protocol.rs:6; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:5"
+  },
+  {
+    "id": "C20d",
+    "name_pl": "Śmierć: odrodzenie w świątyni",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/death.rs:62; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_death_items.rs:286",
+    "client_evidence": "apps/client/src/features/0013-paced-movement/protocol.rs:18; test: apps/client/src/features/0013-paced-movement/tests/play.rs:4"
+  },
+  {
+    "id": "S08",
+    "name_pl": "PvP: czaszki, fragi i tryby",
+    "area": "walka",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/pvp_expert.rs:25; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pvp_death.rs:9",
+    "client_evidence": "apps/client/src/features/0087-pvp-expert/protocol.rs:9; panel: apps/client/src/features/0087-pvp-expert/view.rs:1; test: apps/client/src/features/0087-pvp-expert/tests/play.rs:116"
+  },
+  {
+    "id": "S13a",
+    "name_pl": "Czary drużyny: zasięg i odmowa",
+    "area": "walka",
+    "server": "DONE",
+    "client": "N/A",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat/prepare.rs:113; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_buffs.rs:18",
+    "client_evidence": "apps/client/src/features/0042-party/protocol.rs:22 (granica prezentacji; N/A — wewnętrzna reguła serwera)"
+  },
+  {
+    "id": "S13b",
+    "name_pl": "Czary drużyny: koszt many",
+    "area": "walka",
+    "server": "DONE",
+    "client": "N/A",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/spell/src/spell/party.rs:76; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_buffs.rs:18",
+    "client_evidence": "apps/client/src/features/0042-party/protocol.rs:22 (granica prezentacji; N/A — wewnętrzna reguła serwera)"
+  },
+  {
+    "id": "S13c",
+    "name_pl": "Czary drużyny: efekty członków",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Brak natywnego widoku aktywnych efektów członków drużyny.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat.rs:335; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_buffs.rs:18",
+    "client_evidence": "apps/client/src/features/0042-party/protocol.rs:1; panel: apps/client/src/features/0042-party/native.rs:1; test: apps/client/src/features/0042-party/tests/play.rs:4 (członkostwo; bez buffów)"
+  },
+  {
+    "id": "S15a",
+    "name_pl": "Ochrona po zalogowaniu",
+    "area": "walka",
+    "server": "DONE",
+    "client": "N/A",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack.rs:829; test: crates/gameplay/dispatch/src/gameplay_transport/channel_owner_auto_attack_tests.rs:395",
+    "client_evidence": "apps/client/src/features/local-world-view/world.rs:1 (granica prezentacji; N/A — wewnętrzna reguła serwera)"
+  },
+  {
+    "id": "S15b",
+    "name_pl": "Ochrona po ponownym połączeniu",
+    "area": "walka",
+    "server": "DONE",
+    "client": "N/A",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack.rs:829; test: crates/gameplay/dispatch/src/gameplay_transport/channel_owner_auto_attack_tests.rs:365",
+    "client_evidence": "apps/client/src/features/local-world-view/world.rs:1 (granica prezentacji; N/A — wewnętrzna reguła serwera)"
+  },
+  {
+    "id": "W01c",
+    "name_pl": "Ataki potworów",
+    "area": "walka",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Nierozwiązane callbacki ataków pozostają pomijane.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/physical_spell.rs:24; test: crates/gameplay/monster-ai/src/ai_think/think_tests/crystal_parity.rs:115; ograniczenie: crates/gameplay/monster-ai/src/ai_think/profile_schedule.rs:190",
+    "client_evidence": "apps/client/src/features/0023-presentation/view.rs:10; protokół: apps/client/src/features/0023-presentation/protocol.rs:1; test: apps/client/src/features/0023-presentation/tests/play.rs:1"
+  },
+  {
+    "id": "W20b",
+    "name_pl": "Czary światła",
+    "area": "walka",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient zmienia oświetlenie globalne, nie renderuje światła postaci.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/world_map.rs:119; test: crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit_tests.rs:225",
+    "client_evidence": "apps/client/src/features/0019-world-light/view.rs:6; protokół: apps/client/src/features/0019-world-light/protocol.rs:1; test: apps/client/src/features/0019-world-light/tests/play.rs:1"
+  },
+  {
+    "id": "M01",
+    "name_pl": "Ruch, autowalk, obrót i podążanie",
+    "area": "ruch",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: jawne Follow, Turn i Stop w natywnym sterowaniu.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/target_move.rs:46; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/autowalk.rs:165",
+    "client_evidence": "apps/client/src/features/0064-target-move/input.rs:29; test: apps/client/src/features/0064-target-move/tests/play.rs:13"
+  },
+  {
+    "id": "M02",
+    "name_pl": "Podejście do użycia i przesunięcia",
+    "area": "ruch",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/autowalk.rs:19; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/autowalk.rs:165",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0011-world-interaction/tests/play.rs:99"
+  },
+  {
+    "id": "M03",
+    "name_pl": "Schody, teleporty i blokada agresji",
+    "area": "ruch",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs:157; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/floor_exhaust.rs:18",
+    "client_evidence": "apps/client/src/features/0013-paced-movement/protocol.rs:18; test: apps/client/src/features/0013-paced-movement/tests/play.rs:4"
+  },
+  {
+    "id": "M04",
+    "name_pl": "Popychanie graczy i stworzeń",
+    "area": "ruch",
+    "server": "DONE",
+    "client": "MISSING",
+    "missing": "Klient: natywna komenda popychania i jej test.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/creature_push.rs:16; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/creature_push.rs:140",
+    "client_evidence": "crates/client-ui/src/features/0082-creature-push/registrations/handlers.json:5 (jawny unsupported; brak natywnej komendy popychania)"
+  },
+  {
+    "id": "M05",
+    "name_pl": "Zwykłe drzwi i otwieranie",
+    "area": "ruch",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs:203; test: crates/gameplay/dispatch/src/gameplay_transport/world_map_domain_tests.rs:462",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0011-world-interaction/tests/play.rs:99"
+  },
+  {
+    "id": "M06",
+    "name_pl": "Klucze i drzwi poziomu/zadania",
+    "area": "ruch",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs:55; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m06q_quest_doors.rs:10",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0011-world-interaction/tests/play.rs:99"
+  },
+  {
+    "id": "M07",
+    "name_pl": "Lina i wychodzenie z dziury",
+    "area": "ruch",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/item_craft/rope.rs:78; test: crates/gameplay/dispatch/src/gameplay_transport/item_craft/rope_tests.rs:417",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "M08",
+    "name_pl": "Łopata, maczeta, kosa, sierp, łom i kilof",
+    "area": "ruch",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:305; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/terrain_tool.rs:14",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "M09",
+    "name_pl": "Łowienie ryb, skórowanie i zbieractwo",
+    "area": "ruch",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:373; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/standard_fishing.rs:13",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "M10",
+    "name_pl": "Pływanie, tonięcie, pułapki i pola",
+    "area": "ruch",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs:160; test: crates/gameplay/dispatch/src/gameplay_transport/paced_movement/special_movement.rs:1103",
+    "client_evidence": "apps/client/src/features/0013-paced-movement/protocol.rs:18; test: apps/client/src/features/0013-paced-movement/tests/play.rs:4"
+  },
+  {
+    "id": "M11a",
+    "name_pl": "Levitate: zmiana piętra czarem",
+    "area": "ruch",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Brak kwalifikacji immovable na kaflach aktywnego pakietu świata.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs:570; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vertical_move.rs:24",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/view.rs:47; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:78"
+  },
+  {
+    "id": "M11b",
+    "name_pl": "Magic Rope: magiczna lina",
+    "area": "ruch",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Brak kwalifikacji immovable na kaflach aktywnego pakietu świata.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs:570; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vertical_move.rs:24",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/view.rs:47; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:78"
+  },
+  {
+    "id": "ADD-0012",
+    "name_pl": "Zakładanie, zdejmowanie i upuszczanie wyposażenia",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/item_move.rs:58; test: crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/committed_moves_tests.rs:17",
+    "client_evidence": "apps/client/src/features/0012-item-equip-drop/native.rs:69; apps/client/src/features/0004-item-view-move/input.rs:35; test: crates/client-ui/src/features/0012-item-equip-drop/tests/panel.rs:40"
+  },
+  {
+    "id": "ADD-0146",
+    "name_pl": "Sortowanie kontenerów",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/container_sort.rs:50; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/container_sort.rs:14",
+    "client_evidence": "apps/client/src/features/0146-container-sort/protocol.rs:24; apps/client/src/features/0146-container-sort/view.rs:8; test: apps/client/src/features/0146-container-sort/tests/play.rs:116"
+  },
+  {
+    "id": "I01",
+    "name_pl": "Kontenery, pojemność, zagnieżdżanie i stosy",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/item_move.rs:57; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/stack_quantity.rs:15",
+    "client_evidence": "apps/client/src/features/0014-container-tree/protocol.rs:11; test: apps/client/src/features/0014-container-tree/tests/play.rs:6"
+  },
+  {
+    "id": "I03",
+    "name_pl": "Oglądanie, teksty i księgi czarów",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/item_look.rs:465; test: crates/gameplay/dispatch/src/gameplay_transport/item_look_tests.rs:648",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0011-world-interaction/tests/play.rs:99"
+  },
+  {
+    "id": "I04",
+    "name_pl": "Pisanie i jednorazowe zapisy",
+    "area": "przedmioty",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Brak produkcyjnego wejścia zapisu tekstu i obsługi write-once.",
+    "server_evidence": "crates/gameplay/durability/src/durability/item_text.rs:355 (producent bez wywołania runtime; granica jawnie opisana: crates/gameplay/durability/src/durability/item_text.rs:3); test producenta: crates/gameplay/durability/src/durability/item_text/tests/carried_tests.rs:219",
+    "client_evidence": "apps/client/src/features/0115-mail/protocol.rs:306; test: apps/client/src/features/0115-mail/tests/play.rs:148"
+  },
+  {
+    "id": "I05",
+    "name_pl": "Czasowe przedmioty, ładunki i transformacje",
+    "area": "przedmioty",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Pełne pokrycie powierzchni przechowywania i łańcuchów transformacji niepotwierdzone.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/source_item_cycle.rs:87; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/timed_item.rs:157",
+    "client_evidence": "apps/client/src/features/0039-timed-item/protocol.rs:58; test: apps/client/src/features/0039-timed-item/tests/play.rs:116"
+  },
+  {
+    "id": "I06",
+    "name_pl": "Rozkład zwłok i pozostałego łupu",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/timed_item_clock.rs:56; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/corpse_decay.rs:13",
+    "client_evidence": "apps/client/src/features/0014-container-tree/protocol.rs:11; test: apps/client/src/features/0014-container-tree/tests/play.rs:6"
+  },
+  {
+    "id": "I07",
+    "name_pl": "Quick loot, filtry, kategorie i kołczan",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/quick_loot.rs:46; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quick_loot.rs:13",
+    "client_evidence": "apps/client/src/features/0098-quick-loot/protocol.rs:1; test: apps/client/src/features/0098-quick-loot/tests/play.rs:61"
+  },
+  {
+    "id": "I08",
+    "name_pl": "Losowe nagrody Primal Bag",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/reward_bag_use.rs:88; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/reward_bag.rs:24",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "I09",
+    "name_pl": "Obracanie mebli",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs:190; test: crates/gameplay/dispatch/src/gameplay_transport/item_transform_dispatch_tests.rs:49",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0011-world-interaction/tests/play.rs:99"
+  },
+  {
+    "id": "I10",
+    "name_pl": "Pakowanie, zestawy, niszczenie i płyny",
+    "area": "przedmioty",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Przelewanie do pełnego naczynia jest odrzucane; niepełny przepływ mebli klienta.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:230; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_wrap.rs:30",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "I11",
+    "name_pl": "Gotowanie, pieczenie i przetwarzanie",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:45; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:25",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "I12",
+    "name_pl": "Rafinacja błyszczących kamieni",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/mining/mod.rs:75; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mining.rs:28",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "I13",
+    "name_pl": "Otwieranie losowych worków nagród",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/reward_bag_use.rs:88; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/reward_bag.rs:14",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "I14",
+    "name_pl": "Mikstury, specjalne jedzenie, casks/kegs",
+    "area": "przedmioty",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Brak produkcyjnej obsługi casks/kegs i pełnego zestawu wariantów.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/item_use.rs:545; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/crystal_consumables.rs:3",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "I15",
+    "name_pl": "Energy Ring: tarcza many 2:1",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:1720; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/energy_ring.rs:11",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/protocol.rs:6; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:5"
+  },
+  {
+    "id": "I16",
+    "name_pl": "Inspekcja przedmiotów, wagi i imbuementów",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/inspection.rs:23; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/inspection.rs:16",
+    "client_evidence": "crates/client-ui/src/features/0132-inspection/protocol.rs:29; test: apps/client/src/features/0132-inspection/tests/play.rs:53"
+  },
+  {
+    "id": "I17a",
+    "name_pl": "Skrót: zakładanie przedmiotu z plecaka",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: rzeczywiste przypisanie klawisza do przedmiotu; dostępny panel komendy.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/hotkey_equip.rs:47; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hotkey_equip.rs:11",
+    "client_evidence": "apps/client/src/features/0179-hotkey-equip/native.rs:6; test: apps/client/src/features/0179-hotkey-equip/tests/play.rs:17"
+  },
+  {
+    "id": "I17b",
+    "name_pl": "Skrót: zdejmowanie do kontenera",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: rzeczywiste przypisanie klawisza do przedmiotu; dostępny panel komendy.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/hotkey_equip.rs:47; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hotkey_equip.rs:11",
+    "client_evidence": "apps/client/src/features/0179-hotkey-equip/native.rs:6; test: apps/client/src/features/0179-hotkey-equip/tests/play.rs:17"
+  },
+  {
+    "id": "I17c",
+    "name_pl": "Skrót: zamiana broni, tarczy i amunicji",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: rzeczywiste przypisanie klawisza do przedmiotu; dostępny panel komendy.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/hotkey_equip.rs:47; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hotkey_swap.rs:6",
+    "client_evidence": "apps/client/src/features/0179-hotkey-equip/native.rs:6; test: apps/client/src/features/0179-hotkey-equip/tests/play.rs:17"
+  },
+  {
+    "id": "I17d",
+    "name_pl": "Skrót: opóźnienia biżuterii i blokady",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: rzeczywiste przypisanie klawisza do przedmiotu; dostępny panel komendy.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/hotkey_equip.rs:47; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hotkey_equip_coalescing.rs:5",
+    "client_evidence": "apps/client/src/features/0179-hotkey-equip/native.rs:6; test: apps/client/src/features/0179-hotkey-equip/tests/play.rs:17"
+  },
+  {
+    "id": "I18a",
+    "name_pl": "Browse field: przegląd pola i podejście",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/browse_field.rs:26; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field.rs:49",
+    "client_evidence": "apps/client/src/features/0230-browse-field/native.rs:11; test: apps/client/src/features/0230-browse-field/tests/play.rs:19"
+  },
+  {
+    "id": "I18b",
+    "name_pl": "Browse field: przenoszenie przedmiotów",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: przenoszenie przedmiotów przez okno Browse field i test.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/item_move.rs:57; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field.rs:29",
+    "client_evidence": "apps/client/src/features/0230-browse-field/native.rs:11; test: apps/client/src/features/0230-browse-field/tests/play.rs:19"
+  },
+  {
+    "id": "I18c",
+    "name_pl": "Browse field: poziom wyżej z kontenera",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient: nawigacja Up z kontenera naziemnego do pola i test.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/loop_move.rs:974; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field.rs:39",
+    "client_evidence": "apps/client/src/features/0230-browse-field/native.rs:11; test: apps/client/src/features/0230-browse-field/tests/play.rs:19"
+  },
+  {
+    "id": "I19",
+    "name_pl": "Zaklinanie klejnotów i broni",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:62; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/gem_enchanting.rs:17",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18; test: apps/client/src/features/0015-item-use/tests/play.rs:124"
+  },
+  {
+    "id": "P18",
+    "name_pl": "Kuźnia egzaltacji",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient nie dekoduje wyniku kuźni ani historii operacji.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/item_forge.rs:91; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge.rs:29",
+    "client_evidence": "crates/client-ui/src/features/0152-item-forge/protocol.rs:45; apps/client/src/features/0152-item-forge/protocol.rs:1; panel: apps/client/src/features/0152-item-forge/native.rs:1; test: apps/client/src/features/0152-item-forge/tests/play.rs:3"
+  },
+  {
+    "id": "P21",
+    "name_pl": "Imbuementy, etcher i zwoje",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/imbuement.rs:15; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/imbuement.rs:26",
+    "client_evidence": "apps/client/src/features/0068-imbue/protocol.rs:9; panel: apps/client/src/features/0068-imbue/native.rs:1; test: apps/client/src/features/0068-imbue/tests/play.rs:109"
+  },
+  {
+    "id": "W09",
+    "name_pl": "Mikstury Drome i kostka",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Brak testowanego natywnego widoku czasu działania mikstur.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/drome_cube_use.rs:45; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube.rs:22; mikstury: crates/gameplay/dispatch/src/gameplay_transport/item_use.rs:118",
+    "client_evidence": "apps/client/src/features/0015-item-use/input.rs:1; test: apps/client/src/features/0015-item-use/tests/play.rs:5"
+  },
+  {
+    "id": "W19a",
+    "name_pl": "Losowe torby i prezenty",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/reward_bag_use.rs:78; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/reward_bag.rs:29",
+    "client_evidence": "crates/client-runtime/src/features/0011-world-interaction/protocol.rs:153; obsługa: apps/client/src/features/0011-world-interaction/protocol.rs:18; widok: apps/client/src/features/0004-item-view-move/native.rs:202; test: apps/client/src/features/0015-item-use/tests/play.rs:205; pojemniki: apps/client/src/features/0014-container-tree/protocol.rs:13; widok: apps/client/src/features/0014-container-tree/view.rs:7; test: apps/client/src/features/0014-container-tree/tests/play.rs:6"
+  },
+  {
+    "id": "W19b",
+    "name_pl": "Sadzenie roślin",
+    "area": "przedmioty",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Brak wykonawcy Dryad Garden; efekt zapisany wyłącznie jako stała.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/item_craft/planting.rs:54; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_seed_planting.rs:32; ograniczenie: crates/gameplay/items/src/event_planting.rs:216",
+    "client_evidence": "crates/client-runtime/src/features/0011-world-interaction/protocol.rs:153; obsługa: apps/client/src/features/0011-world-interaction/protocol.rs:18; widok: apps/client/src/features/0004-item-view-move/native.rs:202; test: apps/client/src/features/0015-item-use/tests/play.rs:205; zmiany przedmiotów: apps/client/src/features/0004-item-view-move/protocol.rs:18"
+  },
+  {
+    "id": "W19c",
+    "name_pl": "Fajerwerki i zabawki",
+    "area": "przedmioty",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Efekty wizualne zachowane w receiptach bez działającego konsumenta.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/novelty_item_use.rs:196; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:90; ograniczenie: crates/gameplay/dispatch/src/gameplay_transport/novelty_item_owner.rs:98",
+    "client_evidence": "apps/client/src/features/0023-presentation/view.rs:10; protokół: apps/client/src/features/0023-presentation/protocol.rs:1; test: apps/client/src/features/0023-presentation/tests/play.rs:1"
+  },
+  {
+    "id": "W19d",
+    "name_pl": "Przedmioty odblokowujące wygląd",
+    "area": "przedmioty",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Brak kanonicznego katalogu outfitów; produkcyjny gate odmawia bez kosmetyków.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:220; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:1; odmowa: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:16; gate: crates/gameplay/durability/src/durability/consume_transform_cosmetics.rs:84; katalog: content/cosmetics/outfits/index.json:7",
+    "client_evidence": "apps/client/src/features/0025-appearance/view.rs:8; protokół: apps/client/src/features/0025-appearance/protocol.rs:1; test: apps/client/src/features/0025-appearance/tests/play.rs:1"
+  },
+  {
+    "id": "W19e",
+    "name_pl": "Odrdzewiacz, loteria, jubileusz",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:220; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/rust_lottery.rs:23; jubileusz: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/reward_bag.rs:46",
+    "client_evidence": "crates/client-runtime/src/features/0011-world-interaction/protocol.rs:153; obsługa: apps/client/src/features/0011-world-interaction/protocol.rs:18; widok: apps/client/src/features/0004-item-view-move/native.rs:202; test: apps/client/src/features/0015-item-use/tests/play.rs:205; zmiany przedmiotów: apps/client/src/features/0004-item-view-move/protocol.rs:18"
+  },
+  {
+    "id": "W22a",
+    "name_pl": "Losowanie łupu potworów",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2957; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:49; reguły: crates/gameplay/items/src/loot_plan.rs:358",
+    "client_evidence": "apps/client/src/features/0014-container-tree/view.rs:5; protokół: apps/client/src/features/0014-container-tree/protocol.rs:1; test: apps/client/src/features/0014-container-tree/tests/play.rs:1"
+  },
+  {
+    "id": "W22b",
+    "name_pl": "Modyfikatory łupu",
+    "area": "przedmioty",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2777; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:9; Gut: crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1656; Wealth: crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2785",
+    "client_evidence": "apps/client/src/features/0014-container-tree/view.rs:5; protokół: apps/client/src/features/0014-container-tree/protocol.rs:1; test: apps/client/src/features/0014-container-tree/tests/play.rs:1; premie: apps/client/src/features/0151-daily-boost/view.rs:13; protokół: apps/client/src/features/0151-daily-boost/protocol.rs:1; test: apps/client/src/features/0151-daily-boost/tests/play.rs:1"
+  },
+  {
+    "id": "E01",
+    "name_pl": "Sklep NPC i bank",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/npc_shop.rs:26; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_shop.rs:45",
+    "client_evidence": "apps/client/src/features/0081-npc-shop/protocol.rs:23; panel: apps/client/src/features/0081-npc-shop/native.rs:1; test: apps/client/src/features/0081-npc-shop/tests/play.rs:79"
+  },
+  {
+    "id": "E02",
+    "name_pl": "Wymiana monet u NPC",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:705; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/coin_exchange.rs:19",
+    "client_evidence": "apps/client/src/features/0003-npc-service/protocol.rs:18; panel: apps/client/src/features/0003-npc-service/native.rs:1; test: apps/client/src/features/0003-npc-service/tests/play.rs:4"
+  },
+  {
+    "id": "E03",
+    "name_pl": "Monety i konwertery złota",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:218; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/coin_exchange.rs:19",
+    "client_evidence": "apps/client/src/features/0015-item-use/protocol.rs:1; test: apps/client/src/features/0015-item-use/tests/play.rs:5"
+  },
+  {
+    "id": "E04",
+    "name_pl": "Handel między graczami",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/player_trade.rs:23; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_trade.rs:23",
+    "client_evidence": "apps/client/src/features/0060-player-trade/protocol.rs:22; panel: apps/client/src/features/0060-player-trade/native.rs:1; test: apps/client/src/features/0060-player-trade/tests/play.rs:96"
+  },
+  {
+    "id": "E05",
+    "name_pl": "Oferty i historia rynku",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/market.rs:10; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/market.rs:112",
+    "client_evidence": "apps/client/src/features/0063-market/protocol.rs:18; panel: apps/client/src/features/0063-market/native.rs:1; test: apps/client/src/features/0063-market/tests/play.rs:83"
+  },
+  {
+    "id": "E06",
+    "name_pl": "Wygaszanie ofert i zwroty",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "N/A",
+    "missing": "—",
+    "server_evidence": "apps/game-server/src/node/market_scheduler.rs:20; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/market.rs:124",
+    "client_evidence": "apps/client/src/features/0063-market/protocol.rs:18 (granica prezentacji; N/A — wewnętrzna reguła serwera)"
+  },
+  {
+    "id": "E07",
+    "name_pl": "Depot, skrzynka i magazyn",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/stash.rs:30; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/depot_dispatch/stash_cases.rs:1",
+    "client_evidence": "apps/client/src/features/0062-stash/protocol.rs:18; panel: apps/client/src/features/0062-stash/native.rs:1; test: apps/client/src/features/0062-stash/tests/play.rs:70"
+  },
+  {
+    "id": "E08",
+    "name_pl": "Wyszukiwanie i odbiór z depotu",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/depot_search.rs:99; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/depot_search.rs:8",
+    "client_evidence": "apps/client/src/features/0153-depot-search/protocol.rs:1; panel: apps/client/src/features/0153-depot-search/native.rs:1; test: apps/client/src/features/0153-depot-search/tests/play.rs:3"
+  },
+  {
+    "id": "E09",
+    "name_pl": "Listy i przesyłki",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/mail.rs:77; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/depot_dispatch/mail_cases.rs:1",
+    "client_evidence": "apps/client/src/features/0115-mail/protocol.rs:1; panel: apps/client/src/features/0115-mail/native.rs:1; test: apps/client/src/features/0115-mail/tests/play.rs:110"
+  },
+  {
+    "id": "E10",
+    "name_pl": "Sklep, zakupy i historia",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/store.rs:145; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/store_purchase_history.rs:17",
+    "client_evidence": "apps/client/src/features/0154-store/protocol.rs:1; panel: apps/client/src/features/0154-store/native.rs:1; test: apps/client/src/features/0154-store/tests/play.rs:3"
+  },
+  {
+    "id": "E11",
+    "name_pl": "Monety transferowe i bazar postaci",
+    "area": "ekonomia",
+    "server": "MISSING",
+    "client": "N/A",
+    "missing": "Poza zakresem Game; monety transferowe i bazar należą do Platform.",
+    "server_evidence": "AGENTS.md:1 (granica odpowiedzialności); crates/gameplay/dispatch/src/gameplay_transport/store.rs:145",
+    "client_evidence": "apps/client/src/features/0154-store/protocol.rs:1 (granica prezentacji; N/A — wewnętrzna reguła serwera)"
+  },
+  {
+    "id": "E12",
+    "name_pl": "Najemnicy i usługi domowe",
+    "area": "ekonomia",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Brak natywnego zarządzania tożsamością i strojami najemników.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/hireling_management.rs:7; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:56",
+    "client_evidence": "crates/client-ui/src/features/0250-hireling-management/registrations/handlers.json:6; apps/client/src/features/0165-hireling/native.rs:61; test: apps/client/src/features/0165-hireling/tests/play.rs:61"
+  },
+  {
+    "id": "P01",
+    "name_pl": "Bestiariusz i charmy",
+    "area": "progresja",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Nie wszystkie efekty charmów mają konsumenta runtime.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs:39; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/charm_progression.rs:214",
+    "client_evidence": "apps/client/src/features/0067-bestiary-charm-progression/protocol.rs:15; panel: apps/client/src/features/0067-bestiary-charm-progression/view.rs:1; test: apps/client/src/features/0067-bestiary-charm-progression/tests/play.rs:116"
+  },
+  {
+    "id": "P02",
+    "name_pl": "Bosstiariusz, punkty i sloty",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs:15; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/bosstiary_slots.rs:74",
+    "client_evidence": "apps/client/src/features/0117-boss-encounter/protocol.rs:12; panel: apps/client/src/features/0117-boss-encounter/native.rs:1; test: apps/client/src/features/0117-boss-encounter/tests/play.rs:66"
+  },
+  {
+    "id": "P03",
+    "name_pl": "Prey: wybór i premie",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/prey.rs:324; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey.rs:16",
+    "client_evidence": "apps/client/src/features/0140-prey/protocol.rs:9; panel: apps/client/src/features/0140-prey/native.rs:1; test: apps/client/src/features/0140-prey/tests/play.rs:101"
+  },
+  {
+    "id": "P05",
+    "name_pl": "Talizman łowcy nagród",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Brak natywnego zakupu talizmanu; panel umożliwia tylko starsze ulepszenia.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:501; crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2750; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:154",
+    "client_evidence": "apps/client/src/features/0072-task-board/native.rs:98; apps/client/src/features/0072-task-board/input.rs:13; crates/client-ui/src/features/0072-task-board/mod.rs:27; test: apps/client/src/features/0072-task-board/tests/play.rs:94"
+  },
+  {
+    "id": "P06",
+    "name_pl": "Koło rozwoju",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/wheel.rs:67; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:114",
+    "client_evidence": "apps/client/src/features/0148-wheel-allocation/protocol.rs:9; panel: apps/client/src/features/0148-wheel-allocation/native.rs:1; test: apps/client/src/features/0148-wheel-allocation/tests/play.rs:169"
+  },
+  {
+    "id": "P07",
+    "name_pl": "Atelier klejnotów i rezonans",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/atelier.rs:614; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:97",
+    "client_evidence": "apps/client/src/features/0148-wheel-allocation/protocol.rs:9; panel: apps/client/src/features/0148-wheel-allocation/native.rs:1; test: apps/client/src/features/0148-wheel-allocation/tests/play.rs:169"
+  },
+  {
+    "id": "P08",
+    "name_pl": "Biegłość broni i katalizatory",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient nie pokazuje doświadczenia ani pełnej listy biegłości.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/weapon_proficiency_modify.rs:22; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/proficiency_modification.rs:26",
+    "client_evidence": "apps/client/src/features/0195-weapon-proficiency/protocol.rs:6; panel: apps/client/src/features/0195-weapon-proficiency/native.rs:1; test: apps/client/src/features/0195-weapon-proficiency/tests/play.rs:4"
+  },
+  {
+    "id": "P09",
+    "name_pl": "Codzienne nagrody i premie XP",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/daily_reward.rs:299; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/daily_reward.rs:133",
+    "client_evidence": "apps/client/src/features/0182-daily-reward/protocol.rs:1; panel: apps/client/src/features/0182-daily-reward/native.rs:1; test: apps/client/src/features/0182-daily-reward/tests/play.rs:82"
+  },
+  {
+    "id": "P10",
+    "name_pl": "Regeneracja ze serii nagród",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "N/A",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/resting_area.rs:59; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/daily_resting.rs:8",
+    "client_evidence": "apps/client/src/features/0182-daily-reward/protocol.rs:1 (granica prezentacji; N/A — wewnętrzna reguła serwera)"
+  },
+  {
+    "id": "P11",
+    "name_pl": "Osiągnięcia i źródła nagród",
+    "area": "progresja",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Brakuje osiągnięcia Wayfarer przy finale Wrath of the Emperor.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/achievements.rs:21; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/achievement_notices.rs:13; crates/gameplay/quests/src/quest/wrath_sleeping_dragon.rs:2",
+    "client_evidence": "apps/client/src/features/0008-achievement-notices/protocol.rs:14; panel: apps/client/src/features/0008-achievement-notices/native.rs:1; test: apps/client/src/features/0008-achievement-notices/tests/play.rs:66"
+  },
+  {
+    "id": "P12a",
+    "name_pl": "Tytuły: odblokowanie i wybór",
+    "area": "progresja",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Brakuje źródeł tytułów: punkty zadań, eksploracja i część questów.",
+    "server_evidence": "crates/protocol-oteryn/src/character_info.rs:475; crates/gameplay/dispatch/src/gameplay_transport/character_info.rs:182; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_title_completion.rs:12",
+    "client_evidence": "apps/client/src/features/0097-character-info/protocol.rs:29; panel: apps/client/src/features/0097-character-info/view.rs:1; test: apps/client/src/features/0097-character-info/tests/play.rs:115"
+  },
+  {
+    "id": "P12b",
+    "name_pl": "Odznaki Cyklopedii",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/cyclopedia_character.rs:56; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_character.rs:15",
+    "client_evidence": "apps/client/src/features/0199-cyclopedia-character/protocol.rs:1; panel: apps/client/src/features/0199-cyclopedia-character/native.rs:1; test: apps/client/src/features/0199-cyclopedia-character/tests/play.rs:6"
+  },
+  {
+    "id": "P12c",
+    "name_pl": "Cyklopedia: postać, zgony i PvP",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient pokazuje rozmiar strony zamiast danych postaci.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/cyclopedia_character.rs:10; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_character.rs:15",
+    "client_evidence": "crates/client-ui/src/features/0199-cyclopedia-character/protocol.rs:97; apps/client/src/features/0199-cyclopedia-character/protocol.rs:6; panel: apps/client/src/features/0199-cyclopedia-character/native.rs:1; test: apps/client/src/features/0199-cyclopedia-character/tests/play.rs:6"
+  },
+  {
+    "id": "P13",
+    "name_pl": "Lojalność i premie umiejętności",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:104; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loyalty.rs:13",
+    "client_evidence": "apps/client/src/features/0274-loyalty-skills/protocol.rs:6; panel: apps/client/src/features/0274-loyalty-skills/native.rs:1; test: apps/client/src/features/0274-loyalty-skills/tests/play.rs:159"
+  },
+  {
+    "id": "P14",
+    "name_pl": "Trening offline",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/loop_training/wire.rs:28; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_training.rs:9",
+    "client_evidence": "apps/client/src/features/0054-training/protocol.rs:9; panel: apps/client/src/features/0054-training/view.rs:1; test: apps/client/src/features/0054-training/tests/play.rs:110"
+  },
+  {
+    "id": "P15",
+    "name_pl": "Trening na manekinach",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/loop_training/wire.rs:41; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_training/exercise.rs:21",
+    "client_evidence": "apps/client/src/features/0054-training/protocol.rs:15; panel: apps/client/src/features/0054-training/view.rs:1; test: apps/client/src/features/0054-training/tests/play.rs:110"
+  },
+  {
+    "id": "P16",
+    "name_pl": "Błogosławieństwa i Twist of Fate",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs:166; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/adventurer_blessing.rs:202",
+    "client_evidence": "apps/client/src/features/0003-npc-service/protocol.rs:18; panel: apps/client/src/features/0003-npc-service/native.rs:1; test: apps/client/src/features/0003-npc-service/tests/play.rs:4"
+  },
+  {
+    "id": "P20",
+    "name_pl": "Premium, promocja i relokacja",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/premium.rs:49; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loyalty_premium_days.rs:17; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/promotion_npc.rs:19",
+    "client_evidence": "apps/client/src/features/0003-npc-service/protocol.rs:18; panel: apps/client/src/features/0003-npc-service/native.rs:1; test: apps/client/src/features/0003-npc-service/tests/play.rs:4"
+  },
+  {
+    "id": "P22a",
+    "name_pl": "Tracker bestiariusza",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/cyclopedia_tracker.rs:17; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_tracker.rs:54",
+    "client_evidence": "apps/client/src/features/0197-cyclopedia-tracker/protocol.rs:13; panel: apps/client/src/features/0197-cyclopedia-tracker/native.rs:1; test: apps/client/src/features/0197-cyclopedia-tracker/tests/play.rs:7"
+  },
+  {
+    "id": "P22b",
+    "name_pl": "Tracker bosstiariusza",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/cyclopedia_tracker.rs:17; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_tracker.rs:54",
+    "client_evidence": "apps/client/src/features/0197-cyclopedia-tracker/protocol.rs:13; panel: apps/client/src/features/0197-cyclopedia-tracker/native.rs:1; test: apps/client/src/features/0197-cyclopedia-tracker/tests/play.rs:7"
+  },
+  {
+    "id": "P22c",
+    "name_pl": "Trwałość trackerów",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/cyclopedia_tracker.rs:17; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_tracker.rs:54",
+    "client_evidence": "apps/client/src/features/0197-cyclopedia-tracker/protocol.rs:13; panel: apps/client/src/features/0197-cyclopedia-tracker/native.rs:1; test: apps/client/src/features/0197-cyclopedia-tracker/tests/play.rs:7"
+  },
+  {
+    "id": "P22d",
+    "name_pl": "Odświeżanie trackerów po zabiciu",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/cyclopedia_tracker.rs:17; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_tracker.rs:54",
+    "client_evidence": "apps/client/src/features/0197-cyclopedia-tracker/protocol.rs:13; panel: apps/client/src/features/0197-cyclopedia-tracker/native.rs:1; test: apps/client/src/features/0197-cyclopedia-tracker/tests/play.rs:7"
+  },
+  {
+    "id": "S16a",
+    "name_pl": "Potwierdzony wybór profesji",
+    "area": "progresja",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/vocation_choice.rs:266; test: crates/gameplay/dispatch/src/gameplay_transport/vocation_choice.rs:566",
+    "client_evidence": "apps/client/src/features/0003-npc-service/protocol.rs:18; panel: apps/client/src/features/0003-npc-service/native.rs:1; test: apps/client/src/features/0003-npc-service/tests/play.rs:4"
+  },
+  {
+    "id": "S16b",
+    "name_pl": "Profesja: umiejętności i statystyki",
+    "area": "progresja",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Brak limitu magic level Dawnport; klient nie pokazuje pełnych statystyk.",
+    "server_evidence": "crates/gameplay/durability/src/durability/character_build.rs:339; crates/gameplay/dispatch/src/gameplay_transport/vocation_choice.rs:353",
+    "client_evidence": "crates/client-ui/src/features/0199-cyclopedia-character/protocol.rs:97; apps/client/src/features/0274-loyalty-skills/protocol.rs:1; panel: apps/client/src/features/0274-loyalty-skills/native.rs:1; test: apps/client/src/features/0274-loyalty-skills/tests/play.rs:159"
+  },
+  {
+    "id": "S16c",
+    "name_pl": "Próby profesji przed poziomem 20",
+    "area": "progresja",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Brakuje przedmiotów, stroju i czarów próbnej profesji.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs:223; crates/gameplay/dispatch/src/gameplay_transport/dawnport_trial.rs:10",
+    "client_evidence": "apps/client/src/features/0013-paced-movement/protocol.rs:1; test: apps/client/src/features/0013-paced-movement/tests/play.rs:4 (krok; bez próbnych przydziałów)"
+  },
+  {
+    "id": "W08",
+    "name_pl": "Animus Mastery",
+    "area": "progresja",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Zdobywanie mistrzostwa zależy od niepodłączonego wejścia Soulpit.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/animus_mastery.rs:61; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/animus_mastery.rs:13; źródło: crates/gameplay/durability/src/durability/soulpit/progress.rs:201",
+    "client_evidence": "apps/client/src/features/0168-animus-mastery/view.rs:13; protokół: apps/client/src/features/0168-animus-mastery/protocol.rs:1; test: apps/client/src/features/0168-animus-mastery/tests/play.rs:1"
+  },
+  {
+    "id": "ADD-0031",
+    "name_pl": "Samouczek i wskazówki",
+    "area": "zadania",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/tutorial_movement.rs:94; crates/gameplay/dispatch/src/gameplay_transport/connection/serve/effects.rs:36; test: crates/gameplay/dispatch/src/gameplay_transport/tutorial_session_tests.rs:4",
+    "client_evidence": "apps/client/src/features/0031-tutorial-notices/protocol.rs:21; apps/client/src/features/0031-tutorial-notices/native.rs:17; test: apps/client/src/features/0031-tutorial-notices/tests/play.rs:5"
+  },
+  {
+    "id": "P04",
+    "name_pl": "Zadania tygodniowe i bounty",
+    "area": "zadania",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Natywny panel obsługuje stare komendy, bez tygodniówek, dostaw i sklepu.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/task_board.rs:38; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board.rs:66",
+    "client_evidence": "apps/client/src/features/0072-task-board/native.rs:98; apps/client/src/features/0072-task-board/input.rs:13; crates/client-ui/src/features/0072-task-board/mod.rs:27; test: apps/client/src/features/0072-task-board/tests/play.rs:94"
+  },
+  {
+    "id": "P23a",
+    "name_pl": "Prey Hunting Tasks: wybór potwora",
+    "area": "zadania",
+    "server": "MISSING",
+    "client": "MISSING",
+    "missing": "Brak osobnego systemu Prey Hunting Tasks i jego panelu.",
+    "server_evidence": "crates/protocol-oteryn/src/character_info.rs:479 (brak właściciela punktów); crates/gameplay/dispatch/src/gameplay_transport/prey.rs:1 (tylko bonusy Prey)",
+    "client_evidence": "apps/client/src/features/0140-prey/protocol.rs:1; panel: apps/client/src/features/0140-prey/native.rs:1; test: apps/client/src/features/0140-prey/tests/play.rs:101 (panel bonusów, bez Hunting Tasks)"
+  },
+  {
+    "id": "P23b",
+    "name_pl": "Prey Hunting Tasks: zabicia",
+    "area": "zadania",
+    "server": "MISSING",
+    "client": "MISSING",
+    "missing": "Brak osobnego systemu Prey Hunting Tasks i jego panelu.",
+    "server_evidence": "crates/protocol-oteryn/src/character_info.rs:479 (brak właściciela punktów); crates/gameplay/dispatch/src/gameplay_transport/prey.rs:1 (tylko bonusy Prey)",
+    "client_evidence": "apps/client/src/features/0140-prey/protocol.rs:1; panel: apps/client/src/features/0140-prey/native.rs:1; test: apps/client/src/features/0140-prey/tests/play.rs:101 (panel bonusów, bez Hunting Tasks)"
+  },
+  {
+    "id": "P23c",
+    "name_pl": "Prey Hunting Tasks: nagrody",
+    "area": "zadania",
+    "server": "MISSING",
+    "client": "MISSING",
+    "missing": "Brak osobnego systemu Prey Hunting Tasks i jego panelu.",
+    "server_evidence": "crates/protocol-oteryn/src/character_info.rs:479 (brak właściciela punktów); crates/gameplay/dispatch/src/gameplay_transport/prey.rs:1 (tylko bonusy Prey)",
+    "client_evidence": "apps/client/src/features/0140-prey/protocol.rs:1; panel: apps/client/src/features/0140-prey/native.rs:1; test: apps/client/src/features/0140-prey/tests/play.rs:101 (panel bonusów, bez Hunting Tasks)"
+  },
+  {
+    "id": "W15a",
+    "name_pl": "Dziennik zadań",
+    "area": "zadania",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/quest_log.rs:269; test: crates/gameplay/dispatch/src/gameplay_transport/quest_log_postgres_tests.rs:1",
+    "client_evidence": "apps/client/src/features/0016-quest-log/view.rs:16; protokół: apps/client/src/features/0016-quest-log/protocol.rs:1; test: apps/client/src/features/0016-quest-log/tests/play.rs:1"
+  },
+  {
+    "id": "W15b",
+    "name_pl": "Skrzynie nagród zadań",
+    "area": "zadania",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Ogólny resolver dopuszcza jeden przedmiot; niepełne warianty nagród.",
+    "server_evidence": "crates/gameplay/social/src/interaction/chest_use.rs:253; test: crates/gameplay/dispatch/src/gameplay_transport/quest_chest_postgres_tests.rs:1",
+    "client_evidence": "apps/client/src/features/0014-container-tree/view.rs:5; protokół: apps/client/src/features/0014-container-tree/protocol.rs:1; test: apps/client/src/features/0014-container-tree/tests/play.rs:1"
+  },
+  {
+    "id": "W15c",
+    "name_pl": "Zadania Grizzly Adamsa",
+    "area": "zadania",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/grizzly.rs:611; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_npc/progression.rs:1; zliczanie: crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills.rs:1",
+    "client_evidence": "apps/client/src/features/0003-npc-service/view.rs:11; protokół: apps/client/src/features/0003-npc-service/protocol.rs:1; test: apps/client/src/features/0003-npc-service/tests/play.rs:1"
+  },
+  {
+    "id": "W15d",
+    "name_pl": "Wykonywalne scenariusze zadań",
+    "area": "zadania",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Brak potwierdzonego kompletnego wykonania wszystkich katalogowych zadań.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:317; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs:1",
+    "client_evidence": "apps/client/src/features/0016-quest-log/view.rs:16; protokół: apps/client/src/features/0016-quest-log/protocol.rs:1; test: apps/client/src/features/0016-quest-log/tests/play.rs:1"
+  },
+  {
+    "id": "ADD-0240",
+    "name_pl": "Czat drużynowy",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/guild_chat/wire.rs:75; crates/gameplay/dispatch/src/gameplay_transport/guild_chat/party.rs:48; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_chat.rs:25",
+    "client_evidence": "apps/client/src/features/0240-chat-party-room/protocol.rs:18; apps/client/src/features/0240-chat-party-room/native.rs:33; test: apps/client/src/features/0240-chat-party-room/tests/play.rs:11"
+  },
+  {
+    "id": "P17",
+    "name_pl": "Zgody i listy Exiva",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/exiva_settings.rs:13; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell/exiva_settings.rs:7",
+    "client_evidence": "apps/client/src/features/0147-exiva-settings/protocol.rs:9; panel: apps/client/src/features/0147-exiva-settings/native.rs:1; test: apps/client/src/features/0147-exiva-settings/tests/play.rs:81"
+  },
+  {
+    "id": "S01",
+    "name_pl": "Drużyna i wspólne XP",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/party.rs:14; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_membership.rs:24",
+    "client_evidence": "apps/client/src/features/0042-party/protocol.rs:22; panel: apps/client/src/features/0042-party/native.rs:1; test: apps/client/src/features/0042-party/tests/play.rs:4"
+  },
+  {
+    "id": "S02",
+    "name_pl": "Tarcze drużyny i zasady agresji",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/party_skull.rs:19; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_skull.rs:19",
+    "client_evidence": "apps/client/src/features/0134-party-skull/protocol.rs:1; panel: apps/client/src/features/0134-party-skull/view.rs:1; test: apps/client/src/features/0134-party-skull/tests/play.rs:116"
+  },
+  {
+    "id": "S03",
+    "name_pl": "Gildie, bank i wojny",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/guild.rs:14; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs:23",
+    "client_evidence": "apps/client/src/features/0040-guild/protocol.rs:14; panel: apps/client/src/features/0040-guild/native.rs:1; test: apps/client/src/features/0040-guild/tests/play.rs:150"
+  },
+  {
+    "id": "S04a",
+    "name_pl": "VIP, grupy i obecność",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/vip.rs:14; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vip_presence.rs:27",
+    "client_evidence": "apps/client/src/features/0043-vip/protocol.rs:12; panel: apps/client/src/features/0043-vip/native.rs:1; test: apps/client/src/features/0043-vip/tests/play.rs:60"
+  },
+  {
+    "id": "S04b",
+    "name_pl": "Wiadomości i kanały prywatne",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/chat.rs:16; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_chat.rs:66",
+    "client_evidence": "apps/client/src/features/0080-chat-private-channel/protocol.rs:17; panel: apps/client/src/features/0080-chat-private-channel/native.rs:1; test: apps/client/src/features/0080-chat-private-channel/tests/play.rs:94"
+  },
+  {
+    "id": "S04c",
+    "name_pl": "Kanały publiczne i wyciszenie",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/chat.rs:16; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_chat.rs:66",
+    "client_evidence": "apps/client/src/features/0259-chat-public-channels/protocol.rs:1; panel: apps/client/src/features/0259-chat-public-channels/native.rs:1; test: apps/client/src/features/0259-chat-public-channels/tests/play.rs:86"
+  },
+  {
+    "id": "S06",
+    "name_pl": "Stroje, dodatki i wierzchowce",
+    "area": "społeczność",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Niepełna populacja pozyskiwania strojów, dodatków i reguł oswajania.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/appearance.rs:15; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mount_taming.rs:28",
+    "client_evidence": "apps/client/src/features/0025-appearance/protocol.rs:1; panel: apps/client/src/features/0025-appearance/view.rs:1; test: apps/client/src/features/0025-appearance/tests/play.rs:116"
+  },
+  {
+    "id": "S11",
+    "name_pl": "Rankingi postaci",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/highscores.rs:17; test: crates/gameplay/dispatch/src/gameplay_transport/connection/tests/achievements_highscores.rs:46",
+    "client_evidence": "apps/client/src/features/0009-highscores/protocol.rs:1; panel: apps/client/src/features/0009-highscores/native.rs:1; test: apps/client/src/features/0009-highscores/tests/play.rs:69"
+  },
+  {
+    "id": "S14a",
+    "name_pl": "Team Finder: ogłoszenia lidera",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/team_finder_leader.rs:22; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_leader.rs:80",
+    "client_evidence": "apps/client/src/features/0232-team-finder-members/input.rs:1; test: apps/client/src/features/0232-team-finder-members/tests/play.rs:33"
+  },
+  {
+    "id": "S14b",
+    "name_pl": "Team Finder: szukanie i zgłoszenia",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/team_finder_members.rs:14; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members.rs:67",
+    "client_evidence": "apps/client/src/features/0232-team-finder-members/input.rs:1; test: apps/client/src/features/0232-team-finder-members/tests/play.rs:33"
+  },
+  {
+    "id": "S14c",
+    "name_pl": "Team Finder: decyzje lidera",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/team_finder_members.rs:14; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members.rs:67",
+    "client_evidence": "apps/client/src/features/0232-team-finder-members/input.rs:1; test: apps/client/src/features/0232-team-finder-members/tests/play.rs:33"
+  },
+  {
+    "id": "S17a",
+    "name_pl": "Transmisja: ustawienia nadawcy",
+    "area": "społeczność",
+    "server": "MISSING",
+    "client": "MISSING",
+    "missing": "Brak produkcyjnego wejścia transmisji oraz natywnego interfejsu widza.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/spectate_session.rs:1 (uśpiony runtime, wejście odrzucane)",
+    "client_evidence": "crates/client-ui/src/features/0033-spectate/registrations/handlers.json:1 (rejestracja; brak panelu)"
+  },
+  {
+    "id": "S17b",
+    "name_pl": "Transmisja: widzowie i obraz",
+    "area": "społeczność",
+    "server": "PARTIAL",
+    "client": "MISSING",
+    "missing": "Brak produkcyjnego wejścia transmisji oraz natywnego interfejsu widza.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/spectate_session.rs:1 (uśpiony runtime, wejście odrzucane)",
+    "client_evidence": "crates/client-ui/src/features/0033-spectate/registrations/handlers.json:1 (rejestracja; brak panelu)"
+  },
+  {
+    "id": "S17c",
+    "name_pl": "Transmisja: czat i moderacja",
+    "area": "społeczność",
+    "server": "MISSING",
+    "client": "MISSING",
+    "missing": "Brak produkcyjnego wejścia transmisji oraz natywnego interfejsu widza.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/spectate_session.rs:1 (uśpiony runtime, wejście odrzucane)",
+    "client_evidence": "crates/client-ui/src/features/0033-spectate/registrations/handlers.json:1 (rejestracja; brak panelu)"
+  },
+  {
+    "id": "S18",
+    "name_pl": "Mowa lokalna: say, whisper, yell",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:829; test: crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:1273",
+    "client_evidence": "apps/client/src/features/0007-chat/protocol.rs:1; panel: apps/client/src/features/0007-chat/native.rs:1; test: apps/client/src/features/0007-chat/tests/play.rs:84"
+  },
+  {
+    "id": "S19",
+    "name_pl": "Wskaźnik pisania gracza",
+    "area": "społeczność",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/player_typing.rs:15; test: crates/gameplay/dispatch/src/gameplay_transport/player_typing_wire_tests.rs:388",
+    "client_evidence": "apps/client/src/features/0233-player-typing/protocol.rs:1; panel: apps/client/src/features/0233-player-typing/native.rs:1; test: apps/client/src/features/0233-player-typing/tests/play.rs:78"
+  },
+  {
+    "id": "S05",
+    "name_pl": "Domy, czynsz, aukcje i gildhalla",
+    "area": "mieszkania",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/house.rs:27; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_wire.rs:152; apps/game-server/src/node/house_rent_scheduler.rs:21; test: apps/game-server/tests/support/authority_cases/house_rent.rs:145",
+    "client_evidence": "apps/client/src/features/0099-guildhall/protocol.rs:1; panel: apps/client/src/features/0099-guildhall/view.rs:1; test: apps/client/src/features/0099-guildhall/tests/play.rs:122"
+  },
+  {
+    "id": "S07",
+    "name_pl": "Łóżka: rezerwacja, sen i pobudka",
+    "area": "mieszkania",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/authority/composed.rs:95; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/bed_sleep_dispatch.rs:98",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:44; panel: apps/client/src/features/0011-world-interaction/native.rs:1; test: apps/client/src/features/0011-world-interaction/tests/play.rs:5"
+  },
+  {
+    "id": "W18",
+    "name_pl": "Podia i dekoracje domów",
+    "area": "mieszkania",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Niepotwierdzone wszystkie interaktywne dekoracje i zestawy mebli.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/house_podium.rs:75; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_podium_dispatch.rs:1",
+    "client_evidence": "apps/client/src/features/0150-house-podium/view.rs:8; protokół: apps/client/src/features/0150-house-podium/protocol.rs:1; test: apps/client/src/features/0150-house-podium/tests/play.rs:1"
+  },
+  {
+    "id": "ADD-0026",
+    "name_pl": "Pogoda regionalna",
+    "area": "świat",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/snapshot.rs:610; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/weather_wire.rs:64",
+    "client_evidence": "apps/client/src/features/0026-world-weather/protocol.rs:3; apps/client/src/features/0026-world-weather/view.rs:3; test: apps/client/src/features/0026-world-weather/tests/play.rs:5"
+  },
+  {
+    "id": "P19",
+    "name_pl": "Potwory influenced i fiendish",
+    "area": "świat",
+    "server": "DONE",
+    "client": "MISSING",
+    "missing": "Brak natywnej prezentacji oznaczeń potworów i salda pyłu.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1515; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:8",
+    "client_evidence": "crates/client-ui/src/features/0104-forge-creature/registrations/handlers.json:6; crates/client-ui/src/features/0152-item-forge/protocol.rs:45 (surowa odpowiedź)"
+  },
+  {
+    "id": "S09",
+    "name_pl": "Wylogowanie, PZ i bezczynność",
+    "area": "świat",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/idle.rs:18; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/idle_kick.rs:398",
+    "client_evidence": "apps/client/src/features/0021-logout/protocol.rs:1; test: apps/client/src/features/0021-logout/tests/play.rs:4"
+  },
+  {
+    "id": "S10",
+    "name_pl": "NPC: mowa, podróże i Rashid",
+    "area": "świat",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Niepełne źródłowe głosy, wędrówki oraz populacja usług i misji NPC.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/npc.rs:30; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_paid_travel.rs:22; crates/gameplay/dispatch/src/gameplay_transport/npc_voice.rs:1",
+    "client_evidence": "apps/client/src/features/0003-npc-service/protocol.rs:18; panel: apps/client/src/features/0003-npc-service/native.rs:1; test: apps/client/src/features/0003-npc-service/tests/play.rs:4"
+  },
+  {
+    "id": "S16d",
+    "name_pl": "Dawnport: pokoje, drzwi i ekwipunek",
+    "area": "świat",
+    "server": "MISSING",
+    "client": "MISSING",
+    "missing": "Brak dedykowanych drzwi, teleportów profesji i usuwania przemycanych przedmiotów.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/dawnport_trial.rs:10 (granica wdrożonej części Dawnport)",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:1; panel: apps/client/src/features/0011-world-interaction/native.rs:1; test: apps/client/src/features/0011-world-interaction/tests/play.rs:5 (ogólny USE; bez przepływu Dawnport)"
+  },
+  {
+    "id": "W01a",
+    "name_pl": "AI potworów",
+    "area": "świat",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs:27; test: crates/gameplay/monster-ai/src/ai_think/think_tests/native_parity.rs:217; test: crates/gameplay/monster-ai/src/ai_think/think_tests/crystal_parity.rs:73",
+    "client_evidence": "apps/client/src/features/0006-world-spatial-entities/view.rs:11; protokół: apps/client/src/features/0006-world-spatial-entities/protocol.rs:1; test: apps/client/src/features/0006-world-spatial-entities/tests/play.rs:1"
+  },
+  {
+    "id": "W01b",
+    "name_pl": "Spawn i odradzanie potworów",
+    "area": "świat",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/world_respawns.rs:34; test: crates/gameplay/entities/src/carrier/spawn.rs:328",
+    "client_evidence": "apps/client/src/features/0006-world-spatial-entities/view.rs:11; protokół: apps/client/src/features/0006-world-spatial-entities/protocol.rs:1; test: apps/client/src/features/0006-world-spatial-entities/tests/play.rs:1"
+  },
+  {
+    "id": "W04",
+    "name_pl": "Najazdy i fale",
+    "area": "świat",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/raid_live.rs:435; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/raid_live.rs:17",
+    "client_evidence": "apps/client/src/features/0149-raid-schedule/view.rs:8; protokół: apps/client/src/features/0149-raid-schedule/protocol.rs:1; test: apps/client/src/features/0149-raid-schedule/tests/play.rs:1"
+  },
+  {
+    "id": "W05a",
+    "name_pl": "Zapis serwera i odliczanie",
+    "area": "świat",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/server_save_countdown.rs:90; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/server_save_countdown.rs:1; reset: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/world_event.rs:1",
+    "client_evidence": "apps/client/src/features/0031-tutorial-notices/view.rs:12; protokół: apps/client/src/features/0031-tutorial-notices/protocol.rs:1; test: apps/client/src/features/0031-tutorial-notices/tests/play.rs:1"
+  },
+  {
+    "id": "W05b",
+    "name_pl": "Codzienne zmiany świata",
+    "area": "świat",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Brak aktywacji Fury Gates, Nightmare Isles i fal Flower Month.",
+    "server_evidence": "apps/game-server/src/node/serve/channel_boot.rs:260; reguły/ograniczenie: crates/gameplay/world-change/src/daily.rs:10",
+    "client_evidence": "apps/client/src/features/0006-world-spatial-entities/view.rs:11; protokół: apps/client/src/features/0006-world-spatial-entities/protocol.rs:1; test: apps/client/src/features/0006-world-spatial-entities/tests/play.rs:1"
+  },
+  {
+    "id": "W05c",
+    "name_pl": "NPC według dnia i godziny",
+    "area": "świat",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "apps/game-server/src/node/serve/bundle_npcs.rs:166; test: apps/game-server/src/node/serve/bundle_npcs.rs:711",
+    "client_evidence": "apps/client/src/features/0006-world-spatial-entities/view.rs:11; protokół: apps/client/src/features/0006-world-spatial-entities/protocol.rs:1; test: apps/client/src/features/0006-world-spatial-entities/tests/play.rs:1"
+  },
+  {
+    "id": "W05d",
+    "name_pl": "Kalendarz wydarzeń sezonowych",
+    "area": "świat",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Mnożniki działają; niepotwierdzone kompletne wydarzenia Halloween, Christmas i Cake.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2685; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scheduled_event_rates.rs:21; kalendarz: crates/gameplay/foundation/src/scheduled_events.rs:54",
+    "client_evidence": "apps/client/src/features/0053-world-event/view.rs:12; protokół: apps/client/src/features/0053-world-event/protocol.rs:1; test: apps/client/src/features/0053-world-event/tests/play.rs:1"
+  },
+  {
+    "id": "W12",
+    "name_pl": "Odkrywanie mapy i datki",
+    "area": "świat",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Brak docelowej geometrii POI oraz pełnego bonusu szybkości odkrywania.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/cyclopedia.rs:59; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia.rs:1; ograniczenie: crates/gameplay/dispatch/src/gameplay_transport/cyclopedia/content.rs:1",
+    "client_evidence": "apps/client/src/features/0057-cyclopedia-map/view.rs:8; protokół: apps/client/src/features/0057-cyclopedia-map/protocol.rs:1; test: apps/client/src/features/0057-cyclopedia-map/tests/play.rs:1"
+  },
+  {
+    "id": "W13",
+    "name_pl": "Dzienne premie potwora i bossa",
+    "area": "świat",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/daily_boost.rs:110; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/daily_boost.rs:1; konsumenci: crates/gameplay/dispatch/src/gameplay_transport/world_respawns.rs:39, crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2761",
+    "client_evidence": "apps/client/src/features/0151-daily-boost/view.rs:13; protokół: apps/client/src/features/0151-daily-boost/protocol.rs:1; test: apps/client/src/features/0151-daily-boost/tests/play.rs:1"
+  },
+  {
+    "id": "W16",
+    "name_pl": "Populacja Summer 2026",
+    "area": "świat",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Niepotwierdzona kompletna osiągalność spotkań i zadań Summer 2026.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs:61; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/summer_population.rs:294",
+    "client_evidence": "apps/client/src/features/0006-world-spatial-entities/view.rs:11; protokół: apps/client/src/features/0006-world-spatial-entities/protocol.rs:1; test: apps/client/src/features/0006-world-spatial-entities/tests/play.rs:1"
+  },
+  {
+    "id": "W20a",
+    "name_pl": "Światło dnia i nocy",
+    "area": "świat",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection.rs:989; zegar: crates/gameplay/world/src/world_clock.rs:153; test: crates/gameplay/world/src/world_clock.rs:294",
+    "client_evidence": "apps/client/src/features/0019-world-light/view.rs:6; protokół: apps/client/src/features/0019-world-light/protocol.rs:1; test: apps/client/src/features/0019-world-light/tests/play.rs:1"
+  },
+  {
+    "id": "W23",
+    "name_pl": "Obywatelstwo i świątynia",
+    "area": "świat",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Brak testu bramki Svargrond i kwalifikacji wszystkich płytek obywatelstwa.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/character_home_town.rs:371; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_home_town.rs:56",
+    "client_evidence": "apps/client/src/features/0013-paced-movement/protocol.rs:18; protokół: apps/client/src/features/0013-paced-movement/protocol.rs:1; test: apps/client/src/features/0013-paced-movement/tests/play.rs:1"
+  },
+  {
+    "id": "W24",
+    "name_pl": "Dźwięki otoczenia stref",
+    "area": "świat",
+    "server": "MISSING",
+    "client": "PARTIAL",
+    "missing": "Brak producenta dźwięków stref; klient odbiera ogólne sygnały dźwiękowe.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/spell_presentation_publisher.rs:225 (producent dźwięków czarów, nie stref)",
+    "client_evidence": "apps/client/src/features/0023-presentation/protocol.rs:16; test: apps/client/src/features/0023-presentation/tests/play.rs:5"
+  },
+  {
+    "id": "W02",
+    "name_pl": "Wejścia i instancje bossów",
+    "area": "bossowie",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Produkcyjne profile nagradzanych bossów blokuje kwalifikacja zwłok.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/boss_activity.rs:300; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/rewards.rs:23",
+    "client_evidence": "apps/client/src/features/0117-boss-encounter/view.rs:13; protokół: apps/client/src/features/0117-boss-encounter/protocol.rs:1; test: apps/client/src/features/0117-boss-encounter/tests/play.rs:1"
+  },
+  {
+    "id": "W03",
+    "name_pl": "Skrzynia nagród bossów",
+    "area": "bossowie",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Pełny produkcyjny łańcuch boss–osobista nagroda pozostaje niezakwalifikowany.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/boss_rewards.rs:86; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards/native.rs:1; ograniczenie: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/rewards.rs:23",
+    "client_evidence": "apps/client/src/features/0224-boss-rewards/view.rs:13; protokół: apps/client/src/features/0224-boss-rewards/protocol.rs:1; test: apps/client/src/features/0224-boss-rewards/tests/play.rs:1"
+  },
+  {
+    "id": "W06",
+    "name_pl": "Echo Warden",
+    "area": "bossowie",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Brak testu klienta obejmującego portal i nagrodę Echo.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/echo_warden.rs:150; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/echo_warden.rs:31",
+    "client_evidence": "apps/client/src/features/0006-world-spatial-entities/view.rs:11; protokół: apps/client/src/features/0006-world-spatial-entities/protocol.rs:1; test: apps/client/src/features/0006-world-spatial-entities/tests/play.rs:1; portal używa zwykłej projekcji mapy"
+  },
+  {
+    "id": "W07",
+    "name_pl": "Soulpit i Soul Core",
+    "area": "bossowie",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Niepodłączony wspólny właściciel wejścia i powrotu instancji Soulpit.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/soulpit/entry.rs:232; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soulpit_lifecycle.rs:22; interfejs bez implementacji: crates/gameplay/dispatch/src/gameplay_transport/soulpit/handoff.rs:38",
+    "client_evidence": "apps/client/src/features/0015-item-use/input.rs:1; test: apps/client/src/features/0015-item-use/tests/play.rs:5; brak natywnego przebiegu Soulpit"
+  },
+  {
+    "id": "W10",
+    "name_pl": "Hazard i Primal Ordeal",
+    "area": "bossowie",
+    "server": "PARTIAL",
+    "client": "DONE",
+    "missing": "Niepotwierdzony kompletny produkcyjny przebieg spotkania Primal Ordeal.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/hazard.rs:84; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard/hazard_primal.rs:14",
+    "client_evidence": "apps/client/src/features/0117-boss-encounter/view.rs:13; protokół: apps/client/src/features/0117-boss-encounter/protocol.rs:1; test: apps/client/src/features/0117-boss-encounter/tests/play.rs:1"
+  },
+  {
+    "id": "W11",
+    "name_pl": "Soul War i Rotten Blood",
+    "area": "bossowie",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Niepotwierdzone kompletne łańcuchy spotkań; brak natywnego widoku taintów.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:436; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:1; odbiór: crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:251",
+    "client_evidence": "apps/client/src/features/0003-npc-service/view.rs:11; protokół: apps/client/src/features/0003-npc-service/protocol.rs:1; test: apps/client/src/features/0003-npc-service/tests/play.rs:1"
+  },
+  {
+    "id": "W17",
+    "name_pl": "Areny i Tibiadrome",
+    "area": "bossowie",
+    "server": "PARTIAL",
+    "client": "MISSING",
+    "missing": "Jest Svargrond; brak Tibiadrome i natywnego interfejsu areny.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:35; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/arena_match.rs:1",
+    "client_evidence": "crates/client-ui/src/features/0170-arena/registrations/handlers.json:5 (unsupported)"
+  },
+  {
+    "id": "W21",
+    "name_pl": "Wybór trudności bossów",
+    "area": "bossowie",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/boss_difficulty.rs:40; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_difficulty.rs:1",
+    "client_evidence": "apps/client/src/features/0225-boss-difficulty/view.rs:13; protokół: apps/client/src/features/0225-boss-difficulty/protocol.rs:1; test: apps/client/src/features/0225-boss-difficulty/tests/play.rs:1"
+  },
+  {
+    "id": "ADD-0023",
+    "name_pl": "Efekty, liczby obrażeń i dźwięki",
+    "area": "UI",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/refresh.rs:573; crates/gameplay/dispatch/src/gameplay_transport/connection/serve/outbound.rs:463; test: crates/gameplay/dispatch/src/gameplay_transport/spell_presentation_publisher_tests.rs:309",
+    "client_evidence": "apps/client/src/features/0023-presentation/protocol.rs:10; apps/client/src/features/0023-presentation/view.rs:34; test: apps/client/src/features/0023-presentation/tests/play.rs:166"
+  },
+  {
+    "id": "ADD-0066",
+    "name_pl": "Szczegółowe powody odmowy",
+    "area": "UI",
+    "server": "DONE",
+    "client": "PARTIAL",
+    "missing": "Klient pokazuje szczegóły przenoszenia; brak pełnej prezentacji kroków i użycia.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/result.rs:10; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/refusal_detail.rs:24",
+    "client_evidence": "apps/client/src/features/0004-item-view-move/protocol.rs:89; crates/client-runtime/src/features/0004-item-view-move/protocol.rs:48; test dekodera: crates/session/src/features/0004-item-view-move/tests.rs:122"
+  },
+  {
+    "id": "ADD-0083",
+    "name_pl": "Bieżący świat i kanał gry",
+    "area": "UI",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/snapshot.rs:33; crates/gameplay/dispatch/src/gameplay_transport/connection/authority/composed.rs:180; test: crates/protocol-oteryn/src/channel_list.rs:33; test sesji: crates/gameplay/dispatch/src/gameplay_transport/connection/tests/admission.rs:91",
+    "client_evidence": "apps/client/src/features/0083-channel-list/protocol.rs:15; apps/client/src/features/local-spell-action-bar/view.rs:14; test: apps/client/src/features/0083-channel-list/tests/play.rs:13"
+  },
+  {
+    "id": "ADD-0286",
+    "name_pl": "Nazwy widocznych postaci i stworzeń",
+    "area": "UI",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/snapshot.rs:272; crates/gameplay/dispatch/src/gameplay_transport/entity_names.rs:16; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/entity_names.rs:12",
+    "client_evidence": "apps/client/src/features/0006-world-spatial-entities/view.rs:45; apps/client/src/features/0006-world-spatial-entities/scene.rs:98; test: apps/client/src/features/0006-world-spatial-entities/tests/scene.rs:3"
+  },
+  {
+    "id": "ADD-0287",
+    "name_pl": "Katalog znanych i dostępnych czarów",
+    "area": "UI",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/spell_catalog.rs:24; test: crates/gameplay/dispatch/src/gameplay_transport/connection/serve/spell_catalog.rs:117",
+    "client_evidence": "apps/client/src/features/0287-actor-spell-catalog/protocol.rs:35; apps/client/src/features/0287-actor-spell-catalog/view.rs:8; test: apps/client/src/features/0287-actor-spell-catalog/tests/play.rs:5"
+  },
+  {
+    "id": "S12",
+    "name_pl": "Raporty graczy, GM i analizery",
+    "area": "UI",
+    "server": "PARTIAL",
+    "client": "PARTIAL",
+    "missing": "Brakuje pełnych narzędzi GM; dostępne raporty, kick i analizery.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/player_report.rs:14; test: crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_report.rs:25",
+    "client_evidence": "apps/client/src/features/0076-player-report/protocol.rs:1; panel: apps/client/src/features/0076-player-report/view.rs:1; test: apps/client/src/features/0076-player-report/tests/play.rs:116; analizery: apps/client/src/features/0010-analyser/protocol.rs:1; panel: apps/client/src/features/0010-analyser/view.rs:1; test: apps/client/src/features/0010-analyser/tests/play.rs:4"
+  },
+  {
+    "id": "UI-CHARACTERS",
+    "name_pl": "Wybór postaci i kanału",
+    "area": "UI",
+    "server": "MISSING",
+    "client": "DONE",
+    "missing": "Lista konta należy do Platform; brak takiej implementacji w Game.",
+    "server_evidence": "brak właściciela listy w Game; granica konsumenta: apps/client/src/native_entry/authorize.rs:47",
+    "client_evidence": "apps/client/src/features/local-character-selection/mod.rs:67; apps/client/src/native_entry/authorize.rs:59; test: apps/client/src/features/local-character-selection/mod.rs:86"
+  },
+  {
+    "id": "UI-LOGIN",
+    "name_pl": "Natywne logowanie",
+    "area": "UI",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection.rs:815; test: crates/gameplay/dispatch/src/gameplay_transport/connection/tests/admission.rs:44",
+    "client_evidence": "apps/client/src/features/local-native-login/shell.rs:6; apps/client/src/features/local-native-login/native.rs:26; test: apps/client/tests/native_login.rs:30"
+  },
+  {
+    "id": "UI-MINIMAP",
+    "name_pl": "Minimapa i nawigacja",
+    "area": "UI",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/snapshot.rs:565; test: crates/gameplay/dispatch/src/gameplay_transport/world_map_domain_tests.rs:383",
+    "client_evidence": "apps/client/src/features/local-minimap/scene.rs:13; test: apps/client/src/features/local-minimap/tests/play.rs:39"
+  },
+  {
+    "id": "UI-OBJECT-OVERLAY",
+    "name_pl": "Znaczniki interaktywnych obiektów",
+    "area": "UI",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/snapshot.rs:46; test: crates/gameplay/dispatch/src/gameplay_transport/world_map_domain_tests.rs:552",
+    "client_evidence": "apps/client/src/features/local-world-object-overlay/protocol.rs:4; apps/client/src/features/local-world-view/view.rs:60; test: apps/client/src/features/local-world-object-overlay/tests/play.rs:4"
+  },
+  {
+    "id": "UI-PREFERENCES",
+    "name_pl": "Ustawienia lokalne i skróty",
+    "area": "UI",
+    "server": "MISSING",
+    "client": "DONE",
+    "missing": "Wyłącznie lokalne ustawienia; implementacja serwera nie jest potrzebna.",
+    "server_evidence": "brak operacji serwerowej; lokalna granica: apps/client/src/features/local-reference-preferences/native.rs:49",
+    "client_evidence": "apps/client/src/features/local-reference-preferences/native.rs:61; test: apps/client/src/features/local-reference-preferences/tests/play.rs:46"
+  },
+  {
+    "id": "UI-SPELL-BAR",
+    "name_pl": "Pasek czarów, odnowienia i zasoby",
+    "area": "UI",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/refresh.rs:29; test: crates/gameplay/dispatch/src/gameplay_transport/connection/tests/spell_vitals.rs:49",
+    "client_evidence": "apps/client/src/features/local-spell-action-bar/protocol.rs:11; apps/client/src/features/local-spell-action-bar/view.rs:46; test: apps/client/src/features/local-spell-action-bar/tests/play.rs:59"
+  },
+  {
+    "id": "UI-WORLD-VIEW",
+    "name_pl": "Mapa serwera i widok świata",
+    "area": "UI",
+    "server": "DONE",
+    "client": "DONE",
+    "missing": "—",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/snapshot.rs:565; test: crates/gameplay/dispatch/src/gameplay_transport/world_map_domain_tests.rs:383",
+    "client_evidence": "apps/client/src/features/local-world-view/protocol.rs:28; apps/client/src/features/local-world-view/view.rs:37; test: apps/client/src/features/local-world-view/tests/play.rs:3"
+  },
+  {
+    "id": "W14a",
+    "name_pl": "Konfigurowalne mnożniki i etapy XP",
+    "area": "konfiguracja OT",
+    "server": "PARTIAL",
+    "client": "N/A",
+    "missing": "Są mnożniki wydarzeń; brak ogólnych stawek i etapów poziomowych.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2685; reguły: crates/gameplay/foundation/src/scheduled_events.rs:30",
+    "client_evidence": "apps/client/src/features/0053-world-event/view.rs:8 (granica odczytana; N/A — konfiguracja zasad serwera)"
+  },
+  {
+    "id": "W14b",
+    "name_pl": "Przełączniki autoloot i autobank",
+    "area": "konfiguracja OT",
+    "server": "MISSING",
+    "client": "MISSING",
+    "missing": "Brak przełączników OT autoloot, autobank i chain.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:191 (granica zwykłych akcji, brak konfiguracji OT)",
+    "client_evidence": "apps/client/src/features/0098-quick-loot/view.rs:8; protokół: apps/client/src/features/0098-quick-loot/protocol.rs:1; test: apps/client/src/features/0098-quick-loot/tests/play.rs:1 (quick loot, bez przełączników OT)"
+  },
+  {
+    "id": "W14c",
+    "name_pl": "Płatny system VIP OT",
+    "area": "konfiguracja OT",
+    "server": "MISSING",
+    "client": "MISSING",
+    "missing": "Brak płatnego VIP OT z bonusami i tokenami.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/daily_boost.rs:129 (premie dzienne, nie VIP OT)",
+    "client_evidence": "apps/client/src/features/0043-vip/view.rs:8; protokół: apps/client/src/features/0043-vip/protocol.rs:1; test: apps/client/src/features/0043-vip/tests/play.rs:1 (lista znajomych, nie płatny VIP OT)"
+  },
+  {
+    "id": "W14d",
+    "name_pl": "Komendy wygody OT",
+    "area": "konfiguracja OT",
+    "server": "MISSING",
+    "client": "MISSING",
+    "missing": "Brak rodziny komend !bless, !bank, !refill i pozostałych.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:1 (odczytana granica zwykłego czatu)",
+    "client_evidence": "apps/client/src/features/0007-chat/view.rs:1; protokół: apps/client/src/features/0007-chat/protocol.rs:1; test: apps/client/src/features/0007-chat/tests/play.rs:1 (zwykły czat, brak dedykowanej rodziny OT)"
+  },
+  {
+    "id": "W14e",
+    "name_pl": "Aury, shadery i skrzydła OTC",
+    "area": "konfiguracja OT",
+    "server": "MISSING",
+    "client": "MISSING",
+    "missing": "Brak właściciela i renderowania dołączanych efektów OTC.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/appearance_change.rs:1 (zwykły wygląd, brak attached effects)",
+    "client_evidence": "apps/client/src/features/0025-appearance/view.rs:8; protokół: apps/client/src/features/0025-appearance/protocol.rs:1; test: apps/client/src/features/0025-appearance/tests/play.rs:1 (outfit/mount, bez aur i skrzydeł)"
+  },
+  {
+    "id": "X01",
+    "name_pl": "Utrata skilli i ML po śmierci",
+    "area": "wyłączenia",
+    "server": "MISSING",
+    "client": "N/A",
+    "missing": "Celowo wyłączone decyzją właściciela 19; zachowanie skilli i ML.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/pvp_death.rs:30; zasada: crates/gameplay/durability/src/durability/character_death/settlement.rs:97",
+    "client_evidence": "apps/client/src/features/local-death-respawn/view.rs:4 (granica odczytana; N/A — celowo nieobowiązująca reguła serwerowa)"
+  },
+  {
+    "id": "X02",
+    "name_pl": "Dokładny wzór melee dawcy",
+    "area": "wyłączenia",
+    "server": "MISSING",
+    "client": "N/A",
+    "missing": "Celowo wyłączone decyzją właściciela 7; pozostaje przyjęty model TibiaTools.",
+    "server_evidence": "crates/gameplay/combat-rules/src/attack/formulas.rs:31 (przyjęty model alternatywny)",
+    "client_evidence": "apps/client/src/features/0017-attack/protocol.rs:23 (granica odczytana; N/A — wybór równania serwera)"
+  },
+  {
+    "id": "X03",
+    "name_pl": "Dokładny wzór czarów dawcy",
+    "area": "wyłączenia",
+    "server": "MISSING",
+    "client": "N/A",
+    "missing": "Celowo wyłączone decyzją właściciela 8; przyjęty model base_power.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs:64 (przyjęty natywny właściciel czarów)",
+    "client_evidence": "apps/client/src/features/0017-attack/protocol.rs:6 (granica odczytana; N/A — wybór równania serwera)"
+  },
+  {
+    "id": "X04",
+    "name_pl": "Obrażenia własnych summonów przez AoE",
+    "area": "wyłączenia",
+    "server": "MISSING",
+    "client": "N/A",
+    "missing": "Celowo wyłączone decyzją właściciela 5; wymagane potwierdzenie Global.",
+    "server_evidence": "crates/gameplay/spell-rules/src/ordinary_combat.rs:35 (kwalifikacja legalnych celów)",
+    "client_evidence": "apps/client/src/features/0017-attack/protocol.rs:6 (granica odczytana; N/A — celowo nieobowiązująca reguła serwerowa)"
+  },
+  {
+    "id": "X05",
+    "name_pl": "Uniwersalny decay przedmiotów na ziemi",
+    "area": "wyłączenia",
+    "server": "MISSING",
+    "client": "N/A",
+    "missing": "Celowo wyłączone decyzją właściciela 11; pozostają zwłoki i reset.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/corpse_decay.rs:48 (obowiązujący właściciel terminów zwłok)",
+    "client_evidence": "apps/client/src/features/local-world-view/view.rs:83 (granica odczytana; N/A — celowo nieobowiązująca reguła serwerowa)"
+  },
+  {
+    "id": "X06",
+    "name_pl": "Lua i administracyjne API dawcy",
+    "area": "wyłączenia",
+    "server": "MISSING",
+    "client": "N/A",
+    "missing": "Poza zakresem: Lua, formaty dawcy, reload i webhooki administracyjne.",
+    "server_evidence": "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:317 (natywny odpowiednik, bez silnika Lua)",
+    "client_evidence": "apps/client/src/features/0011-world-interaction/protocol.rs:18 (granica odczytana; N/A — narzędzia administracyjne poza klientem gry)"
+  }
+]

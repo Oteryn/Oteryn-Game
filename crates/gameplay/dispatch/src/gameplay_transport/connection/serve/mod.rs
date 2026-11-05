@@ -65,6 +65,7 @@ struct ServeState {
     sequence: u64,
     movement_effect_revision: u64,
     sound_cursor: u64,
+    ambient_revision: u64,
     weather_sent: Option<WorldWeather>,
     world_clock_pacer: WorldClockDeltaPacer,
     world_clock: WorldClockSource,

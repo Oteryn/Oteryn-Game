@@ -26,6 +26,7 @@ impl PlayView {
         let line = self
             .logout_line
             .as_deref()
+            .or(self.action_line)
             .or(self.combat_line)
             .unwrap_or("");
         let mut status = match self.cursor_spell {

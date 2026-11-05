@@ -53,6 +53,8 @@ pub mod battle;
 #[path = "features/0015-item-use/mod.rs"]
 pub mod item_use;
 
+#[path = "features/0288-ambient-sound/mod.rs"]
+pub mod ambient_sound;
 #[path = "features/0019-world-light/mod.rs"]
 pub mod world_light;
 #[path = "features/0026-world-weather/mod.rs"]
@@ -78,6 +80,9 @@ pub mod reference_preferences;
 pub mod account_achievements;
 #[path = "features/0008-achievement-notices/mod.rs"]
 pub mod achievement_notices;
+
+#[path = "features/0170-arena/mod.rs"]
+pub mod arena;
 
 #[path = "features/0225-boss-difficulty/mod.rs"]
 pub mod boss_difficulty;
@@ -241,6 +246,8 @@ pub mod vip;
 /// House banker hireling status and controls.
 #[path = "features/0165-hireling/mod.rs"]
 pub mod hireling;
+#[path = "features/0250-hireling-management/mod.rs"]
+pub mod hireling_management;
 
 /// Market offer browsing and settlement controls.
 #[path = "features/0063-market/mod.rs"]

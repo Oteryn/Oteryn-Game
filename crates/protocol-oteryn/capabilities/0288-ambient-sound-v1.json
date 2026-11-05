@@ -1,0 +1,11 @@
+{
+  "id": 288,
+  "name": "AMBIENT_SOUND_V1",
+  "constant": "presentation::CAPABILITY_AMBIENT_SOUND_V1",
+  "requires": [6],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [101],
+  "supersedes": [],
+  "offers": {"production": true, "item_view": true, "bundle_world": true}
+}

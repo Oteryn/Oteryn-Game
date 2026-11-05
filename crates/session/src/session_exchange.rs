@@ -27,8 +27,9 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
+        let (payload, detail) = self.item_result_payload(&result.payload)?;
         let disposition = world_spatial::decode_step_result_paced(
-            self.item_result_payload(&result.payload)?.0,
+            payload,
             self.is_selected(CAPABILITY_PACED_MOVEMENT_V1),
         )?;
         check_status_pairing(
@@ -39,6 +40,10 @@ impl<S: SessionStream> Session<S> {
                 StepDisposition::Rejected | StepDisposition::TooEarly
             ),
         )?;
+        if detail.is_some() && disposition == StepDisposition::Moved {
+            return Err(SessionError::SessionUnusable);
+        }
+        self.last_refusal_detail = detail;
         let world_spatial_delta =
             if result.status == CommandStatus::Accepted && disposition == StepDisposition::Moved {
                 match self
@@ -89,9 +94,8 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(world_object::COMMAND_TYPE_USE_INTENT, payload)
             .await?;
-        let (disposition, gate_message_id) = world_object::decode_use_result_with_gate(
-            self.item_result_payload(&result.payload)?.0,
-        )?;
+        let (payload, detail) = self.item_result_payload(&result.payload)?;
+        let (disposition, gate_message_id) = world_object::decode_use_result_with_gate(payload)?;
         // Dispositions 11 to 17 and the gate message id exist only under capability 11, and
         // dispositions 18 and 19 only under capability 22.
         check_use_result_negotiated(
@@ -105,6 +109,10 @@ impl<S: SessionStream> Session<S> {
             result.status,
             disposition == UseDisposition::Rejected,
         )?;
+        if detail.is_some() && disposition == UseDisposition::Committed {
+            return Err(SessionError::SessionUnusable);
+        }
+        self.last_refusal_detail = detail;
         // A `Committed` use names no domain (it can change 2, 9, 11, several or none), so the
         // exchange returns at its result; its deltas go through the store and the event queue.
         Ok(CommandOutcome {

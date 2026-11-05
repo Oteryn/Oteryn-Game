@@ -11,6 +11,7 @@ impl Application {
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
         let clicks = self.actions.route(events);
         if let Some(play) = &mut self.play {
+            play.view.observe_creature_pointer(events);
             if play.link.use_with_cancel_input(events) {
                 return;
             }
@@ -39,6 +40,7 @@ impl Application {
                 || play.link.highscores_input(events)
                 || play.link.notices_input(events)
                 || play.link.animus_input(events)
+                || play.link.arena_input(events)
                 || play.link.prey_input(events)
                 || play.link.task_board_input(events)
                 || play.link.wheel_input(events)
@@ -94,6 +96,9 @@ impl Application {
             if play.link.player_trade_input(events) {
                 return;
             }
+            if play.view.target_move_input(&play.link, events) {
+                return;
+            }
             if let Some(direction) = arrow_step(events) {
                 play.view.arrow(direction);
             }
@@ -103,8 +108,18 @@ impl Application {
             if logout_key(events) {
                 play.view.logout();
             }
+            let suppress_primary = match play.view.world_pointer_input(&play.link, events) {
+                Ok(consumed) => consumed,
+                Err(_) => {
+                    self.fail(event_loop, ShellError::RendererRender);
+                    return;
+                }
+            };
             let mut render_failed = false;
             for click in clicks {
+                if !click.secondary && suppress_primary {
+                    continue;
+                }
                 if !click.secondary && play.view.minimap_click(click.x, click.y) {
                     continue;
                 }

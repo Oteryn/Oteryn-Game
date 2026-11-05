@@ -83,7 +83,8 @@ impl Outbox {
                     | PlayCommand::Combat(_)
                     | PlayCommand::DailyReward(_)
             );
-            if !blocked || !world_input {
+            let movement_control = matches!(&command, PlayCommand::ServerMechanic(request) if matches!(request.capability, 64 | 82));
+            if !blocked || !(world_input || movement_control) {
                 return Ok(command);
             }
         }

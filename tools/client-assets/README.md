@@ -30,7 +30,10 @@ protocol cue ID to `simple_sound_effect.sound_id` (field 5 / nested field 1)
 or `random_sound_effect.random_sound_id` (field 6 / repeated nested field 1).
 The importer joins those two tables from the supplied binary. Random variants
 are preserved in source order. Stream/music/ambience tables and pitch/volume
-variation are outside this one-shot flow. Unsupported or ambiguous numeric cue
+variation are outside this one-shot flow. Ambient loops use the separate optional
+`ambient_cues` mapping: schema lines 29–33 join `AmbienceStream.looping_sound_id`
+to `Sound.filename`. A zero server cue stops the loop. Delayed embellishments
+remain outside this base-loop flow. Unsupported or ambiguous numeric cue
 records fail import rather than yielding invented mappings.
 
 ## Required input and command

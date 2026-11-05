@@ -17,6 +17,8 @@ enum ChatSpeechMode {
   CHAT_SPEECH_MODE_SAY = 1;
   CHAT_SPEECH_MODE_WHISPER = 2;
   CHAT_SPEECH_MODE_YELL = 3;
+  // Server-owned; only with capability 288 selected. Invalid in ChatSayV1 intents.
+  CHAT_SPEECH_MODE_MONSTER_SAY = 4;
 }
 
 enum ChatRoom {

@@ -206,6 +206,136 @@ fn real_outbox_replay_emits_no_new_decision_or_sequence() {
 }
 
 #[test]
+fn reaudit_ambient_sounds() {
+    use oteryn_protocol_oteryn::presentation::PresentationEventKind;
+    let (runtime, caster, other, session) = runtime();
+    let mut publisher = SoundPublisher::default();
+    let city = ambient_sounds::zone_key("oteryn:content.area.subregion.thais_city");
+    assert!(ambient_sounds::zone_key("oteryn:content.area.region.thais").is_none());
+    publisher.ambient(&runtime, caster, session, city, 600);
+    let (revision, events) = publisher
+        .observe(&runtime, caster, session, 0, true)
+        .unwrap();
+    assert_eq!(events.len(), 1);
+    assert!(matches!(
+        events[0].kind,
+        PresentationEventKind::AmbientSound { cue_id: 25 }
+    ));
+    publisher.ambient(&runtime, caster, session, Some("thais-city"), 600);
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, revision, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    publisher.ambient(&runtime, caster, session, Some("thais-city"), 1200);
+    let (revision, events) = publisher
+        .observe(&runtime, caster, session, revision, true)
+        .unwrap();
+    assert!(matches!(
+        events[0].kind,
+        PresentationEventKind::AmbientSound { cue_id: 28 }
+    ));
+    publisher.ambient(&runtime, caster, session, None, 1200);
+    let (_, events) = publisher
+        .observe(&runtime, caster, session, revision, true)
+        .unwrap();
+    assert!(matches!(
+        events[0].kind,
+        PresentationEventKind::AmbientSound { cue_id: 0 }
+    ));
+    let bytes = oteryn_protocol_oteryn::presentation::encode_presentation_batch(&events).unwrap();
+    assert_eq!(
+        oteryn_protocol_oteryn::presentation::decode_presentation_batch(&bytes).unwrap(),
+        events
+    );
+    let other_session = runtime
+        .positioned_actor_census()
+        .unwrap()
+        .into_iter()
+        .find(|(a, _, _)| *a == other)
+        .unwrap()
+        .2
+        .unwrap();
+    assert!(
+        publisher
+            .observe(&runtime, other, other_session, 0, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, 0, false)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+}
+
+#[test]
+fn ambient_current_state_survives_effect_overflow_and_reconnect() {
+    use oteryn_protocol_oteryn::presentation::{MAX_PRESENTATION_EVENTS, PresentationEventKind};
+    let (runtime, actor, other, session) = runtime();
+    let at = runtime.read_actor_position(actor).unwrap().position();
+    let mut publisher = SoundPublisher::default();
+    publisher.ambient(&runtime, actor, session, Some("thais-city"), 1049);
+    for _ in 0..=MAX_PRESENTATION_EVENTS {
+        publisher.record(&runtime, actor, at, 3, 0);
+    }
+    let (cursor, events) = publisher
+        .observe(&runtime, actor, session, 0, true)
+        .unwrap();
+    assert_eq!(events.len(), MAX_PRESENTATION_EVENTS + 1);
+    assert_eq!(
+        events
+            .iter()
+            .filter(|event| matches!(event.kind, PresentationEventKind::Sound { .. }))
+            .count(),
+        MAX_PRESENTATION_EVENTS
+    );
+    assert!(matches!(
+        events[0].kind,
+        PresentationEventKind::AmbientSound { cue_id: 25 }
+    ));
+    publisher.ambient(&runtime, actor, session, Some("thais-city"), 1050);
+    let (cursor, events) = publisher
+        .observe(&runtime, actor, session, cursor, true)
+        .unwrap();
+    assert!(matches!(
+        events[0].kind,
+        PresentationEventKind::AmbientSound { cue_id: 28 }
+    ));
+    publisher.ambient(&runtime, actor, session, Some("carlin-city"), 1050);
+    let (cursor, events) = publisher
+        .observe(&runtime, actor, session, cursor, true)
+        .unwrap();
+    assert_eq!(
+        events.len(),
+        1,
+        "a different zone emits even when it shares the cue"
+    );
+    publisher.ambient(&runtime, other, session, Some("thais-city"), 360);
+    assert!(
+        publisher
+            .observe(&runtime, actor, session, cursor, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    publisher.forget_ambient(session);
+    publisher.ambient(&runtime, actor, session, Some("thais-city"), 360);
+    let (_, events) = publisher
+        .observe(&runtime, actor, session, cursor, true)
+        .unwrap();
+    assert!(matches!(
+        events[0].kind,
+        PresentationEventKind::AmbientSound { cue_id: 25 }
+    ));
+}
+
+#[test]
 fn production_sound_fans_out_hits_and_capability_gates() {
     use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationSource};
     let (runtime, caster, other, session) = runtime();

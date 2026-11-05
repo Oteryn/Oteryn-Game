@@ -48,7 +48,12 @@ const fn result(disposition: ChatDisposition) -> ChatIntentResult {
     }
 }
 
+#[path = "mount_voices.rs"]
+mod mount_voices;
+
 struct ChatSession {
+    last_mount_voice: Option<u64>,
+    mount_sounds: bool,
     name: String,
     /// The session's CharacterId, the key of the private lines it receives; `None` receives none.
     character: Option<[u8; 16]>,
@@ -184,6 +189,8 @@ impl ChatRuntime {
         self.private_world.forget(session);
         if let Ok(mut sessions) = self.sessions.lock() {
             let entry = sessions.entry(session).or_insert_with(|| ChatSession {
+                last_mount_voice: None,
+                mount_sounds: false,
                 name: name.to_owned(),
                 character,
                 limiter: ChatLimiter::new(now),
@@ -200,6 +207,7 @@ impl ChatRuntime {
                 public_rooms: public_channels::PublicRoomState::default(),
             });
             entry.name = name.to_owned();
+            entry.mount_sounds = false;
             entry.character = character;
             entry.egress.clear();
             entry.engaged = None;
@@ -578,7 +586,7 @@ impl ChatRuntime {
                 .and_then(|key| {
                     book.get(key).map(|entry| {
                         oteryn_gameplay_npc::quest_greetings::walkaway(key)
-                            .unwrap_or(entry.farewell())
+                            .unwrap_or(entry.walkaway())
                             .to_owned()
                     })
                 })
@@ -747,12 +755,13 @@ impl ChatRuntime {
     }
 }
 
-fn speech_mode(mode: ChatSpeechMode) -> SpeechMode {
-    match mode {
+fn speech_mode(mode: ChatSpeechMode) -> Option<SpeechMode> {
+    Some(match mode {
         ChatSpeechMode::Say => SpeechMode::Say,
         ChatSpeechMode::Whisper => SpeechMode::Whisper,
         ChatSpeechMode::Yell => SpeechMode::Yell,
-    }
+        ChatSpeechMode::MonsterSay => return None,
+    })
 }
 
 fn refusal(refusal: ChatRefusal) -> ChatIntentResult {
@@ -838,7 +847,9 @@ fn chat_with_quest_greetings(
     let Ok(text) = ChatText::parse(text) else {
         return result(ChatDisposition::Rejected);
     };
-    let mode = speech_mode(*mode);
+    let Some(mode) = speech_mode(*mode) else {
+        return result(ChatDisposition::Rejected);
+    };
     let visible = runtime.visible_entities();
     let Some(speaker) = visible.players.iter().find(|entry| entry.actor == actor) else {
         return result(ChatDisposition::Rejected);
@@ -1808,6 +1819,46 @@ mod tests {
         assert!(chat.muted_cast(session_of(0x7f), BASE).is_none());
         let later = SemanticTimeMicros::from_micros(BASE.get() + 600_000_000);
         assert!(chat.muted_cast(first.1, later).is_none());
+    }
+
+    #[test]
+    fn reaudit_mount_sounds() {
+        let (runtime, chat, first, second) = two_players(0);
+        chat.select_mount_sounds(first.1, true);
+        chat.select_mount_sounds(second.1, true);
+        chat.mount_voice(&runtime, first.0, first.1, 370, BASE.get(), 199);
+        assert!(matches!(
+            chat.peek_line(first.1),
+            Some(ChatLine::Local {
+                mode: ChatSpeechMode::MonsterSay,
+                ..
+            })
+        ));
+        assert_eq!(texts(chat.drain(first.1))[0].1, "Groar");
+        assert_eq!(texts(chat.drain(second.1))[0].1, "Groar");
+        chat.mount_voice(&runtime, first.0, first.1, 370, BASE.get(), 199);
+        assert!(chat.drain(first.1).is_empty());
+        chat.mount_voice(&runtime, first.0, first.1, 0, BASE.get() + 8_000_000, 199);
+        assert!(chat.drain(first.1).is_empty());
+        chat.mount_voice(&runtime, first.0, first.1, 370, BASE.get() + 16_000_000, 48);
+        assert!(chat.drain(first.1).is_empty());
+        chat.select_mount_sounds(second.1, false);
+        chat.mount_voice(
+            &runtime,
+            first.0,
+            first.1,
+            370,
+            BASE.get() + 24_000_000,
+            199,
+        );
+        assert_eq!(chat.drain(first.1).len(), 1);
+        assert!(chat.drain(second.1).is_empty());
+        let (runtime, chat, first, second) = two_players(9);
+        chat.select_mount_sounds(first.1, true);
+        chat.select_mount_sounds(second.1, true);
+        chat.mount_voice(&runtime, first.0, first.1, 370, BASE.get(), 199);
+        assert_eq!(chat.drain(first.1).len(), 1);
+        assert!(chat.drain(second.1).is_empty());
     }
 
     #[test]
