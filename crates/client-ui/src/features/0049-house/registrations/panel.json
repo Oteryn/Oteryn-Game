@@ -1,0 +1,7 @@
+{
+  "mechanic": "0049-house",
+  "kind": "panels",
+  "id": "0049-house-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

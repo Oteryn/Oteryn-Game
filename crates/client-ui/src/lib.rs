@@ -2,6 +2,8 @@
 
 #[path = "features/0025-appearance/mod.rs"]
 pub mod appearance;
+#[path = "features/0083-channel-list/mod.rs"]
+pub mod channel_list;
 #[path = "features/0097-character-info/mod.rs"]
 pub mod character_info;
 #[path = "features/0067-bestiary-charm-progression/mod.rs"]
@@ -16,6 +18,8 @@ pub mod guild_bank;
 pub mod guild_war;
 #[path = "features/0099-guildhall/mod.rs"]
 pub mod guildhall;
+#[path = "features/0049-house/mod.rs"]
+pub mod house;
 #[path = "features/0059-house-move-out/mod.rs"]
 pub mod house_move_out;
 #[path = "features/0150-house-podium/mod.rs"]

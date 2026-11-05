@@ -101,6 +101,9 @@ impl PlayView {
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
+        if let Some(channel) = pushed.served_channel {
+            oteryn_client_ui::channel_list::protocol::apply(&mut self.served_channel, channel);
+        }
         self.world_clock = pushed.world_clock.or(self.world_clock);
         self.world_weather = pushed.world_weather.or(self.world_weather);
         self.apply_server_messages(&pushed.server_messages);

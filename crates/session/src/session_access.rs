@@ -146,6 +146,15 @@ impl<S: SessionStream> Session<S> {
             .map_or(0, |(_, revision)| *revision);
         let outcome = self.read_delta(domain_id, delta_type, applied).await;
         let delta = self.poison_on_error(outcome)?;
+        if domain_id == spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG {
+            let recorded = self.record_spell_catalog(
+                delta.base_revision,
+                delta.new_revision,
+                delta_type,
+                &delta.payload,
+            );
+            self.poison_on_error(recorded)?;
+        }
         match self
             .gated_revisions
             .iter_mut()

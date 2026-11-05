@@ -19,6 +19,8 @@ pub mod world_interaction;
 #[path = "features/0015-item-use/protocol.rs"]
 pub mod item_use;
 
+#[path = "features/0083-channel-list/protocol.rs"]
+pub mod channel_list;
 #[path = "features/0097-character-info/protocol.rs"]
 pub mod character_info_panel;
 #[path = "features/0146-container-sort/protocol.rs"]
@@ -29,6 +31,8 @@ pub mod cyclopedia_map;
 pub mod guild_war;
 #[path = "features/0099-guildhall/protocol.rs"]
 pub mod guildhall;
+#[path = "features/0049-house/protocol.rs"]
+pub mod house;
 #[path = "features/0059-house-move-out/protocol.rs"]
 pub mod house_move_out;
 #[path = "features/0086-house-transfer/protocol.rs"]
@@ -174,6 +178,8 @@ pub mod quest_log;
 /// Spell command execution and feedback.
 #[path = "features/local-spell-action-bar/mod.rs"]
 pub mod spell;
+#[path = "features/0287-actor-spell-catalog/protocol.rs"]
+pub mod spell_catalog;
 
 /// Server-owned Animus mastery wire values.
 pub use oteryn_session::animus_mastery;

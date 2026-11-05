@@ -1,6 +1,8 @@
 #[path = "tests/account_achievements.rs"]
 mod account_achievements_tests;
 mod appearance_session_tests;
+#[path = "features/0083-channel-list/tests.rs"]
+mod channel_list_tests;
 #[path = "container_tree_tests.rs"]
 mod container_tree_tests;
 #[path = "tests/depot_map_tests.rs"]
@@ -15,6 +17,8 @@ mod pvp_expert_tests;
 mod quest_log_tests;
 #[path = "tests/replacement_snapshot.rs"]
 mod replacement_snapshot_tests;
+#[path = "features/0287-actor-spell-catalog/tests.rs"]
+mod spell_catalog_tests;
 #[path = "features/0064-target-move/tests.rs"]
 mod target_move_tests;
 include!("tutorial_notices_tests.rs");
