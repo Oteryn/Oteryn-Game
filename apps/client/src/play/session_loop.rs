@@ -5,25 +5,14 @@ use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
 use oteryn_session::{
     LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome, WorldSpatialEntity,
 };
-use std::future::Future;
-use std::time::Duration;
+use std::{future::Future, time::Duration};
 use tokio::sync::mpsc::UnboundedReceiver;
 
 /// How long the session task serves liveness probes while no step is pending; well inside the
 /// server's probe cadence.
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
-/// The session calls the task needs; implemented by `Session`.
-pub trait Stepper: Send {
-    fn account_achievements(
-        &mut self,
-        _page: u32,
-    ) -> impl Future<
-        Output = Result<oteryn_client_runtime::account_achievements::Response, SessionError>,
-    > + Send {
-        async { Err(SessionError::SessionUnusable) }
-    }
-
+super::feature_local_account_achievements::protocol::session_trait! {
     fn animus_selected(&self) -> bool {
         false
     }
@@ -353,17 +342,8 @@ pub async fn run_session<T: Stepper>(
     outbox.achievements_initialize();
     let mut held = Vec::new();
     loop {
-        let ended = match commands.try_recv() {
-            Ok(PlayCommand::AccountAchievements(page)) => {
-                match session.account_achievements(page).await {
-                    Ok(response) => {
-                        outbox.achievements_result(&response);
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
-                    }
-                    Err(error) => error,
-                }
-            }
+        let ended = super::feature_local_account_achievements::protocol::dispatch! {
+            commands.try_recv(), session, outbox, held, publish;
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {
