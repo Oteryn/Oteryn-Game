@@ -72,6 +72,7 @@ impl Scene {
                 kind: TargetKind::Object,
                 glyph: false,
                 entity: None,
+                item: None,
             })
             .chain(entities.iter().copied())
             .chain([Targetable {
@@ -79,6 +80,7 @@ impl Scene {
                 kind: TargetKind::Entity,
                 glyph: false,
                 entity: None,
+                item: None,
             }])
             .collect();
         let mut scene = Self {
@@ -113,6 +115,12 @@ impl Scene {
         Ok(Some(picked))
     }
 
+    /// Keeps a selection only while that exact visible identity still exists.
+    pub(crate) fn retain_target(&mut self, target: Option<Targetable>) -> Result<(), BatchError> {
+        self.target = target.filter(|target| self.visible.contains(target));
+        self.rebuild_sprites()
+    }
+
     /// Turns the player to `facing`, keeping the target.
     pub fn set_facing(&mut self, facing: StepDir) -> Result<(), BatchError> {
         self.facing = facing;
@@ -145,7 +153,8 @@ impl Scene {
                             .iter()
                             .any(|v| {
                                 v.tile == TileCoord::new(x, y)
-                                    && (v.kind == TargetKind::Object || v.glyph)
+                                    && (v.glyph
+                                        || (v.kind == TargetKind::Object && v.item.is_none()))
                             })
                             .then_some(Draw {
                                 cell: MARKER_CELL,

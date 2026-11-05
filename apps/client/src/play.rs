@@ -8,9 +8,7 @@ use crate::scene::Scene;
 use feature_local_reference_preferences::settings::LocalPlayState;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
-use oteryn_session::{
-    EntityRef, JoinSnapshot, SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity,
-};
+use oteryn_session::{EntityRef, SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity};
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
 
@@ -49,6 +47,7 @@ pub struct PlayView {
     inputs: VecDeque<Input>,
     /// The other entities the server reports as visible.
     entities: Vec<WorldSpatialEntity>,
+    ground_items: Vec<crate::input::Targetable>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
     /// The last refused logout's line, shown until the next combat line or logout answer.
@@ -58,15 +57,6 @@ pub struct PlayView {
 }
 
 impl PlayView {
-    pub fn from_join(snapshot: &JoinSnapshot) -> Result<Self, BatchError> {
-        let position = snapshot.world_spatial.actor_position;
-        Self::new(
-            TileCoord::new(position.x, position.y),
-            position.floor,
-            &snapshot.world_object_overlay,
-        )
-    }
-
     pub fn new(
         own: TileCoord,
         floor: i16,
@@ -90,6 +80,7 @@ impl PlayView {
             in_flight: false,
             inputs: VecDeque::new(),
             entities: Vec::new(),
+            ground_items: Vec::new(),
             combat_line: None,
             logout_line: None,
             server_messages: VecDeque::new(),
@@ -164,6 +155,8 @@ mod session_loop;
 mod session_stepper;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
+
+pub use feature_0004_item_view_move::state::GroundItem;
 
 pub use feature_0023_presentation::state::*;
 

@@ -1,4 +1,4 @@
-//! Headless C03 scenario through the native task, mailbox and rendered scene.
+//! Headless live-map and C05 item-selection scenario through the native task, mailbox and rendered scene.
 use oteryn_client::combat_input::{CombatCommand, CombatReport};
 use oteryn_client::play::{PlayView, Stepper, play_channel, run_session};
 use oteryn_protocol_oteryn::world_map::*;
@@ -46,7 +46,7 @@ impl Stepper for MapSession {
 }
 
 #[test]
-fn native_live_map_snapshot_then_delta_changes_the_scene()
+fn native_live_map_snapshot_then_delta_changes_the_scene_and_item_selection()
 -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -102,6 +102,8 @@ fn native_live_map_snapshot_then_delta_changes_the_scene()
                     ));
                     let mut added = initial.tiles[0].clone();
                     added.position.x += 1;
+                    added.items[0].count = 7;
+                    added.items[0].origin = MapOrigin::Handle(std::num::NonZeroU64::MIN);
                     let added_position = added.position;
                     let upsert = WorldMapViewDelta {
                         header: initial.header,
@@ -137,6 +139,28 @@ fn native_live_map_snapshot_then_delta_changes_the_scene()
                             Ok::<_, String>(())
                         })
                         .await??;
+                        if revision == 2 {
+                            view.click(TileCoord::new(added_position.x, added_position.y))?;
+                            let item = view
+                                .scene()
+                                .target()
+                                .and_then(|target| target.item)
+                                .ok_or("live ground item was not selectable")?;
+                            assert_eq!(item.definition(), 1);
+                            assert_eq!(item.quantity(), 7);
+                            assert!(matches!(
+                                item,
+                                oteryn_client::play::GroundItem::Map {
+                                    item: MapItem {
+                                        origin: MapOrigin::Handle(_),
+                                        ..
+                                    },
+                                    ..
+                                }
+                            ));
+                        } else {
+                            assert_eq!(view.scene().target(), None);
+                        }
                     }
                     drop(link);
                     task.abort();

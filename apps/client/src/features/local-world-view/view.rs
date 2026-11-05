@@ -7,6 +7,15 @@ use oteryn_session::EntityKind;
 use std::sync::Arc;
 
 impl PlayView {
+    pub fn from_join(snapshot: &oteryn_session::JoinSnapshot) -> Result<Self, BatchError> {
+        let position = snapshot.world_spatial.actor_position;
+        Self::new(
+            TileCoord::new(position.x, position.y),
+            position.floor,
+            &snapshot.world_object_overlay,
+        )
+    }
+
     #[must_use]
     pub const fn scene(&self) -> &Scene {
         &self.scene
@@ -30,6 +39,7 @@ impl PlayView {
         map: &oteryn_session::world_map::WorldMapViewSnapshot,
     ) -> Result<(), BatchError> {
         let world = World::from_live_map(map)?;
+        self.ground_items = super::super::feature_0004_item_view_move::state::map_targets(map);
         self.map_floor = Some(map.header.origin.floor);
         self.anchor = TileCoord::new(0, 0);
         self.local.set_world(Arc::new(world));
@@ -39,6 +49,7 @@ impl PlayView {
 
     pub(in crate::play) fn rebuild(&mut self) -> Result<(), BatchError> {
         let markers = self.drawn_markers().collect::<Vec<_>>();
+        let target = self.scene.target();
         let entities = self
             .entities
             .iter()
@@ -51,8 +62,15 @@ impl PlayView {
                     _ => TargetKind::Entity,
                 },
                 glyph: true,
+                item: super::super::feature_0004_item_view_move::state::entity_item(entity),
                 entity: matches!(entity.kind, EntityKind::Creature).then_some(entity.entity),
             })
+            .chain(
+                self.ground_items
+                    .iter()
+                    .filter(|target| target.item.is_some_and(|item| item.floor() == self.floor))
+                    .copied(),
+            )
             .collect::<Vec<_>>();
         self.scene = Scene::centered_with(
             self.local.world(),
@@ -62,6 +80,7 @@ impl PlayView {
             &markers,
             &entities,
         )?;
+        self.scene.retain_target(target)?;
         Ok(())
     }
 

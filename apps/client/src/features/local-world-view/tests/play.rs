@@ -47,7 +47,7 @@ fn live_map_push_reaches_the_rendered_scene() -> Result<(), BatchError> {
     Ok(())
 }
 
-fn live_snapshot(x: i32) -> oteryn_session::world_map::WorldMapViewSnapshot {
+pub(super) fn live_snapshot(x: i32) -> oteryn_session::world_map::WorldMapViewSnapshot {
     use oteryn_session::world_map::{MapTile, MapViewHeader, WorldMapViewSnapshot};
     let position = ActorPosition {
         x,
@@ -77,7 +77,7 @@ fn live_snapshot(x: i32) -> oteryn_session::world_map::WorldMapViewSnapshot {
     }
 }
 
-fn map_event(
+pub(super) fn map_event(
     header: oteryn_session::world_map::MapViewHeader,
     tiles: Vec<oteryn_session::world_map::MapTile>,
     cleared: Vec<ActorPosition>,
