@@ -166,7 +166,62 @@ mod tests {
     }
 
     #[test]
-    fn active_content_mints_every_reward_bag_output() {
+    fn event_catalogue_resolves_captured_selection_shapes_and_quantities() {
+        use crate::content::native_gameplay::test_support::{
+            activated_with_item_keys, activated_with_loot_tables,
+        };
+        let world = activated_with_item_keys(None)
+            .active()
+            .expect("active")
+            .identity()
+            .world_id();
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let active = controller.active().expect("active");
+        let native = active.native_gameplay().expect("native");
+        let source: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/native-gameplay/event-item-actions.json"
+        ))
+        .expect("captured actions");
+        for rule in source["rules"].as_array().expect("rules") {
+            let key = format!("oteryn:item.tibia.i{}", rule["item_id"]);
+            let rewards = rule["rewards"].as_array().expect("rewards");
+            let mut reached = std::collections::BTreeSet::new();
+            for draw in 0..512 {
+                let plan = reward_bag_conversion(native, &item(&key), draw)
+                    .expect("captured outcome resolves in active content");
+                let count = match rule["selection"].as_str().expect("selection") {
+                    "all" => rewards.len(),
+                    "without_replacement" => 7,
+                    _ => 1,
+                };
+                assert_eq!(plan.outputs.len(), count, "{key}");
+                let mut unique = std::collections::BTreeSet::new();
+                for (definition, count) in &plan.outputs {
+                    let id: u64 = definition
+                        .production_key
+                        .strip_prefix("oteryn:item.tibia.i")
+                        .expect("key")
+                        .parse()
+                        .expect("id");
+                    assert!(
+                        rewards.iter().any(|reward| reward["item_id"] == id
+                            && reward["minimum"].as_u64().expect("minimum") <= u64::from(*count)
+                            && u64::from(*count) <= reward["maximum"].as_u64().expect("maximum")),
+                        "{key}: {id} x {count}"
+                    );
+                    unique.insert(id);
+                    reached.insert(id);
+                }
+                if rule["selection"] == "without_replacement" {
+                    assert_eq!(unique.len(), 7);
+                }
+            }
+            assert!(!reached.is_empty());
+        }
+    }
+
+    #[test]
+    fn active_content_mints_every_legacy_reward_bag_output() {
         use crate::content::native_gameplay::test_support::{
             activated_with_item_keys, activated_with_loot_tables,
         };
@@ -179,8 +234,11 @@ mod tests {
         let active = controller.active().expect("active");
         let native = active.native_gameplay().expect("native");
         let bags = reward_bags().expect("overlay");
-        assert_eq!(bags.iter().filter(|b| b.playable).count(), 3);
-        for bag in bags.iter().filter(|b| b.playable) {
+        assert_eq!(bags.iter().filter(|b| b.playable).count(), 27);
+        for bag in bags
+            .iter()
+            .filter(|b| b.playable && !b.constant.starts_with("EVENT_"))
+        {
             let mut reached = std::collections::BTreeSet::new();
             let mut cumulative = 0;
             for reward in &bag.rewards {

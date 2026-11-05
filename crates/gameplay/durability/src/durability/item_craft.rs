@@ -15,7 +15,7 @@ use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_items::item_craft::{
     carried_cooking_conversion_with_sub_type, cooking_conversion, fishing_conversion,
 };
-use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
+use oteryn_gameplay_items::reward_bag::{is_reward_bag_output, reward_bag_conversion, reward_bag_draw};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use serde_json::{Value, json};
 use sqlx::Row;
@@ -321,7 +321,7 @@ async fn write<C: ItemLoopContent>(
         // REWARD-BAGS-2: the alicorn quiver is one fresh empty container. The
         // existing mint inserts only its instance and parent placement, no children.
         let empty_quiver = request.station.is_none()
-            && definition.production_key == "oteryn:item.tibia.i39150"
+            && is_reward_bag_output(&conversion.recipe, &definition.production_key)
             && *count == 1;
         if (facts.container_capacity.is_some() && !empty_quiver)
             || *count

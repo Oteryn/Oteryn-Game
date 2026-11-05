@@ -1,0 +1,10 @@
+name=arena_match
+commands=436
+transport=arena_match
+composed=arena_match
+authority=arena_match
+[route]
+match routing::arena_match::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}
