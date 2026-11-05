@@ -315,6 +315,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
+        mailbox.stash_end();
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.achievement_notices = Default::default();
@@ -338,6 +339,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
+        mailbox.stash_end();
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.achievement_notices = Default::default();

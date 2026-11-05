@@ -379,6 +379,7 @@ pub(super) fn publish<T: Stepper>(
     outbox.achievement_notices_publish(session);
     outbox.guild_chat_publish(session);
     outbox.depot_publish(session);
+    outbox.stash_publish(session);
     outbox.vitals(session.actor_vitals());
     if let Some(payload) = session.feature_snapshot(98) {
         outbox.cyclopedia_tracker_push(payload);

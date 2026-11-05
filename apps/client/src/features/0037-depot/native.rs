@@ -142,6 +142,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
                 [470, 76, 440, 20],
             ),
         ];
+        let stash = control(hwnd, "BUTTON", "Stash items…", 36, [10, 490, 440, 28]);
         let status = control(hwnd, "STATIC", "", 300, [10, 530, 900, 100]);
         if boxes
             .iter()
@@ -149,7 +150,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
             .chain(&carried)
             .chain(&controls)
             .chain(&labels)
-            .chain([&status])
+            .chain([&status, &stash])
             .any(|h| h.is_null())
         {
             DestroyWindow(hwnd);
@@ -176,6 +177,12 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
                 break;
             }
             for id in std::mem::take(&mut actions.0) {
+                if id == 36 {
+                    drop(m);
+                    PlayLink::stash_open(&shared, &commands);
+                    m = lock(&shared);
+                    continue;
+                }
                 if m.depot.pending || ((100..=231).contains(&id) && held.as_ref() != Some(&m.depot))
                 {
                     continue;
