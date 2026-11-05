@@ -143,7 +143,7 @@ fn decode_tab(b: &[u8], requested: cyclopedia_character::CharacterTab) -> Option
             let (health, mana) = (r.u32()?, r.u32()?);
             rows.push(match known {
                 0 if health == 0 && mana == 0 => "Health: unavailable\nMana: unavailable".into(),
-                1 => format!("Health: {health}\nMana: {mana}"),
+                1 => format!("Health: {health} (last saved)\nMana: {mana} (last saved)"),
                 _ => return None,
             });
         }

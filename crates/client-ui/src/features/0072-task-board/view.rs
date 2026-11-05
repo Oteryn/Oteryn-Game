@@ -1,1 +1,114 @@
-//! Task Board plain-text rendering is defined in the feature root.
+use super::task_board;
+use std::fmt::Write;
+
+pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>) -> String {
+    let mut text = format!(
+        "Task Board — week {}\nPoints: {}  Bounty points: {}  Soulseals: {}\n",
+        reply.period, reply.points, reply.bounty_points, reply.soulseals
+    );
+    let weekly = &reply.weekly;
+    let _ = writeln!(
+        text,
+        "Weekly: started {}, difficulty {}, expanded {}, multiplier {}",
+        weekly.started, weekly.difficulty, weekly.expanded, weekly.multiplier
+    );
+    let _ = writeln!(
+        text,
+        "Kill XP: {}  Delivery XP: {}  Pending points: {}  Pending soulseals: {}",
+        weekly.kill_experience,
+        weekly.delivery_experience,
+        weekly.pending_points,
+        weekly.pending_soulseals
+    );
+    for (slot, task) in weekly.kills.iter().enumerate() {
+        let race = if task.race.is_empty() {
+            "Any creature".into()
+        } else {
+            super::creature_name(&task.race)
+        };
+        let _ = writeln!(
+            text,
+            "Kill {}. {race}: {}/{}",
+            slot + 1,
+            task.current,
+            task.required
+        );
+    }
+    for (slot, task) in weekly.deliveries.iter().enumerate() {
+        let _ = writeln!(
+            text,
+            "Delivery {}. {}: {}/{}  delivered: {}",
+            slot + 1,
+            task.item,
+            task.current,
+            task.required,
+            task.delivered
+        );
+    }
+    let bounty = &reply.bounty;
+    let _ = writeln!(
+        text,
+        "Bounty: state {}, difficulty {}, rerolls {}, daily reroll at {}",
+        bounty.state, bounty.difficulty, bounty.rerolls, bounty.daily_reroll_at
+    );
+    for (slot, offer) in bounty.offers.iter().enumerate() {
+        let _ = writeln!(
+            text,
+            "Bounty {}. {}: {} kills, {} XP, {} points, grade {}",
+            slot + 1,
+            super::creature_name(&offer.race),
+            offer.required,
+            offer.experience,
+            offer.points,
+            offer.grade
+        );
+    }
+    if let Some(active) = &bounty.active {
+        let _ = writeln!(
+            text,
+            "Active bounty: {} {}/{} (offer {})",
+            super::creature_name(&active.race),
+            bounty.current,
+            active.required,
+            bounty.selected
+        );
+    }
+    for (slot, list) in bounty.lists.iter().enumerate() {
+        let _ = writeln!(
+            text,
+            "List {}: unlocked {}, preferred {}, unwanted {}",
+            slot + 1,
+            list.unlocked,
+            list.preferred,
+            list.unwanted
+        );
+    }
+    for offer in &reply.shop {
+        let _ = writeln!(
+            text,
+            "Shop {}. kind {}, price {}, reward {} / {}, addon {}, bought {}",
+            offer.index + 1,
+            offer.kind,
+            offer.price,
+            offer.primary,
+            offer.secondary,
+            offer.addon,
+            offer.bought
+        );
+    }
+    for (path, value) in reply.talisman.iter().enumerate() {
+        let _ = writeln!(
+            text,
+            "Talisman {} ({}): level {}, bonus {}, next cost {}",
+            path + 1,
+            ["Damage", "Life leech", "Loot", "Bestiary"][path],
+            value.level,
+            value.bonus,
+            value.next_cost
+        );
+    }
+    if let Some(feedback) = feedback {
+        text.push_str(feedback);
+    }
+    text
+}

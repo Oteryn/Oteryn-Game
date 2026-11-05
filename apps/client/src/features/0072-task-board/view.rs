@@ -5,7 +5,7 @@ impl PlayLink {
         lock(&self.mailbox).task_board.clone()
     }
     pub fn open_task_board(&self) {
-        self.task_board_request(oteryn_client_ui::task_board::Intent::Refresh);
+        self.task_board_full_request(oteryn_client_ui::task_board::FullIntent::Refresh);
         #[cfg(windows)]
         open_window(self);
         #[cfg(not(windows))]
