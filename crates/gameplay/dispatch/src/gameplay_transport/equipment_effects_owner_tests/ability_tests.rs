@@ -201,6 +201,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // P18 Forge shares that existing core profile and adds no duplicate.
     ("W06-ECHO", 24),
     ("W07-SOULPIT", 821),
+    // W15c debris 6475..=6483 and 6485/6486, captured by
+    // tools/content-schema/native-gameplay/build_grizzly_debris_profiles.py from Crystal
+    // 201189f items.xml:17891-17893 (no speed override). src/items/items.hpp:38 defaults
+    // speed to zero; all eleven profiles preserve that qualified speed_bonus=0.
+    ("W15C-GRIZZLY-DEBRIS", 11),
     // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
     // 3477..=3480 (tools/content-migration/fluid_container_profiles.py). All have speed_bonus=0.
     ("W18-FLUID", 20),

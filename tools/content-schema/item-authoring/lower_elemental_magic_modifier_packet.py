@@ -18,8 +18,8 @@ ROOT = base.ROOT
 COMPILER = (
     "tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py"
 )
-PROOF = "docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-source-qualification-v1.json"
-PROOF_SHA = "022b40bdbd6de3d97d938eeff4d7370d5904961edf3ba8effde700c8f5973490"
+PROOF = "docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-source-qualification-v2.json"
+PROOF_SHA = "8dfedefbf831b7a93ebe5f22e7728235e6b089e81d2a33623e77aa9f7e12ca34"
 OUTPUT = (
     ROOT
     / "docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json"

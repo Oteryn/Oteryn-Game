@@ -258,9 +258,12 @@ pub(super) async fn prepare_channel(
     // W05b: the server save's daily world changes, rolled once per reset epoch.
     let daily_npcs =
         daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily, bundle.as_ref());
+    let daily_items =
+        daily_world_changes::apply_items(bundle.as_ref().map(|world| world.facts()), &daily);
     event(&format!(
         "event=daily_world_change reset_epoch={} thawing={} their_masters_voice={} \
-         oriental_trader={:?} grimvale_full_moon={} flower_month={} npcs={daily_npcs}",
+         oriental_trader={:?} grimvale_full_moon={} flower_month={} npcs={daily_npcs} \
+         items={daily_items}",
         daily.reset_epoch,
         daily.thawing,
         daily.their_masters_voice,

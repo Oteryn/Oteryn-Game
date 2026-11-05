@@ -17,8 +17,8 @@ sys.path.insert(0, str(ROOT / "tools/content-migration"))
 from source_relocations import current_path as relocated_path
 
 COMPILER = "tools/content-schema/item-authoring/lower_item_name15_packet.py"
-PROOF = "docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v2.json"
-PROOF_SHA = "20a113d4cc4d9dd1c97c7ee4e09c9c8bb7e11a271cd3acb740f56f31ae76a1bb"
+PROOF = "docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v3.json"
+PROOF_SHA = "34276b2deb0009b1974ca722ba5456782446d3122e673fa37b388169ba9c2d4a"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json"
 IDS = (
     23577,

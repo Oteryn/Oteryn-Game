@@ -1,4 +1,17 @@
-//! Cyclopedia map page registration seam; live command handling remains step 5 work.
+use super::Panel;
+pub fn panel_text(panel: &Panel) -> String {
+    format!(
+        "Cyclopedia map\r\n{}\r\n{}",
+        panel.summary,
+        if panel.pending {
+            "Waiting for the server"
+        } else if !panel.selected && panel.feedback.is_empty() {
+            "Unavailable in this session"
+        } else {
+            &panel.feedback
+        }
+    )
+}
 
-/// Registration target for the generated Cyclopedia map navigation entry.
+/// Registration target for the Cyclopedia map navigation entry.
 pub fn map_page() {}

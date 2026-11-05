@@ -1,0 +1,7 @@
+{
+  "mechanic": "0134-party-skull",
+  "kind": "panels",
+  "id": "0134-party-skull-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

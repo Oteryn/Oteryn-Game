@@ -109,12 +109,23 @@ fn derived_gated_routes_match_previous_table() {
     let expected: &[(u32, &[u32], &[u32])] = &[
         (3, &[7, 8], &[7, 8]),
         (51, &[60, 61], &[]),
+        // P-C06 routes existing timed-item, cyclopedia-map and party-skull queries/intents.
+        (39, &[38], &[]),
+        (57, &[72, 73], &[]),
+        (134, &[155], &[]),
         (40, &[40, 41], &[]),
         (42, &[45, 46], &[]),
         (43, &[48, 49, 50], &[]),
         (53, &[64], &[]),
         (54, &[66, 67], &[]),
         (55, &[68, 69], &[]),
+        // P-C04: existing move-out, scope-transfer and guildhall leadership routes.
+        (59, &[76, 77], &[]),
+        (86, &[102], &[51]),
+        (99, &[115], &[]),
+        // P-C01 already routes charm progression and expert fight modes on this base.
+        (67, &[84], &[]),
+        (87, &[103], &[52]),
         (60, &[78], &[26]),
         (62, &[79], &[27]),
         (63, &[80], &[28]),
@@ -135,6 +146,7 @@ fn derived_gated_routes_match_previous_table() {
         (232, &[444, 445, 446], &[]),
         (285, &[501], &[]),
         (115, &[124], &[]),
+        // P-C05 exposes the existing 117 routes (133, 169, 178-180, 340, 491); no table change.
         // C49: the boss status panel uses the registry-owned capability 117 route.
         (117, &[133, 169, 178, 179, 180, 340, 491], &[99]),
         (140, &[160], &[]),

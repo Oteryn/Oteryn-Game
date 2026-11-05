@@ -7,9 +7,69 @@ import unittest
 from pathlib import Path
 
 import check_stack_default_historical_context as check
+import historical_world_owner_context as world_context
+import refresh_spkg2_qualification_receipts as refresh
 
 
 class ContextTests(unittest.TestCase):
+    def test_historical_owner_receipts_reject_unqualified_ground_changes(self):
+        for relative in (
+            world_context.MARKER,
+            "content/world/terrain/" + world_context.GROUND,
+        ):
+            with (
+                self.subTest(relative=relative),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                root = Path(directory)
+                for source in (
+                    world_context.MARKER,
+                    "content/world/terrain/" + world_context.GROUND,
+                ):
+                    target = root / source
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes((check.ROOT / source).read_bytes())
+                self.assertEqual(
+                    world_context.sha(world_context.original_marker(root)),
+                    world_context.BASE_SHA,
+                )
+                target = root / relative
+                target.write_bytes(target.read_bytes() + b" ")
+                with self.assertRaisesRegex(ValueError, "source digest drift"):
+                    world_context.original_marker(root)
+
+    def test_historical_hit_receipt_rejects_changed_facts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in (
+                world_context.MARKER,
+                "content/world/terrain/" + world_context.GROUND,
+                world_context.HIT_PACKET,
+            ):
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes((check.ROOT / relative).read_bytes())
+            self.assertEqual(
+                world_context.sha(world_context.original_hit_packet(root)),
+                world_context.HIT_SHA,
+            )
+            target = root / world_context.HIT_PACKET
+            packet = json.loads(target.read_bytes())
+            packet["counts"]["fields"] += 1
+            target.write_bytes(check.canonical(packet))
+            with self.assertRaisesRegex(ValueError, "source digest drift"):
+                world_context.original_hit_packet(root)
+
+    def test_receipt_refresh_rejects_modified_frozen_qualification(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            recipe = refresh.RECIPES[0]
+            target = root / recipe[2]
+            target.parent.mkdir(parents=True)
+            target.write_bytes((check.ROOT / recipe[2]).read_bytes() + b" ")
+            with self.assertRaisesRegex(ValueError, "frozen qualification changed"):
+                refresh.refresh(root, recipe)
+
     def test_packets_are_byte_exact_and_actual_current_cohort_stays_closed(self):
         result = check.check()
         self.assertEqual(result["strict_current_original_defaults"], 1487)

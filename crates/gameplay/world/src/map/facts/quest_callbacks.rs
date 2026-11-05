@@ -260,6 +260,34 @@ impl BundleFacts {
         true
     }
 
+    /// W05b (Crystal thawing.lua:21-27): a daily world change's volatile Item, placed at
+    /// Channel boot; no magic effect. Lives until the Channel ends, like other callback items.
+    pub fn create_world_change_item(&self, pos: TilePos, appearance: u16) -> bool {
+        let Some(facts) = self.movement_item_facts(appearance) else {
+            return false;
+        };
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        let Some(sequence) = states.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
+            return false;
+        };
+        if !states.has_capacity(1) {
+            return false;
+        }
+        let entry = view::ComposedEntry {
+            source: view::EntrySource::Added(id),
+            facts,
+        };
+        let states = Arc::make_mut(&mut states);
+        states.movement_sequence = sequence;
+        states.movement_items.entry(pos).or_default().push(entry);
+        true
+    }
+
     /// Bounded observation; cursors are per observer so nearby sessions see the same effect.
     pub fn movement_effects_since(&self, after: u64) -> Vec<(u64, TilePos, u16)> {
         self.callbacks

@@ -1,4 +1,6 @@
 //! Live boss encounter status from the admitted character's server snapshot.
+#[path = "protocol/auxiliary.rs"]
+mod auxiliary;
 mod input;
 mod protocol;
 mod state;
