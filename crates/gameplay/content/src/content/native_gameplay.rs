@@ -30,6 +30,8 @@ pub mod cosmetics_loader;
 mod cosmetics_view;
 pub use cosmetics_view::NativeCosmeticsView;
 
+mod market_catalogue;
+
 pub mod mount_taming;
 
 mod native_cosmetics;
@@ -155,6 +157,10 @@ struct SupplementsEnvelope {
     familiar_defenses: Option<String>,
     #[serde(deserialize_with = "required_supplement_option")]
     wheel_profile: Option<String>,
+    /// The compiler binds the accepted Market type source into the activated outer digest.
+    /// Historical artifacts without this pin retain their Item-profile-only admission.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    market_admission_sha256: Option<String>,
 }
 fn required_supplement_option<'de, D: serde::Deserializer<'de>>(
     d: D,
@@ -402,6 +408,7 @@ pub struct NativeGameplayState {
     creatures: CreatureProfilesDocument,
     presentations: PresentationProfilesDocument,
     items: Option<ItemProfilesDocument>,
+    market_catalogue: Option<market_catalogue::MarketCatalogue>,
     appearances: Option<super::native_spell_appearances::CompiledSpellAppearances>,
     training: Option<crate::content::training_formula::CompiledTrainingFormula>,
     magnitude_policy: oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy,
@@ -518,6 +525,24 @@ impl NativeGameplayState {
         &self,
     ) -> Option<&super::native_spell_appearances::CompiledSpellAppearances> {
         self.appearances.as_ref()
+    }
+    /// Source-qualified Market types need not carry a spell-use Item policy.
+    /// Instance attributes remain the durable selector's responsibility.
+    pub fn marketable_definition(&self, key: &str, revision: &str) -> bool {
+        let Some(index) = self.item_index() else {
+            return false;
+        };
+        if index.definition_ref("Item", key, revision).is_none() {
+            return false;
+        }
+        self.market_catalogue
+            .as_ref()
+            .is_some_and(|catalogue| catalogue.admits(index, key, revision))
+            || self.item_policy(key, revision).is_some_and(|policy| {
+                use super::ReferenceItemField as F;
+                matches!(&policy.record().semantics.trade_restrictions,
+                    F::Known(trade) if trade.marketable == F::Known(true))
+            })
     }
     pub fn item_policy(&self, key: &str, revision: &str) -> Option<QualifiedItemPolicy<'_>> {
         let record = self.items.as_ref()?.records.iter().find(|p| {
@@ -914,6 +939,7 @@ pub fn compile_native_gameplay(
     }
     if let Some(config) = &input.familiar_config {
         let supplements = SupplementsEnvelope {
+            market_admission_sha256: Some(market_catalogue::SOURCE_SHA256.to_owned()),
             native_map_profile: input.native_map_profile,
             familiar_config: String::from_utf8(config.bytes.clone())
                 .map_err(|_| invalid("native gameplay config UTF8"))?,
@@ -1362,6 +1388,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy::Strict,
         )
     };
+    let mut market_catalogue = None;
     let (familiar_config, familiar_defenses, wheel_profile, native_map_profile) = if is_v5 {
         let envelope: SupplementsEnvelope = serde_json::from_slice(sections[8])
             .map_err(|_| invalid("native gameplay source supplements"))?;
@@ -1392,6 +1419,11 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 )
                 .map_err(|_| invalid("native gameplay familiar source defense"))
             })
+            .transpose()?;
+        market_catalogue = envelope
+            .market_admission_sha256
+            .as_deref()
+            .map(market_catalogue::MarketCatalogue::load)
             .transpose()?;
         (Some(config), defenses, wheel, envelope.native_map_profile)
     } else {
@@ -1444,6 +1476,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             creatures,
             presentations,
             items,
+            market_catalogue,
             appearances,
             training,
             magnitude_policy,
@@ -3292,6 +3325,69 @@ mod tests {
             "proposal-content-r1"
         );
     }
+    #[test]
+    fn reaudit_market_population_admission_is_bound_to_the_active_artifact() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let keys =
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");
+        let supplied = v7_input(Some(keys));
+        let compiled = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let state = decode(&compiled.server_artifact).unwrap().state;
+        assert!(
+            state
+                .item_policy("oteryn:item.tibia.i10219", "definition-r1")
+                .is_none()
+        );
+        assert!(state.marketable_definition("oteryn:item.tibia.i10219", "definition-r1"));
+        assert!(!state.marketable_definition("oteryn:item.tibia.i10219", "definition-r2"));
+        assert!(!state.marketable_definition("oteryn:item.tibia.i3031", "definition-r1"));
+        fn replace_admission(bytes: &[u8], pin: Option<&str>) -> Vec<u8> {
+            let mut output = bytes[..8].to_vec();
+            let mut cursor = 8;
+            let mut section = 0;
+            while cursor < bytes.len() {
+                let length =
+                    u32::from_be_bytes(bytes[cursor..cursor + 4].try_into().unwrap()) as usize;
+                cursor += 36;
+                let mut payload = bytes[cursor..cursor + length].to_vec();
+                if section == 8 {
+                    let mut value: Value = serde_json::from_slice(&payload).unwrap();
+                    if let Some(pin) = pin {
+                        value["market_admission_sha256"] = pin.into();
+                    } else {
+                        value
+                            .as_object_mut()
+                            .unwrap()
+                            .remove("market_admission_sha256");
+                    }
+                    payload = serde_json::to_vec(&value).unwrap();
+                }
+                output.extend_from_slice(&(payload.len() as u32).to_be_bytes());
+                output.extend_from_slice(&sha256(&payload));
+                output.extend_from_slice(&payload);
+                cursor += length;
+                section += 1;
+            }
+            output
+        }
+        let historical = replace_admission(&compiled.server_artifact, None);
+        let historical_state = decode(&historical).unwrap().state;
+        assert!(
+            !historical_state.marketable_definition("oteryn:item.tibia.i10219", "definition-r1")
+        );
+        assert!(
+            StagedGeneration::stage(
+                &historical,
+                &compiled.client_artifact,
+                compiled.expectation()
+            )
+            .is_err()
+        );
+        let wrong_pin = replace_admission(&compiled.server_artifact, Some(&"0".repeat(64)));
+        assert!(decode(&wrong_pin).is_err());
+    }
+
     #[test]
     fn summer_corpse_capacity_reward_admission_accepts_thirty_and_refuses_thirty_one() {
         use super::super::creature_reward::NoSettlementReason;

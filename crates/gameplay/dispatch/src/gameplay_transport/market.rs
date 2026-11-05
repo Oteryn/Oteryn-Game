@@ -1,7 +1,6 @@
 //! Depot-admitted MARKET_V1. No client Account, World or custody proof is accepted.
 use super::ComposedFreshAdmission;
 use super::connection::AdmittedSession;
-use crate::content::ReferenceItemField;
 use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::market::{self as wire, MarketReply, MarketRow};
 use std::num::NonZeroU32;
@@ -47,10 +46,7 @@ fn marketable(
     key: &str,
     revision: &str,
 ) -> bool {
-    let Some(policy) = native.item_policy(key, revision) else {
-        return false;
-    };
-    matches!(&policy.record().semantics.trade_restrictions,ReferenceItemField::Known(trade) if trade.marketable==ReferenceItemField::Known(true))
+    native.marketable_definition(key, revision)
 }
 pub(super) async fn execute(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
