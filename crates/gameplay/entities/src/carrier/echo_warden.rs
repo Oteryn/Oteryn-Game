@@ -3,9 +3,9 @@
 use super::*;
 mod echo_child_expiry;
 use oteryn_gameplay_domain::domain::echo_warden::{
-    AURA_INTERVAL_MS, EchoAuraFacts, EchoDeathEffect, EchoDeathFacts, EchoPortalTiming,
-    EchoRaidPlan, EchoVariant, EchoWardenFacts, PORTAL_TTL_MS, SPAWN_STEP_MS, aura_can_enlist,
-    can_apply_warden, death_effect, portal_timing,
+    AURA_INTERVAL_MS, EchoAuraFacts, EchoDeathEffect, EchoDeathFacts, EchoOutcome,
+    EchoPortalTiming, EchoRaidPlan, EchoVariant, EchoWardenFacts, PORTAL_TTL_MS, SPAWN_STEP_MS,
+    aura_can_enlist, can_apply_warden, death_effect, portal_timing,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -195,12 +195,38 @@ impl ChannelRuntimeV1 {
         self.owner_fence()?;
         self.bound_attacker_lease(actor, session)?;
         let position = self.read_actor_position(actor)?.position();
-        let Some(index) = self.echo_wardens.portals.iter().position(|portal| {
-            portal.active && portal.timing.is_visible_at(now_ms) && portal.position == position
-        }) else {
+        let Some(occurrence) = self
+            .echo_portals(now_ms)
+            .find(|portal| portal.position == position)
+            .map(|portal| portal.occurrence)
+        else {
             return Ok(false);
         };
         let plan = EchoRaidPlan::new(minion_draw).map_err(|_| CarrierError::InvalidDamage)?;
+        self.activate_echo_portal_with_plan(actor, session, occurrence, now_ms, plan)
+    }
+
+    /// Consume the same portal captured before any durable Bestiary read. Re-prove the
+    /// exact player/session and occurrence after that read, including same-tile replacement.
+    pub fn activate_echo_portal_with_plan(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        occurrence: [u8; 16],
+        now_ms: u64,
+        plan: EchoRaidPlan,
+    ) -> Result<bool, CarrierError> {
+        self.owner_fence()?;
+        self.bound_attacker_lease(actor, session)?;
+        let position = self.read_actor_position(actor)?.position();
+        let Some(index) = self.echo_wardens.portals.iter().position(|portal| {
+            portal.active
+                && portal.timing.is_visible_at(now_ms)
+                && portal.position == position
+                && portal.occurrence == occurrence
+        }) else {
+            return Ok(false);
+        };
         let portal = self.echo_wardens.portals.remove(index);
         self.echo_wardens.raids.push(EchoRaid {
             creature: portal.creature,
@@ -264,7 +290,8 @@ impl ChannelRuntimeV1 {
         &mut self,
         creature: &str,
         position: MovementLocalPosition,
-        variant: EchoVariant,
+        variant: Option<EchoVariant>,
+        influenced: bool,
         now_ms: u64,
     ) -> Result<ExactActorRef, CarrierError> {
         let health = self.companion_policy(creature)?.maximum_health;
@@ -276,12 +303,27 @@ impl ChannelRuntimeV1 {
         let actor = self.admit_encounter_actor(creature, health, position)?;
         let result = self
             .install_creature_policy(actor, creature)
-            .and_then(|()| self.apply_echo_variant(actor, variant));
+            .and_then(|()| match variant {
+                Some(variant) => self.apply_echo_variant(actor, variant).map(|_| ()),
+                None => Ok(()),
+            })
+            .and_then(|()| {
+                if influenced {
+                    self.apply_echo_influenced(actor)
+                } else {
+                    Ok(())
+                }
+            });
         if let Err(error) = result {
             self.remove_encounter_actor(actor)?;
             return Err(error);
         }
-        if variant == EchoVariant::Warden {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        if let Slot::CreatureOccupied { spell_combat, .. } = &mut self.carrier.slots[index] {
+            // Regular raid children need the same retrigger exclusion as tagged variants.
+            spell_combat.echo_death_recorded = true;
+        }
+        if variant == Some(EchoVariant::Warden) {
             self.echo_wardens.wardens.push((actor, aura_due));
         }
         self.echo_wardens.spawned.push(actor);
@@ -345,15 +387,18 @@ impl ChannelRuntimeV1 {
         let raids = std::mem::take(&mut self.echo_wardens.raids);
         for mut raid in raids {
             while raid.next_spawn < raid.plan.spawn_count() && now_ms >= raid.next_due_ms {
-                if let Some(variant) = raid.plan.variant_at(raid.next_spawn)
-                    && has_ground(raid.position)
-                {
+                if has_ground(raid.position) {
                     // The donor consumes a failed slot and schedules the remaining minions.
-                    let _ =
-                        self.spawn_echo_creature(&raid.creature, raid.position, variant, now_ms);
+                    let _ = self.spawn_echo_creature(
+                        &raid.creature,
+                        raid.position,
+                        raid.plan.variant_at(raid.next_spawn),
+                        raid.plan.outcome() == EchoOutcome::Influenced,
+                        now_ms,
+                    );
                 }
                 raid.next_spawn += 1;
-                if raid.next_spawn > 1 {
+                if raid.plan.outcome() != EchoOutcome::Warden || raid.next_spawn > 1 {
                     raid.next_due_ms = now_ms
                         .checked_add(SPAWN_STEP_MS)
                         .ok_or(CarrierError::DamageOverflow)?;

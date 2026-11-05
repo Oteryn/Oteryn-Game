@@ -259,6 +259,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // tools/content-migration/condition_potion_profiles.py IDS from Crystal potions.lua.
     // Neither has a speed override, so both keep speed_bonus=0.
     ("I14-POTIONS", 2),
+    // SV16 Echo catalysts 51588, 51589 and 54266, added to the W06/W07 overlay
+    // (tools/content-migration/soulpit_echo_item_profiles.py EXTRA_IDS) from Crystal
+    // 201189f871d23597b82caf88fd611454a2ddefb8 items.xml. All three keep speed_bonus=0.
+    ("SV16-ECHO-CATALYSTS", 3),
 ];
 
 #[test]

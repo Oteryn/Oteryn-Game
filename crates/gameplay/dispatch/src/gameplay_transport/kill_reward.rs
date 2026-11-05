@@ -1686,6 +1686,13 @@ pub fn record_creature_kill(
             } else {
                 refuse("echo_warden_scroll_inadmissible", &creature);
             }
+            if let Some(catalyst) =
+                super::echo_warden::drops::warden_catalyst(runtime, sink.rewards, facts.occurrence)
+            {
+                callback_loot.push(catalyst);
+            } else {
+                refuse("echo_warden_catalyst_inadmissible", &creature);
+            }
         }
         let can_receive_loot = sink
             .prey
