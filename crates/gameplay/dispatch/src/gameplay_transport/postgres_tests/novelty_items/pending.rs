@@ -84,9 +84,12 @@ pub(super) async fn exercise(
                 waiting.as_mut().poll(cx).map(|result| result.map(|()| true))
             }).await?;
             if observed {
-                return Ok::<_, sqlx::Error>(attempt);
+                return Ok::<_, Box<dyn std::error::Error>>(attempt);
             }
             assert!(owner.item_use_pending(actor, session).await);
+            if owner.root.has_ready_demand() {
+                owner.root.maintain_ready_once().await.map_err(debug)?;
+            }
             tokio::task::yield_now().await;
         }
     }).await??;
@@ -105,7 +108,15 @@ pub(super) async fn exercise(
     );
     probe_blocker.rollback().await?;
 
-    reconcile_actor_end(owner, actor, session).await?;
+    // Cancellation can retire the sole root holder while returning it to the
+    // pool. Exercise that outcome deterministically, rather than relying on load.
+    owner.root.request_ready();
+    assert!(owner.root.maintain_ready_once().await.map_err(debug)?);
+    let holder = owner.root.try_acquire_ready().map_err(debug)?;
+    holder.close().await?;
+    assert!(!owner.root.is_ready());
+
+    reconcile_actor_end(owner, actor, session, "rollback").await?;
     assert!(
         !owner.item_use_pending(actor, session).await,
         "known rollback releases the original memo"
@@ -194,7 +205,7 @@ pub(super) async fn exercise(
         );
     }
 
-    reconcile_actor_end(owner, actor, session).await?;
+    reconcile_actor_end(owner, actor, session, "committed").await?;
     assert!(!owner.item_use_pending(actor, session).await);
     let after = {
         let runtime = owner.runtime.lock().await;
@@ -208,7 +219,7 @@ pub(super) async fn exercise(
             .vitals()
     };
     assert_eq!(after.health, before.health - 10);
-    reconcile_actor_end(owner, actor, session).await?;
+    reconcile_actor_end(owner, actor, session, "settled").await?;
     {
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
@@ -266,12 +277,15 @@ async fn source_state(harness: &Harness, source: [u8; 16]) -> Result<(i64, i16),
         .bind(source.as_slice()).fetch_one(&harness.pool).await
 }
 
-// Real release owners retry transient semantic-pass availability after a
-// cancelled probe. A persistent memo or unrelated save refusal remains a failure.
+// The direct fixture has no node maintenance task. Like the real release
+// owner's node, service holder demand after a refused pass: cancellation can
+// retire the sole connection, so polling alone cannot make the root ready.
+// A persistent memo or unrelated save refusal remains a failure.
 async fn reconcile_actor_end(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,
+    phase: &str,
 ) -> TestResult {
     let result = tokio::time::timeout(Duration::from_secs(10), async {
         loop {
@@ -279,7 +293,10 @@ async fn reconcile_actor_end(
                 .reconcile_spells_before_control_loss(actor, session)
                 .await
             {
-                return;
+                return Ok::<(), Box<dyn std::error::Error>>(());
+            }
+            if owner.root.has_ready_demand() {
+                owner.root.maintain_ready_once().await.map_err(debug)?;
             }
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
@@ -295,8 +312,11 @@ async fn reconcile_actor_end(
             .has_pending_spell_commit(actor, session);
         let training = owner.save_spell_training(actor, session, true).await;
         return Err(format!(
-            "control-loss reconciliation timed out: item_pending={item_pending} spell_pending={spell_pending} training={training:?}"
+            "{phase} control-loss reconciliation timed out: item_pending={item_pending} spell_pending={spell_pending} training={training:?} root_ready={} ready_demand={}",
+            owner.root.is_ready(),
+            owner.root.has_ready_demand()
         ).into());
     }
+    result??;
     Ok(())
 }
