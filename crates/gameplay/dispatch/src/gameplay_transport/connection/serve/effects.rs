@@ -119,7 +119,7 @@ where
     if matches!(outcome, ItemMoveOutcome::Moved)
         && let (Some(view), Some(items)) = (session.world_map.as_mut(), session.item_view.as_mut())
     {
-        let update = world_map_delta(
+        let update = world_map_frames(
             authority,
             session.actor,
             session.generation,
@@ -132,12 +132,14 @@ where
         let Some(update) = update else {
             return Err(ServeEnd::Disconnected);
         };
-        if let Some((delta_sequence, frame)) = update {
-            session.sequence = delta_sequence;
+        if let Some((next_sequence, frames)) = update {
+            session.sequence = next_sequence;
             session.admitted.continuity.server_sequence = session.sequence;
             session.admitted.continuity.world_map_revision = view.revision();
-            if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
+            for frame in frames {
+                if write_frame(stream, &frame).await.is_err() {
+                    return Err(ServeEnd::Disconnected);
+                }
             }
         }
     }
