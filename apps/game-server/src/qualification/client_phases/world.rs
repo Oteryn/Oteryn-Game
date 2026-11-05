@@ -5,6 +5,14 @@ use crate::map::overlay::TilePos;
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
 
+include!("character_core.rs");
+include!("floor_journey.rs");
+#[path = "map_journey.rs"]
+mod map_journey;
+#[path = "provision.rs"]
+mod provisioning;
+include!("quest_journal.rs");
+
 pub(crate) const TOWN: TilePos = TilePos {
     x: 32369,
     y: 32238,
@@ -220,7 +228,7 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
-        bytes,
+        bytes.clone(),
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
@@ -229,6 +237,9 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
     ));
+    // Keep the high-level fixture on the other Character: the original
+    // progression/death journey must retain its ordinary starter build.
+    let profile_result = profile_journey(clients, &world, &bytes, &metadata.spawns).await;
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {
@@ -249,6 +260,8 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
+    client = character_core(client, clients, &world).await?;
+    client = floor_journey(client, clients, &world).await?;
     client_guild::guild(&mut client).await?;
     client_party::party(&mut client).await?;
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
@@ -328,7 +341,80 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     ));
 
     drop(client);
-    Ok(())
+    profile_result
+}
+
+async fn profile_journey(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    bytes: &[u8],
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    let client = connect_character(clients, 0x6e, 0).await?;
+    let mut client = provisioning::provision(client, clients, 0).await?;
+    let pz = if world
+        .base()
+        .tile(TOWN.x, TOWN.y, TOWN.floor)
+        .is_some_and(|tile| tile.protection_zone())
+    {
+        client_spell_journey::protection_zone_probe(&mut client, true).await
+    } else {
+        Err("configured town start is not a bundle PZ".into())
+    };
+    let outside: TestResult = async {
+        let path = route(world, TOWN, |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+        })
+        .ok_or("no reachable outside-PZ comparison tile")?;
+        walk(&mut client, world, &path).await?;
+        client_spell_journey::protection_zone_probe(&mut client, false).await
+    }
+    .await;
+    let pz = pz.and(outside);
+    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == TOWN
+    })
+    .ok_or("PZ comparison has no return route")?;
+    walk(&mut client, world, &back).await?;
+    let map = map_journey::run(&mut client, world, bytes).await;
+    let combat = match travel_to_spawn(&mut client, world, spawns, "oteryn:creature.rat").await {
+        Ok(()) => client_combat_journey::combat_journey(&mut client).await,
+        Err(error) => Err(error),
+    };
+    let spells = client_spell_journey::spell_journey(&mut client, pz).await;
+    // Combat may still hold the logout/PZ lock. Settle it outside the temple
+    // before restoring the peer that main's trade/party phases use.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    loop {
+        if client.session_mut().logout().await?.result
+            == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("profile combat lock did not settle before logout".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+    drop(client);
+    client = connect_character(clients, 0x6f, 0).await?;
+    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == TOWN
+    })
+    .ok_or("profile journey has no return route")?;
+    walk(&mut client, world, &back).await?;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("profile journey logout refused".into());
+    }
+    map?;
+    combat?;
+    spells
 }
 
 async fn connect_world(
@@ -481,6 +567,17 @@ pub(crate) fn smoke() -> TestResult {
     assert!(
         route(&world, TOWN, |at| near_locker(&world, at)).is_some(),
         "town depot must be reachable"
+    );
+    let floor_path = route(&world, TOWN, |at| at.floor != TOWN.floor)
+        .ok_or("town floor-change route must be reachable")?;
+    let mut landing = TOWN;
+    for direction in floor_path {
+        landing = destination(&world, landing, direction).ok_or("floor route landing")?;
+    }
+    assert_ne!(landing.floor, TOWN.floor);
+    assert!(
+        route(&world, landing, |at| at == TOWN).is_some(),
+        "town floor-change route must have a return path"
     );
     let rats: Vec<_> = project
         .families
