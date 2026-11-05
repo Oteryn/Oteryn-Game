@@ -9,6 +9,7 @@ impl Application {
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
         if let Some(play) = &mut self.play {
+            let trade_clicks = play.link.player_trade_track_pointer(events);
             if play.view.audio_input(events) {
                 return;
             }
@@ -46,6 +47,13 @@ impl Application {
                 || play.link.vip_input(events)
                 || play.link.vip_presence_input(events)
                 || play.link.weapon_proficiency_input(events)
+            {
+                return;
+            }
+            if play.link.player_trade_input(events)
+                || play
+                    .view
+                    .player_trade_context_input(&play.link, &trade_clicks)
             {
                 return;
             }

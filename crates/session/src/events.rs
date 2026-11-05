@@ -8,6 +8,8 @@ pub enum SessionEvent {
     WorldClock(AppliedDelta<world_clock::WorldClock>),
     Presentation(AppliedDelta<Vec<PresentationEvent>>),
     ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
+    PlayerTrade(AppliedDelta<player_trade::State>),
+    TradeContainers(AppliedDelta<container_tree::ContainerViews>),
     NpcConversation(AppliedDelta<npc_service::NpcConversation>),
     NpcTradeWindow(AppliedDelta<npc_service::NpcTradeWindow>),
     /// Domain 16: the requested view and tracked lines, replaced whole.
@@ -56,6 +58,8 @@ impl SessionEvent {
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
+            Self::PlayerTrade(_) => player_trade::STATE_DOMAIN_PLAYER_TRADE,
+            Self::TradeContainers(_) => container_tree::STATE_DOMAIN_CONTAINER_VIEWS,
             Self::NpcConversation(_) => npc_service::STATE_DOMAIN_NPC_CONVERSATION,
             Self::NpcTradeWindow(_) => npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW,
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,

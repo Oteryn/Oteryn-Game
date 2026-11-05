@@ -23,6 +23,9 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            player_trade::STATE_DOMAIN_PLAYER_TRADE | container_tree::STATE_DOMAIN_CONTAINER_VIEWS => {
+                self.apply_trade_delta(server_sequence, delta)
+            }
             npc_service::STATE_DOMAIN_NPC_CONVERSATION
             | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW => {
                 if !self.is_selected(npc_service::CAPABILITY_NPC_SERVICE_V1) {

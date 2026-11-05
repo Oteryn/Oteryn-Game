@@ -36,6 +36,7 @@ mod hotkey_equip_transport;
 pub mod item_movement;
 mod join;
 mod map_transport;
+mod player_trade_transport;
 mod presentation;
 mod quest_log_transport;
 pub use oteryn_protocol_oteryn::presentation::{
@@ -67,7 +68,7 @@ pub use oteryn_protocol_oteryn::{
 };
 pub use oteryn_protocol_oteryn::{atelier, prey, wheel};
 /// Player-trade wire values for the selected native-client feature.
-pub use oteryn_protocol_oteryn::{player_trade, player_typing};
+pub use oteryn_protocol_oteryn::{container_tree, player_trade, player_typing};
 pub use recovery::{Recovery, RecoveryState, check_resume_selection};
 mod guild_chat;
 mod private_channels;
@@ -1086,12 +1087,17 @@ impl<S: SessionStream> Session<S> {
             Some(entry) => entry.1 = delta.new_revision,
             None => self.gated_revisions.push((domain_id, delta.new_revision)),
         }
-        Ok(GatedDelta {
+        let delta = GatedDelta {
             server_sequence: delta.server_sequence,
             base_revision: delta.base_revision,
             new_revision: delta.new_revision,
             payload: delta.payload,
-        })
+        };
+        if domain_id == player_trade::STATE_DOMAIN_PLAYER_TRADE {
+            let recorded = self.record_player_trade_delta(&delta);
+            self.poison_on_error(recorded)?;
+        }
+        Ok(delta)
     }
 
     pub fn join_snapshot(&self) -> &JoinSnapshot {
@@ -1839,6 +1845,7 @@ impl<S: SessionStream> Session<S> {
                     domain_id,
                     npc_service::STATE_DOMAIN_NPC_CONVERSATION
                         | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW
+                        | player_trade::STATE_DOMAIN_PLAYER_TRADE
                 ) {
                     return Err(SessionError::UnexpectedDomain {
                         expected: domain_id,

@@ -173,3 +173,5 @@ include!("session_tests_push.rs");
 include!("session_tests_entities.rs");
 include!("session_tests_chat.rs");
 include!("session_tests_items.rs");
+
+include!("session_tests_player_trade.rs");
