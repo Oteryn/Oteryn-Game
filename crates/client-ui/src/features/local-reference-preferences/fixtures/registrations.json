@@ -1,0 +1,17 @@
+[
+  {
+    "mechanic": "local-reference-preferences",
+    "kind": "keybindings",
+    "id": "local-reference-preferences-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+O",
+    "entry": "input.rs::open_key",
+    "not_applicable": {
+      "state": "Local settings state belongs to the app preferences feature.",
+      "protocol": "Local preferences send no protocol commands.",
+      "view": "The app feature owns the native settings window.",
+      "settings": "The app feature owns the local preference file."
+    }
+  }
+]

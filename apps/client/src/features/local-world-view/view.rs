@@ -80,6 +80,7 @@ impl PlayView {
             &markers,
             &entities,
         )?;
+        self.apply_preference_scale()?;
         self.scene.retain_target(target)?;
         self.light_scene()?;
         self.project_presentation(std::time::Instant::now())

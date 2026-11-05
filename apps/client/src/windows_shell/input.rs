@@ -15,7 +15,12 @@ impl Application {
             if play.link.use_with_cancel_input(events) {
                 return;
             }
+        let routed = self.settings.input(events);
+        let events = routed.as_slice();
+        if let Some(play) = &mut self.play {
+            self.settings.restore(&mut play.view);
             if play.view.audio_input(events) {
+                self.settings.capture(&mut play.view);
                 return;
             }
             if play.view.container_input(&play.link, events)
