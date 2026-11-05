@@ -1,7 +1,11 @@
 -- ADM-01 §9. No gameplay authority is granted to the outbound admin agent.
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'oteryn_game_admin_agent') THEN
-        CREATE ROLE oteryn_game_admin_agent NOLOGIN;
+        BEGIN
+            CREATE ROLE oteryn_game_admin_agent NOLOGIN;
+        EXCEPTION WHEN duplicate_object OR unique_violation THEN
+            NULL;
+        END;
     END IF;
 END $$;
 
