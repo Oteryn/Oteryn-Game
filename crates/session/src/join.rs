@@ -312,6 +312,7 @@ impl<S: SessionStream> Session<S> {
         }
         quest_log_transport::validate_join(&selected_capabilities, &gated_snapshots)?;
         tutorial_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
+        world_light::validate_join(&selected_capabilities, &gated_snapshots)?;
         presentation::validate_join(&selected_capabilities, &gated_snapshots)?;
         server_save_countdown::validate_join(&selected_capabilities, &gated_snapshots)?;
         achievement_notices_transport::validate_join(&selected_capabilities, &gated_snapshots)?;

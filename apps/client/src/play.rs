@@ -2,11 +2,10 @@
 //!
 //! The view projects server-owned positions, overlays and live map tiles.
 
-use crate::input::{ClickWalk, StepDir};
+use crate::input::StepDir;
 use crate::map::World;
 use crate::scene::Scene;
 use feature_local_reference_preferences::settings::LocalPlayState;
-use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{EntityRef, SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity};
 use std::collections::{BTreeMap, VecDeque};
@@ -18,6 +17,7 @@ enum Input {
     Arrow(StepDir),
     Cast(NonZeroU32),
     Attack(EntityRef),
+    TargetWalk(oteryn_session::ActorPosition),
     Logout,
 }
 
@@ -25,6 +25,8 @@ const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    target_walk_feedback: Option<&'static str>,
+    world_clock: Option<oteryn_session::world_clock::WorldClock>,
     vitals: Option<oteryn_session::ActorVitals>,
     sounds: Vec<SoundCue>,
     own: TileCoord,
@@ -40,7 +42,6 @@ pub struct PlayView {
     /// The session floor the map is anchored to; on any other floor no map is drawn.
     map_floor: Option<i16>,
     scene: Scene,
-    walk: ClickWalk,
     /// A step sent to the session task whose outcome has not arrived.
     in_flight: bool,
     /// Arrow, hotkey and click input not yet sent, in the order it was given.
@@ -48,6 +49,7 @@ pub struct PlayView {
     /// The other entities the server reports as visible.
     entities: Vec<WorldSpatialEntity>,
     appearances: Vec<oteryn_session::VisibleAppearance>,
+    ground_items: Vec<crate::input::Targetable>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
     /// The last refused logout's line, shown until the next combat line or logout answer.
@@ -65,6 +67,8 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            target_walk_feedback: None,
+            world_clock: None,
             vitals: None,
             sounds: Vec::new(),
             own,
@@ -76,11 +80,11 @@ impl PlayView {
             live_map: false,
             anchor,
             map_floor: None,
-            walk: ClickWalk::new(),
             in_flight: false,
             inputs: VecDeque::new(),
             entities: Vec::new(),
             appearances: Vec::new(),
+            ground_items: Vec::new(),
             combat_line: None,
             logout_line: None,
             server_messages: VecDeque::new(),
@@ -153,8 +157,11 @@ mod end;
 mod mailbox;
 mod session_loop;
 mod session_stepper;
+mod tick;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
+
+pub use feature_0004_item_view_move::state::GroundItem;
 
 pub use feature_0023_presentation::state::*;
 

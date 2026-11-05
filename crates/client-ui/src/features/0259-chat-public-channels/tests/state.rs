@@ -52,3 +52,44 @@ fn every_extended_room_builds_the_real_existing_chat_intent() {
         );
     }
 }
+
+#[test]
+fn public_channel_list_projects_base_and_extended_room_membership() {
+    let panel = ChatPanel::default();
+    let text = panel_text(&panel);
+    for name in [
+        "World",
+        "English",
+        "Help",
+        "Advertising",
+        "Advertising-Rookgaard",
+        "Tutor",
+        "Gamemaster",
+        "Guild Leaders",
+    ] {
+        assert!(text.contains(&format!("{name}: closed")), "missing {name}");
+    }
+}
+
+#[test]
+fn public_channel_shortcut_requires_a_fresh_ctrl_c_press()
+-> Result<(), oteryn_input_actions::InputError> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let code = KeyCode::new(6)?;
+    let event = |state, modifiers, repeat| NormalizedInputEvent::Key {
+        code,
+        state,
+        modifiers,
+        repeat,
+    };
+    let ctrl = Modifiers::one(Modifier::Control);
+    assert!(open_key(&[event(ButtonState::Pressed, ctrl, false)]));
+    assert!(!open_key(&[event(ButtonState::Released, ctrl, false)]));
+    assert!(!open_key(&[event(ButtonState::Pressed, ctrl, true)]));
+    assert!(!open_key(&[event(
+        ButtonState::Pressed,
+        Modifiers::NONE,
+        false
+    )]));
+    Ok(())
+}

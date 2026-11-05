@@ -7,7 +7,7 @@ impl PlayView {
     /// goal.
     pub fn click(&mut self, tile: TileCoord) -> Result<(), BatchError> {
         match self.scene.select_tile(tile)? {
-            None => self.walk.set_goal(tile),
+            None => self.walk_to(tile),
             Some(Targetable {
                 entity: Some(target),
                 ..

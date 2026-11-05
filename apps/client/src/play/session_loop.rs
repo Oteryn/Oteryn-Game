@@ -16,6 +16,9 @@ use tokio::sync::mpsc::UnboundedReceiver;
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 super::feature_local_account_achievements::protocol::session_trait! {
+    fn target_walk(&mut self, _position: oteryn_session::ActorPosition) -> impl Future<Output = Result<oteryn_client_runtime::target_move::WalkResponse, SessionError>> + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 64 }) }
+    }
     fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
         None
     }
@@ -295,6 +298,9 @@ pub async fn run_session<T: Stepper>(
     outbox: Outbox,
 ) {
     outbox.vitals(session.actor_vitals());
+    outbox.target_walk_initialize(session.feature_selected(64));
+    outbox.vitals(session.actor_vitals());
+    outbox.world_light_initialize(session.feature_snapshot(18));
     outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
@@ -419,6 +425,13 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Stash(command)) => match session.stash(&command).await {
                 Ok(response) => {
                     outbox.stash_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::TargetWalk(position)) => match outbox.target_walk_run(&mut session, position).await {
+                Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
