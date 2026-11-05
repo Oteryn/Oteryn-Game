@@ -29,7 +29,8 @@ pub fn apply_result(panel: &mut DailyRewardPanel, response: &DailyRewardResponse
     if !matches!(
         response.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
+    ) && !matches!(response.reply, Some(DailyRewardReply::Result(_)))
+    {
         panel.feedback = Some("The server refused the daily reward action");
         return false;
     }
@@ -40,13 +41,19 @@ pub fn apply_result(panel: &mut DailyRewardPanel, response: &DailyRewardResponse
             true
         }
         Some(DailyRewardReply::Result(result)) => {
+            if matches!(result.disposition, 1 | 2)
+                && let Some(wall) = &mut panel.wall
+            {
+                wall.claimed = true;
+                wall.claim_enabled = false;
+            }
             panel.feedback = Some(match result.disposition {
                 1 => "Daily reward claimed",
                 2 => "Daily reward already claimed",
                 3 => "Daily reward request was invalid",
-                4 => "Daily reward shrine is out of reach",
+                4 => "Open the daily reward shrine within reach, then refresh",
                 5 => "Daily reward content is unavailable",
-                6 => "Daily reward inventory is full",
+                6 => "Daily reward content changed; refresh before claiming",
                 _ => "Daily reward claim was refused",
             });
             result.disposition == 1

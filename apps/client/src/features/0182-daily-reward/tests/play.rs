@@ -4,6 +4,7 @@ use oteryn_client_runtime::daily_reward::{
     DailyRewardCommand, DailyRewardReply, DailyRewardResponse, daily_reward,
 };
 use oteryn_client_ui::daily_reward::{Intent, panel_text};
+use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
 use oteryn_session::{
     CommandStatus, LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome,
 };
@@ -12,6 +13,7 @@ use std::time::Duration;
 type Error = Box<dyn std::error::Error + Send + Sync>;
 struct Peer {
     commands: Arc<Mutex<Vec<DailyRewardCommand>>>,
+    claimed: bool,
 }
 impl Stepper for Peer {
     fn daily_reward_selected(&self) -> bool {
@@ -30,10 +32,11 @@ impl Stepper for Peer {
                 lane_day: 12,
                 streak: 19,
                 jokers: 2,
-                claimed: false,
-                claim_enabled: true,
+                claimed: self.claimed,
+                claim_enabled: !self.claimed,
             }),
             DailyRewardCommand::Claim => {
+                self.claimed = true;
                 DailyRewardReply::Result(daily_reward::DailyRewardResult {
                     disposition: 1,
                     transaction_id: Some([0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]),
@@ -83,21 +86,32 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
             let runtime = oteryn_client_runtime::ClientRuntime::new()?;
             runtime.block_on(async {
                 let commands = Arc::new(Mutex::new(Vec::new()));
-                let (peer_commands, peer) = (Arc::clone(&commands), Peer { commands });
+                let (peer_commands, peer) = (
+                    Arc::clone(&commands),
+                    Peer {
+                        commands,
+                        claimed: false,
+                    },
+                );
                 let (link, incoming, outbox) = play_channel();
                 let task = tokio::spawn(run_session(peer, incoming, outbox));
                 ready(&link, false).await?;
-                link.daily_reward_request(Intent::Refresh);
+                assert!(
+                    include_str!("../../../windows_shell/input.rs")
+                        .contains("play.link.daily_reward_input(events)")
+                );
+                assert!(link.daily_reward_input(&[NormalizedInputEvent::Key {
+                    code: KeyCode::new(7)?,
+                    state: ButtonState::Pressed,
+                    modifiers: Modifiers::one(Modifier::Control),
+                    repeat: false,
+                }]));
+                assert!(link.daily_reward_panel().open);
                 ready(&link, true).await?;
                 assert!(panel_text(&link.daily_reward_panel()).contains("Day 12 of 30"));
                 link.daily_reward_request(Intent::Claim);
                 tokio::time::timeout(Duration::from_secs(3), async {
-                    while peer_commands
-                        .lock()
-                        .unwrap_or_else(PoisonError::into_inner)
-                        .len()
-                        < 2
-                    {
+                    while link.daily_reward_panel().pending {
                         tokio::task::yield_now().await;
                     }
                 })
@@ -109,6 +123,22 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
                 assert_eq!(
                     link.daily_reward_panel().feedback,
                     Some("Daily reward claimed")
+                );
+                assert!(panel_text(&link.daily_reward_panel()).contains("Status: claimed"));
+                link.daily_reward_request(Intent::Claim);
+                assert_eq!(
+                    peer_commands
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .len(),
+                    2
+                );
+                link.daily_reward_request(Intent::Refresh);
+                ready(&link, true).await?;
+                assert!(
+                    link.daily_reward_panel()
+                        .wall
+                        .is_some_and(|wall| wall.claimed && !wall.claim_enabled)
                 );
                 drop(link);
                 task.await?;
