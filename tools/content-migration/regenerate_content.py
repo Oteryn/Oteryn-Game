@@ -89,6 +89,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
     ["python3", "tools/content-migration/test_prey_difficulty.py"],

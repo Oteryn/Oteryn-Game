@@ -110,6 +110,8 @@ pub enum FeeBurnCauseV1 {
     QuestAccessPurchase(OneItemNpcPurchaseV1),
     #[prost(message, tag = "16")]
     BosstiarySlot(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "17")]
+    ArenaEntry(OneItemNpcPurchaseV1),
     #[prost(message, tag = "472")]
     HirelingService(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
@@ -145,6 +147,7 @@ pub struct OneItemFeeBurnCauseV1 {
             14, // Native Forge
             15, // QuestAccessPurchase: Rotten Blood access, fixed 5m source
             16, // Bosstiary slot removal
+            17, // Svargrond arena entry
             472, // HirelingService
         )
     )]
