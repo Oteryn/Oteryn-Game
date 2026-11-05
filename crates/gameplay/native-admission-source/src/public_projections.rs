@@ -36,6 +36,9 @@ use std::{
     time::Duration,
 };
 
+pub mod world_totals;
+use world_totals::{TotalsFacts, TotalsSnapshot};
+
 pub const HIGHSCORES_PATH: &str = "/internal/v1/game-public/highscores";
 pub const PROFILE_PATH: &str = "/internal/v1/game-public/character-profile";
 pub const ONLINE_PATH: &str = "/internal/v1/game-public/world-online";
@@ -136,6 +139,7 @@ pub enum Family {
     Highscores,
     CharacterProfile,
     WorldOnline,
+    WorldTotals,
 }
 
 impl Family {
@@ -145,6 +149,7 @@ impl Family {
             Self::Highscores => "highscores",
             Self::CharacterProfile => "character_profile",
             Self::WorldOnline => "world_online",
+            Self::WorldTotals => "world_totals",
         }
     }
 }
@@ -765,6 +770,13 @@ pub struct OnlineCut {
 /// The Game side of the public projections (§5). Every call is one database
 /// transaction; an `Err` is "not now".
 pub trait PublicStore: Send + Sync {
+    /// Sample one UUID page durably. None ends the sweep; errors retry the same page.
+    fn sample_totals(&self, after: &str)
+    -> impl Future<Output = Result<Option<String>, ()>> + Send;
+    fn next_totals(&self) -> impl Future<Output = Result<Vec<TotalsSnapshot>, ()>> + Send;
+    fn ack_totals(&self, sample: &TotalsSnapshot) -> impl Future<Output = Result<(), ()>> + Send;
+    fn totals_facts(&self) -> impl Future<Output = Result<Option<TotalsFacts>, ()>> + Send;
+
     /// Whether gameplay is waiting for the durability holder: the publisher
     /// then yields its next store pass (contract §11).
     fn gameplay_waiting(&self) -> bool {
@@ -2001,7 +2013,10 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
     pub async fn run(&self) {
         join2(
             self.outbox_loop(),
-            join2(self.scan_loop(), self.online_watermark_loop()),
+            join2(
+                self.totals_loop(),
+                join2(self.scan_loop(), self.online_watermark_loop()),
+            ),
         )
         .await;
     }

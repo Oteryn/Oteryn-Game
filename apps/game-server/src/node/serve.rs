@@ -1011,7 +1011,12 @@ async fn account_characters_loop(
     first(publisher.run(), stop.cancelled()).await;
 }
 
-const PUBLIC_PRIVILEGES: &str = "SELECT has_table_privilege('game_character_roots', 'SELECT') \
+const PUBLIC_PRIVILEGES: &str = "SELECT has_table_privilege('game_public_world_deaths', 'SELECT') \
+     AND has_table_privilege('game_public_world_totals_heads', 'SELECT') \
+     AND has_table_privilege('game_public_world_totals_samples', 'SELECT') \
+     AND has_column_privilege('game_public_world_totals_samples', 'acked', 'UPDATE') \
+     AND has_function_privilege('game_public_world_totals_sample(uuid)', 'EXECUTE') \
+     AND has_table_privilege('game_character_roots', 'SELECT') \
      AND has_table_privilege('game_character_progression_state', 'SELECT') \
      AND has_table_privilege('game_character_build_state', 'SELECT') \
      AND has_table_privilege('game_durability_reconnect_sessions', 'SELECT') \

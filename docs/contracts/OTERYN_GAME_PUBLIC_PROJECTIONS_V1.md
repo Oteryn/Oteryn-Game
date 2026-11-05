@@ -753,3 +753,12 @@ Owner decisions relayed by the control plane on 2026-10-15 (Oteryn/Oteryn-Platfo
 
 `character_deaths`, `guild` and `house` remain candidates. After acceptance, any change to a
 member, path, bound or response of an accepted family is a new `contract_version`.
+
+### PLAT-WIRE-1 proposed extensions
+
+[World totals V1](world-totals/v1/README.md) specifies the public-safe
+`world_totals` sample family and its Game producer, with JSON schema and golden
+vectors. [Kills listener V2](kills/v2/README.md) proposes durable cursor, replay,
+gap and consistent rebuild semantics on the existing `character-deaths` route.
+These extensions await Platform acceptance; they do not change the acceptance
+status or wire semantics of the families above.
