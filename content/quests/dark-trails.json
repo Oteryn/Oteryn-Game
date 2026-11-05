@@ -1,0 +1,745 @@
+{
+  "schema": "OTERYN_DARK_TRAILS_V1",
+  "quest": "oteryn:quest.dark_trails_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission01",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2153"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission02",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2154"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission03",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2155"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission04",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2156"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission05",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2157"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission06",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2158"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission07",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2159"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission08",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2160"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission09",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2161"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission10",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2162"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission11",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2163"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission12",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2164"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission13",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2165"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission14",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2166"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission15",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2167"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission16",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2168"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission17",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2169"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/mission18",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2170"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/outfit",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2171"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/door_quandon",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2172"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/door_hideout",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2173"
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/dark_trails/oramond_task_probing",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2177"
+    }
+  ],
+  "rules": [
+    {
+      "key": "ezebeth-invite",
+      "npc": "oteryn:npc.ezebeth",
+      "keyword": "mission",
+      "topic": null,
+      "next_topic": 1,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission01",
+          "minimum": -1,
+          "maximum": -1
+        }
+      ],
+      "sets": [],
+      "reply": "ezebeth-invite",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:61-64"
+      ]
+    },
+    {
+      "key": "ezebeth-already",
+      "npc": "oteryn:npc.ezebeth",
+      "keyword": "mission",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission01",
+          "minimum": 0,
+          "maximum": 2
+        }
+      ],
+      "sets": [],
+      "reply": "ezebeth-already",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:65-67"
+      ]
+    },
+    {
+      "key": "ezebeth-assistance",
+      "npc": "oteryn:npc.ezebeth",
+      "keyword": "assistance",
+      "topic": 1,
+      "next_topic": 2,
+      "greeting_only": false,
+      "guards": [],
+      "sets": [],
+      "reply": "ezebeth-assistance",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:69-72"
+      ]
+    },
+    {
+      "key": "ezebeth-start",
+      "npc": "oteryn:npc.ezebeth",
+      "keyword": "strange",
+      "topic": 2,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission01",
+          "value": 1
+        }
+      ],
+      "reply": "ezebeth-start",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:74-78"
+      ]
+    },
+    {
+      "key": "beggar-want",
+      "npc": "oteryn:npc.a_beggar",
+      "keyword": "want",
+      "topic": null,
+      "next_topic": 1,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission01",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "sets": [],
+      "reply": "beggar-want",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_beggar.lua:60-64"
+      ]
+    },
+    {
+      "key": "beggar-want-other",
+      "npc": "oteryn:npc.a_beggar",
+      "keyword": "want",
+      "topic": null,
+      "next_topic": null,
+      "greeting_only": false,
+      "guards": [],
+      "sets": [],
+      "reply": "beggar-want-other",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_beggar.lua:60-64"
+      ]
+    },
+    {
+      "key": "beggar-report",
+      "npc": "oteryn:npc.a_beggar",
+      "keyword": "yes",
+      "topic": 1,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission01",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission02",
+          "value": 1
+        }
+      ],
+      "reply": "beggar-report",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_beggar.lua:65-76"
+      ]
+    },
+    {
+      "key": "jacob-investigate",
+      "npc": "oteryn:npc.jacob",
+      "keyword": "abandoned sewers",
+      "topic": null,
+      "next_topic": 7,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission05",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "sets": [],
+      "reply": "jacob-investigate",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:57-60"
+      ]
+    },
+    {
+      "key": "jacob-report",
+      "npc": "oteryn:npc.jacob",
+      "keyword": "report",
+      "topic": 7,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission05",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission06",
+          "value": 1
+        }
+      ],
+      "reply": "jacob-report",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:114-123"
+      ]
+    },
+    {
+      "key": "jacob-already",
+      "npc": "oteryn:npc.jacob",
+      "keyword": "report",
+      "topic": null,
+      "next_topic": null,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission05",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "sets": [],
+      "reply": "jacob-already",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:123-125"
+      ]
+    },
+    {
+      "key": "elliott-investigate",
+      "npc": "oteryn:npc.elliott",
+      "keyword": "abandoned sewers",
+      "topic": null,
+      "next_topic": 7,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission05",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "sets": [],
+      "reply": "elliott-investigate",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:57-60"
+      ]
+    },
+    {
+      "key": "elliott-report",
+      "npc": "oteryn:npc.elliott",
+      "keyword": "report",
+      "topic": 7,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission05",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission06",
+          "value": 1
+        }
+      ],
+      "reply": "elliott-report",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:111-120"
+      ]
+    },
+    {
+      "key": "elliott-already",
+      "npc": "oteryn:npc.elliott",
+      "keyword": "report",
+      "topic": null,
+      "next_topic": null,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission05",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "sets": [],
+      "reply": "elliott-already",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:120-122"
+      ]
+    },
+    {
+      "key": "barazbaz-ritual",
+      "npc": "oteryn:npc.barazbaz",
+      "keyword": "ritual",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission06",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission07",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission07",
+          "value": 1
+        }
+      ],
+      "reply": "barazbaz-ritual",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barazbaz.lua:57-66"
+      ]
+    },
+    {
+      "key": "barazbaz-archives",
+      "npc": "oteryn:npc.barazbaz",
+      "keyword": "abandoned sewers",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission08",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission09",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission09",
+          "value": 1
+        }
+      ],
+      "reply": "barazbaz-archives",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barazbaz.lua:67-77"
+      ]
+    },
+    {
+      "key": "roswitha-harsin",
+      "npc": "oteryn:npc.roswitha",
+      "keyword": "harsin",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission13",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission14",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission14",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/door_quandon",
+          "value": 1
+        }
+      ],
+      "reply": "roswitha-harsin",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/roswitha.lua:57-62"
+      ]
+    },
+    {
+      "key": "sholley-quandon",
+      "npc": "oteryn:npc.sholley",
+      "keyword": "quandon",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission14",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission15",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission15",
+          "value": 1
+        }
+      ],
+      "reply": "sholley-quandon",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sholley.lua:66-73"
+      ]
+    },
+    {
+      "key": "sholley-body-missing",
+      "npc": "oteryn:npc.sholley",
+      "keyword": "quandon",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [],
+      "sets": [],
+      "reply": "sholley-body-missing",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sholley.lua:74-76"
+      ]
+    },
+    {
+      "key": "terrence-manway",
+      "npc": "oteryn:npc.terrence",
+      "keyword": "manway",
+      "topic": null,
+      "next_topic": 1,
+      "greeting_only": false,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission16",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission17",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "sets": [],
+      "reply": "terrence-manway",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/terrence.lua:57-60"
+      ]
+    },
+    {
+      "key": "terrence-manway-denied",
+      "npc": "oteryn:npc.terrence",
+      "keyword": "manway",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [],
+      "sets": [],
+      "reply": "terrence-manway-denied",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/terrence.lua:61-63"
+      ]
+    },
+    {
+      "key": "terrence-effort",
+      "npc": "oteryn:npc.terrence",
+      "keyword": "effort",
+      "topic": 1,
+      "next_topic": 0,
+      "greeting_only": false,
+      "guards": [],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission17",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/door_hideout",
+          "value": 1
+        }
+      ],
+      "reply": "terrence-effort",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/terrence.lua:65-69"
+      ]
+    },
+    {
+      "key": "ghost-witness",
+      "npc": "oteryn:npc.quandons_ghost",
+      "keyword": "hi",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": true,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission15",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission16",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission16",
+          "value": 1
+        }
+      ],
+      "reply": "ghost-witness",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/quandons_ghost.lua:53-63"
+      ]
+    },
+    {
+      "key": "ghost-witness-hello",
+      "npc": "oteryn:npc.quandons_ghost",
+      "keyword": "hello",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": true,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission15",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission16",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "sets": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission16",
+          "value": 1
+        }
+      ],
+      "reply": "ghost-witness-hello",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/quandons_ghost.lua:53-63"
+      ]
+    },
+    {
+      "key": "ghost-greet-other",
+      "npc": "oteryn:npc.quandons_ghost",
+      "keyword": "hi",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": true,
+      "guards": [],
+      "sets": [],
+      "reply": "ghost-greet-other",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/quandons_ghost.lua:64-65"
+      ]
+    },
+    {
+      "key": "ghost-hello-other",
+      "npc": "oteryn:npc.quandons_ghost",
+      "keyword": "hello",
+      "topic": null,
+      "next_topic": 0,
+      "greeting_only": true,
+      "guards": [],
+      "sets": [],
+      "reply": "ghost-hello-other",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/quandons_ghost.lua:64-65"
+      ]
+    }
+  ],
+  "branches": {
+    "oteryn:npc.ezebeth": [
+      "mission",
+      "assistance",
+      "strange",
+      "outfit",
+      "addon"
+    ],
+    "oteryn:npc.a_beggar": [
+      "want",
+      "yes"
+    ],
+    "oteryn:npc.jacob": [
+      "abandoned sewers",
+      "mission",
+      "yes",
+      "ok",
+      "report"
+    ],
+    "oteryn:npc.elliott": [
+      "abandoned sewers",
+      "mission",
+      "yes",
+      "ok",
+      "report"
+    ],
+    "oteryn:npc.sholley": [
+      "friend",
+      "quandon"
+    ],
+    "oteryn:npc.terrence": [
+      "manway",
+      "effort"
+    ]
+  }
+}

@@ -108,7 +108,7 @@ NATIVE_BINDINGS = {
 }
 KEY = re.compile(r'oteryn:[A-Za-z0-9._:/-]+\Z')
 SOURCE = re.compile(re.escape(SOURCE_PREFIX) + r'([^:\r\n]+):([1-9][0-9]*)(?:-([1-9][0-9]*))?\Z')
-MAX_CALLBACKS = 255  # The runtime adds its existing dynamic Rotten Blood altar.
+MAX_CALLBACKS = 511  # The runtime adds its existing dynamic Rotten Blood altar.
 MAX_EFFECTS = 8
 
 

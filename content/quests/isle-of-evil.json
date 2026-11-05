@@ -1,0 +1,285 @@
+{
+  "schema": "OTERYN_ISLE_OF_EVIL_V1",
+  "quest": "oteryn:quest.the_isle_of_evil_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/door_04",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/door_05",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/door_06",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission01",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission02",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission03",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission04",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission05",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission06",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission07",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+      "initial": 0,
+      "min": 0,
+      "max": 16,
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/kv/the-isle-of-evil/rapanaio-travel",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:88"
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/kv/the-isle-of-evil/mission04-mustpay",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_isle_of_evil_quest/actions_heated_worm_punisher.lua:56"
+    }
+  ],
+  "transitions": [
+    {
+      "key": "accept-fight",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:187",
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "from": null,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "key": "mission-3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:86",
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "from": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission02",
+          "from": null,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "key": "mission-5",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:94",
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "from": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission03",
+          "from": null,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "key": "mission-7",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:105",
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "from": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission04",
+          "from": null,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "key": "mission-9",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:123",
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "from": 9,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission05",
+          "from": null,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "key": "prepare-departure",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:134",
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "from": 11,
+          "set": 12
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission06",
+          "from": null,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/door_06",
+          "from": null,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "key": "mortimer-map",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:637",
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission05",
+          "from": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/door_05",
+          "from": null,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "key": "begin-final-mission",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:86",
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "from": 13,
+          "set": 14
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission07",
+          "from": null,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/kv/the-isle-of-evil/rapanaio-travel",
+          "from": null,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "key": "report-evil-master",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio_isle_of_evil.lua:98",
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "from": 14,
+          "set": 15
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission07",
+          "from": 2,
+          "set": 3
+        }
+      ]
+    }
+  ],
+  "mortimer_prior_keywords": [
+    "bluff",
+    "bonelord secrets",
+    "brooch",
+    "butterfly hunt",
+    "elven book",
+    "elven poetry",
+    "farmine",
+    "giant smith hammer",
+    "ice delivery",
+    "impress",
+    "join",
+    "lizard urn",
+    "memory stone",
+    "mission",
+    "no",
+    "orc powder",
+    "pickaxe",
+    "plant collection",
+    "rune writings",
+    "skull of ratha",
+    "yes"
+  ],
+  "mortimer_static_keywords": [
+    "job",
+    "explorer society",
+    "base",
+    "portals",
+    "parchment",
+    "scroll lizard"
+  ],
+  "kv_lowering": "Source scoped boolean keys: missing/false -> 0, true -> 1; no legacy storage ID or alias is allocated.",
+  "scutty_bug_fix": {
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2845#issuecomment-6589174504",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2845#issuecomment-6589524728",
+    "reason": "Mission04MustPay/Mission04WormCount are absent from the exact source Storage table; use only the existing scoped KV meaning, never invented legacy IDs."
+  }
+}
