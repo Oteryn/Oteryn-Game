@@ -294,6 +294,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_client_runtime::market::MarketResponse, SessionError> {
         oteryn_client_runtime::market::send(self, request).await
     }
+    fn chat_private_state(&self) -> (bool, Option<oteryn_session::ChatChannelList>) {
+        (self.is_selected(80), self.private_channel_list().cloned())
+    }
     fn chat_public_selected(&self) -> bool {
         self.is_selected(259)
     }
@@ -315,6 +318,7 @@ pub(super) fn publish<T: Stepper>(
     outbox: &Outbox,
     held: &mut Vec<WorldSpatialEntity>,
 ) {
+    outbox.chat_private_publish(session);
     outbox.achievement_notices_publish(session);
     outbox.vitals(session.actor_vitals());
     if let Some(payload) = session.feature_snapshot(98) {

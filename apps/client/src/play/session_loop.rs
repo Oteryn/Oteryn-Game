@@ -266,6 +266,9 @@ super::feature_0014_container_tree::protocol::session_trait! {
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 63 }) }
     }
+    fn chat_private_state(&self) -> (bool, Option<oteryn_session::ChatChannelList>) {
+        (false, None)
+    }
     fn chat_public_selected(&self) -> bool {
         false
     }
@@ -326,6 +329,7 @@ pub async fn run_session<T: Stepper>(
     outbox.hireling_initialize(session.hireling_selected());
     outbox.market_initialize(session.market_selected());
     outbox.chat_public_initialize(session.chat_public_selected(), session.chat_state());
+    outbox.chat_private_publish(&session);
     outbox.player_typing_initialize(session.player_typing_selected());
     outbox.boss_encounter_initialize(session.feature_selected(117));
     outbox.boss_difficulty_initialize(session.feature_selected(225));

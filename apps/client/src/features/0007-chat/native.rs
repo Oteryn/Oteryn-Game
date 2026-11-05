@@ -1,6 +1,7 @@
 //! Native local-chat panel. HWND access remains on its creating thread.
 #![allow(unsafe_code)]
 use crate::combat_input::PlayCommand;
+use crate::play::feature_0080_chat_private_channel::view::Controls as PrivateControls;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::chat::{ChatPanel, Mode, panel_text};
 use std::ptr::{null, null_mut};
@@ -26,7 +27,10 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
             let id = w & 0xffff;
             let note = (w >> 16) & 0xffff;
-            if !actions.is_null() && id == SEND && note == BN_CLICKED as usize {
+            if !actions.is_null()
+                && ((id == SEND && note == BN_CLICKED as usize)
+                    || PrivateControls::accepts(id, note))
+            {
                 (*actions).0.push(id);
             }
             return 0;
@@ -71,8 +75,8 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            720,
-            520,
+            1100,
+            630,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -134,6 +138,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [250, 86, 430, 380],
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
+        let mut private = PrivateControls::new(hwnd);
         let mut held: Option<ChatPanel> = None;
         let mut msg: MSG = std::mem::zeroed();
         loop {
@@ -150,6 +155,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 break;
             }
             for action in std::mem::take(&mut actions.0) {
+                if private.action(action, &mut mailbox, &commands) {
+                    continue;
+                }
                 if action != SEND {
                     continue;
                 }
@@ -162,6 +170,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 mailbox.chat.text = read_text(message);
                 super::super::input::enqueue(&mut mailbox, &commands, mode, &read_text(recipient));
             }
+            private.render(&mailbox.chat_private);
             if held.as_ref() != Some(&mailbox.chat) {
                 SetWindowTextW(transcript, wide(&panel_text(&mailbox.chat)).as_ptr());
                 held = Some(mailbox.chat.clone());
