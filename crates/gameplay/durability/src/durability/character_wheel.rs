@@ -182,9 +182,12 @@ pub struct WheelChangeRequest {
     pub vessels: Option<WheelVessels>,
 }
 
-/// Runtime position fact; permanent promotion is read under the writer's own fence.
+/// Runtime removal permission; permanent promotion is read under the writer's own fence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WheelChangeFacts {
+    /// Compatibility name: true when logout's combat lock does not hold the actor,
+    /// including on a protection-zone tile. Oteryn owner decision (2026-11-05)
+    /// diverges from Crystal player_wheel.cpp:2151's temple requirement.
     pub at_temple: bool,
 }
 
@@ -489,7 +492,7 @@ impl DurabilityRoot {
     /// The admission Wheel reset (WHEEL0-RST-1): after the admission's own session fence and
     /// `character_root` FOR UPDATE, clear an allocation whose revision has a `RESET` revision
     /// after it up to the active one, with one `RULESET_RESET` receipt. Free; no eligibility,
-    /// points or temple rule applies. Runtime callers reach it only through a
+    /// points or combat-lock rule applies. Runtime callers reach it only through a
     /// [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot).
     pub async fn reset_character_wheel(
         &self,

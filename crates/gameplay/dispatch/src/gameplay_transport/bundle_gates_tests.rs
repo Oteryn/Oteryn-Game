@@ -252,7 +252,6 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/creature_push.rs", 1),
             ("gameplay_transport/paced_movement.rs", 1),
             ("gameplay_transport/paced_movement/autowalk.rs", 1),
-            ("gameplay_transport/wheel_allocation.rs", 1),
         ],
     },
 ];

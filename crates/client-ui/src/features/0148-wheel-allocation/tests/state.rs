@@ -401,6 +401,11 @@ fn panel_displays_server_quotes_and_the_matching_modifier_grade() {
     panel.modifier = Some((1, 5));
     let text = panel_text(&panel);
     assert!(text.contains("123458 gold"));
+    assert!(
+        text.contains(
+            "Removing points or resetting is blocked while you are in a fight (PZ lock)."
+        )
+    );
     assert!(text.contains("654321 gold"));
     assert!(text.contains("9–11 supreme fragments"));
     assert!(text.contains("222222 gold and 777 supreme fragments"));
