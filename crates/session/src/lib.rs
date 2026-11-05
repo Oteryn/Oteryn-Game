@@ -80,7 +80,9 @@ pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 pub use recovery::{Recovery, RecoveryState, check_resume_selection};
 mod guild_chat;
 mod private_channels;
-pub use appearance_state::{AppearanceItemDictionary, AppearanceUpdate};
+pub use appearance_state::{
+    AppearanceItemDictionary, AppearanceUpdate, EntityDisplayName, Look, VisibleAppearance,
+};
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).

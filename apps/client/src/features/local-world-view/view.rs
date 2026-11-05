@@ -72,7 +72,7 @@ impl PlayView {
                     .copied(),
             )
             .collect::<Vec<_>>();
-        self.scene = Scene::centered_with(
+        self.scene.recenter_with(
             self.local.world(),
             (self.map_floor == Some(self.floor)).then_some(self.anchor),
             self.own,
@@ -81,6 +81,8 @@ impl PlayView {
             &entities,
         )?;
         self.apply_preference_scale()?;
+        self.scene
+            .set_presentations(&self.appearances, self.floor)?;
         self.scene.retain_target(target)?;
         self.light_scene()?;
         self.weather_scene();
@@ -99,6 +101,9 @@ impl PlayView {
         }
         if let Some(position) = pushed.own {
             self.place(position);
+        }
+        if let Some(entries) = &pushed.appearances {
+            self.appearances.clone_from(entries);
         }
         if let Some(entities) = &pushed.entities {
             self.entities.clone_from(entities);

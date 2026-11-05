@@ -4,7 +4,9 @@ mod mapping_reducer;
 use super::*;
 pub use item_dictionary::AppearanceItemDictionary;
 use oteryn_protocol_oteryn::appearance as wire;
+pub use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
 use std::collections::BTreeMap;
+pub use wire::Look;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AppearanceUpdate {
@@ -138,3 +140,32 @@ impl<S: SessionStream> Session<S> {
 
 #[cfg(test)]
 mod mapping_tests;
+
+/// Connection-local, visibility-filtered presentation. A missing look is not a guessed outfit.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VisibleAppearance {
+    pub entity: WorldSpatialEntity,
+    pub look: Option<wire::Look>,
+}
+
+impl<S: SessionStream> Session<S> {
+    /// Resolve only the exact visible incarnation and dictionary reference.
+    pub fn visible_appearances(&self) -> Vec<VisibleAppearance> {
+        self.entities
+            .as_ref()
+            .into_iter()
+            .flat_map(WorldEntities::iter)
+            .map(|entity| VisibleAppearance {
+                entity: *entity,
+                look: match entity.detail {
+                    world_spatial_entities::EntityDetail::Actor { appearance_ref, .. } => self
+                        .appearance
+                        .as_ref()
+                        .and_then(|state| state.resolve(entity.entity, appearance_ref))
+                        .cloned(),
+                    _ => None,
+                },
+            })
+            .collect()
+    }
+}
