@@ -5,6 +5,29 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn observe_sounds(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+    ) -> Option<(
+        u64,
+        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+    )> {
+        let runtime = self.runtime.lock().await;
+        runtime.player_control_facts(actor, session).ok()?;
+        let mut states = self.states.spell_states.lock().await;
+        let actor_spell::ChannelSpellStates {
+            presentations,
+            sounds,
+            ..
+        } = &mut *states;
+        if let Some(owner) = presentations {
+            sounds.capture(owner, &runtime).ok()?;
+        }
+        sounds.observe(&runtime, actor, session, after, true)
+    }
+
     fn observe_movement_effects(
         &self,
         after: u64,

@@ -45,9 +45,23 @@ struct SlowOwner {
     slow_browse: Cell<bool>,
     slow_visibility: Cell<bool>,
     browse_reads: Cell<usize>,
+    sound_reads: Cell<usize>,
 }
 
 impl FreshAdmissionAuthority for SlowOwner {
+    async fn observe_sounds(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _after: u64,
+    ) -> Option<(
+        u64,
+        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+    )> {
+        self.sound_reads.set(self.sound_reads.get() + 1);
+        Some((1, Vec::new()))
+    }
+
     async fn admit(
         &self,
         _attempt: FreshAdmissionAttempt<'_>,
@@ -221,6 +235,14 @@ async fn scenario(browse: bool) -> TestResult {
     )
     .await
     .map_err(|_| "prepare connection")?;
+    refresh::sounds(&mut server, &authority, &mut session)
+        .await
+        .map_err(|_| "sound refresh")?;
+    assert_eq!(
+        authority.sound_reads.get(),
+        0,
+        "clients without capability 23 never read the sound owner"
+    );
     let mut command_id = 1;
     if browse {
         let payload = encode_browse_field_intent(&BrowseFieldIntent::Open { position: FIELD })
