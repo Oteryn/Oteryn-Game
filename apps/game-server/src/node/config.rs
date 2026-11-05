@@ -247,6 +247,16 @@ pub struct BootConfig {
     pub pass_deadline_ms: u64,
 }
 
+/// The operator-selected activation record (PREMIUM-ACTIVATION-0 §1.2).
+/// The snapshot source remains independently gated by its existing environment configuration.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PremiumActivationConfig {
+    pub activation_id: String,
+    /// Switch-over instant in Unix microseconds; never inferred from startup time.
+    pub switch_over_us: i64,
+}
+
 /// `oteryn-game-server serve --config <path>`.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -259,6 +269,8 @@ pub struct NodeConfig {
     pub store_purchases: crate::gameplay_transport::StorePurchaseMode,
     #[serde(default)]
     pub gameplay_idle: crate::gameplay_transport::GameplayIdlePolicy,
+    /// Absent by default: Premium is not activated, even with a snapshot source.
+    pub premium_activation: Option<PremiumActivationConfig>,
     pub staff: Option<crate::durability::staff::StaffConfig>,
     pub listener: ListenerConfig,
     pub scope: ScopeConfig,
@@ -421,6 +433,14 @@ impl NodeConfig {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
+        if let Some(activation) = &self.premium_activation {
+            if activation.activation_id.trim().is_empty() {
+                return reject("premium_activation.activation_id");
+            }
+            if activation.switch_over_us < 0 {
+                return reject("premium_activation.switch_over_us");
+            }
+        }
         if self.server_motd.len() > oteryn_protocol_oteryn::zones_nologout::MAX_SERVER_MOTD_BYTES {
             return reject("server_motd");
         }
@@ -914,6 +934,31 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
         );
         let invalid = NODE.replace("[scope]", "[scope]\npremium_only = 1");
         assert!(NodeConfig::parse(invalid.as_bytes()).is_err());
+    }
+
+    #[test]
+    fn premium_activation_defaults_off_and_requires_a_complete_record() {
+        assert!(
+            NodeConfig::parse(NODE.as_bytes())
+                .expect("default")
+                .premium_activation
+                .is_none()
+        );
+        let configured = format!(
+            "{NODE}\n[premium_activation]\nactivation_id = 'record-1'\nswitch_over_us = 1790769600000000\n"
+        );
+        let config = NodeConfig::parse(configured.as_bytes()).expect("activation");
+        assert_eq!(
+            config.premium_activation.expect("record").activation_id,
+            "record-1"
+        );
+        for invalid in [
+            configured.replace("record-1", ""),
+            configured.replace("1790769600000000", "-1"),
+            configured.replace("switch_over_us = 1790769600000000", ""),
+        ] {
+            assert!(NodeConfig::parse(invalid.as_bytes()).is_err());
+        }
     }
 
     #[test]
