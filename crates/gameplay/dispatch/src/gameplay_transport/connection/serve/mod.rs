@@ -6,6 +6,7 @@ use crate::gameplay_transport::operator_event;
 
 mod achievement_notices;
 mod activity_transfer;
+mod analyser;
 mod autowalk;
 mod command;
 mod creature_push;
@@ -234,6 +235,10 @@ where
                 }
                 Ok(None) => {}
                 Err(end) => return end.finish(session.admitted),
+            }
+            if let Err(end) = analyser::emit(stream, authority, &mut session).await {
+                authority.player_trade_disconnected(session.admitted.game_session_id);
+                return end.finish(authority.current_activity_connection(session.admitted));
             }
             let next = poll::next(stream, authority, &mut session).await;
             // A member who did not issue the lever may have changed owner while

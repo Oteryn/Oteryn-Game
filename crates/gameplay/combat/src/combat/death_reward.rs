@@ -376,6 +376,8 @@ pub enum CombatDeathRewardXpError {
 /// always populated (never short-circuited by the other).
 #[derive(Debug)]
 pub struct CreatureDeathRewardOutcome {
+    /// Advisory committed child details, including entries preceding a later MINT error.
+    pub committed_loot: Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     pub death: CreatureDeathOccurrenceKey,
     pub loot: Result<CommittedCorpseLoot, CombatDeathRewardLootError>,
     pub xp: Result<ExperienceCommitOutcome, CombatDeathRewardXpError>,
@@ -469,6 +471,7 @@ async fn settle_loot(
     loot_table_ref: &LootDefinitionRef,
     loot_table: &LootTableDefinition,
     inflight_before_this_death: usize,
+    committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
 ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
     // Ground custody has no Instance placement contract. This typed refusal does
     // not suppress the independent XP path or W03's personal reward entitlements.
@@ -582,10 +585,14 @@ async fn settle_loot(
         let corpse = outcomes.next().ok_or(CombatDeathRewardLootError::Corpse(
             ItemMintError::InvalidInput,
         ))?;
-        return Ok(CommittedCorpseLoot {
-            corpse,
-            entries: outcomes.collect(),
-        });
+        let entries: Vec<_> = outcomes.collect();
+        committed_loot.extend(
+            entries
+                .iter()
+                .zip(&plan.entries)
+                .map(|(mint, entry)| (mint.clone(), entry.item.clone(), entry.quantity)),
+        );
+        return Ok(CommittedCorpseLoot { corpse, entries });
     }
     let corpse_outcome = if let Some(boss) = &ground.boss_spawn {
         session
@@ -651,7 +658,9 @@ async fn settle_loot(
             .commit_corpse_loot_mint(permit, session.authority, session.node, &mut candidate)
             .await
             .map_err(|error| CombatDeathRewardLootError::Mint(error, corpse_mint.clone()))?;
-        entries.push(committed(outcome));
+        let mint = committed(outcome);
+        committed_loot.push((mint.clone(), entry.item.clone(), entry.quantity));
+        entries.push(mint);
     }
     Ok(CommittedCorpseLoot {
         corpse: corpse_mint,
@@ -793,6 +802,7 @@ pub async fn settle_creature_death_rewards<const N: usize>(
     input: CreatureDeathRewardInput<N>,
 ) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
     let principal = admit_principal(&facts, &input)?;
+    let mut committed_loot = Vec::new();
     let loot = settle_loot(
         permit,
         session,
@@ -804,6 +814,7 @@ pub async fn settle_creature_death_rewards<const N: usize>(
         &input.loot_table_ref,
         &input.loot_table,
         input.inflight_loot_mints_before_this_death,
+        &mut committed_loot,
     )
     .await;
 
@@ -823,6 +834,7 @@ pub async fn settle_creature_death_rewards<const N: usize>(
     };
 
     Ok(CreatureDeathRewardOutcome {
+        committed_loot,
         death: facts.death,
         loot,
         xp,

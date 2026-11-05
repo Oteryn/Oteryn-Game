@@ -223,6 +223,8 @@ pub struct AdmittedSession {
 /// with, on a strictly newer connection generation (FND-04B §16).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SessionContinuity {
+    /// Domain 15 cumulative revision, including discards at recovery snapshots.
+    pub analyser_revision: u64,
     /// Domain 57 revision and once-per-login MOTD receipt; both survive reconnect/transfer.
     pub server_message_revision: u64,
     pub server_motd_sent: bool,
@@ -294,6 +296,7 @@ impl SessionContinuity {
     /// baseline spatial revision 1, and no overlay observed yet (0, the door's own initial
     /// revision).
     pub const FRESH: Self = Self {
+        analyser_revision: 0,
         server_message_revision: 0,
         server_motd_sent: false,
         gameplay_idle: GameplayIdleState::FRESH,

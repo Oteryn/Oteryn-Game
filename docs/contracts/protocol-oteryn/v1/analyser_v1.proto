@@ -36,6 +36,12 @@ message AnalyserItemCountV1 {
   uint32 count = 2;     // 1..=65535
 }
 
+// One credited creature death, including a kill whose corpse has no committed loot.
+message AnalyserKillV1 {
+  uint32 race = 1; // Bestiary race index; 0 = none
+}
+
+// Loot fragments only: never increment a kill counter from this message.
 message AnalyserKillLootV1 {
   uint32 race = 1;                              // Bestiary race index 1..=1024; 0 = none
   repeated AnalyserItemCountV1 corpse_items = 2; // 0..=32 (ANALYSERS0-RL-02)
@@ -68,6 +74,7 @@ message AnalyserFactV1 {
     AnalyserImpactV1 impact = 4;
     AnalyserDamageInputV1 damage_input = 5;
     AnalyserDroppedV1 dropped = 6;
+    AnalyserKillV1 kill = 7;
   }
 }
 

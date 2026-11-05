@@ -19,6 +19,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     admitted: &mut AdmittedSession,
     domains: &mut Vec<OwnedDomain>,
 ) -> Result<InitialSnapshot, ServeEnd> {
+    super::analyser::snapshot(authority, admitted, domains).await?;
     if admitted
         .continuity
         .selected_capabilities

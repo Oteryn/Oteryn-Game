@@ -7,6 +7,6 @@
   "state_domains": [
     15
   ],
-  "offered": false,
-  "offer_gate": "ANALYSER-EMIT-1: the server does not offer this capability before the first emitter ships. Without it selected, domain 15 is never sent."
+  "offered": true,
+  "offer_gate": "ANALYSER-EMIT-1: committed session-local kill, loot, supply, impact, damage input and experience facts. Domain 15 is sent only when capability 10 is selected. See analyser-emission-v1.md."
 }

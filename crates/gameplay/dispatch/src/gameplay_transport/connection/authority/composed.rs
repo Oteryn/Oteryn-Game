@@ -99,6 +99,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<UseOutcome> {
         self.use_bundle_key(actor, command, key, &door).await
     }
+    async fn analyser_snapshot(&self, admitted: AdmittedSession) -> Option<bool> {
+        ComposedFreshAdmission::analyser_snapshot(self, admitted).await
+    }
+    async fn analyser_next(&self, admitted: AdmittedSession) -> Option<Vec<u8>> {
+        ComposedFreshAdmission::analyser_next(self, admitted).await
+    }
     mechanic_composed_methods!();
     async fn activity_transfer_input(&self, admitted: AdmittedSession) -> bool {
         self.note_activity_input(admitted).await

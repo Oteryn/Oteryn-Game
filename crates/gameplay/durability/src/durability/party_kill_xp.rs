@@ -45,6 +45,9 @@ pub struct PartyKillXpRequest<const N: usize> {
 
 #[derive(Debug)]
 pub struct PartyKillXpAward {
+    /// Existing committed base XP (before party sharing) and final awarded XP.
+    pub raw: i64,
+    pub gained: i64,
     pub character: CharacterId,
     /// Zero stamina can remove an award without redistributing it.
     pub xp: Option<ExperienceCommitOutcome>,
@@ -152,7 +155,7 @@ pub async fn reconcile_in_transaction(
     {
         return Err(CharacterProgressionError::ConflictingOccurrence);
     }
-    let rows = sqlx::query("SELECT character_id::text,reward_occurrence_id::text FROM game_party_kill_xp_members WHERE death_key=$1 ORDER BY character_id LIMIT 51")
+    let rows = sqlx::query("SELECT character_id::text,reward_occurrence_id::text,xp_awarded FROM game_party_kill_xp_members WHERE death_key=$1 ORDER BY character_id LIMIT 51")
         .bind(death).fetch_all(&mut **tx).await.map_err(DurabilityError::from)?;
     if rows.is_empty()
         || rows.len() > 50
@@ -196,6 +199,8 @@ pub async fn reconcile_in_transaction(
         .await
         .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?;
         result.push(PartyKillXpAward {
+            raw: base_xp,
+            gained: row.try_get("xp_awarded").map_err(DurabilityError::from)?,
             character,
             xp,
             forge_dust,
@@ -335,6 +340,8 @@ pub async fn commit_in_transaction<const N: usize>(
             .bind(modifiers.prey_percent).bind(modifiers.stamina_minutes).bind(amount).bind(modifiers.xp_boost_percent)
             .execute(&mut **tx).await.map_err(DurabilityError::from)?;
         awards.push(PartyKillXpAward {
+            raw: input.base_xp,
+            gained: amount,
             character: member.fence.character_id,
             xp,
             forge_dust,

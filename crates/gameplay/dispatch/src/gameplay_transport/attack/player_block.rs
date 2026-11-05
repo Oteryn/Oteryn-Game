@@ -192,21 +192,29 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                     amount,
                     now.get() / 1_000,
                 ) && result.applied
-                    && result.health_after == 0
                 {
-                    self.states.equipment_reflection_kills.push((
-                        source,
-                        crate::combat::CapturedRewardPrincipal {
-                            character: lease.character_id(),
-                            lease_generation: lease.generation(),
-                            actor: target,
-                            session,
-                        },
-                        now.get(),
-                    ));
-                    // Parry can kill the source. The admitted incoming hit still lands;
-                    // equipment reflection has no living source to damage after that kill.
-                    return true;
+                    self.states.analyser.impact_amount(
+                        target,
+                        session,
+                        u64::try_from(result.health_before.saturating_sub(result.health_after))
+                            .unwrap_or(0),
+                        Some(super::super::analyser::charm_element(damage.element)),
+                    );
+                    if result.health_after == 0 {
+                        self.states.equipment_reflection_kills.push((
+                            source,
+                            crate::combat::CapturedRewardPrincipal {
+                                character: lease.character_id(),
+                                lease_generation: lease.generation(),
+                                actor: target,
+                                session,
+                            },
+                            now.get(),
+                        ));
+                        // Parry can kill the source. The admitted incoming hit still lands;
+                        // equipment reflection has no living source to damage after that kill.
+                        return true;
+                    }
                 }
             }
         }
@@ -272,8 +280,19 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 .prey_percent(runtime, target, target_session, c.race, 2, now.get())
         });
         let magnitude = magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32;
-        self.states
-            .apply_creature_damage(runtime, target, target_session, magnitude, now)
+        self.states.apply_creature_damage_kind(
+            runtime,
+            target,
+            target_session,
+            magnitude,
+            crate::player_lethal::PlayerHitKind::Physical,
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(
+                self.charm
+                    .as_ref()
+                    .and_then(|charm| super::super::analyser::race(charm.race)),
+            ),
+        )
     }
 
     fn target_armor(
