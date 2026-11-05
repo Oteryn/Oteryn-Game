@@ -11,6 +11,17 @@ use std::future::Future;
 use std::time::Duration;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn container_views(&self) -> Option<oteryn_client_runtime::container_tree::ContainerViews> {
+        oteryn_client_runtime::container_tree::initial(self)
+    }
+    async fn container_view(
+        &mut self,
+        intent: oteryn_client_runtime::container_tree::ContainerViewIntent,
+    ) -> Result<Option<oteryn_client_runtime::container_tree::ContainerViewOutcome>, SessionError>
+    {
+        oteryn_client_runtime::container_tree::send(self, intent).await
+    }
+
     async fn target_walk(
         &mut self,
         position: oteryn_session::ActorPosition,

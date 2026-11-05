@@ -1,17 +1,15 @@
 {
   "mechanic": "0014-container-tree",
   "kind": "handlers",
-  "id": "0014-container-tree-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0014-container-tree-intent",
+  "status": "supported",
   "commands": [
     21
   ],
+  "direction": "client_to_server",
+  "capability": 14,
+  "entry": "protocol.rs::request",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "settings": "Container views are session state; no persistent settings."
   }
 }

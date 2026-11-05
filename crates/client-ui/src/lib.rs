@@ -1,5 +1,7 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+#[path = "features/0014-container-tree/mod.rs"]
+pub mod container_tree;
 #[path = "features/0004-item-view-move/mod.rs"]
 pub mod inventory;
 

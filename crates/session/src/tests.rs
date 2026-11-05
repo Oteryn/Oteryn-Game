@@ -1,6 +1,8 @@
 #[path = "tests/account_achievements.rs"]
 mod account_achievements_tests;
 mod appearance_session_tests;
+#[path = "container_tree_tests.rs"]
+mod container_tree_tests;
 #[path = "tests/depot_map_tests.rs"]
 mod depot_map_tests;
 #[path = "quest_log_transport/tests.rs"]
