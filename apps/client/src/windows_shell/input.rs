@@ -58,9 +58,7 @@ impl Application {
             }
             let mut render_failed = false;
             for click in self.actions.route(events) {
-                if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
-                    render_failed |= play.view.click(tile).is_err();
-                }
+                render_failed |= play.view.click_screen(click.x, click.y).is_err();
             }
             if render_failed {
                 self.fail(event_loop, ShellError::RendererRender);

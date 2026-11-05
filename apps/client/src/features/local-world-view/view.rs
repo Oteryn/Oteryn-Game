@@ -81,6 +81,8 @@ impl PlayView {
             &entities,
         )?;
         self.scene.retain_target(target)?;
+        self.scene
+            .set_minimap(self.live_map && self.preferences().panel_visible("minimap"))?;
         self.light_scene()
     }
 

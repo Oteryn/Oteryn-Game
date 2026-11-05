@@ -15,16 +15,19 @@ use std::sync::Arc;
 /// Compatibility exports for the deterministic viewport policy.
 pub use oteryn_client_simulation::scene::{SCENE_COLUMNS, SCENE_ROWS, SCENE_TILE_PX};
 
-// A full view (map cells, a marker per tile, the player and the target) fits one sprite batch.
+// A full view plus the minimap (background, terrain, creature per cell and own marker)
+// fits one sprite batch.
 const _: () = assert!(
     ((SCENE_COLUMNS + SCAN_MARGIN as u32) * (SCENE_ROWS + SCAN_MARGIN as u32)) as usize
         * (MAX_TILE_DRAWS + 1)
         + MAX_TILE_DRAWS
+        + (31 * 25 * 3 + 1)
         < MAX_BATCH_QUADS
 );
 
 #[derive(Debug, Clone)]
 pub struct Scene {
+    minimap: bool,
     world: Arc<World>,
     lit_atlas: Option<AtlasImage>,
     /// `None` draws no map: the session is on a floor the loaded map does not cover.
@@ -85,6 +88,7 @@ impl Scene {
             }])
             .collect();
         let mut scene = Self {
+            minimap: false,
             world,
             lit_atlas: None,
             anchor,
@@ -174,6 +178,9 @@ impl Scene {
             self.target.map(|target| target.tile),
         )?;
         self.sprites = sprites;
+        if self.minimap {
+            self.draw_minimap()?;
+        }
         Ok(())
     }
 
@@ -207,3 +214,6 @@ impl Scene {
 
 #[cfg(test)]
 mod tests;
+
+#[path = "features/local-minimap/scene.rs"]
+mod minimap;
