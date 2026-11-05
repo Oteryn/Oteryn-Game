@@ -1,5 +1,64 @@
 use super::*;
 #[test]
+fn confirmed_claim_disables_repeat_claim_and_projects_receipt() {
+    let mut panel = DailyRewardPanel {
+        selected: true,
+        wall: Some(daily_reward::DailyRewardWall {
+            lane_day: 12,
+            streak: 19,
+            jokers: 2,
+            claimed: false,
+            claim_enabled: true,
+        }),
+        ..Default::default()
+    };
+    assert_eq!(
+        request(&mut panel, Intent::Claim),
+        Some(DailyRewardCommand::Claim)
+    );
+    assert_eq!(request(&mut panel, Intent::Claim), None);
+    apply_result(
+        &mut panel,
+        &DailyRewardResponse {
+            status: CommandStatus::Accepted,
+            reply: Some(DailyRewardReply::Result(daily_reward::DailyRewardResult {
+                disposition: 2,
+                transaction_id: None,
+            })),
+        },
+    );
+    assert!(panel_text(&panel).contains("Status: claimed"));
+    assert_eq!(request(&mut panel, Intent::Claim), None);
+}
+
+#[test]
+fn shortcut_requires_fresh_control_d() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let code = KeyCode::new(7)?;
+    let event = |state, modifiers, repeat| NormalizedInputEvent::Key {
+        code,
+        state,
+        modifiers,
+        repeat,
+    };
+    let control = Modifiers::one(Modifier::Control);
+    assert!(open_key(&[event(ButtonState::Pressed, control, false)]));
+    for modifiers in [
+        Modifiers::NONE,
+        control.with(Modifier::Alt),
+        control.with(Modifier::Shift),
+        control.with(Modifier::Super),
+    ] {
+        assert!(!open_key(&[event(ButtonState::Pressed, modifiers, false)]));
+    }
+    assert!(!open_key(&[event(ButtonState::Released, control, false)]));
+    assert!(!open_key(&[event(ButtonState::Pressed, control, true)]));
+    let mut panel = DailyRewardPanel::default();
+    assert_eq!(request(&mut panel, Intent::Refresh), None);
+    assert!(panel_text(&panel).contains("unavailable"));
+    Ok(())
+}
+#[test]
 fn wall_encoded_like_server_reduces_into_panel() {
     let wall = daily_reward::DailyRewardWall {
         lane_day: 30,
@@ -39,12 +98,15 @@ fn claim_refusal_is_visible_and_not_inferred_as_state() {
         ..Default::default()
     };
     let response = DailyRewardResponse {
-        status: CommandStatus::Accepted,
+        status: CommandStatus::Rejected,
         reply: Some(DailyRewardReply::Result(daily_reward::DailyRewardResult {
             disposition: 4,
             transaction_id: None,
         })),
     };
     assert!(!apply_result(&mut panel, &response));
-    assert_eq!(panel.feedback, Some("Daily reward shrine is out of reach"));
+    assert_eq!(
+        panel.feedback,
+        Some("Open the daily reward shrine within reach, then refresh")
+    );
 }

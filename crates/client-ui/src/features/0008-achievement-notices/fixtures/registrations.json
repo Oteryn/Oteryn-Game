@@ -1,10 +1,19 @@
 [
   {
     "mechanic": "0008-achievement-notices",
+    "kind": "keybindings",
+    "id": "0008-achievement-notices-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+M",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0008-achievement-notices",
     "kind": "panels",
     "id": "0008-achievement-notices-panel",
     "status": "supported",
-    "entry": "view.rs::panel_text"
+    "entry": "view.rs::notices_panel_text"
   },
   {
     "mechanic": "0008-achievement-notices",

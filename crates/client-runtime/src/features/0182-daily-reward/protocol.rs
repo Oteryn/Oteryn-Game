@@ -22,6 +22,15 @@ pub async fn send<S: SessionStream>(
     session: &mut Session<S>,
     command: &DailyRewardCommand,
 ) -> Result<DailyRewardResponse, SessionError> {
+    // Opening the wall also attempts the server-owned shrine interaction. The
+    // server checks reach and generation; a refused USE still permits viewing.
+    if *command == DailyRewardCommand::Query
+        && session.is_selected(daily_reward::CAPABILITY_DAILY_REWARD_V2)
+    {
+        session
+            .use_object(b"oteryn:placement/daily-reward-shrine", 0)
+            .await?;
+    }
     let command_type = match command {
         DailyRewardCommand::Query => daily_reward::COMMAND_TYPE_DAILY_REWARD_QUERY,
         DailyRewardCommand::Claim => daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM,
@@ -29,10 +38,10 @@ pub async fn send<S: SessionStream>(
     let result = session
         .gated_command(daily_reward::CAPABILITY_DAILY_REWARD_V2, command_type, &[])
         .await?;
-    let reply = matches!(
+    let reply = (matches!(
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    )
+    ) || (*command == DailyRewardCommand::Claim && !result.payload.is_empty()))
     .then(|| match command {
         DailyRewardCommand::Query => decode_wall(&result.payload).map(DailyRewardReply::Wall),
         DailyRewardCommand::Claim => decode_result(&result.payload).map(DailyRewardReply::Result),

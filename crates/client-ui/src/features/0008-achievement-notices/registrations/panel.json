@@ -3,5 +3,5 @@
   "kind": "panels",
   "id": "0008-achievement-notices-panel",
   "status": "supported",
-  "entry": "view.rs::panel_text"
+  "entry": "view.rs::notices_panel_text"
 }

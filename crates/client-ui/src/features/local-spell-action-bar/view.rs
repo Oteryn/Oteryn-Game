@@ -55,3 +55,30 @@ pub fn vitals_bars(
 #[cfg(test)]
 #[path = "tests/view.rs"]
 mod tests;
+
+/// Compact shell HUD beside the spell hotkeys. Unknown vitals never imply a full bar.
+#[must_use]
+pub fn vitals_text(vitals: Option<&ActorVitals>) -> String {
+    let Some(vitals) = vitals else {
+        return "HP —   MP —".to_owned();
+    };
+    fn bar(value: u32, max: u32) -> String {
+        let filled = if max == 0 {
+            0
+        } else {
+            u64::from(value.min(max)) * 10 / u64::from(max)
+        };
+        (0..10)
+            .map(|i| if i < filled { '█' } else { '░' })
+            .collect()
+    }
+    format!(
+        "HP [{}] {}/{}   MP [{}] {}/{}",
+        bar(vitals.health, vitals.max_health),
+        vitals.health,
+        vitals.max_health,
+        bar(vitals.mana, vitals.max_mana),
+        vitals.mana,
+        vitals.max_mana
+    )
+}

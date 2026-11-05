@@ -318,7 +318,7 @@ impl<S: SessionStream> Session<S> {
         tutorial_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
         presentation::validate_join(&selected_capabilities, &gated_snapshots)?;
         server_save_countdown::validate_join(&selected_capabilities, &gated_snapshots)?;
-        achievement_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
+        achievement_notices_transport::validate_join(&selected_capabilities, &gated_snapshots)?;
         let events = server_messages::validate_join(
             &selected_capabilities,
             &gated_snapshots,

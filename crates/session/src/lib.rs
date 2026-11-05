@@ -16,7 +16,12 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
-mod achievement_notices;
+/// Account achievement query and typed result.
+pub mod account_achievements;
+
+#[path = "achievement_notices.rs"]
+mod achievement_notices_transport;
+pub use oteryn_protocol_oteryn::achievement_notices;
 mod appearance_state;
 mod depot;
 mod domain_dispatch;

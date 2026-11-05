@@ -16,12 +16,19 @@ impl PlayLink {
         if !oteryn_client_ui::daily_boost::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
         {
-            lock(&self.mailbox).daily_boost.open = true;
+            let mut mailbox = lock(&self.mailbox);
+            if mailbox.daily_boost.open {
+                return true;
+            }
+            mailbox.daily_boost.open = true;
         }
+        self.daily_boost_request(Intent {
+            command: oteryn_client_runtime::cui3::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY,
+            payload: Vec::new(),
+        });
+        #[cfg(all(windows, not(test)))]
+        super::view::open_window(self);
         true
     }
 }

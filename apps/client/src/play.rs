@@ -1,5 +1,4 @@
-//! Play view after admission (N2N3-1): the map around the own actor, one marker per overlay
-//! object, and the walk over `Session::step`.
+//! Play view after admission: map, overlays, vitals and movement.
 //!
 //! The view projects server-owned positions, overlays and live map tiles.
 
@@ -28,6 +27,7 @@ const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    vitals: Option<oteryn_session::ActorVitals>,
     sounds: Vec<SoundCue>,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
@@ -75,6 +75,7 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            vitals: None,
             sounds: Vec::new(),
             own,
             facing: StepDir::South,
@@ -129,6 +130,7 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
+        self.vitals = link.actor_vitals();
         // One chronological queue: each input goes out in the order it was given. A step still
         // in flight holds back the arrow and what was given after it.
         while let Some(&input) = self.inputs.front() {

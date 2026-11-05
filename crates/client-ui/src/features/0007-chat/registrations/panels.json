@@ -1,0 +1,7 @@
+{
+  "mechanic": "0007-chat",
+  "kind": "panels",
+  "id": "0007-chat-panels",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

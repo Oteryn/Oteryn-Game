@@ -1,20 +1,24 @@
 //! Session task phases: receive one shell command, service the session, and publish its result.
 
-use super::{Outbox, feature_0043_vip::protocol::send_vip, public_class, step_direction};
+use super::{
+    Outbox, feature_0043_vip::protocol::send_vip, public_class, session_stepper::publish,
+    step_direction,
+};
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
 use oteryn_session::{
     LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome, WorldSpatialEntity,
 };
-use std::future::Future;
-use std::time::Duration;
+use std::{future::Future, time::Duration};
 use tokio::sync::mpsc::UnboundedReceiver;
 
 /// How long the session task serves liveness probes while no step is pending; well inside the
 /// server's probe cadence.
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
-/// The session calls the task needs; implemented by `Session`.
-pub trait Stepper: Send {
+super::feature_local_account_achievements::protocol::session_trait! {
+    fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
+        None
+    }
     fn animus_selected(&self) -> bool {
         false
     }
@@ -283,27 +287,13 @@ pub trait Stepper: Send {
     }
 }
 
-/// Hands the shell what the session pushed, and the visible entities when they changed.
-fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpatialEntity>) {
-    outbox.push(session.drain());
-    if let Some(payload) = session.feature_snapshot(98) {
-        outbox.cyclopedia_tracker_push(payload);
-    }
-    if let Some(entities) = session.entities_changed(held) {
-        held.clone_from(&entities);
-        outbox.entities(entities);
-    }
-    if let Some((rooms, lines)) = session.chat_state() {
-        outbox.chat_public_state(rooms, lines);
-    }
-}
-
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
     mut session: T,
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.vitals(session.actor_vitals());
     outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
@@ -331,6 +321,7 @@ pub async fn run_session<T: Stepper>(
     outbox.boss_encounter_initialize(session.feature_selected(117));
     outbox.boss_difficulty_initialize(session.feature_selected(225));
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
+    outbox.chat_initialize(session.feature_selected(7));
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
@@ -343,9 +334,11 @@ pub async fn run_session<T: Stepper>(
     outbox.store_initialize(session.server_mechanic_selected(154));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
+    outbox.achievements_initialize();
     let mut held = Vec::new();
     loop {
-        let ended = match commands.try_recv() {
+        let ended = super::feature_local_account_achievements::protocol::dispatch! {
+            commands.try_recv(), session, outbox, held, publish;
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {

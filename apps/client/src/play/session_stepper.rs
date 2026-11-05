@@ -1,6 +1,6 @@
 //! The production `Stepper`: every session call the play task needs, served by `Session`.
 
-use super::Stepper;
+use super::{Outbox, Stepper};
 use crate::combat_input::{CombatCommand, CombatReport, run_combat};
 use crate::spell::SpellFeedback;
 use oteryn_session::{
@@ -11,6 +11,16 @@ use std::future::Future;
 use std::time::Duration;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    async fn account_achievements(
+        &mut self,
+        page: u32,
+    ) -> Result<oteryn_client_runtime::account_achievements::Response, SessionError> {
+        oteryn_client_runtime::account_achievements::send(self, page).await
+    }
+
+    fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
+        Session::actor_vitals(self).copied()
+    }
     fn player_typing_selected(&self) -> bool {
         self.is_selected(oteryn_session::player_typing::CAPABILITY_PLAYER_TYPING_V1)
     }
@@ -263,5 +273,25 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         intent: &oteryn_session::ChatIntent,
     ) -> Result<oteryn_session::ChatOutcome, SessionError> {
         self.chat(intent).await
+    }
+}
+
+/// Hands the shell what the session pushed, and the visible entities when they changed.
+pub(super) fn publish<T: Stepper>(
+    session: &mut T,
+    outbox: &Outbox,
+    held: &mut Vec<WorldSpatialEntity>,
+) {
+    outbox.achievement_notices_publish(session);
+    outbox.vitals(session.actor_vitals());
+    if let Some(payload) = session.feature_snapshot(98) {
+        outbox.cyclopedia_tracker_push(payload);
+    }
+    if let Some(entities) = session.entities_changed(held) {
+        held.clone_from(&entities);
+        outbox.entities(entities);
+    }
+    if let Some((rooms, lines)) = session.chat_state() {
+        outbox.chat_public_state(rooms, lines);
     }
 }

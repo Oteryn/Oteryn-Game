@@ -2,10 +2,19 @@
 
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
+/// Account achievement pages from core command 10.
+#[path = "features/local-account-achievements/mod.rs"]
+pub mod account_achievements;
+#[path = "features/0008-achievement-notices/mod.rs"]
+pub mod achievement_notices;
+
 #[path = "features/0225-boss-difficulty/mod.rs"]
 pub mod boss_difficulty;
 #[path = "features/0230-browse-field/mod.rs"]
 pub mod browse_field;
+/// Local speech and named private messages.
+#[path = "features/0007-chat/mod.rs"]
+pub mod chat;
 #[path = "features/0240-chat-party-room/mod.rs"]
 pub mod chat_party_room;
 #[path = "features/0199-cyclopedia-character/mod.rs"]
@@ -51,9 +60,6 @@ pub mod paced_movement {
         "/src/features/0013-paced-movement/input.rs"
     ));
 }
-/// Achievement advancement pop-up and session advancement log.
-#[path = "features/0008-achievement-notices/mod.rs"]
-pub mod achievement_notices;
 /// Native skills window with the account Loyalty projection.
 #[path = "features/0274-loyalty-skills/mod.rs"]
 pub mod loyalty_skills;
