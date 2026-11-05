@@ -1,0 +1,7 @@
+{
+  "mechanic": "0097-character-info",
+  "kind": "panels",
+  "id": "0097-character-info-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

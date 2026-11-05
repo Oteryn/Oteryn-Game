@@ -7,6 +7,8 @@ use oteryn_session::property_services::mail::{self, MailIntent};
 pub(in crate::play) struct Panels {
     pub appearance: oteryn_client_ui::appearance::Panel,
     pub charm_progression: oteryn_client_ui::charm_progression::Panel,
+    pub character_info: oteryn_client_ui::character_info::Panel,
+    pub raid_schedule: oteryn_client_ui::raid_schedule::Panel,
     pub container_sort: oteryn_client_ui::container_sort::Panel,
     pub guild_war: oteryn_client_ui::guild_war::Panel,
     pub player_report: oteryn_client_ui::player_report::Panel,
@@ -18,6 +20,14 @@ pub(in crate::play) struct Panels {
 }
 impl Panels {
     pub fn end(&mut self) {
+        self.raid_schedule = oteryn_client_ui::raid_schedule::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.character_info = oteryn_client_ui::character_info::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
         self.container_sort = oteryn_client_ui::container_sort::Panel {
             feedback: "The session has ended".into(),
             ..Default::default()
@@ -77,6 +87,14 @@ impl Panels {
 impl Outbox {
     pub(in crate::play) fn properties_initialize<T: Stepper>(&self, session: &T) {
         let mut shared = lock(&self.0);
+        shared.properties.character_info = oteryn_client_ui::character_info::Panel {
+            selected: session.feature_selected(97),
+            ..Default::default()
+        };
+        shared.properties.raid_schedule = oteryn_client_ui::raid_schedule::Panel {
+            selected: session.feature_selected(149),
+            ..Default::default()
+        };
         shared.properties.container_sort = oteryn_client_ui::container_sort::Panel {
             selected: session.feature_selected(146),
             ..Default::default()
@@ -143,6 +161,11 @@ impl Outbox {
                 command,
                 result,
             ),
+            97 => super::super::feature_0097_character_info::protocol::apply(
+                &mut shared.properties.character_info,
+                command,
+                result,
+            ),
             103 => super::super::feature_0103_guild_war::protocol::apply(
                 &mut shared.properties.guild_war,
                 command,
@@ -151,6 +174,11 @@ impl Outbox {
             115 => apply(&mut shared.properties.mail, command, result),
             146 => super::super::feature_0146_container_sort::protocol::apply(
                 &mut shared.properties.container_sort,
+                command,
+                result,
+            ),
+            149 => super::super::feature_0149_raid_schedule::protocol::apply(
+                &mut shared.properties.raid_schedule,
                 command,
                 result,
             ),
