@@ -84,6 +84,7 @@ impl Application {
                         render_failed |= play.view.primary_click(tile, &play.link).is_err();
                     }
                 }
+                render_failed |= play.view.click_screen(click.x, click.y).is_err();
             }
             if render_failed {
                 self.fail(event_loop, ShellError::RendererRender);

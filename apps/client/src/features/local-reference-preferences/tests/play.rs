@@ -19,3 +19,25 @@ fn reference_preferences_are_local_and_reject_unknown_panel_ids()
     assert!(play.set_preferences(invalid).is_err());
     Ok(())
 }
+
+#[test]
+fn preferences_are_restored_when_scene_rebuild_fails() -> Result<(), BatchError> {
+    let mut play = view()?;
+    let old = play.preferences().clone();
+    let mut changed = old.clone();
+    changed.ui_scale = 125;
+    play.local.set_world(Arc::new(World::builtin_with([(
+        (100, 200),
+        crate::map::MapTile {
+            under: vec![crate::map::Draw {
+                cell: u16::MAX,
+                offset: [0, 0],
+            }],
+            ..crate::map::MapTile::default()
+        },
+    )])?));
+    play.map_floor = Some(play.floor);
+    assert!(play.set_preferences(changed).is_err());
+    assert_eq!(play.preferences(), &old);
+    Ok(())
+}

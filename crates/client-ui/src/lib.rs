@@ -156,6 +156,10 @@ pub mod task_board;
 #[path = "features/0062-stash/mod.rs"]
 pub mod stash;
 
+/// Native current-floor minimap geometry.
+#[path = "features/local-minimap/mod.rs"]
+pub mod minimap;
+
 /// Target-walk input and receipt projection.
 #[path = "features/0064-target-move/mod.rs"]
 pub mod target_move;
