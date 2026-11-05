@@ -9,6 +9,9 @@ pub(in crate::play) struct Panels {
     pub charm_progression: oteryn_client_ui::charm_progression::Panel,
     pub container_sort: oteryn_client_ui::container_sort::Panel,
     pub guild_war: oteryn_client_ui::guild_war::Panel,
+    pub guildhall: oteryn_client_ui::guildhall::Panel,
+    pub house_move_out: oteryn_client_ui::house_move_out::Panel,
+    pub house_transfer: oteryn_client_ui::house_transfer::Panel,
     pub player_report: oteryn_client_ui::player_report::Panel,
     pub pvp_expert: oteryn_client_ui::pvp_expert::Panel,
     pub mail: Panel,
@@ -18,6 +21,18 @@ pub(in crate::play) struct Panels {
 }
 impl Panels {
     pub fn end(&mut self) {
+        self.guildhall = oteryn_client_ui::guildhall::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.house_transfer = oteryn_client_ui::house_transfer::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
+        self.house_move_out = oteryn_client_ui::house_move_out::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
         self.container_sort = oteryn_client_ui::container_sort::Panel {
             feedback: "The session has ended".into(),
             ..Default::default()
@@ -85,6 +100,18 @@ impl Outbox {
             selected: session.feature_selected(103),
             ..Default::default()
         };
+        shared.properties.house_move_out = oteryn_client_ui::house_move_out::Panel {
+            selected: session.feature_selected(59),
+            ..Default::default()
+        };
+        shared.properties.house_transfer = oteryn_client_ui::house_transfer::Panel {
+            selected: session.feature_selected(86),
+            ..Default::default()
+        };
+        shared.properties.guildhall = oteryn_client_ui::guildhall::Panel {
+            selected: session.feature_selected(99),
+            ..Default::default()
+        };
         shared.properties.player_report = oteryn_client_ui::player_report::Panel {
             selected: session.feature_selected(76),
             ..Default::default()
@@ -128,6 +155,11 @@ impl Outbox {
                 command,
                 result,
             ),
+            59 => super::super::feature_0059_house_move_out::protocol::apply(
+                &mut shared.properties.house_move_out,
+                command,
+                result,
+            ),
             67 => super::super::feature_0067_bestiary_charm_progression::protocol::apply(
                 &mut shared.properties.charm_progression,
                 command,
@@ -138,8 +170,18 @@ impl Outbox {
                 command,
                 result,
             ),
+            86 => super::super::feature_0086_house_transfer::protocol::apply(
+                &mut shared.properties.house_transfer,
+                command,
+                result,
+            ),
             87 => super::super::feature_0087_pvp_expert::protocol::apply(
                 &mut shared.properties.pvp_expert,
+                command,
+                result,
+            ),
+            99 => super::super::feature_0099_guildhall::protocol::apply(
+                &mut shared.properties.guildhall,
                 command,
                 result,
             ),

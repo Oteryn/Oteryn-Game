@@ -31,6 +31,10 @@ impl<S: SessionStream> Session<S> {
             payload: result.payload,
         };
         self.poison_on_error(appearance_state::validate_result(command_type, &result))?;
+        if command_type == property_services::house_transfer::COMMAND_TYPE_HOUSE_TRANSFER {
+            let handoff = self.house_handoff(payload, &result).await;
+            self.poison_on_error(handoff)?;
+        }
         Ok(result)
     }
 }
