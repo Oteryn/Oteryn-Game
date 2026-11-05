@@ -198,7 +198,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             CharacterInfoOperation::Select(title) => match self
                 .root
-                .select_character_title(self.character, self.holder, fence, title)
+                .select_character_title_at(self.character, self.holder, fence, title, now)
                 .await
             {
                 Ok(revision) => {
