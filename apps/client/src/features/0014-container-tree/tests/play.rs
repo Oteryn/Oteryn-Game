@@ -46,10 +46,45 @@ fn ground_container_projection_uses_only_the_selected_live_handle()
     // Pending input is bounded to one request, and a removed selection sends nothing.
     assert!(play.container_input(&link, std::slice::from_ref(&key)));
     assert!(commands.try_recv().is_err());
+    outbox.container_result(Some(
+        oteryn_session::container_tree::ContainerViewOutcome::Opened,
+    ));
+    assert!(!link.container_panel().pending);
     map.tiles[0].items.clear();
     play.set_live_map(&map)?;
     play.click(TileCoord::new(101, 200))?;
     assert!(play.container_input(&link, std::slice::from_ref(&key)));
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn inventory_browser_opens_only_when_an_intent_was_sent() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::feature_0014_container_tree::input::inventory_native_open;
+    let (link, mut commands, outbox) = play_channel();
+    let handle = 42.try_into()?;
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        assert!(!inventory_native_open(&mut mailbox, &link.commands, handle));
+    }
+    assert!(commands.try_recv().is_err());
+    outbox.container_initialize(Some(Default::default()));
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        assert!(inventory_native_open(&mut mailbox, &link.commands, handle));
+        assert!(!inventory_native_open(&mut mailbox, &link.commands, handle));
+    }
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::ContainerView(_)
+    ));
+    assert!(commands.try_recv().is_err());
+    outbox.container_result(Some(
+        oteryn_session::container_tree::ContainerViewOutcome::Opened,
+    ));
+    drop(commands);
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    assert!(!inventory_native_open(&mut mailbox, &link.commands, handle));
     Ok(())
 }

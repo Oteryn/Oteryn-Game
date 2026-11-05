@@ -26,7 +26,10 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
     unsafe {
         if msg == WM_COMMAND {
             let id = (w & 0xffff) as u16;
-            if (101..=105).contains(&id) {
+            let notification = (w >> 16) & 0xffff;
+            if ((101..=102).contains(&id) && notification == LBN_SELCHANGE as usize)
+                || ((103..=105).contains(&id) && notification == BN_CLICKED as usize)
+            {
                 let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Vec<u16>;
                 if !actions.is_null() {
                     (*actions).push(id);

@@ -92,15 +92,18 @@ impl PlayLink {
     }
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 pub(in crate::play) fn inventory_native_open(
     mailbox: &mut crate::play::mailbox::Mailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
     handle: ItemHandle,
-) {
-    if let Some(intent) = mailbox.containers.open(handle, None)
-        && commands.send(PlayCommand::ContainerView(intent)).is_err()
-    {
+) -> bool {
+    let Some(intent) = mailbox.containers.open(handle, None) else {
+        return false;
+    };
+    if commands.send(PlayCommand::ContainerView(intent)).is_err() {
         mailbox.containers.end();
+        return false;
     }
+    true
 }

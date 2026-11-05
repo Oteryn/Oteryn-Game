@@ -35,6 +35,11 @@ fn nested_navigation_uses_live_handles_and_server_view_ids()
     assert_eq!(panel.rows()[0].handle.get(), 11);
     assert!(!panel.select(99.try_into()?));
     assert!(panel.select(11.try_into()?));
+    assert!(panel.activate(3));
+    assert_eq!(
+        panel.selected_item().map(|item| item.handle.get()),
+        Some(11)
+    );
     assert_eq!(
         panel.open_selected(),
         Some(ContainerViewIntent::Open {
@@ -130,5 +135,73 @@ fn ground_open_chord_requires_control_shift_and_a_fresh_press()
     ] {
         assert!(!oteryn_client_ui::container_tree::input::open_key(&[event]));
     }
+    Ok(())
+}
+
+#[test]
+fn refused_open_keeps_the_previous_active_view() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::container_tree::ContainerViewOutcome;
+    for outcome in [ContainerViewOutcome::Stale, ContainerViewOutcome::TooFar] {
+        let mut panel = ContainerPanel::default();
+        let views = ContainerViews {
+            views: vec![view(3, 10, None, 11)?, view(7, 42, None, 43)?],
+        };
+        panel.apply(Some(views.clone()));
+        assert!(panel.open(42.try_into()?, None).is_some());
+        assert_eq!(panel.active, Some(3));
+        panel.apply(Some(views));
+        assert_eq!(panel.active, Some(3));
+        oteryn_client_ui::container_tree::protocol::apply_result(&mut panel, Some(outcome));
+        assert_eq!(panel.active, Some(3));
+    }
+    Ok(())
+}
+
+#[test]
+fn open_focus_waits_for_acceptance_when_delta_arrives_first()
+-> Result<(), Box<dyn std::error::Error>> {
+    for existing in [vec![], vec![view(3, 10, None, 11)?]] {
+        let previous = existing.first().map(|v| v.view_id);
+        let mut panel = ContainerPanel::default();
+        panel.apply(Some(ContainerViews {
+            views: existing.clone(),
+        }));
+        assert!(panel.open(42.try_into()?, None).is_some());
+        let mut updated = existing;
+        updated.push(view(7, 42, None, 43)?);
+        panel.apply(Some(ContainerViews { views: updated }));
+        assert_eq!(panel.active, previous);
+        oteryn_client_ui::container_tree::protocol::apply_result(
+            &mut panel,
+            Some(oteryn_client_runtime::container_tree::ContainerViewOutcome::Opened),
+        );
+        assert_eq!(panel.active, Some(7));
+    }
+    Ok(())
+}
+
+#[test]
+fn up_keeps_the_originating_view_when_parent_is_already_open()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut panel = ContainerPanel::default();
+    let parent = view(1, 10, None, 11)?;
+    let child = view(3, 11, Some(10), 12)?;
+    panel.apply(Some(ContainerViews {
+        views: vec![parent.clone(), child.clone()],
+    }));
+    assert!(panel.activate(3));
+    assert_eq!(panel.up(), Some(ContainerViewIntent::Up { view_id: 3 }));
+    oteryn_client_ui::container_tree::protocol::apply_result(
+        &mut panel,
+        Some(oteryn_client_runtime::container_tree::ContainerViewOutcome::Opened),
+    );
+    panel.apply(Some(ContainerViews {
+        views: vec![parent, child],
+    }));
+    assert_eq!(panel.active, Some(3));
+    panel.apply(Some(ContainerViews {
+        views: vec![view(3, 10, None, 11)?],
+    }));
+    assert_eq!(panel.active, Some(3));
     Ok(())
 }

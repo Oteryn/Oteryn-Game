@@ -11,6 +11,7 @@ pub struct ContainerPanel {
     pub feedback: Option<&'static str>,
     selected: Option<ItemHandle>,
     focus: Option<ItemHandle>,
+    focus_accepted: bool,
     ended: bool,
 }
 
@@ -21,7 +22,7 @@ impl ContainerPanel {
         }
         self.views = views;
         self.focus_requested();
-        if self.current().is_none() {
+        if self.current().is_none() && (self.focus.is_none() || self.focus_accepted) {
             self.active = self
                 .views
                 .as_ref()
@@ -33,6 +34,9 @@ impl ContainerPanel {
         }
     }
     fn focus_requested(&mut self) {
+        if !self.focus_accepted {
+            return;
+        }
         if let Some(view) = self.views.as_ref().and_then(|v| {
             v.views
                 .iter()
@@ -60,8 +64,10 @@ impl ContainerPanel {
         {
             return false;
         }
-        self.active = Some(id);
-        self.selected = None;
+        if self.active != Some(id) {
+            self.active = Some(id);
+            self.selected = None;
+        }
         true
     }
     pub fn select(&mut self, handle: ItemHandle) -> bool {
@@ -87,19 +93,16 @@ impl ContainerPanel {
             replace_view,
         })?;
         self.focus = Some(handle);
-        self.focus_requested();
         Some(intent)
     }
     pub fn open_selected(&mut self) -> Option<ContainerViewIntent> {
         self.open(self.selected_item()?.handle, self.active)
     }
     pub fn up(&mut self) -> Option<ContainerViewIntent> {
-        let parent = self.current()?.parent_handle?;
-        let intent = self.request(ContainerViewIntent::Up {
+        self.current()?.parent_handle?;
+        self.request(ContainerViewIntent::Up {
             view_id: self.active?,
-        })?;
-        self.focus = Some(parent);
-        Some(intent)
+        })
     }
     pub fn close(&mut self) -> Option<ContainerViewIntent> {
         self.request(ContainerViewIntent::Close {
@@ -110,11 +113,17 @@ impl ContainerPanel {
         if self.ended || self.views.is_none() || self.pending {
             return None;
         }
+        self.clear_focus();
         self.pending = true;
         self.feedback = None;
         Some(intent)
     }
+    pub fn accept_focus(&mut self) {
+        self.focus_accepted = true;
+        self.focus_requested();
+    }
     pub fn clear_focus(&mut self) {
+        self.focus_accepted = false;
         self.focus = None;
     }
     pub fn finish(&mut self, feedback: Option<&'static str>) {

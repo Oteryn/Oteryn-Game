@@ -120,6 +120,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             break;
                         }
                         let action = std::mem::take(&mut *changed);
+                        let mut show_containers = false;
                         if action != 0 {
                             // Resolve the row against the displayed snapshot, then validate its handle
                             // against current state. A concurrent removal cannot select another item.
@@ -127,10 +128,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             if let Some(item) = usize::try_from(row)
                                 .ok()
                                 .and_then(|i| held.as_ref()?.rows().get(i).copied())
+                                && mailbox.inventory.select(item.handle) && action == 2
                             {
-                                if mailbox.inventory.select(item.handle) && action == 2 {
-                                    super::super::super::feature_0014_container_tree::input::inventory_native_open(&mut mailbox, &commands, item.handle);
-                                }
+                                show_containers = super::super::super::feature_0014_container_tree::input::inventory_native_open(&mut mailbox, &commands, item.handle);
                             }
                         }
                         let panel = &mailbox.inventory;
@@ -154,7 +154,6 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             SetWindowTextW(status, wide(&panel.text()).as_ptr());
                             held = Some(panel.clone());
                         }
-                        let show_containers = action == 2;
                         drop(mailbox);
                         if show_containers {
                             super::super::super::feature_0014_container_tree::view::open_shared(weak.clone(), commands.clone());
