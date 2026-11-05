@@ -2133,3 +2133,6 @@ pub use oteryn_protocol_oteryn::task_board;
 
 /// Server-owned stash wire types exposed to client feature adapters.
 pub use oteryn_protocol_oteryn::stash;
+
+/// Existing property and services command codecs for native feature adapters.
+pub mod property_services;

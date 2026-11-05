@@ -1,5 +1,14 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+#[path = "features/0055-guild-bank/mod.rs"]
+pub mod guild_bank;
+#[path = "features/0150-house-podium/mod.rs"]
+pub mod house_podium;
+#[path = "features/0115-mail/mod.rs"]
+pub mod mail;
+#[path = "features/0054-training/mod.rs"]
+pub mod training;
+
 #[path = "features/0014-container-tree/mod.rs"]
 pub mod container_tree;
 #[path = "features/0012-item-equip-drop/mod.rs"]
