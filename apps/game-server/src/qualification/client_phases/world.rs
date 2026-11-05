@@ -261,6 +261,7 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         return Err("town join served a different or empty World bundle".into());
     }
     client = character_core(client, clients, &world).await?;
+    client = include!("full_e2ef3_registration.rs");
     client = floor_journey(client, clients, &world).await?;
     client_guild::guild(&mut client).await?;
     client_party::party(&mut client).await?;
