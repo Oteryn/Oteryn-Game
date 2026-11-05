@@ -8,11 +8,15 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
+        // Route the full batch before a panel can consume it, retaining pointer/reset events.
+        let clicks = self.actions.route(events);
         if let Some(play) = &mut self.play {
             if play.view.audio_input(events) {
                 return;
             }
-            if play.link.achievement_notices_input(events)
+            if play.link.npc_context_input(events, &play.view)
+                || play.link.npc_dialogue_input(events, &play.view)
+                || play.link.achievement_notices_input(events)
                 || play.link.achievements_input(events)
                 || play.link.chat_input(events)
                 || play.link.chat_public_input(events)
@@ -57,7 +61,7 @@ impl Application {
                 play.view.logout();
             }
             let mut render_failed = false;
-            for click in self.actions.route(events) {
+            for click in clicks {
                 if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
                     render_failed |= play.view.click(tile).is_err();
                 }
@@ -78,7 +82,7 @@ impl Application {
                 return;
             }
         }
-        for click in self.actions.route(events) {
+        for click in clicks {
             let picked = self.scene.as_mut().and_then(|scene| {
                 let tile = click_tile(scene.view(), click.x, click.y)?;
                 Some((tile, scene.select_tile(tile)))

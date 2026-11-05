@@ -107,6 +107,7 @@ mod end;
 mod mailbox;
 mod session_loop;
 mod session_stepper;
+mod stepper;
 mod tick;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));

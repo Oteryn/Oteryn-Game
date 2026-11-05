@@ -8,6 +8,8 @@ pub mod achievement_notices;
 
 pub mod connection;
 pub mod hotkey_equip;
+#[path = "features/0003-npc-service/protocol.rs"]
+pub mod npc_dialogue;
 #[path = "features/0053-world-event/protocol.rs"]
 pub mod world_event;
 #[path = "features/0019-world-light/protocol.rs"]
