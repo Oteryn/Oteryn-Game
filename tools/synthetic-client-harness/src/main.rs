@@ -14,6 +14,8 @@ use std::error::Error;
 mod live;
 
 #[cfg(test)]
+mod native_floor_transition;
+#[cfg(test)]
 mod native_map;
 
 fn main() -> Result<(), Box<dyn Error>> {

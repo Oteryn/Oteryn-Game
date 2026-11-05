@@ -1,6 +1,6 @@
 //! Bounded, non-blocking mailbox between the session task and the shell.
 
-use super::{ServerMessageInbox, StepDir, coalesce_pushed};
+use super::{ServerMessageInbox, StepDir};
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_session::{
@@ -120,7 +120,7 @@ pub(super) struct Mailbox {
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
-    pushed: Pushed,
+    pub(super) pushed: Pushed,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
     /// The latest refused logout not yet polled.
@@ -202,16 +202,7 @@ impl Outbox {
                 );
             }
         }
-        let has_map = events
-            .iter()
-            .any(|event| matches!(event, SessionEvent::WorldMap(_)));
-        if has_map && mailbox.pushed.map.is_none() {
-            mailbox.pushed.map = mailbox.map.clone();
-        }
-        coalesce_pushed(&mut mailbox.pushed, events);
-        if has_map {
-            mailbox.map = mailbox.pushed.map.clone();
-        }
+        mailbox.coalesce_events(events);
         mailbox.check_server_messages();
         let notices = std::mem::take(&mut mailbox.pushed.achievements);
         mailbox.reduce_achievement_notices(notices);

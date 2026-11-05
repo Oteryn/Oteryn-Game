@@ -15,7 +15,8 @@ use std::sync::Arc;
 /// Compatibility exports for the deterministic viewport policy.
 pub use oteryn_client_simulation::scene::{SCENE_COLUMNS, SCENE_ROWS, SCENE_TILE_PX};
 
-// A full view (map cells, a marker per tile, the player and the target) fits one sprite batch.
+// One floor (map cells, a marker per tile, the player and the target) fits one sprite batch.
+// The renderer also bounds the aggregate draws from the visible floors.
 const _: () = assert!(
     ((SCENE_COLUMNS + SCAN_MARGIN as u32) * (SCENE_ROWS + SCAN_MARGIN as u32)) as usize
         * (MAX_TILE_DRAWS + 1)
@@ -134,26 +135,38 @@ impl Scene {
             &self.view,
             atlas,
             |emit| {
-                visit_scene(
-                    (origin.x, origin.y),
-                    self.anchor.map(|anchor| (anchor.x, anchor.y)),
-                    ((self.own.x, self.own.y), self.world.player(self.facing)),
-                    |x, y| self.world.tile(x, y),
-                    |x, y| {
-                        // One glyph per tile however many markers and entities stand on it.
-                        self.visible
-                            .iter()
-                            .any(|v| {
-                                v.tile == TileCoord::new(x, y)
-                                    && (v.kind == TargetKind::Object || v.glyph)
-                            })
-                            .then_some(Draw {
-                                cell: MARKER_CELL,
-                                offset: [0, 0],
-                            })
-                    },
-                    emit,
-                )
+                for floor in self.world.draw_floors() {
+                    let own_floor = floor == self.world.center().2;
+                    visit_scene(
+                        (origin.x, origin.y),
+                        self.anchor.map(|anchor| (anchor.x, anchor.y)),
+                        (
+                            (self.own.x, self.own.y),
+                            if own_floor {
+                                self.world.player(self.facing)
+                            } else {
+                                &[]
+                            },
+                        ),
+                        |x, y| self.world.floor_tile(floor, x, y),
+                        |x, y| {
+                            // One glyph per tile however many markers and entities stand on it.
+                            self.visible
+                                .iter()
+                                .any(|v| {
+                                    own_floor
+                                        && v.tile == TileCoord::new(x, y)
+                                        && (v.kind == TargetKind::Object || v.glyph)
+                                })
+                                .then_some(Draw {
+                                    cell: MARKER_CELL,
+                                    offset: [0, 0],
+                                })
+                        },
+                        &mut *emit,
+                    )?;
+                }
+                Ok(())
             },
             self.target.map(|target| target.tile),
         )?;

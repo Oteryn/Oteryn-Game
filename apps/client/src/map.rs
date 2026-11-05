@@ -11,7 +11,7 @@ use oteryn_client_domain::world::CELL_PX;
 use oteryn_client_simulation::world::{project_cell, project_tile};
 use oteryn_renderer::world::{BUILTIN_CELLS, WorldAtlas, builtin_rgba};
 use oteryn_renderer::{AtlasImage, BatchError};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 /// Names the local asset root.
@@ -34,6 +34,8 @@ pub struct World {
     center: (i32, i32, i16),
     atlas: AtlasImage,
     tiles: HashMap<(i32, i32), MapTile>,
+    /// Other floors keep independent stacks at coordinates projected onto the own-floor plane.
+    layers: BTreeMap<i16, HashMap<(i32, i32), MapTile>>,
     /// The own player's cells per facing, in [`FACINGS`] order.
     player: [Vec<Draw>; 4],
 }
@@ -45,6 +47,7 @@ impl World {
         Ok(Self {
             center: (START.0, START.1, i16::from(START_FLOOR)),
             atlas,
+            layers: BTreeMap::new(),
             tiles: HashMap::new(),
             player: FACINGS.map(|_| {
                 vec![Draw {
@@ -113,6 +116,7 @@ impl World {
             center,
             atlas,
             tiles,
+            layers: BTreeMap::new(),
             player,
         })
     }
@@ -130,7 +134,7 @@ impl World {
 
     #[must_use]
     pub fn tile_count(&self) -> usize {
-        self.tiles.len()
+        self.tiles.len() + self.layers.values().map(HashMap::len).sum::<usize>()
     }
 
     /// The own player's cells facing `facing`, standing on a tile.

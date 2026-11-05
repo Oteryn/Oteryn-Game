@@ -5,6 +5,8 @@ mod appearance_session_tests;
 mod depot_map_tests;
 #[path = "quest_log_transport/tests.rs"]
 mod quest_log_tests;
+#[path = "tests/replacement_snapshot.rs"]
+mod replacement_snapshot_tests;
 include!("tutorial_notices_tests.rs");
 include!("presentation_tests.rs");
 include!("achievement_notices_tests.rs");

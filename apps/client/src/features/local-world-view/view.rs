@@ -30,6 +30,7 @@ impl PlayView {
         map: &oteryn_session::world_map::WorldMapViewSnapshot,
     ) -> Result<(), BatchError> {
         let world = World::from_live_map(map)?;
+        self.place(map.header.origin);
         self.map_floor = Some(map.header.origin.floor);
         self.anchor = TileCoord::new(0, 0);
         self.local.set_world(Arc::new(world));

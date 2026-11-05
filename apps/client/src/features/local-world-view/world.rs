@@ -10,13 +10,9 @@ impl World {
         let origin = map.header.origin;
         world.center = (origin.x, origin.y, origin.floor);
         // A missing appearance remains visibly present without inventing local geometry.
-        for tile in map
-            .tiles
-            .iter()
-            .filter(|tile| tile.position.floor == origin.floor)
-        {
-            world.tiles.insert(
-                (tile.position.x, tile.position.y),
+        for tile in map.tiles.iter().filter(|tile| visible(map, tile.position)) {
+            world.insert_floor_tile(
+                tile.position,
                 MapTile {
                     under: vec![Draw {
                         cell: MARKER_CELL,
@@ -46,11 +42,7 @@ impl World {
         let mut sheets = SpriteSheets::new(store, catalog);
         let origin = map.header.origin;
         let mut entries = Vec::new();
-        for tile in map
-            .tiles
-            .iter()
-            .filter(|tile| tile.position.floor == origin.floor)
-        {
+        for tile in map.tiles.iter().filter(|tile| visible(map, tile.position)) {
             let hook = tile
                 .items
                 .iter()
@@ -93,7 +85,7 @@ impl World {
                 }
             }
             items.sort_by_key(|(layer, _, _)| *layer);
-            entries.push(((tile.position.x, tile.position.y), items));
+            entries.push((tile.position, items));
         }
         let mut player: [Vec<oteryn_client_assets::DrawCell>; 4] = Default::default();
         for (direction, cells) in (0..).zip(&mut player) {
@@ -127,19 +119,60 @@ impl World {
                 }
                 (*position, tile)
             })
-            .collect();
+            .collect::<Vec<_>>();
         let player = player.map(|cells| {
             cells
                 .iter()
                 .filter_map(|cell| project_cell(cell, 0, slot))
                 .collect()
         });
-        Ok(Self {
+        let mut world = Self {
             center: (origin.x, origin.y, origin.floor),
-            tiles,
+            tiles: HashMap::new(),
+            layers: BTreeMap::new(),
             player,
             atlas: atlas.into_image(),
-        })
+        };
+        for (position, tile) in tiles {
+            world.insert_floor_tile(position, tile);
+        }
+        Ok(world)
+    }
+}
+
+/// Native floors increase upwards. The server's boundary hides everything above it.
+fn visible(map: &WorldMapViewSnapshot, position: oteryn_session::ActorPosition) -> bool {
+    position.floor <= map.header.first_visible_floor
+        && oteryn_session::world_map::in_window(map.header.origin, position)
+}
+
+impl World {
+    fn insert_floor_tile(&mut self, position: oteryn_session::ActorPosition, tile: MapTile) {
+        let shift = i32::from(position.floor - self.center.2);
+        let projected = (position.x - shift, position.y - shift);
+        if position.floor == self.center.2 {
+            self.tiles.insert(projected, tile);
+        } else {
+            self.layers
+                .entry(position.floor)
+                .or_default()
+                .insert(projected, tile);
+        }
+    }
+
+    /// Painter order: the deepest floor first, the highest visible floor last.
+    pub(crate) fn draw_floors(&self) -> Vec<i16> {
+        let mut floors: Vec<_> = self.layers.keys().copied().chain([self.center.2]).collect();
+        floors.sort_unstable();
+        floors
+    }
+
+    pub(crate) fn floor_tile(&self, floor: i16, x: i32, y: i32) -> Option<&MapTile> {
+        if floor == self.center.2 {
+            self.tiles.get(&(x, y))
+        } else {
+            self.layers.get(&floor)?.get(&(x, y))
+        }
     }
 }
 
@@ -192,6 +225,24 @@ mod tests {
                 .any(|draw| draw.cell >= BUILTIN_CELLS as u16)
         );
         assert!(world.tile(START.0, START.1).is_none());
+        let mut upper = map.tiles[0].clone();
+        upper.position = ActorPosition {
+            x: 101,
+            y: 201,
+            floor: -6,
+        };
+        map.tiles.push(upper);
+        let layered = World::resolve_live_map(&root, &map)?;
+        assert_eq!(layered.tile_count(), 2);
+        let upper = layered
+            .floor_tile(-6, 100, 200)
+            .ok_or("upper floor missing")?;
+        assert!(
+            upper
+                .under
+                .iter()
+                .any(|draw| draw.cell >= BUILTIN_CELLS as u16)
+        );
         map.tiles.clear();
         let empty = World::resolve_live_map(&root, &map)?;
         assert_eq!(empty.tile_count(), 0);
