@@ -13,7 +13,9 @@ fn id() -> [u8; 16] {
     id[8] = 0x80;
     id
 }
-struct Peer;
+struct Peer {
+    member: bool,
+}
 impl Stepper for Peer {
     fn guild_selected(&self) -> bool {
         true
@@ -27,7 +29,7 @@ impl Stepper for Peer {
                     guild::decode_guild_query(&bytes).map_err(|_| SessionError::SessionUnusable)?;
                 let result = match decoded {
                     guild::GuildQuery::Own => {
-                        guild::GuildQueryResult::Own(Some(guild::GuildSummary {
+                        guild::GuildQueryResult::Own(self.member.then(|| guild::GuildSummary {
                             guild: id(),
                             name: "Guild Name".into(),
                             state: 1,
@@ -49,7 +51,17 @@ impl Stepper for Peer {
                         }],
                         next: None,
                     },
-                    guild::GuildQuery::Invitations => guild::GuildQueryResult::Invitations(vec![]),
+                    guild::GuildQuery::Invitations => {
+                        guild::GuildQueryResult::Invitations(if self.member {
+                            vec![]
+                        } else {
+                            vec![guild::GuildInvitation {
+                                guild: id(),
+                                name: "Guild Name invitation".into(),
+                                expires_at_unix_ms: 1000,
+                            }]
+                        })
+                    }
                 };
                 let reply = guild::encode_guild_query_result(&result)
                     .map_err(|_| SessionError::SessionUnusable)?;
@@ -64,7 +76,13 @@ impl Stepper for Peer {
             GuildCommand::Intent(intent) => {
                 let bytes = guild::encode_guild_intent(intent)
                     .map_err(|_| SessionError::SessionUnusable)?;
-                guild::decode_guild_intent(&bytes).map_err(|_| SessionError::SessionUnusable)?;
+                match guild::decode_guild_intent(&bytes)
+                    .map_err(|_| SessionError::SessionUnusable)?
+                {
+                    guild::GuildIntent::Join { .. } => self.member = true,
+                    guild::GuildIntent::Leave { .. } => self.member = false,
+                    _ => {}
+                }
                 let value = guild::GuildIntentResult {
                     code: 1,
                     guild: id(),
@@ -120,14 +138,28 @@ fn guild_controls_use_real_codecs_and_apply_server_state() -> Result<(), Error> 
             let runtime = oteryn_client_runtime::ClientRuntime::new()?;
             runtime.block_on(async {
                 let (link, incoming, outbox) = play_channel();
-                let task = tokio::spawn(run_session(Peer, incoming, outbox));
+                let task = tokio::spawn(run_session(Peer { member: false }, incoming, outbox));
                 ready(&link, "No guild").await?;
-                link.guild_request(Intent::RefreshOwn);
-                ready(&link, "Guild Name").await?;
-                link.guild_request(Intent::RefreshRoster);
+                let key = oteryn_input_actions::KeyCode::new(10)?;
+                assert!(
+                    link.guild_input(&[oteryn_input_actions::NormalizedInputEvent::Key {
+                        code: key,
+                        state: oteryn_input_actions::ButtonState::Pressed,
+                        modifiers: oteryn_input_actions::Modifiers::one(
+                            oteryn_input_actions::Modifier::Control
+                        ),
+                        repeat: false,
+                    }])
+                );
+                ready(&link, "Guild Name invitation").await?;
+                link.guild_request(Intent::Join(id()));
+                assert!(link.guild_panel().open);
                 ready(&link, "Alice").await?;
                 link.guild_request(Intent::Invite("Bob".into()));
                 ready(&link, "accepted").await?;
+                link.guild_request(Intent::Leave);
+                ready(&link, "No guild").await?;
+                assert!(link.guild_panel().roster.is_empty());
                 drop(link);
                 task.await?;
                 Ok::<(), Error>(())

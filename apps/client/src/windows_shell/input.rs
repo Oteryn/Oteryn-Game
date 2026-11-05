@@ -11,9 +11,11 @@ impl Application {
         if let Some(play) = &mut self.play {
             if play.link.animus_input(events)
                 || play.link.prey_input(events)
+                || play.link.task_board_input(events)
                 || play.link.wheel_input(events)
                 || play.link.exiva_input(events)
                 || play.link.loyalty_skills_input(events)
+                || play.link.guild_input(events)
                 || play.link.stash_input(events)
                 || play.link.quest_input(events)
                 || play.link.boss_difficulty_input(events)
@@ -27,6 +29,7 @@ impl Application {
                 || play.link.hotkey_equip_input(events)
                 || play.link.item_forge_input(events)
                 || play.link.store_input(events)
+                || play.link.vip_input(events)
                 || play.link.vip_presence_input(events)
                 || play.link.weapon_proficiency_input(events)
             {

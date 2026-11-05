@@ -67,7 +67,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             620,
-            480,
+            680,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -100,6 +100,11 @@ fn run(
         ] {
             control(hwnd, "BUTTON", label, id, [x, 325, 140, 30], WS_TABSTOP);
         }
+        let details = control(
+            hwnd, "EDIT", "", 106, [10, 365, 580, 260],
+            WS_BORDER | WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
+        );
+        let mut held_text = String::new();
         let mut held = None;
         loop {
             let mut message: MSG = std::mem::zeroed();
@@ -111,9 +116,20 @@ fn run(
                 break;
             }
             let Some(shared) = weak.upgrade() else {
+                DestroyWindow(hwnd);
                 break;
             };
             let mut mailbox = lock(&shared);
+            if commands.is_closed() {
+                DestroyWindow(hwnd);
+                break;
+            }
+            let text = oteryn_client_ui::task_board::panel_text(&mailbox.task_board)
+                .replace('\n', "\r\n");
+            if held_text != text {
+                SetWindowTextW(details, wide(&text).as_ptr());
+                held_text = text;
+            }
             for id in std::mem::take(&mut actions.0) {
                 let row = u8::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
                     .ok()

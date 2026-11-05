@@ -1,4 +1,6 @@
 //! Server-owned weekly Task Board panel.
+mod input;
+pub use input::open_key;
 pub use oteryn_client_runtime::task_board::{
     CommandStatus, TaskBoardCommand, TaskBoardResponse, task_board,
 };

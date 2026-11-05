@@ -30,6 +30,8 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    /// Latest complete live map window, reduced before publication.
+    pub map: Option<Box<oteryn_session::world_map::WorldMapViewSnapshot>>,
     /// Transient domain-16 updates, reduced before publication to the shell.
     pub quests: Vec<oteryn_session::AppliedDelta<oteryn_client_runtime::quest_log::QuestLog>>,
     /// Transient domain-57 messages retained in order; they are never coalesced to one value.
@@ -48,6 +50,7 @@ pub struct Pushed {
 impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
+        self.map = newer.map.or(self.map.take());
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
         self.server_messages.append(newer.server_messages);
@@ -66,6 +69,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) map: Option<Box<oteryn_session::world_map::WorldMapViewSnapshot>>,
     pub(super) boss_difficulty: oteryn_client_ui::boss_difficulty::BossDifficultyPanel,
     pub(super) browse_field: oteryn_client_ui::browse_field::BrowseFieldPanel,
     pub(super) chat_party_room: oteryn_client_ui::chat_party_room::ChatPartyRoomPanel,
@@ -172,7 +176,16 @@ impl Outbox {
                 );
             }
         }
+        let has_map = events
+            .iter()
+            .any(|event| matches!(event, SessionEvent::WorldMap(_)));
+        if has_map && mailbox.pushed.map.is_none() {
+            mailbox.pushed.map = mailbox.map.clone();
+        }
         coalesce_pushed(&mut mailbox.pushed, events);
+        if has_map {
+            mailbox.map = mailbox.pushed.map.clone();
+        }
         mailbox.check_server_messages();
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
@@ -293,6 +306,7 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
+        mailbox.vip.open = false;
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
         mailbox.prey_shutdown = true;

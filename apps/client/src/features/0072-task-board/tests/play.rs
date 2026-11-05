@@ -107,7 +107,14 @@ fn task_board_controls_use_the_real_codec_and_show_refusals() -> Result<(), Erro
                     outbox,
                 ));
                 selected(&link).await?;
-                link.task_board_request(Intent::Refresh);
+                let input = oteryn_input_actions::NormalizedInputEvent::Key {
+                    code: oteryn_input_actions::KeyCode::new(18)?,
+                    state: oteryn_input_actions::ButtonState::Pressed,
+                    modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control),
+                    repeat: false,
+                };
+                assert!(link.task_board_input(&[input]));
+                assert!(link.task_board_panel().open);
                 ready(&link).await?;
                 assert!(panel_text(&link.task_board_panel()).contains("oteryn:dragon"));
                 link.task_board_request(Intent::Claim(1));
@@ -127,4 +134,43 @@ fn task_board_controls_use_the_real_codec_and_show_refusals() -> Result<(), Erro
         })?
         .join()
         .map_err(|_| "Task Board UI test thread panicked")?
+}
+
+mod input_tests {
+    use oteryn_client_ui::task_board::*;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+
+    #[test]
+    fn task_board_open_requires_exact_ctrl_o_press() -> Result<(), oteryn_input_actions::InputError>
+    {
+        let event = |code, state, modifiers, repeat| NormalizedInputEvent::Key {
+            code,
+            state,
+            modifiers,
+            repeat,
+        };
+        let key = KeyCode::new(18)?;
+        let ctrl = Modifiers::one(Modifier::Control);
+        assert!(open_key(&[event(key, ButtonState::Pressed, ctrl, false)]));
+        for input in [
+            event(key, ButtonState::Released, ctrl, false),
+            event(key, ButtonState::Pressed, ctrl, true),
+            event(key, ButtonState::Pressed, Modifiers::NONE, false),
+            event(key, ButtonState::Pressed, ctrl.with(Modifier::Shift), false),
+            event(key, ButtonState::Pressed, ctrl.with(Modifier::Alt), false),
+            event(key, ButtonState::Pressed, ctrl.with(Modifier::Super), false),
+            event(KeyCode::new(19)?, ButtonState::Pressed, ctrl, false),
+        ] {
+            assert!(!open_key(&[input]));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn task_board_unavailable_projection_explains_capability() {
+        let mut panel = TaskBoardPanel::default();
+        assert!(request(&mut panel, Intent::Refresh).is_none());
+        assert!(!panel.pending);
+        assert!(panel_text(&panel).contains("unavailable in this session"));
+    }
 }

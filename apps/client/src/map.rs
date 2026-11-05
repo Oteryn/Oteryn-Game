@@ -1,13 +1,9 @@
 //! App composition of pinned assets, deterministic projection and the renderer atlas.
 //!
-//! A bounded square of the actual join floor around its position is decoded once from the
-//! B3 region files, every item is resolved through the pinned 15.30 appearances, and the cells
-//! they need are copied into one static atlas. Walking only rebuilds quads over it. Full map
-//! streaming is milestone 2.
-//!
-//! The data comes from a local asset root laid out like the repository (`OTERYN_ASSET_DIR`);
-//! the installer ships no map or sprite files. Without it, [`World::builtin`] draws only the
-//! builtin cells.
+//! Live play resolves server-supplied map tiles through pinned appearances and sprite sheets.
+//! Offline browsing loads a bounded window from local B3 regions. Both paths build a bounded
+//! atlas and use the same deterministic stack projection. `OTERYN_ASSET_DIR` names the local
+//! asset root; missing sprites use builtin glyphs.
 
 use crate::input::StepDir;
 use oteryn_client_assets::window::{ResolvedWindow, within_draw_cap};
@@ -164,3 +160,6 @@ mod tests;
 #[cfg(test)]
 #[path = "features/0031-tutorial-notices/tests/world.rs"]
 mod tutorial_notice_tests;
+
+#[path = "features/local-world-view/world.rs"]
+mod live_map;

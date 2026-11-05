@@ -11,7 +11,7 @@ use oteryn_client::{ClientBootstrap, GameplayEntryError};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_input_platform::InputPlatformAdapter;
 use oteryn_platform_client::native_login::PublicClass;
-use oteryn_renderer::{SurfacePhase, TileCoord, WindowsRenderer};
+use oteryn_renderer::{AtlasImage, SurfacePhase, TileCoord, WindowsRenderer};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
@@ -57,7 +57,8 @@ struct Application {
     smoke: bool,
     window: Option<Arc<Window>>,
     renderer: Option<WindowsRenderer<Arc<Window>>>,
-    /// The map, loaded once the window exists; the offline scene and the play view share it.
+    atlas: Option<AtlasImage>,
+    /// Local map used by the offline scene.
     world: Option<Arc<World>>,
     /// Without a session: the scene around `offline_own`, which the arrow keys move locally.
     scene: Option<Scene>,
@@ -90,6 +91,7 @@ impl Application {
             smoke,
             window: None,
             renderer: None,
+            atlas: None,
             world: None,
             scene: None,
             offline_own: TileCoord::new(START.0, START.1),
@@ -159,21 +161,7 @@ impl Application {
             return;
         };
         match result {
-            Ok((mut view, link)) => {
-                let center = view.map_center();
-                let (world, reason) = World::from_env(center);
-                if let Some(reason) = reason {
-                    println!("Oteryn: drawing without map sprites: {reason}");
-                }
-                let shown = world.map(Arc::new).and_then(|world| {
-                    view.set_world(Arc::clone(&world))?;
-                    self.world = Some(world);
-                    Ok(())
-                });
-                if shown.is_err() {
-                    self.return_to_login(PublicClass::SessionUnavailable);
-                    return;
-                }
+            Ok((view, link)) => {
                 self.scene = None;
                 self.play = Some(Play {
                     view,
@@ -255,7 +243,7 @@ impl ApplicationHandler for Application {
             world
         };
         let shown = match &mut self.play {
-            Some(play) => play.view.set_world(Arc::clone(&world)),
+            Some(_) => Ok(()),
             None => self.rebuild_offline(),
         };
         if shown.is_err() {
@@ -271,8 +259,8 @@ impl ApplicationHandler for Application {
             self.fail(event_loop, ShellError::RendererInitialization);
             return;
         };
-        // One atlas for the offline scene and the play view, uploaded once.
         renderer.set_atlas(world.atlas().clone());
+        self.atlas = Some(world.atlas().clone());
         window.request_redraw();
         self.window = Some(window);
         self.renderer = Some(renderer);
@@ -335,11 +323,17 @@ impl ApplicationHandler for Application {
                     .or(self.scene.as_ref());
                 if let (Some(renderer), Some(scene)) = (&mut self.renderer, scene)
                     && redraw_eligible(Some(renderer.state().phase()))
-                    && renderer
+                {
+                    if self.atlas.as_ref() != Some(scene.atlas()) {
+                        renderer.set_atlas(scene.atlas().clone());
+                        self.atlas = Some(scene.atlas().clone());
+                    }
+                    if renderer
                         .render_batches(self.generation, scene.tiles(), scene.sprites())
                         .is_err()
-                {
-                    self.fail(event_loop, ShellError::RendererRender);
+                    {
+                        self.fail(event_loop, ShellError::RendererRender);
+                    }
                 }
             }
             _ => {}
@@ -359,7 +353,7 @@ impl ApplicationHandler for Application {
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
             let status = play.view.combat_status();
             if status != play.status {
-                window.set_title(&format!("Oteryn — {status}"));
+                window.set_title(&format!("Oteryn — {status} — Ctrl+G: Guild"));
                 play.status = status;
             }
         }

@@ -1,6 +1,6 @@
 //! Session task phases: receive one shell command, service the session, and publish its result.
 
-use super::{Outbox, public_class, step_direction};
+use super::{Outbox, feature_0043_vip::protocol::send_vip, public_class, step_direction};
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
 use oteryn_session::{
     LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome, WorldSpatialEntity,
@@ -298,14 +298,14 @@ fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpa
     }
 }
 
-/// The session task, run on the client runtime: sends requested steps and, while none is
-/// pending, keeps servicing liveness so an idle session is not dropped. It ends with the first
-/// session error (reported with its public class) or when the shell drops its link.
+/// Initializes the live map and serves shell commands and idle liveness.
+/// Ends on the first session error (with its public class) or when the shell drops its link.
 pub async fn run_session<T: Stepper>(
     mut session: T,
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
@@ -527,7 +527,7 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Vip(request)) => match session.vip(&request).await {
+            Ok(PlayCommand::Vip(request)) => match send_vip(&mut session, &request).await {
                 Ok(response) => {
                     outbox.vip_result(&response);
                     publish(&mut session, &outbox, &mut held);
@@ -535,9 +535,9 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Guild(command)) => match session.guild(&command).await {
-                Ok(reply) => {
-                    outbox.guild_result(&reply);
+            Ok(PlayCommand::Guild(command)) => match outbox.guild_run(&mut session, &command).await
+            {
+                Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

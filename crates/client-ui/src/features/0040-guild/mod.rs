@@ -1,3 +1,5 @@
+mod input;
+pub use input::open_key;
 pub use oteryn_client_runtime::guild::{GuildCommand, GuildReply, guild};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,7 +42,7 @@ pub fn request(panel: &mut GuildPanel, intent: Intent) -> Option<GuildCommand> {
         }),
         Intent::MoreRoster => GuildCommand::Query(guild::GuildQuery::Roster {
             guild: panel.own.as_ref()?.guild,
-            after: panel.next,
+            after: Some(panel.next?),
         }),
         Intent::Found(name) => GuildCommand::Intent(guild::GuildIntent::Found { name }),
         Intent::Invite(name) => GuildCommand::Intent(guild::GuildIntent::Invite {
@@ -92,6 +94,10 @@ pub fn apply_result(panel: &mut GuildPanel, reply: &GuildReply) {
             result: Some(guild::GuildQueryResult::Own(value)),
             ..
         } => {
+            if panel.own.as_ref().map(|own| own.guild) != value.as_ref().map(|own| own.guild) {
+                panel.roster.clear();
+                panel.next = None;
+            }
             panel.own.clone_from(value);
             panel.feedback = None;
         }
@@ -174,3 +180,7 @@ mod tests {
         assert!(panel_text(&panel).contains("refused (code 5)"));
     }
 }
+
+#[cfg(test)]
+#[path = "tests.rs"]
+mod flow_tests;

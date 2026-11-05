@@ -145,6 +145,10 @@ fn depot_client_admits_bundle_browses_and_waits_for_committed_inventory() -> Res
         admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
         let mut session = Session::admit(client, admission).await?;
         assert!(session.is_selected(18));
+        let map = session.world_map_snapshot().ok_or("join map")?;
+        assert_eq!(map.header.origin, at(0, 0));
+        assert_eq!(map.header.bundle_digest, [0x22; 32]);
+        assert!(map.tiles.is_empty());
         assert!(session.world_object_overlay().is_empty());
         let browse = DepotIntent {
             town: None,
