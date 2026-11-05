@@ -72,7 +72,12 @@ impl<'a> SeamRooms<'a> {
         }
     }
 
-    /// The world item casts and their commit.
+    /// MAGIC-ITEMS-1: conjure and its durable reagent/product commit.
+    pub fn gate_conjure_cast(&self) -> Option<&'a QualifiedNativeEntryRoom> {
+        self.combat
+    }
+
+    /// MAGIC-SUMMON-1: random item grants and their commit.
     pub fn gate_world_item_cast(&self) -> Option<&'a QualifiedNativeEntryRoom> {
         self.qualified
     }

@@ -1,0 +1,482 @@
+{
+  "schema_version": 1,
+  "corpus": "DONOR-REGRESSION-01",
+  "issue": "https://github.com/Oteryn/Oteryn-Game/issues/710",
+  "packet": "710 DONOR-F27-F33",
+  "base_ref": "origin/main",
+  "base_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+  "candidate": "uncommitted working tree; tested_commit denotes the production base with packet fixture overlay",
+  "fixture_numbering": "The 25 canonical numbered corpus cases in #710; F25-F35 are donor findings, not 25 fixture IDs.",
+  "allowed_statuses": [
+    "REQUIRED_NOT_EXECUTED",
+    "BLOCKED_OWNER",
+    "EXECUTABLE",
+    "PASS",
+    "FAIL",
+    "SUPERSEDED"
+  ],
+  "donor_policy": "Behavioral regression evidence only; never Reference truth or runtime authority.",
+  "fixtures": [
+    {
+      "fixture_id": "CORPUS-01",
+      "finding": null,
+      "donor_locator": {
+        "corpus": "https://github.com/Oteryn/Oteryn-Game/issues/710#canonical-minimal-regression-corpus",
+        "ordinal": 1,
+        "exact_upstream_locator": null,
+        "note": "The canonical row does not retain an exact donor revision; verify before execution."
+      },
+      "invariant": "Queued writes after socket closure cannot reacquire transport or controller authority.",
+      "owner": "FND-03 / Server Seam",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "write queued after socket close"
+    },
+    {
+      "fixture_id": "CORPUS-02",
+      "finding": null,
+      "donor_locator": {
+        "corpus": "https://github.com/Oteryn/Oteryn-Game/issues/710#canonical-minimal-regression-corpus",
+        "ordinal": 2,
+        "exact_upstream_locator": null,
+        "note": "The canonical row does not retain an exact donor revision; verify before execution."
+      },
+      "invariant": "A late successful write completion after forced close cannot revive the closed session.",
+      "owner": "FND-03 / Server Seam",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "successful write completion after forced close"
+    },
+    {
+      "fixture_id": "CORPUS-03",
+      "finding": "F25",
+      "donor_locator": "opentibiabr/canary@d9fba17031176975ef958efd0c2e6a8b6b941856",
+      "invariant": "Saturated ordinary work cannot silently drop ownership or fencing cleanup.",
+      "owner": "FND-03 / Server Seam + FND-04",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "ownership cleanup rejected by saturated queue"
+    },
+    {
+      "fixture_id": "CORPUS-04",
+      "finding": "F25",
+      "donor_locator": "opentibiabr/canary@d9fba17031176975ef958efd0c2e6a8b6b941856",
+      "invariant": "Shutdown resolves retained cleanup retries without zombie session authority.",
+      "owner": "FND-03 / Server Seam + FND-04",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "shutdown while cleanup retry exists"
+    },
+    {
+      "fixture_id": "CORPUS-05",
+      "finding": "F26",
+      "donor_locator": "zimbadev/crystalserver@75e9c72e33ce2c3f193e4f2d2ff17ebae4bbfaac",
+      "invariant": "Malformed counts are rejected without arithmetic or loop-index wrap.",
+      "owner": "FND-02",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "malformed count causes no loop/index wrap"
+    },
+    {
+      "fixture_id": "CORPUS-06",
+      "finding": "F26",
+      "donor_locator": "zimbadev/crystalserver@75e9c72e33ce2c3f193e4f2d2ff17ebae4bbfaac",
+      "invariant": "Maximum wire counts have bounded work and cannot monopolize a serial owner.",
+      "owner": "FND-02",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "max wire count does not monopolize owner"
+    },
+    {
+      "fixture_id": "CORPUS-07",
+      "finding": null,
+      "donor_locator": {
+        "corpus": "https://github.com/Oteryn/Oteryn-Game/issues/710#canonical-minimal-regression-corpus",
+        "ordinal": 7,
+        "exact_upstream_locator": null,
+        "note": "The canonical row does not retain an exact donor revision; verify before execution."
+      },
+      "invariant": "A delayed callback cannot mutate a replacement entity incarnation.",
+      "owner": "FND-03 + FND-04",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "stale delayed callback after entity replacement"
+    },
+    {
+      "fixture_id": "CORPUS-08",
+      "finding": null,
+      "donor_locator": {
+        "corpus": "https://github.com/Oteryn/Oteryn-Game/issues/710#canonical-minimal-regression-corpus",
+        "ordinal": 8,
+        "exact_upstream_locator": null,
+        "note": "The canonical row does not retain an exact donor revision; verify before execution."
+      },
+      "invariant": "Mutating an offered container subtree invalidates or reconciles the trade under current item authority.",
+      "owner": "GAME-ITEM-01 + DUR-03",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "offered container subtree mutation"
+    },
+    {
+      "fixture_id": "CORPUS-09",
+      "finding": null,
+      "donor_locator": {
+        "corpus": "https://github.com/Oteryn/Oteryn-Game/issues/710#canonical-minimal-regression-corpus",
+        "ordinal": 9,
+        "exact_upstream_locator": null,
+        "note": "The canonical row does not retain an exact donor revision; verify before execution."
+      },
+      "invariant": "Split, consume and decay during trade preserve exact value and cannot reuse stale trade authority.",
+      "owner": "GAME-ITEM-01 + DUR-03",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "split/consume/decay during trade"
+    },
+    {
+      "fixture_id": "CORPUS-10",
+      "finding": null,
+      "donor_locator": {
+        "corpus": "https://github.com/Oteryn/Oteryn-Game/issues/710#canonical-minimal-regression-corpus",
+        "ordinal": 10,
+        "exact_upstream_locator": null,
+        "note": "The canonical row does not retain an exact donor revision; verify before execution."
+      },
+      "invariant": "The same decay occurrence applies at most once.",
+      "owner": "GAME-ITEM-01 + DUR-03",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "duplicate active decay occurrence"
+    },
+    {
+      "fixture_id": "CORPUS-11",
+      "finding": "F31",
+      "donor_locator": "OpenCoreMMO/OpenCoreMMO@25636e7e61e5991008f048d26389934ccc9448f8",
+      "invariant": "Custody transfers preserve the selected temporal mode without reset, accidental pause or double charge.",
+      "owner": "GAME-ITEM-01 + DUR-03",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "temporal state survives custody-surface transfer"
+    },
+    {
+      "fixture_id": "CORPUS-12",
+      "finding": "F32",
+      "donor_locator": "diegoQuinas/oxidia@2d5de950005ed460b6608bd036d29b1eae965f44",
+      "invariant": "Parent reorder cannot redirect a nested-container mutation to a replacement item.",
+      "owner": "GAME-ITEM-01 + DUR-03",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "nested container parent reorder"
+    },
+    {
+      "fixture_id": "CORPUS-13",
+      "finding": "F32",
+      "donor_locator": "diegoQuinas/oxidia@2d5de950005ed460b6608bd036d29b1eae965f44",
+      "invariant": "Presentation slots and stale handles cannot authorize mutation of a replacement ItemInstance.",
+      "owner": "GAME-ITEM-01 + DUR-03",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "stale slot/view locator cannot target replacement item"
+    },
+    {
+      "fixture_id": "CORPUS-14",
+      "finding": null,
+      "donor_locator": {
+        "corpus": "https://github.com/Oteryn/Oteryn-Game/issues/710#canonical-minimal-regression-corpus",
+        "ordinal": 14,
+        "exact_upstream_locator": null,
+        "note": "The canonical row does not retain an exact donor revision; verify before execution."
+      },
+      "invariant": "Partial inbox delivery rolls back or reconciles with exact item conservation.",
+      "owner": "DUR-03",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "partial inbox delivery rolls back/reconciles"
+    },
+    {
+      "fixture_id": "CORPUS-15",
+      "finding": null,
+      "donor_locator": {
+        "corpus": "https://github.com/Oteryn/Oteryn-Game/issues/710#canonical-minimal-regression-corpus",
+        "ordinal": 15,
+        "exact_upstream_locator": null,
+        "note": "The canonical row does not retain an exact donor revision; verify before execution."
+      },
+      "invariant": "A full destination cannot commit a partial mint or move.",
+      "owner": "DUR-03",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "full destination never causes partial mint/move"
+    },
+    {
+      "fixture_id": "CORPUS-16",
+      "finding": "F28",
+      "donor_locator": "otland/forgottenserver@99a26db7207a9e94099866678ae8457124139250",
+      "invariant": "An old House view cannot authorize mutation after current ACL revocation.",
+      "owner": "EXP-HOUSES-01 + GAME-ITEM-01 + DUR-03",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "ACL revoked after container already opened"
+    },
+    {
+      "fixture_id": "CORPUS-17",
+      "finding": "F29",
+      "donor_locator": "opentibiabr/canary@1ff6943ae553d839011492b32b66a7664fdad63d",
+      "invariant": "An offline reclaim subject receives a legal destination or retains typed pending custody; no item disappears.",
+      "owner": "EXP-HOUSES-01 + DUR-03",
+      "test_locator": "apps/game-server/tests/support/house_interior_postgres_cases/f29_reclaim_subject.rs::f29_offline_subject_receives_exact_items",
+      "tested_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+      "status": "PASS",
+      "scenario": "offline reclaim subject during eviction",
+      "test_kind": "PostgreSQL integration with native owner",
+      "evidence_run": "f29"
+    },
+    {
+      "fixture_id": "CORPUS-18",
+      "finding": "F29",
+      "donor_locator": "opentibiabr/canary@1ff6943ae553d839011492b32b66a7664fdad63d",
+      "invariant": "Inbox exhaustion retains original item custody and the pending operation atomically.",
+      "owner": "EXP-HOUSES-01 + DUR-03",
+      "test_locator": "apps/game-server/tests/support/house_interior_postgres_cases/f29_reclaim_subject.rs::f29_full_inbox_retains_pending_custody",
+      "tested_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+      "status": "PASS",
+      "scenario": "full inbox/depot during reclaim",
+      "test_kind": "PostgreSQL integration with native owner",
+      "evidence_run": "f29"
+    },
+    {
+      "fixture_id": "CORPUS-19",
+      "finding": "F30",
+      "donor_locator": "opentibiabr/canary@ae423e0e75078635019392031818a405eba12608",
+      "invariant": "Nested evacuation abort restores the exact original ItemInstanceIds, quantities and containment endpoints.",
+      "owner": "EXP-HOUSES-01 + GAME-ITEM-01 + DUR-03",
+      "test_locator": "apps/game-server/tests/support/house_interior_postgres_cases/f30_nested_evacuation.rs::f30_nested_evacuation_abort_restores_exact_identity_set",
+      "tested_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+      "status": "PASS",
+      "scenario": "nested/wrapped house-container evacuation",
+      "test_kind": "PostgreSQL integration with native owner",
+      "evidence_run": "f30"
+    },
+    {
+      "fixture_id": "CORPUS-20",
+      "finding": "F30",
+      "donor_locator": "opentibiabr/canary@ae423e0e75078635019392031818a405eba12608",
+      "invariant": "Successful evacuation moves exactly the original ItemInstanceIds without loss or duplication.",
+      "owner": "DUR-03 + EXP-HOUSES-01",
+      "test_locator": "apps/game-server/tests/support/house_interior_postgres_cases/f30_nested_evacuation.rs::f30_flat_evacuation_moves_exact_identity_set",
+      "tested_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+      "status": "PASS",
+      "scenario": "exact-N content conservation over lifecycle transfer",
+      "test_kind": "PostgreSQL integration with native owner",
+      "evidence_run": "f30"
+    },
+    {
+      "fixture_id": "CORPUS-21",
+      "finding": "F27",
+      "donor_locator": "opentibiabr/canary@b14adcfdd9ed8e2c4c8f54f031c3b34436bdf50a",
+      "invariant": "Death, respawn and reconnect retire old external-container handles; fresh observation is required.",
+      "owner": "Client projection + FND-04 + DUR-03",
+      "test_locator": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/donor_f27_container_after_death.rs::donor_f27_container_handle_refused_after_death_respawn_reconnect",
+      "tested_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+      "status": "PASS",
+      "scenario": "external container destroyed/replaced by death/despawn",
+      "test_kind": "PostgreSQL integration with native owner",
+      "evidence_run": "dispatch"
+    },
+    {
+      "fixture_id": "CORPUS-22",
+      "finding": null,
+      "donor_locator": {
+        "corpus": "https://github.com/Oteryn/Oteryn-Game/issues/710#canonical-minimal-regression-corpus",
+        "ordinal": 22,
+        "exact_upstream_locator": null,
+        "note": "The canonical row does not retain an exact donor revision; verify before execution."
+      },
+      "invariant": "Re-seeing an entity requires a current incarnation mapping rather than a retired projection.",
+      "owner": "Client projection + owning entity domain",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "remove/re-see entity requires current mapping"
+    },
+    {
+      "fixture_id": "CORPUS-23",
+      "finding": "F33",
+      "donor_locator": "opentibiabr/canary@6725cfa3a8cf4636fd046f2087635a646d89d7f0",
+      "invariant": "Shrink from a high page to 21 entries clamps or resyncs to a valid page; offset 40 cannot dangle.",
+      "owner": "Client projection + owning container domain",
+      "test_locator": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/donor_f33_container_page.rs::donor_f33_shrink_resyncs_and_proximity_retires_handles",
+      "tested_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+      "status": "PASS",
+      "scenario": "container page invalid after shrink",
+      "test_kind": "synthetic projection",
+      "evidence_run": "dispatch"
+    },
+    {
+      "fixture_id": "CORPUS-24",
+      "finding": "F33",
+      "donor_locator": "opentibiabr/canary@6725cfa3a8cf4636fd046f2087635a646d89d7f0",
+      "invariant": "Proximity or access loss retires the view and all of its interaction handles.",
+      "owner": "Client projection + owning container domain",
+      "test_locator": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/donor_f33_container_page.rs::donor_f33_shrink_resyncs_and_proximity_retires_handles",
+      "tested_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+      "status": "PASS",
+      "scenario": "proximity/access loss invalidates view capability",
+      "test_kind": "synthetic projection",
+      "evidence_run": "dispatch"
+    },
+    {
+      "fixture_id": "CORPUS-25",
+      "finding": null,
+      "donor_locator": {
+        "corpus": "https://github.com/Oteryn/Oteryn-Game/issues/710#canonical-minimal-regression-corpus",
+        "ordinal": 25,
+        "exact_upstream_locator": null,
+        "note": "The canonical row does not retain an exact donor revision; verify before execution."
+      },
+      "invariant": "A stale projection result cannot authorize mutation of current domain state.",
+      "owner": "Client projection + owning mutation domain",
+      "test_locator": null,
+      "tested_commit": null,
+      "status": "REQUIRED_NOT_EXECUTED",
+      "scenario": "stale projection result cannot mutate current state"
+    }
+  ],
+  "coverage_limits": {
+    "F27": "External Ground container, real durable death/respawn, and native reconnect session projection; does not claim same-connection death E2E or every external custody surface.",
+    "F29": {
+      "retired_subject": {
+        "status": "BLOCKED_OWNER",
+        "reason": "Native Character root lifecycle accepts only 1; no native retirement operation is available. Never fabricate lifecycle=2 or weaken the constraint.",
+        "locator": "apps/game-server/migrations/0005_character_authority.sql:game_character_roots"
+      },
+      "transfer_pending_binding_restriction_world_mismatch": "REQUIRED_NOT_EXECUTED; outside the offline/full fixtures"
+    },
+    "F30": "Native inbox refuses containers with contents; nested case proves exact-ID custody restoration and pending disposition, not successful nested delivery. Flat control proves successful evacuation.",
+    "F33": "Native page capacity is 30. Offset 40 is refused; refresh_index(40,21) clamps to 0. The executable projection seeks native offset 30 then shrinks to 21."
+  },
+  "verification": {
+    "red": {
+      "production_modified": false,
+      "dispatch": {
+        "command": "cargo test -p oteryn-gameplay-dispatch --lib donor_f",
+        "passed": 0,
+        "failed": 2,
+        "probes": {
+          "F27": "Retain predecessor handle table: old root/child handle unexpectedly resolves.",
+          "F33": "Omit shrink observation: no refreshed delta is emitted."
+        }
+      },
+      "f29": {
+        "command": "cargo test -p oteryn-game-server --test house_interior_postgres f29",
+        "passed": 0,
+        "failed": 2,
+        "probe": "Omit child ItemInstanceId from expected closed set; identity equality fails."
+      },
+      "f30": {
+        "command": "cargo test -p oteryn-game-server --test house_interior_postgres f30",
+        "passed": 0,
+        "failed": 2,
+        "probe": "Omit child ItemInstanceId from expected closed set; identity equality fails."
+      }
+    },
+    "command_correction": "The supplied server command with both f29 and f30 is rejected by Cargo (one TESTNAME argument). Run the same target separately with f29 and f30; no broader suite.",
+    "green": {
+      "dispatch": {
+        "command": "cargo test -p oteryn-gameplay-dispatch --lib donor_f",
+        "tested_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+        "passed": 2,
+        "failed": 0,
+        "per_test": {
+          "gameplay_transport::monk_save::postgres_tests::donor_f33_container_page::donor_f33_shrink_resyncs_and_proximity_retires_handles": {
+            "passed": 1,
+            "failed": 0
+          },
+          "gameplay_transport::monk_save::postgres_tests::donor_f27_container_after_death::donor_f27_container_handle_refused_after_death_respawn_reconnect": {
+            "passed": 1,
+            "failed": 0
+          }
+        },
+        "postgres_started_lines": [
+          "POSTGRES_STARTED donor_f27: death receipt and respawn consumed on PostgreSQL 18.6"
+        ],
+        "log_sha256": "672e80c0bd2c523fe17d560b77faae5ce9662b80077c883de703ef93e846b38b"
+      },
+      "f29": {
+        "command": "cargo test -p oteryn-game-server --test house_interior_postgres f29",
+        "tested_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+        "passed": 2,
+        "failed": 0,
+        "per_test": {
+          "house_interior_postgres_cases::f29_reclaim_subject::f29_offline_subject_receives_exact_items": {
+            "passed": 1,
+            "failed": 0
+          },
+          "house_interior_postgres_cases::f29_reclaim_subject::f29_full_inbox_retains_pending_custody": {
+            "passed": 1,
+            "failed": 0
+          }
+        },
+        "postgres_started_lines": [
+          "POSTGRES_STARTED f29: exact 2 identities; nested=false full=false",
+          "POSTGRES_STARTED f29: exact 2 identities; nested=false full=true"
+        ],
+        "log_sha256": "fe442f1485914489d78323f37fc6fa41cd5323d3c67bf8ffa51248fa86e0d98d"
+      },
+      "f30": {
+        "command": "cargo test -p oteryn-game-server --test house_interior_postgres f30",
+        "tested_commit": "99c6716bccdb5d687788747f1cdf2d81456842f5",
+        "passed": 2,
+        "failed": 0,
+        "per_test": {
+          "house_interior_postgres_cases::f30_nested_evacuation::f30_nested_evacuation_abort_restores_exact_identity_set": {
+            "passed": 1,
+            "failed": 0
+          },
+          "house_interior_postgres_cases::f30_nested_evacuation::f30_flat_evacuation_moves_exact_identity_set": {
+            "passed": 1,
+            "failed": 0
+          }
+        },
+        "postgres_started_lines": [
+          "POSTGRES_STARTED f30: exact 2 identities; nested=true full=false",
+          "POSTGRES_STARTED f29: exact 2 identities; nested=false full=false"
+        ],
+        "log_sha256": "1b9282521b92d39a6249790f8eff329b104c7289b9102fc7f20929773e8b724e"
+      }
+    },
+    "scope": "Only the requested dispatch filter and the two separate House filters ran. No full nextest or full PostgreSQL suite. Production files unchanged. No commit created.",
+    "self_review": "All six packet files reviewed: production mutation, role/DDL change, new authority owner, ignored tests and weakening absent. Focused rustfmt --check and diff whitespace check passed. Limits are explicit above.",
+    "fixture_source_sha256": {
+      "apps/game-server/tests/support/house_interior_postgres_cases/f29_reclaim_subject.rs": "def88117ceeda0209407a83bff5c1a578ba7a41ff70952ae6a49d267a63187d1",
+      "apps/game-server/tests/support/house_interior_postgres_cases/f30_nested_evacuation.rs": "61647652d10968baa3f1be738bc51d5a5f9dda5f43ca07b8879904f0ab1e604d",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/donor_f27_container_after_death.rs": "edbf8b8b4f44bea9b8bd913f4e5438dbf8e5f6aa5ee932f1804c87350d197ca6",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/donor_f33_container_page.rs": "aaa0b26186360c0f99ad589f9c68ec7a76b22fc24049c5116fe4500042c94ef2",
+      "apps/game-server/tests/support/house_interior_postgres_cases.rs": "ff449bb51bde52d6317e270c596fbfeb5a437dd71fc0fdc0a935d560eadfbdef"
+    }
+  },
+  "retained_donor_corrections": {
+    "F35": {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ac447fef0935e6df52dc6b6376ae4c1534ecd73f",
+      "path": "src/io/ioweeklytasks.cpp",
+      "blob_sha": "9748b30a96d0dae3689d42851301d3bd2db54eea",
+      "note": "The blob SHA is not a commit SHA. Architecture coverage is not implementation PASS."
+    }
+  }
+}

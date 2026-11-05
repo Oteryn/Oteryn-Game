@@ -18,21 +18,29 @@ const MISSILE: &str = "oteryn:item.tibia.i3198";
 
 #[test]
 fn magic2_conjure_postgres_full_bag_rolls_back_then_merges_mints_and_replays() -> TestResult {
-    large_stack(|| scenario(true, false))
+    large_stack(|| scenario(true, false, false))
 }
 
 #[test]
 fn magic2_conjure_postgres_missing_bag_rolls_back_and_missing_reagent_is_terminal() -> TestResult {
     large_stack(|| {
-        scenario(false, true)?;
-        scenario(false, false)
+        scenario(false, true, false)?;
+        scenario(false, false, false)
     })
 }
 
-fn scenario(full: bool, missing_reagent: bool) -> TestResult {
-    run(async |admin| {
+#[test]
+fn magic2_conjure_postgres_bundle_world_mints_once() -> TestResult {
+    large_stack(|| {
+        scenario(true, false, true)?;
+        scenario(false, false, true)
+    })
+}
+
+fn scenario(full: bool, missing_reagent: bool, bundle: bool) -> TestResult {
+    run(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, "magic2_conjure", true, false).await?;
-        eprintln!("POSTGRES_STARTED MAGIC-2 conjure full={full}");
+        eprintln!("POSTGRES_STARTED MAGIC-2 conjure full={full} bundle={bundle}");
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -50,15 +58,34 @@ fn scenario(full: bool, missing_reagent: bool) -> TestResult {
         )?;
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native gameplay")?;
-        let room = pin.qualified_room();
+        let map = bundle.then(crate::map::spell_tiles::tests::movement_arena::world);
+        let bundle_room = map
+            .as_ref()
+            .map(|map| -> TestResult<_> {
+                let entry = pin.qualified_room();
+                entry
+                    .bundle_view(
+                        map.movement_cells(entry.movement_cells()).map_err(debug)?,
+                        map.frame_binding_digest(world),
+                        map.map_revision_digest(),
+                        crate::content::NativeEntryStart {
+                            x: 100,
+                            y: 100,
+                            floor: 7,
+                        },
+                    )
+                    .ok_or_else(|| "bundle conjure room".into())
+            })
+            .transpose()?;
+        let room = bundle_room.as_ref().unwrap_or(pin.qualified_room());
         let channel_pin = ChannelContentPin::from_activation(
             world,
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
+            room.frame_binding().digest(),
             room.map_revision_digest(),
-            (2, 11, -7),
+            if bundle { (100, 100, 7) } else { (2, 11, -7) },
         );
         let deps =
             Dependencies::with_content(channel_pin, room.clone(), native.spell_book().clone())?;
@@ -83,7 +110,8 @@ fn scenario(full: bool, missing_reagent: bool) -> TestResult {
         }
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.rooms = SeamRooms::new(Some(room), Some(room));
+        owner.rooms = SeamRooms::new(if bundle { None } else { Some(room) }, Some(room));
+        assert_eq!(owner.bundle_map().is_some(), bundle);
         let formula = native.training_formula().ok_or("training formula")?;
         let build = convert_vocation(
             formula,
@@ -156,7 +184,7 @@ fn scenario(full: bool, missing_reagent: bool) -> TestResult {
             .bind(id(42).as_slice()).bind(id(43).as_slice())
             .bind(pin.identity().server_artifact_digest().as_slice())
             .bind(pin.identity().client_artifact_digest().as_slice())
-            .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            .bind(room.frame_binding().digest().as_slice()).execute(&h.pool).await?;
         let find = |result| -> TestResult<SpellCastIntent> {
             let spell = (1..=u32::try_from(native.spell_book().source_len())?)
                 .filter_map(NonZeroU32::new).find(|index| {
@@ -252,6 +280,12 @@ fn scenario(full: bool, missing_reagent: bool) -> TestResult {
             SpellCastDisposition::CoolingDown
         );
         assert_eq!(owner.observe_vitals(actor, session).await, Some(after));
+        eprintln!(
+            "MAGIC-2 COUNTS bundle={bundle} receipts={} blank={} missile={} replay=unchanged",
+            receipt_count(&h).await?,
+            quantity(&h, BLANK).await?,
+            quantity(&h, MISSILE).await?
+        );
         drop(owner);
         drop(authority);
         drop(seal);

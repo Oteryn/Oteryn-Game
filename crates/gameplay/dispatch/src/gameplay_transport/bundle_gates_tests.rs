@@ -196,14 +196,26 @@ const INVENTORY: &[Entry] = &[
         },
         calls: &[],
     },
-    // `random_item_grant`: SPELL-RT-WORLD-1 (MAGIC-SUMMON-1 graph); `conjure`: MAGIC-ITEMS-1.
+    Entry {
+        gate: "conjure cast and its commit",
+        plan: "`conjure` world item cast",
+        accessor: "gate_conjure_cast",
+        key: "",
+        state: Gate::Open {
+            batch: "MAGIC-ITEMS-1",
+            // Provisional packet issue; replace with the landing PR number for #2062.
+            pr: 2062,
+        },
+        calls: &[("gameplay_transport/world_item_cast.rs", 2)],
+    },
+    // `random_item_grant`: SPELL-RT-WORLD-1 (MAGIC-SUMMON-1 graph).
     Entry {
         gate: "world item cast and its commit",
         plan: "world item casts",
         accessor: "gate_world_item_cast",
         key: "",
         state: Gate::Closed {
-            owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
+            owners: &["MAGIC-SUMMON-1"],
         },
         calls: &[("gameplay_transport/world_item_cast.rs", 2)],
     },

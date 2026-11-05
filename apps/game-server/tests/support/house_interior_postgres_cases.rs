@@ -15,6 +15,10 @@ use sqlx::{Connection, PgConnection};
 
 #[path = "house_interior_postgres_cases/f28_house_acl.rs"]
 mod f28_house_acl;
+#[path = "house_interior_postgres_cases/f29_reclaim_subject.rs"]
+mod f29_reclaim_subject;
+#[path = "house_interior_postgres_cases/f30_nested_evacuation.rs"]
+mod f30_nested_evacuation;
 
 const HOUSE: &str = "oteryn:content.house.thais_1";
 const WORLD: &str = "01010101-0101-7101-8101-010101010101";

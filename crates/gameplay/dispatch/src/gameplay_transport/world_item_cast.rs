@@ -784,7 +784,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(content) = active.native_gameplay() else {
             return rejected();
         };
-        if self.rooms.gate_world_item_cast().is_none() {
+        let room = if key == "conjure" {
+            self.rooms.gate_conjure_cast()
+        } else {
+            self.rooms.gate_world_item_cast()
+        };
+        if room.is_none() {
             return rejected();
         }
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
@@ -930,8 +935,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
-            let room=owner.rooms.gate_world_item_cast().ok_or(DurabilityError::Unavailable)?;
             let spell=owner.spells.indexed(intent.spell).ok_or(DurabilityError::Unavailable)?;
+            let room=if matches!(spell.execution,Execution::Conjure{..}){
+                owner.rooms.gate_conjure_cast()
+            }else{
+                owner.rooms.gate_world_item_cast()
+            }.ok_or(DurabilityError::Unavailable)?;
             let item_fence=CurrentCharacterItemFence{character_id:fence.character_id,game_session_id:session,
                 connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,
                 runtime_scope:fence.runtime_scope,scope_ownership_generation:fence.scope_ownership_generation};
