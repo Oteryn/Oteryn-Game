@@ -55,17 +55,20 @@ pub(crate) fn map_targets(map: &WorldMapViewSnapshot) -> Vec<Targetable> {
         .filter(|tile| tile.position.floor == map.header.origin.floor)
         .flat_map(|tile| {
             tile.items.iter().filter_map(move |item| {
-                matches!(item.definition, MapDefinition::Item(_)).then_some(Targetable {
-                    tile: TileCoord::new(tile.position.x, tile.position.y),
-                    kind: TargetKind::Object,
-                    glyph: false,
-                    entity: None,
-                    item: Some(GroundItem::Map {
-                        header: map.header,
-                        position: tile.position,
-                        item: *item,
-                    }),
-                })
+                // Echo portal appearance: native `echo_warden::portal_entry` projects
+                // item i54133. Its server caller activates on step-in, never USE.
+                (matches!(item.definition, MapDefinition::Item(_)) && item.appearance_id != 54133)
+                    .then_some(Targetable {
+                        tile: TileCoord::new(tile.position.x, tile.position.y),
+                        kind: TargetKind::Object,
+                        glyph: false,
+                        entity: None,
+                        item: Some(GroundItem::Map {
+                            header: map.header,
+                            position: tile.position,
+                            item: *item,
+                        }),
+                    })
             })
         })
         .collect()
