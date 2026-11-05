@@ -24,6 +24,7 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
     } else {
         text.push_str("No server snapshot loaded\n");
     }
+    let _ = writeln!(text, "{}", panel.summary);
     if panel.pending {
         text.push_str("Waiting for the server\n");
     }

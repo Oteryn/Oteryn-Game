@@ -7,6 +7,10 @@ mod container_tree_tests;
 mod depot_map_tests;
 #[path = "features/0004-item-view-move/tests.rs"]
 mod item_movement_tests;
+#[path = "tests/property_services.rs"]
+mod property_services_tests;
+#[path = "tests/pvp_expert.rs"]
+mod pvp_expert_tests;
 #[path = "quest_log_transport/tests.rs"]
 mod quest_log_tests;
 #[path = "tests/replacement_snapshot.rs"]
@@ -173,6 +177,8 @@ include!("session_tests_recovery.rs");
 include!("session_tests_combat_logout.rs");
 include!("session_tests_vitals.rs");
 include!("session_tests_capabilities.rs");
+#[path = "property_services/house_transfer_tests.rs"]
+mod pc04_house_transfer;
 include!("session_tests_capability_movement.rs");
 include!("session_tests_capability_native.rs");
 include!("session_tests_push.rs");

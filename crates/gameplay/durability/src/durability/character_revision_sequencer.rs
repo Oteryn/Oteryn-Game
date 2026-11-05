@@ -21,6 +21,7 @@
 //! existing session-generation gameplay fence in its own transaction.
 
 mod appearance_revision;
+mod arena_match;
 mod atelier;
 
 use std::collections::HashMap;

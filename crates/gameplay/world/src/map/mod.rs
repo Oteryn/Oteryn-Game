@@ -14,6 +14,7 @@ use oteryn_world_bundle::sector::{Budget, SECTOR_SIZE};
 use std::fmt;
 
 pub mod boot;
+pub mod daily;
 pub mod door;
 mod door_registry;
 pub mod facts;
@@ -377,6 +378,15 @@ pub fn load_with_spawns(
     pins: &BundlePins,
     limits: LoadLimits,
 ) -> Result<(WorldBase, oteryn_world_bundle::spawn::Table), LoadError> {
+    load_daily_spawns(data, pins, limits, None)
+}
+
+fn load_daily_spawns(
+    data: &[u8],
+    pins: &BundlePins,
+    limits: LoadLimits,
+    daily: Option<&daily::Projection>,
+) -> Result<(WorldBase, oteryn_world_bundle::spawn::Table), LoadError> {
     // The trailer is the digest the reader then verifies; a bundle that does not claim the
     // pinned one is refused before it is parsed.
     let trailer = data
@@ -389,7 +399,7 @@ pub fn load_with_spawns(
     }
     let mut builder = Builder::default();
     let mut refused = None;
-    let visited = bundle::visit_budgeted(data, limits.caps, limits.budget, |manifest, sector| {
+    let visited = daily::visit(data, limits, daily, |manifest, sector| {
         if builder.palette.is_none() {
             if let Err(error) = check_pins(manifest, pins) {
                 refused = Some(error);
@@ -403,6 +413,9 @@ pub fn load_with_spawns(
         return Err(error);
     }
     let visited = visited?;
+    if builder.tiles.len() > limits.budget.tiles || builder.ids.len() > limits.budget.entries {
+        return Err(Error::Limit("daily map exceeds decoded tile or entry budget".into()).into());
+    }
     check_pins(&visited.manifest, pins)?;
     if visited.digest != pins.digest {
         return Err(LoadError::Digest);

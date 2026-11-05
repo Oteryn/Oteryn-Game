@@ -19,6 +19,27 @@ pub mod world_interaction;
 #[path = "features/0015-item-use/protocol.rs"]
 pub mod item_use;
 
+#[path = "features/0097-character-info/protocol.rs"]
+pub mod character_info_panel;
+#[path = "features/0146-container-sort/protocol.rs"]
+pub mod container_sort;
+#[path = "features/0057-cyclopedia-map/protocol.rs"]
+pub mod cyclopedia_map;
+#[path = "features/0103-guild-war/protocol.rs"]
+pub mod guild_war;
+#[path = "features/0099-guildhall/protocol.rs"]
+pub mod guildhall;
+#[path = "features/0059-house-move-out/protocol.rs"]
+pub mod house_move_out;
+#[path = "features/0086-house-transfer/protocol.rs"]
+pub mod house_transfer;
+#[path = "features/0134-party-skull/protocol.rs"]
+pub mod party_skull;
+#[path = "features/0076-player-report/protocol.rs"]
+pub mod player_report;
+#[path = "features/0039-timed-item/protocol.rs"]
+pub mod timed_item;
+
 pub mod connection;
 #[path = "features/0037-depot/protocol.rs"]
 pub mod depot;
@@ -27,6 +48,8 @@ pub mod discovery;
 pub mod hotkey_equip;
 #[path = "features/0003-npc-service/protocol.rs"]
 pub mod npc_dialogue;
+#[path = "features/0149-raid-schedule/protocol.rs"]
+pub mod raid_schedule;
 #[path = "features/0053-world-event/protocol.rs"]
 pub mod world_event;
 #[path = "features/0019-world-light/protocol.rs"]
@@ -209,9 +232,16 @@ pub mod cl25a_protocol {
     };
 }
 
+#[path = "features/0025-appearance/protocol.rs"]
+pub mod appearance;
+#[path = "features/0067-bestiary-charm-progression/protocol.rs"]
+pub mod charm_progression;
 /// Highscores through the admitted session command adapter.
 #[path = "features/0009-highscores/protocol.rs"]
 pub mod highscores;
+#[path = "features/0087-pvp-expert/protocol.rs"]
+pub mod pvp_expert;
+
 /// Admitted command transport for feature-local protocol adapters.
 pub mod raw_feature;
 /// Command and result vocabulary for server-owned mechanic panels.

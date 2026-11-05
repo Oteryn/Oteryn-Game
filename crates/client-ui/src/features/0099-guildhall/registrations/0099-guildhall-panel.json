@@ -1,0 +1,7 @@
+{
+  "mechanic": "0099-guildhall",
+  "kind": "panels",
+  "id": "0099-guildhall-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

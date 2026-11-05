@@ -14,6 +14,7 @@ pub struct ChannelSessionStates {
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     /// APP-3: the appearance-change command state of each session, forgotten with the session.
     pub appearance_commands: appearance_change::AppearanceCommands,
+    pub(super) arena_matches: super::arena_match::Matches,
     /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
     /// Always locked after `runtime` and `spell_states`, never before.
     pub attack: Mutex<attack::ChannelAttackStates>,

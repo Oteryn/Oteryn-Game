@@ -105,6 +105,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
     pub(super) discovery: oteryn_client_ui::quick_loot::Discovery,
+    pub(super) properties: super::feature_0115_mail::protocol::Panels,
     pub(super) containers: oteryn_client_ui::container_tree::ContainerPanel,
     pub(super) world_context: oteryn_client_ui::world_interaction::menu::State,
     pub(super) inventory: oteryn_client_ui::inventory::InventoryPanel,
@@ -248,6 +249,8 @@ impl Outbox {
 
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, events: Vec<SessionEvent>) {
+        self.appearance_events(&events);
+        self.pvp_expert_events(&events);
         self.inventory_events(&events);
         self.container_events(&events);
         let mut mailbox = lock(&self.0);
@@ -322,6 +325,8 @@ impl Outbox {
         self.container_end();
         let mut mailbox = lock(&self.0);
         mailbox.discovery.end();
+        mailbox.properties.end();
+        mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
         mailbox.stash_end();
@@ -346,6 +351,8 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.properties.end();
+        mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
         mailbox.stash_end();
@@ -440,6 +447,8 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
+        mailbox.properties.end();
+        mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.world_event_shutdown = true;
         mailbox.highscores_shutdown = true;

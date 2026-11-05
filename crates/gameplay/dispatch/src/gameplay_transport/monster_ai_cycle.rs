@@ -52,6 +52,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.
         drive_owner_spawns(&mut runtime, now.get());
+        super::arena_match::tick(self, &mut runtime);
         // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
         // World and its bundle view (bundle cells and map revision) on a bundle World.
         let Some(room) = self.rooms.gate_monster_ai() else {
