@@ -13,6 +13,9 @@ use std::error::Error;
 
 mod live;
 
+#[cfg(test)]
+mod native_map;
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|arg| arg == "--live") {

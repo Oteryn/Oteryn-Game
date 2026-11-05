@@ -15,9 +15,25 @@ impl PlayView {
     /// Draws `world` with the current own position on the start tile and the current floor on
     /// the decoded map floor.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
+        if self.live_map {
+            return Ok(());
+        }
         self.map_floor = Some(world.center().2);
         self.local.set_world(world);
         self.anchor = TileCoord::new(0, 0);
+        self.rebuild()
+    }
+
+    /// Installs a complete server window; local placement files never supply its geometry.
+    pub fn set_live_map(
+        &mut self,
+        map: &oteryn_session::world_map::WorldMapViewSnapshot,
+    ) -> Result<(), BatchError> {
+        let world = World::from_live_map(map)?;
+        self.map_floor = Some(map.header.origin.floor);
+        self.anchor = TileCoord::new(0, 0);
+        self.local.set_world(Arc::new(world));
+        self.live_map = true;
         self.rebuild()
     }
 
@@ -49,10 +65,12 @@ impl PlayView {
         Ok(())
     }
 
-    /// Applies what the server pushed outside any step, coalesced: the latest own position and
-    /// the latest entry per placement. Other domains are not drawn by this view.
+    /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
         self.apply_server_messages(&pushed.server_messages);
+        if let Some(map) = &pushed.map {
+            self.set_live_map(map)?;
+        }
         if let Some(position) = pushed.own {
             self.place(position);
         }

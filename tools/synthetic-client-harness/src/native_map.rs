@@ -1,0 +1,148 @@
+//! Headless C03 scenario through the native task, mailbox and rendered scene.
+use oteryn_client::combat_input::{CombatCommand, CombatReport};
+use oteryn_client::play::{PlayView, Stepper, play_channel, run_session};
+use oteryn_protocol_oteryn::world_map::*;
+use oteryn_renderer::TileCoord;
+use oteryn_session::{
+    ActorPosition, AppliedDelta, LogoutResult, SessionError, SessionEvent, StepDirection,
+    StepOutcome,
+};
+use std::time::Duration;
+use tokio::sync::mpsc;
+
+struct MapSession {
+    initial: WorldMapViewSnapshot,
+    incoming: mpsc::UnboundedReceiver<SessionEvent>,
+    pending: Vec<SessionEvent>,
+}
+
+impl Stepper for MapSession {
+    fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
+        (domain == STATE_DOMAIN_WORLD_MAP_VIEW)
+            .then(|| encode_world_map_snapshot(&self.initial).ok())
+            .flatten()
+    }
+    async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+        Err(SessionError::Timeout("synthetic map"))
+    }
+    async fn serve(&mut self, _: Duration) -> Result<(), SessionError> {
+        self.pending.push(
+            self.incoming
+                .recv()
+                .await
+                .ok_or(SessionError::Timeout("synthetic map"))?,
+        );
+        Ok(())
+    }
+    fn drain(&mut self) -> Vec<SessionEvent> {
+        std::mem::take(&mut self.pending)
+    }
+    async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+        Err(SessionError::Timeout("synthetic map"))
+    }
+    async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
+        Err(SessionError::Timeout("synthetic map"))
+    }
+}
+
+#[test]
+fn native_live_map_snapshot_then_delta_changes_the_scene()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?
+                .block_on(async {
+                    let position = ActorPosition {
+                        x: 100,
+                        y: 200,
+                        floor: 0,
+                    };
+                    let initial = WorldMapViewSnapshot {
+                        header: MapViewHeader {
+                            content_generation: [1; 32],
+                            bundle_digest: [2; 32],
+                            reset_epoch: 1,
+                            origin: position,
+                            first_visible_floor: 0,
+                        },
+                        tiles: vec![MapTile {
+                            position,
+                            items: vec![MapItem {
+                                definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
+                                count: 1,
+                                sub_type: 0,
+                                origin: MapOrigin::DisplayOnly,
+                                appearance_id: 0,
+                            }],
+                            more: false,
+                            ground_speed: 0,
+                        }],
+                    };
+                    let payload = encode_world_map_snapshot(&initial)
+                        .map_err(|error| format!("{error:?}"))?;
+                    let initial = decode_world_map_snapshot(&payload)
+                        .map_err(|error| format!("{error:?}"))?;
+                    let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
+                    let empty_sprites = view.scene().sprites().len();
+                    view.set_live_map(&initial)?;
+                    assert!(view.scene().sprites().len() > empty_sprites);
+                    let (link, commands, outbox) = play_channel();
+                    let (send, incoming) = mpsc::unbounded_channel();
+                    let task = tokio::spawn(run_session(
+                        MapSession {
+                            initial: initial.clone(),
+                            incoming,
+                            pending: Vec::new(),
+                        },
+                        commands,
+                        outbox,
+                    ));
+                    let mut added = initial.tiles[0].clone();
+                    added.position.x += 1;
+                    let added_position = added.position;
+                    let upsert = WorldMapViewDelta {
+                        header: initial.header,
+                        tiles: vec![added],
+                        cleared: Vec::new(),
+                    };
+                    let clear = WorldMapViewDelta {
+                        header: initial.header,
+                        tiles: Vec::new(),
+                        cleared: vec![position, added_position],
+                    };
+                    for (revision, delta, expected) in
+                        [(2, upsert, empty_sprites + 2), (3, clear, empty_sprites)]
+                    {
+                        let payload = encode_world_map_delta(&initial.header, &delta)
+                            .map_err(|error| format!("{error:?}"))?;
+                        let value = decode_world_map_delta(&initial.header, &payload)
+                            .map_err(|error| format!("{error:?}"))?;
+                        send.send(SessionEvent::WorldMap(AppliedDelta {
+                            server_sequence: revision,
+                            base_revision: revision - 1,
+                            new_revision: revision,
+                            value,
+                        }))?;
+                        tokio::time::timeout(Duration::from_secs(5), async {
+                            loop {
+                                view.tick(&link).map_err(|error| format!("{error:?}"))?;
+                                if view.scene().sprites().len() == expected {
+                                    break;
+                                }
+                                tokio::task::yield_now().await;
+                            }
+                            Ok::<_, String>(())
+                        })
+                        .await??;
+                    }
+                    drop(link);
+                    task.abort();
+                    Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
+                })
+        })?
+        .join()
+        .map_err(|_| "native map scenario thread failed")?
+}
