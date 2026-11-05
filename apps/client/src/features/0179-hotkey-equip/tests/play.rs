@@ -10,6 +10,62 @@ fn hotkey_equip_panel_opens_and_sends() {
     ));
 }
 
+#[test]
+fn assigned_item_key_sends_the_definition_and_waits_for_the_server()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.hotkey_equip_initialize(true);
+    outbox.hotkey_equip_items(vec![256, 512]);
+    assert!(link.hotkey_equip_assign(0, 256));
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(58)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE,
+        repeat: false,
+    };
+    assert!(link.hotkey_equip_input(std::slice::from_ref(&event)));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("missing assigned hotkey".into());
+    };
+    assert_eq!((command.capability, command.command_type), (179, 348));
+    assert_eq!(command.payload, [0, 0, 1, 0]);
+    // Pending equipment results lock repeated input without inventing a local outcome.
+    assert!(link.hotkey_equip_input(std::slice::from_ref(&event)));
+    assert!(commands.try_recv().is_err());
+    assert!(link.hotkey_equip_panel().outcome.is_none());
+    outbox.hotkey_equip_result(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: vec![8, 1],
+        },
+    );
+    assert!(link.hotkey_equip_input(std::slice::from_ref(&event)));
+    let crate::combat_input::PlayCommand::ServerMechanic(toggle) = commands.try_recv()? else {
+        return Err("missing toggle".into());
+    };
+    assert_eq!(toggle.payload, command.payload);
+    outbox.hotkey_equip_result(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 2,
+            status: oteryn_session::CommandStatus::Accepted,
+            server_sequence: 2,
+            payload: vec![8, 9],
+        },
+    );
+    assert_eq!(
+        link.hotkey_equip_panel().outcome,
+        Some(oteryn_session::ItemMoveOutcome::Rejected)
+    );
+    assert!(link.hotkey_equip_assign(0, 0));
+    assert!(!link.hotkey_equip_input(&[event]));
+    assert!(!link.hotkey_equip_assign(12, 256));
+    assert!(!link.hotkey_equip_assign(0, 999));
+    Ok(())
+}
+
 #[path = "../native.rs"]
 mod native;
 

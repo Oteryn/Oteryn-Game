@@ -14,6 +14,7 @@ use std::num::NonZeroU32;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    creature_drag: feature_0082_creature_push::state::CreatureDrag,
     world_context_feedback: Option<String>,
     death: feature_local_death_respawn::protocol::DeathState,
     target_walk_feedback: Option<&'static str>,
@@ -47,6 +48,7 @@ pub struct PlayView {
     ground_items: Vec<crate::input::Targetable>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
+    action_line: Option<&'static str>,
     /// The last refused logout's line, shown until the next combat line or logout answer.
     logout_line: Option<String>,
     /// Recent server messages in their validated delivery order, owned by this connection.
@@ -62,6 +64,7 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            creature_drag: Default::default(),
             world_context_feedback: None,
             death: Default::default(),
             target_walk_feedback: None,
@@ -87,6 +90,7 @@ impl PlayView {
             appearances: Vec::new(),
             ground_items: Vec::new(),
             combat_line: None,
+            action_line: None,
             logout_line: None,
             server_messages: VecDeque::new(),
         };
@@ -101,6 +105,7 @@ impl PlayView {
 mod end;
 mod input;
 mod mailbox;
+mod refusal_details;
 mod session_loop;
 mod session_stepper;
 mod stepper;

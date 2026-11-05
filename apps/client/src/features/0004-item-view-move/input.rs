@@ -81,6 +81,14 @@ impl crate::play::PlayView {
         &self,
         tile: oteryn_renderer::TileCoord,
     ) -> Option<oteryn_client_ui::inventory::movement::DragItem> {
+        // The shell already captured the drawn actor; do not also drag an item underneath it.
+        if self
+            .creature_drag
+            .source
+            .is_some_and(|(source, _, _)| source == tile)
+        {
+            return None;
+        }
         self.ground_items
             .iter()
             .rev()

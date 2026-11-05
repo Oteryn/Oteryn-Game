@@ -1,17 +1,27 @@
-//! Minimal native Task Board list and action buttons.
-#![allow(unsafe_code)]
+//! Native full weekly, delivery, bounty and shop controls.
+#![allow(unsafe_code, reason = "Win32 controls remain on their creating thread")]
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::task_board::Intent;
+use oteryn_client_ui::task_board::{FullIntent, full_request, panel_text};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
-const LIST: usize = 101;
 const REFRESH: usize = 102;
-const SELECT: usize = 103;
-const CLAIM: usize = 104;
-const UPGRADE: usize = 105;
+const START: usize = 103;
+const DELIVER: usize = 104;
+const OPEN_BOUNTY: usize = 105;
+const SELECT_BOUNTY: usize = 106;
+const CLAIM: usize = 107;
+const DIFFICULTY: usize = 108;
+const REROLL: usize = 109;
+const DAILY: usize = 110;
+const PREFERRED: usize = 111;
+const UNWANTED: usize = 112;
+const UNLOCK: usize = 113;
+const BUY: usize = 114;
+const BUY_TALISMAN: usize = 115;
+const UPGRADE_TALISMAN: usize = 116;
 #[derive(Default)]
 struct Actions(Vec<usize>);
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
@@ -62,12 +72,12 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Task Board").as_ptr(),
+            wide("Task Board — Ctrl+Shift+T").as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            620,
-            680,
+            820,
+            700,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -84,27 +94,94 @@ fn run(
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
-        let list = control(
+        let text = control(
             hwnd,
-            "LISTBOX",
+            "EDIT",
             "",
-            LIST,
-            [10, 10, 580, 300],
-            WS_BORDER | WS_VSCROLL | WS_TABSTOP,
+            101,
+            [10, 10, 780, 380],
+            WS_BORDER | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
         );
-        for (id, label, x) in [
-            (REFRESH, "Refresh", 10),
-            (SELECT, "Select task", 140),
-            (CLAIM, "Claim task", 290),
-            (UPGRADE, "Upgrade talisman", 430),
-        ] {
-            control(hwnd, "BUTTON", label, id, [x, 325, 140, 30], WS_TABSTOP);
+        control(hwnd, "STATIC", "Difficulty", 0, [10, 400, 100, 24], 0);
+        let difficulty = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            201,
+            [110, 400, 140, 160],
+            CBS_DROPDOWNLIST as u32 | WS_TABSTOP,
+        );
+        for label in ["Beginner", "Adept", "Expert", "Master"] {
+            SendMessageW(difficulty, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }
-        let details = control(
-            hwnd, "EDIT", "", 106, [10, 365, 580, 260],
-            WS_BORDER | WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
+        SendMessageW(difficulty, CB_SETCURSEL, 0, 0);
+        control(
+            hwnd,
+            "STATIC",
+            "Row / list slot / path (1-based)",
+            0,
+            [270, 400, 260, 24],
+            0,
         );
-        let mut held_text = String::new();
+        let row = control(
+            hwnd,
+            "EDIT",
+            "1",
+            202,
+            [540, 400, 55, 24],
+            WS_BORDER | WS_TABSTOP | ES_NUMBER as u32,
+        );
+        control(
+            hwnd,
+            "STATIC",
+            "Preferred / unwanted creature",
+            0,
+            [10, 435, 330, 24],
+            0,
+        );
+        let race = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            203,
+            [350, 435, 440, 240],
+            CBS_DROPDOWNLIST as u32 | WS_TABSTOP,
+        );
+        for (index, (id, label)) in [
+            (REFRESH, "Refresh"),
+            (START, "Start weekly"),
+            (DELIVER, "Deliver row"),
+            (OPEN_BOUNTY, "Open bounty"),
+            (SELECT_BOUNTY, "Select bounty row"),
+            (CLAIM, "Claim bounty"),
+            (DIFFICULTY, "Set bounty difficulty"),
+            (REROLL, "Reroll bounty"),
+            (DAILY, "Daily reroll"),
+            (PREFERRED, "Set preferred"),
+            (UNWANTED, "Set unwanted"),
+            (UNLOCK, "Unlock list slot"),
+            (BUY, "Buy shop row"),
+            (BUY_TALISMAN, "Buy Bounty Talisman"),
+            (UPGRADE_TALISMAN, "Upgrade talisman path"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            control(
+                hwnd,
+                "BUTTON",
+                label,
+                id,
+                [
+                    10 + (index % 4) as i32 * 195,
+                    475 + (index / 4) as i32 * 38,
+                    185,
+                    30,
+                ],
+                WS_TABSTOP,
+            );
+        }
+        let mut choices: Vec<String> = Vec::new();
         let mut held = None;
         loop {
             let mut message: MSG = std::mem::zeroed();
@@ -120,54 +197,95 @@ fn run(
                 break;
             };
             let mut mailbox = lock(&shared);
+            if mailbox.quest_shutdown {
+                break;
+            }
             if commands.is_closed() {
                 DestroyWindow(hwnd);
                 break;
             }
-            let text = oteryn_client_ui::task_board::panel_text(&mailbox.task_board)
-                .replace('\n', "\r\n");
-            if held_text != text {
-                SetWindowTextW(details, wide(&text).as_ptr());
-                held_text = text;
-            }
             for id in std::mem::take(&mut actions.0) {
-                let row = u8::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
+                let selected = read_text(row)
+                    .parse::<u16>()
                     .ok()
-                    .and_then(|v| v.checked_add(1));
+                    .and_then(|v| v.checked_sub(1));
+                let slot = selected.and_then(|v| u8::try_from(v).ok());
+                let level = u8::try_from(SendMessageW(difficulty, CB_GETCURSEL, 0, 0)).ok();
+                let selected_race = usize::try_from(SendMessageW(race, CB_GETCURSEL, 0, 0))
+                    .ok()
+                    .and_then(|index| choices.get(index));
                 let intent = match id {
-                    REFRESH => Some(Intent::Refresh),
-                    SELECT => row.map(Intent::Select),
-                    CLAIM => row.map(Intent::Claim),
-                    UPGRADE => row.filter(|v| *v <= 4).map(Intent::UpgradeTalisman),
+                    REFRESH => Some(FullIntent::Refresh),
+                    START => level.map(FullIntent::StartWeekly),
+                    DELIVER => slot.map(FullIntent::Deliver),
+                    OPEN_BOUNTY => Some(FullIntent::OpenBounty),
+                    SELECT_BOUNTY => slot.map(FullIntent::SelectBounty),
+                    CLAIM => Some(FullIntent::ClaimBounty),
+                    DIFFICULTY => level.map(FullIntent::BountyDifficulty),
+                    REROLL => Some(FullIntent::Reroll),
+                    DAILY => Some(FullIntent::DailyReroll),
+                    PREFERRED => slot
+                        .zip(selected_race)
+                        .map(|(v, key)| FullIntent::Preferred(v, key.to_owned())),
+                    UNWANTED => slot
+                        .zip(selected_race)
+                        .map(|(v, key)| FullIntent::Unwanted(v, key.to_owned())),
+                    UNLOCK => Some(FullIntent::UnlockList),
+                    BUY => selected.map(FullIntent::BuyShop),
                     _ => None,
                 };
-                if let Some(intent) = intent
-                    && let Some(command) =
-                        oteryn_client_ui::task_board::request(&mut mailbox.task_board, intent)
+                let command = if let Some(intent) = intent {
+                    full_request(&mut mailbox.task_board, intent)
+                } else {
+                    use oteryn_client_ui::task_board::talisman;
+                    let intent = match id {
+                        BUY_TALISMAN => Some(talisman::Intent::Buy),
+                        UPGRADE_TALISMAN => slot.map(talisman::Intent::Upgrade),
+                        _ => None,
+                    };
+                    intent.and_then(|intent| talisman::request(&mut mailbox.task_board, intent))
+                };
+                if let Some(command) = command
                     && commands
-                        .send(crate::combat_input::PlayCommand::TaskBoard(command))
+                        .send(crate::combat_input::PlayCommand::Feature(command))
                         .is_err()
                 {
                     mailbox.task_board.pending = false;
                     mailbox.task_board.feedback = Some("The session has ended");
                 }
             }
-            if held.as_ref() != mailbox.task_board.state.as_ref() {
-                SendMessageW(list, LB_RESETCONTENT, 0, 0);
-                if let Some(state) = &mailbox.task_board.state {
-                    for task in &state.tasks {
-                        SendMessageW(
-                            list,
-                            LB_ADDSTRING,
-                            0,
-                            wide(&format!("{} ({})", task.race, task.required)).as_ptr() as isize,
-                        );
-                    }
+            let next_choices = oteryn_client_ui::task_board::creature_choices(&mailbox.task_board);
+            if choices != next_choices {
+                let previous = usize::try_from(SendMessageW(race, CB_GETCURSEL, 0, 0))
+                    .ok()
+                    .and_then(|index| choices.get(index))
+                    .cloned();
+                choices = next_choices;
+                SendMessageW(race, CB_RESETCONTENT, 0, 0);
+                for key in &choices {
+                    let name = if key.is_empty() {
+                        "Clear selection".into()
+                    } else {
+                        oteryn_client_ui::task_board::creature_name(key)
+                    };
+                    SendMessageW(race, CB_ADDSTRING, 0, wide(&name).as_ptr() as isize);
                 }
-                held = mailbox.task_board.state.clone();
+                let index = previous
+                    .as_ref()
+                    .and_then(|key| choices.iter().position(|value| value == key))
+                    .unwrap_or(0);
+                SendMessageW(race, CB_SETCURSEL, index, 0);
+            }
+            let rendered = panel_text(&mailbox.task_board).replace('\n', "\r\n");
+            if held.as_ref() != Some(&rendered) {
+                SetWindowTextW(text, wide(&rendered).as_ptr());
+                held = Some(rendered);
             }
             drop(mailbox);
             std::thread::sleep(std::time::Duration::from_millis(30));
+        }
+        if IsWindow(hwnd) != 0 {
+            DestroyWindow(hwnd);
         }
         close(&weak);
     }
@@ -201,4 +319,13 @@ fn close(weak: &WeakMailbox) {
     if let Some(mailbox) = weak.upgrade() {
         lock(&mailbox).task_board.open = false;
     }
+}
+
+unsafe fn read_text(hwnd: HWND) -> String {
+    let mut value = [0u16; 129];
+    unsafe {
+        GetWindowTextW(hwnd, value.as_mut_ptr(), value.len() as i32);
+    }
+    let len = value.iter().position(|v| *v == 0).unwrap_or(value.len());
+    String::from_utf16_lossy(&value[..len])
 }

@@ -173,6 +173,11 @@ impl Outbox {
             selected: session.feature_selected(87),
             ..Default::default()
         };
+        // Publish selection and its confirmed snapshot together, including on re-admission.
+        super::super::feature_0087_pvp_expert::protocol::initialize(
+            &mut shared.properties.pvp_expert,
+            session,
+        );
         shared.properties.mail.selected = session.feature_selected(115);
         shared.properties.house_podium.selected = session.feature_selected(150);
         shared.properties.training.selected = session.feature_selected(54);

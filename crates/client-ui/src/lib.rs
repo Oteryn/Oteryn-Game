@@ -81,6 +81,9 @@ pub mod account_achievements;
 #[path = "features/0008-achievement-notices/mod.rs"]
 pub mod achievement_notices;
 
+#[path = "features/0170-arena/mod.rs"]
+pub mod arena;
+
 #[path = "features/0225-boss-difficulty/mod.rs"]
 pub mod boss_difficulty;
 #[path = "features/0230-browse-field/mod.rs"]
@@ -243,6 +246,8 @@ pub mod vip;
 /// House banker hireling status and controls.
 #[path = "features/0165-hireling/mod.rs"]
 pub mod hireling;
+#[path = "features/0250-hireling-management/mod.rs"]
+pub mod hireling_management;
 
 /// Market offer browsing and settlement controls.
 #[path = "features/0063-market/mod.rs"]

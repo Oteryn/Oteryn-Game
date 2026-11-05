@@ -17,7 +17,13 @@ impl PlayView {
             Some(Targetable {
                 entity: Some(target),
                 ..
-            }) => self.queue(Input::Attack(target)),
+            }) => {
+                if self.entities.iter().any(|entity| {
+                    entity.entity == target && entity.kind == oteryn_session::EntityKind::Creature
+                }) {
+                    self.queue(Input::Attack(target));
+                }
+            }
             Some(_) => {}
         }
         Ok(())

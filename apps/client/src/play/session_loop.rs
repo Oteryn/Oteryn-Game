@@ -30,7 +30,6 @@ pub async fn run_session<T: Stepper>(
     }
     outbox.spell_bar_initialize(session.feature_snapshot(20));
     outbox.appearance_initialize(&session);
-    outbox.pvp_expert_initialize(&session);
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
     outbox.targeting_initialize(session.feature_selected(15));
@@ -67,13 +66,21 @@ pub async fn run_session<T: Stepper>(
         session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1),
     );
     outbox.hireling_initialize(session.hireling_selected());
+    outbox.hireling_management_initialize(session.feature_selected(250));
     outbox.market_initialize(session.market_selected());
     outbox.chat_public_initialize(session.chat_public_selected(), session.chat_state());
     outbox.chat_private_publish(&session);
     outbox.player_typing_initialize(session.player_typing_selected());
+    outbox.arena_initialize(session.feature_selected(170));
     outbox.boss_encounter_initialize(session.feature_selected(117));
     outbox.boss_difficulty_initialize(session.feature_selected(225));
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
+    if let Some(payload) = session.feature_snapshot(14) {
+        outbox.browse_field_views(&payload);
+    }
+    if let Some(inventory) = session.inventory() {
+        outbox.browse_field_inventory(inventory);
+    }
     outbox.guild_chat_publish(&session);
     outbox.chat_initialize(session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1));
     outbox.chat_party_room_initialize(session.feature_selected(240));
@@ -83,7 +90,10 @@ pub async fn run_session<T: Stepper>(
     outbox.daily_boost_initialize(session.feature_selected(151));
     outbox.highscores_initialize(session.server_mechanic_selected(9));
     outbox.depot_search_initialize(session.server_mechanic_selected(153));
+    outbox.target_move_initialize(session.feature_selected(64));
+    outbox.creature_push_initialize(session.feature_selected(82));
     outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
+    outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
     outbox.store_initialize(session.server_mechanic_selected(154));
     outbox.vip_presence_initialize(session.feature_selected(258));
@@ -98,6 +108,7 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {
+                        72 => outbox.task_board_full_result(&result),
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
@@ -108,10 +119,12 @@ pub async fn run_session<T: Stepper>(
                         76 | 103 | 146 => outbox.properties_result(&command, &result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
+                        170 => outbox.arena_result(&result),
                         195 => outbox.weapon_proficiency_result(&result),
                         197 => outbox.cyclopedia_tracker_result(&result),
                         199 => outbox.cyclopedia_character_result(&result),
                         225 => outbox.boss_difficulty_result(&result),
+                        250 => outbox.hireling_management_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
@@ -119,12 +132,25 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
+            Ok(PlayCommand::BrowseFieldMove(intent)) => {
+                match session.move_item(oteryn_client_runtime::inventory::MoveRequest {source:intent.source,destination:intent.destination,count:None}).await {
+                    Ok(response) => {
+                        outbox.browse_field_moved(response);
+                        publish(&mut session, &outbox, &mut held);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
             Ok(PlayCommand::ServerMechanic(request)) => {
                 match session.server_mechanic(&request).await {
                     Ok(response) => {
                         match request.capability {
+                            64 => outbox.target_move_result(&request, &response),
+                            82 => outbox.creature_push_result(&response),
                             98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
                             9 => outbox.highscores_result(&response),
+                            14 => outbox.browse_field_result(&response),
                             152 => outbox.item_forge_result(&response),
                             153 => outbox.depot_search_result(&response),
                             154 => outbox.store_result(&response),
@@ -199,6 +225,7 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Step(direction)) => {
                 match session.step(step_direction(direction)).await {
                     Ok(outcome) => {
+                        outbox.action_feedback(session.refusal_detail().map(|detail| detail.reference_message()));
                         outbox.stepped(outcome);
                         publish(&mut session, &outbox, &mut held);
                         continue;

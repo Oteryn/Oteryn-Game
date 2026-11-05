@@ -20,3 +20,16 @@ impl PlayLink {
         }
     }
 }
+
+impl PlayLink {
+    pub fn task_board_full_request(&self, intent: oteryn_client_ui::task_board::FullIntent) {
+        let mut mailbox = lock(&self.mailbox);
+        if let Some(command) =
+            oteryn_client_ui::task_board::full_request(&mut mailbox.task_board, intent)
+            && self.commands.send(PlayCommand::Feature(command)).is_err()
+        {
+            mailbox.task_board.pending = false;
+            mailbox.task_board.feedback = Some("The session has ended");
+        }
+    }
+}

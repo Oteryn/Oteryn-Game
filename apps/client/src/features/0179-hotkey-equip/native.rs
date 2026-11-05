@@ -35,62 +35,42 @@ pub(in crate::play) use windows::open_window;
 
 #[cfg(windows)]
 mod windows {
-    // Win32 handles and callback userdata stay on the creating thread.
-    #![allow(unsafe_code)]
-    use super::*;
+    //! Native item assignment; HWNDs remain on the thread that creates them.
+    #![allow(unsafe_code)] // Windows control FFI, following the stash panel's ownership pattern.
+    use super::panel_text;
     use crate::play::{PlayLink, mailbox::lock};
-    use std::ptr::{null, null_mut};
-    use windows_sys::Win32::Foundation::*;
+    use oteryn_client_ui::hotkey_equip::{ITEM_HOTKEY_SLOTS, assign, control_request};
+    use std::{
+        ptr::{null, null_mut},
+        sync::{Arc, Weak},
+        time::Duration,
+    };
     use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
-    use windows_sys::Win32::UI::WindowsAndMessaging::*;
-
-    fn wide(text: &str) -> Vec<u16> {
-        text.replace('\0', "\u{fffd}")
-            .encode_utf16()
-            .chain(Some(0))
-            .collect()
-    }
-
-    unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
+    use windows_sys::Win32::{Foundation::*, UI::WindowsAndMessaging::*};
+    const ASSIGN: usize = 103;
+    const REMOVE: usize = 104;
+    const USE: usize = 105;
+    const SUBMIT: usize = 202;
+    #[derive(Default)]
+    struct Actions(Vec<usize>);
+    unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
         unsafe {
-            if msg == WM_COMMAND {
-                let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Vec<usize>;
-                if !actions.is_null() && (*actions).len() < 32 {
-                    (*actions).push(w & 0xffff);
+            if msg == WM_COMMAND && (w >> 16) & 0xffff == BN_CLICKED as usize {
+                let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
+                if !actions.is_null() && (*actions).0.len() < 16 {
+                    (*actions).0.push(w & 0xffff);
                 }
                 return 0;
             }
             DefWindowProcW(hwnd, msg, w, l)
         }
     }
-
-    unsafe fn control(
-        parent: HWND,
-        class: &str,
-        text: &str,
-        id: usize,
-        y: i32,
-        height: i32,
-        style: u32,
-    ) -> HWND {
-        unsafe {
-            CreateWindowExW(
-                0,
-                wide(class).as_ptr(),
-                wide(text).as_ptr(),
-                WS_CHILD | WS_VISIBLE | style,
-                10,
-                y,
-                440,
-                height,
-                parent,
-                id as _,
-                null_mut(),
-                null(),
-            )
-        }
+    fn wide(text: &str) -> Vec<u16> {
+        text.replace('\0', "\u{fffd}")
+            .encode_utf16()
+            .chain(Some(0))
+            .collect()
     }
-
     pub(in crate::play) fn open_window(link: &PlayLink) {
         {
             let mut mailbox = lock(&link.mailbox);
@@ -99,105 +79,276 @@ mod windows {
             }
             mailbox.hotkey_equip.open = true;
         }
-        let weak = std::sync::Arc::downgrade(&link.mailbox);
-        let rollback = weak.clone();
+        let weak = Arc::downgrade(&link.mailbox);
+        let failed = weak.clone();
         let commands = link.commands.clone();
         if std::thread::Builder::new()
-            .name("hotkey_equip-panel".into())
-            .spawn(move || {
-                unsafe {
-                    let hwnd = CreateWindowExW(
-                        0,
-                        wide("STATIC").as_ptr(),
-                        wide("Hotkey equip").as_ptr(),
-                        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-                        CW_USEDEFAULT,
-                        CW_USEDEFAULT,
-                        480,
-                        420,
-                        null_mut(),
-                        null_mut(),
-                        null_mut(),
-                        null(),
-                    );
-                    if !hwnd.is_null() {
-                        let mut actions: Vec<usize> = Vec::new();
-                        SetWindowLongPtrW(hwnd, GWLP_USERDATA, &mut actions as *mut _ as isize);
-                        SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
-                        control(hwnd, "STATIC", "Item definition", 0, 10, 25, 0);
-                        let input = control(
-                            hwnd,
-                            "EDIT",
-                            "",
-                            1,
-                            40,
-                            30,
-                            WS_BORDER | ES_AUTOHSCROLL as u32 | ES_NUMBER as u32,
-                        );
-                        let equip = control(hwnd, "BUTTON", "Equip", 2, 85, 35, 0);
-                        let status = control(hwnd, "STATIC", "", 0, 310, 65, 0);
-                        let mut message: MSG = std::mem::zeroed();
-                        loop {
-                            while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
-                                TranslateMessage(&message);
-                                DispatchMessageW(&message);
+            .name("item-hotkeys".into())
+            .spawn(move || run(weak, commands))
+            .is_err()
+        {
+            close(&failed);
+        }
+    }
+    type Mailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
+    fn run(
+        weak: Mailbox,
+        commands: tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
+    ) {
+        unsafe {
+            let hwnd = CreateWindowExW(
+                0,
+                wide("STATIC").as_ptr(),
+                wide("Item hotkeys — Ctrl+Shift+E").as_ptr(),
+                WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
+                620,
+                600,
+                null_mut(),
+                null_mut(),
+                null_mut(),
+                null(),
+            );
+            if hwnd.is_null() {
+                close(&weak);
+                return;
+            }
+            let mut actions = Box::<Actions>::default();
+            SetWindowLongPtrW(
+                hwnd,
+                GWLP_USERDATA,
+                (&mut *actions as *mut Actions) as isize,
+            );
+            SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
+            let keys = control(
+                hwnd,
+                "LISTBOX",
+                "",
+                101,
+                [10, 40, 280, 230],
+                LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL | WS_TABSTOP,
+            );
+            let items = control(
+                hwnd,
+                "LISTBOX",
+                "",
+                102,
+                [300, 40, 280, 230],
+                LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL | WS_TABSTOP,
+            );
+            let labels = control(
+                hwnd,
+                "STATIC",
+                "Choose a key                         Choose a carried or equipped item",
+                106,
+                [10, 10, 580, 25],
+                0,
+            );
+            let assign_button = control(
+                hwnd,
+                "BUTTON",
+                "Assign item",
+                ASSIGN,
+                [10, 280, 170, 30],
+                WS_TABSTOP,
+            );
+            let remove = control(
+                hwnd,
+                "BUTTON",
+                "Clear key",
+                REMOVE,
+                [190, 280, 170, 30],
+                WS_TABSTOP,
+            );
+            let use_button = control(
+                hwnd,
+                "BUTTON",
+                "Use key",
+                USE,
+                [370, 280, 170, 30],
+                WS_TABSTOP,
+            );
+            let status = control(
+                hwnd,
+                "EDIT",
+                "",
+                107,
+                [10, 420, 570, 130],
+                ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
+            );
+            let input = control(
+                hwnd,
+                "EDIT",
+                "",
+                201,
+                [10, 360, 280, 30],
+                WS_BORDER | ES_NUMBER as u32,
+            );
+            let submit = control(
+                hwnd,
+                "BUTTON",
+                "Equip definition",
+                SUBMIT,
+                [300, 360, 240, 30],
+                WS_TABSTOP,
+            );
+            if [
+                input,
+                submit,
+                keys,
+                items,
+                labels,
+                assign_button,
+                remove,
+                use_button,
+                status,
+            ]
+            .iter()
+            .any(|handle| handle.is_null())
+            {
+                DestroyWindow(hwnd);
+                close(&weak);
+                return;
+            }
+            let mut desired: Option<oteryn_client_ui::hotkey_equip::HotkeyEquipPanel> = None;
+            loop {
+                let mut message: MSG = std::mem::zeroed();
+                while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
+                    TranslateMessage(&message);
+                    DispatchMessageW(&message);
+                }
+                if IsWindow(hwnd) == 0 {
+                    break;
+                }
+                let Some(shared) = weak.upgrade() else {
+                    break;
+                };
+                let mut mailbox = lock(&shared);
+                let panel = &mut mailbox.hotkey_equip;
+                for action in std::mem::take(&mut actions.0) {
+                    let slot = usize::try_from(SendMessageW(keys, LB_GETCURSEL, 0, 0)).unwrap_or(0);
+                    if slot >= ITEM_HOTKEY_SLOTS {
+                        continue;
+                    }
+                    match action {
+                        SUBMIT => {
+                            let mut text = [0_u16; 32];
+                            let len = GetWindowTextW(input, text.as_mut_ptr(), 32);
+                            if let Some(command) = super::submit(
+                                panel,
+                                &String::from_utf16_lossy(&text[..len as usize]),
+                            ) && commands
+                                .send(crate::combat_input::PlayCommand::ServerMechanic(command))
+                                .is_err()
+                            {
+                                panel.pending = false;
+                                panel.feedback = Some("The session has ended".into());
                             }
-                            if IsWindow(hwnd) == 0 {
-                                break;
+                        }
+                        ASSIGN => {
+                            if let Ok(row) =
+                                usize::try_from(SendMessageW(items, LB_GETCURSEL, 0, 0))
+                                && let Some(&definition) =
+                                    desired.as_ref().and_then(|shown| shown.items.get(row))
+                            {
+                                assign(panel, slot, definition);
                             }
-                            let Some(shared) = weak.upgrade() else {
-                                break;
-                            };
-                            let mut mailbox = lock(&shared);
-                            for action in std::mem::take(&mut actions) {
-                                let panel = &mut mailbox.hotkey_equip;
-                                let command = {
-                                    if action == 2 {
-                                        let mut text = [0u16; 32];
-                                        let len = GetWindowTextW(
-                                            input,
-                                            text.as_mut_ptr(),
-                                            text.len() as i32,
-                                        );
-                                        submit(
-                                            panel,
-                                            &String::from_utf16_lossy(&text[..len as usize]),
-                                        )
-                                    } else {
-                                        None
-                                    }
-                                };
-                                if let Some(command) = command
+                        }
+                        REMOVE => {
+                            assign(panel, slot, 0);
+                        }
+                        USE => {
+                            if let Some(definition) = panel.bindings[slot] {
+                                panel.item_definition = definition.get();
+                                if let Some(command) = control_request(panel)
                                     && commands
                                         .send(crate::combat_input::PlayCommand::ServerMechanic(
                                             command,
                                         ))
                                         .is_err()
                                 {
-                                    mailbox.hotkey_equip.pending = false;
-                                    mailbox.hotkey_equip.feedback =
-                                        Some("The session has ended".into());
+                                    panel.pending = false;
+                                    panel.feedback = Some("The session has ended".into());
                                 }
                             }
-                            let panel = &mut mailbox.hotkey_equip;
-                            EnableWindow(equip, i32::from(panel.selected && !panel.pending));
-                            SetWindowTextW(status, wide(&panel_text(panel)).as_ptr());
-                            drop(mailbox);
-                            std::thread::sleep(std::time::Duration::from_millis(100));
                         }
-                        if IsWindow(hwnd) != 0 {
-                            DestroyWindow(hwnd);
-                        }
+                        _ => {}
                     }
                 }
-                if let Some(shared) = weak.upgrade() {
-                    lock(&shared).hotkey_equip.open = false;
+                EnableWindow(submit, i32::from(panel.selected && !panel.pending));
+                EnableWindow(use_button, i32::from(panel.selected && !panel.pending));
+                if desired.as_ref() != Some(panel) {
+                    let key_row = SendMessageW(keys, LB_GETCURSEL, 0, 0);
+                    let item_row = SendMessageW(items, LB_GETCURSEL, 0, 0);
+                    SendMessageW(keys, LB_RESETCONTENT, 0, 0);
+                    for (slot, definition) in panel.bindings.iter().enumerate() {
+                        let label = format!(
+                            "F{}: {}",
+                            slot + 1,
+                            definition.map_or_else(
+                                || "Unassigned".into(),
+                                |value| format!("Item {value}")
+                            )
+                        );
+                        SendMessageW(keys, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                    }
+                    SendMessageW(items, LB_RESETCONTENT, 0, 0);
+                    for definition in &panel.items {
+                        SendMessageW(
+                            items,
+                            LB_ADDSTRING,
+                            0,
+                            wide(&format!("Item {definition}")).as_ptr() as isize,
+                        );
+                    }
+                    SendMessageW(keys, LB_SETCURSEL, usize::try_from(key_row).unwrap_or(0), 0);
+                    SendMessageW(
+                        items,
+                        LB_SETCURSEL,
+                        usize::try_from(item_row).unwrap_or(0),
+                        0,
+                    );
+                    SetWindowTextW(status, wide(&panel_text(panel)).as_ptr());
+                    desired = Some(panel.clone());
                 }
-            })
-            .is_err()
-            && let Some(shared) = rollback.upgrade()
-        {
+                drop(mailbox);
+                std::thread::sleep(Duration::from_millis(30));
+            }
+            if IsWindow(hwnd) != 0 {
+                DestroyWindow(hwnd);
+            }
+            close(&weak);
+        }
+    }
+    fn close(weak: &Mailbox) {
+        if let Some(shared) = weak.upgrade() {
             lock(&shared).hotkey_equip.open = false;
+        }
+    }
+    unsafe fn control(
+        parent: HWND,
+        class: &str,
+        text: &str,
+        id: usize,
+        rect: [i32; 4],
+        style: u32,
+    ) -> HWND {
+        unsafe {
+            CreateWindowExW(
+                0,
+                wide(class).as_ptr(),
+                wide(text).as_ptr(),
+                WS_CHILD | WS_VISIBLE | style,
+                rect[0],
+                rect[1],
+                rect[2],
+                rect[3],
+                parent,
+                id as _,
+                null_mut(),
+                null(),
+            )
         }
     }
 }

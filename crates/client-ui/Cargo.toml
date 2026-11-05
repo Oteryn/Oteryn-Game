@@ -12,6 +12,7 @@ category = "client-ui"
 release-role = "production"
 
 [dependencies]
+serde_json.workspace = true
 oteryn-client-domain = { version = "=0.1.0", path = "../client-domain" }
 oteryn-client-runtime = { version = "=0.1.0", path = "../client-runtime" }
 oteryn-input-actions = { version = "=0.1.0", path = "../input-actions" }

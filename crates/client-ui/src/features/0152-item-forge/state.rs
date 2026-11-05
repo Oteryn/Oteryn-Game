@@ -12,6 +12,7 @@ pub struct ItemForgePanel {
     pub protect: bool,
     pub history_limit: u8,
     pub response: Vec<u8>,
+    pub decoded: Option<super::reply::Reply>,
     pub feedback: Option<String>,
 }
 impl Default for ItemForgePanel {
@@ -28,6 +29,7 @@ impl Default for ItemForgePanel {
             protect: false,
             history_limit: 20,
             response: vec![],
+            decoded: None,
             feedback: None,
         }
     }

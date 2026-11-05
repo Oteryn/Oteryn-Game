@@ -14,6 +14,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 /// What the session task reports to the shell.
 #[derive(Debug)]
 pub enum PlayEvent {
+    ActionFeedback(Option<&'static str>),
     Stepped(Box<StepOutcome>),
     /// Deltas pushed outside any step, coalesced since the last poll.
     Pushed(Box<Pushed>),
@@ -105,7 +106,12 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) target_move_selected: bool,
+    pub(super) movement_turn: Option<StepDir>,
+    pub(super) creature_push_selected: bool,
+    pub(super) movement_feedback: Option<&'static str>,
     pub(super) analyser: oteryn_client_ui::analyser::Panel,
+    pub(super) arena: oteryn_client_ui::arena::ArenaPanel,
     pub(super) spell_catalog: oteryn_client_ui::spell_catalog::Panel,
     pub(super) spell_bar: oteryn_client_ui::spell_action_bar::ActionBarPanel,
     pub(super) served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
@@ -137,6 +143,7 @@ pub(super) struct Mailbox {
     pub(super) chat_party_room: oteryn_client_ui::chat_party_room::ChatPartyRoomPanel,
     pub(super) cyclopedia_character:
         oteryn_client_ui::cyclopedia_character::CyclopediaCharacterPanel,
+    pub(super) cyclopedia_character_shutdown: bool,
     pub(super) cyclopedia_tracker: oteryn_client_ui::cyclopedia_tracker::CyclopediaTrackerPanel,
     pub(super) world_event: oteryn_client_ui::world_event::WorldEventPanel,
     pub(super) world_event_shutdown: bool,
@@ -166,6 +173,7 @@ pub(super) struct Mailbox {
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
+    pub(super) action_feedback: Option<Option<&'static str>>,
     pub(super) pushed: Pushed,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
@@ -191,6 +199,7 @@ pub(super) struct Mailbox {
     pub(super) party: oteryn_client_ui::party::PartyPanel,
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) hireling_shutdown: bool,
+    pub(super) hireling_management: oteryn_client_ui::hireling_management::Panel,
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
     // CL26s1
@@ -250,6 +259,7 @@ pub struct Outbox(pub(super) SharedMailbox);
 impl Outbox {
     pub(super) fn stepped(&self, outcome: StepOutcome) {
         let mut mailbox = lock(&self.0);
+        mailbox.movement_turn = None;
         let older = std::mem::take(&mut mailbox.pushed);
         mailbox.before.absorb(older);
         mailbox.check_server_messages();
@@ -269,6 +279,12 @@ impl Outbox {
         mailbox.dialogue_events(&events);
         mailbox.npc_shop_events(&events);
         for event in &events {
+            if let SessionEvent::ContainerViews(update) = event {
+                super::feature_0230_browse_field::protocol::replace_views(
+                    &mut mailbox.browse_field,
+                    update.value.clone(),
+                );
+            }
             if let SessionEvent::PlayerTyping(update) = event {
                 oteryn_client_ui::player_typing::protocol::reduce(
                     &mut mailbox.player_typing,
@@ -438,6 +454,9 @@ impl PlayLink {
                 &mut mailbox.pushed,
             ))));
         }
+        if let Some(feedback) = mailbox.action_feedback.take() {
+            return Some(PlayEvent::ActionFeedback(feedback));
+        }
         if let Some(report) = mailbox.combat.pop_front() {
             return Some(PlayEvent::Combat(report));
         }
@@ -479,6 +498,8 @@ impl Drop for PlayLink {
         mailbox.vip.open = false;
         mailbox.inventory_shutdown = true;
         mailbox.containers.end();
+        mailbox.browse_field.open = false;
+        mailbox.item_forge.open = false;
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
         mailbox.prey_shutdown = true;
@@ -486,6 +507,7 @@ impl Drop for PlayLink {
         mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
         mailbox.hireling_shutdown = true;
+        mailbox.cyclopedia_character_shutdown = true;
         // CL26s1
         mailbox.chat_public_shutdown = true;
         // CL26s2: stop the player-typing native panel with the session.

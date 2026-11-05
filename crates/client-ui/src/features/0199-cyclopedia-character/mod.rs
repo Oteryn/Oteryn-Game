@@ -3,10 +3,13 @@ mod input;
 mod protocol;
 mod state;
 mod view;
-pub use input::open_key;
+pub use input::{open_key, set_target};
 pub use protocol::{Intent, apply_result, request};
 pub use state::CyclopediaCharacterPanel;
 pub use view::panel_text;
+
+#[cfg(test)]
+mod tests;
 
 #[cfg(test)]
 #[path = "tests/combat_modifiers.rs"]

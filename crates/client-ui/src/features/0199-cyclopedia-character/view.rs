@@ -5,8 +5,12 @@ pub fn panel_text(p: &CyclopediaCharacterPanel) -> String {
         .result
         .as_deref()
         .unwrap_or("No server character view yet");
+    let heading = format!(
+        "Cyclopedia character — {:?}, offset {}, limit {}",
+        p.tab, p.offset, p.limit
+    );
     match p.feedback {
-        Some(f) => format!("Cyclopedia character\n{state}\n{f}"),
-        None => format!("Cyclopedia character\n{state}"),
+        Some(f) => format!("{heading}\r\n{state}\r\n{f}"),
+        None => format!("{heading}\r\n{state}"),
     }
 }

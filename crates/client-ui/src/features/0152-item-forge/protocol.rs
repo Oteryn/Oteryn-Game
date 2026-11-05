@@ -1,3 +1,5 @@
+#[path = "protocol/reply.rs"]
+pub mod reply;
 use super::ItemForgePanel;
 use oteryn_client_runtime::cui3::item_forge::{COMMAND_TYPE_ITEM_FORGE, Request};
 use oteryn_client_runtime::server_mechanic::{
@@ -49,7 +51,12 @@ pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
         p.response.clone_from(&r.payload);
-        p.feedback = Some("Forge result received".into())
+        if let Some(reply) = super::reply::decode(&r.payload) {
+            p.decoded = Some(reply);
+            p.feedback = None;
+        } else {
+            p.feedback = Some("Invalid forge reply; refresh to retry".into());
+        }
     } else {
         p.feedback = Some(format!("Server refused forge action: {:?}", r.status))
     }
