@@ -28,6 +28,7 @@ mod domain_dispatch;
 mod events;
 pub use events::SessionEvent;
 mod gated_command;
+pub use gated_command::world_context;
 /// Server-owned highscores query and result codecs.
 pub use oteryn_protocol_oteryn::highscores;
 pub mod container_tree;

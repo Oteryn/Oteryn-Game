@@ -10,11 +10,12 @@ impl PlayView {
     #[must_use]
     pub fn hud_status(&self) -> String {
         format!(
-            "{}   {}   {}   {}",
+            "{}   {}   {}   {}   {}",
             self.world_clock_text().unwrap_or_default(),
             oteryn_client_ui::spell_action_bar::vitals_text(self.actor_vitals()),
             self.combat_status(),
-            self.target_walk_feedback().unwrap_or("")
+            self.target_walk_feedback().unwrap_or(""),
+            self.world_context_feedback.as_deref().unwrap_or("")
         )
     }
 

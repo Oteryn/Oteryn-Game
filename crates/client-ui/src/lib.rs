@@ -58,6 +58,13 @@ pub mod animus_mastery;
 
 /// World-interaction click intent mapping.
 pub mod world_interaction {
+    pub use oteryn_client_runtime::world_interaction as protocol;
+    pub mod menu {
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/features/0011-world-interaction/state.rs"
+        ));
+    }
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/src/features/0011-world-interaction/input.rs"

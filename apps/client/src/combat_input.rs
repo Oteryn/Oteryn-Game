@@ -19,6 +19,7 @@ pub enum PlayCommand {
     TargetWalk(oteryn_session::ActorPosition),
     MoveItem(oteryn_client_runtime::inventory::MoveRequest),
     ContainerView(oteryn_client_runtime::container_tree::ContainerViewIntent),
+    WorldContext(oteryn_client_runtime::world_interaction::Command),
     Combat(CombatCommand),
     /// Leave the game (capability 21 `LOGOUT_INTENT`).
     Logout,

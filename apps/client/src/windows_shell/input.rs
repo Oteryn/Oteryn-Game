@@ -69,7 +69,16 @@ impl Application {
             let mut render_failed = false;
             for click in self.actions.route(events) {
                 if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
-                    render_failed |= play.view.click(tile).is_err();
+                    if click.secondary {
+                        if let Some(menu) = play.view.world_context(tile, &play.link) {
+                            oteryn_client::play::open_world_context_menu(
+                                &play.view, &play.link, &menu,
+                            );
+                            self.actions.context_closed();
+                        }
+                    } else {
+                        render_failed |= play.view.click(tile).is_err();
+                    }
                 }
             }
             if render_failed {

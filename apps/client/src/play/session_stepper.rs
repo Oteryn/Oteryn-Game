@@ -264,6 +264,12 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_client_runtime::hireling::HirelingResponse, SessionError> {
         oteryn_client_runtime::hireling::send(self, request).await
     }
+    async fn world_context(
+        &mut self,
+        command: &oteryn_client_runtime::world_interaction::Command,
+    ) -> Result<String, SessionError> {
+        oteryn_client_runtime::world_interaction::send(self, command).await
+    }
     fn feature_selected(&self, capability: u32) -> bool {
         self.is_selected(capability)
     }

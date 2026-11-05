@@ -90,6 +90,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
     pub(super) containers: oteryn_client_ui::container_tree::ContainerPanel,
+    pub(super) world_context: oteryn_client_ui::world_interaction::menu::State,
     pub(super) inventory: oteryn_client_ui::inventory::InventoryPanel,
     pub(super) inventory_shutdown: bool,
     pub(super) item_movement: oteryn_client_ui::inventory::movement::Movement,
