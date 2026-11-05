@@ -27,6 +27,7 @@ pub struct ChannelSessionStates {
     /// P22d: settled kills of tracked creatures awaiting a domain 98 refresh. A leaf lock.
     pub(super) cyclopedia_tracker_refresh: super::cyclopedia_tracker::TrackerRefresh,
     pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
+    pub(super) dawnport_departures: super::dawnport_departure::Departures,
     /// S16c: sessions whose Dawnport trial build commit awaits live installation; their last
     /// position capture is held like a retained NPC vocation choice. A leaf lock.
     pub(super) dawnport_trials: std::sync::Mutex<std::collections::HashSet<GameSessionId>>,
@@ -132,6 +133,7 @@ impl ChannelSessionStates {
 
     /// Forget exactly the state retired after the runtime removes a terminal session.
     pub(super) fn forget_session(&self, session: GameSessionId) {
+        self.dawnport_departures.forget(session);
         self.analyser.forget(session);
         self.fence_holders.forget(session);
         self.appearance_commands.forget(session);

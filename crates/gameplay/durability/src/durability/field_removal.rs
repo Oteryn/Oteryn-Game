@@ -96,7 +96,7 @@ pub async fn remove_field_in_transaction(
 
 /// The current scope owner clears volatile fields of earlier generations, in
 /// the same bounded pass as expiry. An old caster never authorizes this write.
-pub(super) async fn retire_restarted_fields(
+pub async fn retire_restarted_fields(
     tx: &mut Transaction<'_, Postgres>,
     authority: &super::spell_item_transaction::SpellItemScopeAuthority,
     limit: usize,

@@ -24,6 +24,9 @@ content digests are derived from committed inputs.
   hashing its output. After materializing an Item admission change, regenerate the native loot facts
   with `python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py --refresh-loot-tables`
   and run `python3 tools/content-migration/register_spell_families.py` to pin those facts in the manifest.
+- For native-provider changes with unchanged World package inputs, use
+  `python3 tools/content-migration/regenerate_content.py --native-only`; it regenerates
+  native providers and their registry pins without rebuilding the World package.
 - To refresh only the World pins:
   `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh .`
 - The gate is

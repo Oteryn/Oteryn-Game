@@ -36,6 +36,7 @@ mod market_catalogue;
 pub mod mount_taming;
 
 mod native_cosmetics;
+mod starting_loadout_input;
 
 pub const MAGIC: &[u8; 8] = b"OTNGP01\0";
 pub const MAGIC_V2: &[u8; 8] = b"OTNGP02\0";
@@ -186,6 +187,8 @@ struct ProvisioningManifest {
     presentation_profiles: FilePin,
     #[serde(default)]
     item_profiles: Option<FilePin>,
+    #[serde(default)]
+    starting_loadout_item_profiles: Option<FilePin>,
     #[serde(default)]
     spell_appearances: Option<FilePin>,
     #[serde(default)]
@@ -761,10 +764,16 @@ impl NativeGameplayInput {
             source_selection: load(manifest.source_selection, MAX_SELECTION)?,
             creature_profiles: load(manifest.creature_profiles, MAX_CREATURE_PROFILES)?,
             presentation_profiles: load(manifest.presentation_profiles, MAX_PROFILES)?,
-            item_profiles: manifest
-                .item_profiles
-                .map(|pin| load(pin, MAX_ITEM_PROFILES))
-                .transpose()?,
+            item_profiles: starting_loadout_input::merge(
+                manifest
+                    .item_profiles
+                    .map(|pin| load(pin, MAX_ITEM_PROFILES))
+                    .transpose()?,
+                manifest
+                    .starting_loadout_item_profiles
+                    .map(|pin| load(pin, MAX_PROFILES))
+                    .transpose()?,
+            )?,
             spell_appearances: manifest
                 .spell_appearances
                 .map(|pin| load(pin, MAX_PROFILES))

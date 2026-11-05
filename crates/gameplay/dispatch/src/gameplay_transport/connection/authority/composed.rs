@@ -1077,10 +1077,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// C2: a `USE` naming the injected entry chest is routed to [`Self::use_chest`] instead;
     /// every other placement takes the unchanged door path.
     async fn quest_callback_unresolved(&self, session: GameSessionId) -> bool {
-        self.has_pending_quest_callback(session)
+        self.has_pending_quest_callback(session) || self.states.dawnport_departures.held(session)
     }
 
     async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
+        if let Some(actor) = admitted.runtime_actor
+            && !self
+                .resume_dawnport_departure(actor, admitted.game_session_id)
+                .await
+        {
+            return false;
+        }
         if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
             self.prepare_grizzly_npc_resume(admitted).await
                 && self

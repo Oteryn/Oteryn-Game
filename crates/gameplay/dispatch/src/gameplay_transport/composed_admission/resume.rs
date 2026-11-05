@@ -86,6 +86,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         recovered_house_transfer: bool,
     ) {
+        if let Some(actor) = admitted.runtime_actor {
+            // Finish the durable departure before rebuilding the resumed observations.
+            let _ = self
+                .resume_dawnport_departure(actor, admitted.game_session_id)
+                .await;
+        }
         // ATTACK-0 §3 Reconnect: only the target is cleared; the in-fight deadline is kept.
         if let Some(actor) = admitted.runtime_actor {
             self.states

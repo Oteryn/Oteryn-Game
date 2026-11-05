@@ -20,6 +20,7 @@ pub mod daily_reward_claim;
 pub mod daily_reward_delivery;
 mod daily_reward_effects;
 mod daily_reward_jokers;
+pub mod dawnport_departure;
 pub mod endgame_terminal;
 pub mod exercise_training;
 pub mod field_removal;

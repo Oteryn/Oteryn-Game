@@ -27,7 +27,7 @@ struct Content;
 fn gap_sv2_i05_permanent_stack_grants_keep_existing_rules() -> TestResult {
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let (controller, _) =
-        crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
     let native = controller
         .active()
         .and_then(|active| active.native_gameplay())
@@ -50,7 +50,7 @@ fn gap_sv2_i05_permanent_stack_grants_keep_existing_rules() -> TestResult {
 fn gap_sv2_i05_activated_ordinary_chain_keeps_permanent_terminal_form() -> TestResult {
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let (controller, _) =
-        crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
     let native = controller
         .active()
         .and_then(|active| active.native_gameplay())
