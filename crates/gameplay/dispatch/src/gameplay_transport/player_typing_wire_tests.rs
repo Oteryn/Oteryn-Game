@@ -72,6 +72,7 @@ impl FreshAdmissionAuthority for TypingAuthority {
                 .players
                 .iter()
                 .map(|entry| ChannelEntity {
+                    display_name: None,
                     health_percent: 100,
                     direction: StepDirection::South,
                     kind: VisibleKind::Player,

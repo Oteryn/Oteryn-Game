@@ -344,6 +344,7 @@ fn position(x: i32, y: i32) -> ActorPosition {
 
 fn actor_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        display_name: None,
         kind,
         entity: EntityRef {
             identity: if kind == EntityKind::Player && marker == 0 {
@@ -364,6 +365,7 @@ fn actor_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatial
 
 fn object_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        display_name: None,
         kind,
         entity: EntityRef {
             identity: [marker; 16],

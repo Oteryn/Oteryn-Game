@@ -434,7 +434,13 @@ where
     let Some(view) = session.visibility.as_mut() else {
         return Ok(());
     };
-    let Some(channel) = authority.observe_visible_entities(session.actor).await else {
+    let Some(channel) = crate::gameplay_transport::entity_names::observe(
+        authority,
+        session.actor,
+        session.admitted.continuity.selected_capabilities,
+    )
+    .await
+    else {
         return Err(ServeEnd::Disconnected);
     };
     let Some((to_sequence, to_revision)) = session

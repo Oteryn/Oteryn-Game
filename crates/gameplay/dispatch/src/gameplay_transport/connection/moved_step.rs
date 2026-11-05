@@ -28,7 +28,12 @@ where
     A: FreshAdmissionAuthority,
 {
     let (frames_out, delta_sequence, new_revision) = if let Some(view) = visibility {
-        let mut channel = authority.observe_visible_entities(actor).await?;
+        let mut channel = crate::gameplay_transport::entity_names::observe(
+            authority,
+            actor,
+            admitted.continuity.selected_capabilities,
+        )
+        .await?;
         // The step's committed position is the observer's own.
         let observer = channel.observer;
         for own in channel

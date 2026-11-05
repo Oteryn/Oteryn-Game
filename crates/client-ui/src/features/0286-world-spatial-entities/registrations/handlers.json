@@ -1,0 +1,15 @@
+{
+  "mechanic": "0286-world-spatial-entities",
+  "kind": "handlers",
+  "id": "0286-world-spatial-entities-unsupported",
+  "status": "unsupported",
+  "reason": "C04 owns native world-view names; S-ENTNAME supplies the server payload only.",
+  "commands": [],
+  "not_applicable": {
+    "state": "Native client rendering belongs to C04.",
+    "protocol": "Native client rendering belongs to C04.",
+    "view": "Native client rendering belongs to C04.",
+    "input": "Native client rendering belongs to C04.",
+    "settings": "Native client rendering belongs to C04."
+  }
+}

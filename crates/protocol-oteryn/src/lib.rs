@@ -56,6 +56,7 @@ pub mod damage_element;
 mod decoder_fuzz_support;
 pub mod depot;
 pub mod depot_search;
+pub mod entity_names;
 pub mod exiva;
 pub mod fishing;
 pub mod guild;

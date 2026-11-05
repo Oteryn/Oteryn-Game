@@ -264,7 +264,13 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
     let mut appearances = SessionAppearance::new(selected_capabilities);
     let mut visibility = None;
     if selected_capabilities.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES) {
-        let Some(channel) = authority.observe_visible_entities(actor).await else {
+        let Some(channel) = crate::gameplay_transport::entity_names::observe(
+            authority,
+            actor,
+            selected_capabilities,
+        )
+        .await
+        else {
             return Err(ServeEnd::Disconnected);
         };
         let mut view = SessionVisibility::with_objects(item_view.is_some())

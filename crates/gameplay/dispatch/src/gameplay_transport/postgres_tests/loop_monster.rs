@@ -3,7 +3,7 @@ use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
 #[path = "loop_monster/fixture.rs"]
-mod fixture;
+pub(super) mod fixture;
 use fixture::{cell, dependencies, next_pass, run_case};
 #[path = "loop_monster/item_scope.rs"]
 mod item_scope;
