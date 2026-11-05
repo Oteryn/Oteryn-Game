@@ -84,6 +84,8 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) death: super::feature_local_death_respawn::protocol::DeathState,
+    pub(super) death_reset_commands: bool,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,
@@ -306,12 +308,19 @@ pub struct PlayLink {
 
 impl PlayLink {
     pub fn request(&self, direction: StepDir) {
+        let mailbox = lock(&self.mailbox);
+        if mailbox.world_input_blocked() {
+            return;
+        }
         // A closed task has already reported or will report `Ended`.
         let _ = self.commands.send(PlayCommand::Step(direction));
     }
 
     pub fn request_combat(&self, command: CombatCommand) {
-        let _ = self.commands.send(PlayCommand::Combat(command));
+        let mailbox = lock(&self.mailbox);
+        if !mailbox.world_input_blocked() {
+            let _ = self.commands.send(PlayCommand::Combat(command));
+        }
     }
 
     pub fn request_logout(&self) {

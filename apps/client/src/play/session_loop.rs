@@ -343,7 +343,7 @@ pub async fn run_session<T: Stepper>(
     let mut held = Vec::new();
     loop {
         let ended = super::feature_local_account_achievements::protocol::dispatch! {
-            commands.try_recv(), session, outbox, held, publish;
+            outbox.death_command(&mut commands), session, outbox, held, publish;
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {

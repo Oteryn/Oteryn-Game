@@ -26,9 +26,12 @@ impl PlayView {
             .as_deref()
             .or(self.combat_line)
             .unwrap_or("");
-        let status = format!("spells 1-{SPELL_SLOTS} {line}")
+        let mut status = format!("spells 1-{SPELL_SLOTS} {line}")
             .trim_end()
             .to_owned();
+        if let Some(notice) = self.death_notice() {
+            status = format!("{notice} — {status}");
+        }
         match self.server_message_status() {
             Some(message) => format!("{status} — {message}"),
             None => status,

@@ -25,6 +25,7 @@ const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    death: feature_local_death_respawn::protocol::DeathState,
     target_walk_feedback: Option<&'static str>,
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
     vitals: Option<oteryn_session::ActorVitals>,
@@ -66,6 +67,7 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            death: Default::default(),
             target_walk_feedback: None,
             world_clock: None,
             vitals: None,
@@ -97,6 +99,9 @@ impl PlayView {
     /// Appends `input` unless the same one already waits (a repeated press of a slot or click of
     /// a target is one command) or the queue is full.
     fn queue(&mut self, input: Input) {
+        if self.death.dead && !matches!(input, Input::Logout) {
+            return;
+        }
         if self.inputs.len() < MAX_QUEUED_INPUTS && !self.inputs.contains(&input) {
             self.inputs.push_back(input);
         }
