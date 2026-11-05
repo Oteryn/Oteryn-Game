@@ -1,3 +1,5 @@
+mod clxc_projection;
+
 use super::*;
 use oteryn_gameplay_domain::domain::echo_warden::{
     CHILD_TTL_MS, EchoOutcome, EchoRaidPlan, SPAWN_STEP_MS, WARDEN_ADDS_MAX,
@@ -188,6 +190,9 @@ pub(super) async fn verify(
             walker.clock_origin = std::time::Instant::now()
                 .checked_sub(Duration::from_millis(now_ms + 30_000))
                 .ok_or("portal clock")?;
+            if attempt == 0 {
+                clxc_projection::portal_snapshot(&walker, player.0, true).await?;
+            }
             let (entry, _) = walker
                 .ordinary_paced_step(
                     player.0,
@@ -201,6 +206,9 @@ pub(super) async fn verify(
                 entry.moved_to.ok_or("step onto portal")?.actor_position.x,
                 POSITION.x
             );
+            if attempt == 0 {
+                clxc_projection::portal_snapshot(&walker, player.0, false).await?;
+            }
             let mut runtime = owner.runtime.lock().await;
             assert!(
                 !runtime

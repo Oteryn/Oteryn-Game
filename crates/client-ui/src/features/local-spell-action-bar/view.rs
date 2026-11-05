@@ -113,12 +113,15 @@ pub fn vitals_text(vitals: Option<&ActorVitals>) -> String {
             .collect()
     }
     format!(
-        "HP [{}] {}/{}   MP [{}] {}/{}",
+        "HP [{}] {}/{}   MP [{}] {}/{}   Soul: {}   Harmony: {}/5   Serene: {}",
         bar(vitals.health, vitals.max_health),
         vitals.health,
         vitals.max_health,
         bar(vitals.mana, vitals.max_mana),
         vitals.mana,
-        vitals.max_mana
+        vitals.max_mana,
+        vitals.soul,
+        vitals.harmony,
+        if vitals.serene { "active" } else { "inactive" }
     )
 }
