@@ -942,22 +942,32 @@ impl KillSettlementQueue {
             };
         };
         let entry = &state.queued[index];
+        // One snapshot covers reservation and settlement, even across an event window edge.
+        let event_rates = oteryn_gameplay_foundation::scheduled_events::current_rates();
         let loot_mints = entry.row.as_ref().map_or(0, |row| {
-            loot_table_mint_ceiling(entry.facts.death, row)
-                .and_then(|mints| {
-                    // Reserve the table's complete mint ceiling, rather than only this roll's
-                    // successful entries. Crystal applies its 95..105% factor while generating
-                    // loot (`data/libs/functions/monstertype.lua:89-100`), after this admission
-                    // point; capacity therefore has to cover every direct and nested candidate.
-                    mints
-                        .checked_add(entry.callback_loot.len())
-                        .and_then(|mints| {
-                            mints.checked_add(
-                                usize::from(entry.creature == "oteryn:creature.the_corruptor") * 3,
-                            )
-                        })
-                })
-                .unwrap_or(0)
+            loot_table_mint_ceiling(
+                entry.facts.death,
+                row,
+                if entry.boss_reward.is_none() {
+                    event_rates.loot
+                } else {
+                    100
+                },
+            )
+            .and_then(|mints| {
+                // Reserve the table's complete mint ceiling, rather than only this roll's
+                // successful entries. Crystal applies its 95..105% factor while generating
+                // loot (`data/libs/functions/monstertype.lua:89-100`), after this admission
+                // point; capacity therefore has to cover every direct and nested candidate.
+                mints
+                    .checked_add(entry.callback_loot.len())
+                    .and_then(|mints| {
+                        mints.checked_add(
+                            usize::from(entry.creature == "oteryn:creature.the_corruptor") * 3,
+                        )
+                    })
+            })
+            .unwrap_or(0)
         });
         // A plan that cannot fit even an idle scope must reach settle's terminal
         // capacity refusal, rather than wait forever for impossible headroom.
@@ -991,6 +1001,7 @@ impl KillSettlementQueue {
             entry: Some(entry),
             loot_mints,
             inflight_before,
+            event_rates,
         }))
     }
 
@@ -1054,9 +1065,41 @@ impl KillSettlementQueue {
     }
 }
 
+// SV09: Double Loot adds complete independent sets, including guaranteed and nested drops.
+// Crystal ff7ede59 data/libs/functions/monstertype.lua:4-10,123-124 gives each call its own
+// uniqueness set. DailyBoosted already domain-separates rolls and their durable MINT ordinals.
+fn apply_scheduled_loot_rate(
+    table: &mut oteryn_gameplay_items::loot_plan::LootTableDefinition,
+    rate: u32,
+) {
+    if rate >= 200 && rate.is_multiple_of(100) {
+        let multiplier = u8::try_from(rate / 100).unwrap_or(u8::MAX);
+        let (rolls, boosted_entries) = match table.algorithm {
+            crate::combat::LootSelectionAlgorithm::DailyBoosted {
+                extra_rolls,
+                boosted_entries,
+            } => (
+                extra_rolls
+                    .saturating_add(1)
+                    .saturating_mul(multiplier)
+                    .saturating_sub(1),
+                boosted_entries,
+            ),
+            _ => (multiplier - 1, table.entries.len()),
+        };
+        table.algorithm = crate::combat::LootSelectionAlgorithm::DailyBoosted {
+            extra_rolls: rolls,
+            boosted_entries,
+        };
+    } else {
+        oteryn_gameplay_items::loot_plan::apply_configured_loot_rate(table, rate);
+    }
+}
+
 fn loot_table_mint_ceiling(
     death: CreatureDeathOccurrenceKey,
     row: &CreatureRewardRow,
+    event_loot_rate: u32,
 ) -> Option<usize> {
     fn guarantee(entries: &mut [oteryn_gameplay_items::loot_plan::LootTableEntry]) {
         for entry in entries {
@@ -1073,6 +1116,9 @@ fn loot_table_mint_ceiling(
 
     let mut table = row.loot_table.clone();
     guarantee(&mut table.entries);
+    if event_loot_rate >= 200 && event_loot_rate.is_multiple_of(100) {
+        apply_scheduled_loot_rate(&mut table, event_loot_rate);
+    }
     plan_creature_loot(loot_plan_seed(death), &row.loot_table_ref, &table)
         .ok()
         .map(|plan| plan.entries.len())
@@ -1086,6 +1132,7 @@ pub struct TakenKillSettlement {
     entry: Option<PendingKillSettlement>,
     loot_mints: usize,
     inflight_before: usize,
+    event_rates: oteryn_gameplay_foundation::scheduled_events::EventRates,
 }
 
 impl TakenKillSettlement {
@@ -2173,6 +2220,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let report = DurableKillSettle {
                 admission: self,
                 fence,
+                event_rates: taken.event_rates,
             }
             .settle(entry, taken.inflight_before())
             .await;
@@ -2272,6 +2320,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 struct DurableKillSettle<'s, 'a, 'f, 'g> {
+    event_rates: oteryn_gameplay_foundation::scheduled_events::EventRates,
     admission: &'s ComposedFreshAdmission<'a, 'f, 'g>,
     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
 }
@@ -2625,7 +2674,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         let animus_xp = animus_mastery_experience(base_xp, masteries.len(), mastered);
         // W05d: the scheduled event experience rate (Crystal `player.lua:428-429`) applies to the
         // kill's experience before the party split, so solo and party kills both carry it.
-        let event_rates = oteryn_gameplay_foundation::scheduled_events::current_rates();
+        let event_rates = self.event_rates;
         let event_xp = oteryn_gameplay_foundation::scheduled_events::scale_gain(
             animus_xp,
             event_rates.experience,
@@ -2719,12 +2768,10 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .await
             .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
         apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
-        // W05d: the scheduled event loot rate scales each drop chance (Crystal
-        // `functions.lua:68-70`), capped at certainty.
-        oteryn_gameplay_items::loot_plan::apply_configured_loot_rate(
-            &mut loot_table,
-            event_rates.loot,
-        );
+        // SV09: two full rolls for Double Loot; Reward System loot is excluded.
+        if entry.boss_reward.is_none() {
+            apply_scheduled_loot_rate(&mut loot_table, event_rates.loot);
+        }
         if !loot_table.entries.is_empty() {
             let Ok(active) = admission
                 .root
