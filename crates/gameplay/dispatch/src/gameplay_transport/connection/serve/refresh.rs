@@ -562,13 +562,16 @@ where
     A: FreshAdmissionAuthority,
 {
     use oteryn_protocol_oteryn::presentation as wire;
-    if !session
+    let presentation_selected = session
         .selected_capabilities
-        .contains(wire::CAPABILITY_PRESENTATION_V1)
-    {
+        .contains(wire::CAPABILITY_PRESENTATION_V1);
+    let ambient_selected = session
+        .selected_capabilities
+        .contains(wire::CAPABILITY_AMBIENT_SOUND_V1);
+    if !presentation_selected && !ambient_selected {
         return Ok(());
     }
-    let Some((cursor, events)) = authority
+    let Some((cursor, mut events)) = authority
         .observe_sounds(
             session.actor,
             session.admitted.game_session_id,
@@ -578,6 +581,22 @@ where
     else {
         return Ok(());
     };
+    if ambient_selected
+        && let Some(cue_id) = events.iter().find_map(|event| match event.kind {
+            wire::PresentationEventKind::AmbientSound { cue_id } => Some(cue_id),
+            _ => None,
+        })
+    {
+        ambient_sound(stream, session, cue_id).await?;
+    }
+
+    events.retain(|event| {
+        presentation_selected
+            && !matches!(event.kind, wire::PresentationEventKind::AmbientSound { .. })
+    });
+    for (index, event) in events.iter_mut().enumerate() {
+        event.decision_ordinal = u32::try_from(index + 1).map_err(|_| ServeEnd::Disconnected)?;
+    }
     if !events.is_empty() {
         let payload =
             wire::encode_presentation_batch(&events).map_err(|_| ServeEnd::Disconnected)?;
@@ -609,5 +628,45 @@ where
         session.admitted.continuity.presentation_revision = revision;
     }
     session.sound_cursor = cursor;
+    Ok(())
+}
+
+/// One private replacement, including the silence sent before entering House custody.
+pub(super) async fn ambient_sound<S: AsyncRead + AsyncWrite + Unpin>(
+    stream: &mut S,
+    session: &mut ServeState,
+    cue_id: u32,
+) -> Result<(), ServeEnd> {
+    use oteryn_protocol_oteryn::presentation as wire;
+    let event = wire::PresentationEvent {
+        decision_ordinal: 1,
+        emission_ordinal: 1,
+        kind: wire::PresentationEventKind::AmbientSound { cue_id },
+    };
+    let payload = wire::encode_presentation_batch(&[event]).map_err(|_| ServeEnd::Disconnected)?;
+    let revision = session
+        .ambient_revision
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let sequence = session
+        .sequence
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let frame = encode_state_delta(
+        session.generation,
+        sequence,
+        wire::STATE_DOMAIN_AMBIENT_SOUND,
+        session.ambient_revision,
+        revision,
+        1,
+        &payload,
+    )
+    .map_err(|_| ServeEnd::Disconnected)?;
+    write_frame(stream, &frame)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+    session.ambient_revision = revision;
+    session.sequence = sequence;
+    session.admitted.continuity.server_sequence = sequence;
     Ok(())
 }

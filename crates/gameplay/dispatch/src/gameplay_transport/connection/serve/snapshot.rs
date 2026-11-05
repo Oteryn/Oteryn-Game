@@ -577,6 +577,16 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
         });
         world_map = Some(view);
     }
+    if selected_capabilities
+        .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
+    {
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::presentation::STATE_DOMAIN_AMBIENT_SOUND,
+            revision: 0,
+            snapshot_type: 1,
+            payload: Vec::new(),
+        });
+    }
     // CLOCK-1 (§11.3): with capability 19 (which requires 6), domain 18 at the session's current
     // revision; a resume or transfer sends only this snapshot and never replays a delta.
     let world_clock = WorldClockSource::new(DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS);

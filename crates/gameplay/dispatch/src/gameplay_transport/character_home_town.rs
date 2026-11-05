@@ -401,7 +401,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             blocked,
             &closed,
         ) {
-            let _ = runtime.commit_source_step(proof);
+            // Crystal 201189f8 data-global/scripts/movements/teleport/citizen.lua:46-49:
+            // successful citizenship is confirmed after the temple teleport.
+            if runtime.commit_source_step(proof).is_ok()
+                && committed == Some(town)
+                && let Some(area) = map.overlay.base().subareas.town(town)
+            {
+                self.states.chat.push_quest_feedback(
+                    session,
+                    &format!("You are now a citizen of {}.", area.name),
+                );
+            }
         }
         runtime.read_actor_position(actor).unwrap_or(entered)
     }

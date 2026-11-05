@@ -10,6 +10,7 @@ pub struct AudioOutput {
     stream: OutputStream,
     catalog: SoundCatalog,
     voices: Vec<(PresentationSource, Sink)>,
+    ambient: Option<(u32, Sink)>,
     error: Option<String>,
 }
 
@@ -27,11 +28,15 @@ impl AudioOutput {
             stream,
             catalog,
             voices: Vec::new(),
+            ambient: None,
             error: None,
         })
     }
 
     pub fn stop(&mut self) {
+        if let Some((_, voice)) = self.ambient.take() {
+            voice.stop();
+        }
         for (_, voice) in self.voices.drain(..) {
             voice.stop();
         }
@@ -46,10 +51,13 @@ impl AudioOutput {
         for (_, voice) in &self.voices {
             voice.set_volume(settings.gain());
         }
-        if settings.gain() == 0.0 {
-            return;
+        if let Some((_, voice)) = &self.ambient {
+            voice.set_volume(settings.gain());
         }
         for cue in cues {
+            if !cue.ambient && settings.gain() == 0.0 {
+                continue;
+            }
             if let Err(error) = self.play(cue, settings.gain()) {
                 self.error = Some(error);
             }
@@ -57,6 +65,26 @@ impl AudioOutput {
     }
 
     fn play(&mut self, cue: SoundCue, gain: f32) -> Result<(), String> {
+        if cue.ambient {
+            if self.ambient.as_ref().is_some_and(|(id, _)| *id == cue.id) {
+                return Ok(());
+            }
+            if let Some((_, voice)) = self.ambient.take() {
+                voice.stop();
+            }
+            if cue.id == 0 {
+                return Ok(());
+            }
+            let Some(bytes) = self.catalog.read_channel(cue.id, 0, true)? else {
+                return Ok(());
+            };
+            let source = Decoder::try_from(Cursor::new(bytes)).map_err(|e| e.to_string())?;
+            let voice = Sink::connect_new(self.stream.mixer());
+            voice.set_volume(gain);
+            voice.append(source.repeat_infinite());
+            self.ambient = Some((cue.id, voice));
+            return Ok(());
+        }
         let variant = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_or(0, |d| d.subsec_nanos() as usize);
@@ -108,18 +136,19 @@ impl NativeAudio {
     pub fn status(&mut self, view: &mut crate::play::PlayView) -> String {
         self.settings = view.preferences().audio;
         let cues = view.take_sound_cues();
-        let status = match &mut self.output {
+        let (status, ambient) = match &mut self.output {
             Ok(audio) => {
                 audio.update(self.settings, cues);
-                audio.status().unwrap_or("ready")
+                (audio.status().unwrap_or("ready"), audio.ambient.is_some())
             }
-            Err(error) => error.as_str(),
+            Err(error) => (error.as_str(), false),
         };
         format!(
-            "{} | Audio {}%{} ({status}); F10 mute, F11/F12 volume",
+            "{} | Audio {}%{} ({status}, {}); F10 mute, F11/F12 volume",
             view.combat_status(),
             self.settings.master_volume,
-            if self.settings.muted { " muted" } else { "" }
+            if self.settings.muted { " muted" } else { "" },
+            oteryn_client_ui::ambient_sound::status(ambient)
         )
     }
 }

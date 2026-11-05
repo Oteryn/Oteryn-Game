@@ -27,8 +27,7 @@ pub fn audio_input(settings: &mut AudioSettings, events: &[NormalizedInputEvent]
 
 impl PlayView {
     pub(in crate::play) fn enqueue(&mut self, cues: Vec<super::state::SoundCue>) {
-        let room = super::state::MAX_PENDING_SOUNDS.saturating_sub(self.sounds.len());
-        self.sounds.extend(cues.into_iter().take(room));
+        super::protocol::absorb_sounds(&mut self.sounds, cues);
     }
 
     pub fn audio_input(&mut self, events: &[NormalizedInputEvent]) -> bool {

@@ -51,8 +51,16 @@ pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
     write_frame(stream, &result)
         .await
         .map_err(|_| ServeEnd::Disconnected)?;
+    if next.is_some()
+        && session
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
+    {
+        // A House has no Channel cadence: leaving the sound zone must stop its loop now.
+        refresh::ambient_sound(stream, session, 0).await?;
+    }
     match next {
-        Some(next) => Err(ServeEnd::Transferred(Box::new(next))),
+        Some(_) => Err(ServeEnd::Transferred(Box::new(session.admitted))),
         None => Ok(()),
     }
 }
