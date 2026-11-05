@@ -17,6 +17,12 @@ pub struct StorePanel {
     pub page: StorePage,
     pub category: String,
     pub selected_offer: usize,
+    pub catalogue_category: String,
+    pub hireling_name: String,
+    pub hireling_sex: u8,
+    pub hireling_id: Option<[u8; 16]>,
+    /// Frozen confirmed wire request; uncertain outcomes retry these exact bytes.
+    pub confirmed_purchase: Option<Vec<u8>>,
     pub purchase_request_id: [u8; 16],
     pub purchase_confirmed: bool,
     pub fulfilment_unit_id: String,

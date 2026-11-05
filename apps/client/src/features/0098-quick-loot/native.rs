@@ -213,8 +213,8 @@ fn specs(
         ),
         _ => (
             &[
-                "Refresh purchase history",
-                "Next history page",
+                "Refresh current Store tab",
+                "Next page in current tab",
                 "Catalogue",
                 "Purchase history",
             ],
@@ -332,12 +332,20 @@ unsafe fn window(
                 let row = usize::try_from(SendMessageW(rows, LB_GETCURSEL, 0, 0)).unwrap_or(0);
                 if panel == 285
                     && (action == 3
-                        || (action == 1
+                        || ((action == 1 || action == 2)
                             && link.store_panel().page
                                 == oteryn_client_ui::store::StorePage::Catalogue))
                 {
-                    let command =
-                        oteryn_client_ui::store::catalogue(&mut lock(&link.mailbox).store);
+                    let command = {
+                        let mut mailbox = lock(&link.mailbox);
+                        if mailbox.store.category.is_empty() {
+                            mailbox.store.category = "featured".into();
+                        }
+                        if action != 2 {
+                            mailbox.store.catalogue = None;
+                        }
+                        oteryn_client_ui::store::catalogue(&mut mailbox.store)
+                    };
                     if let Some(command) = command {
                         link.discovery_send(command);
                     }
@@ -440,13 +448,24 @@ unsafe fn window(
                 {
                     store.selected && !store.pending
                 } else if panel == 285 && i == 1 {
-                    available
-                        && store.page == oteryn_client_ui::store::StorePage::History
-                        && state
-                            .history
-                            .page
-                            .as_ref()
-                            .is_some_and(|p| !p.next_page_cursor.is_empty())
+                    match store.page {
+                        oteryn_client_ui::store::StorePage::Catalogue => {
+                            store.selected
+                                && !store.pending
+                                && store
+                                    .catalogue
+                                    .as_ref()
+                                    .is_some_and(|p| !p.next_page_cursor.is_empty())
+                        }
+                        _ => {
+                            available
+                                && state
+                                    .history
+                                    .page
+                                    .as_ref()
+                                    .is_some_and(|p| !p.next_page_cursor.is_empty())
+                        }
+                    }
                 } else {
                     available
                 };

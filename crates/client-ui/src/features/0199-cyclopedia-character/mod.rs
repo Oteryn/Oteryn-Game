@@ -7,3 +7,7 @@ pub use input::open_key;
 pub use protocol::{Intent, apply_result, request};
 pub use state::CyclopediaCharacterPanel;
 pub use view::panel_text;
+
+#[cfg(test)]
+#[path = "tests/gap_character_tabs.rs"]
+mod gap_character_tabs;
