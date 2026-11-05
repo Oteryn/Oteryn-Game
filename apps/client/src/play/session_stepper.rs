@@ -11,6 +11,9 @@ use std::future::Future;
 use std::time::Duration;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn refusal_detail(&self) -> Option<oteryn_session::refusal_detail::RefusalDetail> {
+        self.last_refusal_detail()
+    }
     fn equipment_selected(&self) -> bool {
         self.is_selected(12)
     }
@@ -414,6 +417,9 @@ pub(super) fn publish<T: Stepper>(
     outbox.guild_chat_publish(session);
     outbox.depot_publish(session);
     outbox.stash_publish(session);
+    if let Some(inventory) = session.inventory() {
+        outbox.browse_field_inventory(inventory);
+    }
     outbox.vitals(session.actor_vitals());
     outbox.appearances(session.visible_appearances());
     if let Some(payload) = session.feature_snapshot(98) {

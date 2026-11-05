@@ -5,6 +5,7 @@ impl PlayView {
     /// Shows the server's answer to a combat command.
     pub fn apply_combat(&mut self, report: CombatReport) {
         self.combat_line = report.text();
+        self.action_line = None;
         self.logout_line = None;
     }
 }

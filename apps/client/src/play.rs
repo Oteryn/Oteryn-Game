@@ -48,6 +48,7 @@ pub struct PlayView {
     ground_items: Vec<crate::input::Targetable>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
+    action_line: Option<&'static str>,
     /// The last refused logout's line, shown until the next combat line or logout answer.
     logout_line: Option<String>,
     /// Recent server messages in their validated delivery order, owned by this connection.
@@ -89,6 +90,7 @@ impl PlayView {
             appearances: Vec::new(),
             ground_items: Vec::new(),
             combat_line: None,
+            action_line: None,
             logout_line: None,
             server_messages: VecDeque::new(),
         };
@@ -103,6 +105,7 @@ impl PlayView {
 mod end;
 mod input;
 mod mailbox;
+mod refusal_details;
 mod session_loop;
 mod session_stepper;
 mod stepper;

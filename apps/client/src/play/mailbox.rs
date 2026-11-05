@@ -14,6 +14,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 /// What the session task reports to the shell.
 #[derive(Debug)]
 pub enum PlayEvent {
+    ActionFeedback(Option<&'static str>),
     Stepped(Box<StepOutcome>),
     /// Deltas pushed outside any step, coalesced since the last poll.
     Pushed(Box<Pushed>),
@@ -171,6 +172,7 @@ pub(super) struct Mailbox {
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
+    pub(super) action_feedback: Option<Option<&'static str>>,
     pub(super) pushed: Pushed,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
@@ -275,6 +277,12 @@ impl Outbox {
         mailbox.dialogue_events(&events);
         mailbox.npc_shop_events(&events);
         for event in &events {
+            if let SessionEvent::ContainerViews(update) = event {
+                super::feature_0230_browse_field::protocol::replace_views(
+                    &mut mailbox.browse_field,
+                    update.value.clone(),
+                );
+            }
             if let SessionEvent::PlayerTyping(update) = event {
                 oteryn_client_ui::player_typing::protocol::reduce(
                     &mut mailbox.player_typing,
@@ -444,6 +452,9 @@ impl PlayLink {
                 &mut mailbox.pushed,
             ))));
         }
+        if let Some(feedback) = mailbox.action_feedback.take() {
+            return Some(PlayEvent::ActionFeedback(feedback));
+        }
         if let Some(report) = mailbox.combat.pop_front() {
             return Some(PlayEvent::Combat(report));
         }
@@ -485,6 +496,8 @@ impl Drop for PlayLink {
         mailbox.vip.open = false;
         mailbox.inventory_shutdown = true;
         mailbox.containers.end();
+        mailbox.browse_field.open = false;
+        mailbox.item_forge.open = false;
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
         mailbox.prey_shutdown = true;

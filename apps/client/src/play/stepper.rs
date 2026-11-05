@@ -8,6 +8,7 @@ use oteryn_session::{
 };
 use std::{future::Future, time::Duration};
 super::feature_0014_container_tree::protocol::session_trait! {
+    fn refusal_detail(&self) -> Option<oteryn_session::refusal_detail::RefusalDetail> { None }
     fn target_walk(
         &mut self,
         _position: oteryn_session::ActorPosition,

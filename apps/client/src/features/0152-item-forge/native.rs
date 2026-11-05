@@ -34,7 +34,7 @@ pub(super) fn presentation(panel: &ItemForgePanel) -> String {
     if panel.pending {
         text.push_str("\nWaiting for server…");
     }
-    if !panel.response.is_empty() {
+    if panel.decoded.is_none() && !panel.response.is_empty() {
         match serde_json::from_slice::<serde_json::Value>(&panel.response) {
             Ok(value) => text.push_str(&format!("\nResult: {value:#}")),
             Err(_) => text.push_str("\nThe server returned invalid forge results"),
@@ -273,6 +273,9 @@ mod windows {
                             }
                         }
                         let panel = lock(&shared).item_forge.clone();
+                        if !panel.open {
+                            break;
+                        }
                         if held.as_ref() != Some(&panel) {
                             SetWindowTextW(
                                 status,

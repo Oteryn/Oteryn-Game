@@ -47,7 +47,7 @@ fn moved_to(x: i32, y: i32, floor: i16) -> StepOutcome {
     }
 }
 
-fn view() -> Result<PlayView, BatchError> {
+pub(super) fn view() -> Result<PlayView, BatchError> {
     PlayView::new(
         TileCoord::new(100, 200),
         0,
@@ -415,7 +415,10 @@ fn pushed_events_are_drained_so_the_queue_never_overflows() -> Result<(), String
                 }
                 PlayEvent::Ended(class) => return Err(format!("session ended: {class:?}")),
                 PlayEvent::LoggedOut => return Err("logged out".to_owned()),
-                PlayEvent::Stepped(_) | PlayEvent::Combat(_) | PlayEvent::LogoutRefused(_) => {}
+                PlayEvent::Stepped(_)
+                | PlayEvent::Combat(_)
+                | PlayEvent::LogoutRefused(_)
+                | PlayEvent::ActionFeedback(_) => {}
             }
         }
         if pushed > 4 {

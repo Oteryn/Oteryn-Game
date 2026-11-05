@@ -10,6 +10,35 @@ fn item_forge_panel_opens_and_sends() {
     ));
 }
 
+#[test]
+fn forge_native_flow_decodes_result_and_history() {
+    use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
+    let (link, _, outbox) = play_channel();
+    outbox.item_forge_initialize(true);
+    let receipt = br#"{"operation":"fusion","succeeded":false,"applied":true,"reason":null,"bonus":0,"result":{"first_item":2,"first_tier":1,"second_item":3,"second_tier":null,"dust":50,"dust_limit":100,"gold_spent":25000,"cores_spent":1,"slivers_spent":0,"slivers_created":0,"cores_created":0}}"#;
+    let mut response = ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: receipt.to_vec(),
+    };
+    outbox.item_forge_result(&response);
+    let text = oteryn_client_ui::item_forge::panel_text(&link.item_forge_panel());
+    assert!(text.contains("Fusion: failed"), "{text}");
+    assert!(text.contains("Dust: 50 / 100"), "{text}");
+    response.payload = [b"[{\"ordinal\":7,\"receipt\":".as_slice(), receipt, b"}]"].concat();
+    outbox.item_forge_result(&response);
+    let text = oteryn_client_ui::item_forge::panel_text(&link.item_forge_panel());
+    assert!(text.contains("History #7"), "{text}");
+    response.payload = vec![1];
+    outbox.item_forge_result(&response);
+    let text = oteryn_client_ui::item_forge::panel_text(&link.item_forge_panel());
+    assert!(
+        text.contains("History #7") && text.contains("Invalid forge reply"),
+        "{text}"
+    );
+}
+
 #[path = "../native.rs"]
 mod native;
 #[test]

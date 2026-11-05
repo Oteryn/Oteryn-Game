@@ -16,6 +16,7 @@ impl PlayView {
         const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
         while let Some(event) = link.poll() {
             match event {
+                PlayEvent::ActionFeedback(line) => self.action_line = line,
                 PlayEvent::Stepped(outcome) => {
                     self.apply(&outcome).map_err(|_error| UNAVAILABLE)?;
                 }

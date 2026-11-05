@@ -131,6 +131,17 @@ pub async fn send<S: SessionStream>(
         }
         _ => return Ok(format!("{label} unavailable")),
     };
+    if command.action != Action::Look
+        && matches!(
+            result.status,
+            oteryn_session::CommandStatus::Accepted
+                | oteryn_session::CommandStatus::Rejected
+                | oteryn_session::CommandStatus::DuplicateReplay
+        )
+        && let Some(message) = refusal_message(&result.payload, session.is_selected(66))
+    {
+        return Ok(message.into());
+    }
     if !matches!(
         result.status,
         oteryn_session::CommandStatus::Accepted | oteryn_session::CommandStatus::DuplicateReplay
@@ -226,5 +237,42 @@ mod tests {
             );
         }
         Ok(())
+    }
+}
+
+fn refusal_message(payload: &[u8], selected: bool) -> Option<&'static str> {
+    if !selected {
+        return None;
+    }
+    let (payload, detail) = oteryn_session::refusal_detail::split_refusal_detail(payload).ok()?;
+    let (disposition, _) = world_object::decode_use_result_with_gate(payload).ok()?;
+    if matches!(
+        disposition,
+        world_object::UseDisposition::Committed
+            | world_object::UseDisposition::BedWoken
+            | world_object::UseDisposition::OfflineTraining
+    ) {
+        return None;
+    }
+    detail.map(|detail| detail.reference_message())
+}
+#[cfg(test)]
+mod refusal_tests {
+    use super::*;
+    #[test]
+    fn use_flow_presents_every_negotiated_refusal_detail() {
+        for detail in oteryn_session::refusal_detail::RefusalDetail::ALL {
+            let mut payload = vec![8, 5];
+            oteryn_session::refusal_detail::append_refusal_detail(
+                &mut payload,
+                &[66],
+                Some(detail),
+            );
+            assert_eq!(
+                refusal_message(&payload, true),
+                Some(detail.reference_message())
+            );
+            assert_eq!(refusal_message(&payload, false), None);
+        }
     }
 }
