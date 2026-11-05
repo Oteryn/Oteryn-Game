@@ -17,6 +17,8 @@ pub use oteryn_client_simulation::scene::{SCENE_COLUMNS, SCENE_ROWS, SCENE_TILE_
 
 // A full view plus the minimap (background, terrain, creature per cell and own marker)
 // fits one sprite batch.
+// One floor (map cells, a marker per tile, the player and the target) fits one sprite batch.
+// The renderer also bounds the aggregate draws from the visible floors.
 const _: () = assert!(
     ((SCENE_COLUMNS + SCAN_MARGIN as u32) * (SCENE_ROWS + SCAN_MARGIN as u32)) as usize
         * (MAX_TILE_DRAWS + 1)
@@ -238,6 +240,39 @@ impl Scene {
                     },
                     emit,
                 )
+                for floor in self.world.draw_floors() {
+                    let own_floor = floor == self.world.center().2;
+                    visit_scene(
+                        (origin.x, origin.y),
+                        self.anchor.map(|anchor| (anchor.x, anchor.y)),
+                        (
+                            (self.own.x, self.own.y),
+                            if own_floor {
+                                self.world.player(self.facing)
+                            } else {
+                                &[]
+                            },
+                        ),
+                        |x, y| self.world.floor_tile(floor, x, y),
+                        |x, y| {
+                            // One glyph per tile however many markers and entities stand on it.
+                            self.visible
+                                .iter()
+                                .any(|v| {
+                                    own_floor
+                                        && v.tile == TileCoord::new(x, y)
+                                        && (v.glyph
+                                            || (v.kind == TargetKind::Object && v.item.is_none()))
+                                })
+                                .then_some(Draw {
+                                    cell: MARKER_CELL,
+                                    offset: [0, 0],
+                                })
+                        },
+                        &mut *emit,
+                    )?;
+                }
+                Ok(())
             },
             self.target.map(|target| target.tile),
         )?;

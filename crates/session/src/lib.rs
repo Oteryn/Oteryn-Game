@@ -27,7 +27,10 @@ mod depot;
 #[path = "features/0037-depot/protocol.rs"]
 mod depot_containers;
 mod domain_dispatch;
+mod entities;
+mod error;
 mod events;
+mod framing;
 pub use events::SessionEvent;
 mod gated_command;
 pub use gated_command::world_context;
@@ -40,8 +43,17 @@ pub mod item_movement;
 mod join;
 mod map_transport;
 mod player_trade_transport;
+mod outcomes;
 mod presentation;
 mod quest_log_transport;
+mod replacement_snapshot;
+mod session_access;
+mod session_commands;
+mod session_exchange;
+mod session_transport;
+mod snapshot_install;
+mod snapshot_state;
+mod snapshot_transfer;
 pub use oteryn_protocol_oteryn::presentation::{
     PresentationColor, PresentationEvent, PresentationEventKind, PresentationSource,
     PresentationValue, PresentationValueKind,
@@ -874,6 +886,9 @@ impl WorldEntities {
 /// recorded and returned by `take_duplicate_outcomes`, never followed by a delta. Any other
 /// violation, timeout or I/O failure makes the session unusable (`SessionUnusable`): the
 /// server's state is no longer known, so nothing further is sent.
+///
+/// Replacement snapshots are committed atomically and advance the applied sequence; domains
+/// absent from a replacement retain their current state.
 ///
 /// Liveness: the session runs no background task. A `LivenessProbe` that arrives while a
 /// command's reply is being read is answered with a `LivenessAck` and otherwise ignored, but
@@ -2135,3 +2150,9 @@ pub use oteryn_protocol_oteryn::task_board;
 
 /// Server-owned stash wire types exposed to client feature adapters.
 pub use oteryn_protocol_oteryn::stash;
+
+pub use entities::WorldEntities;
+pub use error::SessionError;
+use framing::*;
+pub use framing::{read_frame, write_frame};
+pub use outcomes::*;
