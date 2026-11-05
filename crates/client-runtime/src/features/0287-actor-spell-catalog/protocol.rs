@@ -1,6 +1,9 @@
 //! Read the latest catalogue from the session owner, including after reconnect.
+#[path = "state.rs"]
+mod state;
 pub use oteryn_session::spell_catalog::{SpellCatalog, SpellCatalogEntry};
 use oteryn_session::{Session, SessionError, SessionEvent, SessionStream};
+pub use state::CatalogState;
 
 /// Read confirmed state from this session rather than retaining a catalogue across admissions.
 pub fn snapshot<S: SessionStream>(

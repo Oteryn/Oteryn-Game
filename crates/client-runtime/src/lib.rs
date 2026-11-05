@@ -167,6 +167,8 @@ pub mod cyclopedia_protocol {
     };
 }
 
+#[path = "features/0010-analyser/protocol.rs"]
+pub mod analyser;
 /// Attack command execution and disposition mapping.
 #[path = "features/0017-attack/protocol.rs"]
 pub mod attack;

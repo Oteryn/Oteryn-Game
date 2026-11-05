@@ -40,3 +40,41 @@ impl PlayView {
         }
     }
 }
+
+#[cfg(windows)]
+pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
+    use crate::play::feature_0115_mail::view::native::{Form, open};
+    open(
+        link,
+        Form {
+            title: "Spell action bar",
+            labels: &[
+                "Slot 1 cast index",
+                "Slot 2 cast index",
+                "Slot 3 cast index",
+                "Slot 4 cast index",
+            ],
+            buttons: &["Apply", "Cast 1", "Cast 2", "Cast 3", "Cast 4"],
+            snapshot: |mailbox| {
+                let panel = &mailbox.spell_bar;
+                (
+                    panel.open,
+                    false,
+                    panel.bar.fields(),
+                    format!(
+                        "{}\r\n{}",
+                        oteryn_client_ui::spell_action_bar::panel_text(
+                            panel,
+                            &mailbox.spell_catalog.catalog
+                        ),
+                        oteryn_client_ui::spell_action_bar::vitals_text(mailbox.vitals.as_ref())
+                    ),
+                )
+            },
+            set_open: |mailbox, open| mailbox.spell_bar.open = open,
+            submit: |mailbox, commands, action, fields| {
+                super::input::submit(mailbox, commands, action, &fields)
+            },
+        },
+    );
+}
