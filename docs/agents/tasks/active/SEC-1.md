@@ -157,8 +157,7 @@ Structure rules (binding acceptance criteria):
 - [ ] **Admission hookup**: evaluate client release/trust in fresh admission and V2 recovery (`crates/gameplay/admission-evidence/src/lib.rs`, admission path in `apps/game-server/src/node/serve.rs`, ADMIT-CAP-1 merged #2187) and capability negotiation in `capabilities.rs`; refuse or flag untrusted builds with a typed error code.
 - [ ] **Protocol**: client-integrity capability and challenge/response or attestation messages in `crates/protocol-oteryn/src/` (new module, registry entries); client side in `apps/client`.
 - [ ] **Detection**: SEC-CHAL / SEC-TELEM / SEC-DETECT children (movement/step integrity in `gameplay_transport/actor_movement.rs` and `input_gate.rs`, telemetry per DATA-PRIVACY-01), GM-1 staff audit linkage; mode starts REPORT_ONLY.
-- SEC-DETECT-1: CP allocated 2026-11-05 by operator (issue #2054), report-only
-- [x] **SEC-DETECT-1 (#2054)**: REPORT_ONLY cadence, shared use/cast exhaust and reach refusal bursts; fixed per-connection timestamp arrays, anonymous coalesced audit, at most one line per second including teardown. No command outcome or sanction changes.
+- [x] **SEC-DETECT-1 (#2054, CP allocated 2026-11-05)**: REPORT_ONLY cadence, shared use/cast exhaust and reach refusal bursts; fixed per-connection timestamp arrays, anonymous coalesced audit, at most one line per second including teardown. No command outcome or sanction changes.
 - [ ] **Config**: node config switches (`apps/game-server/src/node/config.rs`) for report-only vs enforce, trust root provisioning, operator docs.
 - [ ] **Tests**: keep the 17 unit tests; add durable trust-store restart tests; **end-to-end through the real session handshake/`connection.rs` dispatch**: valid build admitted, revoked/unsigned/wrong-role build refused or reported, clock step backward handled; no player-visible regression in report-only mode.
 
@@ -169,20 +168,8 @@ Structure rules (binding acceptance criteria):
 
 ### SEC-DETECT-1 evidence (2026-11-05)
 
-- Base: current `origin/main` at `9418ffb846e338aafcab4bb84b90cca00ce1d3bf`.
-- Existing #2561 refusal observations feed three sliding detectors: eight refusals
-  within one second per category. The initial burst is coalesced into its first
-  report; pending observations on close never bypass a previous report's rate cap.
-- `cargo test -p oteryn-gameplay-dispatch --lib sec1`: red without detectors
-  (6 passed, 2 failed on missing burst/flood signals), green with detectors
-  (8 passed, 0 failed). Virtual-time cases:
-  `sec1_detect_cadence_burst_flags_without_changing_outcomes`,
-  `sec1_detect_state_is_bounded_under_flood`,
-  `sec1_detect_no_flag_for_paced_play`.
-- Connection evidence: two movement owner calls and eight unchanged TOO_EARLY
-  rejection payloads in the ten-command cadence burst. Detector state stays
-  below 4096 bytes through 100,000 refusal observations; paced play has no signal.
-- PG not applicable: no SQL or persistence changes. No full nextest or PG suite.
-- Self-review covered all three changed files: fixed memory, saturating counts,
-  numeric-only reports, rate-limited teardown and unchanged command execution.
-  Remaining SEC-1 children and overall PARTIAL status are unchanged.
+- Base `origin/main` `9418ffb8`. #2561 refusal observations feed three sliding
+  detectors (8 refusals/s per category); bursts coalesce, close never bypasses the rate cap.
+- `cargo test -p oteryn-gameplay-dispatch --lib sec1`: red 6/2, green 8/0
+  (cadence burst, bounded flood state < 4096 B over 100,000 refusals, paced play silent).
+- Outcomes unchanged (eight TOO_EARLY payloads intact). No SQL/persistence, so no PG.
