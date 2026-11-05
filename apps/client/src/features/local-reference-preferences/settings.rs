@@ -8,6 +8,16 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 
+#[path = "bindings.rs"]
+mod bindings;
+#[path = "store.rs"]
+mod store;
+#[path = "sync.rs"]
+mod sync;
+pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
+pub use store::PreferenceStore;
+pub use sync::SettingsState;
+
 const PANEL_IDS: &[&str] = &[
     "battle",
     "chat",
@@ -46,8 +56,10 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub audio: crate::play::AudioSettings,
     #[serde(default)]
+    pub keybindings: std::collections::BTreeMap<String, String>,
+    #[serde(default)]
     pub english: bool,
-    /// Interface scale as an integral percentage.
+    /// Requested world zoom percentage, fitted to the current viewport when projected.
     #[serde(default = "default_scale")]
     pub ui_scale: u16,
     #[serde(default = "default_panels")]
@@ -58,6 +70,7 @@ impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
             audio: crate::play::AudioSettings::default(),
+            keybindings: std::collections::BTreeMap::new(),
             english: false,
             ui_scale: default_scale(),
             visible_panels: default_panels(),
@@ -66,7 +79,8 @@ impl Default for ReferencePreferences {
 }
 
 impl ReferencePreferences {
-    fn validate(&self) -> Result<(), PreferenceError> {
+    pub(super) fn validate(&self) -> Result<(), PreferenceError> {
+        self.validate_bindings()?;
         if self.audio.master_volume > 100
             || !(80..=180).contains(&self.ui_scale)
             || self.visible_panels.len() > PANEL_IDS.len()
@@ -91,7 +105,7 @@ pub struct PreferenceError;
 
 impl Display for PreferenceError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str("invalid local client preferences")
+        formatter.write_str("Invalid preferences or conflicting key binding")
     }
 }
 
@@ -101,6 +115,7 @@ impl std::error::Error for PreferenceError {}
 pub(crate) struct LocalPlayState {
     world: Arc<World>,
     preferences: ReferencePreferences,
+    viewport: [u32; 2],
 }
 
 impl LocalPlayState {
@@ -108,6 +123,7 @@ impl LocalPlayState {
         Self {
             world: Arc::new(world),
             preferences: ReferencePreferences::default(),
+            viewport: [960, 540],
         }
     }
 
@@ -121,6 +137,29 @@ impl LocalPlayState {
 }
 
 impl PlayView {
+    pub(in crate::play) fn apply_preference_scale(
+        &mut self,
+    ) -> Result<(), oteryn_renderer::BatchError> {
+        let pixels = crate::scene::SCENE_TILE_PX * u32::from(self.preferences().ui_scale) / 100;
+        let fit = (self.local.viewport[0] / crate::scene::SCENE_COLUMNS)
+            .min(self.local.viewport[1] / crate::scene::SCENE_ROWS)
+            .max(1);
+        self.scene.set_tile_px(pixels.min(fit))
+    }
+
+    pub fn set_world_viewport(&mut self, viewport: [u32; 2]) -> Result<(), PreferenceError> {
+        if viewport.contains(&0) || self.local.viewport == viewport {
+            return Ok(());
+        }
+        let mut candidate = self.clone();
+        candidate.local.viewport = viewport;
+        candidate
+            .apply_preference_scale()
+            .map_err(|_| PreferenceError)?;
+        *self = candidate;
+        Ok(())
+    }
+
     #[must_use]
     pub const fn preferences(&self) -> &ReferencePreferences {
         &self.local.preferences
@@ -131,7 +170,10 @@ impl PlayView {
         preferences: ReferencePreferences,
     ) -> Result<(), PreferenceError> {
         preferences.validate()?;
-        self.local.preferences = preferences;
+        let mut candidate = self.clone();
+        candidate.local.preferences = preferences;
+        candidate.rebuild().map_err(|_| PreferenceError)?;
+        *self = candidate;
         Ok(())
     }
 }

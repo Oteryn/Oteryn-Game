@@ -5,6 +5,9 @@ pub mod world_light;
 
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
+#[path = "features/local-reference-preferences/input.rs"]
+pub mod reference_preferences;
+
 /// Account achievement pages from core command 10.
 #[path = "features/local-account-achievements/mod.rs"]
 pub mod account_achievements;

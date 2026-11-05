@@ -100,6 +100,16 @@ impl Scene {
         Ok(scene)
     }
 
+    pub fn set_tile_px(&mut self, tile_px: u32) -> Result<(), BatchError> {
+        if self.view.tile_px() == tile_px {
+            return Ok(());
+        }
+        self.view = TileView::new(self.view.origin(), tile_px, SCENE_COLUMNS, SCENE_ROWS)?;
+        let cells = vec![BLACK_CELL; (SCENE_COLUMNS * SCENE_ROWS) as usize];
+        self.tiles = TileBatch::from_cells(&self.view, self.world.atlas(), &cells)?;
+        self.rebuild_sprites()
+    }
+
     pub fn set_ambient(&mut self, ambient: [u8; 3]) -> Result<(), BatchError> {
         self.lit_atlas = Some(oteryn_renderer::lit_atlas(self.world.atlas(), ambient));
         Ok(())

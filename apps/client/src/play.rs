@@ -111,6 +111,11 @@ mod tick;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
+pub use feature_local_reference_preferences::settings::{
+    PreferenceBinding, PreferenceInput, PreferenceStore, ReferencePreferences, SettingsState,
+    preference_bindings,
+};
+
 pub use feature_0004_item_view_move::state::GroundItem;
 
 pub use feature_0023_presentation::state::*;

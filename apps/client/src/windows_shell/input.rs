@@ -8,8 +8,12 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
+        let routed = self.settings.input(events);
+        let events = routed.as_slice();
         if let Some(play) = &mut self.play {
+            self.settings.restore(&mut play.view);
             if play.view.audio_input(events) {
+                self.settings.capture(&mut play.view);
                 return;
             }
             if play.link.achievement_notices_input(events)
