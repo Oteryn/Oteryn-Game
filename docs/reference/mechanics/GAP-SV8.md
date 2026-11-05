@@ -67,7 +67,7 @@ Item-profile fixture. It checks every known tile against the independent movemen
 floor-change owner: rope ground itself has no floor change, but another stacked
 entry can supply one (Canary `src/items/tile.cpp:1837-1841`).
 
-## Stopped mechanics
+## Original investigation (superseded by continuation below)
 
 W19b: STOPPED at the shared USE/drop planting transaction design.
 Crystal `201189f871d23597b82caf88fd611454a2ddefb8`, `data-global/scripts/actions/other/dryad_garden.lua:1-26` only teleports; those callbacks already exist.
@@ -104,3 +104,98 @@ run passes in 242.61 s: 19,373,519 tiles, 19,355,477 known, 18,042 unknown,
 The catalogue generator's `--check` and `oteryn-architecture-check workspace .`
 also pass. Native Windows window execution is unavailable on this Linux host;
 the client ingress/session/refusal/logout flows are covered by the passing tests.
+
+
+## Continuation on integrated SV8
+
+Base: `a0fbfbc5fb07b9685d3f43c9ec342195be4cb15d`, fetched from
+`claude/happy-davinci-ijz3wy-srvpkg3`. The original uncommitted tree was discarded.
+The preceding investigation/validation describes the earlier movement-spell package;
+it is not validation evidence for this continuation. Continuation donor references
+are classified `OTS_HYPOTHESIS_ONLY`.
+
+- **oteryn-choice — W19b:** retain the production fenced writers already integrated
+  by the planting work. USE composes in consume/transform; AddItem composes in the
+  native item-transfer transaction, with the same terrain CAS, source-timed decay
+  and type-2 audit ownership. Do not create a second planting transaction owner.
+  Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+  `data/scripts/actions/items/ice_flower_seeds.lua:3-17` and
+  `data/scripts/movements/seeds.lua:3-17` distinguish USE from AddItem.
+  Concrete production paths: `item_craft/planting.rs::use_planting`,
+  `durability/consume_transform_planting.rs::prepare`, and
+  `durability/item_loop_move/seed_drop.rs::commit_item_loop_seed_drop`.
+  The static-map paths already consume one seed, transform, retain decay and
+  grant Preservationist through their existing owners. The remaining AddItem
+  consequence for a materialized pot should join its existing native transfer
+  transaction, rather than perform a second commit.
+  **Implementation remains incomplete:** `loop_move/seed_drop.rs:34-35` accepts
+  only `MapEntryKey::Base`; a materialized pot does not select that consequence.
+  The existing map-pot tests do not qualify materialized-pot AddItem execution.
+- **oteryn-choice — W07:** use a dedicated multi-wave Soulpit template under the
+  existing `ActivityHandoffOwner`, with the core debit and encounter creation
+  inserted before its prepared group becomes committed and before any source
+  session ends. Reuse its physical reservation and entry/return recovery owner.
+  Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+  `data-global/scripts/quests/soulpit/soulpit_fight.lua:37-77` validates the
+  whole staging roster before consuming the core; `:100-106` owns completion.
+  This is a selected technical design, not an owner decision request.
+  **Implementation remains incomplete:** the production handoff implementation,
+  qualified multi-wave template and native wave/return bridge are still absent.
+  An incomplete transaction-only draft was discarded; it is not in this patch.
+- **oteryn-choice — W08:** keep acquisition in the existing Soulpit completion
+  transaction, with current survivor fences and exact occurrence replay; do not
+  add a separate grant command or client-controlled acquisition path.
+  Crystal `data-global/scripts/quests/soulpit/soulpit_fight.lua:100-106` and
+  `src/creatures/players/animus_mastery/animus_mastery.cpp:33-61`;
+  current writer `durability/soulpit/progress.rs::credit_survivors`.
+  **Implementation remains incomplete:** the production acquisition path still
+  depends on W07. No W07/W08 completion or PostgreSQL qualification is claimed.
+
+The integrated base failed Rust compilation with duplicate `TitleFacts` fields
+(`E0062` for `drome_rota_top_five` and `next_rotation_unix_ms`). This continuation
+removes only their obsolete default assignments, retaining the existing computed
+values. No Tibiadrome gameplay rule is changed. No migration or protocol number
+is allocated, and no commit or push is made.
+
+A second inherited validation failure was the audit source-site inventory:
+`item_text/write_once.rs:182,227-228` already binds the selected fenced tuple,
+but `item_mint_audit.rs::every_type2_insert_takes_its_tuple_from_a_type2_transaction`
+omitted that production site from its exact expected list. The list now includes
+it; both per-insert tuple assertions remain unchanged. The red focused case is
+retained in `/tmp/sv8-type2-red.log` (0 passed, 1 failed, 0.05 s).
+
+### Continuation PostgreSQL evidence
+
+Six existing `map_seed_planting` wire cases executed against the retained local
+PostgreSQL cluster. The first invocation passed ice-seed drop and Preservationist
+USE, then four cases failed before database creation because the workspace disk
+was full (2 passed, 4 infrastructure failures, 94.21 s). After recovering space,
+only those four blocked cases were retried: all passed in 188.76 s (wall 188.792 s).
+The logs explicitly record `MAP_SEED_PLANTING_PG_EXECUTED` for all six cases,
+including rollback/replay and pickup/absolute-deadline checks.
+The retry used the same freshly compiled dispatch test executable, relocated to
+`/tmp/sv8-dispatch-test-current`; its source tree was unchanged.
+This qualifies the existing static-pot slice only. No new W07/W08 PostgreSQL case
+was implemented or counted, and no full PostgreSQL suite or nextest run was used.
+
+Disk recovery preserved task test executables and build archives under `/tmp`;
+relocated archives retain symlinks at their original build-cache paths.
+No PostgreSQL data, tool installation, dependency source or durability setting
+was deleted or changed.
+
+### Final focused checks
+
+`cargo fmt --all --check` passes. `cargo check --locked -p oteryn-gameplay-durability
+--all-features` passes. `cargo clippy --locked -p oteryn-gameplay-durability
+--all-targets --all-features -- -D warnings` passes (11.39 s).
+With the PostgreSQL admin URL unset, `cargo test --locked -p
+oteryn-gameplay-durability --all-features --lib --quiet -- --test-threads=4`
+passes: 688 passed, 0 failed, 0 ignored, 54.48 s. The first complete library run
+had 687 passes and the one stale source-list failure (55.06 s); that assertion was
+repaired rather than skipped or weakened. Disk-full attempts did not count as
+successful validation. `git diff --check` passes.
+
+**Package status: W19b STOPPED, W07 STOPPED, W08 STOPPED.** Their selected designs
+are recorded above, but the remaining mechanic implementations were not completed
+in this continuation. The delivered code delta repairs only the two inherited
+validation failures; it does not claim new playable Soulpit or mastery acquisition.
