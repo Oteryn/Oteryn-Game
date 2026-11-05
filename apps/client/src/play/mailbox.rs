@@ -30,6 +30,7 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    pub world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     pub world_clock: Option<oteryn_session::world_clock::WorldClock>,
     pub achievements: Vec<oteryn_client_ui::achievement_notices::AchievementEarned>,
     pub sounds: Vec<super::SoundCue>,
@@ -64,6 +65,7 @@ impl Pushed {
         }
         self.notices.save_minutes = newer.notices.save_minutes.or(self.notices.save_minutes);
         self.world_clock = newer.world_clock.or(self.world_clock);
+        self.world_weather = newer.world_weather.or(self.world_weather);
         self.map = newer.map.or(self.map.take());
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());

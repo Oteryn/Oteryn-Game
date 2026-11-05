@@ -11,6 +11,8 @@ include!("tutorial_notices_tests.rs");
 include!("presentation_tests.rs");
 #[path = "features/0019-world-light/tests.rs"]
 mod world_light_tests;
+#[path = "features/0026-world-weather/tests.rs"]
+mod world_weather_tests;
 include!("achievement_notices_tests.rs");
 include!("server_messages_tests.rs");
 use super::*;

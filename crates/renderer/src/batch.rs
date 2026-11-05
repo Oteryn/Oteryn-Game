@@ -7,8 +7,11 @@
 #[path = "ambient.rs"]
 mod ambient;
 pub use ambient::lit_atlas;
+#[path = "weather.rs"]
+mod weather;
 use oteryn_client_domain::TileCoord;
 use std::fmt::{self, Display, Formatter};
+pub use weather::weather_atlas;
 
 /// Upper bound of quads in one batch. Bounds both memory and the GPU instance buffer.
 pub const MAX_BATCH_QUADS: usize = 81_920;

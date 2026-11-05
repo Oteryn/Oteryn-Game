@@ -299,6 +299,7 @@ pub async fn run_session<T: Stepper>(
     outbox.target_walk_initialize(session.feature_selected(64));
     outbox.vitals(session.actor_vitals());
     outbox.world_light_initialize(session.feature_snapshot(18));
+    outbox.world_weather_initialize(session.feature_snapshot(22));
     outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
