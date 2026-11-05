@@ -48,6 +48,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     player_trade::CAPABILITY_PLAYER_TRADE_V1,
     stash::CAPABILITY_STASH_V1,
     market::CAPABILITY_MARKET_V1,
+    oteryn_protocol_oteryn::target_move::CAPABILITY_TARGET_MOVE_V1,
     imbuement::CAPABILITY_IMBUE_V1,
     task_board::CAPABILITY_TASK_BOARD_V1,
     oteryn_protocol_oteryn::server_save_countdown::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1,
@@ -108,6 +109,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     player_trade::CAPABILITY_PLAYER_TRADE_V1,
     stash::CAPABILITY_STASH_V1,
     market::CAPABILITY_MARKET_V1,
+    oteryn_protocol_oteryn::target_move::CAPABILITY_TARGET_MOVE_V1,
     imbuement::CAPABILITY_IMBUE_V1,
     task_board::CAPABILITY_TASK_BOARD_V1,
     oteryn_protocol_oteryn::server_save_countdown::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1,
@@ -145,4 +147,17 @@ pub(super) fn capability_of_domain(domain_id: u32) -> Option<u32> {
     gated_routes()
         .find(|(_, _, domains)| domains.contains(&domain_id))
         .map(|(capability, _, _)| capability)
+}
+
+#[cfg(test)]
+mod target_move_tests {
+    use super::*;
+
+    #[test]
+    fn target_walk_is_advertised_and_routed_with_its_prerequisites() {
+        for capability in [6, 13, 64] {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+        }
+        assert!(gated_routes().any(|(id, commands, _)| id == 64 && commands.contains(&81)));
+    }
 }

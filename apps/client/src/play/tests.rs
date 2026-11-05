@@ -2,6 +2,7 @@ use super::mailbox::MAX_PUSHED_MARKERS;
 use super::*;
 use crate::combat_input::{CombatCommand, CombatReport};
 use oteryn_client_runtime::ClientRuntime;
+use oteryn_platform_client::native_login::PublicClass;
 use oteryn_session::{
     ActorPosition, AppliedDelta, AttackIntentDisposition, CommandStatus, LogoutResult,
     MAX_QUEUED_EVENTS, SessionError, SessionEvent, SpellCastDisposition, StepDirection,

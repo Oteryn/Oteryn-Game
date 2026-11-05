@@ -82,6 +82,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,
     pub(super) notices: oteryn_client_ui::tutorial_notices::NoticePanel,

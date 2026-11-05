@@ -170,6 +170,10 @@ pub mod prey;
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;
 
+/// Server target-cell walking through the admitted session.
+#[path = "features/0064-target-move/protocol.rs"]
+pub mod target_move;
+
 /// Task Board command execution through the admitted session.
 #[path = "features/0072-task-board/protocol.rs"]
 pub mod task_board;

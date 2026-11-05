@@ -130,6 +130,10 @@ pub mod task_board;
 #[path = "features/0062-stash/mod.rs"]
 pub mod stash;
 
+/// Target-walk input and receipt projection.
+#[path = "features/0064-target-move/mod.rs"]
+pub mod target_move;
+
 /// NPC shop look and sell-all panel state.
 #[path = "features/0081-npc-shop/mod.rs"]
 pub mod npc_shop;

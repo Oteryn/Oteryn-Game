@@ -10,9 +10,10 @@ impl PlayView {
     #[must_use]
     pub fn hud_status(&self) -> String {
         format!(
-            "{}   {}",
+            "{}   {}   {}",
             oteryn_client_ui::spell_action_bar::vitals_text(self.actor_vitals()),
-            self.combat_status()
+            self.combat_status(),
+            self.target_walk_feedback().unwrap_or("")
         )
     }
 
