@@ -53,6 +53,7 @@ pub enum Operation {
     PublishCharacterProfileV1,
     /// World online snapshot (same contract, §4.6).
     PublishWorldOnlineV1,
+    PublishWorldTotalsV1,
     /// Public projection liveness watermark (same contract, §5.1).
     PublishPublicProjectionWatermarkV1,
     PublishGameRestoreNoticeV1,
@@ -90,6 +91,7 @@ impl Operation {
             Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_PATH,
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_PATH,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_PATH,
+            Self::PublishWorldTotalsV1 => super::public_projections::world_totals::PATH,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_PATH,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::PATH,
         }
@@ -124,6 +126,7 @@ impl Operation {
             Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_BYTES,
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_BYTES,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_BYTES,
+            Self::PublishWorldTotalsV1 => super::public_projections::world_totals::REQUEST_BYTES,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_BYTES,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::NOTICE_BYTES,
             Self::ReadAccountSecurityV1

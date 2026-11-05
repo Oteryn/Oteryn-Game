@@ -442,6 +442,8 @@ impl ReportClock for Clock {
 #[derive(Default)]
 struct Store {
     epoch: u64,
+    totals: Vec<TotalsSnapshot>,
+    totals_facts: Option<TotalsFacts>,
     highscores_source: bool,
     profiles: Vec<ProfileSnapshot>,
     batches: Vec<HighscoresBatch>,
@@ -464,6 +466,20 @@ struct Store {
 type Shared = Arc<Mutex<Store>>;
 
 impl PublicStore for Shared {
+    async fn sample_totals(&self, _after: &str) -> Result<Option<String>, ()> {
+        Ok(None)
+    }
+    async fn next_totals(&self) -> Result<Vec<TotalsSnapshot>, ()> {
+        Ok(self.lock().unwrap().totals.clone())
+    }
+    async fn ack_totals(&self, sample: &TotalsSnapshot) -> Result<(), ()> {
+        self.lock().unwrap().totals.retain(|s| s != sample);
+        Ok(())
+    }
+    async fn totals_facts(&self) -> Result<Option<TotalsFacts>, ()> {
+        Ok(self.lock().unwrap().totals_facts)
+    }
+
     fn gameplay_waiting(&self) -> bool {
         self.lock().unwrap().demand
     }
@@ -1650,4 +1666,107 @@ fn projection_names_refuse_slash_dot_and_dot_dot() {
     for name in ["Al Dric", "...", "Al.dric", ".a"] {
         assert!(projection_name_valid(name), "{name:?}");
     }
+}
+
+fn totals() -> TotalsSnapshot {
+    TotalsSnapshot {
+        world_id: WORLD.into(),
+        projection_epoch: 1,
+        projection_revision: 17,
+        source_observed_at: 1_790_000_000,
+        online_players: 0,
+        player_deaths: 42,
+    }
+}
+
+#[test]
+fn world_totals_match_golden_vectors_and_reject_invalid_envelopes() {
+    use world_totals::encode_totals;
+    let fixture =
+        include_str!("../../../../docs/contracts/world-totals/v1/vectors/zero-online.json");
+    assert_eq!(encode_totals(AUTHORITY, &totals()).unwrap(), fixture.trim());
+    let mut wide = totals();
+    wide.online_players = 4097; // No public-list cap or float precision loss.
+    wide.player_deaths = 9_007_199_254_740_993;
+    assert_eq!(
+        encode_totals(AUTHORITY, &wide).unwrap(),
+        include_str!("../../../../docs/contracts/world-totals/v1/vectors/wide-counts.json").trim()
+    );
+    let mut next = totals();
+    next.projection_revision = 18;
+    next.source_observed_at += 10;
+    assert_eq!(
+        encode_totals(AUTHORITY, &next).unwrap(),
+        include_str!(
+            "../../../../docs/contracts/world-totals/v1/vectors/unchanged-next-sample.json"
+        )
+        .trim()
+    );
+    for bad in [
+        TotalsSnapshot {
+            projection_epoch: 0,
+            ..totals()
+        },
+        TotalsSnapshot {
+            projection_revision: 0,
+            ..totals()
+        },
+        TotalsSnapshot {
+            source_observed_at: -1,
+            ..totals()
+        },
+        TotalsSnapshot {
+            player_deaths: u64::MAX,
+            ..totals()
+        },
+        TotalsSnapshot {
+            online_players: u64::MAX,
+            ..totals()
+        },
+        TotalsSnapshot {
+            world_id: "private text".into(),
+            ..totals()
+        },
+    ] {
+        assert!(encode_totals(AUTHORITY, &bad).is_err());
+    }
+    assert_eq!(Operation::PublishWorldTotalsV1.path(), world_totals::PATH);
+    assert_eq!(Operation::PublishWorldTotalsV1.request_bytes_max(), 1024);
+}
+
+#[test]
+fn world_totals_retry_identically_and_ack_only_after_delivery_with_epoch_fence() {
+    let store = Shared::default();
+    store.lock().unwrap().totals.push(totals());
+    let p = publisher(&store, vec![Some(Err(NotDelivered::Unavailable)), OK]);
+    assert!(block_on(p.totals_step()).is_err());
+    assert_eq!(store.lock().unwrap().totals.len(), 1);
+    block_on(p.totals_step()).unwrap();
+    assert!(store.lock().unwrap().totals.is_empty());
+    let sent = p.sink.sent();
+    assert_eq!(sent.len(), 2);
+    assert_eq!(sent[0], sent[1]);
+    store.lock().unwrap().totals.push(totals());
+    p.fence.lock().unwrap().0 = Some(2);
+    assert!(block_on(p.totals_step()).is_err());
+    assert_eq!(p.sink.sent().len(), 2);
+    assert_eq!(store.lock().unwrap().totals.len(), 1);
+}
+
+#[test]
+fn world_totals_watermark_requires_durable_sampling_coverage() {
+    let store = Shared::default();
+    let p = publisher(&store, vec![OK]);
+    assert!(block_on(p.totals_watermark()).is_err());
+    assert!(p.sink.sent().is_empty());
+    store.lock().unwrap().totals_facts = Some(TotalsFacts {
+        projection_epoch: 1,
+        complete_through: 1_790_000_000,
+        observed_at: 1_790_000_010,
+    });
+    block_on(p.totals_watermark()).unwrap();
+    let sent = p.sink.sent();
+    assert_eq!(sent[0].0, Operation::PublishPublicProjectionWatermarkV1);
+    assert!(sent[0].1.contains(r#""family":"world_totals""#));
+    assert!(sent[0].1.contains(r#""complete_through":"1790000000""#));
 }

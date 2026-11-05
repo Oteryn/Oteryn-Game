@@ -222,6 +222,7 @@ async fn exchange_status(
                 | Operation::PublishWorldHighscoresV1
                 | Operation::PublishCharacterProfileV1
                 | Operation::PublishWorldOnlineV1
+                | Operation::PublishWorldTotalsV1
                 | Operation::PublishPublicProjectionWatermarkV1
         ) {
             // §3 (LCFA and public projections): every projection response, success

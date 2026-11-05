@@ -5,11 +5,16 @@
 //! Every read runs under the reconciled Character authority, so a restored or
 //! unreconciled store never publishes. Each call is one semantic transaction.
 
+mod world_totals;
+
 use super::DurabilityRoot;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use crate::native_admission_source::public_projections::world_totals::{
+    TotalsFacts, TotalsSnapshot,
+};
 use crate::native_admission_source::public_projections::{
     FILTERS, HighscoreRow, HighscoresBatch, MAX_HIGHSCORE_ROWS, MAX_ONLINE, NAME_HANDOFF_HOLD,
     NameHandoff, OnlineCut, OnlineEntry, OnlineState, OnlineWorld, OutboxFacts, ProfileEntry,
@@ -731,6 +736,30 @@ pub struct PublicProjectionsStore<'r, 'a, 'f, 's> {
 }
 
 impl PublicStore for PublicProjectionsStore<'_, '_, '_, '_> {
+    async fn sample_totals(&self, after: &str) -> std::result::Result<Option<String>, ()> {
+        self.root
+            .sample_public_world_totals(self.authority, after)
+            .await
+            .map_err(|_| ())
+    }
+    async fn next_totals(&self) -> std::result::Result<Vec<TotalsSnapshot>, ()> {
+        self.root
+            .next_public_world_totals(self.authority)
+            .await
+            .map_err(|_| ())
+    }
+    async fn ack_totals(&self, sample: &TotalsSnapshot) -> std::result::Result<(), ()> {
+        self.root
+            .ack_public_world_totals(self.authority, sample)
+            .await
+            .map_err(|_| ())
+    }
+    async fn totals_facts(&self) -> std::result::Result<Option<TotalsFacts>, ()> {
+        self.root
+            .public_world_totals_facts(self.authority)
+            .await
+            .map_err(|_| ())
+    }
     /// A failed checkout of the single holder (gameplay or the publisher
     /// itself) records a demand until maintenance serves it; the publisher
     /// yields meanwhile.
