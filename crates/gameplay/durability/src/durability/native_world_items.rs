@@ -26,6 +26,22 @@ impl SpellGroundTarget {
             if !source.contains_capture_cell(cell) {
                 return Err("tile read is outside qualified source capture");
             }
+        } else if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
+            index,
+        ) = room.movement_cells().index()
+        {
+            // A bounded absence in this pinned bundle is valid readonly probe space.
+            // It never qualifies Ground placement: from_native_owner still requires a tile.
+            if u16::try_from(cell.x).is_err()
+                || u16::try_from(cell.y).is_err()
+                || !(0..=15).contains(&cell.z)
+                || !matches!(
+                    index.lookup(room.movement_cells().scope(), cell),
+                    Ok(_) | Err(crate::content::static_cell_engine::StaticCellEngineError::Absent)
+                )
+            {
+                return Err("tile read is outside qualified bundle space");
+            }
         } else {
             room.movement_cells()
                 .index()

@@ -68,7 +68,7 @@ pub async fn run_session<T: Stepper>(
     );
     outbox.hireling_initialize(session.hireling_selected());
     outbox.market_initialize(session.market_selected());
-    outbox.chat_public_initialize(session.chat_public_selected(), session.chat_state());
+    outbox.chat_with_movement_initialize(&session);
     outbox.chat_private_publish(&session);
     outbox.player_typing_initialize(session.player_typing_selected());
     outbox.boss_encounter_initialize(session.feature_selected(117));

@@ -358,6 +358,8 @@ impl Outbox {
         mailbox.npc_shop = Default::default();
         mailbox.dialogue = Default::default();
         mailbox.dialogue_shutdown = true;
+        mailbox.chat_public.speech_selected = false;
+        mailbox.chat_public.pending = false;
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::Ended(class));
@@ -387,6 +389,8 @@ impl Outbox {
         mailbox.npc_shop = Default::default();
         mailbox.dialogue = Default::default();
         mailbox.dialogue_shutdown = true;
+        mailbox.chat_public.speech_selected = false;
+        mailbox.chat_public.pending = false;
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::LoggedOut);
