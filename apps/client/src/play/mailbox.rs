@@ -84,6 +84,8 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) inventory: oteryn_client_ui::inventory::InventoryPanel,
+    pub(super) inventory_shutdown: bool,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,
@@ -195,6 +197,7 @@ impl Outbox {
 
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, events: Vec<SessionEvent>) {
+        self.inventory_events(&events);
         let mut mailbox = lock(&self.0);
         super::feature_local_spell_action_bar::protocol::vitals_events(&mut mailbox, &events);
         for event in &events {
@@ -275,6 +278,7 @@ impl Outbox {
 
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
+        self.inventory_end();
         let mut mailbox = lock(&self.0);
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
@@ -286,6 +290,7 @@ impl Outbox {
     }
 
     pub(super) fn logged_out(&self) {
+        self.inventory_end();
         let mut mailbox = lock(&self.0);
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
@@ -364,6 +369,7 @@ impl Drop for PlayLink {
         mailbox.world_event_shutdown = true;
         mailbox.highscores_shutdown = true;
         mailbox.vip.open = false;
+        mailbox.inventory_shutdown = true;
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
         mailbox.prey_shutdown = true;

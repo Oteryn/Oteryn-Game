@@ -1,5 +1,8 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+#[path = "features/0004-item-view-move/mod.rs"]
+pub mod inventory;
+
 #[path = "features/0019-world-light/mod.rs"]
 pub mod world_light;
 

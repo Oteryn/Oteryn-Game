@@ -6,6 +6,9 @@ pub mod account_achievements;
 #[path = "features/0008-achievement-notices/protocol.rs"]
 pub mod achievement_notices;
 
+#[path = "features/0004-item-view-move/protocol.rs"]
+pub mod inventory;
+
 pub mod connection;
 pub mod hotkey_equip;
 #[path = "features/0053-world-event/protocol.rs"]
