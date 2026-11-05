@@ -9,3 +9,75 @@ fn store_panel_opens_and_sends() {
         Ok(crate::combat_input::PlayCommand::ServerMechanic(_))
     ));
 }
+
+#[path = "../native.rs"]
+mod native;
+
+#[test]
+fn native_store_confirmation_and_server_quote() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(windows)]
+    let _open: fn(&crate::play::PlayLink) = native::open_window;
+    use oteryn_client_runtime::cui3::store::*;
+    let mut p = oteryn_client_ui::store::StorePanel {
+        selected: true,
+        catalogue: Some(StoreCataloguePage {
+            catalog_revision: "rev-7".into(),
+            offers: vec![StoreOffer {
+                offer_key: "mount".into(),
+                title: "Mount".into(),
+                price: 25,
+                currency: "coins".into(),
+            }],
+            next_page_cursor: String::new(),
+            total_coins: 100,
+            transferable_coins: 0,
+        }),
+        ..Default::default()
+    };
+    assert!(native::purchase(&mut p, 0, false).is_none());
+    let c = native::purchase(&mut p, 0, true).ok_or("missing purchase")?;
+    let quote = decode_purchase_request(&c.payload).map_err(|_| "invalid purchase")?;
+    assert_eq!(
+        (
+            quote.offer_key.as_str(),
+            quote.catalog_revision.as_str(),
+            quote.price
+        ),
+        ("mount", "rev-7", 25)
+    );
+    assert!(native::purchase(&mut p, 0, true).is_none());
+    assert!(native::panel_text(&p).contains("Pending"));
+    assert_eq!(c.command_type, 185);
+    let response = oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+        command_id: 1,
+        status: oteryn_client_runtime::server_mechanic::CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: encode_purchase_result(&StorePurchaseResult {
+            code: StorePurchaseCode::Accepted,
+            order_id: Some(quote.purchase_request_id),
+            operation_id: Some(quote.purchase_request_id),
+        })
+        .map_err(|_| "invalid fixture")?,
+    };
+    oteryn_client_ui::store::apply_result(&mut p, &response);
+    assert!(native::panel_text(&p).contains("Accepted"));
+    assert!(!p.pending);
+    oteryn_client_ui::store::apply_result(
+        &mut p,
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            status: oteryn_client_runtime::server_mechanic::CommandStatus::Rejected,
+            ..response
+        },
+    );
+    assert!(native::panel_text(&p).contains("refused"));
+    p.category = "featured".into();
+    let catalogue = oteryn_client_ui::store::catalogue(&mut p).ok_or("missing catalogue")?;
+    assert_eq!(catalogue.command_type, 183);
+    assert_eq!(
+        decode_catalogue_request(&catalogue.payload)
+            .map_err(|_| "invalid catalogue")?
+            .category,
+        "featured"
+    );
+    Ok(())
+}
