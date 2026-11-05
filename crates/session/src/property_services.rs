@@ -79,3 +79,7 @@ pub fn training_result(bytes: &[u8]) -> Option<loop_training::TrainingResult> {
     loop_training::encode_training_result(result).ok()?;
     Some(result)
 }
+
+#[path = "features/0097-character-info/protocol.rs"]
+pub mod character_info;
+pub use oteryn_protocol_oteryn::raid_schedule;
