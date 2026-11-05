@@ -84,22 +84,20 @@ fn state(panel: &mut Panel, modes: wire::ExpertFightModes) {
         modes.modes.fight_mode, modes.modes.chase, modes.modes.secure, modes.expert
     );
 }
-impl Outbox {
-    pub(in crate::play) fn pvp_expert_initialize<T: Stepper>(&self, session: &T) {
-        let mut shared = lock(&self.0);
-        let panel = &mut shared.properties.pvp_expert;
-        if !panel.selected {
-            return;
-        }
-        if let Some(modes) = session
-            .feature_snapshot(wire::STATE_DOMAIN_EXPERT_FIGHT_MODES)
-            .and_then(|bytes| wire::decode_expert_fight_modes(&bytes).ok())
-        {
-            state(panel, modes);
-        } else {
-            panel.feedback = "Invalid expert mode state".into();
-        }
+pub(in crate::play) fn initialize<T: Stepper>(panel: &mut Panel, session: &T) {
+    if !panel.selected {
+        return;
     }
+    if let Some(modes) = session
+        .feature_snapshot(wire::STATE_DOMAIN_EXPERT_FIGHT_MODES)
+        .and_then(|bytes| wire::decode_expert_fight_modes(&bytes).ok())
+    {
+        state(panel, modes);
+    } else {
+        panel.feedback = "Invalid expert mode state".into();
+    }
+}
+impl Outbox {
     pub(in crate::play) fn pvp_expert_events(&self, events: &[oteryn_session::SessionEvent]) {
         let mut shared = lock(&self.0);
         let panel = &mut shared.properties.pvp_expert;

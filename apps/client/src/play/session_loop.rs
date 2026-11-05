@@ -30,7 +30,6 @@ pub async fn run_session<T: Stepper>(
     }
     outbox.spell_bar_initialize(session.feature_snapshot(20));
     outbox.appearance_initialize(&session);
-    outbox.pvp_expert_initialize(&session);
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
     outbox.targeting_initialize(session.feature_selected(15));
