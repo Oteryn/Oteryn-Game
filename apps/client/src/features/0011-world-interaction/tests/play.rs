@@ -85,7 +85,7 @@ fn creature_click_dispatches_attack_and_reduces_the_report() -> Result<(), Batch
             CombatCommand::Attack(target)
         ))
     );
-    outbox.combat(CombatReport::Attack(AttackIntentDisposition::Ok));
+    outbox.battle_result(CombatReport::Attack(AttackIntentDisposition::Ok), None, None);
     assert_eq!(view.tick(&link), Ok(()));
     assert!(view.combat_status().ends_with("Attacking"));
     Ok(())

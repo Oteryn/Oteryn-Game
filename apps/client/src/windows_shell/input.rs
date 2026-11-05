@@ -12,7 +12,8 @@ impl Application {
             if play.view.audio_input(events) {
                 return;
             }
-            if play.link.achievement_notices_input(events)
+            if play.link.battle_input(events)
+                || play.link.achievement_notices_input(events)
                 || play.link.achievements_input(events)
                 || play.link.chat_input(events)
                 || play.link.chat_public_input(events)

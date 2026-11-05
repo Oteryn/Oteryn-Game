@@ -1,5 +1,8 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+#[path = "features/0017-attack/mod.rs"]
+pub mod battle;
+
 #[path = "features/0019-world-light/mod.rs"]
 pub mod world_light;
 

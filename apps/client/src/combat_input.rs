@@ -18,6 +18,8 @@ pub enum PlayCommand {
     Step(StepDir),
     TargetWalk(oteryn_session::ActorPosition),
     Combat(CombatCommand),
+    /// Combat command originating from the battle panel.
+    Battle(CombatCommand),
     /// Leave the game (capability 21 `LOGOUT_INTENT`).
     Logout,
     TaskBoard(oteryn_client_runtime::task_board::TaskBoardCommand),

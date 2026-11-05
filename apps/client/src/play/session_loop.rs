@@ -19,6 +19,8 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn target_walk(&mut self, _position: oteryn_session::ActorPosition) -> impl Future<Output = Result<oteryn_client_runtime::target_move::WalkResponse, SessionError>> + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 64 }) }
     }
+    fn battle_floor(&self) -> Option<i16> { None }
+    fn battle_state(&self) -> Option<oteryn_session::ActorCombatState> { None }
     fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
         None
     }
@@ -445,9 +447,8 @@ pub async fn run_session<T: Stepper>(
                     Err(error) => error,
                 }
             }
-            Ok(PlayCommand::Combat(command)) => match session.combat(command).await {
-                Ok(report) => {
-                    outbox.combat(report);
+            Ok(command @ (PlayCommand::Combat(_) | PlayCommand::Battle(_))) => match outbox.battle_run(&mut session, command).await {
+                Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

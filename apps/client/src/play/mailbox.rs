@@ -84,6 +84,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) battle: oteryn_client_ui::battle::BattlePanel,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,
@@ -161,6 +162,13 @@ const MAX_COMBAT_REPORTS: usize = 8;
 pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 
 impl Mailbox {
+    pub(super) fn combat_report(&mut self, report: CombatReport) {
+        if self.combat.len() == MAX_COMBAT_REPORTS {
+            self.combat.pop_front();
+        }
+        self.combat.push_back(report);
+    }
+
     /// A slow shell may not silently lose an announcement or grow an unbounded event queue.
     fn check_server_messages(&mut self) {
         if self.before.server_messages.overflowed()
@@ -261,14 +269,6 @@ impl Outbox {
         mailbox.pushed.entities = Some(entities);
     }
 
-    pub(super) fn combat(&self, report: CombatReport) {
-        let mut mailbox = lock(&self.0);
-        if mailbox.combat.len() == MAX_COMBAT_REPORTS {
-            mailbox.combat.pop_front();
-        }
-        mailbox.combat.push_back(report);
-    }
-
     pub(super) fn logout_refused(&self, result: Option<LogoutResult>) {
         lock(&self.0).logout_refused = Some(result);
     }
@@ -276,6 +276,7 @@ impl Outbox {
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
         let mut mailbox = lock(&self.0);
+        mailbox.battle_end();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -287,6 +288,7 @@ impl Outbox {
 
     pub(super) fn logged_out(&self) {
         let mut mailbox = lock(&self.0);
+        mailbox.battle_end();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
