@@ -43,7 +43,7 @@ impl PlayView {
         let before = self.facing;
         let direction = self.next_step();
         if self.facing != before {
-            self.scene.set_facing(self.facing)?;
+            self.rebuild()?;
         }
         Ok(direction)
     }

@@ -451,3 +451,5 @@ impl SurfaceState {
 
 #[cfg(test)]
 mod tests;
+
+pub use batch::name_text;

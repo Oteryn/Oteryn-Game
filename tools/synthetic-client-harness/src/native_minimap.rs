@@ -85,6 +85,7 @@ fn native_minimap_click_reaches_the_server_walk_path()
                     let task = tokio::spawn(run_session(
                         MinimapSession {
                             map: MapSession {
+                                appearances: Vec::new(),
                                 pending: vec![SessionEvent::WorldMap(
                                     oteryn_session::AppliedDelta {
                                         server_sequence: 1,

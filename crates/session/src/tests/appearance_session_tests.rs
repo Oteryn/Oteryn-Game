@@ -70,6 +70,10 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
                 Ok::<_, BoxError>(())
             });
             let mut session = Session::admit(client, entity_admission()?).await?;
+            assert_eq!(
+                session.visible_appearances()[0].look.as_ref(),
+                Some(&original)
+            );
             let change = appearance::Change {
                 context: snapshot.catalogue.context,
                 expected_root_revision: 1,
@@ -109,6 +113,10 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
                     .resolve(entity.entity, 1)
                     .ok_or("binding")?,
                 expected
+            );
+            assert_eq!(
+                session.visible_appearances()[0].look.as_ref(),
+                Some(&expected)
             );
             assert!(matches!(
                 session.take_events().as_slice(),
