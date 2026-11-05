@@ -16,10 +16,15 @@ fn controls_encode_exact_request_and_reply_and_refusal_are_visible() {
         command_id: 1,
         status: CommandStatus::Accepted,
         server_sequence: 1,
-        payload: vec![1, 0],
+        payload: {
+            let mut body = vec![0; 42];
+            body[0] = 1;
+            body
+        },
     };
     assert!(apply_result(&mut p, &ok));
     assert!(p.result.is_some());
+    assert!(request(&mut p, Intent::Tab).is_some());
     let refused = GatedCommandResult {
         status: CommandStatus::Rejected,
         ..ok
@@ -83,4 +88,32 @@ fn native_character_target_and_page_validation() {
     p.pending = false;
     p.selected = false;
     assert!(native_controls::submit(&mut p, 111, ["0", "20", ""]).is_none());
+}
+
+#[test]
+fn gap_character_tabs_render_and_reject_malformed_replies() {
+    use oteryn_client_ui::cyclopedia_character::panel_text;
+    let mut p = CyclopediaCharacterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let mut body = vec![0; 42];
+    body[0] = 1;
+    body[9..13].copy_from_slice(&42_u32.to_le_bytes());
+    let mut reply = GatedCommandResult {
+        command_id: 1,
+        status: CommandStatus::DuplicateReplay,
+        server_sequence: 1,
+        payload: body,
+    };
+    assert!(request(&mut p, Intent::Tab).is_some());
+    assert!(apply_result(&mut p, &reply));
+    assert!(panel_text(&p).contains("Level: 42"));
+    let confirmed = p.result.clone();
+    for payload in [vec![1, 0], vec![1; 16385], vec![2, 0, 0]] {
+        assert!(request(&mut p, Intent::Tab).is_some());
+        reply.payload = payload;
+        assert!(!apply_result(&mut p, &reply));
+        assert_eq!(p.result, confirmed);
+    }
 }

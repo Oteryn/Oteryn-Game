@@ -49,6 +49,7 @@ def canonical_schema(root):
             'schema': {'const': 'OTERYN_NATIVE_CONTAINER_REWARD/v1'},
             'revision': {'const': container_native.REVISION},
             'source_sha256': {'const': container_native.SOURCE_SHA256},
+            'source_difference': {'const': container_native.MEDUSA_DIFFERENCE},
             'placements': {'type': 'array', 'minItems': 1, 'items': {
                 'type': 'object', 'additionalProperties': False,
                 'required': ['unique_id', 'line', 'root', 'capacity', 'contents', 'completion'],

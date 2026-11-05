@@ -27,11 +27,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let runtime = self.runtime.lock().await;
             let index =
                 item_ref_admission::pinned_index(&runtime, self.active_generation).ok_or(())?;
+            let native = self
+                .active_generation
+                .and_then(|g| g.native_gameplay())
+                .ok_or(())?;
             let mut definitions = BTreeMap::new();
             for vocation in ["knight", "paladin", "sorcerer", "druid", "monk"] {
                 for id in corruptor_items(vocation) {
                     let key = format!("oteryn:item.tibia.i{id}");
                     if let Some(revision) = index.revision(&key) {
+                        let Some(policy) = native.item_policy(&key, revision) else {
+                            continue;
+                        };
+                        let admission = &policy.record().admission;
+                        if !admission.materializable
+                            || !admission.legal_destinations.contains(
+                                &crate::content::native_gameplay::NativeItemDestination::CharacterInventory,
+                            )
+                        {
+                            continue;
+                        }
                         definitions.insert(*id, LootDefinitionRef::new("Item", key, revision));
                     }
                 }
@@ -39,11 +54,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             definitions
         };
         let desired = corruptor_items(build.vocation());
-        let defined = if desired.iter().all(|id| definitions.contains_key(id)) {
-            desired.to_vec()
-        } else {
-            Vec::new()
-        };
+        // A missing native admission must not consume the armed one-time reward.
+        // The durable claim accepts an empty selection, so refuse before claiming.
+        if !desired.iter().all(|id| definitions.contains_key(id)) {
+            return Err(());
+        }
+        let defined = desired.to_vec();
         let claimed = self
             .root
             .claim_tutorial_corruptor(

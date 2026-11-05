@@ -20,7 +20,7 @@ pub(super) async fn exercise(
     callback: &Callback,
     expected_destination: Position,
 ) -> TestResult {
-    assert_eq!(callback.trigger, Trigger::StepIn);
+    assert!(matches!(callback.trigger, Trigger::StepIn | Trigger::Use));
     assert_eq!(callback.teleport, Some(expected_destination));
     assert!(callback.storage.is_empty());
     assert!(callback.offerings.is_empty());
@@ -79,18 +79,33 @@ pub(super) async fn exercise(
     );
     let receipts_before = receipt_count(h, fence).await?;
 
-    let reply = wire(
-        owner,
-        admitted,
-        1,
-        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-        encode_step_intent(StepDirection::East),
-    )
-    .await?;
-    assert_eq!(
-        decode_step_result(&reply).map_err(debug)?,
-        StepDisposition::Moved
-    );
+    if callback.trigger == Trigger::Use {
+        use oteryn_protocol_oteryn::world_object::{encode_use_intent, decode_use_result};
+        let at = callback.selector.position.ok_or("position")?;
+        let ordinal = super::super::quest_position_callbacks::ordinal(&callback.key).ok_or("source ordinal")?;
+        owner.states.chat.admit(admitted.game_session_id, "Reader", owner.owner_now());
+        let payload = |ordinal| -> TestResult<Vec<u8>> {
+            let mut placement = owner.bundle_map().ok_or("map")?.overlay.base().digest().to_vec();
+            placement.extend_from_slice(&oteryn_world_bundle::bundle::placement_key(at.floor,at.x,at.y,ordinal).ok_or("placement")?.to_be_bytes());
+            Ok(encode_use_intent(&WorldObjectTarget { placement, expected_revision: 0 }).map_err(debug)?)
+        };
+        for (command, wrong) in [(1,0), (2,ordinal-1)] {
+            let result = wire(owner,admitted,command,2,payload(wrong)?).await?;
+            assert_eq!(decode_use_result(&result).map_err(debug)?, UseDisposition::NothingToUse);
+            assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+                local(Position { x: at.x-1, ..at }));
+        }
+        let result = wire(owner,admitted,3,2,payload(ordinal)?).await?;
+        assert_eq!(decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
+        if let Some(text) = &callback.success_message {
+            assert!(owner.states.chat.drain(admitted.game_session_id).iter().any(|line|
+                matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text: actual, .. } if actual == text)));
+        }
+    } else {
+        let reply = wire(owner, admitted, 1, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            encode_step_intent(StepDirection::East)).await?;
+        assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+    }
     assert_eq!(
         owner
             .runtime

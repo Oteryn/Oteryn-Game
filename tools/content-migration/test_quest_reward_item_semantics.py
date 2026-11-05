@@ -112,6 +112,28 @@ class RewardItemAdmissionTests(unittest.TestCase):
         self.assertFalse(definition["materializable"])
         self.assertEqual(definition["semantics"]["charges"]["value"]["count"], known(5))
 
+    def test_full_charge_quest_items_reuse_the_existing_timed_instance_owner(self):
+        defaults = {3054: 200, 3056: 200, 3082: 50, 3083: 150,
+                    3084: 250, 3085: 200, 3284: 1}
+        for item_id, charges in defaults.items():
+            with self.subTest(item_id=item_id):
+                entry, appearance, definition = self.fixture(attrs={"charges": str(charges)})
+                definition['identity']['key'] = f'oteryn:item.tibia.i{item_id}'
+                facts = item_facts(entry, appearance)
+                enrich(definition, facts, entry['xml'])
+                self.assertTrue(definition['materializable'])
+                self.assertEqual(definition['semantics']['charges']['value']['count'], known(charges))
+                self.assertIn('INSTANCE_CHARGE_ATTRIBUTE_LOWERING_MISSING', facts['holds'],
+                              'retain the original source capture diagnostic')
+
+    def test_full_charge_admission_does_not_discard_a_sibling_fluid_hold(self):
+        entry, appearance, definition = self.fixture(
+            {'flags.liquidcontainer': True}, {'charges': '200'})
+        definition['identity']['key'] = 'oteryn:item.tibia.i3085'
+        facts = item_facts(entry, appearance)
+        enrich(definition, facts, entry['xml'])
+        self.assertFalse(definition['materializable'])
+
     def test_existing_charge_admission_is_retained_without_clearing_hold(self):
         entry, appearance, definition = self.fixture(attrs={"charges": "5"})
         definition["materializable"] = True

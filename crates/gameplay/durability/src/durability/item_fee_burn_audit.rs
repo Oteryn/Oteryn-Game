@@ -112,6 +112,8 @@ pub enum FeeBurnCauseV1 {
     BosstiarySlot(OneItemNpcPurchaseV1),
     #[prost(message, tag = "17")]
     ArenaEntry(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "18")]
+    QuestNpcProgram(Box<OneItemQuestNpcProgramFeeV1>),
     #[prost(message, tag = "472")]
     HirelingService(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
@@ -119,9 +121,11 @@ pub enum FeeBurnCauseV1 {
 
 pub(super) mod atelier_cause;
 pub(super) mod imbuement_cause;
+pub(crate) mod npc_program_cause;
 mod purchase_cause;
 pub(super) mod repair_cause;
 pub use imbuement_cause::{OneItemImbuementMaterialV1, OneItemImbuementV1};
+pub use npc_program_cause::OneItemQuestNpcProgramFeeV1;
 pub use purchase_cause::OneItemNpcPurchaseV1;
 pub use repair_cause::OneItemTimedRepairV1;
 
@@ -148,6 +152,7 @@ pub struct OneItemFeeBurnCauseV1 {
             15, // QuestAccessPurchase: Rotten Blood access, fixed 5m source
             16, // Bosstiary slot removal
             17, // Svargrond arena entry
+            18, // Source-bound NPC program fee
             472, // HirelingService
         )
     )]
@@ -788,6 +793,7 @@ pub struct OneItemAreaDonationV1 {
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
     mod imbuement_cause_tests;
+    mod npc_program_tests;
     mod purchase_cause_tests;
     mod timed_repair_tests;
     use super::super::item_mint_audit::{OneItemTypedDefinitionRevisionV1, decode_payload};

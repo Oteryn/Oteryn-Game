@@ -26,6 +26,7 @@ enum Case {
     DemonBoots,
     DemonHelmet,
     DemonShield,
+    Catalogue,
 }
 
 fn execute(case: Case, marker: &'static str) -> TestResult {
@@ -102,7 +103,36 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn scenario(case: Case) -> TestResult {
+    scenario_case(case, None, None)
+}
+
+pub(super) fn catalogue_scenario(
+    chest: &super::quest_catalogue_chests::CatalogueChest,
+    activation: &super::quest_catalogue_chests::CatalogueActivation,
+) -> TestResult {
+    scenario_case(Case::Catalogue, Some(chest), Some(activation))
+}
+
+fn scenario_case(
+    case: Case,
+    catalogue: Option<&super::quest_catalogue_chests::CatalogueChest>,
+    activation: Option<&super::quest_catalogue_chests::CatalogueActivation>,
+) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
+        Case::Catalogue => {
+            let chest = catalogue.ok_or("catalogue chest")?;
+            (
+                chest.claim.as_str(),
+                chest.position,
+                chest.unique,
+                chest.root.as_str(),
+                chest
+                    .contents
+                    .iter()
+                    .map(|(key, count, number)| (key.as_str(), *count, *number))
+                    .collect(),
+            )
+        }
         Case::DemonBoots => (
             "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
             (33313, 31574, -15),
@@ -196,11 +226,16 @@ fn scenario(case: Case) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+        let owned_activation;
+        let (controller, activated_pin) = if let Some(activation) = activation {
+            activation
+        } else {
+            owned_activation = super::death_ml_loss_composed::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
+            &owned_activation
+        };
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
         let world = if matches!(case, Case::Choice) {
@@ -210,10 +245,14 @@ fn scenario(case: Case) -> TestResult {
                 2472,
             )?
         } else {
-            let appearance = match case {
-                Case::Text | Case::RootText => 4240,
-                Case::CrystalKey => 2474,
-                _ => 2472,
+            let appearance = if let Some(chest) = catalogue {
+                chest.appearance
+            } else {
+                match case {
+                    Case::Text | Case::RootText => 4240,
+                    Case::CrystalKey => 2474,
+                    _ => 2472,
+                }
             };
             source_world(chest, unique, appearance, 0)?
         };
@@ -221,9 +260,10 @@ fn scenario(case: Case) -> TestResult {
             world.base().as_ref(),
             &|_| true,
         )?;
-        assert!(
+        assert_eq!(
             report.served.iter().any(|row| row.key.as_str() == claim),
-            "source claim did not bind"
+            catalogue.is_none_or(|chest| chest.servable),
+            "source namespace must match the native World binder"
         );
         let cells = world
             .movement_cells(deps.room.movement_cells())
@@ -427,6 +467,7 @@ fn scenario(case: Case) -> TestResult {
                     quantity,
                     contents: Vec::new(),
                     root_text: None,
+                    root_fluid_subtype: None,
                     backpack: backpack.clone(),
                     content_revision: "content-1".into(),
                     ruleset_revision: "ruleset-1".into(),
@@ -476,6 +517,28 @@ fn scenario(case: Case) -> TestResult {
                 (0, 0, 0),
                 "room/weight refusal must leave no partial or pending reward"
             );
+        } else if catalogue.is_some_and(|chest| !chest.servable) {
+            // A Canary-only UID cannot acquire a Crystal World binding just
+            // because its numeric value matches. This negative source-alias
+            // case executes USE and must not qualify the unbound placement.
+            assert!(report.unbound.iter().any(|row| row.claim == claim
+                && row.reason == crate::content::world_reward_claims::UnboundReason::NoCrystalUniqueId));
+            let mut owner = deps.owner(&harness, &authority);
+            owner.active_generation = Some(generation);
+            owner.movement_cells = &cells;
+            owner.admit_progression_session(&mut admitted).await;
+            deps.initialize(&owner).await;
+            assert_eq!(wire_use_targets(&owner, admitted,
+                &[(1, &target), (1, &target), (2, &target)]).await?, [
+                    (CommandStatus::Accepted, UseDisposition::NothingToUse),
+                    (CommandStatus::DuplicateReplay, UseDisposition::NothingToUse),
+                    (CommandStatus::Accepted, UseDisposition::NothingToUse),
+                ]);
+            let counts: (i64, i64) = sqlx::query_as("SELECT \
+                (SELECT count(*) FROM game_reward_claims WHERE claim_production_key=$1), \
+                (SELECT count(*) FROM game_reward_claim_mint_receipts WHERE claim_production_key=$1)")
+                .bind(claim).fetch_one(&harness.pool).await?;
+            assert_eq!(counts, (0, 0), "unbound donor UID must mint nothing");
         } else {
             let alternate = if matches!(case, Case::Choice) {
                 target_at(33231)?
@@ -521,7 +584,7 @@ fn scenario(case: Case) -> TestResult {
                     .ok_or("backpack")?;
                 assert_eq!(bag.entries.len(), 1);
                 let root = &bag.entries[0].item;
-                assert_eq!(root.quantity, 1);
+                assert_eq!(root.quantity, catalogue.map_or(1, |chest| chest.quantity));
                 assert_eq!(root.definition.production_key, root_key);
                 if let Some(original) = first_root {
                     assert_eq!(root.item_instance_id, original)
@@ -546,6 +609,20 @@ fn scenario(case: Case) -> TestResult {
                     (SELECT count(DISTINCT created_xact_id::text) FROM game_item_audit_outbox WHERE item_instance_id=encode($2,'hex')::uuid OR item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($2,'hex')::uuid))")
                     .bind(claim).bind(root.item_instance_id.as_slice()).fetch_one(&harness.pool).await?;
                 assert_eq!(counts, (1, 1, 1 + expected.len() as i64, 1));
+                if let Some(chest) = catalogue {
+                    let texts: Vec<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,t.text \
+                        FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id) \
+                        WHERE i.item_instance_id=encode($1,'hex')::uuid OR i.item_instance_id IN \
+                        (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) \
+                        ORDER BY i.definition_production_key,t.text")
+                        .bind(root.item_instance_id.as_slice()).fetch_all(&harness.pool).await?;
+                    let mut expected_texts = chest.texts.clone();
+                    expected_texts.sort();
+                    assert_eq!(texts, expected_texts, "complete source text plan");
+                    let number: Option<i32> = sqlx::query_scalar("SELECT key_number FROM game_item_keys WHERE item_instance_id=encode($1,'hex')::uuid")
+                        .bind(root.item_instance_id.as_slice()).fetch_optional(&harness.pool).await?;
+                    assert_eq!(number, chest.key_number, "source root key number");
+                }
                 if matches!(case, Case::CrystalKey) {
                     let key: (i32,bool,bool) = sqlx::query_as("SELECT k.key_number, \
                         k.minted_transaction_id=r.transaction_id,k.created_xact_id=r.created_xact_id \
@@ -640,7 +717,13 @@ fn scenario(case: Case) -> TestResult {
             }
             let achievements:i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/annihilator'")
                 .fetch_one(&harness.pool).await?;
-            assert_eq!(achievements, i64::from(matches!(case, Case::Choice)));
+            assert_eq!(
+                achievements,
+                i64::from(
+                    matches!(case, Case::Choice)
+                        || catalogue.is_some_and(|chest| chest.achievement)
+                )
+            );
             if matches!(case, Case::Text) {
                 let valid: (bool,bool,bool,bool,bool,bool) = sqlx::query_as("SELECT \
                     game_reward_claim_contents_plan_valid(contents_plan,contents_capacity), \

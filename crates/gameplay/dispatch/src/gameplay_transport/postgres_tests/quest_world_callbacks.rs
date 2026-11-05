@@ -259,6 +259,13 @@ pub(super) fn world(
             }),
         });
     }
+    // Preserve the actual source object's above-ground ordinal in position-USE cases.
+    if let Some(ordinal) = super::quest_position_callbacks::ordinal(&callback.key) {
+        for _ in 1..ordinal {
+            cells.entry((trigger.floor, trigger.x, trigger.y)).or_default()
+                .push(sector::Item { palette: 0, depth: 0, attrs: Default::default() });
+        }
+    }
     cells
         .entry((trigger.floor, trigger.x, trigger.y))
         .or_default()

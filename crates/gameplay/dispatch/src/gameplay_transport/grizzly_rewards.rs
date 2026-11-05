@@ -114,6 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             quantity: 1,
             contents: Vec::new(),
             root_text: None,
+            root_fluid_subtype: None,
             backpack,
             // Keep the earning pin in the entitlement. Resolve the durable Item
             // identity in the current generation so deployments cannot strand it.

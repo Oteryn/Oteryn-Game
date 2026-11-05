@@ -501,3 +501,140 @@ fn unqualified_hazard_receipt_and_mount_contracts_are_rejected() {
     let effect = fixture_rule("mount", serde_json::json!([{"kind":"mount","mount":202}]));
     assert!(fixture_catalog(&fixture_document(vec![effect])).is_err());
 }
+
+#[test]
+fn dialogue_admission_refuses_an_unavailable_guard_before_fallback() -> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::load_embedded()?;
+    let facts = Facts::empty();
+    // Crystal tereban_functions.lua: the source checks a real sinew item before
+    // its missing-item reply. An unavailable inventory owner is not zero items.
+    let input = facts.input("oteryn:npc.tereban", "yes", 7201);
+    assert!(matches!(
+        catalogue.plan_dialogue(&input),
+        Err(NpcRuleError::MissingRuntimeOwner(_))
+    ));
+    Ok(())
+}
+
+#[test]
+fn dialogue_admission_keeps_a_pure_topic_branch_and_refuses_storage_writes()
+-> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::load_embedded()?;
+    let facts = Facts::empty();
+    let offer = catalogue
+        .plan_dialogue(&facts.input("oteryn:npc.tereban", "mission", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing offer".into()))?;
+    assert_eq!(offer.next_topic, 1);
+    assert!(offer.track_changes.is_empty());
+    assert!(
+        offer
+            .reply
+            .iter()
+            .any(|line| line.starts_with("I have four sons"))
+    );
+    assert!(matches!(
+        catalogue.plan_dialogue(&facts.input("oteryn:npc.tereban", "yes", 1)),
+        Err(NpcRuleError::MissingRuntimeOwner(_))
+    ));
+    Ok(())
+}
+
+#[test]
+fn dialogue_admission_discards_earlier_continuing_reply_on_later_unowned_effect()
+-> Result<(), NpcRuleError> {
+    let mut first = fixture_rule("first", serde_json::json!([{"kind":"set_topic","value":2}]));
+    first["continue_matching"] = true.into();
+    let mut second = fixture_rule(
+        "second",
+        serde_json::json!([{"kind":"give_money","amount":500}]),
+    );
+    second["topics"] = serde_json::json!([2]);
+    let catalogue = fixture_catalog(&fixture_document(vec![first, second]))?;
+    let facts = Facts::empty();
+    assert!(matches!(
+        catalogue.plan_dialogue(&facts.input("oteryn:npc.test", "mission", 0)),
+        Err(NpcRuleError::MissingRuntimeOwner(_))
+    ));
+    assert!(facts.tracks.is_empty());
+    assert_eq!(facts.inventory, NpcInventorySnapshot::default());
+    Ok(())
+}
+
+#[test]
+fn npc_programs_extend_the_ordinary_definition_hash_and_generic_callers_refuse()
+-> Result<(), NpcRuleError> {
+    let programs = NpcRuleCatalog::load_embedded()?;
+    let empty = crate::quest::QuestStateCatalogue::empty("content-1")
+        .ok_or_else(|| NpcRuleError::Invalid("empty catalogue".into()))?;
+    let merged = programs.extend_quest_state(&empty)?;
+    for program in programs.programs() {
+        let transition = merged
+            .transition(&program_transition_key(program.digest))
+            .ok_or_else(|| NpcRuleError::Invalid("missing synthetic transition".into()))?;
+        assert_eq!(transition.quest, program.document.quest);
+        assert_eq!(
+            merged.evaluate(transition, &BTreeMap::new(), 0),
+            Err(crate::quest::QuestRefusal::NotSupported)
+        );
+        assert!(merged.definition_hash(&program.document.quest).is_some());
+        assert!(program_transition_key(program.digest).len() <= crate::quest::QUESTSTATE0_RL_06);
+    }
+    assert_eq!(
+        programs.extend_quest_state(&merged)?,
+        merged,
+        "idempotent exact merge"
+    );
+    let mut changed = programs.clone();
+    changed.programs[0].document.rules[0]
+        .reply
+        .push("changed source reply".into());
+    let source = serde_json::to_string(&changed.programs[0].document)
+        .map_err(|error| NpcRuleError::Json(error.to_string()))?;
+    let changed = NpcRuleCatalog::from_json_documents(&[&source])?;
+    let changed_catalogue = changed.extend_quest_state(&empty)?;
+    let quest = &changed.programs[0].document.quest;
+    assert_ne!(
+        merged.definition_hash(quest),
+        changed_catalogue.definition_hash(quest)
+    );
+    Ok(())
+}
+
+#[test]
+fn source_extension_retains_wider_bounds_and_refuses_owner_or_initial_conflicts()
+-> Result<(), NpcRuleError> {
+    let programs = fixture_catalog(&fixture_document(vec![fixture_rule(
+        "offer",
+        serde_json::json!([]),
+    )]))?;
+    let source = &programs.programs[0].document.tracks[0];
+    let wider = crate::quest::QuestTrack {
+        key: source.key.clone(),
+        quest: source.quest.clone(),
+        initial: source.initial,
+        min: source.min.saturating_sub(1),
+        max: source.max.saturating_add(1),
+    };
+    let base = crate::quest::QuestStateCatalogue::new("content-1", vec![wider.clone()], vec![])
+        .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))?;
+    let merged = programs.extend_quest_state(&base)?;
+    assert_eq!(merged.track(&wider.key), Some(&wider));
+    for track in [
+        crate::quest::QuestTrack {
+            initial: source.initial + 1,
+            ..wider.clone()
+        },
+        crate::quest::QuestTrack {
+            quest: "oteryn:quest.other".into(),
+            ..wider.clone()
+        },
+    ] {
+        let conflicting = crate::quest::QuestStateCatalogue::new("content-1", vec![track], vec![])
+            .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))?;
+        assert!(matches!(
+            programs.extend_quest_state(&conflicting),
+            Err(NpcRuleError::Invalid(_))
+        ));
+    }
+    Ok(())
+}

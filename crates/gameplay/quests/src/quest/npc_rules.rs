@@ -1,9 +1,3 @@
-//! Test-only source qualification for declarative NPC branches in quest batch three.
-//!
-//! Mounted only with `cfg(test)`: it validates captured programs and builds pure
-//! plans for source tests. No production NPC API, adapter or writer executes them.
-//! Coordinator ANSWER forbids changing those owners in this batch:
-//! https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671
 //! Crystal `201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20`
 //! defines keyword matching; individual programs retain their source references.
 
@@ -11,9 +5,8 @@ mod evaluate;
 mod keyword;
 mod validate;
 
-// Directory-scanned source data only. No NPC owner applies these plans yet;
-// see PR2843#issuecomment-6589900671. Each quest can add its own file without
-// editing a shared include list or depending on other quest commits.
+// Directory-scanned, source-qualified programs. Durable effects require their
+// composed owner; dialogue admission never silently omits an effect.
 include!(concat!(env!("OUT_DIR"), "/npc_rule_programs.rs"));
 
 use std::collections::BTreeMap;
@@ -39,6 +32,7 @@ pub enum NpcRuleError {
     MissingMoney,
     MissingNativeResolution(String),
     LimitExceeded,
+    MissingRuntimeOwner(String),
 }
 
 impl fmt::Display for NpcRuleError {
@@ -356,6 +350,17 @@ pub struct NpcRulePlan {
     pub inventory_failure_reply: Vec<String>,
 }
 
+#[must_use]
+pub fn program_transition_key(digest: [u8; 32]) -> String {
+    use std::fmt::Write;
+    let mut key = String::from("oteryn:quest-transition/npc-program/");
+    for byte in digest {
+        // Writing to a String is infallible.
+        let _ = write!(&mut key, "{byte:02x}");
+    }
+    key
+}
+
 impl NpcRuleCatalog {
     pub fn from_json_documents(documents: &[&str]) -> Result<Self, NpcRuleError> {
         let mut programs = Vec::with_capacity(documents.len());
@@ -390,8 +395,100 @@ impl NpcRuleCatalog {
             .find(|program| program.document.quest == quest)
     }
 
+    /// Merge source tracks and one non-executable transition per full program.
+    /// Existing compatible wider bounds are retained; owner/initial conflicts fail.
+    /// The ordinary catalogue hash consequently binds both existing callbacks
+    /// and every source branch/reply, without a second definition-hash authority.
+    pub fn extend_quest_state(
+        &self,
+        catalogue: &super::QuestStateCatalogue,
+    ) -> Result<super::QuestStateCatalogue, NpcRuleError> {
+        let mut tracks = catalogue.tracks.clone();
+        let mut transitions = catalogue.transitions.clone();
+        for program in &self.programs {
+            if !super::in_runtime_scope(&program.document.quest) {
+                continue;
+            }
+            for source in &program.document.tracks {
+                let track = super::QuestTrack {
+                    key: source.key.clone(),
+                    quest: source.quest.clone(),
+                    initial: source.initial,
+                    min: source.min,
+                    max: source.max,
+                };
+                if let Some(existing) = tracks.get(&track.key) {
+                    if existing.quest != track.quest
+                        || existing.initial != track.initial
+                        || existing.min > track.min
+                        || existing.max < track.max
+                    {
+                        return Err(NpcRuleError::Invalid(format!(
+                            "conflicting NPC track: {}",
+                            track.key
+                        )));
+                    }
+                    // Native and source callback owners may already admit a
+                    // wider range; source extension never narrows that contract.
+                } else {
+                    tracks.insert(track.key.clone(), track);
+                }
+            }
+            let track = program
+                .document
+                .tracks
+                .first()
+                .ok_or_else(|| NpcRuleError::Invalid("NPC program has no tracks".into()))?;
+            let transition = super::QuestTransition {
+                key: program_transition_key(program.digest),
+                quest: program.document.quest.clone(),
+                effects: vec![super::QuestEffect {
+                    track: track.key.clone(),
+                    from: super::QuestComparison::Any,
+                    effect: super::QuestEffectKind::Computed,
+                }],
+                completes: false,
+                experience: None,
+            };
+            if transitions
+                .get(&transition.key)
+                .is_some_and(|existing| existing != &transition)
+            {
+                return Err(NpcRuleError::Invalid(
+                    "conflicting NPC program transition".into(),
+                ));
+            }
+            transitions.insert(transition.key.clone(), transition);
+        }
+        super::QuestStateCatalogue::new(
+            catalogue.content_revision(),
+            tracks.into_values().collect(),
+            transitions.into_values().collect(),
+        )
+        .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))
+    }
+
     pub fn plan(&self, input: &NpcRuleInput<'_>) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         self.plan_with_native(input, &BTreeMap::new())
+    }
+
+    /// Admit reply/topic branches with only the facts supplied by the dialogue
+    /// owner. An unavailable guard or effect refuses the complete ordered match,
+    /// including any earlier continuing branches; no successful source text leaks.
+    pub fn plan_dialogue(
+        &self,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        evaluate::plan_dialogue(self, input)
+    }
+
+    /// The QuestState owner supplies locked tracks and its database clock.
+    /// Inventory, currency and appearance effects still require their atomic owners.
+    pub fn plan_storage(
+        &self,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        evaluate::plan_storage(self, input)
     }
 
     /// Native effects require a bounded result from the encounter/RNG owner. The

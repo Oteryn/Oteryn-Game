@@ -18,6 +18,11 @@ MAX_CONTENTS = 20  # Existing BAGS-0 direct-container admission, not a donor cap
 # Their source total remains 200; this deliberately preserves the accepted
 # native two-stack recipe over Container:addItem's donor clamp to one stack.
 ACCEPTED_TWO_STACKS = {6218: 3031, 6226: 3450}
+CHARGE_EVIDENCE = Path(__file__).with_name('source_charge_evidence.json')
+CHARGE_EVIDENCE_SHA256 = 'aced9b5e52f472f2a1bc80e7192093036f513c182a6542933ae1abe7f613cf71'
+MEDUSA_DIFFERENCE = 'CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT'
+MEDUSA_HOLD = [{'category': 'source', 'code': 'SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED',
+                'placement_index': 0}]
 
 
 def source():
@@ -54,17 +59,27 @@ def item_id(ref):
 
 
 def full_charge_leaf(item, pilot_key, position, key, raw_count):
-    """UID6082 is one already-admitted Item at its exact definition charges.
+    """An exact D277 source leaf is one admitted Item at definition charges.
 
     Missing native timed state means full definition values; this does not
     authorize partial source charges or make a held Item materializable.
     """
-    if (pilot_key != 'canary:reward-claim/kv/madmageroom3'
-            or key != 'oteryn:item.tibia.i3081' or raw_count != 5
+    if (type(raw_count) is not int or raw_count <= 0
             or not item or item.get('identity', {}).get('key') != key
             or not item.get('materializable') or item.get('stack_class') != 'NonStackable'
             or fact(item, 'charges', 'count') != raw_count):
         return False
+    raw = CHARGE_EVIDENCE.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != CHARGE_EVIDENCE_SHA256:
+        raise ValueError('pinned charge source evidence changed')
+    matches = [row for row in json.loads(raw)['rewards']
+               if row['pilot_key'] == pilot_key and row['project_position'] == position
+               and row['item'] == key and row['source_count_argument'] == raw_count
+               and row['source_default_charges'] == raw_count]
+    if len(matches) != 1:
+        return False
+    if pilot_key != 'canary:reward-claim/kv/madmageroom3':
+        return True
     _, entries = source()
     setting = entries[6082]['setting']
     return (setting.get('useKV') is True and setting.get('questName') == 'madmageroom3'
@@ -72,6 +87,23 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
 
 
 def derive(definition, items, stack_problem):
+    difference = None
+    if (definition['identity']['key'] == 'oteryn:reward-claim.quest.u7_3.the_medusa_quest'
+            and definition.get('data_holds') == MEDUSA_HOLD
+            and len(definition['placements']) == 1
+            and definition['placements'][0]['reward'].get('written_text') == {
+                'item': None, 'text_ref': {'length': 70, 'placeholders': [],
+                    'sha256': '3d95b7c96da6a14a36118fbbd5a8397239e7e3cc9931c5f60f65d136bd72ff27'}}):
+        # QUEST-FINISH source reconciliation: Crystal201189f chest.lua:2017
+        # gives exactly the bag and three items, with no6183 text attribute.
+        # Its handler:42-49 assigns the fox text to6179/book2815 instead.
+        # Canary47dfd handler:40-47,119-123 wrongly stamps all three Medusa
+        # children. Preserve that SOURCE conflict; native rewards follow the
+        # same pinned Crystal handler as every other native container here.
+        definition = copy.deepcopy(definition)
+        definition['data_holds'] = []
+        del definition['placements'][0]['reward']['written_text']
+        difference = MEDUSA_DIFFERENCE
     if definition.get('data_holds') or definition['claim'] != {'per': 'character', 'repeat': {'kind': 'once'}}:
         return None
     if not any('container' in p['reward'] or 'written_text' in p['reward']
@@ -211,5 +243,8 @@ def derive(definition, items, stack_problem):
         result.append(projected)
     if not result:
         return None
-    return {'schema': 'OTERYN_NATIVE_CONTAINER_REWARD/v1', 'revision': REVISION,
-            'source_sha256': SOURCE_SHA256, 'placements': result}
+    projection = {'schema': 'OTERYN_NATIVE_CONTAINER_REWARD/v1', 'revision': REVISION,
+                  'source_sha256': SOURCE_SHA256, 'placements': result}
+    if difference is not None:
+        projection['source_difference'] = difference
+    return projection

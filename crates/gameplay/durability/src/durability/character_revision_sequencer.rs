@@ -448,6 +448,36 @@ impl RevisionSlot {
         .await
     }
 
+    /// Source NPC storage programs use the same revision cursor and bounded retry.
+    #[allow(clippy::too_many_arguments)] // The existing explicit authority/fence seam is retained.
+    pub async fn commit_npc_program(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        context: super::npc_quest_program::NpcProgramContext,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_npc_program(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    Arc::clone(&catalogue),
+                    context.clone(),
+                )
+            },
+        )
+        .await
+    }
+
     /// Generated Task Board state and its quest receipts share this revision slot.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_task_board(

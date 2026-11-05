@@ -285,6 +285,30 @@ pub(super) fn plan(
     input: &NpcRuleInput<'_>,
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    plan_inner(catalogue, input, resolutions, false, false)
+}
+
+pub(super) fn plan_dialogue(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    plan_inner(catalogue, input, &BTreeMap::new(), true, false)
+}
+
+pub(super) fn plan_storage(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    plan_inner(catalogue, input, &BTreeMap::new(), true, true)
+}
+
+fn plan_inner(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+    resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
+    restricted: bool,
+    storage_effects: bool,
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
     }
@@ -315,6 +339,12 @@ pub(super) fn plan(
             }
             let mut eligible = true;
             for guard in &rule.guards {
+                if restricted
+                    && !matches!(guard, NpcRuleGuard::Storage { .. })
+                    && !(storage_effects && matches!(guard, NpcRuleGuard::StorageTime { .. }))
+                {
+                    return Err(NpcRuleError::MissingRuntimeOwner(rule.key.clone()));
+                }
                 if !state.guard(guard, input)? {
                     eligible = false;
                     break;
@@ -324,6 +354,18 @@ pub(super) fn plan(
                 continue;
             }
             for effect in &rule.effects {
+                if restricted
+                    && !matches!(effect, NpcRuleEffect::SetTopic { .. })
+                    && !(storage_effects
+                        && matches!(
+                            effect,
+                            NpcRuleEffect::Set { .. }
+                                | NpcRuleEffect::Add { .. }
+                                | NpcRuleEffect::SetNowPlus { .. }
+                        ))
+                {
+                    return Err(NpcRuleError::MissingRuntimeOwner(rule.key.clone()));
+                }
                 let concrete = match effect {
                     NpcRuleEffect::BigfootMatchmakerTarget | NpcRuleEffect::BigfootSoulMelody => {
                         resolve_native(effect, &rule.key, resolutions)?

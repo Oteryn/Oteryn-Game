@@ -58,6 +58,7 @@ use sqlx::postgres::PgConnection;
 const REQUEST_BINDING_VERSION: u8 = 1;
 const CAUSE_CHARM_UNASSIGN: i16 = 1;
 mod atelier;
+pub mod npc_program;
 mod purchase_cause;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
@@ -84,6 +85,10 @@ pub enum FeeBurnCause {
     /// Crystal bloodshade_sacrifice.lua:69-89; atomic with the access Quest receipt.
     QuestAccessPurchase {
         occurrence: [u8; 16],
+    },
+    /// A captured source NPC program, distinct from the fixed Bloodshade access fee.
+    QuestNpcProgram {
+        proof: Box<super::item_fee_burn_audit::OneItemQuestNpcProgramFeeV1>,
     },
     /// Crystal E12 cooking and imbuement-package purchases.
     HirelingService { service: String, occurrence: [u8; 16] },
@@ -544,7 +549,8 @@ async fn burn_fee_at_channel(
     let bank_debit_gold_units = bank_part(
         request.fee_gold_units,
         eligible,
-        if matches!(request.cause, FeeBurnCause::PromotionPurchase { .. }) {
+        if matches!(request.cause, FeeBurnCause::PromotionPurchase { .. })
+            || matches!(&request.cause, FeeBurnCause::QuestNpcProgram { proof } if !proof.include_bank) {
             Type2EventTuple::V1
         } else {
             tuple
@@ -1057,6 +1063,10 @@ fn request_binding<C>(fence: &CurrentCharacterGameplayFence, request: &FeeBurnRe
     );
     digest.update(request.cause.key().as_bytes());
     match &request.cause {
+        FeeBurnCause::QuestNpcProgram { proof } => {
+            use prost::Message;
+            digest.update(Sha256::digest(proof.encode_to_vec()));
+        }
         FeeBurnCause::GemReveal { proof, .. } | FeeBurnCause::GemGradeUp { proof, .. } => {
             digest.update(Sha256::digest(proof))
         }

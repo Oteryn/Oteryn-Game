@@ -77,6 +77,8 @@ pub enum UnboundReason {
 /// Why a record is not a served candidate (§1.5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LeftOut {
+    /// QUEST-FINISH owner scope excludes Dawnport from the Newhaven runtime.
+    OwnerExcluded,
     /// An authored variant record other than a key reward.
     Variant,
     /// `readiness` is not `ready` (`WAITING_*`).
@@ -274,7 +276,16 @@ fn candidate(
     definition: &serde_json::Map<String, Value>,
     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
 ) -> Result<Result<Candidate, LeftOut>, ClaimsError> {
+    if definition
+        .get("quest")
+        .and_then(|quest| quest.get("key"))
+        .and_then(Value::as_str)
+        == Some("canary:quest/dawnport_quest")
+    {
+        return Ok(Err(LeftOut::OwnerExcluded));
+    }
     let key_variant = definition.contains_key("definition_profile");
+    let medusa = crystal_medusa_reconciliation(definition);
     let native_contents = native_container_placements(definition);
     if key_variant && !waits_only_for_key_lowering(definition) && native_contents.is_none() {
         return Ok(Err(LeftOut::Variant));
@@ -315,6 +326,12 @@ fn candidate(
     }
     for (index, placement) in placements.iter().enumerate() {
         let parsed_placement = match native_contents {
+            Some(recipes) if medusa => {
+                let mut native = placement.clone();
+                native["reward"].as_object_mut()
+                    .ok_or(ClaimsError("Medusa reward is malformed"))?.remove("written_text");
+                candidate_container_placement(&native, &recipes[index])?
+            }
             Some(recipes) => candidate_container_placement(placement, &recipes[index])?,
             None => candidate_placement(placement, key_variant)?,
         };
@@ -381,28 +398,66 @@ fn key_number(binding: &str) -> Option<u16> {
 /// The source DATA packet is immutable evidence. Only the additional authored
 /// native projection admits a filled container; missing source or Item facts
 /// still refuse the entire claim (no partial rewards).
+fn crystal_medusa_reconciliation(definition: &serde_json::Map<String, Value>) -> bool {
+    if definition.get("identity").and_then(|value| value.get("key")).and_then(Value::as_str)
+        != Some("oteryn:reward-claim.quest.u7_3.the_medusa_quest")
+    {
+        return false;
+    }
+    // Crystal201189f chest.lua:2017-2024 and handler:42-49: the fox text
+    // belongs to6179/book2815. Canary47dfd handler:40-47,119-123 attaches it
+    // to all Medusa children. Only this complete, exact Crystal projection
+    // resolves that SOURCE-only conflict; no other hold or carrier is erased.
+    let item = |number: u16| serde_json::json!({"family":"Item",
+        "key":format!("oteryn:item.tibia.i{number}"),"revision":"definition-r1"});
+    let contents: Vec<_> = [3436, 3567, 3324].into_iter()
+        .map(|number| serde_json::json!({"item":item(number),"count":1})).collect();
+    let Some(projection) = definition.get("native_contents") else { return false; };
+    projection.get("source_difference").and_then(Value::as_str)
+        == Some("CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT")
+        && definition.get("readiness").and_then(Value::as_str) == Some("waiting_data")
+        && definition.get("data_holds") == Some(&serde_json::json!([
+            {"category":"source","code":"SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED","placement_index":0}]))
+        && definition.get("source_variant").and_then(|value| value.get("source_data"))
+            == Some(&serde_json::json!({"status":"WAITING_SOURCE","missing":[
+                {"code":"SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED","placement_index":0}]}))
+        && definition.get("placements") == Some(&serde_json::json!([{
+            "appearance_tibia_id":1983,"source_binding":{
+                "project_position":{"x":33049,"y":32399,"z":10},
+                "legacy_unique_ids":[{"server":"canary","unique_id":6183},
+                                     {"server":"crystalserver","unique_id":6183}]},
+            "reward":{"container":item(2853),"items":contents,"written_text":{
+                "item":null,"text_ref":{"length":70,"placeholders":[],
+                    "sha256":"3d95b7c96da6a14a36118fbbd5a8397239e7e3cc9931c5f60f65d136bd72ff27"}}}}]))
+        && projection.get("placements") == Some(&serde_json::json!([{
+            "unique_id":6183,"line":2017,"root":item(2853),"capacity":8,"contents":contents,
+            "completion":{"kind":"storage","key":"Storage.Quest.U7_3.TheMedusaQuest"}}]))
+}
+
 fn native_container_placements(definition: &serde_json::Map<String, Value>) -> Option<&Vec<Value>> {
+    let medusa = crystal_medusa_reconciliation(definition);
     if definition.get("definition_profile")?.as_str()? != "authored_variant_v1"
         || definition.get("native_admission")?.as_str()? != "WAITING_IMPLEMENTATION"
-        || definition.get("readiness")?.as_str()? != "waiting_implementation"
+        || (!medusa && (definition.get("readiness")?.as_str()? != "waiting_implementation"
         || !definition.get("data_holds")?.as_array()?.is_empty()
         || definition
             .get("source_variant")?
             .get("source_data")?
             .get("status")?
             .as_str()?
-            != "COMPLETE"
+            != "COMPLETE"))
     {
         return None;
     }
     let projection = definition.get("native_contents")?;
     if !only(
         projection,
-        &["schema", "revision", "source_sha256", "placements"],
+        &["schema", "revision", "source_sha256", "placements", "source_difference"],
     ) || projection.get("schema")?.as_str()? != "OTERYN_NATIVE_CONTAINER_REWARD/v1"
         || projection.get("revision")?.as_str()? != "201189f871d23597b82caf88fd611454a2ddefb8"
         || projection.get("source_sha256")?.as_str()?
             != "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
+        || (projection.get("source_difference").is_some() && !medusa)
     {
         return None;
     }
@@ -931,6 +986,42 @@ fn bind_placement(
 #[allow(clippy::expect_used)]
 mod container_tests {
     use super::*;
+
+    #[test]
+    fn medusa_uses_exact_crystal_bag_without_canary_text_carrier_guess() {
+        let source = authored("quest.u7_3.the_medusa_quest").expect("Medusa source");
+        let parsed = candidate(source.as_object().expect("definition"), &|_| true)
+            .expect("decoded")
+            .expect("complete Crystal bag");
+        assert_eq!(parsed.placements[0].contents.len(), 3);
+        for mutation in ["sibling hold", "carrier", "count", "difference"] {
+            let mut changed = source.clone();
+            match mutation {
+                "sibling hold" => changed["data_holds"].as_array_mut().expect("holds")
+                    .push(serde_json::json!({"category":"item","code":"ITEM_SEMANTICS_MISSING"})),
+                "carrier" => changed["placements"][0]["reward"]["written_text"]["item"] =
+                    changed["placements"][0]["reward"]["items"][0]["item"].clone(),
+                "count" => changed["placements"][0]["reward"]["items"][0]["count"] = 2.into(),
+                "difference" => changed["native_contents"]["source_difference"] = "guessed".into(),
+                _ => unreachable!(),
+            }
+            assert!(candidate(changed.as_object().expect("definition"), &|_| true)
+                .expect("decoded").is_err(), "{mutation}");
+        }
+    }
+
+    #[test]
+    fn owner_scope_excludes_dawnport_rewards_even_when_items_are_admitted() {
+        for suffix in ["quest.key.id0010", "quest.u10_55.dawnport.torn_log_book"] {
+            let definition = authored(suffix).expect("Dawnport source claim retained");
+            assert!(
+                candidate(definition.as_object().expect("definition"), &|_| true)
+                    .expect("well-formed source claim")
+                    .is_err(),
+                "{suffix}"
+            );
+        }
+    }
 
     fn authored(suffix: &str) -> Option<Value> {
         for shard in REWARD_CLAIM_SHARDS {

@@ -5,6 +5,7 @@ use crate::durability::item_fee_burn_audit::OneItemNpcPurchaseV1;
 impl FeeBurnCause {
     pub(super) fn kind(&self) -> i16 {
         match self {
+            Self::QuestNpcProgram { .. } => 18,
             Self::ArenaEntry { .. } => 17,
             Self::TaskBoardTalisman { .. } => 13,
             Self::Forge { .. } => 14,
@@ -27,6 +28,7 @@ impl FeeBurnCause {
     }
     pub(super) fn occurrence(&self) -> &[u8; 16] {
         match self {
+            Self::QuestNpcProgram { proof } => proof.occurrence.as_slice().try_into().unwrap_or(&[0;16]),
             Self::ArenaEntry { occurrence } => occurrence,
             Self::TaskBoardTalisman { occurrence } | Self::BosstiarySlot { occurrence } => {
                 occurrence
@@ -51,6 +53,7 @@ impl FeeBurnCause {
     }
     pub(super) fn key(&self) -> &str {
         match self {
+            Self::QuestNpcProgram { .. } => "oteryn:service.quest.npc-program",
             Self::ArenaEntry { .. } => "oteryn:service.svargrond-arena.entry",
             Self::TaskBoardTalisman { .. } => "oteryn:taskboard.talisman",
             Self::PreyPickAgain { slot, .. } => match slot {
@@ -89,6 +92,7 @@ impl FeeBurnCause {
     pub(super) fn validate(&self) -> Result<()> {
         check_uuid_v7(self.occurrence()).map_err(|_| FeeBurnError::InvalidInput)?;
         match self {
+            Self::QuestNpcProgram { proof } => super::super::item_fee_burn_audit::npc_program_cause::check_proof(proof).map_err(|_| FeeBurnError::InvalidInput),
             Self::ArenaEntry { .. } => Ok(()),
             Self::TaskBoardTalisman { .. } | Self::BosstiarySlot { .. } => Ok(()),
             Self::Forge { occurrence, proof } => {
@@ -141,6 +145,7 @@ impl FeeBurnCause {
     }
     pub(in super::super) fn audit(&self) -> FeeBurnCauseV1 {
         match self {
+            Self::QuestNpcProgram { proof } => FeeBurnCauseV1::QuestNpcProgram(proof.clone()),
             Self::ArenaEntry { occurrence } => FeeBurnCauseV1::ArenaEntry(OneItemNpcPurchaseV1 { service_key: self.key().into(), occurrence: occurrence.to_vec(), atelier_proof: Vec::new() }),
             Self::BosstiarySlot { occurrence } => {
                 FeeBurnCauseV1::BosstiarySlot(OneItemNpcPurchaseV1 {

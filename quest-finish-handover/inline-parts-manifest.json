@@ -1,0 +1,100 @@
+[
+  {
+    "part": 1,
+    "count": 14,
+    "path": "inline-parts/PART-01-of-14.diff",
+    "bytes": 23962,
+    "md5": "7b5edbfdb11a4f75551ba91d14fe418c"
+  },
+  {
+    "part": 2,
+    "count": 14,
+    "path": "inline-parts/PART-02-of-14.diff",
+    "bytes": 23937,
+    "md5": "1542610937dfeec42c3f96a3b021e353"
+  },
+  {
+    "part": 3,
+    "count": 14,
+    "path": "inline-parts/PART-03-of-14.diff",
+    "bytes": 23920,
+    "md5": "12401b28ef35538858d2cc3a324c769b"
+  },
+  {
+    "part": 4,
+    "count": 14,
+    "path": "inline-parts/PART-04-of-14.diff",
+    "bytes": 23990,
+    "md5": "f56638e63c592f1aecb2ba4652d87954"
+  },
+  {
+    "part": 5,
+    "count": 14,
+    "path": "inline-parts/PART-05-of-14.diff",
+    "bytes": 23986,
+    "md5": "141f1e9a6bcaabfedd2fcc85e8d147a8"
+  },
+  {
+    "part": 6,
+    "count": 14,
+    "path": "inline-parts/PART-06-of-14.diff",
+    "bytes": 23981,
+    "md5": "0782ea7e9fcc248f7e6ff173e35faf37"
+  },
+  {
+    "part": 7,
+    "count": 14,
+    "path": "inline-parts/PART-07-of-14.diff",
+    "bytes": 23961,
+    "md5": "f6e66f8025ae51eeed19a006b88df61b"
+  },
+  {
+    "part": 8,
+    "count": 14,
+    "path": "inline-parts/PART-08-of-14.diff",
+    "bytes": 23987,
+    "md5": "1c51191733b15d754ccdc0e8dc96d9bb"
+  },
+  {
+    "part": 9,
+    "count": 14,
+    "path": "inline-parts/PART-09-of-14.diff",
+    "bytes": 23860,
+    "md5": "2b4129f2f8dc512c711a9b79715928d1"
+  },
+  {
+    "part": 10,
+    "count": 14,
+    "path": "inline-parts/PART-10-of-14.diff",
+    "bytes": 23990,
+    "md5": "4a5e02df39e0af0766a06953aec53a24"
+  },
+  {
+    "part": 11,
+    "count": 14,
+    "path": "inline-parts/PART-11-of-14.diff",
+    "bytes": 23955,
+    "md5": "4fe65e26e969b6cf10c36db3a0689823"
+  },
+  {
+    "part": 12,
+    "count": 14,
+    "path": "inline-parts/PART-12-of-14.diff",
+    "bytes": 23984,
+    "md5": "7e620a59cd05eff73c0c1a1db078cbb7"
+  },
+  {
+    "part": 13,
+    "count": 14,
+    "path": "inline-parts/PART-13-of-14.diff",
+    "bytes": 23983,
+    "md5": "342a756dd181569c116d2754fec068ac"
+  },
+  {
+    "part": 14,
+    "count": 14,
+    "path": "inline-parts/PART-14-of-14.diff",
+    "bytes": 16538,
+    "md5": "d62cce25f256371b611f408e7c061729"
+  }
+]

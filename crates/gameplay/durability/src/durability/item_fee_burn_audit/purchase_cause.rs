@@ -28,6 +28,7 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         return Err(AuditError::InvalidInput);
     }
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
+        Some(FeeBurnCauseV1::QuestNpcProgram(proof)) => super::npc_program_cause::check(proof, value),
         Some(FeeBurnCauseV1::ArenaEntry(cause)) if cause.service_key == "oteryn:service.svargrond-arena.entry" && super::super::arena_match::donor::FEES.contains(&value.fee_gold_units) => check_uuid_v7(&cause.occurrence),
         Some(FeeBurnCauseV1::BosstiarySlot(cause))
             if cause.service_key == "oteryn:bosstiary.slot_remove"
