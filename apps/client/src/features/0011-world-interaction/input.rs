@@ -39,7 +39,8 @@ impl PlayView {
             target,
             mailbox.world_context.look,
             mailbox.world_context.bed,
-        );
+        )
+        .with_targeting(mailbox.world_context.use_with);
         menu.tile = Some(tile);
         if let Some(crate::play::GroundItem::Map { header, .. }) =
             self.scene.target_at(tile).and_then(|target| target.item)
@@ -84,9 +85,18 @@ impl PlayView {
             menu.target.clone(),
             mailbox.world_context.look,
             mailbox.world_context.bed,
-        );
+        )
+        .with_targeting(mailbox.world_context.use_with);
         if !current.entries.iter().any(|(_, entry)| *entry == action) {
             return false;
+        }
+        if matches!(action, Action::UseWith | Action::UseRune) {
+            let oteryn_client_runtime::world_interaction::Target::Item(source) = menu.target else {
+                return false;
+            };
+            mailbox.world_context.begin_targeting(source);
+            mailbox.world_context.rune_targeting = action == Action::UseRune;
+            return true;
         }
         if link
             .commands

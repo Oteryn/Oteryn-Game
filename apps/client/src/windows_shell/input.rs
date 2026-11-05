@@ -10,6 +10,9 @@ impl Application {
     ) {
         if let Some(play) = &mut self.play {
             let trade_clicks = play.link.player_trade_track_pointer(events);
+            if play.link.use_with_cancel_input(events) {
+                return;
+            }
             if play.view.audio_input(events) {
                 return;
             }
@@ -77,7 +80,7 @@ impl Application {
                             self.actions.context_closed();
                         }
                     } else {
-                        render_failed |= play.view.click(tile).is_err();
+                        render_failed |= play.view.primary_click(tile, &play.link).is_err();
                     }
                 }
             }

@@ -1,6 +1,10 @@
 use crate::play::{Outbox, Stepper, mailbox::lock};
 use oteryn_client_runtime::world_interaction::Command;
 impl Outbox {
+    pub(in crate::play) fn targeting_initialize(&self, enabled: bool) {
+        lock(&self.0).world_context.use_with = enabled;
+    }
+
     pub(in crate::play) fn world_context_initialize(&self, look: bool, bed: bool) {
         let mut mailbox = lock(&self.0);
         mailbox.world_context.look = look;
@@ -35,6 +39,9 @@ macro_rules! session_trait {
     ($($methods:tt)*) => {
         super::feature_local_account_achievements::protocol::session_trait! {
             $($methods)*
+            fn targeting_source_current(&self, source: oteryn_session::ItemHandle) -> bool {
+                self.inventory().is_some_and(|inventory| inventory.main_backpack.iter().chain(&inventory.entries).any(|item| item.handle == source))
+            }
             fn world_context(
                 &mut self,
                 _command: &oteryn_client_runtime::world_interaction::Command,

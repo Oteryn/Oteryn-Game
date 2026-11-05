@@ -7,12 +7,16 @@ use world_object::WorldObjectTarget;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Target {
+    Position(oteryn_session::ActorPosition),
     Item(ItemHandle),
     Creature(oteryn_session::EntityRef),
     Object(WorldObjectTarget),
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
+    UseWith,
+    UseRune,
+    UseOn(ItemHandle),
     Look,
     Use,
     Open,
@@ -33,6 +37,7 @@ pub struct Command {
 
 pub fn look_payload(target: &Target) -> Result<Vec<u8>, SessionError> {
     let target = match target {
+        Target::Position(_) => return Err(SessionError::SessionUnusable),
         Target::Item(handle) => ItemLookTarget::Item(*handle),
         Target::Creature(entity) => ItemLookTarget::Creature(*entity),
         Target::Object(object) => ItemLookTarget::WorldObject(object.clone()),
@@ -59,8 +64,11 @@ pub fn bed_payload(handle: ItemHandle, skill: u8) -> Result<Vec<u8>, SessionErro
     Ok(payload)
 }
 
+pub use crate::item_use::use_with_payload;
+
 #[path = "state.rs"]
 mod state;
+pub use state::item_current;
 
 pub async fn send<S: SessionStream>(
     session: &mut Session<S>,
@@ -75,12 +83,26 @@ pub async fn send<S: SessionStream>(
         return Ok("Target changed".into());
     }
     let label = match command.action {
+        Action::UseWith | Action::UseRune | Action::UseOn(_) => "Use with",
         Action::Look => "Look",
         Action::Use => "Use",
         Action::Open => "Open",
         Action::BedInteract | Action::Bed(_) => "Bed",
     };
     let result = match (&command.target, command.action) {
+        (_, Action::UseOn(source)) => {
+            if !session.is_selected(15)
+                || matches!(command.target, Target::Position(_)) && !session.is_selected(22)
+                || matches!(command.target, Target::Item(_) | Target::Object(_))
+                    && !session.is_selected(11)
+            {
+                return Ok("Use with unavailable".into());
+            }
+            let Ok(payload) = use_with_payload(source, &command.target) else {
+                return Ok("Use with: invalid target".into());
+            };
+            session.world_context_use(&payload).await?
+        }
         (_, Action::Look) => {
             let Ok(payload) = look_payload(&command.target) else {
                 return Ok("Look unavailable".into());
@@ -140,7 +162,20 @@ pub async fn send<S: SessionStream>(
         UseDisposition::TooFar => "move closer",
         UseDisposition::StaleState => "target changed",
         UseDisposition::NothingToUse => "nothing to use here",
-        _ => "refused",
+        UseDisposition::RequirementNotMet => "requirements not met",
+        UseDisposition::Exhausted => "exhausted",
+        UseDisposition::Full => "already full",
+        UseDisposition::NoTarget => "no target",
+        UseDisposition::TargetIllegal => "illegal target or blocked line of sight",
+        UseDisposition::ProtectionZone | UseDisposition::PzBlocked => "protection zone",
+        UseDisposition::Locked => "locked",
+        UseDisposition::KeyMismatch => "wrong key",
+        UseDisposition::Sealed => "sealed",
+        UseDisposition::NotMovable => "item cannot move",
+        UseDisposition::NoRoom => "no room",
+        UseDisposition::NotPossible => "not possible",
+        UseDisposition::Occupied => "occupied",
+        UseDisposition::Rejected => "refused",
     };
     Ok(format!("{label}: {text}"))
 }
@@ -183,6 +218,7 @@ mod tests {
             assert_eq!(
                 decoded.target,
                 match target {
+                    Target::Position(_) => return Err(SessionError::SessionUnusable),
                     Target::Item(handle) => ItemLookTarget::Item(handle),
                     Target::Creature(entity) => ItemLookTarget::Creature(entity),
                     Target::Object(object) => ItemLookTarget::WorldObject(object),

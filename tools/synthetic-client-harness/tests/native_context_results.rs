@@ -122,7 +122,7 @@ async fn join(stream: &mut DuplexStream) -> Result<(), Error> {
             current_server_sequence: 0,
             next_command_id: 7,
             schema_revision: 1,
-            selected_capabilities: &[4, 6, 11, 15, 18, 28],
+            selected_capabilities: &[4, 6, 11, 15, 18, 22, 28],
         })?,
     )
     .await?;
@@ -133,11 +133,50 @@ async fn join(stream: &mut DuplexStream) -> Result<(), Error> {
         entities: vec![actor(100, 7), actor(102, 9)],
     })
     .map_err(|e| format!("{e:?}"))?;
-    let inventory = item_view::encode_character_inventory(&CharacterInventory::default())
-        .map_err(|e| format!("{e:?}"))?;
+    let inventory = item_view::encode_character_inventory(&CharacterInventory {
+        main_backpack: Some(item_view::ItemEntry {
+            handle: 2.try_into()?,
+            item_definition_ref: 1.try_into()?,
+            count: 1.try_into()?,
+            sub_type: 0,
+        }),
+        entries: [3]
+            .into_iter()
+            .map(|handle| {
+                Ok(item_view::ItemEntry {
+                    handle: handle.try_into()?,
+                    item_definition_ref: 1.try_into()?,
+                    count: 1.try_into()?,
+                    sub_type: 0,
+                })
+            })
+            .collect::<Result<Vec<_>, Error>>()?,
+        equipment: vec![],
+    })
+    .map_err(|e| format!("{e:?}"))?;
     let container = item_view::encode_open_container(&OpenContainer::default())
         .map_err(|e| format!("{e:?}"))?;
-    let map = encode_world_map_snapshot(&map()).map_err(|e| format!("{e:?}"))?;
+    let mut map_view = map();
+    map_view.tiles.push(MapTile {
+        position: position(103),
+        items: vec![MapItem {
+            definition: MapDefinition::Terrain(std::num::NonZeroU32::MIN),
+            count: 1,
+            sub_type: 0,
+            origin: MapOrigin::BaseOrdinal {
+                ordinal: 0,
+                object_revision: 0,
+            },
+            appearance_id: 0,
+        }],
+        more: false,
+        ground_speed: 0,
+    });
+    let mut other = map_view.tiles.first().cloned().ok_or("tile")?;
+    other.position = position(104);
+    other.items.first_mut().ok_or("item")?.origin = MapOrigin::Handle(4.try_into()?);
+    map_view.tiles.push(other);
+    let map = encode_world_map_snapshot(&map_view).map_err(|e| format!("{e:?}"))?;
     let domains = [
         DomainSnapshot {
             domain_id: 1,
@@ -414,6 +453,133 @@ fn context_held_menu_drops_creature_moves_death_and_old_map_epoch_at_dispatch() 
         assert_eq!(context::send(&mut session, &old).await?, "Target changed");
         finish.send(()).map_err(|_| "peer gone")?;
         peer.await??;
+        Ok(())
+    })
+}
+
+#[test]
+fn native_use_with_targeting_cancels_and_projects_server_refusals() -> Result<(), Error> {
+    on_thread(async {
+        let (client, mut server) = tokio::io::duplex(64 * 1024);
+        let (finish, finished) = oneshot::channel();
+        let peer = tokio::spawn(async move {
+            join(&mut server).await?;
+            for (index, expected) in [
+                (2, Target::Creature(actor(102, 9).entity)),
+                (1, Target::Position(position(101))),
+                (1, Target::Item(4.try_into()?)),
+                (2, Target::Item(3.try_into()?)),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let frame = read_frame(&mut server).await?;
+                let envelope = decode_wire_envelope(&frame)?;
+                let request = envelope.client_command(1)?;
+                assert_eq!(request.command_type, 2);
+                let source = expected.0.try_into()?;
+                assert_eq!(
+                    request.payload,
+                    context::use_with_payload(source, &expected.1)?
+                );
+                let payload = world_object::encode_use_result(if index == 0 {
+                    UseDisposition::TargetIllegal
+                } else {
+                    UseDisposition::Exhausted
+                })
+                .map_err(|e| format!("{e:?}"))?;
+                write_frame(
+                    &mut server,
+                    &encode_command_result(
+                        1,
+                        41 + u64::try_from(index)?,
+                        request.command_id,
+                        CommandStatus::Accepted,
+                        &payload,
+                    )?,
+                )
+                .await?;
+            }
+            no_command(&mut server, finished).await?;
+            Ok::<_, Error>(())
+        });
+        let session = admit(client).await?;
+        let mut view = PlayView::from_join(session.join_snapshot())?;
+        view.set_live_map(&session.world_map_snapshot().ok_or("map")?)?;
+        view = view.with_entities(
+            session
+                .world_entities()
+                .ok_or("entities")?
+                .others()
+                .copied()
+                .collect(),
+        )?;
+        let (link, commands, outbox) = play_channel();
+        let task = tokio::spawn(run_session(session, commands, outbox));
+        tokio::time::timeout(WAIT, async {
+            while link.inventory_panel().inventory.is_none() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await?;
+        let menu = view
+            .world_context(TileCoord::new(101, 200), &link)
+            .ok_or("menu")?;
+        assert!(view.world_context_choose(&link, &menu, Action::UseWith));
+        let escape = oteryn_input_actions::NormalizedInputEvent::Key {
+            code: oteryn_input_actions::KeyCode::ESCAPE,
+            state: oteryn_input_actions::ButtonState::Pressed,
+            modifiers: oteryn_input_actions::Modifiers::NONE,
+            repeat: false,
+        };
+        assert!(link.use_with_cancel_input(&[escape]));
+        assert!(!view.use_with_click(TileCoord::new(102, 200), &link));
+        assert!(link.inventory_select(2.try_into()?));
+        assert!(link.inventory_use_rune());
+        assert!(view.use_with_click(TileCoord::new(102, 200), &link));
+        for index in 0..4 {
+            let expected = if index == 0 {
+                "Use with: illegal target or blocked line of sight"
+            } else {
+                "Use with: exhausted"
+            };
+            tokio::time::timeout(WAIT, async {
+                while link.world_context_feedback().as_deref() != Some(expected) {
+                    tokio::task::yield_now().await;
+                }
+            })
+            .await?;
+            match index {
+                0 | 1 => {
+                    let menu = view
+                        .world_context(TileCoord::new(101, 200), &link)
+                        .ok_or("menu")?;
+                    assert!(view.world_context_choose(
+                        &link,
+                        &menu,
+                        if index == 0 {
+                            Action::UseRune
+                        } else {
+                            Action::UseWith
+                        }
+                    ));
+                    assert!(view.use_with_click(
+                        TileCoord::new(if index == 0 { 101 } else { 104 }, 200),
+                        &link
+                    ));
+                }
+                2 => {
+                    assert!(link.inventory_select(2.try_into()?));
+                    assert!(link.inventory_use_with());
+                    assert!(link.inventory_select(3.try_into()?));
+                    assert!(link.inventory_use_with());
+                }
+                _ => {}
+            }
+        }
+        finish.send(()).map_err(|_| "peer gone")?;
+        peer.await??;
+        task.abort();
         Ok(())
     })
 }

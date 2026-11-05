@@ -13,6 +13,9 @@ struct InventorySession {
     events: Vec<SessionEvent>,
 }
 impl Stepper for InventorySession {
+    fn feature_selected(&self, capability: u32) -> bool {
+        capability == 15
+    }
     fn inventory(&self) -> Option<CharacterInventory> {
         Some(self.inventory.clone())
     }
@@ -86,12 +89,24 @@ fn scenario() -> Result<(), String> {
     assert!(link.inventory_panel().open);
     assert!(link.inventory_select(carried.handle));
     assert_eq!(link.inventory_panel().selected_item(), Some(carried));
+    assert!(link.inventory_use_with());
     link.request_combat(CombatCommand::Cast(1.try_into().map_err(|_| "spell")?));
     while link.inventory_panel().rows().len() == 2 && Instant::now() < deadline {
         std::thread::yield_now();
     }
     assert_eq!(link.inventory_panel().rows(), vec![backpack]);
     assert_eq!(link.inventory_panel().selected_item(), None);
+    while !link
+        .world_context_feedback()
+        .is_some_and(|text| text.contains("disappeared"))
+        && Instant::now() < deadline
+    {
+        std::thread::yield_now();
+    }
+    assert!(
+        link.world_context_feedback()
+            .is_some_and(|text| text.contains("disappeared"))
+    );
     link.request_logout();
     runtime.block_on(task).map_err(|e| e.to_string())?;
     assert!(link.inventory_panel().inventory.is_none());
