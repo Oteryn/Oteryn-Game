@@ -7,6 +7,8 @@ mod container_tree_tests;
 mod depot_map_tests;
 #[path = "features/0004-item-view-move/tests.rs"]
 mod item_movement_tests;
+#[path = "tests/property_services.rs"]
+mod property_services_tests;
 #[path = "quest_log_transport/tests.rs"]
 mod quest_log_tests;
 #[path = "tests/replacement_snapshot.rs"]
