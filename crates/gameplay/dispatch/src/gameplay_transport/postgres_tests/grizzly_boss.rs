@@ -32,7 +32,7 @@ fn grizzly_boss_portal_wire_occupied_spawn_expiry_and_relog_return() -> TestResu
 }
 
 #[test]
-fn grizzly_boss_portal_wire_unqualified_room_preserves_assignment() -> TestResult {
+fn grizzly_boss_portal_wire_debris_qualified_hide_room_consumes_assignment() -> TestResult {
     postgres_case(2, false)
 }
 
@@ -193,12 +193,11 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
             .await;
         assert_eq!(value(&owner, boss.storage).await?, 1);
         if boss_id == 2 {
-            // Hide's source room lacks the required complete map bounds (Q2=B).
-            east(&owner, &mut admitted, 1).await?;
-            assert_position(&owner, deps.actor, origin).await?;
-            assert_eq!(value(&owner, boss.storage).await?, 1);
-            assert_eq!(visits(&h).await?, 0);
-            assert!(monsters(&owner).await?.is_empty());
+            // W15c's nonblocking debris profiles connect Hide's source player and
+            // boss positions in a bounded 90-tile room (grizzly-boss-rooms.json).
+            // Occupancy still refuses entry; a free room uses the exact source
+            // landing and spawn positions and consumes the assignment once.
+            qualified(&owner, &mut admitted, &h, &deps, boss, origin, false).await?;
         } else {
             qualified(
                 &owner,
