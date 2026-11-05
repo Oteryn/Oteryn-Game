@@ -155,15 +155,11 @@ impl<S: SessionStream> Session<S> {
                     world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
                     world_spatial_entities::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
                 ) if entities_selected => {
-                    let snapshot = if item_selected {
-                        world_spatial_entities::decode_world_spatial_entities_snapshot_with_item_handles(
+                    let (snapshot, _) =
+                        world_spatial_entities::decode_world_spatial_entities_snapshot_with_fields(
                             domain.payload,
-                        )?
-                    } else {
-                        world_spatial_entities::decode_world_spatial_entities_snapshot(
-                            domain.payload,
-                        )?
-                    };
+                            world_spatial_entities::EntityFields::selected(&selected_capabilities),
+                        )?;
                     world_spatial_observation = Some(WorldSpatialObservation {
                         content_generation: snapshot.content_generation,
                         actor_position: snapshot.actor_position,

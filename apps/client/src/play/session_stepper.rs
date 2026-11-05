@@ -115,6 +115,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn visible_appearances(&self) -> Vec<oteryn_session::VisibleAppearance> {
+        Session::visible_appearances(self)
+    }
     fn task_board_selected(&self) -> bool {
         self.is_selected(oteryn_session::task_board::CAPABILITY_TASK_BOARD_V1)
     }
@@ -284,6 +287,7 @@ pub(super) fn publish<T: Stepper>(
 ) {
     outbox.achievement_notices_publish(session);
     outbox.vitals(session.actor_vitals());
+    outbox.appearances(session.visible_appearances());
     if let Some(payload) = session.feature_snapshot(98) {
         outbox.cyclopedia_tracker_push(payload);
     }

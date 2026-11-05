@@ -26,6 +26,7 @@ impl AdmittedSession {
         if let Some(map) = self.session.world_map_snapshot() {
             view.set_live_map(&map)?;
         }
+        view.set_presentations(self.session.visible_appearances())?;
         view.with_entities(
             self.session
                 .world_entities()

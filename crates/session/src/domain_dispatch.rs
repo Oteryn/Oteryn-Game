@@ -83,13 +83,10 @@ impl<S: SessionStream> Session<S> {
                     world_spatial_entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
                     self.spatial_revision,
                 )?;
-                let entities_delta = if self.is_selected(CAPABILITY_ITEM_VIEW_MOVE_V1) {
-                    world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(
-                        delta.payload,
-                    )?
-                } else {
-                    world_spatial_entities::decode_world_spatial_entities_delta(delta.payload)?
-                };
+                let (entities_delta, _) = world_spatial_entities::decode_world_spatial_entities_delta_with_fields(
+                    delta.payload,
+                    world_spatial_entities::EntityFields::selected(self.selected_capabilities()),
+                )?;
                 if entities_delta.content_generation != self.world_spatial.content_generation {
                     return Err(SessionError::ContentGenerationMismatch { domain_id });
                 }

@@ -345,7 +345,7 @@ impl TileBatch {
 /// Alpha-blended sprite batch: one tile-sized quad per sprite, in draw order.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct SpriteBatch {
-    instances: Vec<QuadInstance>,
+    pub(crate) instances: Vec<QuadInstance>,
 }
 
 impl SpriteBatch {

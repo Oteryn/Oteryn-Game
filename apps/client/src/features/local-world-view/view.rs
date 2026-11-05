@@ -62,6 +62,8 @@ impl PlayView {
             &markers,
             &entities,
         )?;
+        self.scene
+            .set_presentations(&self.appearances, self.floor)?;
         Ok(())
     }
 
@@ -73,6 +75,9 @@ impl PlayView {
         }
         if let Some(position) = pushed.own {
             self.place(position);
+        }
+        if let Some(entries) = &pushed.appearances {
+            self.appearances.clone_from(entries);
         }
         if let Some(entities) = &pushed.entities {
             self.entities.clone_from(entities);

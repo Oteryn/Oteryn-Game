@@ -60,3 +60,36 @@ fn generated_dispatch_keeps_spatial_event_order_and_ignores_undrawn_domains() ->
     assert_eq!(pushed.own.map(|p| p.x), Some(51));
     Ok(())
 }
+
+#[test]
+fn live_names_reach_scene_and_disappear_with_visibility() -> Result<(), BatchError> {
+    let mut view = view()?;
+    let entity = oteryn_session::WorldSpatialEntity {
+        display_name: Some(
+            oteryn_session::EntityDisplayName::new("Rat").map_err(|_| BatchError::InvalidView)?,
+        ),
+        kind: oteryn_session::EntityKind::Creature,
+        entity: oteryn_session::EntityRef {
+            identity: [8; 16],
+            generation: 1,
+        },
+        position: ActorPosition {
+            x: 101,
+            y: 200,
+            floor: 0,
+        },
+        detail: oteryn_session::EntityDetail::Actor {
+            direction: oteryn_session::StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    view.set_presentations(vec![oteryn_session::VisibleAppearance {
+        entity,
+        look: None,
+    }])?;
+    assert_eq!(view.scene().name_count(), 1);
+    view.set_presentations(Vec::new())?;
+    assert_eq!(view.scene().name_count(), 0);
+    Ok(())
+}

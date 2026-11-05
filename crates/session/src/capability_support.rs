@@ -82,6 +82,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_EMPTY_OUTFIT_V1,
+    oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

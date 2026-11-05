@@ -43,6 +43,7 @@ pub struct Pushed {
     pub own: Option<ActorPosition>,
     /// The latest full list of the other visible entities, when it changed.
     pub entities: Option<Vec<WorldSpatialEntity>>,
+    pub appearances: Option<Vec<oteryn_session::VisibleAppearance>>,
     /// The latest domain-2 entry per placement, in first-pushed order of placement.
     pub markers: Vec<WorldObjectOverlayEntry>,
     pub chat_lines: Vec<oteryn_session::ChatLine>,
@@ -65,6 +66,7 @@ impl Pushed {
         self.map = newer.map.or(self.map.take());
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
+        self.appearances = newer.appearances.or(self.appearances.take());
         self.server_messages.append(newer.server_messages);
         self.achievements.extend(newer.achievements);
         self.chat_lines.extend(newer.chat_lines);
@@ -117,10 +119,12 @@ pub(super) struct Mailbox {
     pub(super) quest_shutdown: bool,
     pub(super) stash: oteryn_client_ui::stash::StashPanel,
     pub(super) guild: oteryn_client_ui::guild::GuildPanel,
+    /// Last published connection-local presentation, including appearance-only updates.
+    pub(super) appearance_state: Vec<oteryn_session::VisibleAppearance>,
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
-    pushed: Pushed,
+    pub(super) pushed: Pushed,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
     /// The latest refused logout not yet polled.

@@ -98,6 +98,7 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn visible_appearances(&self) -> Vec<oteryn_session::VisibleAppearance> { Vec::new() }
     fn task_board_selected(&self) -> bool {
         false
     }

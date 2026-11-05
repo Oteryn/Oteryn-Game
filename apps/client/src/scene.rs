@@ -6,7 +6,7 @@
 
 use crate::input::{StepDir, TargetKind, Targetable, pick_target};
 use crate::map::{BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, World};
-use oteryn_client_simulation::scene::{scene_origin, visit_scene};
+use oteryn_client_simulation::scene::{scene_origin, visit_scene_entities};
 use oteryn_renderer::{
     AtlasImage, BatchError, MAX_BATCH_QUADS, SpriteBatch, TileBatch, TileCoord, TileView,
 };
@@ -35,6 +35,9 @@ pub struct Scene {
     sprites: SpriteBatch,
     visible: Vec<Targetable>,
     target: Option<Targetable>,
+    presentation_atlas: Option<AtlasImage>,
+    actor_draws: Vec<(TileCoord, Vec<Draw>)>,
+    names: Vec<(TileCoord, Vec<u16>)>,
 }
 
 impl Scene {
@@ -91,6 +94,9 @@ impl Scene {
             sprites: SpriteBatch::new(),
             visible,
             target: None,
+            presentation_atlas: None,
+            actor_draws: Vec::new(),
+            names: Vec::new(),
         };
         scene.rebuild_sprites()?;
         Ok(scene)
@@ -129,17 +135,37 @@ impl Scene {
     /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
-        let (atlas, origin) = (self.world.atlas(), self.view.origin());
-        let sprites = oteryn_renderer::world::sprite_batch(
+        let (atlas, origin) = (self.atlas(), self.view.origin());
+        let mut sprites = oteryn_renderer::world::sprite_batch(
             &self.view,
             atlas,
             |emit| {
-                visit_scene(
+                visit_scene_entities(
                     (origin.x, origin.y),
                     self.anchor.map(|anchor| (anchor.x, anchor.y)),
-                    ((self.own.x, self.own.y), self.world.player(self.facing)),
+                    (
+                        (self.own.x, self.own.y),
+                        if self.actor_draws.iter().any(|(tile, _)| *tile == self.own) {
+                            &[]
+                        } else {
+                            self.world.player(self.facing)
+                        },
+                    ),
                     |x, y| self.world.tile(x, y),
                     |x, y| {
+                        let actors: Vec<_> = self
+                            .actor_draws
+                            .iter()
+                            .filter(|(tile, _)| *tile == TileCoord::new(x, y))
+                            .flat_map(|(_, draws)| draws.iter().copied())
+                            .collect();
+                        if self
+                            .actor_draws
+                            .iter()
+                            .any(|(tile, _)| *tile == TileCoord::new(x, y))
+                        {
+                            return actors;
+                        }
                         // One glyph per tile however many markers and entities stand on it.
                         self.visible
                             .iter()
@@ -151,12 +177,26 @@ impl Scene {
                                 cell: MARKER_CELL,
                                 offset: [0, 0],
                             })
+                            .into_iter()
+                            .collect()
                     },
                     emit,
                 )
             },
             self.target.map(|target| target.tile),
         )?;
+        for (tile, cells) in &self.names {
+            let [x, y] = self.view.tile_to_screen(*tile);
+            let left = (x + 24.0 - cells.len() as f32 * 4.0).max(0.0);
+            for (index, cell) in cells.iter().enumerate() {
+                oteryn_renderer::name_text::label_quad(
+                    &mut sprites,
+                    atlas,
+                    *cell,
+                    [left + index as f32 * 8.0, (y - 14.0).max(0.0)],
+                )?;
+            }
+        }
         self.sprites = sprites;
         Ok(())
     }
@@ -168,7 +208,9 @@ impl Scene {
 
     #[must_use]
     pub fn atlas(&self) -> &AtlasImage {
-        self.world.atlas()
+        self.presentation_atlas
+            .as_ref()
+            .unwrap_or_else(|| self.world.atlas())
     }
 
     #[must_use]
@@ -189,3 +231,6 @@ impl Scene {
 
 #[cfg(test)]
 mod tests;
+
+#[path = "features/0006-world-spatial-entities/scene.rs"]
+mod live_entities;
