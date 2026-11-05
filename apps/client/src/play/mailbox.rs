@@ -278,6 +278,7 @@ impl Outbox {
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
         let mut mailbox = lock(&self.0);
+        mailbox.stash_end();
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.achievement_notices = Default::default();
@@ -291,6 +292,7 @@ impl Outbox {
 
     pub(super) fn logged_out(&self) {
         let mut mailbox = lock(&self.0);
+        mailbox.stash_end();
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.achievement_notices = Default::default();

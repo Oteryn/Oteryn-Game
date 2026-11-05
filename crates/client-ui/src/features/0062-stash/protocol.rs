@@ -18,7 +18,13 @@ pub fn request(panel: &mut StashPanel, intent: Intent) -> Option<StashCommand> {
         Intent::Refresh => (panel.page, stash::StashAction::Browse),
         Intent::Previous if panel.page > 0 => (panel.page - 1, stash::StashAction::Browse),
         Intent::Next if panel.has_more => (panel.page + 1, stash::StashAction::Browse),
-        Intent::Stow(handle) => (panel.page, stash::StashAction::Stow(handle)),
+        Intent::Stow(handle) => {
+            if !panel.carried.iter().any(|item| item.handle == handle) {
+                panel.feedback = Some("The item changed; select a carried item again".into());
+                return None;
+            }
+            (panel.page, stash::StashAction::Stow(handle))
+        }
         Intent::Withdraw { row, amount } => {
             let row = panel.rows.get(row)?.handle;
             (panel.page, stash::StashAction::Withdraw { row, amount })
@@ -39,4 +45,16 @@ pub fn apply_result(panel: &mut StashPanel, response: &StashResponse) {
     panel.row = panel.row.filter(|row| *row < panel.rows.len());
     let message = response.reply.message();
     panel.feedback = (!message.is_empty()).then_some(message);
+}
+
+/// Resolve a click only while the displayed carried list still matches live items.
+pub fn carried_intent(
+    panel: &StashPanel,
+    displayed: &[oteryn_client_runtime::depot::ItemEntry],
+    row: usize,
+) -> Option<Intent> {
+    if displayed != panel.carried {
+        return None;
+    }
+    panel.carried.get(row).map(|item| Intent::Stow(item.handle))
 }

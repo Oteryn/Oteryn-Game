@@ -1,18 +1,20 @@
 use oteryn_client_ui::{
-    boss_encounter, boss_rewards, browse_field, highscores, hotkey_equip, item_forge, store,
-    tutorial_notices, weapon_proficiency, world_event,
+    boss_encounter, boss_rewards, browse_field, depot, highscores, hotkey_equip, item_forge, stash,
+    store, tutorial_notices, weapon_proficiency, world_event,
 };
 use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
 
 #[test]
 fn registered_shortcuts_reach_one_panel_each() -> Result<(), oteryn_input_actions::InputError> {
     type OpenKey = fn(&[NormalizedInputEvent]) -> bool;
-    let panels: [(u16, bool, OpenKey); 10] = [
+    let panels: [(u16, bool, OpenKey); 12] = [
         (30, true, boss_rewards::open_key),
         (5, true, browse_field::open_key),
         (8, true, hotkey_equip::open_key),
         (9, true, item_forge::open_key),
         (22, true, store::open_key),
+        (22, false, stash::open_key),
+        (15, true, depot::open_key),
         (19, true, weapon_proficiency::open_key),
         (13, true, boss_encounter::open_key),
         (11, false, highscores::open_key),
