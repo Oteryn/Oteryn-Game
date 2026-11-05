@@ -326,6 +326,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         mailbox.discovery.end();
         mailbox.properties.end();
+        mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
         mailbox.stash_end();
@@ -351,6 +352,7 @@ impl Outbox {
         self.container_end();
         let mut mailbox = lock(&self.0);
         mailbox.properties.end();
+        mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
         mailbox.stash_end();
@@ -446,6 +448,7 @@ impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
         mailbox.properties.end();
+        mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.world_event_shutdown = true;
         mailbox.highscores_shutdown = true;
