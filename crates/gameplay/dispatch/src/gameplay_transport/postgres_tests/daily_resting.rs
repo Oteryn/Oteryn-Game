@@ -128,15 +128,16 @@ fn resting_scenario(premium: bool) -> TestResult {
             // Crystal 201189f8 src/creatures/combat/condition.cpp:1348-1356,1385-1391
             // unlocks resting credits and doubles them, rather than adding a flat bonus
             // (data/libs/systems/daily_reward.lua:1-6). This unfed level-8 Monk has
-            // max HP/MP 185/90. REGEN-PCT-4 credits max(185*8/10000, 1*3/6)=0.5 HP
-            // per 4 s and max(90*10/10000, 2*3/6)=1 MP per 6 s: 120 s gains 15/20,
-            // or 30/40 with Premium inside; outside receives the base gains.
+            // max HP/MP 185/90. Monk regenerates like Paladin (owner 2026-10-29: 1 HP per
+            // 8 s, 2 MP per 4 s). REGEN-PCT-4 credits max(185*8/10000, 1*3/8)=0.375 HP
+            // per 4 s and max(90*10/10000, 2*3/4)=1.5 MP per 6 s: 120 s gains 11/30,
+            // or 22/60 with Premium inside; outside receives the base gains.
             assert_eq!(
                 (vitals.health, vitals.mana),
                 if premium && inside {
-                    (130, 50)
+                    (122, 70)
                 } else {
-                    (115, 30)
+                    (111, 40)
                 }
             );
             // Free soul stays at the seeded 5: resting_area.rs:95 gates the streak-seven

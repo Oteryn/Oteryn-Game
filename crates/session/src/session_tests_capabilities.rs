@@ -175,6 +175,10 @@ fn derived_gated_routes_match_previous_table() {
         (225, &[431], &[]),
         (230, &[440], &[]),
         (233, &[447], &[]),
+        // P-C01: native Bestiary/Charms (command 84) and PvP expert (command 103,
+        // confirmed-mode domain 52) panels use their existing gated routes.
+        (67, &[84], &[]),
+        (87, &[103], &[52]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();

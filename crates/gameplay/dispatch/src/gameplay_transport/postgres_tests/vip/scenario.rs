@@ -58,7 +58,16 @@ pub(super) fn run_scenario() -> TestResult {
             SpellPremiumCoordinator::new(consumer, Some(clock), None, Some(h.root.clone()));
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = Some(&coordinator);
-        let target_owner = target_deps.owner(&h, &authority);
+        // Each live fixture owner needs its own holder: periodic work on one session
+        // must not turn the other session's VIP command into a busy-root refusal.
+        let target_root = h.independent_root()?;
+        assert!(target_root.maintain_ready_once().await?);
+        let target_authority = target_root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut target_owner = target_deps.owner(&h, &target_authority);
+        target_owner.root = &target_root;
         deps.initialize(&owner).await;
         target_deps.initialize(&target_owner).await;
         owner

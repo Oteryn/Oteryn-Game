@@ -1729,7 +1729,7 @@ fn canonical_uuid(value: &[u8; 16]) -> String {
 pub use actor_spell::ChannelSpellStates;
 #[cfg(test)]
 pub use party_spell_owner::read_source_party_world_in_transaction;
-#[cfg(any(test, feature = "test-support"))]
+/// Used by the opted-in node-boot qualification fixture in shipping builds of the game server.
 pub use spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 #[cfg(test)]
 pub use spell_presentation_publisher::{

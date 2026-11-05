@@ -27,7 +27,36 @@ pub(super) fn step_due(state: &mut PlayerSpellState, now: u64, in_protection_zon
     } else {
         credit_second(state, fed);
     }
+    credit_equipment(state, in_protection_zone);
     state.regeneration_next_tick_us = Some(now.saturating_add(u64::from(FOOD_TICK_MS) * 1_000));
+}
+
+fn credit_equipment(state: &mut PlayerSpellState, in_protection_zone: bool) {
+    let mut regeneration = RegenerationState {
+        health: state.health,
+        mana: state.mana,
+        regen_health_ms: state.regen_health_ms,
+        regen_mana_ms: state.regen_mana_ms,
+        regen_health_carry: state.regen_health_carry,
+        regen_mana_carry: state.regen_mana_carry,
+    };
+    let streak = if state.premium_current {
+        state.resting_streak
+    } else {
+        state.resting_streak.min(3)
+    };
+    let mut clocks = std::mem::take(&mut state.equipped_regeneration);
+    oteryn_gameplay_progression::regeneration::credit_equipment_second(
+        &mut regeneration,
+        &mut clocks,
+        state.facts.max_health,
+        state.facts.max_mana,
+        in_protection_zone,
+        streak,
+    );
+    state.equipped_regeneration = clocks;
+    state.health = regeneration.health;
+    state.mana = regeneration.mana;
 }
 
 /// Credits one fed tick to a living actor. Dead actors neither accumulate nor gain.
@@ -167,6 +196,53 @@ mod tests {
         state.health = 100;
         state.mana = 100;
         state
+    }
+
+    #[test]
+    fn equipped_regeneration_runs_on_the_native_tick_and_survives_reinstall() {
+        use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
+
+        let ring = EquipmentRegeneration {
+            health_gain: 6,
+            health_ticks_ms: 6_000,
+            mana_gain: 24,
+            mana_ticks_ms: 6_000,
+        };
+        let mut with_ring = actor(Vocation::Knight);
+        let mut without_ring = actor(Vocation::Knight);
+        with_ring.install_equipped_regeneration(vec![(8, ring)]);
+        for second in 1..=6 {
+            step_due(&mut with_ring, second * 1_000_000, false);
+            step_due(&mut without_ring, second * 1_000_000, false);
+            assert_eq!(
+                (with_ring.regen_health_carry, with_ring.regen_mana_carry),
+                (
+                    without_ring.regen_health_carry,
+                    without_ring.regen_mana_carry
+                ),
+                "equipment preserves the native percentage carries"
+            );
+        }
+        assert_eq!(with_ring.health - without_ring.health, 6);
+        assert_eq!(with_ring.mana - without_ring.mana, 24);
+
+        let mut reinstalled = actor(Vocation::Knight);
+        reinstalled.install_equipped_regeneration(vec![(8, ring)]);
+        for second in 1..=3 {
+            step_due(&mut reinstalled, second * 1_000_000, false);
+        }
+        reinstalled.install_equipped_regeneration(vec![(8, ring)]);
+        assert_eq!(reinstalled.equipped_regeneration()[0].health_ms, 3_000);
+        reinstalled.install_equipped_regeneration(vec![(
+            8,
+            EquipmentRegeneration {
+                health_gain: 2,
+                ..ring
+            },
+        )]);
+        assert_eq!(reinstalled.equipped_regeneration()[0].health_ms, 0);
+        reinstalled.install_equipped_regeneration(vec![]);
+        assert!(reinstalled.equipped_regeneration().is_empty());
     }
 
     #[test]
