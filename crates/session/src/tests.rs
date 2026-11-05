@@ -9,6 +9,8 @@ mod quest_log_tests;
 mod target_move_tests;
 include!("tutorial_notices_tests.rs");
 include!("presentation_tests.rs");
+#[path = "features/0011-world-interaction/tests.rs"]
+mod world_context_tests;
 #[path = "features/0019-world-light/tests.rs"]
 mod world_light_tests;
 include!("achievement_notices_tests.rs");

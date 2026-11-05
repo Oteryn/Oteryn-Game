@@ -111,6 +111,19 @@ impl Scene {
         self.target
     }
 
+    pub(crate) fn target_at(&self, tile: TileCoord) -> Option<Targetable> {
+        // The own-actor highlight has no command identity; it must not hide an item below it.
+        let on_tile = || {
+            self.visible.iter().rev().filter(|target| {
+                target.tile == tile && (target.entity.is_some() || target.item.is_some())
+            })
+        };
+        on_tile()
+            .find(|target| target.kind == TargetKind::Entity)
+            .or_else(|| on_tile().find(|target| target.kind == TargetKind::Object))
+            .copied()
+    }
+
     /// Selects what is drawn on `tile` (entity before object). Returns the new target; a tile
     /// with nothing on it leaves the target unchanged and returns `None`.
     pub fn select_tile(&mut self, tile: TileCoord) -> Result<Option<Targetable>, BatchError> {

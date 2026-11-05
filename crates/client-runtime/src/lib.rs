@@ -9,6 +9,9 @@ pub mod achievement_notices;
 #[path = "features/0004-item-view-move/protocol.rs"]
 pub mod inventory;
 
+#[path = "features/0011-world-interaction/protocol.rs"]
+pub mod world_interaction;
+
 pub mod connection;
 pub mod hotkey_equip;
 #[path = "features/0053-world-event/protocol.rs"]

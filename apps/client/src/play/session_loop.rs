@@ -230,6 +230,7 @@ super::feature_local_account_achievements::protocol::session_trait! {
     > + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 165 }) }
     }
+    fn world_context(&mut self, _command: &oteryn_client_runtime::world_interaction::Command) -> impl Future<Output = Result<String, SessionError>> + Send { async { Err(SessionError::CapabilityNotSelected { capability: 28 }) } }
     fn feature_selected(&self, _capability: u32) -> bool {
         false
     }
@@ -297,6 +298,7 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
     outbox.inventory_initialize(session.inventory());
     outbox.target_walk_initialize(session.feature_selected(64));
     outbox.vitals(session.actor_vitals());
@@ -430,6 +432,7 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
+            Ok(PlayCommand::WorldContext(command)) => match outbox.world_context_run(&mut session, &command).await { Ok(()) => { publish(&mut session, &outbox, &mut held); continue; } Err(error) => error },
             Ok(PlayCommand::TargetWalk(position)) => match outbox.target_walk_run(&mut session, position).await {
                 Ok(()) => {
                     publish(&mut session, &outbox, &mut held);

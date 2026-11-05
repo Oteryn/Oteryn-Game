@@ -25,6 +25,7 @@ const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    world_context_feedback: Option<String>,
     target_walk_feedback: Option<&'static str>,
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
     vitals: Option<oteryn_session::ActorVitals>,
@@ -66,6 +67,7 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            world_context_feedback: None,
             target_walk_feedback: None,
             world_clock: None,
             vitals: None,
@@ -110,6 +112,9 @@ mod session_stepper;
 mod tick;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
+
+#[cfg(windows)]
+pub use feature_0011_world_interaction::view::{open_world_context_menu, present_world_look};
 
 pub use feature_0004_item_view_move::state::GroundItem;
 

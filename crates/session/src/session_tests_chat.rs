@@ -119,6 +119,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // C89 adds server-save countdown notices (75, domain 40).
     // C88 adds 53 (world-event query) through the admitted raw-command route.
     // C76 adds 9 (highscores), using the existing selected-session query route.
+    // C12 adds item-look (28); world interaction (11) already carries bed support.
     // C24 adds server target walking (64), with existing prerequisites 6 and 13.
     // C17b adds 275 (empty-outfit-v1: invisible creatures project an empty outfit).
     // The real-server client journeys (node boot) add 3 (npc_service) and 81 (npc_shop) for the
@@ -127,7 +128,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     assert_eq!(
         CLIENT_SUPPORTED_CAPABILITIES,
         &[
-            3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 30, 31, 36, 37,
+            3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 28, 30, 31, 36, 37,
             40, 42, 43, 51, 53, 60, 62, 63, 64, 68, 72, 75, 80, 81, 91, 92, 117, 140, 147, 148, 151,
             152, 153, 154, 165, 168, 179, 182, 224, 230, 233, 240, 258, 259, 272, 274, 275
         ]

@@ -14,6 +14,8 @@ use std::error::Error;
 mod live;
 
 #[cfg(test)]
+mod native_context;
+#[cfg(test)]
 mod native_light;
 #[cfg(test)]
 mod native_map;

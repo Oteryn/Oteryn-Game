@@ -62,6 +62,7 @@ impl Drop for Hud {
 impl super::Application {
     pub(super) fn update_hud(&mut self) {
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
+            oteryn_client::play::present_world_look(&play.link);
             let audio = self.audio.status(&mut play.view);
             let status = format!("{} — {audio}", play.view.hud_status());
             if status != play.status {
