@@ -9,7 +9,9 @@ pub fn request(panel: &mut ChatPanel, mode: Mode, recipient: &str) -> Option<Cha
         panel.feedback = Some("Enter a message of at most 1,020 bytes".into());
         return None;
     }
-    let intent = if mode == Mode::Private {
+    let intent = if mode == Mode::Guild {
+        return crate::chat_guild_room::request(panel);
+    } else if mode == Mode::Private {
         let name = recipient.trim();
         if name.is_empty() || name.len() > 120 || name.contains('\0') {
             panel.feedback = Some("Enter a player name of at most 120 bytes".into());

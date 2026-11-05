@@ -226,6 +226,8 @@ pub mod market;
 /// Local speech and named private messages.
 #[path = "features/0007-chat/protocol.rs"]
 pub mod chat;
+#[path = "features/0036-chat-guild-room/protocol.rs"]
+pub mod chat_guild_room;
 /// Existing chat command and state types extended by capability 259.
 #[path = "features/0259-chat-public-channels/protocol.rs"]
 pub mod chat_public_channels;

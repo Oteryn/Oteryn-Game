@@ -268,6 +268,11 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_client_runtime::market::MarketResponse, SessionError> {
         oteryn_client_runtime::market::send(self, request).await
     }
+    fn guild_chat_state(&self) -> oteryn_session::GuildRoomState {
+        self.chat_log()
+            .map(|log| log.guild_room().clone())
+            .unwrap_or_default()
+    }
     fn chat_public_selected(&self) -> bool {
         self.is_selected(259)
     }
@@ -290,6 +295,7 @@ pub(super) fn publish<T: Stepper>(
     held: &mut Vec<WorldSpatialEntity>,
 ) {
     outbox.achievement_notices_publish(session);
+    outbox.guild_chat_publish(session);
     outbox.vitals(session.actor_vitals());
     if let Some(payload) = session.feature_snapshot(98) {
         outbox.cyclopedia_tracker_push(payload);

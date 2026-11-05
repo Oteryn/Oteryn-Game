@@ -1,13 +1,17 @@
 //! Native local-chat panel. HWND access remains on its creating thread.
 #![allow(unsafe_code)]
 use crate::combat_input::PlayCommand;
-use crate::play::{PlayLink, mailbox::lock};
+use crate::play::{
+    PlayLink,
+    mailbox::{SharedMailbox, lock},
+};
 use oteryn_client_ui::chat::{ChatPanel, Mode, panel_text};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedSender;
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
 const MODES: usize = 101;
@@ -43,16 +47,23 @@ fn wide(text: &str) -> Vec<u16> {
 }
 
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    open_shared(&link.mailbox, &link.commands);
+}
+
+pub(in crate::play) fn open_shared(
+    mailbox: &SharedMailbox,
+    commands: &UnboundedSender<PlayCommand>,
+) {
     {
-        let mut mailbox = lock(&link.mailbox);
+        let mut mailbox = lock(mailbox);
         if mailbox.chat.open {
             return;
         }
         mailbox.chat.open = true;
     }
-    let weak = Arc::downgrade(&link.mailbox);
+    let weak = Arc::downgrade(mailbox);
     let rollback = weak.clone();
-    let commands = link.commands.clone();
+    let commands = commands.clone();
     if std::thread::Builder::new()
         .name("local-chat-panel".into())
         .spawn(move || run(weak, commands))
@@ -97,7 +108,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [10, 10, 230, 180],
             LBS_NOTIFY as u32 | WS_BORDER,
         );
-        for mode in ["Say", "Whisper", "Yell", "Private"] {
+        for mode in ["Say", "Whisper", "Yell", "Private", "Guild"] {
             SendMessageW(rooms, LB_ADDSTRING, 0, wide(mode).as_ptr() as isize);
         }
         SendMessageW(rooms, LB_SETCURSEL, 0, 0);
@@ -149,6 +160,15 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             if mailbox.chat_public_shutdown {
                 break;
             }
+            if mailbox.chat.guild_open {
+                SendMessageW(rooms, LB_SETCURSEL, 4, 0);
+                mailbox.chat.guild_open = false;
+            }
+            let guild_mode = SendMessageW(rooms, LB_GETCURSEL, 0, 0) == 4;
+            let enabled =
+                !guild_mode || oteryn_client_ui::chat_guild_room::available(&mailbox.chat);
+            EnableWindow(message, i32::from(enabled));
+            EnableWindow(GetDlgItem(hwnd, SEND as i32), i32::from(enabled));
             for action in std::mem::take(&mut actions.0) {
                 if action != SEND {
                     continue;
@@ -157,6 +177,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     1 => Mode::Whisper,
                     2 => Mode::Yell,
                     3 => Mode::Private,
+                    4 => Mode::Guild,
                     _ => Mode::Say,
                 };
                 mailbox.chat.text = read_text(message);

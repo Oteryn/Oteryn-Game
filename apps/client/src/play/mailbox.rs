@@ -280,6 +280,9 @@ impl Outbox {
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
+        mailbox.chat.guild = Default::default();
+        mailbox.chat.guild_selected = false;
+        mailbox.chat.guild_open = false;
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::Ended(class));
@@ -291,6 +294,9 @@ impl Outbox {
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
+        mailbox.chat.guild = Default::default();
+        mailbox.chat.guild_selected = false;
+        mailbox.chat.guild_open = false;
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::LoggedOut);

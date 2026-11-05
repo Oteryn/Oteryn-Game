@@ -265,6 +265,9 @@ super::feature_local_account_achievements::protocol::session_trait! {
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 63 }) }
     }
+    fn guild_chat_state(&self) -> oteryn_session::GuildRoomState {
+        Default::default()
+    }
     fn chat_public_selected(&self) -> bool {
         false
     }
@@ -327,6 +330,7 @@ pub async fn run_session<T: Stepper>(
     outbox.boss_difficulty_initialize(session.feature_selected(225));
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
     outbox.chat_initialize(session.feature_selected(7));
+    outbox.guild_chat_publish(&session);
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));

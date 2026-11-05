@@ -16,7 +16,9 @@ impl Outbox {
             self.chat_party_room_result();
         } else if matches!(
             intent,
-            oteryn_session::ChatIntent::Say { .. } | oteryn_session::ChatIntent::Private { .. }
+            oteryn_session::ChatIntent::Say { .. }
+                | oteryn_session::ChatIntent::Private { .. }
+                | oteryn_session::ChatIntent::Guild { .. }
         ) {
             self.local_chat_result(outcome);
         } else {
