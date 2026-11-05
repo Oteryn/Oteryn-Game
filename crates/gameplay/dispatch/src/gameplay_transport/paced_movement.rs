@@ -200,19 +200,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await;
                 }
-                if self
-                    .soulpit_exit_step(actor, session, snapshot.position())
-                    .await
-                    .is_err()
-                {
-                    super::operator_event(
-                        "soulpit_return_pending shared_activity_owner_unavailable",
-                    );
-                }
                 let snapshot = match origin {
                     Some(origin) => {
                         let snapshot = self
                             .citizen_step(actor, session, direction, origin, snapshot)
+                            .await;
+                        let snapshot = self
+                            .soulpit_lobby_step(&permit, actor, session, snapshot)
                             .await;
                         let snapshot = self
                             .step_quest_callback(&permit, actor, session, origin, snapshot)

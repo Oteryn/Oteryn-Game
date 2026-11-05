@@ -3,6 +3,7 @@
 
 mod encounter;
 mod items;
+mod passages;
 mod source_bestiary;
 
 pub use encounter::{
@@ -10,6 +11,7 @@ pub use encounter::{
     SoulpitMonster,
 };
 pub use items::*;
+pub use passages::{PassageTrigger, SoulpitPassage, soulpit_passage};
 pub use source_bestiary::{
     SOURCE_BESTIARY_ROSTER_SHA256, SourceMonsterFacts, source_bestiary_candidates, source_monster,
 };

@@ -509,7 +509,7 @@ impl ChatRuntime {
                 .and_then(|key| {
                     book.get(key).map(|entry| {
                         oteryn_gameplay_npc::quest_greetings::walkaway(key)
-                            .unwrap_or(entry.farewell())
+                            .unwrap_or(entry.walkaway())
                             .to_owned()
                     })
                 })
