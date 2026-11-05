@@ -744,6 +744,9 @@ impl ChannelRuntimeV1 {
         raw: u64,
         critical_roll: u8,
     ) -> Result<(u64, bool), CarrierError> {
+        if let Some(damage) = self.tibiadrome_damage(actor, raw)? {
+            return Ok((damage, false));
+        }
         if let Some(tag) = self.soulpit_variant(actor) {
             return tag.outgoing_damage(raw, critical_roll);
         }

@@ -139,6 +139,12 @@ pub struct Presentation {
 /// no player CommandRef; their sealed physical receipt identifies the independent occurrence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PresentationCause {
+    ItemAction {
+        actor: ExactActorRef,
+        origin: MovementLocalPosition,
+        command: crate::foundation::CommandRef,
+        private: bool,
+    },
     Cast {
         caster: ExactActorRef,
         origin: MovementLocalPosition,
@@ -155,12 +161,14 @@ impl PresentationCause {
     pub fn actor(&self) -> ExactActorRef {
         match self {
             Self::Cast { caster, .. } => *caster,
-            Self::FamiliarDefense { actor, .. } => *actor,
+            Self::FamiliarDefense { actor, .. } | Self::ItemAction { actor, .. } => *actor,
         }
     }
     pub fn origin(&self) -> MovementLocalPosition {
         match self {
-            Self::Cast { origin, .. } | Self::FamiliarDefense { origin, .. } => *origin,
+            Self::Cast { origin, .. }
+            | Self::FamiliarDefense { origin, .. }
+            | Self::ItemAction { origin, .. } => *origin,
         }
     }
 }
@@ -613,6 +621,43 @@ impl SpellPresentationOwner {
                 emission_sequence: self.emitted_events,
             });
         }
+    }
+    /// Dedicated item owner supplies only the effect IDs from its committed source receipt.
+    pub fn publish_item_action(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        command: crate::foundation::CommandRef,
+        source_item: u32,
+        effects: &[u16],
+        target: Option<ExactActorRef>,
+    ) -> Result<(), Error> {
+        self.reserve_before_draw(runtime, effects.len())?;
+        let origin = runtime
+            .read_actor_position(actor)
+            .map_err(|_| Error::StaleOwner)?
+            .position();
+        let recipient = target.unwrap_or(actor);
+        let position = runtime
+            .read_actor_position(recipient)
+            .map_err(|_| Error::StaleOwner)?
+            .position();
+        let events = effects.iter().map(|effect| Presentation {
+            source_binding: format!("crystal:item/{source_item}"),
+            cue: Cue::Effect(*effect),
+            actor: Some(recipient),
+            position,
+        });
+        self.install_committed_events(
+            std::sync::Arc::new(PresentationCause::ItemAction {
+                actor,
+                origin,
+                command,
+                private: source_item == 3002,
+            }),
+            events,
+        );
+        Ok(())
     }
     /// A current Channel publisher takes the actual outbox; wire delivery still
     /// requires the independently selected protocol presentation capability.

@@ -158,6 +158,9 @@ fn operation_fixtures() -> Vec<(u32, &'static str, OneItemOperationV1)> {
                 proof: vec![0x81, 0x07],
             }),
         ),
+        (20, "WriteOnce", OneItemOperationV1::WriteOnce(crate::durability::item_text::write_once::OneItemWriteOnceV1 {
+            state_revision_before: 129, state_revision_after: 130, ..Default::default()
+        })),
     ]
 }
 
@@ -345,6 +348,7 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("Craft", "08017a040a028107"),
         ("Atelier", "08018201040a028107"),
         ("Forge", "08019a01040a028107"),
+        ("WriteOnce", include_str!("write_once_wire.hex").trim()),
         ("ForgeFee", "72040a028107"),
         ("QuestAccessPurchase", "7a2e0a286f746572796e3a736572766963652e71756573742e726f7474656e2d626c6f6f642e61636365737312028107"),
         ("GemReveal", "4a0c0a0672657665616c12028107"),

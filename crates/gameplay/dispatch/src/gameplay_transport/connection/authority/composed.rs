@@ -895,6 +895,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_usable_action_instance(actor, command, item).await {
+            return outcome;
+        }
         if let Some(outcome) = self.use_coin(actor, command, item).await {
             return outcome;
         }
@@ -923,6 +926,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .pending_hireling_lamps
                 .iter()
                 .any(|pending| pending.actor == actor && pending.session == session)
+            || states.has_pending_usable_action(actor, session)
             || states.pending_item_effects.iter().any(|pending| {
                 pending.actor == actor && pending.request.command.game_session_id() == session
             })
@@ -957,6 +961,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome));
         }
         self.use_event_item_impl(actor, command, intent, source, visible_target)
+            .await
+    }
+
+    async fn use_usable_action(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        visible_target: bool,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_usable_action(actor, command, &intent, source, visible_target, false)
             .await
     }
 
@@ -1061,10 +1077,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// C2: a `USE` naming the injected entry chest is routed to [`Self::use_chest`] instead;
     /// every other placement takes the unchanged door path.
     async fn quest_callback_unresolved(&self, session: GameSessionId) -> bool {
-        self.has_pending_quest_callback(session)
+        self.has_pending_quest_callback(session) || self.states.dawnport_departures.held(session)
     }
 
     async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
+        if let Some(actor) = admitted.runtime_actor
+            && !self
+                .resume_dawnport_departure(actor, admitted.game_session_id)
+                .await
+        {
+            return false;
+        }
         if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
             self.prepare_grizzly_npc_resume(admitted).await
                 && self

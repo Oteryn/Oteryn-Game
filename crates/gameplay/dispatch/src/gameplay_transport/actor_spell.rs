@@ -59,6 +59,8 @@ mod parameter_cast;
 pub(in crate::gameplay_transport) mod player_field;
 #[path = "spell_timer_callbacks.rs"]
 mod spell_timer_callbacks;
+#[path = "usable_item_owner.rs"]
+mod usable_item_owner;
 #[path = "world_item_cast.rs"]
 mod world_item_cast;
 pub(in crate::gameplay_transport) use native_combat_cast::ordinary_combat::due_chain_presentations as prepare_ordinary_due_presentations;
@@ -115,6 +117,7 @@ pub struct ChannelSpellStates {
         oteryn_gameplay_domain::domain::hireling::food::GourmetConditions,
         u64,
     )>,
+    pending_c4: Vec<usable_item_owner::PendingAction>,
     pub(in crate::gameplay_transport) pending_item_effects:
         Vec<super::novelty_item_use::PendingItemEffect>,
     pub(in crate::gameplay_transport) pending_gourmet: Vec<super::item_use::gourmet::PendingUse>,
@@ -300,6 +303,7 @@ impl Default for ChannelSpellStates {
         Self {
             enchanting_pending: Vec::new(),
             gourmet_checkpoints: Vec::new(),
+            pending_c4: Vec::new(),
             pending_item_effects: Vec::new(),
             pending_gourmet: Vec::new(),
             pending_hireling_lamps: Vec::new(),
@@ -444,9 +448,12 @@ impl ChannelSpellStates {
 
     /// Unknown durable outcomes retain their original prepared owner state.
     pub fn has_pending_spell_commit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        self.pending_item_effects
+        self.pending_c4
             .iter()
-            .any(|memo| memo.actor == actor && memo.request.command.game_session_id() == session)
+            .any(|p| p.actor == actor && p.request.command.game_session_id() == session)
+            || self.pending_item_effects.iter().any(|memo| {
+                memo.actor == actor && memo.request.command.game_session_id() == session
+            })
             || self
                 .pending_gourmet
                 .iter()
@@ -649,6 +656,11 @@ impl ChannelSpellStates {
                 || runtime
                     .house_player_control_facts(*present, *session)
                     .is_ok()
+        });
+        self.pending_c4.retain(|p| {
+            runtime
+                .player_control_facts(p.actor, p.request.command.game_session_id())
+                .is_ok()
         });
         self.pending_gourmet.retain(|pending| {
             runtime
@@ -1544,6 +1556,8 @@ impl ChannelSpellStates {
             .retain(|m| runtime.player_control_facts(m.actor, m.session).is_ok());
     }
     fn forget_source_memos(&mut self, actor: ExactActorRef, session: GameSessionId) {
+        self.pending_c4
+            .retain(|p| p.actor != actor || p.request.command.game_session_id() != session);
         self.source_secondary_memos
             .retain(|m| m.actor != actor || m.session != session);
         self.source_damage

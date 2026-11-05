@@ -32,6 +32,9 @@ mod agony_ramp_tests;
 #[path = "condition_persistence.rs"]
 mod persistence;
 
+#[path = "condition_status.rs"]
+mod status;
+
 #[path = "condition_spell.rs"]
 mod spell;
 pub use spell::{SkillAdjustments, SpellSpeedError};

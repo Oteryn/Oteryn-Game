@@ -30,7 +30,16 @@ impl std::ops::Deref for NativeCosmeticsView {
 }
 impl AppearanceContent<String> for NativeCosmeticsView {
     fn earned_grant_keys(&self) -> Vec<String> {
-        self.content.earned_grant_keys()
+        let mut keys = self.content.earned_grant_keys();
+        keys.extend(super::item_action_grants::keys());
+        for selector in [17, 18] {
+            if let Some(key) = self.drome_grant(selector) {
+                keys.push(key.into());
+            }
+        }
+        keys.sort();
+        keys.dedup();
+        keys
     }
     fn earned_unlock(
         &self,
@@ -38,7 +47,29 @@ impl AppearanceContent<String> for NativeCosmeticsView {
         provenance: &str,
         target: EarnedCosmetic<'_>,
     ) -> UnlockFact {
-        self.content.earned_unlock(grant_key, provenance, target)
+        if provenance == DROME_PROVENANCE {
+            let compatible = match (grant_key, target) {
+                (DROME_PHANT, EarnedCosmetic::Mount(key)) => self
+                    .mount_metadata(key)
+                    .is_some_and(|(look, _, _)| look == 1417),
+                (DROME_LION, EarnedCosmetic::Outfit(key)) => {
+                    self.look_type(key, crate::domain::appearance::Sex::Female) == Some(1207)
+                        && self.look_type(key, crate::domain::appearance::Sex::Male) == Some(1206)
+                }
+                _ => false,
+            };
+            return if compatible {
+                UnlockFact::Compatible
+            } else {
+                UnlockFact::Incompatible
+            };
+        }
+        match self.content.earned_unlock(grant_key, provenance, target) {
+            UnlockFact::Absent => {
+                super::item_action_grants::resolve(self, grant_key, provenance, target)
+            }
+            result => result,
+        }
     }
     fn palette_size(&self) -> u16 {
         self.content.palette_size()
@@ -59,5 +90,32 @@ impl AppearanceContent<String> for NativeCosmeticsView {
     }
     fn mount_exists(&self, key: &String) -> bool {
         self.content.mount_exists(key)
+    }
+}
+
+// Crystal 201189f data/XML/mounts.xml:211; data/XML/outfits.xml:112,244.
+// These are explicit grant mappings against already admitted native definitions.
+pub const DROME_PROVENANCE: &str = "crystal-201189f-tibiadrome-v1";
+const DROME_PHANT: &str = "oteryn:appearance-grant/tibiadrome/phant";
+const DROME_LION: &str = "oteryn:appearance-grant/tibiadrome/lion-of-war-base";
+impl NativeCosmeticsView {
+    pub fn drome_grant(&self, selector: u8) -> Option<&'static str> {
+        match selector {
+            17 if self.mount_keys().any(|key| {
+                self.mount_metadata(key)
+                    .is_some_and(|(look, _, _)| look == 1417)
+            }) =>
+            {
+                Some(DROME_PHANT)
+            }
+            18 if self.outfit_keys().any(|key| {
+                self.look_type(key, crate::domain::appearance::Sex::Female) == Some(1207)
+                    && self.look_type(key, crate::domain::appearance::Sex::Male) == Some(1206)
+            }) =>
+            {
+                Some(DROME_LION)
+            }
+            _ => None,
+        }
     }
 }

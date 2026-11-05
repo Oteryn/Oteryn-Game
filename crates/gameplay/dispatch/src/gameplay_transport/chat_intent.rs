@@ -216,6 +216,75 @@ impl ChatRuntime {
         }
     }
 
+    /// Donor item speech bypasses the player's chat limiter, using the existing bounded egress.
+    pub(super) fn publish_item_action(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        text: &str,
+        private: bool,
+    ) {
+        let Ok(text) = ChatText::parse(text) else {
+            return;
+        };
+        let Ok(position) = runtime.read_actor_position(actor) else {
+            return;
+        };
+        let position = position.position();
+        let Ok(floor) = u8::try_from(position.floor) else {
+            return;
+        };
+        let at = ChatPosition {
+            x: position.x,
+            y: position.y,
+            floor,
+        };
+        let Some(generation) = NonZeroU64::new(actor.actor_local_generation()) else {
+            return;
+        };
+        let speaker = ChatSpeaker {
+            identity: actor.placement_identity(),
+            generation,
+        };
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return;
+        };
+        let Some(name) = sessions.get(&session).map(|s| s.name.clone()) else {
+            return;
+        };
+        for (listener, entry) in sessions.iter_mut() {
+            if private && *listener != session {
+                continue;
+            }
+            let Ok(Some((_, snapshot))) = runtime.positioned_player_for_session(*listener) else {
+                continue;
+            };
+            let p = snapshot.position();
+            let Ok(floor) = u8::try_from(p.floor) else {
+                continue;
+            };
+            let heard = ChatPosition {
+                x: p.x,
+                y: p.y,
+                floor,
+            };
+            if let Some((_, heard)) = local_listeners(SpeechMode::Say, at, [(*listener, heard)])
+                .into_iter()
+                .next()
+            {
+                entry.egress.push(local_line(
+                    speaker,
+                    &name,
+                    SpeechMode::Say,
+                    &text,
+                    at,
+                    heard,
+                ));
+            }
+        }
+    }
+
     /// A local Game feedback line, subject to the ordinary CHAT egress bound.
     pub(super) fn push_party_spell_feedback(&self, session: GameSessionId, text: &str) {
         if let Ok(mut sessions) = self.sessions.lock()

@@ -201,11 +201,21 @@ fn selected_events(
             continue;
         }
         let own = event.cause.actor() == observer.actor;
+        if !own
+            && matches!(
+                event.cause.as_ref(),
+                PresentationCause::ItemAction { private: true, .. }
+            )
+        {
+            continue;
+        }
         let source = if own {
             wire::Source::Own
         } else {
             match event.cause.as_ref() {
-                PresentationCause::Cast { .. } => wire::Source::Others,
+                PresentationCause::Cast { .. } | PresentationCause::ItemAction { .. } => {
+                    wire::Source::Others
+                }
                 PresentationCause::FamiliarDefense { .. } => wire::Source::Creatures,
             }
         };

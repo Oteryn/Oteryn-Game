@@ -5,6 +5,8 @@ use crate::charm_wire::{
 };
 use ArenaWireError as Error;
 
+mod drome;
+pub use drome::*;
 mod match_wire;
 pub use match_wire::*;
 

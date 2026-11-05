@@ -9,6 +9,7 @@ pub const MAX_MATCH_RESULT_BYTES: usize = 128;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArenaAction {
     Status,
+    Drome(super::DromeAction),
     Enter,
     Advance,
     Leave,
@@ -55,6 +56,13 @@ pub struct ArenaResult {
 
 pub fn encode_match_request(action: ArenaAction) -> Result<Vec<u8>, Error> {
     let fields = match action {
+        ArenaAction::Drome(action) => {
+            let (operation, reward) = action.fields();
+            if operation == 6 && !(1..=18).contains(&reward) {
+                return Err(Error::Malformed);
+            }
+            [6, operation, reward, 0]
+        }
         ArenaAction::Status => [1, 0, 0, 0],
         ArenaAction::Enter => [2, 0, 0, 0],
         ArenaAction::Advance => [3, 0, 0, 0],
@@ -78,10 +86,13 @@ pub fn decode_match_request(payload: &[u8]) -> Result<ArenaAction, Error> {
         return Err(Error::LimitExceeded);
     }
     let [action, rank, category, choice] = read_uint32_fields::<4>(payload)?;
-    if action != 5 && [rank, category, choice] != [0; 3] {
+    if action != 5 && action != 6 && [rank, category, choice] != [0; 3] {
         return Err(Error::Malformed);
     }
     match action {
+        6 if choice == 0 => Ok(ArenaAction::Drome(super::DromeAction::decode(
+            rank, category,
+        )?)),
         1 => Ok(ArenaAction::Status),
         2 => Ok(ArenaAction::Enter),
         3 => Ok(ArenaAction::Advance),

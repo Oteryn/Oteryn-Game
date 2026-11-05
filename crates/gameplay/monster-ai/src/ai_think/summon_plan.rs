@@ -452,11 +452,15 @@ impl CreatureAiTable {
                 );
             }
             let route = self.retained_summon_route(runtime, actor);
-            let Some(players) =
+            let Some(mut players) =
                 targeting::with_current_damage(runtime, actor, position.position(), &players)
             else {
                 continue;
             };
+            for player in &mut players {
+                player.eligible &=
+                    runtime.is_tibiadrome(actor) == runtime.is_tibiadrome(player.actor);
+            }
             let Some(entry) = self.entry_mut(actor) else {
                 continue;
             };

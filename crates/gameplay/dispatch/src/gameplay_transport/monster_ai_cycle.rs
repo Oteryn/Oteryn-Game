@@ -53,6 +53,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // before the creature think pass, whether or not melee content is active.
         drive_owner_spawns(&mut runtime, now.get());
         super::arena_match::tick(self, &mut runtime);
+        super::tibiadrome::tick(self, &mut runtime);
         // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
         // World and its bundle view (bundle cells and map revision) on a bundle World.
         let Some(room) = self.rooms.gate_monster_ai() else {
@@ -359,9 +360,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Some(indices) = local_target_indices(
                         p,
                         monster.behavior.targeting.sense_invisible,
-                        targets
-                            .iter()
-                            .map(|(_, p, _, invisible, protected)| (*p, *invisible, *protected)),
+                        targets.iter().map(|(target, p, _, invisible, protected)| {
+                            (
+                                *p,
+                                *invisible,
+                                *protected
+                                    || runtime.is_tibiadrome(*actor)
+                                        != runtime.is_tibiadrome(*target),
+                            )
+                        }),
                     ) else {
                         continue;
                     };

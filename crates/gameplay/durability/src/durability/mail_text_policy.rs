@@ -30,11 +30,37 @@ impl NativeGameplayMailTextPolicyExt for NativeGameplayState {
             &record.semantics,
             definition,
         )?;
-        Ok(MailTextPolicy::from_qualified_content(
+        let mut result = MailTextPolicy::from_qualified_content(
             definition.clone(),
             policy.source_digest(),
             maximum,
-        ))
+        );
+        if let ReferenceItemField::Known(text) = &record.semantics.readable_writeable
+            && let ReferenceItemField::Known(target) = &text.write_once_target
+        {
+            let target_policy = self
+                .item_policy(&target.key, &target.revision)
+                .ok_or(ItemTextWriteError::NotWritable)?;
+            let fixed = target_policy.record();
+            if !fixed.admission.materializable
+                || fixed.admission.stack_class != NativeItemStackClass::NonStackable
+                || !fixed
+                    .admission
+                    .legal_destinations
+                    .contains(&NativeItemDestination::CharacterInventory)
+                || !matches!(&fixed.semantics.readable_writeable, ReferenceItemField::Known(text)
+                    if text.readable == ReferenceItemField::Known(true)
+                        && text.writeable == ReferenceItemField::Known(false))
+            {
+                return Err(ItemTextWriteError::NotWritable);
+            }
+            result.write_once_target = Some(TypedDefinitionRef {
+                family: fixed.production_definition.family.clone(),
+                production_key: target.key.clone(),
+                revision_ref: target.revision.clone(),
+            });
+        }
+        Ok(result)
     }
 }
 
@@ -75,7 +101,10 @@ fn qualified_profile(
                 if text.readable == ReferenceItemField::Known(true)
                     && text.writeable == ReferenceItemField::Known(true)
                     && text.max_text_length == ReferenceItemField::Known(maximum)
-                    && matches!(text.write_once_target, ReferenceItemField::NotApplicable)
+                    && (matches!(text.write_once_target, ReferenceItemField::NotApplicable)
+                        || matches!(&text.write_once_target, ReferenceItemField::Known(target)
+                            if !matches!(requested.production_key.as_str(), "oteryn:item.tibia.i3505" | "oteryn:item.tibia.i3507")
+                                && target.key != requested.production_key && !target.key.is_empty() && !target.revision.is_empty()))
         )
     {
         return Err(ItemTextWriteError::NotWritable);
@@ -126,6 +155,25 @@ mod tests {
                 revision_ref: "definition-r1".into(),
             },
         )
+    }
+
+    #[test]
+    fn gap_sv2_i04_explicit_non_mail_write_once_source_is_qualified()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let (definition, admission, mut semantics, requested) =
+            fields("oteryn:item.tibia.i2818", 1023);
+        let ReferenceItemField::Known(text) = &mut semantics.readable_writeable else {
+            return Err("text fixture".into());
+        };
+        text.write_once_target = ReferenceItemField::Known(ReferenceItemTarget {
+            key: "oteryn:item.tibia.i2834".into(),
+            revision: "definition-r1".into(),
+        });
+        assert_eq!(
+            qualified_profile(&definition, &admission, &semantics, &requested)?,
+            1023
+        );
+        Ok(())
     }
 
     #[test]

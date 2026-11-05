@@ -193,8 +193,13 @@ pub use oteryn_session::animus_mastery;
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 
+pub use oteryn_session::battle_instinct_status;
+pub use oteryn_session::condition_status;
 /// Loyalty skills wire values owned by the admitted session.
 pub use oteryn_session::loyalty_skills;
+pub use oteryn_session::party_effects;
+pub use oteryn_session::rest_status;
+pub use oteryn_session::skill_progress;
 
 #[path = "features/0117-boss-encounter/protocol.rs"]
 pub mod boss_encounter;

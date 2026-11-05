@@ -327,6 +327,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::proficiency_catalyst::CATALYST_CAUSE
             | super::item_use::proficiency_orb::ORB_CAUSE
             | super::item_use::concoction::CONCOCTION_CAUSE
+            | oteryn_gameplay_items::usable_actions::CAUSE
             | super::item_use::drome_cube::DROME_CUBE_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
             | super::item_use::gourmet::GOURMET_CAUSE
@@ -364,7 +365,8 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::proficiency_catalyst::CATALYST_CAUSE
             | super::item_use::proficiency_orb::ORB_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
-            | super::item_use::gourmet::GOURMET_CAUSE,
+            | super::item_use::gourmet::GOURMET_CAUSE
+            | oteryn_gameplay_items::usable_actions::CAUSE,
             None,
             false,
         ) => ItemUseShape::Burn,
@@ -372,6 +374,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
         (
             ITEM_USE_CAUSE_POTION
             | super::item_use::mining::PICK_REFINE_CAUSE
+            | oteryn_gameplay_items::usable_actions::CAUSE
             | super::item_use::drome_cube::DROME_CUBE_CAUSE,
             Some(flask),
             false,
