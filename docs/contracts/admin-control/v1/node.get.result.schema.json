@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Node",
+  "type": "object",
+  "properties": {
+    "build": {
+      "type": "string"
+    },
+    "cpu_percent": {
+      "type": "number",
+      "format": "double"
+    },
+    "host": {
+      "type": "string"
+    },
+    "memory_bytes": {
+      "type": "string"
+    },
+    "node_id": {
+      "type": "string"
+    },
+    "ready": {
+      "type": "boolean"
+    },
+    "uptime_seconds": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "worlds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "node_id",
+    "host",
+    "build",
+    "uptime_seconds",
+    "worlds",
+    "ready",
+    "cpu_percent",
+    "memory_bytes"
+  ]
+}
