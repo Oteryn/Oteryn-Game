@@ -114,6 +114,13 @@ super::feature_local_account_achievements::protocol::session_trait! {
     fn npc_talk(&mut self, _intent: &oteryn_session::npc_service::NpcTalkIntent) -> impl Future<Output = Result<oteryn_session::NpcIntentDisposition, SessionError>> + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 3 }) }
     }
+    fn npc_resources(&mut self) -> impl Future<Output = Result<Option<oteryn_client_runtime::npc_shop::resources::ResourceBalances>, SessionError>> + Send {
+        async { Ok(None) }
+    }
+    fn npc_inventory(&self) -> Option<oteryn_session::CharacterInventory> { None }
+    fn npc_trade(&mut self, _intent: &oteryn_session::npc_service::NpcTradeIntent) -> impl Future<Output = Result<oteryn_session::NpcIntentDisposition, SessionError>> + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 3 }) }
+    }
     fn npc_shop_selected(&self) -> bool {
         false
     }

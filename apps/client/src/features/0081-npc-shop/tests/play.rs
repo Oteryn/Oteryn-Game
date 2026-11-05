@@ -114,3 +114,35 @@ fn npc_shop_actions_reach_the_session_and_render_real_encoded_replies()
         .map_err(|_| "NPC shop UI test thread panicked")??;
     Ok(())
 }
+
+#[test]
+fn closed_server_shop_retains_inline_refusal_and_removes_tradeable_quotes() {
+    use oteryn_session::{AppliedDelta, npc_service};
+    let (link, _, outbox) = play_channel();
+    let update = |value| {
+        SessionEvent::NpcTradeWindow(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value,
+        })
+    };
+    outbox.push(vec![update(npc_service::NpcTradeWindow {
+        open: Some((offer().npc_actor, 7)),
+        offers: vec![npc_service::NpcOffer {
+            item_definition_ref: 42,
+            side: NpcTradeSide::Sell,
+            count: 1,
+            unit_price: 12,
+        }],
+    })]);
+    crate::play::mailbox::lock(&outbox.0)
+        .npc_shop
+        .live
+        .result(NpcIntentDisposition::NotInRange);
+    outbox.push(vec![update(Default::default())]);
+    let panel = link.npc_shop_panel();
+    assert!(panel.open);
+    assert!(panel.live.quotes().is_empty());
+    assert!(panel.live.text().contains("NotInRange"));
+}

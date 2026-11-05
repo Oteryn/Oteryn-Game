@@ -1,6 +1,9 @@
 //! Apply typed domain deltas to this connection after envelope validation.
 use super::*;
 
+#[path = "features/0081-npc-shop/protocol.rs"]
+mod npc_shop_views;
+
 impl<S: SessionStream> Session<S> {
     /// The domain store: applies one validated `StateDelta` by its own domain. It must be based
     /// on exactly the stored revision, carry the domain's registered `delta_type` and, where the
@@ -23,6 +26,7 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            14 => npc_shop_views::apply(self, server_sequence, delta),
             npc_service::STATE_DOMAIN_NPC_CONVERSATION
             | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW => {
                 if !self.is_selected(npc_service::CAPABILITY_NPC_SERVICE_V1) {

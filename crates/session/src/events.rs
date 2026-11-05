@@ -46,6 +46,7 @@ pub enum SessionEvent {
     /// Domain 9 `CHARACTER_INVENTORY`: the inventory, replaced whole.
     /// [`Session::inventory`] already holds it.
     Inventory(AppliedDelta<CharacterInventory>),
+    ContainerViews(AppliedDelta<container_tree::ContainerViews>),
     /// Domain 11 `OPEN_CONTAINER`: the open corpse, replaced whole (the default means closed).
     /// [`Session::open_container`] already holds it.
     OpenContainer(AppliedDelta<OpenContainer>),
@@ -83,6 +84,7 @@ impl SessionEvent {
             | Self::PlayerTyping(_) => STATE_DOMAIN_CHAT,
             Self::ChatChannelList(_) => STATE_DOMAIN_CHAT,
             Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
+            Self::ContainerViews(_) => container_tree::STATE_DOMAIN_CONTAINER_VIEWS,
             Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,
         }
     }

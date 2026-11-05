@@ -100,3 +100,12 @@ pub fn request(
 pub fn panel_text(panel: &DialoguePanel) -> String {
     panel.text()
 }
+
+/// NPC service command 8 shares the live shop selection reducer.
+pub fn trade_request(
+    panel: &mut crate::npc_shop::LiveShop,
+    quote: crate::npc_shop::Quote,
+    amount: u32,
+) -> Option<npc_service::NpcTradeIntent> {
+    panel.trade(quote, amount)
+}

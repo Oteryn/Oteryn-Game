@@ -13,6 +13,7 @@ use std::{
     time::Duration,
 };
 use tokio::sync::mpsc::UnboundedSender;
+use windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT;
 use windows_sys::Win32::{
     Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM},
     UI::WindowsAndMessaging::*,
@@ -46,6 +47,7 @@ pub(in crate::play) fn context_menu(link: &PlayLink, npc: oteryn_session::Entity
             return;
         }
         AppendMenuW(menu, MF_STRING, 1, wide("Talk").as_ptr());
+        AppendMenuW(menu, MF_STRING, 2, wide("Trade").as_ptr());
         let mut point = POINT { x: 0, y: 0 };
         GetCursorPos(&mut point);
         let chosen = TrackPopupMenu(
@@ -58,8 +60,10 @@ pub(in crate::play) fn context_menu(link: &PlayLink, npc: oteryn_session::Entity
             null(),
         );
         DestroyMenu(menu);
-        if chosen == 1 {
-            link.talk_to_npc(npc, "hi");
+        match chosen {
+            1 => link.talk_to_npc(npc, "hi"),
+            2 => link.talk_to_npc(npc, "trade"),
+            _ => {}
         }
     }
 }
@@ -133,6 +137,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
         );
         SendMessageW(input, EM_SETLIMITTEXT, 255, 0);
         let send = control(hwnd, "BUTTON", "Send", 102, (570, 320, 110, 30), 0);
+        control(hwnd, "BUTTON", "Trade", 105, (400, 510, 110, 30), 0);
         let previous = control(
             hwnd,
             "BUTTON",
@@ -184,7 +189,9 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                     redraw = true;
                     continue;
                 }
-                let text = if id == 102 {
+                let text = if id == 105 {
+                    "trade".into()
+                } else if id == 102 {
                     let mut buffer = [0u16; 256];
                     let len = GetWindowTextW(input, buffer.as_mut_ptr(), 256);
                     String::from_utf16_lossy(&buffer[..len.max(0) as usize])

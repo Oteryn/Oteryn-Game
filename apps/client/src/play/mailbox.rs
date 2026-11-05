@@ -136,6 +136,8 @@ pub(super) struct Mailbox {
     #[cfg(windows)]
     pub(super) dialogue_window: bool,
     pub(super) dialogue_shutdown: bool,
+    #[cfg(windows)]
+    pub(super) npc_shop_window: bool,
     pub(super) npc_shop: oteryn_client_ui::npc_shop::NpcShopPanel,
     pub(super) prey: oteryn_client_ui::prey::PreyPanel,
     pub(super) prey_shutdown: bool,
@@ -204,6 +206,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         super::feature_local_spell_action_bar::protocol::vitals_events(&mut mailbox, &events);
         mailbox.dialogue_events(&events);
+        mailbox.npc_shop_events(&events);
         for event in &events {
             if let SessionEvent::PlayerTyping(update) = event {
                 oteryn_client_ui::player_typing::protocol::reduce(
@@ -287,6 +290,7 @@ impl Outbox {
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
+        mailbox.npc_shop = Default::default();
         mailbox.dialogue = Default::default();
         mailbox.dialogue_shutdown = true;
         mailbox.animus = Default::default();
@@ -300,6 +304,7 @@ impl Outbox {
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
+        mailbox.npc_shop = Default::default();
         mailbox.dialogue = Default::default();
         mailbox.dialogue_shutdown = true;
         mailbox.animus = Default::default();
@@ -331,6 +336,8 @@ impl PlayLink {
 
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
     pub fn poll(&self) -> Option<PlayEvent> {
+        #[cfg(windows)]
+        super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
         let mut mailbox = lock(&self.mailbox);
         if mailbox.before != Pushed::default() {
             return Some(PlayEvent::Pushed(Box::new(std::mem::take(
@@ -374,6 +381,7 @@ impl Drop for PlayLink {
         let mut mailbox = lock(&self.mailbox);
         mailbox.world_event_shutdown = true;
         mailbox.highscores_shutdown = true;
+        mailbox.npc_shop = Default::default();
         mailbox.dialogue = Default::default();
         mailbox.dialogue_shutdown = true;
         mailbox.vip.open = false;
