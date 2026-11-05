@@ -33,6 +33,7 @@ pub struct Pushed {
     pub world_clock: Option<oteryn_session::world_clock::WorldClock>,
     pub achievements: Vec<oteryn_client_ui::achievement_notices::AchievementEarned>,
     pub sounds: Vec<super::SoundCue>,
+    pub visuals: Vec<oteryn_session::PresentationEventKind>,
     pub notices: Box<oteryn_client_ui::tutorial_notices::NoticePanel>,
     /// Latest complete live map window, reduced before publication.
     pub map: Option<Box<oteryn_session::world_map::WorldMapViewSnapshot>>,
@@ -54,6 +55,10 @@ pub struct Pushed {
 impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
+        super::feature_0023_presentation::protocol::absorb_visuals(
+            &mut self.visuals,
+            newer.visuals,
+        );
         let room = super::MAX_PENDING_SOUNDS.saturating_sub(self.sounds.len());
         self.sounds.extend(newer.sounds.into_iter().take(room));
         for text in newer.notices.tutorial {

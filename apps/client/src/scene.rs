@@ -105,6 +105,14 @@ impl Scene {
         Ok(())
     }
 
+    /// Rebuilds base sprites before appending this frame's transient visual quads.
+    pub(crate) fn presentation_base(
+        &mut self,
+    ) -> Result<(&TileView, &mut SpriteBatch), BatchError> {
+        self.rebuild_sprites()?;
+        Ok((&self.view, &mut self.sprites))
+    }
+
     /// Current target, if any.
     #[must_use]
     pub const fn target(&self) -> Option<Targetable> {

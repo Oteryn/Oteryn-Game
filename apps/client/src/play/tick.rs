@@ -27,6 +27,8 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
+        self.advance_presentation(std::time::Instant::now())
+            .map_err(|_error| UNAVAILABLE)?;
         self.vitals = link.actor_vitals();
         self.target_walk_feedback = link.target_walk_feedback();
         // One chronological queue: each input goes out in the order it was given. A step still

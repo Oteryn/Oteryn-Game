@@ -1,1 +1,1 @@
-{"concerns":["state","protocol","input"],"events":{"Presentation":"presentation"}}
+{"concerns":["state","protocol","input","view"],"events":{"Presentation":"presentation"}}
