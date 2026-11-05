@@ -17,7 +17,7 @@ authorised; this file only says how the flow behaves.
   Seam, Atlas fullworld. A red post-merge run means `main` is broken for
   everyone: that is a P0 and its fix PR goes first.
 - The PostgreSQL harness (`pr-postgres-harness.yml`, checks named
-  `PR early signal / Durability PostgreSQL harness (1..6)`) runs on a PR only
+  `PR early signal / Durability PostgreSQL harness (1..24)`) runs on a PR only
   when it carries the `heavy-tests` label and touches a game-server path. Add
   the label to a **finished** mechanic PR or to one batch PR that merges
   several finished ones, never to a work-in-progress head: each labelled push
@@ -56,11 +56,11 @@ run on a later `main` is green or fails only on a job the fix does not touch.
 A PR is mergeable when all of these hold on its **current** head SHA:
 
 1. `game-gate` green and the PR `mergeable_state` is `clean`.
-2. For a game-server change: all six PostgreSQL partitions green on that same
+2. For a game-server change: all twenty-four PostgreSQL partitions green on that same
    head (root `AGENTS.md`: merge only a head whose own CI is green, the
    PostgreSQL legs included). The one exception is the owner's grouping
    decision (2026-10-29, also stated in root `AGENTS.md`): a member of a batch
-   PR whose six partitions are green on the same `main`, with its own
+   PR whose twenty-four partitions are green on the same `main`, with its own
    `game-gate` green, merged right after the other members with no other
    merge at all in between, so the final `main` is the tree the batch tested:
    `git rev-parse origin/main^{tree}` equals the batch head's `^{tree}`. A
