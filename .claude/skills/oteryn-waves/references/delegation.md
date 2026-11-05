@@ -48,8 +48,9 @@ values taken from the source and the test for each step, and leaves open only
 what any competent engineer would choose the same way. Point at repository
 files (`AGENTS.md`, task card, README of a directory) instead of pasting them.
 State what to do rather than what to avoid; a prohibition belongs only in the
-limits below. Keep Codex reasoning effort at
-`medium` or lower unless the owner says otherwise; repository subagents use
+limits below. Send Codex work to Codex Cloud with model
+`gpt-6.1-sol` at reasoning effort `high` (owner decision 2026-11-05) and
+start each packet with "Reasoning effort: high."; repository subagents use
 the model and effort set in their own `.claude/agents/*.md` definition.
 
 ## Limits to paste into every packet
