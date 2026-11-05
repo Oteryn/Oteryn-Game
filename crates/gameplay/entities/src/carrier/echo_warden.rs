@@ -1,6 +1,7 @@
 //! The Channel owner's ephemeral Echo portals, raid timers and physical creature variants.
 //! Durable first-species rewards and corpse Items remain in their existing owners.
 use super::*;
+mod echo_child_expiry;
 use oteryn_gameplay_domain::domain::echo_warden::{
     AURA_INTERVAL_MS, EchoAuraFacts, EchoDeathEffect, EchoDeathFacts, EchoPortalTiming,
     EchoRaidPlan, EchoVariant, EchoWardenFacts, PORTAL_TTL_MS, SPAWN_STEP_MS, aura_can_enlist,
@@ -40,6 +41,7 @@ pub(super) struct EchoRuntime {
     raids: Vec<EchoRaid>,
     wardens: Vec<(ExactActorRef, u64)>,
     spawned: Vec<ExactActorRef>,
+    expirations: Vec<(ExactActorRef, u64)>,
 }
 
 /// A captured physical death plus its source facts and owner draw. The typed death key can
@@ -177,6 +179,7 @@ impl ChannelRuntimeV1 {
             })
             .chain(self.echo_wardens.raids.iter().map(|raid| raid.next_due_ms))
             .chain(self.echo_wardens.wardens.iter().map(|(_, due)| *due))
+            .chain(self.echo_wardens.expirations.iter().map(|(_, due)| *due))
             .min()
     }
 
@@ -282,6 +285,7 @@ impl ChannelRuntimeV1 {
             self.echo_wardens.wardens.push((actor, aura_due));
         }
         self.echo_wardens.spawned.push(actor);
+        self.track_echo_child_expiry(actor, now_ms);
         Ok(actor)
     }
 
@@ -295,6 +299,7 @@ impl ChannelRuntimeV1 {
     ) -> Result<bool, CarrierError> {
         self.owner_fence()?;
         let mut changed = false;
+        self.expire_echo_children(now_ms);
         // Encounter children have no ordinary respawn cell to reclaim their slot. Keep the
         // exact dead actor while its kill is queued, then let the existing corpse projection
         // outlive the removed incarnation just as it does for ordinary respawns.
@@ -306,6 +311,7 @@ impl ChannelRuntimeV1 {
                 {
                     if self.remove_encounter_actor(actor).is_err() {
                         self.echo_wardens.spawned.push(actor);
+                        self.track_echo_child_expiry(actor, now_ms);
                     }
                 }
                 Ok(_) => self.echo_wardens.spawned.push(actor),

@@ -24,6 +24,7 @@ fn partner() -> entities::EntityRef {
 }
 fn actor() -> entities::WorldSpatialEntity {
     entities::WorldSpatialEntity {
+        display_name: None,
         kind: entities::EntityKind::Player,
         entity: partner(),
         position: world_spatial::ActorPosition {

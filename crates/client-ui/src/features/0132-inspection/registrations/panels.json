@@ -1,0 +1,7 @@
+{
+  "mechanic": "0132-inspection",
+  "status": "supported",
+  "kind": "panels",
+  "id": "0132-inspection-panel",
+  "entry": "view.rs::panel_text"
+}

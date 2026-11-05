@@ -3,6 +3,7 @@ use oteryn_session::{ActorPosition, EntityDetail, EntityKind, StepDirection};
 #[test]
 fn dialogue_selection_requires_visible_npc_and_current_floor() -> Result<(), BatchError> {
     let npc = WorldSpatialEntity {
+        display_name: None,
         kind: EntityKind::Npc,
         entity: EntityRef {
             identity: [9; 16],
@@ -35,6 +36,7 @@ fn dialogue_selection_requires_visible_npc_and_current_floor() -> Result<(), Bat
 
 fn context_npc() -> WorldSpatialEntity {
     WorldSpatialEntity {
+        display_name: None,
         kind: EntityKind::Npc,
         entity: EntityRef {
             identity: [9; 16],

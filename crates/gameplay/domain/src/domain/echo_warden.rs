@@ -8,6 +8,9 @@
 pub const PORTAL_ITEM_ID: u16 = 54_133;
 pub const PORTAL_DELAY_MS: u64 = 30_000;
 pub const PORTAL_TTL_MS: u64 = 120_000;
+/// SV16/G51: `OTERYN_GAME_EVENTS_GAP_AUDIT_2026-11-01.md:167,873-879`.
+/// The requested ten-minute child lifetime has no counterpart in the pinned Lua donor.
+pub const CHILD_TTL_MS: u64 = 600_000;
 pub const SPAWN_CHANCE_NUM: u32 = 100;
 pub const SPAWN_CHANCE_DEN: u32 = 200_000;
 pub const WARDEN_ADDS_MIN: u8 = 7;

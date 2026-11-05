@@ -1,12 +1,10 @@
 //! Session task phases: receive one shell command, service the session, and publish its result.
-
 use super::{
     Outbox, feature_0043_vip::protocol::send_vip, public_class, session_stepper::publish,
     step_direction,
 };
 use crate::combat_input::PlayCommand;
 use oteryn_session::LogoutResult;
-
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
 
@@ -15,13 +13,13 @@ use tokio::sync::mpsc::UnboundedReceiver;
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 pub use super::stepper::Stepper;
-
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
     mut session: T,
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.discovery_initialize(&session);
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
     outbox.targeting_initialize(session.feature_selected(15));
@@ -107,6 +105,7 @@ pub async fn run_session<T: Stepper>(
                 match session.server_mechanic(&request).await {
                     Ok(response) => {
                         match request.capability {
+                            98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
                             9 => outbox.highscores_result(&response),
                             152 => outbox.item_forge_result(&response),
                             153 => outbox.depot_search_result(&response),

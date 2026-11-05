@@ -1,6 +1,8 @@
 //! Static map atlas layout and builtin cells, independent of asset decoding.
 
-use crate::{AtlasImage, BatchError, MAX_ATLAS_DIMENSION, SpriteBatch, TileCoord, TileView};
+use crate::{
+    AtlasImage, BatchError, MAX_ATLAS_DIMENSION, MAX_BATCH_QUADS, SpriteBatch, TileCoord, TileView,
+};
 use oteryn_client_domain::world::{CELL_PX, Draw, DrawCell};
 use std::collections::BTreeMap;
 
@@ -111,6 +113,7 @@ impl WorldAtlas {
 
 /// Stream deterministic scene draws into one batch, then append the target highlight.
 /// The visitor owns painter order; the renderer owns offsets, UVs and batch limits.
+/// Retain the first (deepest) draws when full, reserving space for the target highlight.
 pub fn sprite_batch(
     view: &TileView,
     atlas: &AtlasImage,
@@ -120,7 +123,11 @@ pub fn sprite_batch(
     target: Option<TileCoord>,
 ) -> Result<SpriteBatch, BatchError> {
     let mut sprites = SpriteBatch::new();
+    let limit = MAX_BATCH_QUADS - usize::from(target.is_some());
     visit(&mut |(x, y), draw: Draw| {
+        if sprites.len() >= limit {
+            return Ok(());
+        }
         sprites
             .push_offset(
                 view,
