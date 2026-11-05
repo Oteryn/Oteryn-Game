@@ -75,14 +75,15 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             },
             self.result["summary"]["implementation_state"],
         )
-        # W15b qualifies Mad Mage room 3's full-charge amulet as one more ready claim.
-        self.assertEqual(124, self.result["summary"]["reward_claim_ready_refs"])
-        self.assertEqual(127, self.result["summary"]["reward_claim_placements"])
+        # QUEST-FINISH admits eight additional exact full-default charge claims.
+        # SOURCE holds remain separate from native implementation support.
+        self.assertEqual(132, self.result["summary"]["reward_claim_ready_refs"])
+        self.assertEqual(136, self.result["summary"]["reward_claim_placements"])
         self.assertEqual(
             {
-                "REWARD_CLAIM_DATA_PENDING": 16,
-                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 40,
-                "REWARD_CLAIM_USE_PENDING": 49,
+                "REWARD_CLAIM_DATA_PENDING": 5,
+                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 44,
+                "REWARD_CLAIM_USE_PENDING": 56,
             },
             self.result["summary"]["reward_claim_owner_state"],
         )

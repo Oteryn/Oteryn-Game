@@ -73,6 +73,12 @@ pub const QUESTGATE0_RL_10: usize = 16;
 const KEY_PREFIX: &str = "oteryn:";
 const DEFINITION_HASH_VERSION: u8 = 2;
 
+/// QUEST-FINISH owner scope: Dawnport is reference data; Newhaven owns the start.
+#[must_use]
+pub fn in_runtime_scope(quest: &str) -> bool {
+    quest != "oteryn:quest.dawnport_quest"
+}
+
 /// An Oteryn key (§13.2): `oteryn:` and a non-empty tail of `[A-Za-z0-9._:/-]`, at most
 /// [`QUESTSTATE0_RL_06`] bytes. A source key never reaches the store.
 #[must_use]

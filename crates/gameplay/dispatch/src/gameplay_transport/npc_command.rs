@@ -501,6 +501,9 @@ impl NpcConversations {
             floor: npc_floor,
         };
         if Some(npc.key.as_str()) == Some(super::vocation_choice::DAWNPORT_CHOICE_NPC) {
+            if !oteryn_gameplay_quests::quest::in_runtime_scope("oteryn:quest.dawnport_quest") {
+                return NpcTalkOutcome::only(Disposition::NoConversation);
+            }
             if runtime.owner_fence().is_err()
                 || !runtime
                     .player_control_facts(actor, session)

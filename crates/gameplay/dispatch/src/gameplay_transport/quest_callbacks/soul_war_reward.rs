@@ -212,6 +212,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 quantity: 1,
                 contents: Vec::new(),
                 root_text: None,
+                root_fluid_subtype: None,
                 backpack,
                 content_revision: format!(
                     "sha256:{}",

@@ -227,6 +227,32 @@ pub fn load_embedded_quest_state(
         super::rotten_blood::ACCESS_DOOR_TRACK.into(),
         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
     );
+    // Preserve source captures and their counts; only the production catalogue
+    // and its executable bindings are filtered by the owner's target scope.
+    lowered.catalogue = QuestStateCatalogue::new(
+        content_revision,
+        lowered
+            .catalogue
+            .tracks
+            .values()
+            .filter(|track| super::in_runtime_scope(&track.quest))
+            .cloned()
+            .collect(),
+        lowered
+            .catalogue
+            .transitions
+            .values()
+            .filter(|transition| super::in_runtime_scope(&transition.quest))
+            .cloned()
+            .collect(),
+    )
+    .map_err(QuestLoadError::Catalogue)?;
+    lowered
+        .source_tracks
+        .retain(|key, _| lowered.catalogue.track(key).is_some());
+    lowered
+        .requested_by
+        .retain(|key, _| lowered.catalogue.transition(key).is_some());
     Ok(lowered)
 }
 
@@ -360,6 +386,54 @@ mod tests {
         load_embedded_quest_state("content-1").expect("embedded quest state loads")
     }
 
+    #[test]
+    fn owner_scope_excludes_dawnport_from_runtime_state_and_callbacks() -> Result<(), String> {
+        let loaded =
+            load_embedded_quest_state("owner-scope").map_err(|error| format!("{error:?}"))?;
+        assert!(
+            loaded
+                .catalogue()
+                .definition_hash("oteryn:quest.dawnport_quest")
+                .is_none()
+        );
+        assert!(
+            loaded
+                .catalogue()
+                .transition("oteryn:quest-transition/classic/dawnport/start-the-rare-herb")
+                .is_none()
+        );
+        let callbacks = crate::quest::world_callbacks::load()?;
+        assert!(
+            callbacks
+                .iter()
+                .all(|callback| callback.quest != "oteryn:quest.dawnport_quest")
+        );
+        let source: serde_json::Value =
+            serde_json::from_str(crate::quest::world_callbacks::EMBEDDED)
+                .map_err(|error| error.to_string())?;
+        let mut expected: std::collections::BTreeSet<_> = source["callbacks"]
+            .as_array()
+            .ok_or("source callbacks")?
+            .iter()
+            .filter(|callback| callback["quest"] != "oteryn:quest.dawnport_quest")
+            .map(|callback| {
+                callback["key"]
+                    .as_str()
+                    .map(str::to_owned)
+                    .ok_or("callback key")
+            })
+            .collect::<Result<_, _>>()?;
+        expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        assert_eq!(
+            callbacks
+                .into_iter()
+                .map(|callback| callback.key)
+                .collect::<std::collections::BTreeSet<_>>(),
+            expected
+        );
+        Ok(())
+    }
+
     fn document() -> serde_json::Value {
         serde_json::from_str(EMBEDDED).expect("embedded quest state is JSON")
     }
@@ -370,7 +444,9 @@ mod tests {
 
     #[test]
     fn every_lowered_record_loads_under_an_oteryn_key() {
-        let lowered = embedded();
+        // Source transcription remains complete, including owner-excluded
+        // donor quests. The owner_scope test separately checks runtime admission.
+        let lowered = parse_quest_state(EMBEDDED, "content-1").expect("source catalogue");
         let document = document();
         let quests = document["quests"].as_array().expect("quests");
         let (mut tracks, mut transitions) = (0, 0);
