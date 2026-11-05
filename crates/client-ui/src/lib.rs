@@ -42,6 +42,8 @@ pub mod cyclopedia_character;
 pub mod cyclopedia_tracker;
 #[path = "features/0151-daily-boost/mod.rs"]
 pub mod daily_boost;
+#[path = "features/0037-depot/mod.rs"]
+pub mod depot;
 #[path = "features/0153-depot-search/mod.rs"]
 pub mod depot_search;
 /// Live server highscores panel.

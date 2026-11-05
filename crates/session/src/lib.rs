@@ -24,6 +24,8 @@ mod achievement_notices_transport;
 pub use oteryn_protocol_oteryn::achievement_notices;
 mod appearance_state;
 mod depot;
+#[path = "features/0037-depot/protocol.rs"]
+mod depot_containers;
 mod domain_dispatch;
 mod events;
 pub use events::SessionEvent;
@@ -46,7 +48,9 @@ pub use oteryn_protocol_oteryn::presentation::{
 };
 mod recovery;
 use join::JoinAcceptance;
-pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
+pub use oteryn_protocol_oteryn::depot::{
+    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply,
+};
 /// Guild command and query wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::guild;
 /// Hireling wire values for the selected client feature.
@@ -67,8 +71,8 @@ pub use oteryn_protocol_oteryn::world_event;
 /// Live map snapshot and delta value types and codecs.
 pub use oteryn_protocol_oteryn::world_map;
 pub use oteryn_protocol_oteryn::{
-    animus_mastery, browse_field, daily_boost, daily_reward, depot_search, item_forge, item_view,
-    store,
+    animus_mastery, browse_field, container_tree, daily_boost, daily_reward, depot_search,
+    item_forge, item_view, store,
 };
 pub use oteryn_protocol_oteryn::{atelier, prey, wheel};
 /// Player-trade wire values for the selected native-client feature.

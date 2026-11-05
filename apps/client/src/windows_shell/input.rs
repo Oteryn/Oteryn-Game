@@ -46,6 +46,7 @@ impl Application {
                 || play.link.world_event_input(events)
                 || play.link.daily_boost_input(events)
                 || play.link.daily_reward_input(events)
+                || play.link.depot_input(events)
                 || play.link.depot_search_input(events)
                 || play.link.hireling_input(events)
                 || play.link.hotkey_equip_input(events)

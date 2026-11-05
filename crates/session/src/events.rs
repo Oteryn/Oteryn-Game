@@ -6,6 +6,8 @@ use super::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
     WorldWeather(AppliedDelta<world_weather::WorldWeather>),
+    /// Live bag sources used by the depot browser; the session retains the complete view.
+    ContainerViews(AppliedDelta<container_tree::ContainerViews>),
     WorldClock(AppliedDelta<world_clock::WorldClock>),
     Presentation(AppliedDelta<Vec<PresentationEvent>>),
     ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
@@ -61,6 +63,7 @@ impl SessionEvent {
         match self {
             Self::PlayerTrade(_) => player_trade::STATE_DOMAIN_PLAYER_TRADE,
             Self::TradeContainers(_) => container_tree::STATE_DOMAIN_CONTAINER_VIEWS,
+            Self::ContainerViews(_) => 14,
             Self::NpcConversation(_) => npc_service::STATE_DOMAIN_NPC_CONVERSATION,
             Self::NpcTradeWindow(_) => npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW,
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,

@@ -103,6 +103,8 @@ pub(super) struct Mailbox {
     pub(super) battle: oteryn_client_ui::battle::BattlePanel,
     pub(super) death: super::feature_local_death_respawn::protocol::DeathState,
     pub(super) death_reset_commands: bool,
+    pub(super) depot: oteryn_client_ui::depot::DepotPanel,
+    pub(super) depot_shutdown: bool,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,
@@ -303,6 +305,8 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
+        mailbox.depot = Default::default();
+        mailbox.depot_shutdown = true;
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -321,6 +325,8 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
+        mailbox.depot = Default::default();
+        mailbox.depot_shutdown = true;
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -414,6 +420,7 @@ impl Drop for PlayLink {
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
         mailbox.prey_shutdown = true;
+        mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
         mailbox.hireling_shutdown = true;

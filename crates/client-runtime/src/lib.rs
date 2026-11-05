@@ -20,6 +20,8 @@ pub mod world_interaction;
 pub mod item_use;
 
 pub mod connection;
+#[path = "features/0037-depot/protocol.rs"]
+pub mod depot;
 pub mod hotkey_equip;
 #[path = "features/0053-world-event/protocol.rs"]
 pub mod world_event;
