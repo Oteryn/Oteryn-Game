@@ -629,7 +629,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor,
             session,
             entered,
-            origin.position(),
+            callback.failure_teleport.map_or(origin.position(), local),
             blocked,
             &closed,
         ) && let Ok(snapshot) = runtime.commit_source_step(proof)

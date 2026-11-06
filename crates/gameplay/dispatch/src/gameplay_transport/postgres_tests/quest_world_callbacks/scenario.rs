@@ -39,8 +39,11 @@ fn scenario_case(
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let sewer = name.starts_with("devil-helmet-sewer");
+    let failure_landing = name.starts_with("conditional-failure-");
     let mut callback = callback(if classic_npc || sewer {
         "behemoth"
+    } else if failure_landing {
+        "liquid-black-shortcut"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
     } else if monk {
@@ -50,6 +53,14 @@ fn scenario_case(
     } else {
         name
     })?;
+    if failure_landing {
+        callback.selector.position = Some(trigger);
+        callback.failure_teleport = Some(Position {
+            x: 32818,
+            y: 31599,
+            floor: if name.ends_with("blocked") { -10 } else { -9 },
+        });
+    }
     if sewer {
         callback.key = format!("fixture:{name}");
         callback.selector.position = Some(trigger);
@@ -166,7 +177,7 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
-        if lever_fixture || target_swap {
+        if lever_fixture || target_swap || failure_landing {
             assert!(
                 owner
                     .states
@@ -222,7 +233,21 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if sewer {
+        if failure_landing {
+            super::super::conditional_callback_failure::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                if name.ends_with("blocked") {
+                    trigger
+                } else {
+                    callback.failure_teleport.ok_or("failure landing")?
+                },
+            )
+            .await?;
+        } else if sewer {
             super::super::pressure_plate_sewer::exercise(
                 &mut owner,
                 &mut admitted,

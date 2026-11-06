@@ -34,6 +34,12 @@
       "targets": [
         "Chakoya Iceberg"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
@@ -71,6 +77,12 @@
       "targets": [
         "Party Skeleton"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
@@ -375,6 +387,12 @@
       "duration_seconds": 95.635899022,
       "log": ".questpc6/source-red.log",
       "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
@@ -414,6 +432,12 @@
         "Gnomal Warming Measurements",
         "Uncharted Territory"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
@@ -670,6 +694,12 @@
       "targets": [
         "Fiehonja first-stage area"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
@@ -731,6 +761,12 @@
       "duration_seconds": 111.437056386,
       "log": ".questpc6/access-current.log",
       "scope": "every source reward placement, exact native items, replay and refusal; shared access dependencies remain blocked"
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc5",
+      "lane": "L5",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc5/qlane-meta/questpc5/LANE-L5.json"
     }
   },
   {
@@ -806,6 +842,12 @@
       "targets": [
         "Shaburak Demon"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
@@ -980,6 +1022,12 @@
         "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib devil_helmet_pressure_plate_ -- --nocapture",
         "scope": "Inherited pressure lifecycle and ordinary sewer USE, replay and missing landing refusal. Whole chosen quest path remains unfinished."
       }
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc5",
+      "lane": "L5",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc5/qlane-meta/questpc5/LANE-L5.json"
     }
   },
   {
@@ -1017,6 +1065,12 @@
       "targets": [
         "Vengoth incarnation entrance"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
@@ -1054,6 +1108,12 @@
       "targets": [
         "Outlaw Camp flooded island"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
@@ -1159,6 +1219,10 @@
       "duration_seconds": 111.437056386,
       "log": ".questpc6/access-current.log",
       "scope": "every source reward placement, exact native items, replay and refusal; shared access dependencies remain blocked"
+    },
+    "shared_mechanism_progress": {
+      "failure_landing": "Implemented; two real PostgreSQL regressions now pass after RED 2/2, GREEN 2/2. Callback source composition, conditional storage reset and atomic NPC exchange remain active work.",
+      "evidence": "qlane-meta/questpc6/cloud-failure-landing-verification.json"
     }
   },
   {
@@ -1458,6 +1522,12 @@
         "Small Enchanted Amethyst",
         "Small Enchanted Sapphire"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
@@ -1535,6 +1605,12 @@
         "Elvenbane Castle",
         "stone-ring basement"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   }
 ]

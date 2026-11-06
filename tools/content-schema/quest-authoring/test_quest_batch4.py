@@ -44,6 +44,16 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_failure_teleport_requires_valid_native_position_and_returning_step(self):
+        row = callback('cults_of_tibia', 'failure-landing')
+        row['return_on_failure'] = True
+        row['failure_teleport'] = {'x': 32818, 'y': 31599, 'floor': -9}
+        tool.validate_callback(row, 'cults_of_tibia')
+        for field, value in [('trigger', 'use'), ('return_on_failure', False),
+                             ('failure_teleport', {'x': 1, 'y': 2, 'floor': -16})]:
+            with self.assertRaises(ValueError):
+                tool.validate_callback({**row, field: value}, 'cults_of_tibia')
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)

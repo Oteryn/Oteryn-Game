@@ -447,6 +447,7 @@ fn scenario_in_world(
                 monk_reward: None,
                 item_on_target: None,
                 return_on_failure: refused,
+                failure_teleport: None,
                 failure_message: None,
                 success_message: None,
                 native_rule: None,

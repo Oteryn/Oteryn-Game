@@ -1,3 +1,26 @@
+## Cloud shared mechanism: authored recovery landing
+
+Implemented optional failure_teleport for returning STEP callbacks. Actual PG
+RED 2/2 (44.92s) reproduced origin-only recovery; GREEN 2/2 (45.82s) includes
+PostgreSQL18.6 STARTED and COMPLETED markers, replay and no quest writes.
+Existing default-origin callback PG regression PASS1/1 (46.44s). Quest callback
+units9/9; authoring units21/21; both-crate alltarget check37.71s and fmt PASS.
+Both-crate all-target/all-feature Clippy-Dwarnings PASS50.78s. Own diff
+and constructor/caller scan reviewed against CODEX-CHECKLIST; no unresolved finding. Full proof and exact donor citation/hash:
+cloud-failure-landing-verification.json. No whole quest newly qualified.
+
+Live ownership lookup recovered L3 on questpc2 and L5 on questpc5. Their
+packets assign 12 rows of the inherited ledger elsewhere; these rows now carry
+cross_lane_allocation and must be skipped. In particular Demon Helmet and
+Devil Helmet are L5; no further entry work there. The inherited sewer commit
+was verification/formatting only, before the live allocation was recovered.
+No LANE-L6.json exists in this branch; a per-entry allocation question remains
+pending. Continue only mechanisms/entries outside proven foreign allocation.
+
+NEXT after this mechanism is validated and pushed: source-composed conditional
+reset and atomic NPC exchange for Draconia; recover the exact L6 inventory.
+Do not treat either generic test fixtures or reward cohorts as whole quests.
+
 # Cloud continuation — 2026-11-06
 
 Current branch: `claude/happy-davinci-ijz3wy-questpc6`; fetched remote and

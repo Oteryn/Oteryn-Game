@@ -36,11 +36,20 @@ def compile_callbacks(existing, previous, shards):
             # ANSWER R-CALLBACK-SCHEMA=B: do not silently lower a held field
             # into a different operation accepted by the current contract.
             # https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355
-            declined = {'failure_teleport', 'success_say'} & row.keys()
+            declined = {'success_say'} & row.keys()
             storage_extensions = any(
                 set(state) - {'track', 'minimum', 'maximum', 'set', 'read_only'}
                 for state in row.get('storage', [])
             )
+            failure = row.get('failure_teleport')
+            if failure is not None and (
+                row.get('trigger') != 'step_in' or row.get('return_on_failure') is not True
+                or not isinstance(failure, dict) or set(failure) != {'x', 'y', 'floor'}
+                or any(type(failure[axis]) is not int or not 0 <= failure[axis] <= 65535
+                       for axis in ('x', 'y'))
+                or type(failure['floor']) is not int or not -15 <= failure['floor'] <= 0
+            ):
+                raise ValueError(f'held callback contract extension: {row["key"]}')
             if declined or storage_extensions:
                 raise ValueError(f'held callback contract extension: {row["key"]}')
             if row['key'] in keys:
