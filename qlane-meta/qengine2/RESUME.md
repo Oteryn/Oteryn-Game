@@ -115,8 +115,11 @@ Final world a8729db03de3aff94477f96d700abeb75554cbb710c63d4986d94c88ccc596ac.
 All artifacts generated with repository tooling. Complete diff reviewed; no
 forbidden edits, binaries/donor copies, weakened tests or remaining findings.
 
-Counts9/66 QUALIFIED,57 actionable remaining. Commit/push L1-03 now with required
-author/trailers, then continue batches. Last origin comparison equal9d3c3869f.
+Counts9/66 QUALIFIED,57 actionable remaining. L1-03 committed/pushed asba797c537 with required
+author/trailers; clean tree after push. Continue batches. Owner now requires
+immediate push of each green quest/mechanism slice and at least every30minutes
+while green work exists. Limit each investigation to10minutes; document
+conservative decisions in CONTRACT-NOTES.md. Only focused tests.
 Logs /tmp/qengine2-batch3-{red,green,unit,final-check,clippy,pins,pincheck,
 content-tests,world-tests,authoring-tests}.log. Source scratch files/index only
 in /tmp; never commit donor copies. Continue without ending at a checkpoint.

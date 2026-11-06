@@ -1549,7 +1549,9 @@
         "integration_content": "123 passed2.18s",
         "integration_world": "5 passed46.75s",
         "review": "Complete diff self-review; no unresolved findings, test weakening, binaries/donor copies, forbidden workflow/repository-tool edits or unrelated lane merges."
-      }
+      },
+      "commit": "ba797c537",
+      "push": "Fast-forward push confirmed to origin/claude/happy-davinci-ijz3wy-qengine2"
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",
@@ -1876,5 +1878,6 @@
       }
     ],
     "finding": "The questpc5/6/7/8 NPC source executor provides bounded sorted foreign storage reads, source defaults and atomic Father-specific inventory operations; it still supplies empty outfit snapshots and uses storage-only planning elsewhere. No general shared-reward parent predicate or replacement general outfit owner was found. Reuse existing QuestComparison semantics and the established lock/fresh-default pattern with the already delivered shared value participant. Preserve Father atomicity and avoid unrelated lane data."
-  }
+  },
+  "delivery_rule": "Push every finished green quest/mechanism slice immediately and at least every30minutes while green work exists. Bound each investigation/missing-fact search to10minutes; record conservative decisions in CONTRACT-NOTES.md and implement. No full workspace/PG suite."
 }
