@@ -20,6 +20,7 @@ use crate::content::{
 };
 use crate::foundation::{ChannelId, WorldId};
 use crate::movement::speed::{EngineeringGroundSpeed, GroundSpeedSource};
+use oteryn_world_bundle::bundle;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::fmt;
@@ -118,6 +119,9 @@ impl PartialEq for BundleWorld {
     fn eq(&self, other: &Self) -> bool {
         self.daily == other.daily
             && self.base.digest() == other.base.digest()
+            && self.base.active_layers() == other.base.active_layers()
+            && self.base.layer_epoch() == other.base.layer_epoch()
+            && self.base.exit_layers() == other.base.exit_layers()
             && self.base.content_revision() == other.base.content_revision()
             && self.base.tile_count() == other.base.tile_count()
             && self.base.entry_count() == other.base.entry_count()
@@ -160,6 +164,7 @@ pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal
         return Err(BootRefusal::StartNotEnterable);
     }
     Ok(CheckedBundle {
+        composition: None,
         data,
         base,
         map_revision: revision,
@@ -173,6 +178,7 @@ pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal
 /// A bundle that passed [`check`] and waits for the served item definitions.
 #[derive(Debug)]
 pub struct CheckedBundle {
+    composition: Option<bundle::Bundle>,
     daily: Option<super::daily::DailyMap>,
     pins: BundlePins,
     data: Vec<u8>,
@@ -183,6 +189,114 @@ pub struct CheckedBundle {
 }
 
 impl CheckedBundle {
+    /// Regional/fixture bundles omit changes outside their admitted geography.
+    pub fn compose_admitted_layers(self, keys: &[&str]) -> Result<Self, BootRefusal> {
+        self.compose_admitted_layers_with_exits(keys, keys)
+    }
+
+    pub fn compose_admitted_layers_with_exits(
+        self,
+        keys: &[&str],
+        exits: &[&str],
+    ) -> Result<Self, BootRefusal> {
+        let selected: Vec<_> = keys
+            .iter()
+            .copied()
+            .filter(|key| self.base.admitted_layers.iter().any(|layer| layer == *key))
+            .collect();
+        let exit_selected: Vec<_> = exits
+            .iter()
+            .copied()
+            .filter(|key| self.base.admitted_layers.iter().any(|layer| layer == *key))
+            .collect();
+        self.compose_layers_with_exits(&selected, &exit_selected)
+    }
+
+    /// Select compiler-admitted named layers before any map facts, movement or spawn admission.
+    pub fn compose_layers(self, keys: &[&str]) -> Result<Self, BootRefusal> {
+        self.compose_layers_with_exits(keys, keys)
+    }
+
+    /// Bind the actual boot composition to the independently resolved reset epoch.
+    pub fn compose_epoch_layers(
+        self,
+        epoch: u64,
+        keys: &[&str],
+        exits: &[&str],
+    ) -> Result<Self, BootRefusal> {
+        self.compose_layers_with_exits(keys, exits)?
+            .with_layer_epoch(epoch)
+    }
+
+    pub fn compose_epoch_admitted_layers(
+        self,
+        epoch: u64,
+        keys: &[&str],
+        exits: &[&str],
+    ) -> Result<Self, BootRefusal> {
+        self.compose_admitted_layers_with_exits(keys, exits)?
+            .with_layer_epoch(epoch)
+    }
+
+    fn with_layer_epoch(mut self, epoch: u64) -> Result<Self, BootRefusal> {
+        if epoch == 0 {
+            return Err(LoadError::Bundle(oteryn_world_bundle::Error::Format(
+                "zero world-change epoch".into(),
+            ))
+            .into());
+        }
+        let base = Arc::get_mut(&mut self.base).ok_or_else(|| {
+            LoadError::Bundle(oteryn_world_bundle::Error::Format(
+                "base shared before epoch binding".into(),
+            ))
+        })?;
+        if base.layer_epoch.is_some() {
+            return Err(LoadError::Bundle(oteryn_world_bundle::Error::Format(
+                "composition already epoch-bound".into(),
+            ))
+            .into());
+        }
+        base.layer_epoch = Some(epoch);
+        Ok(self)
+    }
+
+    /// Return metadata is admitted independently; an inactive Fury gate still has a safe exit.
+    pub fn compose_layers_with_exits(
+        mut self,
+        keys: &[&str],
+        exits: &[&str],
+    ) -> Result<Self, BootRefusal> {
+        let mut families = BTreeSet::new();
+        if exits.len() > 16
+            || !exits.iter().all(|key| {
+                self.base.admitted_layers.iter().any(|layer| layer == *key)
+                    && families.insert(key.rsplit_once('/').map_or(*key, |(family, _)| family))
+            })
+        {
+            return Err(LoadError::Bundle(oteryn_world_bundle::Error::Key(
+                "exit layer not compiled or ambiguous".into(),
+            ))
+            .into());
+        }
+        if keys.is_empty() {
+            if !exits.is_empty() {
+                Arc::get_mut(&mut self.base)
+                    .ok_or_else(|| {
+                        LoadError::Bundle(oteryn_world_bundle::Error::Format(
+                            "base shared before composition".into(),
+                        ))
+                    })?
+                    .exit_layers = exits.iter().map(|key| (*key).to_owned()).collect();
+            }
+            return Ok(self);
+        }
+        let mut decoded = bundle::read(&self.data).map_err(LoadError::from)?;
+        oteryn_world_bundle::layers::compose(&mut decoded, keys).map_err(LoadError::from)?;
+        self.base = Arc::new(WorldBase::composed(&decoded, keys, exits)?);
+        self.composition = Some(decoded);
+        Ok(self)
+    }
+
     /// Builds the reset day's physical map before any collision or presentation owner exists.
     pub fn with_daily_map(mut self, daily: super::daily::DailyMap) -> Self {
         self.daily = Some(daily);
@@ -201,21 +315,50 @@ impl CheckedBundle {
         let projection = self
             .daily
             .as_ref()
-            .map(|daily| super::daily::Projection::new(&self.data, daily, &item))
+            .map(|daily| match &self.composition {
+                Some(bundle) => {
+                    super::daily::Projection::from_manifest(bundle.manifest.clone(), daily, &item)
+                }
+                None => super::daily::Projection::new(&self.data, daily, &item),
+            })
             .transpose()
             .map_err(LoadError::from)?;
         if let Some(projection) = &projection {
-            let (base, _) = super::load_daily_spawns(
-                &self.data,
-                &self.pins,
-                super::LOAD_LIMITS,
-                Some(projection),
-            )?;
-            self.base = Arc::new(base);
+            if let Some(mut decoded) = self.composition.take() {
+                super::daily::project_bundle(&mut decoded, projection).map_err(LoadError::from)?;
+                let active: Vec<_> = self
+                    .base
+                    .active_layers()
+                    .iter()
+                    .map(String::as_str)
+                    .collect();
+                let exits: Vec<_> = self.base.exit_layers().iter().map(String::as_str).collect();
+                let mut base = WorldBase::composed(&decoded, &active, &exits)?;
+                base.layer_epoch = self.base.layer_epoch();
+                self.base = Arc::new(base);
+                self.composition = Some(decoded);
+            } else {
+                // Preserve main's streaming projection when no entrance geometry is selected.
+                let (mut base, _) = super::load_daily_spawns(
+                    &self.data,
+                    &self.pins,
+                    super::LOAD_LIMITS,
+                    Some(projection),
+                )?;
+                base.active_layers = self.base.active_layers().to_vec();
+                base.exit_layers = self.base.exit_layers().to_vec();
+                base.layer_epoch = self.base.layer_epoch();
+                self.base = Arc::new(base);
+            }
         }
         let mut spell_tiles = SpellTilesBuilder::new(Arc::clone(&self.base));
-        let (facts, blocked, floors) =
-            scan(&self.data, &item, &mut spell_tiles, projection.as_ref())?;
+        let (facts, blocked, floors) = scan(
+            &self.data,
+            self.composition.as_ref(),
+            &item,
+            &mut spell_tiles,
+            projection.as_ref(),
+        )?;
         let spell_tiles = Arc::new(spell_tiles.finish(facts.doors())?);
         let blocked = Arc::new(blocked);
         if !enterable(&self.base, &blocked, self.start) || facts.doors().blocks(self.start) {
@@ -267,6 +410,7 @@ impl CheckedBundle {
 /// `spell_tiles` collects the spell tile facts of the same sectors (BUNDLE-TILES-1).
 fn scan(
     data: &[u8],
+    composition: Option<&bundle::Bundle>,
     item: &impl Fn(&str) -> Option<ItemDefinition>,
     spell_tiles: &mut SpellTilesBuilder,
     daily: Option<&super::daily::Projection>,
@@ -276,7 +420,7 @@ fn scan(
     let mut floors = FloorTable::default();
     let mut refused = None;
     let mut blocked = BTreeSet::new();
-    let visited = super::daily::visit(data, super::LOAD_LIMITS, daily, |manifest, sector| {
+    let mut scan_sector = |manifest: &bundle::Manifest, sector: &bundle::Sector| {
         if facts.is_none() {
             match BundleFacts::palette(manifest, item) {
                 Ok(palette) => {
@@ -330,17 +474,31 @@ fn scan(
                 );
             }
         }
-        facts.push(manifest, &sector, &mut blocked);
-        spell_tiles.push(manifest, &sector, &blocked, item, &masks);
+        facts.push(manifest, sector, &mut blocked);
+        spell_tiles.push(manifest, sector, &blocked, item, &masks);
         Ok(())
-    });
+    };
+    let manifest = if let Some(composed) = composition {
+        composed
+            .sectors
+            .iter()
+            .try_for_each(|sector| scan_sector(&composed.manifest, sector))
+            .map(|()| composed.manifest.clone())
+            .map_err(LoadError::from)
+    } else {
+        super::daily::visit(data, super::LOAD_LIMITS, daily, |manifest, sector| {
+            scan_sector(manifest, &sector)
+        })
+        .map(|visited| visited.manifest)
+        .map_err(LoadError::from)
+    };
     if let Some(refusal) = refused {
         return Err(refusal.into());
     }
-    let visited = visited.map_err(LoadError::from)?;
+    let manifest = manifest?;
     let mut facts = match facts {
         Some(facts) => facts,
-        None => BundleFacts::palette(&visited.manifest, item)?,
+        None => BundleFacts::palette(&manifest, item)?,
     };
     facts.finish();
     Ok((facts, blocked, floors))
@@ -442,6 +600,27 @@ impl BundleWorld {
         profile: impl Fn(&str) -> Option<(u64, bool)>,
     ) -> Option<Vec<BundleSpawnFacts>> {
         let mut sources = table_activation_spawns(&self.spawns, &profile)?;
+        if !self.base.active_layers().is_empty() {
+            // A layer may replace previously admitted ground. Recheck the composed map
+            // before handing ordinary source points to the creature owner.
+            for (points, _) in &mut sources {
+                points.retain(|((x, y, z), _, _, _, _)| {
+                    let (Ok(x), Ok(y), Ok(floor)) =
+                        (u16::try_from(*x), u16::try_from(*y), i8::try_from(-*z))
+                    else {
+                        return false;
+                    };
+                    let at = TilePos { x, y, floor };
+                    enterable(&self.base, &self.blocked, at)
+                        && !self.map.facts.doors().blocks(at)
+                        && self
+                            .base
+                            .tile(x, y, floor)
+                            .is_some_and(|tile| !tile.protection_zone())
+                });
+            }
+            sources.retain(|(points, _)| !points.is_empty());
+        }
         if let Some(daily) = &self.daily {
             sources.extend(super::daily::grimvale_spawns(self, daily, profile)?);
         }
@@ -1215,6 +1394,212 @@ pub mod tests {
             map_revision: revision,
             start: TilePos { x, y: 0, floor: -7 },
         }
+    }
+
+    #[test]
+    fn w05b_boot_refuses_a_layer_not_compiled_into_its_bundle() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = bundle();
+        let checked = check(bytes, pins(load, 2))?;
+        assert!(checked.compose_layers(&["fury_gates/thais"]).is_err());
+        let (bytes, load) = bundle();
+        let checked = check(bytes, pins(load, 2))?;
+        let world = checked
+            .compose_admitted_layers(&["nightmare_isle/darashia-west"])?
+            .boot(WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?, items)?;
+        assert!(
+            world
+                .base()
+                .tile(2, 0, -7)
+                .is_some_and(|tile| tile.walkable())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn w05b_boot_composes_compiled_layer_before_collision_and_keeps_bundle_pin()
+    -> Result<(), Box<dyn Error>> {
+        let (bytes, mut load) = bundle();
+        let mut decoded = bundle::read(&bytes)?;
+        // Admit the main SP02 fungus ground and replacement states beside native gate geometry.
+        let fungus_palette = decoded.manifest.palette.len() as u32;
+        for appearance in [12065, 12059, 12060, 12061, 12062, 12063] {
+            let mut entry = decoded.manifest.palette[0].clone();
+            entry.key = format!("oteryn:item.tibia.i{appearance}");
+            entry.family = bundle::Family::Item;
+            entry.id = appearance;
+            decoded.manifest.palette.push(entry);
+        }
+        decoded.manifest.world.max_x = decoded.manifest.world.max_x.max(33344);
+        decoded.manifest.world.max_y = decoded.manifest.world.max_y.max(31851);
+        decoded.manifest.world.floors = vec![-9, -7];
+        decoded.sectors.insert(
+            0,
+            bundle::Sector {
+                floor: -9,
+                sx: 33312 / 32,
+                sy: 31850 / 32,
+                tiles: (33312..=33343)
+                    .map(|x| oteryn_world_bundle::sector::Tile {
+                        x,
+                        y: 31850,
+                        flags: 0,
+                        house: 0,
+                        zones: Vec::new(),
+                        items: vec![oteryn_world_bundle::sector::Item {
+                            palette: fungus_palette,
+                            depth: 0,
+                            attrs: Default::default(),
+                        }],
+                    })
+                    .collect(),
+            },
+        );
+        let served = |key: &str| {
+            items(key).or_else(|| {
+                let appearance: u32 = key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
+                [12065, 12059, 12060, 12061, 12062, 12063]
+                    .contains(&appearance)
+                    .then_some(ItemDefinition {
+                        reference: std::num::NonZeroU32::new(appearance + 1)?,
+                        solid: Some(false),
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: false,
+                    })
+            })
+        };
+        let mut replacement = decoded.sectors[1].tiles[1].clone();
+        replacement.items[0].palette = 1; // source lava ground is not walkable
+        replacement.flags = 1;
+        decoded.layers.push(oteryn_world_bundle::layers::Layer {
+            key: "fury_gates/thais".into(),
+            palette: decoded.manifest.palette.clone(),
+            sectors: vec![bundle::Sector {
+                floor: -7,
+                sx: 0,
+                sy: 0,
+                tiles: vec![replacement],
+            }],
+        });
+        decoded.spawns = oteryn_world_bundle::spawn::Table {
+            creatures: vec![oteryn_world_bundle::spawn::Creature {
+                key: "oteryn:creature.silencer".into(),
+                period: oteryn_world_bundle::spawn::Period::All,
+            }],
+            sources: vec![oteryn_world_bundle::spawn::Source {
+                key: "oteryn:spawn.layer_test".into(),
+                floor: -7,
+                x: 3,
+                y: 0,
+                points: [2, 3]
+                    .into_iter()
+                    .map(|x| oteryn_world_bundle::spawn::Point {
+                        creature: 0,
+                        x,
+                        y: 0,
+                        direction: oteryn_world_bundle::spawn::Direction::North,
+                        respawn_ms: 90000,
+                        boss_policy: None,
+                    })
+                    .collect(),
+            }],
+        };
+        decoded.manifest.spawns = bundle::SpawnCounts {
+            sources: 1,
+            points: 2,
+        };
+        let bytes = oteryn_world_bundle::writer::write_with_layers(
+            &decoded.manifest,
+            &decoded.sectors,
+            &decoded.spawns,
+            &decoded.npcs,
+            &decoded.layers,
+        )?;
+        load.digest.copy_from_slice(&bytes[bytes.len() - 32..]);
+        let dated = check(bytes.clone(), pins(load.clone(), 3))?.compose_epoch_layers(
+            1,
+            &["fury_gates/thais"],
+            &["fury_gates/thais"],
+        )?;
+        assert!(
+            dated.compose_epoch_layers(2, &[], &[]).is_err(),
+            "an empty selection cannot relabel yesterday's geometry"
+        );
+        let offday = check(bytes.clone(), pins(load.clone(), 3))?
+            .compose_layers_with_exits(&[], &["fury_gates/thais"])?
+            .boot(WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?, served)?;
+        assert!(offday.base().active_layers().is_empty());
+        assert_eq!(offday.base().exit_layers(), &["fury_gates/thais"]);
+        assert!(
+            offday
+                .base()
+                .tile(2, 0, -7)
+                .is_some_and(|tile| tile.walkable())
+        );
+        let checked = check(bytes, pins(load.clone(), 3))?;
+        let world = checked
+            .compose_epoch_layers(1, &["fury_gates/thais"], &["fury_gates/thais"])?
+            .with_daily_map(super::super::daily::DailyMap {
+                seed: [7; 32],
+                fungus: true,
+                grimvale_full_moon: false,
+                trader: None,
+            })
+            .boot(WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?, served)?;
+        assert_eq!(world.base().digest(), load.digest);
+        assert_eq!(world.base().active_layers(), &["fury_gates/thais"]);
+        assert_eq!(world.base().exit_layers(), &["fury_gates/thais"]);
+        assert_eq!(world.base().layer_epoch(), Some(1));
+        let fungus_ids: Vec<_> = (33312..=33343)
+            .map(|x| {
+                world
+                    .base()
+                    .tile(x, 31850, -9)
+                    .expect("admitted fungus tile")
+                    .ids()[0]
+            })
+            .collect();
+        assert!(
+            fungus_ids.iter().any(|id| (12059..=12063).contains(id)),
+            "active SP02 projection must transform fungus alongside the gate"
+        );
+        assert!(
+            fungus_ids.contains(&12065),
+            "the deterministic source chance also leaves ordinary fungus ground"
+        );
+        let changed = world.base().tile(2, 0, -7).ok_or("layer tile")?;
+        assert!(changed.protection_zone());
+        assert!(!changed.walkable());
+        assert!(
+            world
+                .base()
+                .tile(3, 0, -7)
+                .is_some_and(|tile| tile.walkable())
+        );
+        assert!(world.activation_spawns(|_| None).is_none());
+        let sources = world
+            .activation_spawns(|key| (key == "oteryn:creature.silencer").then_some((5400, false)))
+            .ok_or("source admission")?;
+        assert_eq!(sources.len(), 1);
+        assert_eq!(sources[0].0.len(), 1);
+        assert_eq!(sources[0].0[0].0, (3, 0, 7));
+        let world_id = WorldId::decode(&id(1))?;
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world_id,
+            ChannelId::decode(&id(2))?,
+            NodeId::decode(&id(3))?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(world_id),
+        )?;
+        assert_eq!(runtime.begin_activation_spawn_sources(sources)?, 1);
+        let progress = runtime.realize_activation_spawn_window(0)?;
+        assert_eq!(progress.remaining, 0);
+        assert_eq!(runtime.spawn_point_creatures().len(), 1);
+        Ok(())
     }
 
     #[test]

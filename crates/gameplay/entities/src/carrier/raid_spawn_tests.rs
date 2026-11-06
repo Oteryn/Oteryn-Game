@@ -358,3 +358,52 @@ fn raid_durable_end_compacts_terminal_receipts_but_keeps_persistent_actors() -> 
     assert_eq!(runtime.raid_spawns.size(), 3);
     Ok(())
 }
+
+#[test]
+fn raid_owner_shared_wave_attempt_budget_survives_partial_retry_and_fences() -> TestResult {
+    let mut owner = runtime(1)?;
+    let stamp = checked(owner.issue_owner_work())?;
+    for expected in 0..137_u8 {
+        assert_eq!(
+            checked(owner.spend_raid_shared_attempt(stamp, id(4), 0))?,
+            Some(expected)
+        );
+    }
+    // Physical map reads can fail after consumption; a later pass gets no refund.
+    let retry_stamp = checked(owner.issue_owner_work())?;
+    for expected in 137..250_u8 {
+        assert_eq!(
+            checked(owner.spend_raid_shared_attempt(retry_stamp, id(4), 0))?,
+            Some(expected)
+        );
+    }
+    assert_eq!(
+        checked(owner.spend_raid_shared_attempt(retry_stamp, id(4), 0))?,
+        None
+    );
+    assert!(owner.visible_entities().creatures.is_empty());
+    assert_eq!(
+        checked(owner.spend_raid_shared_attempt(retry_stamp, id(4), 1))?,
+        Some(0)
+    );
+    let before_close = owner.raid_spawns.size();
+    checked(owner.finish_raid_run(retry_stamp, id(4), false))?;
+    assert_eq!(owner.raid_spawns.size(), before_close - 2);
+    assert!(
+        owner
+            .spend_raid_shared_attempt(retry_stamp, id(4), 0)
+            .is_err()
+    );
+    let mut replacement = runtime(2)?;
+    assert!(
+        replacement
+            .spend_raid_shared_attempt(retry_stamp, id(4), 1)
+            .is_err()
+    );
+    let replacement_stamp = checked(replacement.issue_owner_work())?;
+    assert_eq!(
+        checked(replacement.spend_raid_shared_attempt(replacement_stamp, id(5), 0))?,
+        Some(0)
+    );
+    Ok(())
+}

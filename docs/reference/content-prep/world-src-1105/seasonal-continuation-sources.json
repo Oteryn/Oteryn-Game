@@ -1,0 +1,2865 @@
+{
+  "schema": "OTERYN_WORLD_SRC_SEASONAL_CONTINUATION/v1",
+  "researched_at_utc": "2026-11-06T00:01:24.572976+00:00",
+  "native_base": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+  "user_agent": "OterynCompatibilityResearch/1.0",
+  "raw_download_root": "/tmp/world-src-cont/seasonal",
+  "requests": [
+    {
+      "key": "crystal-tree",
+      "url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/201189f871d23597b82caf88fd611454a2ddefb8?recursive=1",
+      "status": 200,
+      "bytes": 2556806,
+      "sha256": "d9b4821acb0fe6c816a51115859727707c94f7a933091aefbe6d354f150c2e40",
+      "truncated": false
+    },
+    {
+      "key": "canary-tree",
+      "url": "https://api.github.com/repos/opentibiabr/canary/git/trees/47dfd51f45280a59a1d3e50ba7edd573d7234446?recursive=1",
+      "status": 200,
+      "bytes": 1835374,
+      "sha256": "5c2b5ec13473b1853efa18924e6c9f60e8988dc96473313cd40807abc3229bcd",
+      "truncated": false
+    },
+    {
+      "key": "wiki-seasonal",
+      "url": "https://tibia.fandom.com/api.php?action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&titles=Cake_Golem%7CHalloween%7CChristmas%7CSanta_Claus%7CThe_Halloween_Hare&format=json&formatversion=2",
+      "status": 402
+    },
+    {
+      "key": "crystal:data-crystal/monster/event_creatures/the_halloween_hare.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/event_creatures/the_halloween_hare.lua",
+      "status": 200,
+      "bytes": 4380,
+      "sha256": "21a407061b5b1c1b79134ee08ad04177ff6256fb7fc2a9fe07268a0772342310",
+      "git_blob_sha1": "07cac277c007681c104a06de376a261884f2c7a0",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/monster/event_creatures/the_mutated_pumpkin.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/event_creatures/the_mutated_pumpkin.lua",
+      "status": 200,
+      "bytes": 4972,
+      "sha256": "6c14aac3b5eab8c9cf460edb3e6167e1f1c536d75ad9c586c2f13290274a3042",
+      "git_blob_sha1": "5e21973680494c16f90cd0d478cda0d6ee80fd4c",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/monster/event_creatures/the_halloween_hare.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/event_creatures/the_halloween_hare.lua",
+      "status": 200,
+      "bytes": 4380,
+      "sha256": "21a407061b5b1c1b79134ee08ad04177ff6256fb7fc2a9fe07268a0772342310",
+      "git_blob_sha1": "07cac277c007681c104a06de376a261884f2c7a0",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/monster/event_creatures/the_mutated_pumpkin.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/event_creatures/the_mutated_pumpkin.lua",
+      "status": 200,
+      "bytes": 4611,
+      "sha256": "cd4f71cb0d633327294404560d900f6dc8b370853e534f13267a3d953d260da8",
+      "git_blob_sha1": "4abdfe163407b97dd1ecea06d405ac1ba8725e01",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+      "status": 200,
+      "bytes": 2912,
+      "sha256": "48471262a6d87ca938218890cc10f3839bd072dbf9f71301e63df155933595cf",
+      "git_blob_sha1": "d95b96f4ed3c5e47d9219a3112c6065ea5de1e2d",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/npc/ruprecht.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/ruprecht.lua",
+      "status": 200,
+      "bytes": 9249,
+      "sha256": "6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f",
+      "git_blob_sha1": "6718df2ef51872c95a8fe2036add77d2623141bb",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/npc/santa_claus.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santa_claus.lua",
+      "status": 200,
+      "bytes": 2711,
+      "sha256": "16f900a55116b6298044c4105b2f1550f9b91c797aefc56f201d60f61596c06c",
+      "git_blob_sha1": "6498113caf5154f94fe75fa07db9697d9a57adfa",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/globalevents/others/raids_schedule.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/others/raids_schedule.lua",
+      "status": 200,
+      "bytes": 1468,
+      "sha256": "71f468bb018eb2f1ed0ab4b9c53061241cb64f2178c5cc522166a6198e0fb5ff",
+      "git_blob_sha1": "7f6cfd369482f593615ca2b1b5467ee2460d5604",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/actions/items/christmas_bundle.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/items/christmas_bundle.lua",
+      "status": 200,
+      "bytes": 1173,
+      "sha256": "f7df1ecb2f7b74f39973cb0fead733ae041353587f224a1476e1dd31e62d39b8",
+      "git_blob_sha1": "d0a56f6d050f6542860bc26ea87c880e1dba6d11",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/creatures/combat/combat.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/combat/combat.cpp",
+      "status": 200,
+      "bytes": 105373,
+      "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+      "git_blob_sha1": "499a6aec29f7fd85da4953aea599ab1cba181fe3",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/creatures/creature.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/creature.cpp",
+      "status": 200,
+      "bytes": 56897,
+      "sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+      "git_blob_sha1": "d1e52e5881ea75cdc5835e0563dc842b38372f85",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/creatures/monsters/monsters.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/monsters/monsters.cpp",
+      "status": 200,
+      "bytes": 13781,
+      "sha256": "624dadf971b9f164d2751747f76312c9294f65565fdc663011b073eef824ef85",
+      "git_blob_sha1": "3bea0830e8a0a322feb5cd7788322f749ffc56a6",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/creatures/monsters/monsters.hpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/monsters/monsters.hpp",
+      "status": 200,
+      "bytes": 7975,
+      "sha256": "24c5b9830d89c4150ccdaecf12f6a5d892e926b5e81c1f812d0081df32220426",
+      "git_blob_sha1": "890e4cd8250e5663d980c79e8d73d13219cd9803",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/game/game.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/game/game.cpp",
+      "status": 200,
+      "bytes": 439904,
+      "sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6",
+      "git_blob_sha1": "5f421b1b2361280abeb8b392bca0e0344fc04648",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "status": 200,
+      "bytes": 4380,
+      "sha256": "21a407061b5b1c1b79134ee08ad04177ff6256fb7fc2a9fe07268a0772342310",
+      "git_blob_sha1": "07cac277c007681c104a06de376a261884f2c7a0",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/monster/event_creatures/the_mutated_pumpkin.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/monster/event_creatures/the_mutated_pumpkin.lua",
+      "status": 200,
+      "bytes": 4611,
+      "sha256": "cd4f71cb0d633327294404560d900f6dc8b370853e534f13267a3d953d260da8",
+      "git_blob_sha1": "4abdfe163407b97dd1ecea06d405ac1ba8725e01",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/npc/ruprecht.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/ruprecht.lua",
+      "status": 200,
+      "bytes": 9376,
+      "sha256": "92c81341ebd400c35eeddb115ccdb1fa2c5f848ca8bc6b95c46d1a7834e12c33",
+      "git_blob_sha1": "3873834206cfec0e4055d246d24a57900485327c",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/npc/santa_claus.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/santa_claus.lua",
+      "status": 200,
+      "bytes": 2779,
+      "sha256": "1acaaab3f6b05ba0918e3641addd5f919080a59f055da093d825dccffbb2ff1c",
+      "git_blob_sha1": "31705f629a84ff1e4dde2135a01f57a3c6602004",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/globalevents/others/raids_schedule.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/globalevents/others/raids_schedule.lua",
+      "status": 200,
+      "bytes": 1356,
+      "sha256": "ae8d1e052e46b282fd6353aeeb9e5005919474fb84ea2c565854ff06655c62ae",
+      "git_blob_sha1": "be6070d857aefec0a25c9aa414b5f3cbf2f9dd2e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/scripts/actions/items/christmas_bundle.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/actions/items/christmas_bundle.lua",
+      "status": 200,
+      "bytes": 1173,
+      "sha256": "f7df1ecb2f7b74f39973cb0fead733ae041353587f224a1476e1dd31e62d39b8",
+      "git_blob_sha1": "d0a56f6d050f6542860bc26ea87c880e1dba6d11",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/creatures/combat/combat.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/combat/combat.cpp",
+      "status": 200,
+      "bytes": 95855,
+      "sha256": "c57a9cdf3d68f7d82c5cb3220a4a603e76c3992d5517a654bb01814c68f80889",
+      "git_blob_sha1": "ec7a7ceebea67280ab8b2c77ab9a527e3a9f9aea",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/creatures/creature.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/creature.cpp",
+      "status": 200,
+      "bytes": 64257,
+      "sha256": "f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683",
+      "git_blob_sha1": "89a4af117d4de4e9373ddcb96c2513006c22c6ab",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/creatures/monsters/monsters.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/monsters/monsters.cpp",
+      "status": 200,
+      "bytes": 13441,
+      "sha256": "77096a723113e896b7d90d2615450cec9c61acf22f5d36f1d6eed3592aaa5512",
+      "git_blob_sha1": "13512c48d1258b0cb7a1875e26ef60783eb53389",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/creatures/monsters/monsters.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/monsters/monsters.hpp",
+      "status": 200,
+      "bytes": 7570,
+      "sha256": "ba4b06827d1e88dd40eeb44a832e90b4ae18ad9108879a8aa997cb7702d7e022",
+      "git_blob_sha1": "74cf29a519015932002d149c4bb568bd131f1c71",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/game/game.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/game/game.cpp",
+      "status": 200,
+      "bytes": 430896,
+      "sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+      "git_blob_sha1": "40a667ac7c28cff9a04324cca18575cebc92f13f",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/monster/event_creatures/grynch_clan_goblin.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/event_creatures/grynch_clan_goblin.lua",
+      "status": 200,
+      "bytes": 5369,
+      "sha256": "ed52bf43106af724d9f78724c9aa4c2f15a67dafb68f3a6252e147860c04241c",
+      "git_blob_sha1": "d13e2a3d487ee0cdc71702def3e7be9774f62d05",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/raids/raids.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/raids/raids.xml",
+      "status": 200,
+      "bytes": 254,
+      "sha256": "9594936b8897993d6e01856bd99bfced5ba1c72fcaccc0dce044063a2fd0d6a3",
+      "git_blob_sha1": "33f9b2824e6425efc4db576e5bcb9214c8e7e99a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/monster/event_creatures/grynch_clan_goblin.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/event_creatures/grynch_clan_goblin.lua",
+      "status": 200,
+      "bytes": 5394,
+      "sha256": "c2b175c9518d2cb0186704cdfc64e1ef19cae35af5fb3ea1fc74d2f7acdc936f",
+      "git_blob_sha1": "059ee1c72b301efb9f8c6a781286b20a0e428218",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/npc/messenger_of_santa.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/messenger_of_santa.lua",
+      "status": 200,
+      "bytes": 2611,
+      "sha256": "cb91c928e0d5dfd8dbf4cd327667a2456be8bcc57461e226cde3af36260939b1",
+      "git_blob_sha1": "ee88ab0ce8b61c87b3dac2f0d81aee4a358218a1",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/npc/rudolph.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/rudolph.lua",
+      "status": 200,
+      "bytes": 2803,
+      "sha256": "b58ca97a46cb8f128544d9ebca8e6c5e04578b570c39e3d1699fd34e5e215ec8",
+      "git_blob_sha1": "0f6afa55124802265e48831aa6a96590e13e516f",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/raids/raids.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/raids/raids.xml",
+      "status": 200,
+      "bytes": 16275,
+      "sha256": "590841d11807081e7d0a6a39a8e6218b10f8c8932377e5fb87daf13c6958d653",
+      "git_blob_sha1": "6d142e72fcaceb5650fec9c39ab375752a7775e1",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/lib/register_monster_type.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/lib/register_monster_type.lua",
+      "status": 200,
+      "bytes": 31814,
+      "sha256": "0c3957278446eab9f7d5f6c921bffa13d877fae09f409f7ea3c21aabd0729b38",
+      "git_blob_sha1": "d8a43ca3d14661bb6527591f94c585a64a925203",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/creatures/combat/combat.hpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/combat/combat.hpp",
+      "status": 200,
+      "bytes": 14916,
+      "sha256": "3718c1336fe831550ac9859e5859394e2edeb2588da0250502489af73ed1ef43",
+      "git_blob_sha1": "e9b500e7d4acf031e7ce749fff10a2ff0752593b",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/creatures/creatures_definitions.hpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/creatures_definitions.hpp",
+      "status": 200,
+      "bytes": 49258,
+      "sha256": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94",
+      "git_blob_sha1": "fc4ae0cf45a56ee7c363b0f452acfb14cbd3c63a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/creatures/players/player.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/player.cpp",
+      "status": 200,
+      "bytes": 406324,
+      "sha256": "1252ef7d27c7f77f5aaaadffdf9f85bb0820bb53beb67f2d900a42dcb187dd85",
+      "git_blob_sha1": "0cad0f7c4560bc6ede267756ff50b8568e266125",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/lua/functions/creatures/monster/monster_functions.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/functions/creatures/monster/monster_functions.cpp",
+      "status": 200,
+      "bytes": 30791,
+      "sha256": "2e612c96ff958861a064475288542d39e858e9007d38dd7beeeddb243af6c54e",
+      "git_blob_sha1": "4e6c50984ee2e5881f9a55aa15d82cd42da9979c",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/lua/functions/creatures/monster/monster_spell_functions.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/functions/creatures/monster/monster_spell_functions.cpp",
+      "status": 200,
+      "bytes": 12232,
+      "sha256": "3b6255fddd3616791c12b41f6d8066e541f85bcaa31e774c030344c8559bebc3",
+      "git_blob_sha1": "3f94a55335138518bb04edaa261c701099742e55",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/utils/const.hpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/utils/const.hpp",
+      "status": 200,
+      "bytes": 3550,
+      "sha256": "f5e1c58e271c640bf9732f7043c624c3aa855923b5d0c7159d3abf08de6e2a6f",
+      "git_blob_sha1": "c29ff0e93b301074d0d9dfa56bcdf73c8708590f",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-canary/raids/raids.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-canary/raids/raids.xml",
+      "status": 200,
+      "bytes": 129,
+      "sha256": "5b09c902f2fcdad87580651e690c357534b8d4178ef48455e549fad92a222f66",
+      "git_blob_sha1": "7852b0fe098657a2d2ec42ae150a169853041e7e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/monster/event_creatures/grynch_clan_goblin.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/monster/event_creatures/grynch_clan_goblin.lua",
+      "status": 200,
+      "bytes": 5394,
+      "sha256": "c2b175c9518d2cb0186704cdfc64e1ef19cae35af5fb3ea1fc74d2f7acdc936f",
+      "git_blob_sha1": "059ee1c72b301efb9f8c6a781286b20a0e428218",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/npc/messenger_of_santa.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/messenger_of_santa.lua",
+      "status": 200,
+      "bytes": 2568,
+      "sha256": "eb98a2e9ab43320c58058ac6737be92e717a2795a27726806de16aba92e7be3c",
+      "git_blob_sha1": "5f06f42e556b68c76ec62c2bc1f64745e9539c0e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/npc/rudolph.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rudolph.lua",
+      "status": 200,
+      "bytes": 2760,
+      "sha256": "7148fa8678402cf48600b7d3f59aa93bc0102bb88835929cde1216a0d9443ae8",
+      "git_blob_sha1": "e6acd2921e9cfe5c079fb618dc3df44e91b4985d",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/raids/raids.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/raids/raids.xml",
+      "status": 200,
+      "bytes": 5787,
+      "sha256": "a1f4e7d049c942e976a1c175b0e63b86f38d07f65fe025e921c6a16883b9a49b",
+      "git_blob_sha1": "51aae3a0165f57b5e80c8df60651cc6161bbe555",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/scripts/lib/register_monster_type.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/lib/register_monster_type.lua",
+      "status": 200,
+      "bytes": 30603,
+      "sha256": "42165d6a26189c0c8b8631011f061f8a90ec2534a33404af4cc93e1ce011a187",
+      "git_blob_sha1": "6bb42593a2e529e25bb1e5b7df21a288a64ffa33",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/creatures/combat/combat.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/combat/combat.hpp",
+      "status": 200,
+      "bytes": 16320,
+      "sha256": "3f1a109f59b9a81b09afb292049186a07cdb74c393caf967664407b454173ea3",
+      "git_blob_sha1": "125390ed1a35cf804f5b31dbec61bcca346275c2",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/creatures/creatures_definitions.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/creatures_definitions.hpp",
+      "status": 200,
+      "bytes": 48887,
+      "sha256": "54f0a5bcdc10e33d8850300c5c5022eb7fe8b4549394407482c57245bdab3e33",
+      "git_blob_sha1": "c8f64483241e0bb7bcca4e1768fda4c0ca386c56",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/creatures/players/player.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/player.cpp",
+      "status": 200,
+      "bytes": 378350,
+      "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+      "git_blob_sha1": "d1b12e93fdf34598af61c7f69adceac9d977e819",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/lua/functions/creatures/monster/monster_functions.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/functions/creatures/monster/monster_functions.cpp",
+      "status": 200,
+      "bytes": 29447,
+      "sha256": "b4e235dea6a9b904739ed03dec404539ea4dfa717adc6bfb1e0f8fd4420d3d35",
+      "git_blob_sha1": "bba3c32a396e9cca3292b2017eb6c76fcef56889",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/lua/functions/creatures/monster/monster_spell_functions.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/functions/creatures/monster/monster_spell_functions.cpp",
+      "status": 200,
+      "bytes": 12021,
+      "sha256": "799a651b9ded6f9ee3dc6e24c5ac4675140724cc94239a318b41d77c9835bb23",
+      "git_blob_sha1": "701e98fd87322bdec9c3c002ab4b63aff7157596",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/utils/const.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/utils/const.hpp",
+      "status": 200,
+      "bytes": 3432,
+      "sha256": "054253324a9535160c6c849deb1364217c3b958e7ec9f911392ee25dac260914",
+      "git_blob_sha1": "516b095599bc64cd39ed07208411f57478832488",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "wiki-cake-parse",
+      "url": "https://tibia.fandom.com/api.php?action=parse&page=Cake_Golem&prop=wikitext&format=json",
+      "status": 402
+    },
+    {
+      "key": "crystal:CMakeLists.txt",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/CMakeLists.txt",
+      "status": 200,
+      "bytes": 4020,
+      "sha256": "edfb170cfc04f2a1729c0fa14ece55b90f1b236c55f722fab13473276a42b477",
+      "git_blob_sha1": "533c278fd42043b82fe00045f4d929a9c3f27927",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:vcpkg.json",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/vcpkg.json",
+      "status": 200,
+      "bytes": 753,
+      "sha256": "9b4582d1cc6f5849487ae035da0ea17ca759a7f0dbad03977ac08dc57e8db384",
+      "git_blob_sha1": "41107a95a62d130a386ba6ef5a4e01e20ed4f3d6",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:cmake/modules/FindLuaJIT.cmake",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/cmake/modules/FindLuaJIT.cmake",
+      "status": 200,
+      "bytes": 1738,
+      "sha256": "952382eac06f7b8ec0745c29b186488f5b3552c6b01ef07069be22978d8d277a",
+      "git_blob_sha1": "d5a5c74f82a82f39fafa92c22e6bba88b2ecb094",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/lua/scripts/lua_environment.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/scripts/lua_environment.cpp",
+      "status": 200,
+      "bytes": 4943,
+      "sha256": "10448091c0f099fede2f84c268933b711f253c398a95aefeece4b216ae6201c5",
+      "git_blob_sha1": "163771c85c19201e93e2aeeb3c3ab75ff90b269b",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/lua/functions/lua_functions_loader.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/functions/lua_functions_loader.cpp",
+      "status": 200,
+      "bytes": 23910,
+      "sha256": "82ad6174261b289c3f82618ea71ce308ab4b52c190dbc6b7e3f9f635353f6dc6",
+      "git_blob_sha1": "be87e5f65e98d56cfc5ff49c9d62fda8ce19f2cf",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/global.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/global.lua",
+      "status": 200,
+      "bytes": 5859,
+      "sha256": "6949be337ff3e7607af1141780b089083058146e8b5b268748482fb526311d5b",
+      "git_blob_sha1": "e45ab68dc085126dc2825e78a104e01e20aea801",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/lua/scripts/script_environment.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/scripts/script_environment.cpp",
+      "status": 200,
+      "bytes": 4854,
+      "sha256": "9a005447a513567b10c4d6e80c6d4a30e7c1c98e917540b7c520d04dc6c1cafc",
+      "git_blob_sha1": "9c28fd8cfbab42e53ca8d5e906051c19f07af18d",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/globalevents/raids.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/globalevents/raids.lua",
+      "status": 200,
+      "bytes": 506,
+      "sha256": "19b5036ddb8ef83a5b3bdf243467a4538d3f4caf972400bca9386da3293333cc",
+      "git_blob_sha1": "b6e1053bafb5e974029c8e7fc833dd748d448f46",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:CMakeLists.txt",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/CMakeLists.txt",
+      "status": 200,
+      "bytes": 6922,
+      "sha256": "8a343f82a21c8b59f28b55bcbe7c3907aed2136402ed2d20814b0cef3d006eb2",
+      "git_blob_sha1": "de9c2238df949d4858a44491bf9fff5983f5eb50",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:vcpkg.json",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/vcpkg.json",
+      "status": 200,
+      "bytes": 903,
+      "sha256": "c57c8d94f636e3c39a5b2f20f461ce0997438f2a451da4c8fea232108884ff50",
+      "git_blob_sha1": "e286303da22f02cd86ec9061cc3570011402b4c4",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:cmake/modules/FindLuaJIT.cmake",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/cmake/modules/FindLuaJIT.cmake",
+      "status": 200,
+      "bytes": 2563,
+      "sha256": "bff26a418c0dc1dfe8c952893077c4c8289c6b2f6c3b5fddae4b33f5cd9ec4fc",
+      "git_blob_sha1": "35cb49d3740c8752cc16b9cf48d9ee0518e09c6e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/lua/scripts/lua_environment.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/scripts/lua_environment.cpp",
+      "status": 200,
+      "bytes": 4410,
+      "sha256": "8f2b26184469d9c5cc2d507b5843f22bed9bcd42d653c8ddc8f752a813838165",
+      "git_blob_sha1": "c28c3a77824fc7fc997940921b039a3eeca1a6ce",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/lua/functions/lua_functions_loader.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/functions/lua_functions_loader.cpp",
+      "status": 200,
+      "bytes": 27643,
+      "sha256": "26c3f1aee865301b039b0337c89804b450c1c14257f87660408accadfd7808f8",
+      "git_blob_sha1": "442bc11ccc9c86f3f75c33ab26c583807367920d",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/global.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/global.lua",
+      "status": 200,
+      "bytes": 5608,
+      "sha256": "449b703a6ba45b8ff2daa26ad05d1553454e4707552648308fb4eb6063bdb3c5",
+      "git_blob_sha1": "4811197e96a734be97d2005089e9834c03982b70",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/lua/scripts/script_environment.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/scripts/script_environment.cpp",
+      "status": 200,
+      "bytes": 4314,
+      "sha256": "ea8c699f9459dc345aab00472972477f570cbfa193311f0d926dd8dc7bba7e89",
+      "git_blob_sha1": "b55a11336c9ecaf591f3de2ac443f0f101444a1e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/scripts/globalevents/raids.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/globalevents/raids.lua",
+      "status": 200,
+      "bytes": 552,
+      "sha256": "9f537c03c5241db719f98b11a596ff089cfe3ee3b199c56281d84079e2e0d9c7",
+      "git_blob_sha1": "709baf53bced905c5e860987923bf50c48a74072",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/raids/edron/goblins.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/raids/edron/goblins.xml",
+      "status": 200,
+      "bytes": 435,
+      "sha256": "d6fd02af3b3dc1ea78b45242a2c25e7faac727ea7a54c2b8661665fe2426ebfd",
+      "git_blob_sha1": "8089cf924c88ec22e584e92c63da8d204b2d5c7a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/raids/kazordoon/goblins.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/raids/kazordoon/goblins.xml",
+      "status": 200,
+      "bytes": 739,
+      "sha256": "9ce301a4b7dccc98d3a03853c2a99232902d1afd3a5619ab9e555d1af9f425b1",
+      "git_blob_sha1": "41f1af6cba13fe7a4e59645376ae7e2c53886c22",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:src/lua/functions/core/core_functions.hpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/functions/core/core_functions.hpp",
+      "status": 200,
+      "bytes": 1484,
+      "sha256": "699e20058676781be54cec6a512c6c1ea02d80ede305ca4243de3e8528d5d4f8",
+      "git_blob_sha1": "79d2f6903e07e6acccbe8bc2bb3fbe1a5bd5f788",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/raids/edron/goblins.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/raids/edron/goblins.xml",
+      "status": 200,
+      "bytes": 435,
+      "sha256": "d6fd02af3b3dc1ea78b45242a2c25e7faac727ea7a54c2b8661665fe2426ebfd",
+      "git_blob_sha1": "8089cf924c88ec22e584e92c63da8d204b2d5c7a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/raids/kazordoon/goblins.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/raids/kazordoon/goblins.xml",
+      "status": 200,
+      "bytes": 739,
+      "sha256": "9ce301a4b7dccc98d3a03853c2a99232902d1afd3a5619ab9e555d1af9f425b1",
+      "git_blob_sha1": "41f1af6cba13fe7a4e59645376ae7e2c53886c22",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:src/lua/functions/core/core_functions.hpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/functions/core/core_functions.hpp",
+      "status": 200,
+      "bytes": 944,
+      "sha256": "17560af33f72b26866b186b225fa9450c7e8d0175ec2476f88408f21c385d1b2",
+      "git_blob_sha1": "ff64468e956d2f1c55ee595909bac4cf067e5c06",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/raids/bosses/man_in_the_cave.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/raids/bosses/man_in_the_cave.lua",
+      "status": 200,
+      "bytes": 1435,
+      "sha256": "99a7fd4eebdf29054caac10fbb1cea5c2137e3126248437eddfdfe0a7dfbcadc",
+      "git_blob_sha1": "769e72c3156ce8225dd665c60e018ec4d18040c5",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/raids/bosses/sugar_mommy.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/raids/bosses/sugar_mommy.lua",
+      "status": 200,
+      "bytes": 434,
+      "sha256": "ed14893eab8935bf905ca251b59c77f4cf1d620d7c1235eb5cf4ef5df05a13cd",
+      "git_blob_sha1": "4d7c8d09e076d6aedc214da216455423dfef52f8",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/raids/world_changes/flower_month.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/raids/world_changes/flower_month.lua",
+      "status": 200,
+      "bytes": 1923,
+      "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb",
+      "git_blob_sha1": "17d2123446b08246bec6804353985139be9a9927",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/libs/systems/raids.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/systems/raids.lua",
+      "status": 200,
+      "bytes": 6382,
+      "sha256": "195090b7052c8ec601d1ca17015f4e57509a01f32dd68137ebfa0c648f90326b",
+      "git_blob_sha1": "9cf3039c43c5a7d404a06c5b716a1f8058252b67",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/arachir_the_ancient_one.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/arachir_the_ancient_one.lua",
+      "status": 200,
+      "bytes": 530,
+      "sha256": "c57c547ee87f7caf28e62ba04ba073fe3472c7290c627f30ea864000455efd9c",
+      "git_blob_sha1": "c3eed4ab17d9f5e15432bf796ce10b5f9b5700fa",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/battlemaster_zunzu.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/battlemaster_zunzu.lua",
+      "status": 200,
+      "bytes": 515,
+      "sha256": "35c181e394d28416768df70f975475a4b559fb8b22e35eec2dff6dd47809b56c",
+      "git_blob_sha1": "c07f69e4dd6239e5646898340ccdd26f6b8f18ff",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/diblis_the_fair.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/diblis_the_fair.lua",
+      "status": 200,
+      "bytes": 520,
+      "sha256": "915f1e21b1a75a47e10af63b186e6ec768686bcc9c0608c07450c38eb53201b1",
+      "git_blob_sha1": "a510439bdfcef19a50a945cf741205282d23ea09",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/furyosa.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/furyosa.lua",
+      "status": 200,
+      "bytes": 617,
+      "sha256": "4bf9ef610a1d7073b4f5e1720035582a42f5fb624d37daf1654c756c0a28d3c0",
+      "git_blob_sha1": "083e0b23afa688be81d1e0da66de42db7a28d436",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/hirintror.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/hirintror.lua",
+      "status": 200,
+      "bytes": 523,
+      "sha256": "0040b21fc1910b034ef1607252403afa5752dddc3d40ac1660efd741c3fa81a8",
+      "git_blob_sha1": "a2343d80a3795f0e3bf7ee7e8359de8530367915",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/mawhawk.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/mawhawk.lua",
+      "status": 200,
+      "bytes": 463,
+      "sha256": "0aa504ff1b8611389bd59f1ee0163bbbb617379c83daa9829217d795c32acfbd",
+      "git_blob_sha1": "f71a64eb38043378fabe36ac6d42c7f7efea532a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/sir_valorcrest.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/sir_valorcrest.lua",
+      "status": 200,
+      "bytes": 525,
+      "sha256": "104e28eb142ff2370ee69b1d7be4bcdbff624028936bb73160a3aad7f8a6a544",
+      "git_blob_sha1": "ddb86dc7e57ac3d2766702955e31402c53d3ffda",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/the_old_widow.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/the_old_widow.lua",
+      "status": 200,
+      "bytes": 923,
+      "sha256": "321e2d2c9e8ffad9e43811ebdfb20cabf5ddc6314876d6b44a9451364c06f273",
+      "git_blob_sha1": "ff82c9fca57d699d95ec12364d5d45c6d790e4d1",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/the_pale_count.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/the_pale_count.lua",
+      "status": 200,
+      "bytes": 535,
+      "sha256": "65eff27a037f9f03048a62486046c49d7beaa72eb34ff60a6dbcc08656329a66",
+      "git_blob_sha1": "268636736bd127cd54493e5af53ccc547a11f7c8",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/the_welter.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/the_welter.lua",
+      "status": 200,
+      "bytes": 475,
+      "sha256": "483bfc2d89ce4c5522c24aa6dbd84cff194135f5305c09dcaca793e63d428bbd",
+      "git_blob_sha1": "3daadde51f82b27b0c931ff3d3293ec33641a2eb",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/tyrn.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/tyrn.lua",
+      "status": 200,
+      "bytes": 457,
+      "sha256": "9108346ccdef4f59908520a0f10a744cef4853fe1e04cfeb112e80928a75b663",
+      "git_blob_sha1": "839f462872d81043a090c18085d1928bfc63b669",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/weakened_shlorg.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/weakened_shlorg.lua",
+      "status": 200,
+      "bytes": 533,
+      "sha256": "cb08bb69ce83546e01ee398e747e9bb064bb01d76543609e949e57c5c53ad395",
+      "git_blob_sha1": "78ef336a953279ccdf15816cedb99d5dfd6518ba",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/bosses/white_pale.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/bosses/white_pale.lua",
+      "status": 200,
+      "bytes": 521,
+      "sha256": "68f66745288b6dfac397abd5bce5c1688b393cc442f3ab303fceec05a7499243",
+      "git_blob_sha1": "880660d5c996a67b14c6ddf4666955dac5431425",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/monsters/draptor.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/monsters/draptor.lua",
+      "status": 200,
+      "bytes": 891,
+      "sha256": "1c0ea30d4b56e92cc45018685e3ca6c3aa793d770edc731deb0b980832ed914c",
+      "git_blob_sha1": "002e06ce8de32760f5aee932cead98f65114f07a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/monsters/midnight_panther.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/monsters/midnight_panther.lua",
+      "status": 200,
+      "bytes": 685,
+      "sha256": "6a18da21e0c8a737e41f46b24eb7bd18020ec832dbc8a9ca413a1b513e1c745b",
+      "git_blob_sha1": "d4bb999f8810855f5afa706cf30ed26b581e8ce8",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/monsters/rats.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/monsters/rats.lua",
+      "status": 200,
+      "bytes": 732,
+      "sha256": "14c12f8ec4200ecc637f9a50b1f31ff9b60b32ba1b99310a7b7dbb3260006398",
+      "git_blob_sha1": "11d1a440bb28361f364fda6884ecc204faa5938f",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/monsters/undead_cavebear.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/monsters/undead_cavebear.lua",
+      "status": 200,
+      "bytes": 531,
+      "sha256": "ae20b0f54965c8a5283e7e57792bc242c72ed5cc89966b20f4b2d933bf6a5a6b",
+      "git_blob_sha1": "b86f23b54c3d6e6224655bdf8b344c3e8d0c4e5c",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/monsters/wild_horses.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/monsters/wild_horses.lua",
+      "status": 200,
+      "bytes": 614,
+      "sha256": "454f99d08b0f9c6f43ff2c7ada491cd3d70a267d66468882f2ec8e473c66a9e3",
+      "git_blob_sha1": "b5e6063684e37f6a91bb5f98362c4773c3be0a54",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/monsters/yeti.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/monsters/yeti.lua",
+      "status": 200,
+      "bytes": 783,
+      "sha256": "b851d9dbf16a837509ab6dda12fdd2317f30c645c9e579337511bf0c3300e9ce",
+      "git_blob_sha1": "0161b7eacd2b396d59b97fd3e2ab08c569a68df3",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/thais/rats.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/thais/rats.lua",
+      "status": 200,
+      "bytes": 706,
+      "sha256": "c7d2086ed2e3dbd7b3572867b71330dc4ff2c02879c0f1fe769800ffdaeb426e",
+      "git_blob_sha1": "c63b327462f60e4455fbb5e564d0fa222ef5b738",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/raids/thais/wild_horses.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/raids/thais/wild_horses.lua",
+      "status": 200,
+      "bytes": 614,
+      "sha256": "ebd4533ffccfa528b32dfac9090b626072424d59fa9628e845a9faab6d884e71",
+      "git_blob_sha1": "45ac7a3d262dd917b1a3802ecab289482dc0ef9b",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/libs/systems/raids.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/libs/systems/raids.lua",
+      "status": 200,
+      "bytes": 6726,
+      "sha256": "a8d60451df573ea3a69b63f5cefb3a862b233a2c261fee3cc557e2e9eb6a3be8",
+      "git_blob_sha1": "c0dbe7078b3e6ee832e9f33f305f980453c46870",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/others/functions.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/others/functions.lua",
+      "status": 200,
+      "bytes": 6470,
+      "sha256": "22fe879621fa93f62a90faf52d20a3f63f701475c51e888fac7cc319cbdc9fb2",
+      "git_blob_sha1": "6a1001d84fb32abc240439d9292cc253ee8d5400",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/others/load.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/others/load.lua",
+      "status": 200,
+      "bytes": 58,
+      "sha256": "aede7dbba49ce619c87401729f040393ac41457df02c31554b37eb9f209b1b8b",
+      "git_blob_sha1": "c9051291a63d8b272fb19d481280b41345584791",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/startup.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/startup.lua",
+      "status": 200,
+      "bytes": 106,
+      "sha256": "952048addb167347d3d9a666a79a722c45e6f81bc241fb00666e2aba291e8410",
+      "git_blob_sha1": "5f54dc9b9fb3abf28d7c9de8f948df87f73c6cb6",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/chest.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/chest.lua",
+      "status": 200,
+      "bytes": 13324,
+      "sha256": "cee656392d69feb584cecad13989b63656836facc6b25918ba7bb4c1d0b80836",
+      "git_blob_sha1": "7e897714f9ccaacfd2bc668a09a158c960e831e5",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/corpse.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/corpse.lua",
+      "status": 200,
+      "bytes": 1391,
+      "sha256": "d7f2b9524ef27dda92f3dd778083c574b146d83ec045aa08169f41dafb7b2fc8",
+      "git_blob_sha1": "0efa3f46cae008814aad11a298ac881b3522ae3f",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/create_item.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/create_item.lua",
+      "status": 200,
+      "bytes": 401,
+      "sha256": "d2fb83bc9d6167d1dd8e54efc127e315c466558427bafb610fa7be64abcffc9f",
+      "git_blob_sha1": "2310d4e5a86571b893da726448a7652e75963529",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/door_key.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/door_key.lua",
+      "status": 200,
+      "bytes": 228,
+      "sha256": "a1046fb74aa032f596892a0e90bc3aa6f4272f93656861cfb974074b80cfb14d",
+      "git_blob_sha1": "3118e05b7fc68cf87df977701d7c0cf705353415",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/door_level.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/door_level.lua",
+      "status": 200,
+      "bytes": 2035,
+      "sha256": "a84ac9eba8ccfb586be5d9d6c257f59a9731d3820c81507fd998a8f8aea0dfd2",
+      "git_blob_sha1": "4739b04075395e6530454fb46cd81e1cdb9ea62d",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/door_quest.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/door_quest.lua",
+      "status": 200,
+      "bytes": 1233,
+      "sha256": "b6bbafc2dc8fa54850a3e9965b18bff0adcd44dae557f9835acff52ec9b5940d",
+      "git_blob_sha1": "4da787ce0ec42473d6c7400b34c8c39337ce4a83",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/item.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/item.lua",
+      "status": 200,
+      "bytes": 68651,
+      "sha256": "edafa796ce3731531e5ff4ae7c1d44354860b5fb8434e79bd1054785b0d8d67d",
+      "git_blob_sha1": "4510c37c53cd0d9dc9926485f25ee3bc372a4ef0",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/item_daily_reward.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/item_daily_reward.lua",
+      "status": 200,
+      "bytes": 23,
+      "sha256": "0f8d718a8ab4cd1378cd9da82c0436cc169d1c0c9077196d8c05e2a19f50cbbe",
+      "git_blob_sha1": "9decb4dc89863d18f7b6351f3abda96ec4758bc4",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/item_unmovable.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/item_unmovable.lua",
+      "status": 200,
+      "bytes": 237,
+      "sha256": "083ef3fdc650856405005d425350db9023ba09d3290175483a1db2f6462fda95",
+      "git_blob_sha1": "cd7aa1957421eee1d8ed452369f8ffe2c952c36e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/lever.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/lever.lua",
+      "status": 200,
+      "bytes": 452,
+      "sha256": "54b53449803ebf38065e04252c163a62e0c15cbe864935dea904c7e839da8f50",
+      "git_blob_sha1": "2fb9e3b2b093cfcb69bf6002da2d812d75e8ad3e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/load.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/load.lua",
+      "status": 200,
+      "bytes": 936,
+      "sha256": "3d6e75544c91e3d5897e0133b630ce8be3eb5a953999758195a52b011a62ee6b",
+      "git_blob_sha1": "901dd2fe94006cb63968bb73858bd8a389f46ba4",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/storage_keys_update.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/storage_keys_update.lua",
+      "status": 200,
+      "bytes": 11687,
+      "sha256": "a44b81bccddd2103b6516257bd4113bb8ca7351b8f68b2509a372c740d915323",
+      "git_blob_sha1": "8b4eab2d4de187112f606c3b5168b5c2b24c27e2",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/teleport.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/teleport.lua",
+      "status": 200,
+      "bytes": 1239,
+      "sha256": "a74a263d6969d152dc92407dbe561f834035d9c4edc772bf4d706a82f3dd868b",
+      "git_blob_sha1": "66fa77be1455662eeccbeb3122ccbcdb6aa03966",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/teleport_item.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/teleport_item.lua",
+      "status": 200,
+      "bytes": 1949,
+      "sha256": "45b1e8b4a198bf00af3598aa9bee8c826a99a42e09caab6862da0931a0a75477",
+      "git_blob_sha1": "9ba767e8beccc04f5cd0f3982ebe8a637ef75211",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/tile.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/tile.lua",
+      "status": 200,
+      "bytes": 1437,
+      "sha256": "f3c9ff2f8dfb225ad7b598bac484351a210a782d75ceaa46d1370f595863bffc",
+      "git_blob_sha1": "3a46a6317651b15ff9c95c960f3ab368564151e8",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/tile_pick.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/tile_pick.lua",
+      "status": 200,
+      "bytes": 895,
+      "sha256": "e8bf19d1710e505a32c69651af84b275c941c155ca4fbad9e39bb300e1efc5b3",
+      "git_blob_sha1": "f208306ed30d45cd00304cf863a910ceff8f43ea",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-crystal/startup/tables/writeable.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/startup/tables/writeable.lua",
+      "status": 200,
+      "bytes": 2011,
+      "sha256": "85d5f3d0730f34d6c6af2c94b35e7288be5b2dd028021e55fa41ae8d166c8f0d",
+      "git_blob_sha1": "451a92abafc702f10e8c8ac69382322af82cd647",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/globalevents/dawnport_magic_effect.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/dawnport_magic_effect.lua",
+      "status": 200,
+      "bytes": 579,
+      "sha256": "8fe5128abc327b3582369dd14db4a69f8ae3d3dd7c9680a40a024abba0b4c9b2",
+      "git_blob_sha1": "d2cafef85ff04ce9acde4b58b97d03091bb5f1cc",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/globalevents/others/check_mount.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/others/check_mount.lua",
+      "status": 200,
+      "bytes": 918,
+      "sha256": "7a811588ac947fda360b0b0ce79b24391b26dd5aeef2c27ea35fbba32a1a9df8",
+      "git_blob_sha1": "ba02d93701b4bca6d6d9d2019dc254320e81af78",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/globalevents/others/horse_station.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/others/horse_station.lua",
+      "status": 200,
+      "bytes": 2062,
+      "sha256": "0d6615155766a3ccd21a5ba8519a687dcca1ff5314ed57d07600dbe021c863f0",
+      "git_blob_sha1": "0368a37794eefc18f2800c863d3dac4745489b8e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/globalevents/others/map_attributes_loader.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/others/map_attributes_loader.lua",
+      "status": 200,
+      "bytes": 2220,
+      "sha256": "295756ff8740c2ce077edb5c26820fd49289acb35bd2bf9d1008c3736157fa3a",
+      "git_blob_sha1": "bc49ad7b68ea8ede6de61de0b4e14c1ea7732639",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+      "status": 200,
+      "bytes": 1638,
+      "sha256": "631b28ccc0120d2f8d9d74c1f9540b40989065b6785d7d4331f495389c92e07b",
+      "git_blob_sha1": "6927277b292b1d41da6c27523c2bf7a32f64d68d",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/globalevents/spawn/rashid.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/spawn/rashid.lua",
+      "status": 200,
+      "bytes": 2345,
+      "sha256": "77c696b75f7027c3f4120e5392874ce0809495c3c425ba4a005bff3521a546b8",
+      "git_blob_sha1": "78fd80d874e9ddfadcc9c489e5fffad2ded860e8",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/globalevents/update.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/update.lua",
+      "status": 200,
+      "bytes": 757,
+      "sha256": "dc77c3bce124c10316ab6c84d679be76a0d39a4ee1598b1b5375ff4376c393a7",
+      "git_blob_sha1": "057360c4dc5fa68ebb45bf6b06896853eb149f19",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/globalevents/vip/online_coins.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/vip/online_coins.lua",
+      "status": 200,
+      "bytes": 1806,
+      "sha256": "1c9962b566043441568048714f3dba8a9369471c6310b5168f9f48ccd775e3e0",
+      "git_blob_sha1": "f249752397d3591571ee125903237f82550b027f",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/globalevents/vip/online_tokens.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/vip/online_tokens.lua",
+      "status": 200,
+      "bytes": 1793,
+      "sha256": "73014e5ea2345e670626ce8fae0a57b59dfdea2cc0321a48b1f103bf3b7264e4",
+      "git_blob_sha1": "656039dfe66c1e026c7faad3d95056b859e3ba02",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/world_changes/fury_gates.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/world_changes/fury_gates.lua",
+      "status": 200,
+      "bytes": 2819,
+      "sha256": "e8b1aa7185c34a52e11d97a0b5b7f74b170a5ab71129c7c1ad7b69a72122f37a",
+      "git_blob_sha1": "96700d0971acd65efb92e6b50b562046e116aadd",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/world_changes/grimvale_respawn_event.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/world_changes/grimvale_respawn_event.lua",
+      "status": 200,
+      "bytes": 1279,
+      "sha256": "e81002f0623fbab97322562a688a8759efa6e98806a2d90667f97c6d4895ecb9",
+      "git_blob_sha1": "b1cea5504e9aef639a9258bb7a87e9b98590f70c",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/world_changes/nightmare_isles.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/world_changes/nightmare_isles.lua",
+      "status": 200,
+      "bytes": 3851,
+      "sha256": "ca41506fb7949527c1254a0a9fca146f455a982b912cead5545fa02acddc5c65",
+      "git_blob_sha1": "4d35a0dde12eb7aa1670d75504fac73e986aa638",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/world_changes/oriental_trader.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/world_changes/oriental_trader.lua",
+      "status": 200,
+      "bytes": 2092,
+      "sha256": "c3209fbcb1edff3facf4e751d43c89d3b66158ef731994992b1d3d70d28fa5cf",
+      "git_blob_sha1": "4b28c2484461786ce2b1b4d5b1cc0e38ffd041c7",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/world_changes/spawns_npc_by_time.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/world_changes/spawns_npc_by_time.lua",
+      "status": 200,
+      "bytes": 5563,
+      "sha256": "c658a767d92ca6f23f893e0107b1466bac961f069847dac79ffcca7dd5903349",
+      "git_blob_sha1": "72cdf800a33c0d80613fc27085102c42e27828e7",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/world_changes/thawing.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/world_changes/thawing.lua",
+      "status": 200,
+      "bytes": 1288,
+      "sha256": "d4cd1c58e91c2358b2846d73f30253f5514292347a50cca9103859f58688699a",
+      "git_blob_sha1": "ddc7d9fb24cd059a84d5e01c1ba461848ca3df63",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/scripts/world_changes/their_masters_voice.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/world_changes/their_masters_voice.lua",
+      "status": 200,
+      "bytes": 563,
+      "sha256": "1b40d4f37635a24dfe4077f6aa2393dd610fb1811473e59336f123d2976f2500",
+      "git_blob_sha1": "af1354dae6cf698a17b00415b8f86d7b13b70362",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/others/functions.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/others/functions.lua",
+      "status": 200,
+      "bytes": 13373,
+      "sha256": "897c4ea5572c6adef1d2b300fd75c141910d608a093ca15c3d3bf65fcf56826c",
+      "git_blob_sha1": "0fdc9b91ef9b9205a6337478a9eecbcb41c5fb0d",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/others/load.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/others/load.lua",
+      "status": 200,
+      "bytes": 58,
+      "sha256": "aede7dbba49ce619c87401729f040393ac41457df02c31554b37eb9f209b1b8b",
+      "git_blob_sha1": "c9051291a63d8b272fb19d481280b41345584791",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/startup.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/startup.lua",
+      "status": 200,
+      "bytes": 106,
+      "sha256": "952048addb167347d3d9a666a79a722c45e6f81bc241fb00666e2aba291e8410",
+      "git_blob_sha1": "5f54dc9b9fb3abf28d7c9de8f948df87f73c6cb6",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/chest.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
+      "status": 200,
+      "bytes": 93109,
+      "sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+      "git_blob_sha1": "7b9f823542f9b8d5f99fb6960abe070324c89b8e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/container_books_1.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_1.lua",
+      "status": 200,
+      "bytes": 400523,
+      "sha256": "2ac7dd366f059c1efeb0d47590015628e5e5a8e2f7dee4bfde7502cc8eae6f90",
+      "git_blob_sha1": "d93503fb8fc6e38c77a61855cee511d83946d471",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/container_books_2.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_2.lua",
+      "status": 200,
+      "bytes": 538936,
+      "sha256": "5ca0d041c3e8056b4412ae4f3cfe6d496e3b7f90e57cafb602d36458478dc81a",
+      "git_blob_sha1": "5b75cedded96301bc807538e27cf2c5c44423681",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/container_books_3.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_3.lua",
+      "status": 200,
+      "bytes": 233986,
+      "sha256": "a57dc2174e14c4059fe2bc7704db1e62913262fc9b1caa837268acdcfdf7a8b0",
+      "git_blob_sha1": "9f872ca6faefff9e4f96831cd424e8c96556793c",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/container_books_4.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_4.lua",
+      "status": 200,
+      "bytes": 68478,
+      "sha256": "7fe4af869def2449b1ce96bb4829745ef68b5cbb71729afa7701a0de021c5916",
+      "git_blob_sha1": "8a1eaa48f9a08393772a0775031840fb237ee4b9",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/container_misc.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_misc.lua",
+      "status": 200,
+      "bytes": 45124,
+      "sha256": "da146858a7bfbef47f601e02fc2b621c5e639ec2d096a6831446800277129bca",
+      "git_blob_sha1": "fbb988e2f836cc3b5a2ca611e2dbe38ee0b28bef",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/container_quest.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_quest.lua",
+      "status": 200,
+      "bytes": 24346,
+      "sha256": "c18f0caf3d2c9f1d0c084722dfcb55523dbb1811166863a4f72d052bd2ae24b9",
+      "git_blob_sha1": "78bc8ab7617f966f5b1c511c87543453cc5d493b",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/corpse.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/corpse.lua",
+      "status": 200,
+      "bytes": 3109,
+      "sha256": "51373610aa6f9d73b6e5a3496db2e70d93b3d3b914d54d84fcbfb08e6c844039",
+      "git_blob_sha1": "dc19373494f7b06943dcb2e02972cd8e8e5d48b2",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/create_item.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/create_item.lua",
+      "status": 200,
+      "bytes": 6283,
+      "sha256": "587ef236d016bed8505c9ccde65a2acf9ea3de8c37c477dd8bd550d07f0f818f",
+      "git_blob_sha1": "0cc2fba2941bfea00ff0514239bf006001099861",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/door_key.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_key.lua",
+      "status": 200,
+      "bytes": 6782,
+      "sha256": "e5368703030072fcb400980274408ee2cbcfa51a6bf7d435da3dc2c9fcd2438b",
+      "git_blob_sha1": "61414780c50287cb7982e4286eafa1224b7e2b65",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/door_level.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_level.lua",
+      "status": 200,
+      "bytes": 5076,
+      "sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+      "git_blob_sha1": "0d1a38cf3b0309d81ce8a08c6fc495df74c86444",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/door_quest.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_quest.lua",
+      "status": 200,
+      "bytes": 32820,
+      "sha256": "aaa483a7cc4b643585b92acfd407538c74986e0d6f9f12022db09bf419b870ce",
+      "git_blob_sha1": "d9bbe974804ad7555ff35f400f3b1e62a3d5ddf2",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/item.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item.lua",
+      "status": 200,
+      "bytes": 121248,
+      "sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+      "git_blob_sha1": "5d5323401d243df8416a38aba33c3d6e738b2d1a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/item_daily_reward.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item_daily_reward.lua",
+      "status": 200,
+      "bytes": 23,
+      "sha256": "0f8d718a8ab4cd1378cd9da82c0436cc169d1c0c9077196d8c05e2a19f50cbbe",
+      "git_blob_sha1": "9decb4dc89863d18f7b6351f3abda96ec4758bc4",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/item_unmovable.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item_unmovable.lua",
+      "status": 200,
+      "bytes": 18184,
+      "sha256": "eac88e62f8d2fd3eed427ffa3e39c35cf5273f34d6456687f4dd2f90a919e30c",
+      "git_blob_sha1": "00e20eb1b5aec2faa4bbe268f9aa8636abc29dbc",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/lever.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/lever.lua",
+      "status": 200,
+      "bytes": 23980,
+      "sha256": "41e560708ca123dd7aba34b1e54adf73b843e61fe3eb72fa33ad380a92282a7e",
+      "git_blob_sha1": "31643d019244bd228c0355c9aed8522bce45aaf0",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/load.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/load.lua",
+      "status": 200,
+      "bytes": 1327,
+      "sha256": "0b04b56a8a3843f06dbceb6494ecdf585249f4b41c9889f3c7370ab4ae89dc17",
+      "git_blob_sha1": "fa6202b548fed9631e8d24acf0ccc4be07de9de9",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/storage_keys_update.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/storage_keys_update.lua",
+      "status": 200,
+      "bytes": 11687,
+      "sha256": "a44b81bccddd2103b6516257bd4113bb8ca7351b8f68b2509a372c740d915323",
+      "git_blob_sha1": "8b4eab2d4de187112f606c3b5168b5c2b24c27e2",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/teleport.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport.lua",
+      "status": 200,
+      "bytes": 18837,
+      "sha256": "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e",
+      "git_blob_sha1": "cfbfc04755c4cfd2665aa1d963bcc7416e23707d",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/teleport_item.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport_item.lua",
+      "status": 200,
+      "bytes": 3350,
+      "sha256": "976f198758fa88d337a1f7fb06a9740cc2a4f57920ae09a8cac00b6a3c5a5006",
+      "git_blob_sha1": "9341960605fc6b61956a209bd96c9ed095505438",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/tile.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/tile.lua",
+      "status": 200,
+      "bytes": 59827,
+      "sha256": "f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7",
+      "git_blob_sha1": "e8780ad80e10d09eba2db1138e1cac4ba1d4b67b",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/tile_pick.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/tile_pick.lua",
+      "status": 200,
+      "bytes": 1790,
+      "sha256": "b4839e13c284d32724d0b304bde18bb0d5d9924f6dd3cbd27c884e76c69a48a6",
+      "git_blob_sha1": "9b7f1cb43878b2f34a5a99efc77f14a784799647",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/startup/tables/writeable.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/writeable.lua",
+      "status": 200,
+      "bytes": 71442,
+      "sha256": "f13056b992356031c6a593ac3f28702959ba3d7c9bd8f2bf7a50e7d4dfd5b027",
+      "git_blob_sha1": "eb256895b3c761f4c51f01fa0eb2c53143302b4a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/libs/tables/doors.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/tables/doors.lua",
+      "status": 200,
+      "bytes": 14753,
+      "sha256": "6b22b5c4c213ef5a3f18fab43ea61acca7be227c06eb99bbc25d1a8d3e75112c",
+      "git_blob_sha1": "9719c547c43049970440914e8a3f1fb3b2f61d90",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/libs/tables/load.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/tables/load.lua",
+      "status": 200,
+      "bytes": 129,
+      "sha256": "93258b045640d7030d554c12baedaf216e713d44ea3c4a6549cb426209b2d6a2",
+      "git_blob_sha1": "4651019d840e2d323522ad6de31150ddec1713ea",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/libs/tables/windows.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/tables/windows.lua",
+      "status": 200,
+      "bytes": 4222,
+      "sha256": "318cbbc884da29cf3038e75833f263451ed9f8592ad18d6ce1140333763cd90a",
+      "git_blob_sha1": "c640355b4e2b6e6faae7aa17805d6e1502985f1a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/globalevents/clean.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/globalevents/clean.lua",
+      "status": 200,
+      "bytes": 550,
+      "sha256": "45169d1e0ce6e4fb4cd44abe271d1d094db68766ad03b385d17a22cb6f0fd84a",
+      "git_blob_sha1": "080fa6699622f2972cc971c6ed987f1df99bc4bb",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/globalevents/encounters.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/globalevents/encounters.lua",
+      "status": 200,
+      "bytes": 368,
+      "sha256": "75f4927dd4530f8200cd33e2ef43424ddbe08df1369e190fcb675f7f01f073cd",
+      "git_blob_sha1": "7fb46c73b23e065f83cb9e15089ddeaf60684e77",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/globalevents/global_server_save.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/globalevents/global_server_save.lua",
+      "status": 200,
+      "bytes": 2294,
+      "sha256": "195ad0634436070a6aac2f37be8051f13f4e507cf950ce88930fae547ae19e3c",
+      "git_blob_sha1": "da432e23121a119553cfbdde1538682208ea1a3b",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/globalevents/hireling_save.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/globalevents/hireling_save.lua",
+      "status": 200,
+      "bytes": 144,
+      "sha256": "808e4b83b2c81590a21dbca7a62f618e191936a0f738858ac75f386f7c341ade",
+      "git_blob_sha1": "9f975ec920753caf5200151d5e5f1484b81c8680",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/globalevents/online_record.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/globalevents/online_record.lua",
+      "status": 200,
+      "bytes": 246,
+      "sha256": "edd3ee1b07335996b1ff2f58052b5bd0b4bb81e00ccf012fbcfc235f3f1b4d6b",
+      "git_blob_sha1": "506fd328ac1ad31172d354d1cd1bf5d3d0d32b9e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/globalevents/save_interval.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/globalevents/save_interval.lua",
+      "status": 200,
+      "bytes": 1391,
+      "sha256": "4f32aa3591e627b5e315a7bf6044bb291cddd50611527d1747427d827ba4902a",
+      "git_blob_sha1": "6e24bc53edcc7bd59d593824a4cc13ad13e8e53a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/globalevents/server_initialization.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/globalevents/server_initialization.lua",
+      "status": 200,
+      "bytes": 6744,
+      "sha256": "2c78c050bade514766b6e297ce6bdc8a7f53989f81468a6e0aed8e4156b4c0a7",
+      "git_blob_sha1": "b30ea8914d63c526e10f45231222cc49f8bc5a67",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/scripts/globalevents/update_guild_war_status.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/globalevents/update_guild_war_status.lua",
+      "status": 200,
+      "bytes": 416,
+      "sha256": "40d844a2cd72bac377cdb6f3e036af6515f3ef21de0f37f994bfb0a57ed3ed86",
+      "git_blob_sha1": "c80a8c3d714398a970e17f5b69e73b0f8f94004b",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/world/world-npc.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-npc.xml",
+      "status": 200,
+      "bytes": 145534,
+      "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+      "git_blob_sha1": "3f52fd27aceceeb66590702701edb4dbe5faf940",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/globalevents/dawnport_magic_effect.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/globalevents/dawnport_magic_effect.lua",
+      "status": 200,
+      "bytes": 579,
+      "sha256": "fda8a503fa869e8ae6348e2305bad4166e08c832773927cba0924619114ce052",
+      "git_blob_sha1": "3f758cef987057f8fe098b02d8ee73e9c1b30359",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/globalevents/others/check_mount.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/globalevents/others/check_mount.lua",
+      "status": 200,
+      "bytes": 959,
+      "sha256": "14d10a6381cd02648b17cd0716c86079b43364fe0abaeff9511884f31db0e6ea",
+      "git_blob_sha1": "497ec1a0415753af782369b6db494d40299091d4",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/globalevents/others/map_attributes_loader.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/globalevents/others/map_attributes_loader.lua",
+      "status": 200,
+      "bytes": 1588,
+      "sha256": "33b2a88c0a5794f3fe4ce20050072b2c64dce95b8f03dfbff038a6abfec4f73c",
+      "git_blob_sha1": "af5b0e80fd794697233851fd671e451acffdcd38",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/globalevents/spawn/rashid.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/globalevents/spawn/rashid.lua",
+      "status": 200,
+      "bytes": 2345,
+      "sha256": "77c696b75f7027c3f4120e5392874ce0809495c3c425ba4a005bff3521a546b8",
+      "git_blob_sha1": "78fd80d874e9ddfadcc9c489e5fffad2ded860e8",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/globalevents/update.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/globalevents/update.lua",
+      "status": 200,
+      "bytes": 757,
+      "sha256": "dc77c3bce124c10316ab6c84d679be76a0d39a4ee1598b1b5375ff4376c393a7",
+      "git_blob_sha1": "057360c4dc5fa68ebb45bf6b06896853eb149f19",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/globalevents/vip/online_coins.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/globalevents/vip/online_coins.lua",
+      "status": 200,
+      "bytes": 1806,
+      "sha256": "1c9962b566043441568048714f3dba8a9369471c6310b5168f9f48ccd775e3e0",
+      "git_blob_sha1": "f249752397d3591571ee125903237f82550b027f",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/globalevents/vip/online_tokens.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/globalevents/vip/online_tokens.lua",
+      "status": 200,
+      "bytes": 1793,
+      "sha256": "73014e5ea2345e670626ce8fae0a57b59dfdea2cc0321a48b1f103bf3b7264e4",
+      "git_blob_sha1": "656039dfe66c1e026c7faad3d95056b859e3ba02",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/world_changes/fury_gates.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/world_changes/fury_gates.lua",
+      "status": 200,
+      "bytes": 2819,
+      "sha256": "e8b1aa7185c34a52e11d97a0b5b7f74b170a5ab71129c7c1ad7b69a72122f37a",
+      "git_blob_sha1": "96700d0971acd65efb92e6b50b562046e116aadd",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/world_changes/grimvale_respawn_event.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/world_changes/grimvale_respawn_event.lua",
+      "status": 200,
+      "bytes": 1279,
+      "sha256": "e81002f0623fbab97322562a688a8759efa6e98806a2d90667f97c6d4895ecb9",
+      "git_blob_sha1": "b1cea5504e9aef639a9258bb7a87e9b98590f70c",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/world_changes/nightmare_isles.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/world_changes/nightmare_isles.lua",
+      "status": 200,
+      "bytes": 3851,
+      "sha256": "ca41506fb7949527c1254a0a9fca146f455a982b912cead5545fa02acddc5c65",
+      "git_blob_sha1": "4d35a0dde12eb7aa1670d75504fac73e986aa638",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/world_changes/oriental_trader.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/world_changes/oriental_trader.lua",
+      "status": 200,
+      "bytes": 2092,
+      "sha256": "c3209fbcb1edff3facf4e751d43c89d3b66158ef731994992b1d3d70d28fa5cf",
+      "git_blob_sha1": "4b28c2484461786ce2b1b4d5b1cc0e38ffd041c7",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/world_changes/spawns_npc_by_time.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/world_changes/spawns_npc_by_time.lua",
+      "status": 200,
+      "bytes": 2781,
+      "sha256": "0966cbbf4f44ad2b22d02cef6ef0425b19ae58ee32eca5f2503beaec40fc90f3",
+      "git_blob_sha1": "25bfde4e1f667e4a066e8857bca4c0deef8a73b9",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/scripts/world_changes/their_masters_voice.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/world_changes/their_masters_voice.lua",
+      "status": 200,
+      "bytes": 563,
+      "sha256": "1b40d4f37635a24dfe4077f6aa2393dd610fb1811473e59336f123d2976f2500",
+      "git_blob_sha1": "af1354dae6cf698a17b00415b8f86d7b13b70362",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/others/functions.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/others/functions.lua",
+      "status": 200,
+      "bytes": 6359,
+      "sha256": "ac9e706fe9aaf2614771bc9e5560668475d124f66ce56598ca05b277b7d2d72e",
+      "git_blob_sha1": "362e2a38b97be67b612eaf1d52c0ef3e606472ac",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/others/load.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/others/load.lua",
+      "status": 200,
+      "bytes": 58,
+      "sha256": "aede7dbba49ce619c87401729f040393ac41457df02c31554b37eb9f209b1b8b",
+      "git_blob_sha1": "c9051291a63d8b272fb19d481280b41345584791",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/startup.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/startup.lua",
+      "status": 200,
+      "bytes": 106,
+      "sha256": "952048addb167347d3d9a666a79a722c45e6f81bc241fb00666e2aba291e8410",
+      "git_blob_sha1": "5f54dc9b9fb3abf28d7c9de8f948df87f73c6cb6",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/chest.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/chest.lua",
+      "status": 200,
+      "bytes": 78927,
+      "sha256": "2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda",
+      "git_blob_sha1": "13efcb4d1294ec1ff1ee5e5da18e2eeb3c904c02",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/corpse.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/corpse.lua",
+      "status": 200,
+      "bytes": 1391,
+      "sha256": "d7f2b9524ef27dda92f3dd778083c574b146d83ec045aa08169f41dafb7b2fc8",
+      "git_blob_sha1": "0efa3f46cae008814aad11a298ac881b3522ae3f",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/create_item.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/create_item.lua",
+      "status": 200,
+      "bytes": 401,
+      "sha256": "d2fb83bc9d6167d1dd8e54efc127e315c466558427bafb610fa7be64abcffc9f",
+      "git_blob_sha1": "2310d4e5a86571b893da726448a7652e75963529",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/door_key.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/door_key.lua",
+      "status": 200,
+      "bytes": 5489,
+      "sha256": "882f30c06c7d636b9204b26c9ca2ee2f1cbdd2c97566f9be89139a8372bc175e",
+      "git_blob_sha1": "01d571991ac93bf52e91a84379925688331fc580",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/door_level.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/door_level.lua",
+      "status": 200,
+      "bytes": 2223,
+      "sha256": "fceda5f3ce381324b5c88e7104bdd4f6eba6afec7ab2e5b9e1bcafd646f56bd1",
+      "git_blob_sha1": "4108d0a044eacd296ded8d4b85ca3dba7feadbdc",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/door_quest.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/door_quest.lua",
+      "status": 200,
+      "bytes": 26793,
+      "sha256": "bfcfdf9c66ae540922f5e05aace80106d1f1e2945b1f06ad4a35bf7da14191d1",
+      "git_blob_sha1": "3fee0ec470c44f2e6be825dd48e772ae3c098257",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/item.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/item.lua",
+      "status": 200,
+      "bytes": 75556,
+      "sha256": "e297d9513320e887193578f5f2ce70b9a3b20dd76bb1d3626986419232a03ddb",
+      "git_blob_sha1": "883fe90ce48330875aee7c958f8d65ce69b78769",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/item_daily_reward.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/item_daily_reward.lua",
+      "status": 200,
+      "bytes": 23,
+      "sha256": "0f8d718a8ab4cd1378cd9da82c0436cc169d1c0c9077196d8c05e2a19f50cbbe",
+      "git_blob_sha1": "9decb4dc89863d18f7b6351f3abda96ec4758bc4",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/item_unmovable.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/item_unmovable.lua",
+      "status": 200,
+      "bytes": 237,
+      "sha256": "083ef3fdc650856405005d425350db9023ba09d3290175483a1db2f6462fda95",
+      "git_blob_sha1": "cd7aa1957421eee1d8ed452369f8ffe2c952c36e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/lever.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/lever.lua",
+      "status": 200,
+      "bytes": 18369,
+      "sha256": "d1736a882e067d9eb2e25e8886278c5715ceb93514bdd6e7007d8cb16d71a35a",
+      "git_blob_sha1": "ee7ff7d02044e30e8521ee713860f1d92b456a12",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/load.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/load.lua",
+      "status": 200,
+      "bytes": 936,
+      "sha256": "3d6e75544c91e3d5897e0133b630ce8be3eb5a953999758195a52b011a62ee6b",
+      "git_blob_sha1": "901dd2fe94006cb63968bb73858bd8a389f46ba4",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/storage_keys_update.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/storage_keys_update.lua",
+      "status": 200,
+      "bytes": 11687,
+      "sha256": "a44b81bccddd2103b6516257bd4113bb8ca7351b8f68b2509a372c740d915323",
+      "git_blob_sha1": "8b4eab2d4de187112f606c3b5168b5c2b24c27e2",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/teleport.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/teleport.lua",
+      "status": 200,
+      "bytes": 14683,
+      "sha256": "1a7c16098994647c922098b1a941a48ec56ab7522b6e6dd12b65eb920950ab8b",
+      "git_blob_sha1": "a04d00188b86411ab2db61e3f1588ad295955622",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/teleport_item.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/teleport_item.lua",
+      "status": 200,
+      "bytes": 3350,
+      "sha256": "cd770885411f352b3db4e6d7a294a1b3788078c442bad3263c1b3ba74940a3df",
+      "git_blob_sha1": "c09dd9e22fa39391ad95231f752238acaadbe026",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/tile.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/tile.lua",
+      "status": 200,
+      "bytes": 32487,
+      "sha256": "1b674409e03ab16b868b1aef070f8fa68a7e51e8976c716634e5d4a7b810b74d",
+      "git_blob_sha1": "4a80a8f13356d2f22d560199ae6f83473374c354",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/tile_pick.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/tile_pick.lua",
+      "status": 200,
+      "bytes": 895,
+      "sha256": "e8bf19d1710e505a32c69651af84b275c941c155ca4fbad9e39bb300e1efc5b3",
+      "git_blob_sha1": "f208306ed30d45cd00304cf863a910ceff8f43ea",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/startup/tables/writeable.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/startup/tables/writeable.lua",
+      "status": 200,
+      "bytes": 73233,
+      "sha256": "70e77bf0a03d9c1949602b509428477aa2ec4273e13913a87a903f21ccbe05cf",
+      "git_blob_sha1": "737dec50cb3ee8c3f3b76e6fbb93913622cdcd37",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/libs/tables/doors.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/libs/tables/doors.lua",
+      "status": 200,
+      "bytes": 14316,
+      "sha256": "03e1d4a7a5a2902bd748db9ca963d3947c7a60fb2a53358c999f259e28c7c614",
+      "git_blob_sha1": "2a5e8f4073272c5850f01636caff2625f9cf313a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/libs/tables/load.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/libs/tables/load.lua",
+      "status": 200,
+      "bytes": 129,
+      "sha256": "93258b045640d7030d554c12baedaf216e713d44ea3c4a6549cb426209b2d6a2",
+      "git_blob_sha1": "4651019d840e2d323522ad6de31150ddec1713ea",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/libs/tables/windows.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/libs/tables/windows.lua",
+      "status": 200,
+      "bytes": 4222,
+      "sha256": "318cbbc884da29cf3038e75833f263451ed9f8592ad18d6ce1140333763cd90a",
+      "git_blob_sha1": "c640355b4e2b6e6faae7aa17805d6e1502985f1a",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/scripts/globalevents/encounters.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/globalevents/encounters.lua",
+      "status": 200,
+      "bytes": 368,
+      "sha256": "75f4927dd4530f8200cd33e2ef43424ddbe08df1369e190fcb675f7f01f073cd",
+      "git_blob_sha1": "7fb46c73b23e065f83cb9e15089ddeaf60684e77",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/scripts/globalevents/global_server_save.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/globalevents/global_server_save.lua",
+      "status": 200,
+      "bytes": 2276,
+      "sha256": "76b4148f2df4bf1214ee5e510a3f82039b82e070301b6dbf35093ed6c80f5959",
+      "git_blob_sha1": "693ef24a9a941cf6b580815da51640fbc86da383",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/scripts/globalevents/hireling_save.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/globalevents/hireling_save.lua",
+      "status": 200,
+      "bytes": 144,
+      "sha256": "808e4b83b2c81590a21dbca7a62f618e191936a0f738858ac75f386f7c341ade",
+      "git_blob_sha1": "9f975ec920753caf5200151d5e5f1484b81c8680",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/scripts/globalevents/online_record.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/globalevents/online_record.lua",
+      "status": 200,
+      "bytes": 246,
+      "sha256": "edd3ee1b07335996b1ff2f58052b5bd0b4bb81e00ccf012fbcfc235f3f1b4d6b",
+      "git_blob_sha1": "506fd328ac1ad31172d354d1cd1bf5d3d0d32b9e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/scripts/globalevents/save_interval.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/globalevents/save_interval.lua",
+      "status": 200,
+      "bytes": 1529,
+      "sha256": "2750f2de314131b148d91fa8d536fff2dee4d48ae09d6eb9e4fd017848a5cde4",
+      "git_blob_sha1": "43400719e5462ad099ad96790e2ad4274e898b6b",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/scripts/globalevents/server_initialization.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/globalevents/server_initialization.lua",
+      "status": 200,
+      "bytes": 5321,
+      "sha256": "49dc0353ca59d5a6811ed412b12000f78b772beac6c68693ef66aa3bfd9b4321",
+      "git_blob_sha1": "0542f922a824e76cec4ac1214d51d13e543fcaf3",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/scripts/globalevents/update_guild_war_status.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/globalevents/update_guild_war_status.lua",
+      "status": 200,
+      "bytes": 390,
+      "sha256": "950b4304eefaf8996e0fd6692de08ad18c8fe112036554a76483d8af78e3509e",
+      "git_blob_sha1": "e499d5aa22ef9e0af566de2a8205a8c31e136463",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/world/otservbr-npc.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/world/otservbr-npc.xml",
+      "status": 200,
+      "bytes": 131308,
+      "sha256": "a02d95945d73c1f5c24f9b0446d3f63102d2bfa2d4c2d4a59bb40c1ea3fd2fe9",
+      "git_blob_sha1": "0a72085b7bbdfca73b794e631cc2bab790d8fcef",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+      "status": 404
+    },
+    {
+      "key": "crystal:data-crystal/world/world-npc.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/world/world-npc.xml",
+      "status": 200,
+      "bytes": 14514,
+      "sha256": "4e9c3ce7e21b55e78082ec2502b6c187f5e4b890e36d7c7cb592edfa0f27594e",
+      "git_blob_sha1": "77d06a85be43b6c1ecafbace02f4ca39037fdafd",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/world/annual_events/winterlight_solstice/island-npc.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/annual_events/winterlight_solstice/island-npc.xml",
+      "status": 200,
+      "bytes": 585,
+      "sha256": "2335f7e2097ff12ede5e10d14efc9bbd34ade9be7d4178b2e13362e85b308565",
+      "git_blob_sha1": "d9781e3f7721aaff2713ffb6b76bc1f82a26b393",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data-global/world/custom/global-custom-npc.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/custom/global-custom-npc.xml",
+      "status": 200,
+      "bytes": 2364,
+      "sha256": "3aaf7740399fc615970d5d0c5f9f4a6eaf8fdc74ad7f455f0bfcfb030c1ea8bd",
+      "git_blob_sha1": "643e7e7705a1c3a2b70a7dd4c2a4039321797cc6",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-canary/world/canary-npc.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-canary/world/canary-npc.xml",
+      "status": 200,
+      "bytes": 790,
+      "sha256": "d357a83d07bf31ddf58d20445bfaaa938a50d850a6949b94bc167e43491465c6",
+      "git_blob_sha1": "e4b3ab9517b3ac462c8d0a90d95c0c127873715e",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/world/annual_events/winterlight_solstice/island-npc.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/world/annual_events/winterlight_solstice/island-npc.xml",
+      "status": 200,
+      "bytes": 585,
+      "sha256": "2335f7e2097ff12ede5e10d14efc9bbd34ade9be7d4178b2e13362e85b308565",
+      "git_blob_sha1": "d9781e3f7721aaff2713ffb6b76bc1f82a26b393",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data-otservbr-global/world/custom/otservbr-custom-npc.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/world/custom/otservbr-custom-npc.xml",
+      "status": 200,
+      "bytes": 2364,
+      "sha256": "6196e92cac5301d463f178b38ef60ec5ebbcd991f18cd03b361091c5d29f8f29",
+      "git_blob_sha1": "3597ef592c3d60c1ebfd5634462501aaf867bd8f",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/npclib/npc_system/npc_handler.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/npclib/npc_system/npc_handler.lua",
+      "status": 200,
+      "bytes": 24162,
+      "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+      "git_blob_sha1": "5ac57f68c335e7aa5e2d03ab032ef5f42a5e266d",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/npclib/npc_system/modules.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/npclib/npc_system/modules.lua",
+      "status": 200,
+      "bytes": 19835,
+      "sha256": "13b3fa5e827d592bc8ce6c81e64b41ac2ae528fceac305e7a8e08d566a4cb024",
+      "git_blob_sha1": "ac0fa8d5d9abff50458f6344a66ba828914a8dbe",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/npclib/npc.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/npclib/npc.lua",
+      "status": 200,
+      "bytes": 3345,
+      "sha256": "1c93ea48053cb3697ed3c0acc23c1bdcec7fb6cf8371e3dccf1ddf4aabff91be",
+      "git_blob_sha1": "4a8097ff27fc622d84353e8cee0fcd3bd85f76b5",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "crystal:data/npclib/load.lua",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/npclib/load.lua",
+      "status": 200,
+      "bytes": 362,
+      "sha256": "6bc11ad662207dfad593a89e4808aa09764b8c9f4407aabb9c51ce7053c948a9",
+      "git_blob_sha1": "1246a66141557c3a4d90eeb9fcbb92ae24791ed6",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/npclib/npc_system/npc_handler.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/npclib/npc_system/npc_handler.lua",
+      "status": 200,
+      "bytes": 25106,
+      "sha256": "632be3d5b445ec233d80ed2e60c3cd6bc43fec0691330d35aea10f5a21551f55",
+      "git_blob_sha1": "47820294029e7dbae522a7210cf1274a33105910",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/npclib/npc_system/modules.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/npclib/npc_system/modules.lua",
+      "status": 200,
+      "bytes": 19734,
+      "sha256": "a1b4e1e97a72efedc1a427cddbf6fa7e352c9d8dd3d49f7298167a4550aa29f1",
+      "git_blob_sha1": "40a58c2ca7c74e28c51565604390ad80dcdb30af",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/npclib/npc.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/npclib/npc.lua",
+      "status": 200,
+      "bytes": 3240,
+      "sha256": "b929aa96c66f803bb9f3db99aeb6404d131197b65e8e204a74c0a39975614ad0",
+      "git_blob_sha1": "d810a03d27922050f225d8ab6dd67c66e0d5d34f",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "key": "canary:data/npclib/load.lua",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/npclib/load.lua",
+      "status": 200,
+      "bytes": 426,
+      "sha256": "5293b30e4408ca8555ca5a23d81c63758d86701fa11823010046038ec50a4959",
+      "git_blob_sha1": "ad7cb718531212facdca6b842cbf03e63945f379",
+      "git_blob_verified": true,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    }
+  ],
+  "git_blob_verification_mismatches": [],
+  "npc_placement_census": [
+    {
+      "repository": "crystal",
+      "path": "data-crystal/world/world-npc.xml",
+      "git_blob_sha1": "77d06a85be43b6c1ecafbace02f4ca39037fdafd",
+      "named_npc_count": 118,
+      "santa_claus_count": 0,
+      "messenger_of_santa_count": 0,
+      "ruprecht_count": 0,
+      "heaven_messenger_names": []
+    },
+    {
+      "repository": "crystal",
+      "path": "data-global/world/annual_events/winterlight_solstice/island-npc.xml",
+      "git_blob_sha1": "d9781e3f7721aaff2713ffb6b76bc1f82a26b393",
+      "named_npc_count": 4,
+      "santa_claus_count": 0,
+      "messenger_of_santa_count": 0,
+      "ruprecht_count": 0,
+      "heaven_messenger_names": []
+    },
+    {
+      "repository": "crystal",
+      "path": "data-global/world/custom/global-custom-npc.xml",
+      "git_blob_sha1": "643e7e7705a1c3a2b70a7dd4c2a4039321797cc6",
+      "named_npc_count": 18,
+      "santa_claus_count": 0,
+      "messenger_of_santa_count": 0,
+      "ruprecht_count": 0,
+      "heaven_messenger_names": []
+    },
+    {
+      "repository": "crystal",
+      "path": "data-global/world/world-npc.xml",
+      "git_blob_sha1": "3f52fd27aceceeb66590702701edb4dbe5faf940",
+      "named_npc_count": 1116,
+      "santa_claus_count": 0,
+      "messenger_of_santa_count": 0,
+      "ruprecht_count": 1,
+      "heaven_messenger_names": [
+        "Heavenly Messenger",
+        "Lesser Messenger of Heaven",
+        "Messenger of Heaven"
+      ]
+    },
+    {
+      "repository": "canary",
+      "path": "data-canary/world/canary-npc.xml",
+      "git_blob_sha1": "e4b3ab9517b3ac462c8d0a90d95c0c127873715e",
+      "named_npc_count": 6,
+      "santa_claus_count": 0,
+      "messenger_of_santa_count": 0,
+      "ruprecht_count": 0,
+      "heaven_messenger_names": []
+    },
+    {
+      "repository": "canary",
+      "path": "data-otservbr-global/world/annual_events/winterlight_solstice/island-npc.xml",
+      "git_blob_sha1": "d9781e3f7721aaff2713ffb6b76bc1f82a26b393",
+      "named_npc_count": 4,
+      "santa_claus_count": 0,
+      "messenger_of_santa_count": 0,
+      "ruprecht_count": 0,
+      "heaven_messenger_names": []
+    },
+    {
+      "repository": "canary",
+      "path": "data-otservbr-global/world/custom/otservbr-custom-npc.xml",
+      "git_blob_sha1": "3597ef592c3d60c1ebfd5634462501aaf867bd8f",
+      "named_npc_count": 18,
+      "santa_claus_count": 0,
+      "messenger_of_santa_count": 0,
+      "ruprecht_count": 0,
+      "heaven_messenger_names": []
+    },
+    {
+      "repository": "canary",
+      "path": "data-otservbr-global/world/otservbr-npc.xml",
+      "git_blob_sha1": "0a72085b7bbdfca73b794e631cc2bab790d8fcef",
+      "named_npc_count": 1008,
+      "santa_claus_count": 0,
+      "messenger_of_santa_count": 0,
+      "ruprecht_count": 1,
+      "heaven_messenger_names": [
+        "Heavenly Messenger",
+        "Lesser Messenger of Heaven",
+        "Messenger of Heaven"
+      ]
+    }
+  ],
+  "activation_census_paths": {
+    "crystal": [
+      "data-crystal/startup/others/functions.lua",
+      "data-crystal/startup/others/load.lua",
+      "data-crystal/startup/startup.lua",
+      "data-crystal/startup/tables/chest.lua",
+      "data-crystal/startup/tables/corpse.lua",
+      "data-crystal/startup/tables/create_item.lua",
+      "data-crystal/startup/tables/door_key.lua",
+      "data-crystal/startup/tables/door_level.lua",
+      "data-crystal/startup/tables/door_quest.lua",
+      "data-crystal/startup/tables/item.lua",
+      "data-crystal/startup/tables/item_daily_reward.lua",
+      "data-crystal/startup/tables/item_unmovable.lua",
+      "data-crystal/startup/tables/lever.lua",
+      "data-crystal/startup/tables/load.lua",
+      "data-crystal/startup/tables/storage_keys_update.lua",
+      "data-crystal/startup/tables/teleport.lua",
+      "data-crystal/startup/tables/teleport_item.lua",
+      "data-crystal/startup/tables/tile.lua",
+      "data-crystal/startup/tables/tile_pick.lua",
+      "data-crystal/startup/tables/writeable.lua",
+      "data-global/scripts/globalevents/dawnport_magic_effect.lua",
+      "data-global/scripts/globalevents/others/check_mount.lua",
+      "data-global/scripts/globalevents/others/horse_station.lua",
+      "data-global/scripts/globalevents/others/map_attributes_loader.lua",
+      "data-global/scripts/globalevents/others/raids_schedule.lua",
+      "data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+      "data-global/scripts/globalevents/spawn/rashid.lua",
+      "data-global/scripts/globalevents/update.lua",
+      "data-global/scripts/globalevents/vip/online_coins.lua",
+      "data-global/scripts/globalevents/vip/online_tokens.lua",
+      "data-global/scripts/world_changes/fury_gates.lua",
+      "data-global/scripts/world_changes/grimvale_respawn_event.lua",
+      "data-global/scripts/world_changes/nightmare_isles.lua",
+      "data-global/scripts/world_changes/oriental_trader.lua",
+      "data-global/scripts/world_changes/spawns_npc_by_time.lua",
+      "data-global/scripts/world_changes/thawing.lua",
+      "data-global/scripts/world_changes/their_masters_voice.lua",
+      "data-global/startup/others/functions.lua",
+      "data-global/startup/others/load.lua",
+      "data-global/startup/startup.lua",
+      "data-global/startup/tables/chest.lua",
+      "data-global/startup/tables/container_books_1.lua",
+      "data-global/startup/tables/container_books_2.lua",
+      "data-global/startup/tables/container_books_3.lua",
+      "data-global/startup/tables/container_books_4.lua",
+      "data-global/startup/tables/container_misc.lua",
+      "data-global/startup/tables/container_quest.lua",
+      "data-global/startup/tables/corpse.lua",
+      "data-global/startup/tables/create_item.lua",
+      "data-global/startup/tables/door_key.lua",
+      "data-global/startup/tables/door_level.lua",
+      "data-global/startup/tables/door_quest.lua",
+      "data-global/startup/tables/item.lua",
+      "data-global/startup/tables/item_daily_reward.lua",
+      "data-global/startup/tables/item_unmovable.lua",
+      "data-global/startup/tables/lever.lua",
+      "data-global/startup/tables/load.lua",
+      "data-global/startup/tables/storage_keys_update.lua",
+      "data-global/startup/tables/teleport.lua",
+      "data-global/startup/tables/teleport_item.lua",
+      "data-global/startup/tables/tile.lua",
+      "data-global/startup/tables/tile_pick.lua",
+      "data-global/startup/tables/writeable.lua",
+      "data/libs/tables/doors.lua",
+      "data/libs/tables/load.lua",
+      "data/libs/tables/windows.lua",
+      "data/scripts/globalevents/clean.lua",
+      "data/scripts/globalevents/encounters.lua",
+      "data/scripts/globalevents/global_server_save.lua",
+      "data/scripts/globalevents/hireling_save.lua",
+      "data/scripts/globalevents/online_record.lua",
+      "data/scripts/globalevents/raids.lua",
+      "data/scripts/globalevents/save_interval.lua",
+      "data/scripts/globalevents/server_initialization.lua",
+      "data/scripts/globalevents/update_guild_war_status.lua"
+    ],
+    "canary": [
+      "data-otservbr-global/scripts/globalevents/dawnport_magic_effect.lua",
+      "data-otservbr-global/scripts/globalevents/others/check_mount.lua",
+      "data-otservbr-global/scripts/globalevents/others/map_attributes_loader.lua",
+      "data-otservbr-global/scripts/globalevents/others/raids_schedule.lua",
+      "data-otservbr-global/scripts/globalevents/spawn/rashid.lua",
+      "data-otservbr-global/scripts/globalevents/update.lua",
+      "data-otservbr-global/scripts/globalevents/vip/online_coins.lua",
+      "data-otservbr-global/scripts/globalevents/vip/online_tokens.lua",
+      "data-otservbr-global/scripts/world_changes/fury_gates.lua",
+      "data-otservbr-global/scripts/world_changes/grimvale_respawn_event.lua",
+      "data-otservbr-global/scripts/world_changes/nightmare_isles.lua",
+      "data-otservbr-global/scripts/world_changes/oriental_trader.lua",
+      "data-otservbr-global/scripts/world_changes/spawns_npc_by_time.lua",
+      "data-otservbr-global/scripts/world_changes/their_masters_voice.lua",
+      "data-otservbr-global/startup/others/functions.lua",
+      "data-otservbr-global/startup/others/load.lua",
+      "data-otservbr-global/startup/startup.lua",
+      "data-otservbr-global/startup/tables/chest.lua",
+      "data-otservbr-global/startup/tables/corpse.lua",
+      "data-otservbr-global/startup/tables/create_item.lua",
+      "data-otservbr-global/startup/tables/door_key.lua",
+      "data-otservbr-global/startup/tables/door_level.lua",
+      "data-otservbr-global/startup/tables/door_quest.lua",
+      "data-otservbr-global/startup/tables/item.lua",
+      "data-otservbr-global/startup/tables/item_daily_reward.lua",
+      "data-otservbr-global/startup/tables/item_unmovable.lua",
+      "data-otservbr-global/startup/tables/lever.lua",
+      "data-otservbr-global/startup/tables/load.lua",
+      "data-otservbr-global/startup/tables/storage_keys_update.lua",
+      "data-otservbr-global/startup/tables/teleport.lua",
+      "data-otservbr-global/startup/tables/teleport_item.lua",
+      "data-otservbr-global/startup/tables/tile.lua",
+      "data-otservbr-global/startup/tables/tile_pick.lua",
+      "data-otservbr-global/startup/tables/writeable.lua",
+      "data/libs/tables/doors.lua",
+      "data/libs/tables/load.lua",
+      "data/libs/tables/windows.lua",
+      "data/scripts/globalevents/encounters.lua",
+      "data/scripts/globalevents/global_server_save.lua",
+      "data/scripts/globalevents/hireling_save.lua",
+      "data/scripts/globalevents/online_record.lua",
+      "data/scripts/globalevents/raids.lua",
+      "data/scripts/globalevents/save_interval.lua",
+      "data/scripts/globalevents/server_initialization.lua",
+      "data/scripts/globalevents/update_guild_war_status.lua"
+    ]
+  },
+  "ruprecht_offers": [
+    {
+      "name": "gingerbreadman",
+      "item": 6500,
+      "cost": 1
+    },
+    {
+      "name": "christmas cookie tray",
+      "item": 20310,
+      "cost": 1
+    },
+    {
+      "name": "gingerbread recipe",
+      "item": 174,
+      "cost": 10
+    },
+    {
+      "name": "jewel case",
+      "item": 7527,
+      "cost": 25
+    },
+    {
+      "name": "santa hat",
+      "item": 6531,
+      "cost": 50
+    },
+    {
+      "name": "santa backpack",
+      "item": 10346,
+      "cost": 75
+    },
+    {
+      "name": "snow flake tapestry",
+      "item": 20315,
+      "cost": 75
+    },
+    {
+      "name": "santa doll",
+      "item": 6511,
+      "cost": 100
+    },
+    {
+      "name": "snowman doll",
+      "item": 10339,
+      "cost": 150
+    },
+    {
+      "name": "snow globe",
+      "item": 20311,
+      "cost": 150
+    },
+    {
+      "name": "frazzlemaw santa",
+      "item": 20308,
+      "cost": 250
+    },
+    {
+      "name": "leaf golem santa",
+      "item": 20309,
+      "cost": 250
+    },
+    {
+      "name": "santa music box",
+      "item": 20313,
+      "cost": 250
+    },
+    {
+      "name": "santa teddy",
+      "item": 10338,
+      "cost": 500
+    },
+    {
+      "name": "maxxen santa",
+      "item": 21952,
+      "cost": 250
+    },
+    {
+      "name": "present bag",
+      "item": 6496,
+      "cost": 1
+    },
+    {
+      "name": "ferumbras' teddy santa",
+      "item": 22879,
+      "cost": 250
+    },
+    {
+      "name": "nightmare beast santa",
+      "item": 29947,
+      "cost": 250
+    },
+    {
+      "name": "orclops santa",
+      "item": 24394,
+      "cost": 250
+    },
+    {
+      "name": "raccoon santa",
+      "item": 35692,
+      "cost": 250
+    },
+    {
+      "name": "santa fox",
+      "item": 27591,
+      "cost": 250
+    },
+    {
+      "name": "santa leech",
+      "item": 32746,
+      "cost": 250
+    }
+  ],
+  "santa_reachable_normal_groups": [
+    {
+      "group": 1,
+      "items": [
+        {
+          "item": 7439,
+          "count": 1
+        },
+        {
+          "item": 7440,
+          "count": 1
+        },
+        {
+          "item": 7443,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "group": 2,
+      "items": [
+        {
+          "item": 3599,
+          "count": 10
+        },
+        {
+          "item": 6507,
+          "count": 10
+        }
+      ]
+    },
+    {
+      "group": 3,
+      "items": [
+        {
+          "item": 3599,
+          "count": 10
+        },
+        {
+          "item": 6508,
+          "count": 10
+        }
+      ]
+    },
+    {
+      "group": 4,
+      "items": [
+        {
+          "item": 3599,
+          "count": 10
+        },
+        {
+          "item": 6506,
+          "count": 10
+        }
+      ]
+    },
+    {
+      "group": 5,
+      "items": [
+        {
+          "item": 3599,
+          "count": 10
+        },
+        {
+          "item": 2995,
+          "count": 10
+        }
+      ]
+    },
+    {
+      "group": 6,
+      "items": [
+        {
+          "item": 3599,
+          "count": 10
+        },
+        {
+          "item": 2992,
+          "count": 10
+        }
+      ]
+    },
+    {
+      "group": 7,
+      "items": [
+        {
+          "item": 3051,
+          "count": 1
+        },
+        {
+          "item": 3097,
+          "count": 1
+        },
+        {
+          "item": 3098,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "group": 8,
+      "items": [
+        {
+          "item": 10310,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "group": 9,
+      "items": [
+        {
+          "item": 3039,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "group": 10,
+      "items": [
+        {
+          "item": 3036,
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "santa_claim_storage": 840293,
+  "santa_claim_blocked_value": 1,
+  "santa_empty_draw_semantics": {
+    "established": "A first draw91..100 leaves an empty reward table; no valid reward group is selected. Storage set follows item reward loop.",
+    "not_established": "Exact empty-interval error timing before versus after container mint; no complete global math.random override proof or local LuaJIT VM execution.",
+    "donor_runtime_evidence": [
+      "crystal:vcpkg.json:13",
+      "crystal:src/lua/functions/lua_functions_loader.cpp:46"
+    ]
+  },
+  "protected_required_consumers": [
+    {
+      "path": "crates/gameplay/spell/src/spell/actor_conditions.rs",
+      "lines": "715-721,763,877-918",
+      "boundary": "Typed HP hits always use mana shield; donor Undefined must bypass only this shield while retaining mitigation and final reductions."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs",
+      "lines": "1253-1282,2616-2672",
+      "boundary": "Existing authoritative ChannelSpellStates typed HP/death/receipt owner."
+    },
+    {
+      "path": "content/spells.manifest.json",
+      "field": "creature_profiles",
+      "boundary": "Normal production admission pins Creature closure; no unpinned Creature injection."
+    }
+  ],
+  "not_run": [
+    "Cargo/builds",
+    "Donor server or Lua VM execution",
+    "CipSoft network requests",
+    "HTML wiki scraping",
+    "Captcha bypass"
+  ],
+  "native_creature_admission_census": {
+    "manifest": "content/spells.manifest.json",
+    "field": "creature_profiles",
+    "path": "content/creatures/definitions/spell-native-profiles.json",
+    "sha256": "06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5",
+    "pin_matches": true,
+    "records": 1870,
+    "cake_present": false
+  },
+  "ruprecht_framework_defaults": {
+    "classification": "OTS_HYPOTHESIS_ONLY",
+    "greet": "Greetings, |PLAYERNAME|.",
+    "farewell": "Good bye, |PLAYERNAME|.",
+    "walkaway": "Good bye.",
+    "greet_keywords": [
+      "hi",
+      "hello"
+    ],
+    "farewell_keywords": [
+      "bye",
+      "farewell"
+    ],
+    "talk_range": 4,
+    "crystal_sources": [
+      "data/npclib/npc_system/npc_handler.lua:77–90,348–355,386–391,406–410",
+      "data/npclib/npc_system/modules.lua:5–6,281–300",
+      "data-global/npc/ruprecht.lua:182"
+    ],
+    "canary_sources": [
+      "data/npclib/npc_system/npc_handler.lua:84–97,355–362,393–398,413–417",
+      "data/npclib/npc_system/modules.lua:5–6,284–303"
+    ],
+    "native_scope": "Ruprecht is Dialogue-backed; admit exact definition and use its sourced defaults, not a generic fallback for dialogue-less NPCs."
+  }
+}

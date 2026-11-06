@@ -25,6 +25,7 @@ pub type LegacyPosition = (u16, u16, u8);
 /// The families one compilation checks the placements against.
 #[derive(Clone, Debug, Default)]
 pub struct Families {
+    pub layers: crate::compile::layers::Source,
     /// Verified client masks; empty only in synthetic compiler fixtures.
     pub subareas: crate::compile::subareas::Source,
     /// `Transition.Teleport` records, keyed by their `from` position, valued by `to`.
