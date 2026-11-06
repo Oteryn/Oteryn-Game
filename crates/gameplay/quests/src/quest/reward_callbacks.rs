@@ -44,7 +44,7 @@ pub struct RewardCallback {
     pub storage: Vec<Storage>,
     pub take: Vec<ItemAmount>,
     /// Carried evidence checked under the same locks, without consuming it.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
@@ -102,9 +102,9 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
             || c.present.len() > 8
             || evidence.len() != c.present.len()
-            || c.present.iter().any(|s| {
-                !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0
-            })
+            || c.present
+                .iter()
+                .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
             || c.take.len() > 8
             || inputs.len() != c.take.len()
             || c.take

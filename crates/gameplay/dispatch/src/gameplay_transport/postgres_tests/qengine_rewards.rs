@@ -72,7 +72,7 @@ fn qengine_l1_wayfarer_cape() -> TestResult {
     scenario("qengine-rewards-l1-wayfarer")
 }
 #[test]
-fn qengine_l1_yalaharian_sage() -> TestResult {
+fn qengine_l1_yalaharian_addon_sage() -> TestResult {
     scenario("qengine-rewards-l1-yalaharian")
 }
 
@@ -93,7 +93,7 @@ fn qengine_l1_yalaharian_base_yalahari() -> TestResult {
     scenario("qengine-rewards-l1-yalaharian-base-yalahari")
 }
 #[test]
-fn qengine_l1_yalaharian_villain() -> TestResult {
+fn qengine_l1_yalaharian_addon_villain() -> TestResult {
     scenario("qengine-rewards-l1-yalaharian-villain")
 }
 
@@ -356,7 +356,7 @@ async fn wire_grant(
     peer.await?.map_err(Into::into)
 }
 
-async fn seed(
+pub(super) async fn seed(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     callback: &RewardCallback,
@@ -739,13 +739,24 @@ pub(super) async fn exercise(
     for evidence in &callback.present {
         let item: sqlx::types::Uuid = sqlx::query_scalar("SELECT item_instance_id FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1 ORDER BY item_instance_id LIMIT 1")
             .bind(&evidence.item).fetch_one(&h.pool).await?;
-        let fence = owner.current_quest_fence(admitted.game_session_id).await
-            .map_err(|_| "fence")?.ok_or("fence")?;
-        super::quest_world_callbacks::input_item(owner, fence.item_fence(),
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        super::quest_world_callbacks::input_item(
+            owner,
+            fence.item_fence(),
             &oteryn_gameplay_quests::quest::world_callbacks::Offering {
-                position: at, item: "oteryn:item.tibia.i2854".into(), count: 1,
-            }, 300, true).await?;
-        let bag: sqlx::types::Uuid = sqlx::query_scalar("SELECT item_instance_id FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i2854' ORDER BY item_instance_id LIMIT 1")
+                position: at,
+                item: "oteryn:item.tibia.i2854".into(),
+                count: 1,
+            },
+            300,
+            true,
+        )
+        .await?;
+        let bag: sqlx::types::Uuid = sqlx::query_scalar("SELECT i.item_instance_id FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i2854' ORDER BY i.item_instance_id LIMIT 1")
             .fetch_one(&h.pool).await?;
         into_bag(owner, admitted, *item.as_bytes(), *bag.as_bytes(), 8200).await?;
         held_evidence.push(item);
@@ -787,17 +798,31 @@ pub(super) async fn exercise(
         }
     }
     for item in held_evidence {
-        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=$1")
-            .bind(item).fetch_one(&h.pool).await?, 1,
-            "the exact original crest stays in its closed nested custody");
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=$1"
+            )
+            .bind(item)
+            .fetch_one(&h.pool)
+            .await?,
+            1,
+            "the exact original crest stays in its closed nested custody"
+        );
     }
     for evidence in &callback.present {
         let remaining: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
             .bind(&evidence.item).fetch_one(&h.pool).await?;
         assert_eq!(remaining, i64::from(evidence.count));
-        let consumed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key=$1")
-            .bind(&callback.key).fetch_one(&h.pool).await?;
-        assert_eq!(consumed, 0, "possession keeps the original crest and custody receipt");
+        let consumed: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key=$1",
+        )
+        .bind(&callback.key)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            consumed, 0,
+            "possession keeps the original crest and custody receipt"
+        );
     }
     if let Some(reward) = &callback.give {
         let minted:(String,i64)=sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.claim_production_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
@@ -851,8 +876,10 @@ pub(super) async fn exercise(
             .ok_or("earned outfit absent from client catalogue")?;
         assert_eq!(option.permitted_addons & outfit.addons, outfit.addons);
         if key.starts_with("l1-yalaharian-") {
-            assert_eq!(option.permitted_addons, outfit.addons,
-                "Palimuth and Azerus sides must never grant each other's addon");
+            assert_eq!(
+                option.permitted_addons, outfit.addons,
+                "Palimuth and Azerus sides must never grant each other's addon"
+            );
         }
         let bytes = observation.catalogue.encode().map_err(debug)?;
         assert_eq!(

@@ -105,6 +105,352 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l1-warmaster-crest",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 60,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i10199",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.warmaster",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-warmaster-tribal",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 61,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i10198",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.warmaster",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-wayfarer-cape",
+      "quest": "oteryn:quest.wayfarer_outfits_quest",
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i11701",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.wayfarer",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-wayfarer-hat",
+      "quest": "oteryn:quest.wayfarer_outfits_quest",
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i11700",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.wayfarer",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-yalaharian-base-palimuth",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 52,
+          "maximum": 52,
+          "set": 53
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_reward",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/mission10",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.yalaharian",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-yalaharian-base-yalahari",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "npc": "oteryn:npc.yalahari",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 52,
+          "maximum": 52,
+          "set": 53
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_reward",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/mission10",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.yalaharian",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yalahari.lua:sha256:4a1c2569d797d7a8dac838f7070140c14aaf9103c088f7c663778ffcad02cf5a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-yalaharian-sage",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.yalaharian",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i9041",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-yalaharian-villain",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.yalaharian",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i9041",
+          "count": 1
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/outfox-helmet",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.budrik",

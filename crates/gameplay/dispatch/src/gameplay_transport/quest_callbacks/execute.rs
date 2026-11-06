@@ -241,6 +241,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     std::sync::Arc::clone(catalogue),
                     permit,
                     context,
+                    self.active_generation
+                        .and_then(|generation| generation.native_gameplay()),
                 )
                 .await;
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));

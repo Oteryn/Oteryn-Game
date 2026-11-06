@@ -77,6 +77,29 @@ class QuestRewards(unittest.TestCase):
         for name,item in [('cape',11701),('hat',11700)]:
             self.assertEqual(callbacks['l1-wayfarer-'+name]['take'],[{'item':f'oteryn:item.tibia.i{item}','count':1}])
 
+    def test_wardrobe_rewards_use_exact_native_source_objects_and_once_guards(self):
+        import quest_batch4
+        worlds=json.loads(self.outputs['content/quests/shared-outfit-callbacks.json'])['callbacks']
+        self.assertEqual(len(worlds),2)
+        for world,expected in zip(worlds,[(33053,31020,-7,5862,'warmaster'),(33073,31173,-8,11431,'wayfarer')]):
+            x,y,z,item,outfit=expected
+            self.assertEqual(world['selector'],{'position':{'x':x,'y':y,'floor':z},'unique':None,'action':None,'appearance':item})
+            self.assertEqual(world['effects']['outfit_reward'],{'outfit':'oteryn:outfit.'+outfit,'addons':0})
+            import sys
+            sys.path.insert(0,str(q.ROOT/'tools/content-schema/world-authoring'))
+            import world_region_codec as codec
+            index=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())
+            region=q.ROOT/f'content/world/placements/region-z{-z:02}-x{x//256:03}-y{y//256:03}.b3'
+            matches=[attrs for _,tiles in codec.decode_region(region.read_bytes())[3]
+                     for tx,ty,_,_,_,items in tiles if (tx,ty)==(x,y)
+                     for palette,depth,attrs in items
+                     if depth==0 and index['palette'][palette]['source_item_id']==item]
+            self.assertEqual(len(matches),1,'exact native wardrobe target')
+            quest_batch4.validate_effects(world,world['key'])
+            bad=copy.deepcopy(world)
+            for state in bad['storage']:state['set']=state['minimum']
+            with self.assertRaises(ValueError):quest_batch4.validate_effects(bad,bad['key'])
+
     def test_every_exchange_item_has_native_custody_facts(self):
         rows=json.loads((q.ROOT/'content/items/definitions/spell-native-profiles.json').read_bytes())['records']
         native={r['production_definition']['production_key']:r for r in rows}

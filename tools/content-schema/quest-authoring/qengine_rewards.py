@@ -32,6 +32,9 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari')]
+    paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
+              'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
+              'data-global/startup/tables/item.lua']
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
@@ -232,6 +235,28 @@ def build():
             citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
         greetings.append({'npc':npc,**messages,'sources':citations})
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
+    access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')
+    worlds=[]
+    for name,quest,path,at,appearance,states,outfit in [
+        ('l1-warmaster-wardrobe','the_new_frontier_quest',
+         'data-global/scripts/quests/the_new_frontier/action_outfit.lua',(33053,31020,7),5862,
+         [storage(frontier+'questline',26,27),storage(frontier+'mission09/reward_door',0,1)],'warmaster'),
+        ('l1-wayfarer-wardrobe','wrath_of_the_emperor_quest',
+         'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',(33073,31173,8),11431,
+         [storage(prefix+'u8_6/wrath_of_the_emperor/mission12',0,1),
+          storage('oteryn:quest-progress/1150',-1,1,1)],'wayfarer')]:
+        world=access.callback(name,quest,'use',path,at=access.position(*at),appearance=appearance,
+            outfit_reward={'outfit':'oteryn:outfit.'+outfit,'addons':0})
+        world['storage']=states
+        world['sources']=[f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']
+        if outfit=='wayfarer':
+            table='data-global/startup/tables/item.lua'
+            if not re.search(r'\[3200\]\s*=\s*\{\s*itemId\s*=\s*11431,\s*itemPos\s*=\s*\{\s*x\s*=\s*33073,\s*y\s*=\s*31173,\s*z\s*=\s*8', inputs[table].decode()):
+                raise ValueError('Wayfarer source wardrobe binding drift')
+            world['sources'].append(f'crystal:{PIN}:{table}:sha256:{sha(inputs[table])}')
+        worlds.append(world)
+    generated['content/quests/shared-outfit-callbacks.json']=encoded({'schema':1,'callbacks':worlds})
+
     sys.path.insert(0,str(ROOT/'tools/content-migration'))
     import qengine_reward_item_profiles as reward_items
     import register_spell_families as native

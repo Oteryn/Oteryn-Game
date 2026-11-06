@@ -38,6 +38,21 @@ pub(crate) fn prepare_achievement(
     }))
 }
 
+/// Both NPC and world rewards use the admitted generation's explicit mappings.
+pub(crate) fn outfit_compatible(
+    native: &NativeGameplayState,
+    reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
+) -> bool {
+    let Some(cosmetics) = native.cosmetics() else { return false; };
+    (0..=2).all(|addon| {
+        if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 { return true; }
+        let key = format!("{}/quest-grant/{addon}", reward.outfit);
+        let target = if addon == 0 { EarnedCosmetic::Outfit(&reward.outfit) }
+            else { EarnedCosmetic::Addon(&reward.outfit, addon) };
+        cosmetics.earned_unlock(&key, PROVENANCE, target) == UnlockFact::Compatible
+    })
+}
+
 /// The runtime supplies its admitted generation and the normal wheel-aware capacity lookup.
 #[derive(Clone, Copy)]
 pub struct QuestRewardAdmission<'a> {
@@ -65,24 +80,8 @@ pub(crate) async fn apply(
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
-    if let Some(reward) = &callback.outfit {
-        let Some(cosmetics) = admission.native.cosmetics() else {
-            return Ok(false);
-        };
-        for addon in 0..=2 {
-            if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
-                continue;
-            }
-            let key = format!("{}/quest-grant/{addon}", reward.outfit);
-            let target = if addon == 0 {
-                EarnedCosmetic::Outfit(&reward.outfit)
-            } else {
-                EarnedCosmetic::Addon(&reward.outfit, addon)
-            };
-            if cosmetics.earned_unlock(&key, PROVENANCE, target) != UnlockFact::Compatible {
-                return Ok(false);
-            }
-        }
+    if callback.outfit.as_ref().is_some_and(|reward| !outfit_compatible(admission.native, reward)) {
+        return Ok(false);
     }
     if !super::super::quest_world_callback::consume_reward_inputs(tx, fence, request, callback)
         .await?

@@ -145,6 +145,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-access-callbacks.json"
     ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/shared-outfit-callbacks.json"
+    ))?);
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
         return Err("callback bounds including native source callbacks".into());
     }

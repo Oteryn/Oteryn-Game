@@ -223,8 +223,17 @@ def validate_native(callback, context):
 def validate_effects(callback, context):
     """The optional Channel effects share the Rust world_callbacks closed shape."""
     effects = callback.get('effects', {})
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward'}
     fields(effects, set(), allowed, context + ': effects')
+    outfit = effects.get('outfit_reward')
+    if outfit is not None:
+        fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')
+        require(isinstance(outfit['outfit'],str) and len(outfit['outfit'])<=160
+                and re.fullmatch(r'oteryn:outfit\.[a-z0-9_]+',outfit['outfit']) is not None
+                and integer(outfit['addons'],0,3), context + ': invalid outfit reward')
+        require(callback['trigger']=='use' and callback['storage']
+                and any(not s.get('preserve',False) and not s['minimum']<=s['set']<=s['maximum']
+                        for s in callback['storage']), context + ': repeatable outfit reward')
     transform = effects.get('transform')
     require(transform is None or integer(transform, 1, 65535), context + ': invalid transform')
     facing = effects.get('facing')
