@@ -197,11 +197,18 @@ def build():
             'topic':0,'next_topic':bit,'storage':callbacks[-1]['storage'],
             'reply':['Do you have the '+('old cape' if bit==1 else 'sedge hat')+' with you?']})
     for npc,side in [('palimuth',1),('yalahari',2)]:
+        states=[storage(yalahar+'questline',52,53),
+                storage(yalahar+'door_to_reward',-1,1,1),
+                storage(yalahar+'mission10',-1,4,4)]
+        # Palimuth's completion checks questline only; Yalahari also requires
+        # his side. The remaining tracks are assignments, not prerequisites.
+        if npc=='yalahari':
+            states.insert(1,storage(yalahar+'side_decision',side,side,preserve=True))
         add('l1-yalaharian-base-'+npc,'in_service_of_yalahar_quest',npc,['mission'],
-            [storage(yalahar+'questline',52,53),
-             storage(yalahar+'side_decision',side,side,preserve=True),
-             storage(yalahar+'door_to_reward',0,1),
-             storage(yalahar+'mission10',3,4)],outfit=('yalaharian',0))
+            states,outfit=('yalaharian',0))
+        path='data-global/npc/'+npc+'.lua'
+        lines='244-259' if npc=='palimuth' else '246-252'
+        callbacks[-1]['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
     for name,side,bit in [('sage',1,1),('villain',2,2)]:
         add('l1-yalaharian-'+name,'in_service_of_yalahar_quest','palimuth',['yes'],
             [storage(yalahar+'questline',54,55),
@@ -298,7 +305,7 @@ def main():
         if args.check:
             if not target.is_file() or target.read_bytes()!=raw:
                 raise ValueError('stale QENGINE reward output: '+path)
-        else:
+        elif not target.is_file() or target.read_bytes()!=raw:
             target.write_bytes(raw)
 
 if __name__=='__main__':

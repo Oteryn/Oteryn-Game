@@ -20,7 +20,7 @@ fn scenario(name: &'static str) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run(name, move || {
+    let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
             Position {
@@ -30,12 +30,13 @@ fn scenario(name: &'static str) -> TestResult {
             },
             false,
         )
-    })?;
+    });
     eprintln!(
-        "POSTGRES_CASE_COMPLETED {name} duration={:?}",
-        started.elapsed()
+        "POSTGRES_CASE_COMPLETED {name} duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
     );
-    Ok(())
+    result
 }
 
 #[test]
@@ -87,6 +88,10 @@ fn qengine_l1_wayfarer_hat() -> TestResult {
 #[test]
 fn qengine_l1_yalaharian_base_palimuth() -> TestResult {
     scenario("qengine-rewards-l1-yalaharian-base-palimuth")
+}
+#[test]
+fn qengine_l1_yalaharian_base_palimuth_accepts_villain() -> TestResult {
+    scenario("qengine-rewards-l1-yalaharian-base-palimuth-villain")
 }
 #[test]
 fn qengine_l1_yalaharian_base_yalahari() -> TestResult {
@@ -590,7 +595,8 @@ pub(super) async fn exercise(
     let key = match name {
         "qengine-rewards-l1-warmaster-tribal" => "l1-warmaster-tribal",
         "qengine-rewards-l1-wayfarer-hat" => "l1-wayfarer-hat",
-        "qengine-rewards-l1-yalaharian-base-palimuth" => "l1-yalaharian-base-palimuth",
+        "qengine-rewards-l1-yalaharian-base-palimuth"
+        | "qengine-rewards-l1-yalaharian-base-palimuth-villain" => "l1-yalaharian-base-palimuth",
         "qengine-rewards-l1-yalaharian-base-yalahari" => "l1-yalaharian-base-yalahari",
         "qengine-rewards-l1-yalaharian-villain" => "l1-yalaharian-villain",
         "qengine-rewards-l1-warmaster" => "l1-warmaster-crest",
@@ -608,7 +614,25 @@ pub(super) async fn exercise(
         .into_iter()
         .find(|c| c.key.ends_with(key))
         .ok_or("callback")?;
-    seed(owner, admitted, &callback, 9000).await?;
+    let mut setup = callback.clone();
+    if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
+        // Palimuth's source completion at questline 52 does not test the side.
+        // Keep the actual callback unchanged while arranging the opposite side.
+        setup.storage.retain(|state| !state.track.ends_with("/side_decision"));
+        for state in &mut setup.storage {
+            if state.track.ends_with("/door_to_reward") || state.track.ends_with("/mission10") {
+                state.minimum = -1;
+            }
+        }
+        setup.storage.push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+            track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision".into(),
+            minimum: 2,
+            maximum: 2,
+            set: 2,
+            preserve: true,
+        });
+    }
+    seed(owner, admitted, &setup, 9000).await?;
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;
     let mut selected = admitted
         .continuity
@@ -867,6 +891,19 @@ pub(super) async fn exercise(
         NpcIntentDisposition::Ok
     );
     assert_eq!(counts(h).await?, after);
+    if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
+        assert_eq!(
+            super::classic_quests::progress(
+                owner,
+                admitted,
+                authority,
+                "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+            )
+            .await?,
+            2,
+            "Palimuth's base reward must preserve the chosen side"
+        );
+    }
     if let Some(outfit) = &callback.outfit {
         let observation = owner
             .appearance_observation(

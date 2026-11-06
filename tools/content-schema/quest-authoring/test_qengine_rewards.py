@@ -77,6 +77,18 @@ class QuestRewards(unittest.TestCase):
         for name,item in [('cape',11701),('hat',11700)]:
             self.assertEqual(callbacks['l1-wayfarer-'+name]['take'],[{'item':f'oteryn:item.tibia.i{item}','count':1}])
 
+    def test_palimuth_base_completion_does_not_require_his_side(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        palimuth=callbacks['l1-yalaharian-base-palimuth']
+        self.assertFalse(any(s['track'].endswith('/side_decision') for s in palimuth['storage']))
+        yalahari=callbacks['l1-yalaharian-base-yalahari']
+        self.assertTrue(any(s['track'].endswith('/side_decision') and s['minimum']==2
+                            and s['maximum']==2 and s['preserve'] for s in yalahari['storage']))
+        for callback in (palimuth,yalahari):
+            for suffix,maximum in (('/door_to_reward',1),('/mission10',4)):
+                state=next(s for s in callback['storage'] if s['track'].endswith(suffix))
+                self.assertEqual((state['minimum'],state['maximum'],state['set']),(-1,maximum,maximum))
+
     def test_wardrobe_rewards_use_exact_native_source_objects_and_once_guards(self):
         import quest_batch4
         worlds=json.loads(self.outputs['content/quests/shared-outfit-callbacks.json'])['callbacks']

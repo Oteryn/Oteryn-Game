@@ -1,10 +1,10 @@
 {
   "task_id": "qengine2-L1",
-  "lifecycle": "AUTHORING; local edits only; no Git mutations or publication",
+  "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 0,
-    "unfinished": 66,
+    "qualified": 3,
+    "unfinished": 63,
     "blocked": 0
   },
   "quests": [
@@ -1276,8 +1276,7 @@
     {
       "canonical": "oteryn:quest.warmaster_outfits_quest",
       "title": "Warmaster Outfits Quest",
-      "status": "UNFINISHED",
-      "blocker": "Serpent Crest/Snake Sceptre hand-ins have no source-qualified native appearance-grant mapping; selected canonical recipe is held, and base outfit identity is not an addon grant.",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc4",
@@ -1286,13 +1285,25 @@
             "ACTIONABLE"
           ]
         }
-      ]
+      ],
+      "evidence": {
+        "batch": "L1-01",
+        "paths": [
+          "l1-warmaster-wardrobe",
+          "l1-warmaster-crest",
+          "l1-warmaster-tribal"
+        ],
+        "source": [
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:342-375:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_new_frontier/action_outfit.lua:5-10:sha256:02f08dcaefb333bc83c8a99786d97ff2689995644af7b6b28a22dc5788b70d70"
+        ],
+        "scope": "All L1 base outfit and addon reward branches; preserve parent QuestState ownership and prerequisite tracks. Actual NPC/USE command dispatch, durable value receipts, atomic source flags, replay, client catalogue and earned appearance selection verified."
+      }
     },
     {
       "canonical": "oteryn:quest.wayfarer_outfits_quest",
       "title": "Wayfarer Outfits Quest",
-      "status": "UNFINISHED",
-      "blocker": "Cranky Lizard Crone's Brimstone/Fallen Brimstone item hand-ins and paired addon grants lack source-qualified native appearance/delivery mappings.",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc4",
@@ -1301,7 +1312,20 @@
             "ACTIONABLE"
           ]
         }
-      ]
+      ],
+      "evidence": {
+        "batch": "L1-01",
+        "paths": [
+          "l1-wayfarer-wardrobe",
+          "l1-wayfarer-cape",
+          "l1-wayfarer-hat"
+        ],
+        "source": [
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:50-95:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua:3-9:sha256:f4b5e3fdb2daa7e1ab892dfa6983e58b20a2d85874c3911f87ac32fe6a3a17bf"
+        ],
+        "scope": "All L1 base outfit and addon reward branches; preserve parent QuestState ownership and prerequisite tracks. Actual NPC/USE command dispatch, durable value receipts, atomic source flags, replay, client catalogue and earned appearance selection verified."
+      }
     },
     {
       "canonical": "oteryn:quest.what_a_foolish_quest",
@@ -1321,8 +1345,7 @@
     {
       "canonical": "oteryn:quest.yalaharian_outfits_quest",
       "title": "Yalaharian Outfits Quest",
-      "status": "UNFINISHED",
-      "blocker": "Palimuth/Yalahari outfit/addon claims have no selected native provenance-compatible appearance-grant mapping; the outfit identity is not an earned entitlement.",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc4",
@@ -1331,7 +1354,77 @@
             "ACTIONABLE"
           ]
         }
-      ]
+      ],
+      "evidence": {
+        "batch": "L1-01",
+        "paths": [
+          "l1-yalaharian-base-palimuth",
+          "l1-yalaharian-base-palimuth-villain",
+          "l1-yalaharian-base-yalahari",
+          "l1-yalaharian-sage",
+          "l1-yalaharian-villain"
+        ],
+        "source": [
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:244-259,323-328:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db",
+          "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yalahari.lua:246-252:sha256:4a1c2569d797d7a8dac838f7070140c14aaf9103c088f7c663778ffcad02cf5a"
+        ],
+        "scope": "All L1 base outfit and addon reward branches; preserve parent QuestState ownership and prerequisite tracks. Actual NPC/USE command dispatch, durable value receipts, atomic source flags, replay, client catalogue and earned appearance selection verified."
+      }
+    }
+  ],
+  "batches": [
+    {
+      "entries": [
+        "oteryn:quest.warmaster_outfits_quest",
+        "oteryn:quest.wayfarer_outfits_quest",
+        "oteryn:quest.yalaharian_outfits_quest"
+      ],
+      "base": "04255c6af",
+      "red": {
+        "command": "cargo test -p oteryn-gameplay-dispatch qengine_l1_ -- --nocapture",
+        "postgres": "Startup verified PostgreSQL 18.6; nine POSTGRES_CASE_COMPLETED markers, no skipped cases",
+        "result": "9 passed; 2 failed; 264.43 seconds",
+        "failures": [
+          "qengine_l1_world_warmaster_base_wardrobe: no command result",
+          "qengine_l1_world_wayfarer_base_wardrobe: no command result"
+        ],
+        "isolated": "Warmaster wardrobe reproduced: 0 passed; 1 failed; 59.96 seconds",
+        "wardrobe_current_revision": {
+          "warmaster": "POSTGRES_CASE_COMPLETED l1-warmaster-wardrobe duration=89.848292773s success=false",
+          "wayfarer": "POSTGRES_CASE_COMPLETED l1-wayfarer-wardrobe duration=93.696289394s success=false"
+        },
+        "palimuth_opposite_side": "POSTGRES_CASE_COMPLETED qengine-rewards-l1-yalaharian-base-palimuth-villain duration=88.194634024s success=false; earned appearance catalogue did not arrive"
+      },
+      "repair": "Scope exclusive test lane permits to direct-writer assertions; test stale and current object revisions separately without changing refusal assertions. Match Palimuth side-independent source completion, retain Yalahari side 2, and treat door/mission flags as unconditional assignments over their valid domains. Regenerate with qengine_rewards.py; preserve unchanged output mtimes.",
+      "green": "QUALIFIED; all required batch checks passed",
+      "validation": {
+        "postgres_command": "cargo nextest run --locked -p oteryn-gameplay-dispatch -E 'test(qengine_l1_world_) | test(qengine_l1_yalaharian_base_)' --no-capture",
+        "postgres_result": "5 selected passed; no selected skips; 370.980 seconds; unrelated 2535 cases outside filter",
+        "postgres_markers": [
+          "POSTGRES_CASE_COMPLETED l1-warmaster-wardrobe duration=46.091451118s success=true",
+          "POSTGRES_CASE_COMPLETED l1-wayfarer-wardrobe duration=57.049123789s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l1-yalaharian-base-palimuth duration=86.155578851s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l1-yalaharian-base-palimuth-villain duration=96.614977945s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l1-yalaharian-base-yalahari duration=84.855625677s success=true"
+        ],
+        "unchanged_coverage": "Seven unchanged hand-in/legacy cases retained from /tmp/qengine2-batch1-green.log; each completed PostgreSQL with success=true. Two superseded Yalaharian base cases replaced by the final five-case run.",
+        "authoring": "11 tests passed; 4.688 seconds; qengine_rewards.py --check passed",
+        "world_callbacks": "quest_batch4.py --available --check: 21 source packets validated; 0 generated files changed",
+        "world_pin": "pin-refresh and pin-check passed; unchanged digest d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5",
+        "check": "cargo check --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-quests --all-features passed; 16.85 seconds",
+        "clippy": "cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-quests --all-targets --all-features -- -D warnings passed; 39.88 seconds",
+        "content_integration": "integration_rest content_: 123 passed, 2.22 seconds; content_world_project_repository: 5 passed, 50.50 seconds",
+        "unchanged_postgres_markers": [
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l1-legacy-decaying duration=89.999762916s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l1-warmaster duration=159.535073212s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l1-warmaster-tribal duration=129.934456152s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l1-wayfarer duration=132.135018203s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l1-wayfarer-hat duration=132.851970427s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l1-yalaharian duration=123.639876225s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l1-yalaharian-villain duration=113.197246328s success=true"
+        ]
+      },
+      "id": "L1-01"
     }
   ]
 }

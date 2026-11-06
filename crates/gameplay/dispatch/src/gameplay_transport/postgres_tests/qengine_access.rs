@@ -675,20 +675,24 @@ fn scenario(name: &str, trigger: Position) -> TestResult {
     }
     let started = std::time::Instant::now();
     let task = name.to_owned();
-    std::thread::Builder::new()
-        .name(task.clone())
-        .stack_size(256 << 20)
-        .spawn(move || {
-            super::quest_world_callbacks::scenario(&task, trigger, false)
-                .map_err(|error| error.to_string())
-        })?
-        .join()
-        .map_err(|_| "quest access scenario panicked")??;
+    let result = (|| -> TestResult {
+        std::thread::Builder::new()
+            .name(task.clone())
+            .stack_size(256 << 20)
+            .spawn(move || {
+                super::quest_world_callbacks::scenario(&task, trigger, false)
+                    .map_err(|error| error.to_string())
+            })?
+            .join()
+            .map_err(|_| "quest access scenario panicked")??;
+        Ok(())
+    })();
     eprintln!(
-        "POSTGRES_CASE_COMPLETED {name} duration={:?}",
-        started.elapsed()
+        "POSTGRES_CASE_COMPLETED {name} duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
     );
-    Ok(())
+    result
 }
 
 #[test]
@@ -866,7 +870,6 @@ async fn wardrobe(
                 .revision(),
         }
     };
-    let permit = owner.spell_lane_permit().await.ok_or("permit")?;
     let session = admitted.game_session_id;
     let request = |ordinal| -> TestResult<_> {
         Ok(crate::durability::quest_state::QuestTransitionRequest {
@@ -885,6 +888,7 @@ async fn wardrobe(
         .map_err(|_| "fence")?
         .ok_or("fence")?;
     {
+        let permit = owner.spell_lane_permit().await.ok_or("permit")?;
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let result = slot
             .commit_world_callback(
@@ -941,6 +945,7 @@ async fn wardrobe(
         .map_err(|_| "fence")?
         .ok_or("fence")?;
     {
+        let permit = owner.spell_lane_permit().await.ok_or("permit")?;
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let result = slot
             .commit_world_callback(
@@ -983,6 +988,11 @@ async fn wardrobe(
     let next = admitted.continuity.next_command_id;
     assert_eq!(
         use_lever(owner, admitted, next, trigger, 0).await?,
+        UseDisposition::StaleState
+    );
+    let next = admitted.continuity.next_command_id;
+    assert_eq!(
+        use_lever(owner, admitted, next, trigger, 1).await?,
         UseDisposition::Rejected
     );
     assert_eq!(
