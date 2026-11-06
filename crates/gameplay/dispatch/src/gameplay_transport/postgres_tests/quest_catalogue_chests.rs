@@ -29,7 +29,7 @@ fn string(value: &Value) -> TestResult<String> {
     Ok(value.as_str().ok_or("catalogue string")?.into())
 }
 
-fn cases() -> TestResult<Vec<CatalogueChest>> {
+pub(super) fn cases() -> TestResult<Vec<CatalogueChest>> {
     cases_including(|_| false)
 }
 
@@ -1097,7 +1097,7 @@ pub(super) fn catalogue_source_world(
     .map_err(super::fixture::debug)
 }
 
-fn execute(cases: Vec<CatalogueChest>) -> TestResult {
+pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }

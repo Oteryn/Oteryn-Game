@@ -2,6 +2,10 @@
 use super::super::quest_state::npc_program::{NpcProgramCommit, NpcProgramRequest};
 use super::*;
 impl RevisionSlot {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "forwards the existing fenced NPC writer's arguments through the revision sequencer"
+    )]
     pub async fn commit_npc_program<C: super::super::item_loop_move::ItemLoopContent>(
         &mut self,
         root: &DurabilityRoot,

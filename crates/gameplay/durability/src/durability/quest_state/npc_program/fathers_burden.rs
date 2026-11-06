@@ -6,7 +6,7 @@ use crate::durability::item_loop_move::{ItemLoopContent};
 use crate::durability::item_mint_audit::Type2Transaction;
 use crate::durability::item_transfer::{scope_of};
 use oteryn_gameplay_quests::quest::npc_rules::{NpcItemKey, NpcRuleEffect};
-use serde_json::{Value, json};
+use serde_json::Value;
 
 const MATERIALS: [u32; 8] = [11545, 11546, 11547, 11548, 11549, 11550, 11551, 11552];
 const CAPE: &str = "oteryn:item.tibia.i11701";
