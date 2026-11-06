@@ -1296,11 +1296,13 @@ pub fn record_creature_kill(
         refuse("no_loot_binding", "unknown");
         return;
     };
-    let activity_death = if !personal_rewards
-        && matches!(
-            target.runtime_scope(),
-            crate::foundation::RuntimeScopeRefV1::Instance { .. }
-        ) {
+    // Retain room victory independently of loot admission. If a personal reward
+    // plan is admitted, its existing atomic settlement consumes the room death;
+    // otherwise the nonreward descendant still needs this sealed occurrence.
+    let activity_death = if matches!(
+        target.runtime_scope(),
+        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+    ) {
         let Some(frozen) = sink.queue.freeze_activity_death(runtime, target, &creature) else {
             refuse("activity_death_capture_unavailable", &creature);
             return;

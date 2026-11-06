@@ -1,7 +1,7 @@
 {
   "task_id": "questpc2",
   "round_id": "L3",
-  "scope": "Only .questpc2/LANE-L3.json; whole-quest qualification",
+  "scope": "Only qlane-meta/questpc2/LANE-L3.json; whole-quest qualification, with inherited Primal shared-mechanism regression.",
   "lifecycle": "AUTHORING",
   "counts": {
     "qualified": 0,
@@ -518,7 +518,7 @@
       "title": "Rotten Blood Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Source-native Rotten Blood room/map/template, encounter lifecycle and Instance corpse/reward composition remain unqualified; admission fixture tests alone do not qualify the quest.",
+      "blocker": "Source-native room/map/template, source boss mechanics and Instance physical corpse/reward composition remain active implementation work. Native death progression and timed refusal are PG verified.",
       "source_lane_checks": [
         {
           "lane": "questpc3",
@@ -541,6 +541,12 @@
           "goshnar_s_spite": 69044,
           "goshnar_s_megalomania_purple": 69007
         }
+      },
+      "native_death_slice": {
+        "status": "PG_VERIFIED",
+        "batch": "BATCH-native-death-2026-11-06.json",
+        "scope": "Native death -> W02 timed victory -> atomic XP/Quest/Hazard progression, retained replay and late refusal; isolated geometry and imported access prerequisites do not qualify the whole source quest.",
+        "test_filter": "l3_instance_endgame"
       }
     },
     {
@@ -548,7 +554,7 @@
       "title": "Soul War Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Source-native Soul War room/map/template, encounter lifecycle and Instance corpse/reward composition remain unqualified; admission fixture tests alone do not qualify the quest.",
+      "blocker": "Source-native room/map/template, source boss mechanics and Instance physical corpse/reward composition remain active implementation work. Native death progression and timed refusal are PG verified.",
       "source_lane_checks": [
         {
           "lane": "questpc3",
@@ -571,6 +577,12 @@
           "goshnar_s_spite": 69044,
           "goshnar_s_megalomania_purple": 69007
         }
+      },
+      "native_death_slice": {
+        "status": "PG_VERIFIED",
+        "batch": "BATCH-native-death-2026-11-06.json",
+        "scope": "Native death -> W02 timed victory -> atomic XP/Quest/Hazard progression, retained replay and late refusal; isolated geometry and imported access prerequisites do not qualify the whole source quest.",
+        "test_filter": "l3_instance_endgame"
       }
     },
     {
@@ -1395,7 +1407,13 @@
           ],
           "previous_status": "BLOCKED",
           "work_owner": "questpc2",
-          "ownership_note": "Latest owner instruction makes Game admission/mechanism gaps lane work. Current in-flight ITEMHOLD/WORLDCHG assignments are not present locally and have been requested; external ownership is not assumed."
+          "ownership_note": "Latest owner instruction makes Game admission/mechanism gaps lane work. Current in-flight ITEMHOLD/WORLDCHG assignments are not present locally and have been requested; external ownership is not assumed.",
+          "native_death_slice": {
+            "status": "PG_VERIFIED",
+            "batch": "BATCH-native-death-2026-11-06.json",
+            "scope": "Native death -> W02 timed victory -> atomic XP/Quest/Hazard progression, retained replay and late refusal; isolated geometry and imported access prerequisites do not qualify the whole source quest.",
+            "test_filter": "l3_instance_endgame"
+          }
         },
         {
           "quest": "Purple Tome Quest",
@@ -1592,6 +1610,19 @@
       }
     ],
     "self_review": ".questpc2/L3-REVIEW.md",
-    "independent_review": "not run; no freeze, readiness or publication claim"
+    "independent_review": "not run; AUTHORING branch publication only; no freeze, PR or readiness claim",
+    "native_death_2026_11_06": {
+      "record": "BATCH-native-death-2026-11-06.json",
+      "checks_passed": 11,
+      "postgres_cases_passed": 10,
+      "zero_test_results_accepted": false
+    }
+  },
+  "current_batch": {
+    "id": "native-death-2026-11-06",
+    "record": "BATCH-native-death-2026-11-06.json",
+    "whole_quest_qualifications": 0,
+    "entries_with_verified_shared_slice": 3,
+    "next": "Implement generic scope-fenced Instance corpse MINT/custody/audit bridge, then source-native encounter templates and remaining quest mechanisms. Respect cross-lane and world-change ownership; no deferral."
   }
 }

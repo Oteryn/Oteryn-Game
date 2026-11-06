@@ -26,8 +26,8 @@ These are remaining implementation gaps owned by L3, not external-owner deferral
 | Make Believe Quest | Mimar Haffar charge/shield windows, Maior Domus vocation charge windows and Phosphorus simultaneous adds/hazards lack encounter lifecycle ownership. |
 | Ravenous Madness Quest | Quest-bound corpse custody/progress and Trollwut encounter admission/completion are not composed. |
 | Rise of Devovorga | Seasonal stages/reset, coordinated incarnation encounters and participant rewards are not composed. |
-| Rotten Blood Quest | Source-native Rotten Blood room/map/template, encounter lifecycle and Instance corpse/reward composition remain unqualified; admission fixture tests alone do not qualify the quest. |
-| Soul War Quest | Source-native Soul War room/map/template, encounter lifecycle and Instance corpse/reward composition remain unqualified; admission fixture tests alone do not qualify the quest. |
+| Rotten Blood Quest | Source-native room/map/template, source boss mechanics and Instance physical corpse/reward composition remain. Native death -> atomic XP/Quest progression, timed refusal and replay are PG verified in BATCH-native-death-2026-11-06.json. |
+| Soul War Quest | Source-native room/map/template, source boss mechanics and Instance physical corpse/reward composition remain. Native death -> atomic XP/Quest progression, timed refusal and replay are PG verified in BATCH-native-death-2026-11-06.json. |
 | The Annihilator Quest | Four-player lever admission, room occupancy, six demons, escape timing and earned reward entitlement are not composed. |
 | The Demon Oak Quest | Hallowed Axe use on all four Oak parts, defender waves and final reward entitlement are not composed. |
 | The Desert Dungeon Quest | Multi-vocation offering stations and the central lever lack one atomic party/item/access occurrence and bound native targets. |

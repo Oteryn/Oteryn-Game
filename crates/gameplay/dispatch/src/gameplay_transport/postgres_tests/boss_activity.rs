@@ -564,7 +564,12 @@ fn scenario(case: Case) -> TestResult {
                 source_cell
             );
             if endgame_death {
-                endgame::prepare_level(&owner, admitted).await?;
+                endgame::prepare_level(
+                    &owner,
+                    admitted,
+                    if case == Case::PrimalDefeat { 500 } else { 250 },
+                )
+                .await?;
             } else {
                 // Imported snapshots exercise admission only, not quest completion.
                 let mut seed = h.pool.begin().await?;

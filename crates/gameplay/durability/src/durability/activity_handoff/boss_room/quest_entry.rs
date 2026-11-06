@@ -16,19 +16,27 @@ pub(super) async fn validate(
         || soul::SoulWarBoss::from_creature(creature) == Some(soul::SoulWarBoss::Megalomania);
     let soul_boss = soul_final || soul::SoulWarBoss::from_creature(creature).is_some();
     let rotten_boss = rotten::RottenBloodBoss::from_creature_key(creature);
-    if !soul_boss && rotten_boss.is_none() {
+    let primal_boss = creature == "oteryn:creature.the_primal_menace";
+    if !soul_boss && rotten_boss.is_none() && !primal_boss {
         return Ok(None);
     }
     if participants > 5 {
         return Ok(Some(ActivityRefusal::PartyCount));
     }
-    let minimum_level = if soul_boss {
+    // Crystal 201189f actions/bosses_levers/the_primal_manace.lua:6-12.
+    // An alias in the room catalogue cannot bypass the source's level 500 gate.
+    let minimum_level = if primal_boss {
+        500
+    } else if soul_boss {
         soul::MINIMUM_LEVEL
     } else {
         rotten::REQUIRED_LEVEL
     };
     if level < i64::from(minimum_level) {
         return Ok(Some(ActivityRefusal::Level));
+    }
+    if primal_boss {
+        return Ok(None);
     }
     if soul_boss {
         // The existing read projection expires taints without manufacturing a

@@ -88,13 +88,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // This preview grants no handoff. W02 resolves the actual lever roster
         // and rechecks every member inside the existing admission transaction.
-        Ok(endgame_entry::enter(encounter, &[facts], |_| async {
-            if encounter.family() == QuestFamily::PrimalOrdeal {
-                Err(EntryRefusal::ContentUnavailable)
-            } else {
-                Ok(())
-            }
-        })
-        .await)
+        Ok(endgame_entry::enter(encounter, &[facts], |_| async { Ok(()) }).await)
     }
 }
