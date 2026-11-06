@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "lane": "npcfix",
+  "branch": "claude/happy-davinci-ijz3wy-npcfix",
+  "lifecycle": "AUTHORING",
+  "inventory": "QUEST-STATUS.json#/entries",
+  "recovery": {
+    "scope_commit": "95accb923",
+    "scope_packet": "qlane-meta/npcfix/PC-PACKET.md",
+    "ownership_plan": "qlane-meta/npcfix/QSPLIT-PLAN.md",
+    "reason": "be6bca215 removed the lane records; no original QUEST-STATUS or LANE file survived in fetched NPCFIX history."
+  },
+  "scope": "Current-playable NPC DIFF/MISSING rows in the recovered 320-row NPC-AUDIT-1 report; preserve prior authored repairs and qualify actual caller paths. Father\u2019s Burden acceptance remains an atomic eleven-track write.",
+  "excluded": [
+    "Dawnport",
+    "OT-only W14",
+    "P23",
+    "X01-X06",
+    "proven foreign-owned entries",
+    "entries already QUALIFIED in a source lane"
+  ],
+  "shared_features": "Implement missing reusable engine, reward/binding, world, NPC, item or callback support here when an owned entry needs it. First inspect and reuse qengine2 and relevant lane implementations; never defer for engine support.",
+  "dependencies_inspected": {
+    "qengine2": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+    "questl2": "e5a4d6e7e46e7bf3a6754b563fd8647900de7680",
+    "questpc6": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda"
+  },
+  "publication": "Commit as blakinio with required trailers; fetch/merge remote movement and fast-forward push every green batch. No force, main write or PR.",
+  "verification": "3-6 entry batches; real PG RED/GREEN with markers and duration; fmt, changed-crate check and strict clippy; repo tooling for generated files/pins; focused tests only.",
+  "constraints": [
+    "Grants charge only on an exact match.",
+    "No credentials, binaries, donor/wiki dumps, workflow edits or tools/repository edits.",
+    "One writer; no subagents."
+  ]
+}

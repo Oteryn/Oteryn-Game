@@ -41,6 +41,7 @@ pub mod rotten_blood;
 pub mod schrodinger_island;
 pub mod soul_war;
 pub mod soul_war_dialogue;
+pub mod state_dialogue;
 pub mod task_board;
 pub mod threatened_dreams;
 pub mod unnatural_selection;

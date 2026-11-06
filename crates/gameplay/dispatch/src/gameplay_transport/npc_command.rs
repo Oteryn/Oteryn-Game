@@ -52,6 +52,7 @@ mod premium_purchase;
 mod quest_dialogue;
 mod service_context;
 mod session_transfer;
+mod state_dialogue;
 mod threatened_dreams;
 mod wrath_sleeping_dragon;
 pub(super) use premium_purchase::resume_npc_talk;
@@ -858,6 +859,13 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
+    }
+    if let Some(step) =
+        state_dialogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return state_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = dark_trails::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

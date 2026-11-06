@@ -1,0 +1,402 @@
+{
+  "schema": 1,
+  "default_messages_source": {
+    "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/npclib/npc_system/npc_handler.lua#L82",
+    "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+  },
+  "npcs": [
+    {
+      "npc": "oteryn:npc.a_restless_soul",
+      "greet": "Ahhhh! At last someone that can listen to my {story}!",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_restless_soul.lua#L56",
+        "sha256": "a0a3272d20cda4c5f4cb7f14107bd49fc55f40e9f9a983c9399e193cd8878ac9"
+      }
+    },
+    {
+      "npc": "oteryn:npc.a_strange_chalice",
+      "greet": "Hi? What do you mean 'hi' - can't you see I am a... I have to lower my voice. Did it occur to you, that this 'chalice' does not want to be disturbed?! Leave me alone!",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_chalice.lua#L117",
+        "sha256": "7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
+      }
+    },
+    {
+      "npc": "oteryn:npc.tereban",
+      "greet": "Greetings, friend. Good you are showing up.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/tereban.lua#L61",
+        "sha256": "cd19384fbcdec240275b364a8d0c61be2b9f1d39bbbf6f401c268cc268c6b212"
+      }
+    }
+  ],
+  "branches": [
+    {
+      "key": "oteryn:quest-transition/npcfix/fathers-burden/mission-offer",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "keyword": "mission",
+      "topic": 0,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "reply": [
+        "I have four sons which are very dear to me. Though they were born on the same day and even in the same hour, they took quite different paths in life. ...",
+        "Each of them chose a different vocation, one will become a knight, one a sorcerer, one a druid, and the other a paladin. In a few weeks they will reach adulthood and I am holding a birthday party for them. ...",
+        "It should become a day to remember and so I want to give them something special as a present. I searched the land for the finest craftsmen so they could create suitable presents for my sons. ...",
+        "But something of fine craftsmanship will just not cut it. So I asked them what they would need to create something special. They all came up with lists of rare and expensive items necessary for the task ahead. ...",
+        "I spent a small fortune to buy most of the materials but in the end the key components are that rare that they cannot be simply bought somewhere. ...",
+        "As far as I understood it, the places where you can get these items are quite dangerous and so it would take some adventurer to get them. ...",
+        "That would be your mission if you are interested. Uhm, so are you interested?"
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/tereban_functions.lua#L150",
+        "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/fathers-burden/mission-pending",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "keyword": "mission",
+      "topic": 0,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "op": "ne",
+          "value": 8
+        }
+      ],
+      "writes": [],
+      "reply": [
+        "Well, I need the parts of a sorcerer's robe, a paladin's bow, a knight's shield, and a druid's rod. If you cannot find one of them, ask me about it and I might provide you with some minor hints."
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/tereban_functions.lua#L132",
+        "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/fathers-burden/mission-already-complete",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "keyword": "mission",
+      "topic": 0,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "writes": [],
+      "reply": [
+        "Thank you for your help!"
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/tereban_functions.lua#L146",
+        "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/fathers-burden/accept",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "keyword": "yes",
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/quest_log",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/sinew",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/wood",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/cloth",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/silk",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/crystal",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/root",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/iron",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/scale",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I am relieved someone as capable as you will handle the task. Well, I need the parts of a sorcerer's robe, a paladin's bow, a knight's shield, and a druid's wand."
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/tereban_functions.lua#L173",
+        "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/fathers-burden/cancel",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "keyword": "no",
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [],
+      "writes": [],
+      "reply": [
+        "Oh my. I really hope you will change your mind."
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/tereban_functions.lua#L181",
+        "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/chalice/chalice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "keyword": "chalice",
+      "topic": 0,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/chalice",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "reply": [
+        "Finally. That's what I... oh wait, you're still talking to me - you will blow my cover! What do you want? Oh wait, did my {daughter} send you? It has been some time now, indeed."
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_chalice.lua#L60",
+        "sha256": "7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/chalice/daughter",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "keyword": "daughter",
+      "topic": 1,
+      "next_topic": 2,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/chalice",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "reply": [
+        "Well, besides being a renowned sorcerer and scholar at the magic academy in Edron, I am also the proud father of a beautiful daughter, Ivalisse. My little endeavour here must have troubled the poor thing all the time since I left. ...",
+        "Tell her I love her and that I will take care. I have to press on! My research is most valuable to the 'Edron-Zaoan Exploration Division'. You don't happen to have some water, do you? Ah nevermind. It's a long {story}."
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_chalice.lua#L65",
+        "sha256": "7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/chalice/story",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "keyword": "story",
+      "topic": 2,
+      "next_topic": 3,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/chalice",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "reply": [
+        "No water then? Ah drat - er, don't worry, no problem. So, from the day I received news of the discovery of Zao, I wanted to study its inhabitants, wildlife, plants and geography. ...",
+        "The academy instated the 'Edron-Zaoan Exploration Division' shortly after. I was a founding member and head of the 'Draken' research branch. ...",
+        "Since my valued and practical oriented colleague and mentor Spectulus did not join us, there is only one member of the academy exploration division to actually venture out to see the place - me. ...",
+        "You must know, most things in the academy happen 'inside', behind closed doors. But some of us simply refuse to let theory reign over practical experience in science. ...",
+        "Well, basically Spectulus is the only one likeminded so far. In fact, he incited me to work in the field in first place. So here I am! {Disguised} as a chalice."
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_chalice.lua#L73",
+        "sha256": "7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/chalice/disguised",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "keyword": "disguised",
+      "topic": 3,
+      "next_topic": 4,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/chalice",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "reply": [
+        "Oh yes, so since I wanted to study the Draken up close, I came up with an idea. Based on my research, and some slight bruises and a scar, the perfect hiding place is often right in the middle of subjects. ...",
+        "If I could enter their lair unseen and establish a forward camp, I would be able to study the draken in peace - or so I thought. Turns out the whole place was empty. I set up my camp and waited. ...",
+        "Then something happened, lizardfolk started to appear, searching the place. I had to retreat from my hiding place and advance through a safer position. ...",
+        "I needed to get close and blend in. So I came up with the ultimate disguise: a chalice. I could establish foothold right in their midst, would never be identified as an intruder and could even analyse their drinks! ...",
+        "I quickly dug a tunnel to get into what I assume is a throne room and waited for them to pick me up an carry me around! ...",
+        "They also 'used' me a bit, you don't want to go into any details here. I am really {thirsty}."
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_chalice.lua#L84",
+        "sha256": "7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/chalice/thirsty",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "keyword": "thirsty",
+      "topic": 4,
+      "next_topic": 5,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/chalice",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "reply": [
+        "Ah did I say that? Nevermind, I'm not really thirsty. It's part of this illusion. Somehow, I've been in hiding for so long, I started to... become... a vessel. ...",
+        "I don't know, I have that constant urge to drink but in this form I would not need to, there is no mouth, no stomach, no flesh and no actual need to eat, drink or sleep. ...",
+        "I basically communicate by making the metal of this goblet vibrate and using its form as a body of sound. Like a real voice, don't you think?? Yes, alright I know it's creepy. ...",
+        "I am still in the middle of my research and do not want to go home, so please tell my daughter to not worry about my - this will be a breakthrough! I already {learned} a lot!"
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_chalice.lua#L96",
+        "sha256": "7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/chalice/learned",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.a_strange_chalice",
+      "keyword": "learned",
+      "topic": 5,
+      "next_topic": 5,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/chalice",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_lava_teleport",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Yes, well for instance I tried for some time to figure out how to enter the fiery portal in this complex. Most of the draken never come up here. They rather hide somewhere down there, planning and plotting. ...",
+        " I already know how to enter it, you need to step in and yell 'zzubaran'. Unfortunately they never took me with them. ...",
+        " I heard them say it once, when a seemingly drunk guard yelled it in front of a wall mounted torch, hitting his head against it afterwards. He spilt all my contents on the floor, hmpf."
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_chalice.lua#L106",
+        "sha256": "7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/npcfix/restless-soul/story",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.a_restless_soul",
+      "keyword": "story",
+      "topic": 0,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "op": "eq",
+          "value": 37
+        }
+      ],
+      "writes": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 38
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission10",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission11",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I was captured and tortured to death by the cultists here. They worship a being that they call Ghazbaran ...",
+        "In his name they have claimed the mines and started to melt the ice to free an army of vile demons that have been frozen here for ages ...",
+        "Their plan is to create a new demon army for their master to conquer the world. Hjaern and the other shamans must learn about it! Hurry before its too late."
+      ],
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_restless_soul.lua#L69",
+        "sha256": "a0a3272d20cda4c5f4cb7f14107bd49fc55f40e9f9a983c9399e193cd8878ac9"
+      }
+    }
+  ]
+}
