@@ -446,7 +446,9 @@ GRANT SELECT ON game_bazaar_projection_state TO oteryn_game_control;
 CREATE TRIGGER game_bazaar_projection_no_truncate BEFORE TRUNCATE ON game_bazaar_projection_state EXECUTE FUNCTION game_character_reject_truncate();
 ALTER TABLE game_bazaar_projection_state ADD COLUMN version BIGINT NOT NULL DEFAULT 1 CHECK(version>0), ADD COLUMN policy_digest BYTEA NULL CHECK(octet_length(policy_digest)=32), ADD COLUMN last_observed BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE game_bazaar_publication_outbox ADD COLUMN enumeration_version BIGINT NOT NULL DEFAULT 0;
-CREATE FUNCTION game_bazaar_projection_dirty() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+-- Scope assignment and content owners do not have Bazaar projection write grants.
+-- Only this trigger updates the projection, under its pinned migration-owner path.
+CREATE FUNCTION game_bazaar_projection_dirty() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN
  UPDATE game_bazaar_projection_state SET version=version+1,enumeration_cursor='',enumeration_done=false WHERE singleton;
  RETURN NULL;
 END $$;
