@@ -30,12 +30,14 @@ use super::{LoadError, palette_appearance};
 use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
 use oteryn_world_bundle::bundle::{Family, Manifest, PaletteEntry, Sector, TerrainKind};
 use oteryn_world_bundle::sector::Attrs;
+mod source_bindings;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
 mod quest_callbacks;
 use quest_callbacks::CallbackStates;
+pub use quest_callbacks::QuestCallbackProjection;
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -154,7 +156,7 @@ impl BundleFacts {
             }
         }
         // 435: Devil Helmet sewer (movements_sewer.lua:15); 13842: thawing.lua:1.
-        let movement_definitions = [435, 12369, 13842, 26077, 26087, 26100]
+        let movement_definitions = [435, 1025, 1949, 12369, 13842, 26077, 26087, 26100]
             .into_iter()
             .chain(6594..=6608)
             .filter_map(|id| {
@@ -213,6 +215,22 @@ impl BundleFacts {
             let top = tile.items.iter().filter(|item| item.depth == 0);
             let mut blocks = false;
             for (ordinal, item) in top.enumerate() {
+                let mut item = item.clone();
+                if let Some(entry) = self.palette.get(item.palette as usize)
+                    && tile
+                        .items
+                        .iter()
+                        .filter(|other| other.depth == 0 && other.palette == item.palette)
+                        .count()
+                        == 1
+                {
+                    source_bindings::apply(
+                        pos,
+                        entry.facts.appearance_id,
+                        tile.house,
+                        &mut item.attrs,
+                    );
+                }
                 let door = self
                     .palette
                     .get(item.palette as usize)
@@ -327,7 +345,16 @@ impl BundleFacts {
                             .is_some_and(|p| p.facts.pickupable),
                         &manifest.dropped_teleports,
                     )
-                    .map(|entry| entry.quantity),
+                    .map(|entry| entry.quantity)
+                    .and_then(|quantity| {
+                        if item.attrs.unique.is_some() {
+                            Err(pickup::Ineligible::Unique)
+                        } else if item.attrs.action.is_some() {
+                            Err(pickup::Ineligible::Action)
+                        } else {
+                            Ok(quantity)
+                        }
+                    }),
                 };
                 let plain = Placement {
                     palette: item.palette,

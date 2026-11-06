@@ -1,0 +1,108 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/l1-warmaster-wardrobe",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33053,
+          "y": 31020,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5862
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission09/reward_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null,
+        "outfit_reward": {
+          "outfit": "oteryn:outfit.warmaster",
+          "addons": 0
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_new_frontier/action_outfit.lua:sha256:02f08dcaefb333bc83c8a99786d97ff2689995644af7b6b28a22dc5788b70d70"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l1-wayfarer-wardrobe",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33073,
+          "y": 31173,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 11431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission12",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/1150",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null,
+        "outfit_reward": {
+          "outfit": "oteryn:outfit.wayfarer",
+          "addons": 0
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua:sha256:f4b5e3fdb2daa7e1ab892dfa6983e58b20a2d85874c3911f87ac32fe6a3a17bf",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/item.lua:sha256:677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      ]
+    }
+  ]
+}

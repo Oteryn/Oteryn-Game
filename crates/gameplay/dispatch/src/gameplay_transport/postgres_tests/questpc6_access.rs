@@ -212,6 +212,7 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
             expected_revision: 0,
         };
         let (kind, payload) = match callback.trigger {
+            Trigger::StepOut => return Err("departure requires the StepOut fixture".into()),
             Trigger::Use => (
                 2,
                 oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
@@ -270,6 +271,7 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
         };
         let reply = wire(&owner, &mut admitted, command, kind, payload.clone()).await?;
         match callback.trigger {
+            Trigger::StepOut => return Err("departure requires the StepOut fixture".into()),
             Trigger::Use => assert_eq!(
                 oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
                 UseDisposition::Committed

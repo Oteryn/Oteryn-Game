@@ -1,3 +1,18 @@
+# Current questpc6 state — verified ownership and green engine reuse
+
+The original committed ledger has 33 rows: 1 inherited QUALIFIED (Deeper Fibula), 31 SKIPPED_OTHER_LANE under fetched immutable ownership evidence, and owner-excluded Dawnport. **No unfinished entry remains assigned to questpc6.** See LANE-QUESTPC6.json, QUEST-STATUS.json and cloud-scope-ownership.json. No foreign title is newly claimed QUALIFIED. ENGINE-BLOCKERS.json is empty; earlier dependency reservations below are historical.
+
+Latest ownership checks: questpc4/LANE-L6 owns Chyllfroest and Dreamer's Challenge; questl2's L2 status owns Demon's Lullaby and Draconia. The earlier confirmed L1/L3/L5 allocations cover the other 27 skipped rows. Exact source paths, commits and links are in the status and audit. Do not duplicate those lanes.
+
+Reusable engine features from qengine2@5a6de28c142de185594217ce1e5cbc7f4b6e6e4e are integrated without unrelated workflow updates or binary map commits. Original sewer, true read-only guards, conditional SetIf reset and failure landing support remain intact. Startup UID/AID projection uses exact source coordinates/item identity; conflicting native attributes, Houses and ambiguous top-level items cannot acquire a binding. Existing admitted native profiles remain byte-semantically unchanged; eight profiles were added, including preservation of Draconia item3206.
+
+Verification: real PostgreSQL18.6 RED6 (189.63s), GREEN6 (203.22s), callback regressions15 (235.95s), world/atomic cases6 (125.30s), and final-tree cases6 (107.10s). The last run proves raw-map plate startup binding and the single eleven-track Father's Burden transaction. Scoped units, authoring, content123, all-target checks, strict all-target/all-feature Clippy on all seven changed crates, formatting and compiler pin refresh/check passed. See cloud-engine-reuse-verification.json for markers/durations. No full workspace/nextest/PG suite ran.
+
+Current branch is claude/happy-davinci-ijz3wy-questpc6. Commit and fast-forward push this green slice now. No PR. Owner follow-up requires a push for each finished slice and at least every 30 minutes; cap investigations at ten minutes and record conservative decisions in CONTRACT-NOTES.md. A final repository integration check may be recorded in a separate small follow-up.
+
+---
+Historical resume records below are retained as evidence, not the current queue or instructions.
+
 ## Cloud source composition: Draconia escape and Dragon Fetish
 
 Current verified batch: source uid35012 escape/offering callback and native Item3206.

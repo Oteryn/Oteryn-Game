@@ -3,7 +3,7 @@
     "title": "Chakoya Iceberg Mini World Change",
     "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/92/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -11,7 +11,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Personal iceberg encounter/access owner: the chosen fixed expedition needs a Character-scoped route and credited Chakoya encounter occurrences. The current callback schema has no encounter/access scope or spawn lifecycle. An NPC-only module cannot supply that shared map/combat authority; qengine owns encounter/access.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/92/definition",
@@ -27,26 +36,20 @@
       "previous_reserved_engine_owner": "qengine",
       "disposition": "Game implementation active; WORLDCHG ownership/in-flight evidence is not established by a world-change title alone."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s1",
       "kind": "explore",
       "objective": "Reach the iceberg north of Port Hope",
       "targets": [
         "Chakoya Iceberg"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc2",
-      "lane": "L3",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
     "title": "Child of Destiny Quest",
     "canonical": "oteryn:quest.authored.child_of_destiny_quest",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/93/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -54,7 +57,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Training encounter owner for Party Skeleton combat, spear-target hit and spell-target hit events. USE/StepIn callbacks cannot observe those authoritative combat events or close a training encounter; qengine owns encounter/access. NPC talk progress alone would bypass the three training exercises.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/93/definition",
@@ -70,26 +82,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "kill",
       "objective": "Practise melee against one training skeleton",
       "targets": [
         "Party Skeleton"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc2",
-      "lane": "L3",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
     "title": "Children of the Revolution Quest",
     "canonical": "oteryn:quest.children_of_the_revolution_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/21/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -113,7 +119,24 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "source_slice_evidence": {
+      "test": "questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
+      "marker": "POSTGRES_CASE_COMPLETED questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
+      "duration_seconds": 95.635899022,
+      "log": ".questpc6/source-red.log",
+      "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Children of the Revolution Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/21/definition",
@@ -130,34 +153,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "explore",
       "objective": "Investigate the Temple of Equilibrium for Corruption.",
       "targets": [
         "Temple of Equilibrium"
       ]
-    },
-    "source_slice_evidence": {
-      "test": "questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
-      "marker": "POSTGRES_CASE_COMPLETED questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
-      "duration_seconds": 95.635899022,
-      "log": ".questpc6/source-red.log",
-      "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Chyllfroest Mini World Change",
     "canonical": "oteryn:quest.chyllfroest_mini_world_change",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/22/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -165,7 +174,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questpc4",
+      "lane": "L6",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "qlane-meta/questpc4/LANE-L6.json",
+      "source_commit": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/db95b72d3d8659a9f0a884f8169ea9da3a39c9fe/qlane-meta/questpc4/LANE-L6.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Stateful thaw/reset/pickup owner for the frozen Ursagrodon object and Tinder Box interaction. Existing taming rules have a single retained success/failure outcome, no staged thaw/reset state, and no Ursagrodon rule. A direct mount grant would bypass the frozen-object interaction. qengine owns reset/pickup.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/22/definition",
@@ -182,7 +200,7 @@
       "previous_reserved_engine_owner": "qengine",
       "disposition": "Game implementation active; WORLDCHG ownership/in-flight evidence is not established by a world-change title alone."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s1",
       "kind": "explore",
       "objective": "Cross the chosen permanent bridge from Svargrond to Chyllfroest.",
@@ -196,7 +214,7 @@
     "title": "Citizen Outfits Quest",
     "canonical": "oteryn:quest.outfit_and_addon_quests",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/82/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -204,7 +222,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Citizen Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/82/definition",
@@ -221,7 +249,7 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "collect",
       "objective": "Zbierz 100 Minotaur Leather i oddaj je Lubo.",
@@ -229,20 +257,13 @@
         "Minotaur Leather",
         "Lubo"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Citizen Outfits Quest on Rook",
     "canonical": "oteryn:quest.citizen_outfits_quest_on_rook",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/23/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -250,7 +271,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Citizen Outfits Quest on Rook: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/23/definition",
@@ -267,27 +298,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "collect",
       "objective": "Gather chicken feathers for Norma's hat.",
       "targets": [
         "Chicken Feather"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Citizen of Issavi Outfits Quest",
     "canonical": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/94/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -295,7 +319,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Citizen of Issavi Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/94/definition",
@@ -312,27 +346,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "collect",
       "objective": "Obtain an eye-embroidered veil",
       "targets": [
         "Eye-Embroidered Veil"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Crystal Warlord Outfits Quest",
     "canonical": "oteryn:quest.crystal_warlord_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/25/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -340,7 +367,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Crystal Warlord Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/25/definition",
@@ -357,27 +394,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "collect",
       "objective": "Gather twenty Major Crystalline Tokens.",
       "targets": [
         "Major Crystalline Token"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Cults of Tibia Quest",
     "canonical": "oteryn:quest.cults_of_tibia_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/26/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -391,7 +421,23 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "source_slice_evidence": {
+      "test": "questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
+      "marker": "POSTGRES_CASE_COMPLETED questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
+      "duration_seconds": 95.635899022,
+      "log": ".questpc6/source-red.log",
+      "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Encounter/party access and summon lifecycle for the cult boss rooms and Essence of Malice completion. Orc entry/exit travel and source chests can execute; the callback schema cannot own boss participants, spawned entities, room cleanup or encounter completion. These are shared qengine authority, not missing tests.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/26/definition",
@@ -407,7 +453,7 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "explore",
       "objective": "Visit the Barkless and Misguided hideouts.",
@@ -415,26 +461,13 @@
         "Barkless hideout",
         "Misguided hideout"
       ]
-    },
-    "source_slice_evidence": {
-      "test": "questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
-      "marker": "POSTGRES_CASE_COMPLETED questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
-      "duration_seconds": 95.635899022,
-      "log": ".questpc6/source-red.log",
-      "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc2",
-      "lane": "L3",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
     "title": "Dangerous Depths Quest",
     "canonical": "oteryn:quest.dangerous_depths_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/27/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -442,7 +475,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Encounter/party access owner for Warzone IV/V/VI entry, boss summon/cleanup and successful-room completion. Neither a personal quest track nor a literal USE callback supplies group admission and authoritative encounter lifecycle; qengine owns this shared piece.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/27/definition",
@@ -458,7 +500,7 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "use",
       "objective": "Complete Ordnance, Gnomal Warming and Uncharted Territory tasks.",
@@ -467,19 +509,13 @@
         "Gnomal Warming Measurements",
         "Uncharted Territory"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc2",
-      "lane": "L3",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
     "title": "Dark Trails Quest",
     "canonical": "oteryn:quest.dark_trails_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/18/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -503,7 +539,24 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "source_slice_evidence": {
+      "test": "questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
+      "marker": "POSTGRES_CASE_COMPLETED questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
+      "duration_seconds": 95.635899022,
+      "log": ".questpc6/source-red.log",
+      "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Dark Trails Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/18/definition",
@@ -520,34 +573,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s3",
       "kind": "explore",
       "objective": "Enter the abandoned sewers and investigate the suspicious traces.",
       "targets": [
         "Rathleton abandoned sewers"
       ]
-    },
-    "source_slice_evidence": {
-      "test": "questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
-      "marker": "POSTGRES_CASE_COMPLETED questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
-      "duration_seconds": 95.635899022,
-      "log": ".questpc6/source-red.log",
-      "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Dawnport Quest",
     "canonical": "oteryn:quest.dawnport_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/28/definition",
-    "status": "BLOCKED",
+    "status": "EXCLUDED",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -567,7 +606,9 @@
       "runtime_enabled": false
     },
     "excluded": true,
-    "blocker": {
+    "historical_status": "BLOCKED",
+    "exclusion": "Owner exclusion: Dawnport.",
+    "historical_blocker": {
       "missing_piece": "Owner-excluded Dawnport; no ordinary completion work authorized.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/28/definition",
@@ -581,7 +622,7 @@
       ],
       "owner": "owner-excluded"
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "collect",
       "objective": "Dig up the Strange Amulet and recover the Torn Log Book.",
@@ -595,7 +636,7 @@
     "title": "Decaying Defender Outfits Quest",
     "canonical": "oteryn:quest.decaying_defender_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/29/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -603,7 +644,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Decaying Defender Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. The existing DecayingDefender grant is explicitly base-only and cannot grant either addon. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/29/definition",
@@ -620,20 +671,13 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s1",
       "kind": "kill",
       "objective": "Defeat Bakragore at the end of the Rotten Blood journey.",
       "targets": [
         "Bakragore"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -711,7 +755,7 @@
     "title": "Deeplings World Change",
     "canonical": "oteryn:quest.deeplings_worldchange",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/30/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -719,7 +763,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Fiehonja encounter/access stage owner: the three served boss teleports only READ the crystal track at13; they do not own the world stage, boss encounter or stage reset. The shared encounter/reset owner is reserved to qengine. Writing13 directly would bypass the world change.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/30/definition",
@@ -736,26 +789,20 @@
       "previous_reserved_engine_owner": "qengine",
       "disposition": "Game implementation active; WORLDCHG ownership/in-flight evidence is not established by a world-change title alone."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s1",
       "kind": "explore",
       "objective": "Survey the initially accessible part of Fiehonja.",
       "targets": [
         "Fiehonja first-stage area"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc2",
-      "lane": "L3",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
     "title": "Demon Helmet Quest",
     "canonical": "oteryn:quest.demon_helmet_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/21/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -779,7 +826,23 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "source_reward_evidence": {
+      "test": "questpc6_reward_caches_fibula_demon_devil_draconia",
+      "marker": "POSTGRES_CASE_COMPLETED questpc6_reward_caches_fibula_demon_devil_draconia",
+      "duration_seconds": 111.437056386,
+      "log": ".questpc6/access-current.log",
+      "scope": "every source reward placement, exact native items, replay and refusal; shared access dependencies remain blocked"
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc5",
+      "lane": "L5",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f78cf159d8a2eef2703091197ea661d26537137a/qlane-meta/questpc5/LANE-L5.json",
+      "source_commit": "f78cf159d8a2eef2703091197ea661d26537137a",
+      "source_path": "qlane-meta/questpc5/LANE-L5.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Paired pressure-plate StepIn/StepOut owner for the Gate of the Lost Souls. Callback Trigger has no StepOut; a sequential track flag cannot preserve the original physical plate restoration. qengine owns this shared piece. All three reward claims are separately exercised.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/21/definition",
@@ -796,33 +859,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s1",
       "kind": "explore",
       "objective": "Descend through the Edron Hero Cave to the expertise gate.",
       "targets": [
         "Edron Hero Cave"
       ]
-    },
-    "source_reward_evidence": {
-      "test": "questpc6_reward_caches_fibula_demon_devil_draconia",
-      "marker": "POSTGRES_CASE_COMPLETED questpc6_reward_caches_fibula_demon_devil_draconia",
-      "duration_seconds": 111.437056386,
-      "log": ".questpc6/access-current.log",
-      "scope": "every source reward placement, exact native items, replay and refusal; shared access dependencies remain blocked"
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc5",
-      "lane": "L5",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc5/qlane-meta/questpc5/LANE-L5.json"
     }
   },
   {
     "title": "Demon Outfits Quest",
     "canonical": "oteryn:quest.demon_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/32/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -830,7 +880,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Demon Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/32/definition",
@@ -847,27 +907,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "explore",
       "objective": "Present completion of the Annihilator challenge for the base outfit.",
       "targets": [
         "Annihilator completion intent"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Demon Wars World Change",
     "canonical": "oteryn:quest.authored.demon_wars_world_change",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/95/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -875,7 +928,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Encounter/access and faction-war reset owner for Shaburak Demon/Lord/Prince progression. A quest NPC module cannot establish the shared combat occurrence and faction encounter scope. The callback schema has no encounter lifecycle; qengine owns encounter/access and reset.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/95/definition",
@@ -891,26 +953,20 @@
       "previous_reserved_engine_owner": "qengine",
       "disposition": "Game implementation active; WORLDCHG ownership/in-flight evidence is not established by a world-change title alone."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "kill",
       "objective": "Defeat twenty Shaburak demons",
       "targets": [
         "Shaburak Demon"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc2",
-      "lane": "L3",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
     "title": "Demon's Lullaby",
     "canonical": "oteryn:quest.authored.demon_s_lullaby",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/96/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -918,7 +974,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questl2",
+      "lane": "L2",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
+      "source_commit": "7e16b64ee099c8e81cabf3b4e420531269bb4c1a",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/7e16b64ee099c8e81cabf3b4e420531269bb4c1a/tools/content-schema/quest-authoring/questl2-status.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Atomic carried-item hand-in and quest progression for the infant feeding requests, plus the infant item lifecycle. Storage-only NPC execution rejects item effects, and the sole native item exception is Tereban. qengine2 owns the general hand-in owner; do not perform separate item and quest writes.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/96/definition",
@@ -934,7 +999,7 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "collect",
       "objective": "Bring mouldy cheese for the first chosen feeding request",
@@ -947,7 +1012,7 @@
     "title": "Devil Helmet Quest",
     "canonical": "oteryn:quest.devil_helmet_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/23/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -980,35 +1045,6 @@
       "stage": "s1",
       "native_dispatch_binding": null,
       "runtime_enabled": false
-    },
-    "blocker": {
-      "missing_piece": "Inherited pressure lifecycle and ordinary sewer dropdown now pass all six focused PostgreSQL cases. Complete quest access-to-reward qualification remains to be implemented and tested.",
-      "evidence": [
-        "content/quests/definitions/quests-00000-00099.json:1#/records/23/definition",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
-        "crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs:212",
-        ".questpc6/NOTE-coordination.md:16",
-        "docs/agents/evidence/quests-2-20261102/devil_helmet.json:1"
-      ],
-      "attempts": [
-        "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
-        "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
-        "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module.",
-        "Implemented source uid25030 on committed paced movement with shared callback-item removal. Actual PG RED41.72s; final GREEN3/3 with three non-zero completion markers, replay and no fabricated quest receipts. Full quest remains unfinished."
-      ],
-      "previous_reserved_engine_owner": "qengine",
-      "owner": "questpc6",
-      "disposition": "Unfinished Game work owned by questpc6; not a terminal BLOCKED state.",
-      "previous_missing_piece": "StepOut paired with StepIn on plate uid25030, including creation/removal of435 on the other tile. Trigger only admits Use/StepIn, and passage effects operate on existing objects. qengine owns StepOut/reset. Reward/key receipts do not supply that pressure-plate authority."
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Reach the Cyclops chamber under the Ancient Temple.",
-      "targets": [
-        "Ancient Temple",
-        "Cyclops chamber"
-      ]
     },
     "source_reward_evidence": {
       "test": "questpc6_reward_caches_fibula_demon_devil_draconia",
@@ -1083,14 +1119,46 @@
       "owner": "questpc5",
       "lane": "L5",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc5/qlane-meta/questpc5/LANE-L5.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f78cf159d8a2eef2703091197ea661d26537137a/qlane-meta/questpc5/LANE-L5.json",
+      "source_commit": "f78cf159d8a2eef2703091197ea661d26537137a",
+      "source_path": "qlane-meta/questpc5/LANE-L5.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
+      "missing_piece": "Inherited pressure lifecycle and ordinary sewer dropdown now pass all six focused PostgreSQL cases. Complete quest access-to-reward qualification remains to be implemented and tested.",
+      "evidence": [
+        "content/quests/definitions/quests-00000-00099.json:1#/records/23/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+        "crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs:212",
+        ".questpc6/NOTE-coordination.md:16",
+        "docs/agents/evidence/quests-2-20261102/devil_helmet.json:1"
+      ],
+      "attempts": [
+        "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+        "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+        "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module.",
+        "Implemented source uid25030 on committed paced movement with shared callback-item removal. Actual PG RED41.72s; final GREEN3/3 with three non-zero completion markers, replay and no fabricated quest receipts. Full quest remains unfinished."
+      ],
+      "previous_reserved_engine_owner": "qengine",
+      "owner": "questpc6",
+      "disposition": "Unfinished Game work owned by questpc6; not a terminal BLOCKED state.",
+      "previous_missing_piece": "StepOut paired with StepIn on plate uid25030, including creation/removal of435 on the other tile. Trigger only admits Use/StepIn, and passage effects operate on existing objects. qengine owns StepOut/reset. Reward/key receipts do not supply that pressure-plate authority."
+    },
+    "historical_first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the Cyclops chamber under the Ancient Temple.",
+      "targets": [
+        "Ancient Temple",
+        "Cyclops chamber"
+      ]
     }
   },
   {
     "title": "Devovorga's Essence Mini World Change",
     "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/97/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1098,7 +1166,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Encounter/party access owner for the Vengoth incarnation offering, Anmothra spawn, participant admission and terminal boss cleanup. Static callbacks cannot own the incarnation encounter lifecycle; qengine owns encounter/access.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/97/definition",
@@ -1114,26 +1191,20 @@
       "previous_reserved_engine_owner": "qengine",
       "disposition": "Game implementation active; WORLDCHG ownership/in-flight evidence is not established by a world-change title alone."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s1",
       "kind": "explore",
       "objective": "Find the incarnation entrance in Vengoth",
       "targets": [
         "Vengoth incarnation entrance"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc2",
-      "lane": "L3",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
     "title": "Down the Drain Mini World Change",
     "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/98/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1141,7 +1212,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Flooded-island encounter/access and reset owner for the Water Elemental dungeon. The accepted personal route still needs authoritative entry and encounter completion, while current callbacks only process individual map interactions. qengine owns encounter/access and reset.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/98/definition",
@@ -1157,26 +1237,20 @@
       "previous_reserved_engine_owner": "qengine",
       "disposition": "Game implementation active; WORLDCHG ownership/in-flight evidence is not established by a world-change title alone."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s1",
       "kind": "explore",
       "objective": "Reach the flooded island south of Outlaw Camp",
       "targets": [
         "Outlaw Camp flooded island"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc2",
-      "lane": "L3",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
     "title": "Draccoon Herald Outfits Quest",
     "canonical": "oteryn:quest.authored.draccoon_herald_outfits_quest",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/99/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1184,7 +1258,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Draccoon Herald Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/99/definition",
@@ -1201,27 +1285,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "collect",
       "objective": "Obtain one set of herald wings",
       "targets": [
         "Heralds Wings"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Draconia Quest",
     "canonical": "oteryn:quest.draconia_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/26/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -1250,7 +1327,31 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "source_reward_evidence": {
+      "test": "questpc6_reward_caches_fibula_demon_devil_draconia",
+      "marker": "POSTGRES_CASE_COMPLETED questpc6_reward_caches_fibula_demon_devil_draconia",
+      "duration_seconds": 111.437056386,
+      "log": ".questpc6/access-current.log",
+      "scope": "every source reward placement, exact native items, replay and refusal; shared access dependencies remain blocked"
+    },
+    "shared_mechanism_progress": {
+      "failure_landing": "Implemented; two real PostgreSQL regressions now pass after RED 2/2, GREEN 2/2. Callback source composition, conditional storage reset and atomic NPC exchange remain active work.",
+      "evidence": "qlane-meta/questpc6/cloud-failure-landing-verification.json",
+      "conditional_reset": "Implemented and verified: PG RED3/3 (3.85s), GREEN3/3 (5.88s), exact match/absent/later values and receipt replay. Source composition remains active.",
+      "conditional_reset_evidence": "qlane-meta/questpc6/cloud-conditional-reset-verification.json",
+      "source_escape": "Native source callback and Item3206 composed: four actual PG cases pass, 57.25s; no full quest qualification. Remaining source route and NPC acquisition are active implementation.",
+      "source_escape_evidence": "qlane-meta/questpc6/cloud-draconia-escape-verification.json"
+    },
+    "cross_lane_allocation": {
+      "owner": "questl2",
+      "lane": "L2",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
+      "source_commit": "7e16b64ee099c8e81cabf3b4e420531269bb4c1a",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/7e16b64ee099c8e81cabf3b4e420531269bb4c1a/tools/content-schema/quest-authoring/questl2-status.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Active source-route work: compose NPC acquisition and remaining top-floor lever predicate; reuse delivered qengine2 exchange/world effects. No shared-engine dependency is deferred.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/26/definition",
@@ -1266,7 +1367,7 @@
       "owner": "questpc6",
       "disposition": "Active implementation here; owner forbids waiting for a shared engine."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s1",
       "kind": "use",
       "objective": "Enter Hellgate with Key 3012 and reach Draconia.",
@@ -1275,28 +1376,13 @@
         "Hellgate",
         "Draconia"
       ]
-    },
-    "source_reward_evidence": {
-      "test": "questpc6_reward_caches_fibula_demon_devil_draconia",
-      "marker": "POSTGRES_CASE_COMPLETED questpc6_reward_caches_fibula_demon_devil_draconia",
-      "duration_seconds": 111.437056386,
-      "log": ".questpc6/access-current.log",
-      "scope": "every source reward placement, exact native items, replay and refusal; shared access dependencies remain blocked"
-    },
-    "shared_mechanism_progress": {
-      "failure_landing": "Implemented; two real PostgreSQL regressions now pass after RED 2/2, GREEN 2/2. Callback source composition, conditional storage reset and atomic NPC exchange remain active work.",
-      "evidence": "qlane-meta/questpc6/cloud-failure-landing-verification.json",
-      "conditional_reset": "Implemented and verified: PG RED3/3 (3.85s), GREEN3/3 (5.88s), exact match/absent/later values and receipt replay. Source composition remains active.",
-      "conditional_reset_evidence": "qlane-meta/questpc6/cloud-conditional-reset-verification.json",
-      "source_escape": "Native source callback and Item3206 composed: four actual PG cases pass, 57.25s; no full quest qualification. Remaining source route and NPC acquisition are active implementation.",
-      "source_escape_evidence": "qlane-meta/questpc6/cloud-draconia-escape-verification.json"
     }
   },
   {
     "title": "Dragon Slayer Outfits Quest",
     "canonical": "oteryn:quest.authored.dragon_slayer_outfits_quest",
     "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/0/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1304,7 +1390,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Dragon Slayer Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00300-00351.json:1#/records/0/definition",
@@ -1321,27 +1417,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "kill",
       "objective": "Defeat twenty dragons in the chosen trial",
       "targets": [
         "Dragon"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Dream Warden Outfits Quest",
     "canonical": "oteryn:quest.dream_warden_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/34/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1349,7 +1438,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Dream Warden Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/34/definition",
@@ -1366,7 +1465,7 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "use",
       "objective": "Help the Dream Butterfly Mend What's Broken.",
@@ -1374,20 +1473,13 @@
         "Dream Butterfly",
         "Mend What's Broken"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Dream Warrior Outfits Quest",
     "canonical": "oteryn:quest.dream_warrior_outfits_quest",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/73/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1395,7 +1487,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Dream Warrior Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00200-00299.json:1#/records/73/definition",
@@ -1412,27 +1514,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "collect",
       "objective": "Gather five Pomegranates for the first addon.",
       "targets": [
         "Pomegranate"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Dreamer's Challenge Quest",
     "canonical": "oteryn:quest.dreamer_s_challenge_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/35/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -1461,7 +1556,23 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "source_slice_evidence": {
+      "test": "questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
+      "marker": "POSTGRES_CASE_COMPLETED questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
+      "duration_seconds": 95.635899022,
+      "log": ".questpc6/source-red.log",
+      "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
+    },
+    "cross_lane_allocation": {
+      "owner": "questpc4",
+      "lane": "L6",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "qlane-meta/questpc4/LANE-L6.json",
+      "source_commit": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/db95b72d3d8659a9f0a884f8169ea9da3a39c9fe/qlane-meta/questpc4/LANE-L6.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Shared reset/pickup and conditional puzzle-world owner for the carrot/Fire Bug/Death Ring entrance and later plate/maze state. The seven stateless exits execute, but a teleport-only callback cannot atomically validate and consume the puzzle offerings, reset the physical puzzle and choose failure recovery. qengine owns reset/pickup; item exchanges additionally need qengine2.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/35/definition",
@@ -1477,7 +1588,7 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s1",
       "kind": "use",
       "objective": "Open the dream entrance with a carrot, Fire Bug and Death Ring.",
@@ -1486,20 +1597,13 @@
         "Fire Bug",
         "Death Ring"
       ]
-    },
-    "source_slice_evidence": {
-      "test": "questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
-      "marker": "POSTGRES_CASE_COMPLETED questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
-      "duration_seconds": 95.635899022,
-      "log": ".questpc6/source-red.log",
-      "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
     }
   },
   {
     "title": "Druid Outfits Quest",
     "canonical": "oteryn:quest.druid_outfits_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/29/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -1508,7 +1612,24 @@
         "retained_test": "quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal"
       }
     ],
-    "blocker": {
+    "source_slice_evidence": {
+      "test": "questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
+      "marker": "POSTGRES_CASE_COMPLETED questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
+      "duration_seconds": 95.635899022,
+      "log": ".questpc6/source-red.log",
+      "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Druid Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/29/definition",
@@ -1524,27 +1645,13 @@
       "previous_reserved_engine_owner": "qengine2",
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
-    },
-    "source_slice_evidence": {
-      "test": "questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
-      "marker": "POSTGRES_CASE_COMPLETED questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid",
-      "duration_seconds": 95.635899022,
-      "log": ".questpc6/source-red.log",
-      "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Druid Outfits Quest on Rook",
     "canonical": "oteryn:quest.druid_outfits_quest_on_rook",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/36/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1552,7 +1659,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Druid Outfits Quest on Rook: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/36/definition",
@@ -1569,27 +1686,20 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "collect",
       "objective": "Gather fifty Bear Paws for Tom.",
       "targets": [
         "Bear Paw"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Elemental Spheres Quest",
     "canonical": "oteryn:quest.elemental_spheres_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/37/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1597,7 +1707,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Encounter/party access owner for the four sphere participants, machines and Lord of the Elements summon/cleanup. Existing lord-room exit only resets four storage tracks; it cannot establish participant admission or own the boss lifecycle. qengine owns encounter/access.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/37/definition",
@@ -1614,7 +1733,7 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "collect",
       "objective": "Gather twenty enchanted gems for the chosen sphere route.",
@@ -1624,19 +1743,13 @@
         "Small Enchanted Amethyst",
         "Small Enchanted Sapphire"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc2",
-      "lane": "L3",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   },
   {
     "title": "Elementalist Outfits Quest",
     "canonical": "oteryn:quest.elementalist_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/38/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1644,7 +1757,17 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json",
+      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Elementalist Outfits Quest: general durable quest outfit/addon entitlement composed with its source objective/hand-in. QuestOutfitGrant is closed to Revenant-base and DecayingDefender-base; NPC storage execution rejects Outfit/OutfitAddon/item effects. qengine2 owns the general outfit/addon and atomic hand-in engine, so a lane NPC module cannot truthfully finish this reward by setting a quest flag.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/38/definition",
@@ -1661,7 +1784,7 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s2",
       "kind": "use",
       "objective": "Clean the dungeon floor and walls with the Slime Gobbler.",
@@ -1669,20 +1792,13 @@
         "Slime Gobbler",
         "slime fungus"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "qengine2",
-      "lane": "L1",
-      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
-      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
     "title": "Elvenbane Quest",
     "canonical": "oteryn:quest.authored.elvenbane_quest",
     "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/1/definition",
-    "status": "UNFINISHED",
+    "status": "SKIPPED_OTHER_LANE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -1690,7 +1806,16 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
+    "cross_lane_allocation": {
+      "owner": "questpc2",
+      "lane": "L3",
+      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+    },
+    "historical_status": "UNFINISHED",
+    "historical_blocker": {
       "missing_piece": "Encounter/access owner for the mandatory Dragon and five upper-floor defenders before terminal loot. Literal callbacks cannot prove combat completion or own the chosen personal encounter route; qengine owns encounter/access. Giving terminal loot from an NPC would bypass the required defenders.",
       "evidence": [
         "content/quests/definitions/quests-00300-00351.json:1#/records/1/definition",
@@ -1706,7 +1831,7 @@
       "owner": "questpc6",
       "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
     },
-    "first_unqualified_stage": {
+    "historical_first_unqualified_stage": {
       "key": "s1",
       "kind": "explore",
       "objective": "Reach Elvenbane from Ab'Dendriel and enter the stone-ring basement entrance.",
@@ -1714,12 +1839,6 @@
         "Elvenbane Castle",
         "stone-ring basement"
       ]
-    },
-    "cross_lane_allocation": {
-      "owner": "questpc2",
-      "lane": "L3",
-      "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/claude/happy-davinci-ijz3wy-questpc2/qlane-meta/questpc2/LANE-L3.json"
     }
   }
 ]

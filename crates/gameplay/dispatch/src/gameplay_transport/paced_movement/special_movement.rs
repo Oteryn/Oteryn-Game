@@ -143,6 +143,7 @@ fn quest_sewer_step(
                 &[placement_key],
                 &[],
                 false,
+                None,
             ),
             EntrySource::Added(_) => map.facts.remove_movement_item(position, 435),
             EntrySource::Ground(_) | EntrySource::House(_) => false,
@@ -203,6 +204,7 @@ pub(super) fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
         &[],
         &[],
         false,
+        None,
     )
 }
 

@@ -1,0 +1,77 @@
+{
+  "scope": "Original committed 33-row questpc6 ledger after owner-mandated cross-lane exclusions. No foreign quest is qualified by this audit.",
+  "counts": {
+    "EXCLUDED": 1,
+    "QUALIFIED": 1,
+    "SKIPPED_OTHER_LANE": 31
+  },
+  "owned_remaining": 0,
+  "owned_entries": [
+    {
+      "title": "Deeper Fibula Quest",
+      "canonical": "oteryn:quest.deeper_fibula_quest",
+      "status": "QUALIFIED"
+    }
+  ],
+  "source_branches": {
+    "questpc2": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc2",
+      "commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e"
+    },
+    "qengine2": {
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e"
+    },
+    "questpc4": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc4",
+      "commit": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe"
+    },
+    "questpc5": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "commit": "f78cf159d8a2eef2703091197ea661d26537137a"
+    },
+    "questl2": {
+      "branch": "claude/happy-davinci-ijz3wy-questl2",
+      "commit": "7e16b64ee099c8e81cabf3b4e420531269bb4c1a"
+    }
+  },
+  "new_ownership_evidence": [
+    {
+      "title": "Chyllfroest Mini World Change",
+      "owner": "questpc4",
+      "lane": "L6",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "qlane-meta/questpc4/LANE-L6.json",
+      "source_commit": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/db95b72d3d8659a9f0a884f8169ea9da3a39c9fe/qlane-meta/questpc4/LANE-L6.json"
+    },
+    {
+      "title": "Demon's Lullaby",
+      "owner": "questl2",
+      "lane": "L2",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
+      "source_commit": "7e16b64ee099c8e81cabf3b4e420531269bb4c1a",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/7e16b64ee099c8e81cabf3b4e420531269bb4c1a/tools/content-schema/quest-authoring/questl2-status.json"
+    },
+    {
+      "title": "Draconia Quest",
+      "owner": "questl2",
+      "lane": "L2",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
+      "source_commit": "7e16b64ee099c8e81cabf3b4e420531269bb4c1a",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/7e16b64ee099c8e81cabf3b4e420531269bb4c1a/tools/content-schema/quest-authoring/questl2-status.json"
+    },
+    {
+      "title": "Dreamer's Challenge Quest",
+      "owner": "questpc4",
+      "lane": "L6",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "qlane-meta/questpc4/LANE-L6.json",
+      "source_commit": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/db95b72d3d8659a9f0a884f8169ea9da3a39c9fe/qlane-meta/questpc4/LANE-L6.json"
+    }
+  ],
+  "absent_original_lane_packet": "No LANE-*.json existed at start db355fae2; this audit preserves the actual committed ledger and verifies foreign allocation against fetched packets."
+}
