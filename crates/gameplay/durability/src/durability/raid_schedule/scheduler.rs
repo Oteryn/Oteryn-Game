@@ -122,6 +122,11 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(RaidSchedulerOutcome::default());
             }
+            for kind in oteryn_gameplay_world_change::timed::EventKind::ALL {
+                crate::durability::world_event::changes::timed::poll(
+                    &mut tx, request.world, request.reset_epoch, kind, request.now_ms,
+                ).await?;
+            }
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:raid-world:' || encode($1,'hex'),0))")
                 .bind(request.world.as_bytes().as_slice()).execute(&mut *tx).await?;
             // Retire previous-epoch firings before checking a new admitted epoch.
