@@ -548,3 +548,30 @@ fn unqualified_hazard_receipt_and_mount_contracts_are_rejected() {
     let effect = fixture_rule("mount", serde_json::json!([{"kind":"mount","mount":202}]));
     assert!(fixture_catalog(&fixture_document(vec![effect])).is_err());
 }
+
+#[test]
+fn state_only_selection_never_invents_inventory_clock_or_actor_facts() -> Result<(), NpcRuleError> {
+    for guard in [
+        serde_json::json!({"kind":"item","item":"oteryn:item.test","count":1,"op":"lt"}),
+        serde_json::json!({"kind":"level","op":"eq","value":0}),
+        serde_json::json!({"kind":"storage_time","track":"oteryn:quest-progress/test/value","op":"le"}),
+    ] {
+        let mut rule = fixture_rule("state-only", serde_json::json!([]));
+        rule["guards"] = serde_json::json!([guard]);
+        let catalog = fixture_catalog(&fixture_document(vec![rule]))?;
+        assert!(matches!(
+            catalog.plan_state("oteryn:npc.test", "mission", 0, &BTreeMap::new()),
+            Err(NpcRuleError::MissingNativeResolution(_))
+        ));
+    }
+    let rule = fixture_rule(
+        "reward",
+        serde_json::json!([{"kind":"give_money","amount":1}]),
+    );
+    let catalog = fixture_catalog(&fixture_document(vec![rule]))?;
+    assert!(matches!(
+        catalog.plan_state("oteryn:npc.test", "mission", 0, &BTreeMap::new()),
+        Err(NpcRuleError::MissingNativeResolution(_))
+    ));
+    Ok(())
+}

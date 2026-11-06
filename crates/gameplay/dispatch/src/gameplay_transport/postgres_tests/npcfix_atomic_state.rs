@@ -10,7 +10,7 @@ use oteryn_gameplay_quests::quest::{
 use std::sync::Arc;
 
 const QUEST: &str = "oteryn:quest.a_father_s_burden_quest";
-const KEY: &str = "oteryn:quest-transition/npcfix/fathers-burden/accept";
+const KEY: &str = "oteryn:quest-transition/state/a_father_s_burden_quest/tereban_functions/mission-accept";
 
 fn acceptance(failure: Option<QuestRefusal>) -> TestResult<Arc<QuestStateCatalogue>> {
     // Existing normalized source, Crystal 201189f, tereban_functions.lua:173-184.
@@ -108,7 +108,11 @@ fn scenario() -> TestResult {
                 deps.initialize(&owner).await;
                 let fence = owner.current_quest_fence(deps.admitted.game_session_id).await
                     .map_err(|()| "fence")?.ok_or("live fence")?;
-                let catalogue = acceptance(failure)?;
+                let catalogue = if failure.is_none() {
+                    let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
+                    assert!(loaded.catalogue().transition(KEY).is_some(), "production acceptance transition");
+                    Arc::new(loaded.catalogue().clone())
+                } else { acceptance(failure)? };
                 let request = QuestTransitionRequest { transition_key: KEY.into(), cause: QuestCause::Command(
                     CommandRef::new(deps.admitted.game_session_id, CommandId::new(1).map_err(debug)?)) };
                 let outcome = h.root.commit_character_quest_transition(&authority, &h.node, fence,

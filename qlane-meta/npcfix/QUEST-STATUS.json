@@ -3027,6 +3027,35 @@
         "diff_check": "PASS",
         "self_review": "No findings; migration changes only the bound, preserves all shape/deferred guards; no new runtime public API or fence changes."
       }
+    },
+    {
+      "name": "Production source state planner and catalogue binding",
+      "state": "QUALIFIED",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX eleven-track acceptance None",
+        "seconds": 8.67,
+        "failure": "Production acceptance transition missing",
+        "log": "/tmp/npcfix-evidence/state-red.log"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX eleven-track acceptance",
+        "seconds": 23.63,
+        "cases": [
+          "production eleven-track acceptance and exact receipt replay",
+          "late stage refusal rolls back all tracks and revision",
+          "arithmetic refusal rolls back all tracks and revision"
+        ],
+        "log": "/tmp/npcfix-evidence/state-green-final.log"
+      },
+      "unit_checks": "253 quest library tests passed in 19.26s, including state-only unknown-fact refusal",
+      "checks": {
+        "cargo_fmt": "PASS",
+        "cargo_check": "PASS quests all targets/features 10.85s",
+        "clippy": "PASS quests all targets/features -D warnings 10.17s",
+        "diff_check": "PASS",
+        "self_review": "Source guards remain durable predicates; existing track owners/defaults/bounds retained; unknown inventory/actor/clock/reward facts cannot select a state branch. No new schema or fence semantics."
+      },
+      "next": "Finish the separate NPC caller integration, then continue remaining NPCs; no NPC row qualified by this mechanism prerequisite."
     }
   ],
   "owner_constraints": {
@@ -3041,5 +3070,12 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Three source-backed NPC state callers: Tereban, Restless Soul, Strange Chalice"
+  "next_batch": "Three source-backed NPC state callers: Tereban, Restless Soul, Strange Chalice",
+  "active_batch": {
+    "name": "Tereban production caller",
+    "state": "AUTHORING",
+    "red": "Real PG test: missing Tereban talk entry, 105.33s. Current fixture reaches source offer; confirmed acceptance refused because fixture lacks the runtime character lease binding used by existing Grizzly callers. Add that actual current lease, retaining every assertion.",
+    "logs": "/tmp/npcfix-evidence/{talk-red,caller-green-final}.log",
+    "publication": "Only green planner/catalogue/atomic test belongs to current prerequisite commit; caller code and test remain in worktree."
+  }
 }

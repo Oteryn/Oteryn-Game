@@ -284,6 +284,7 @@ pub(super) fn plan(
     catalogue: &NpcRuleCatalog,
     input: &NpcRuleInput<'_>,
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
+    state_only: bool,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
@@ -315,6 +316,9 @@ pub(super) fn plan(
             }
             let mut eligible = true;
             for guard in &rule.guards {
+                if state_only && !matches!(guard, NpcRuleGuard::Storage { .. }) {
+                    return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
+                }
                 if !state.guard(guard, input)? {
                     eligible = false;
                     break;
@@ -324,6 +328,16 @@ pub(super) fn plan(
                 continue;
             }
             for effect in &rule.effects {
+                if state_only
+                    && !matches!(
+                        effect,
+                        NpcRuleEffect::Set { .. }
+                            | NpcRuleEffect::Add { .. }
+                            | NpcRuleEffect::SetTopic { .. }
+                    )
+                {
+                    return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
+                }
                 let concrete = match effect {
                     NpcRuleEffect::BigfootMatchmakerTarget | NpcRuleEffect::BigfootSoulMelody => {
                         resolve_native(effect, &rule.key, resolutions)?

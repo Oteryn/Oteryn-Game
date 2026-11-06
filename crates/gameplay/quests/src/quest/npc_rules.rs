@@ -1,19 +1,12 @@
-//! Test-only source qualification for declarative NPC branches in quest batch three.
-//!
-//! Mounted only with `cfg(test)`: it validates captured programs and builds pure
-//! plans for source tests. No production NPC API, adapter or writer executes them.
-//! Coordinator ANSWER forbids changing those owners in this batch:
-//! https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671
-//! Crystal `201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20`
-//! defines keyword matching; individual programs retain their source references.
+//! Source-backed declarative NPC selection. The state-only caller rejects every
+//! inventory, clock, appearance and reward dependency it cannot authoritatively read.
+//! Crystal 201189f data/npclib/npc.lua:13-20 defines keyword matching.
 
 mod evaluate;
 mod keyword;
 mod validate;
 
-// Directory-scanned source data only. No NPC owner applies these plans yet;
-// see PR2843#issuecomment-6589900671. Each quest can add its own file without
-// editing a shared include list or depending on other quest commits.
+// Directory-scanned source programmes; callers select their owned documents.
 include!(concat!(env!("OUT_DIR"), "/npc_rule_programs.rs"));
 
 use std::collections::BTreeMap;
@@ -389,6 +382,38 @@ impl NpcRuleCatalog {
             .find(|program| program.document.quest == quest)
     }
 
+    /// Select only branches whose facts and effects belong to QuestState/topic.
+    /// Missing inventory or actor facts never mean zero inventory or a default actor.
+    pub fn plan_state(
+        &self,
+        npc: &str,
+        message: &str,
+        topic: i32,
+        tracks: &BTreeMap<String, i64>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        let inventory = NpcInventorySnapshot::default();
+        let outfits = BTreeMap::new();
+        evaluate::plan(
+            self,
+            &NpcRuleInput {
+                npc,
+                trigger: NpcRuleTrigger::Say,
+                message,
+                topic,
+                tracks,
+                inventory: &inventory,
+                now_epoch_seconds: 0,
+                calendar_month: 0,
+                level: 0,
+                vocation: "",
+                sex: 0,
+                outfits: &outfits,
+            },
+            &BTreeMap::new(),
+            true,
+        )
+    }
+
     pub fn plan(&self, input: &NpcRuleInput<'_>) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         self.plan_with_native(input, &BTreeMap::new())
     }
@@ -401,7 +426,7 @@ impl NpcRuleCatalog {
         input: &NpcRuleInput<'_>,
         resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        evaluate::plan(self, input, resolutions)
+        evaluate::plan(self, input, resolutions, false)
     }
 }
 
