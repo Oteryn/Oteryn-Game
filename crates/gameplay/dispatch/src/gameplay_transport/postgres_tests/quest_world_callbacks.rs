@@ -225,6 +225,16 @@ fn world_ordinal(
     appearance: u16,
     ordinal: u8,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_remote(callback, trigger, appearance, ordinal, None)
+}
+
+fn world_remote(
+    callback: &Callback,
+    trigger: Position,
+    appearance: u16,
+    ordinal: u8,
+    remote_appearance: Option<u16>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -241,6 +251,18 @@ fn world_ordinal(
         .map(|p| p.position)
         .chain(callback.offerings.iter().map(|p| p.position))
         .chain(callback.teleport)
+        .chain(
+            callback
+                .remote_teleport
+                .as_ref()
+                .map(|remote| remote.position),
+        )
+        .chain(
+            callback
+                .remote_teleport
+                .as_ref()
+                .map(|remote| remote.destination),
+        )
     {
         cells
             .entry((position.floor, position.x, position.y))
@@ -376,6 +398,42 @@ fn world_ordinal(
                 depth: 0,
                 attrs: Default::default(),
             });
+    }
+    if let Some(remote) = &callback.remote_teleport
+        && let Some(appearance) = remote_appearance
+    {
+        let palette = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{}", remote.appearance),
+            family: bundle::Family::Terrain,
+            id: palette,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+        cells
+            .entry((remote.position.floor, remote.position.x, remote.position.y))
+            .or_default()
+            .push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: Default::default(),
+            });
+        if appearance != remote.appearance {
+            let id = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: bundle::Family::Terrain,
+                id,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+        }
     }
     let floors: std::collections::BTreeSet<_> = cells.keys().map(|(f, _, _)| *f).collect();
     data.manifest.world = bundle::Extent {

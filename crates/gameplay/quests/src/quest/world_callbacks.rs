@@ -97,6 +97,14 @@ pub struct MonkReward {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct RemoteTeleport {
+    pub position: Position,
+    pub appearance: u16,
+    pub destination: Position,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Callback {
     pub key: String,
     pub quest: String,
@@ -107,6 +115,9 @@ pub struct Callback {
     pub reversible: bool,
     pub passages: Vec<Passage>,
     pub teleport: Option<Position>,
+    /// Select an alternate destination from the current composed remote tile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote_teleport: Option<RemoteTeleport>,
     pub storage: Vec<Storage>,
     /// Checked against the progression owner in the same fenced quest transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -173,6 +184,14 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback.remote_teleport.as_ref().is_some_and(|remote| {
+                !valid_pos(remote.position)
+                    || !valid_pos(remote.destination)
+                    || remote.appearance == 0
+                    || callback.trigger != Trigger::StepIn
+                    || !callback.is_read_only()
+                    || callback.teleport.is_none()
+            })
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
             || unique_storage.len() != callback.storage.len()
@@ -359,6 +378,31 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn remote_teleport_is_a_bounded_read_only_step() -> Result<(), String> {
+        let source: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batches/quests4/formogar_mine_hoist.json")).map_err(|e| e.to_string())?;
+        let mut callback = source["callbacks"][0].clone();
+        callback["remote_teleport"] = serde_json::json!({
+            "position": {"x":32156,"y":31125,"floor":-10}, "appearance":2772,
+            "destination": {"x":32157,"y":31125,"floor":-11}
+        });
+        let document =
+            |callback| serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
+        assert!(parse(&document(callback.clone())).is_ok());
+        for case in 0..5 {
+            let mut invalid = callback.clone();
+            match case {
+                0 => invalid["remote_teleport"]["appearance"] = 0.into(),
+                1 => invalid["remote_teleport"]["position"]["floor"] = (-16).into(),
+                2 => invalid["remote_teleport"]["destination"]["floor"] = 1.into(),
+                3 => invalid["trigger"] = "use".into(),
+                _ => invalid["storage"][0]["read_only"] = false.into(),
+            }
+            assert!(parse(&document(invalid)).is_err());
+        }
+        Ok(())
+    }
 
     #[test]
     fn read_only_world_callback_has_no_quest_write_transition() -> Result<(), String> {

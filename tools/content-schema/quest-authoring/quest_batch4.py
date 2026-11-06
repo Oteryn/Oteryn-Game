@@ -62,7 +62,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'sources',
+    'success_message', 'native_rule', 'sources', 'remote_teleport',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -256,6 +256,15 @@ def validate_callback(callback, directory):
                 key + ': invalid lever')
     if callback.get('teleport') is not None:
         position(callback['teleport'], key + ': teleport')
+    remote = callback.get('remote_teleport')
+    if remote is not None:
+        fields(remote, {'position', 'appearance', 'destination'},
+               {'position', 'appearance', 'destination'}, key + ': remote teleport')
+        position(remote['position'], key + ': remote position')
+        position(remote['destination'], key + ': remote destination')
+        require(integer(remote['appearance'], 1, 65535)
+                and callback['trigger'] == 'step_in' and callback.get('teleport') is not None,
+                key + ': remote teleport requires a readonly step')
     for field in ('passages', 'storage', 'offerings'):
         require(isinstance(callback[field], list) and len(callback[field]) <= MAX_EFFECTS,
                 key + ': invalid or excessive ' + field)
@@ -269,6 +278,9 @@ def validate_callback(callback, directory):
                 and storage['minimum'] <= storage['maximum'], key + ': invalid storage range')
         require(type(storage.get('preserve', False)) is bool, key + ': invalid preserve')
         require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
+    if remote is not None:
+        require(callback['storage'] and all(s.get('read_only') is True for s in callback['storage']),
+                key + ': remote teleport requires a readonly step')
     if any(entry.get('read_only', False) for entry in callback['storage']):
         require(all(entry.get('read_only', False) and not entry.get('preserve', False)
                     for entry in callback['storage'])

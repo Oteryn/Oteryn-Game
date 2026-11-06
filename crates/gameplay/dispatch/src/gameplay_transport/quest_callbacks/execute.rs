@@ -144,7 +144,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        let teleport = match callback.teleport {
+        // Read the composed tile while holding the Channel runtime lock. Hidden,
+        // transformed and newly placed objects must all affect the same decision.
+        let mut destination = callback.teleport;
+        if let Some(remote) = &callback.remote_teleport {
+            let Ok(Some(remote_tile)) =
+                crate::map::view::compose_tile(&map.overlay, &map.facts, tile(remote.position))
+            else {
+                return UseDisposition::Rejected;
+            };
+            if remote_tile
+                .entries
+                .iter()
+                .any(|entry| entry.facts.appearance_id == remote.appearance)
+            {
+                destination = Some(remote.destination);
+            }
+        }
+        let teleport = match destination {
             Some(to) => match crate::map::floor::prepare_quest_callback_teleport(
                 runtime,
                 self.movement_cells,

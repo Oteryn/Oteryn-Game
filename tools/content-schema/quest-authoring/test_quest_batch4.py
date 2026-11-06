@@ -44,6 +44,25 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_remote_teleport_requires_a_readonly_step_and_bounded_positions(self):
+        source = Path(__file__).parent / 'batches/quests4/formogar_mine_hoist.json'
+        row = json.loads(source.read_text())['callbacks'][0]
+        row['remote_teleport'] = {
+            'position': {'x': 32156, 'y': 31125, 'floor': -10},
+            'appearance': 2772,
+            'destination': {'x': 32157, 'y': 31125, 'floor': -11},
+        }
+        tool.validate_callback(row, 'formogar_mine_hoist')
+        for field, value in [('appearance', 0), ('appearance', 65536),
+                             ('destination', {'x': 1, 'y': 1, 'floor': -16})]:
+            invalid = copy.deepcopy(row)
+            invalid['remote_teleport'][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                tool.validate_callback(invalid, 'formogar_mine_hoist')
+        row['trigger'] = 'use'
+        with self.assertRaises(ValueError):
+            tool.validate_callback(row, 'formogar_mine_hoist')
+
     def test_hoist_step_reads_both_instructions_without_a_write(self):
         source = Path(__file__).parent / 'batches/quests4/formogar_mine_hoist.json'
         row = json.loads(source.read_text())['callbacks'][0]

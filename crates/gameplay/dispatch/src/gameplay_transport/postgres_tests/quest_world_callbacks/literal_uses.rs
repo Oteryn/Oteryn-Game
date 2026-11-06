@@ -109,6 +109,83 @@ fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> Test
 }
 
 #[test]
+fn questpc5_l5_remote_hoist_uses_current_tile_and_both_instructions() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::super::kill_reward_e2e::scenario_thread::run("l5-hoist-remote-step", || {
+        let mut callback = callback("formogar-hoist-3059")?;
+        callback.selector.unique = Some(3060);
+        callback.selector.position = Some(Position {
+            x: 32157,
+            y: 31125,
+            floor: -10,
+        });
+        callback.teleport = Some(Position {
+            x: 32157,
+            y: 31125,
+            floor: -9,
+        });
+        callback.remote_teleport = Some(
+            oteryn_gameplay_quests::quest::world_callbacks::RemoteTeleport {
+                position: Position {
+                    x: 32156,
+                    y: 31125,
+                    floor: -10,
+                },
+                appearance: 2772,
+                destination: Position {
+                    x: 32157,
+                    y: 31125,
+                    floor: -11,
+                },
+            },
+        );
+        for appearance in [Some(2772), Some(2773), None] {
+            exercise_with_remote(
+                callback.clone(),
+                100,
+                1,
+                Some(1),
+                None,
+                false,
+                false,
+                appearance,
+            )?;
+        }
+        exercise_with_remote(callback, 100, 1, Some(1), Some(1), false, false, Some(2772))
+    })
+}
+
+#[test]
+fn questpc5_l5_remote_hoist_predicate_is_admitted() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::super::kill_reward_e2e::scenario_thread::run("l5-hoist-remote", || {
+        run(async |admin| {
+            let started = std::time::Instant::now();
+            let h =
+                Harness::create_with_admission_seed(admin, "hoist_remote", false, false).await?;
+            eprintln!("POSTGRES_CASE_STARTED remote_hoist {:?}", started.elapsed());
+            let mut value = serde_json::to_value(callback("formogar-hoist-3059")?)?;
+            value["remote_teleport"] = serde_json::json!({
+                "position": {"x":32156,"y":31125,"floor":-10},
+                "appearance":2772,
+                "destination": {"x":32157,"y":31125,"floor":-11}
+            });
+            let _: Callback = serde_json::from_value(value)?;
+            h.cleanup().await?;
+            eprintln!(
+                "POSTGRES_CASE_COMPLETED remote_hoist {:?}",
+                started.elapsed()
+            );
+            Ok(())
+        })
+    })
+}
+
+#[test]
 fn questpc5_l5_hoist_instruction_gates_are_read_only() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -175,10 +252,27 @@ fn exercise_with_missing(
     recovery: bool,
     departed: bool,
 ) -> TestResult {
+    exercise_with_remote(
+        callback, appearance, ordinal, stage, missing, recovery, departed, None,
+    )
+}
+
+// The finite matrix varies the existing movement/refusal fixture plus one remote map fact.
+#[allow(clippy::too_many_arguments)]
+fn exercise_with_remote(
+    callback: Callback,
+    appearance: u16,
+    ordinal: u8,
+    stage: Option<i64>,
+    missing: Option<usize>,
+    recovery: bool,
+    departed: bool,
+    remote_appearance: Option<u16>,
+) -> TestResult {
     let started = std::time::Instant::now();
     let step = callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
     let trigger = callback.selector.position.ok_or("position")?;
-    let world = world_ordinal(&callback, trigger, appearance, ordinal)?;
+    let world = super::world_remote(&callback, trigger, appearance, ordinal, remote_appearance)?;
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
@@ -239,6 +333,26 @@ fn exercise_with_missing(
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
+        if let Some(remote) = &callback.remote_teleport
+            && let Some(appearance) = remote_appearance
+            && appearance != remote.appearance
+        {
+            let key = oteryn_world_bundle::bundle::placement_key(
+                remote.position.floor,
+                remote.position.x,
+                remote.position.y,
+                1,
+            )
+            .ok_or("remote placement")?;
+            let _runtime = owner.runtime.lock().await;
+            assert!(
+                owner
+                    .bundle_map()
+                    .ok_or("map")?
+                    .facts
+                    .transform_movement_item(key, appearance)
+            );
+        }
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
@@ -539,7 +653,15 @@ fn exercise_with_missing(
                 .map_err(debug)?
                 .position(),
             if allowed && !departed {
-                local(callback.teleport.ok_or("destination")?)
+                local(
+                    if let Some(remote) = &callback.remote_teleport
+                        && remote_appearance == Some(remote.appearance)
+                    {
+                        remote.destination
+                    } else {
+                        callback.teleport.ok_or("destination")?
+                    },
+                )
             } else if departed {
                 MovementLocalPosition {
                     y: origin.y - 1,

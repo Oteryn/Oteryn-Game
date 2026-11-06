@@ -1,3 +1,17 @@
+# Active Cloud continuation — questpc5, 2026-11-06
+
+Branch `claude/happy-davinci-ijz3wy-questpc5`, starting at `be670b5c1`. The current owner instructions authorize commits and fast-forward pushes after each green batch; historical no-Git/no-publication and `/home/mole` instructions below are superseded. No PR or main mutation is requested. Continue until every owned entry is qualified; missing facts are researched or covered by a documented conservative rule, never a final hold.
+
+Completed prerequisite batch: generic `remote_teleport` for read-only STEP gates. It reads the current composed remote tile, including transformed/hidden/added entries, under the existing runtime owner, then uses the existing fenced gate and movement owner. Source UID3060 chooses floor11 when remote lever2772 is present, otherwise floor9 (native floors are negative). Source blob `5fd560ef6dbdf27bcb58f0f14447750fe90dc062` is retained in the donor archive and byte-identical to the current Canary URL. No new source tuning was needed.
+
+Proof: `cloud-remote-teleport-proof.json`. PG RED reached the database and rejected the unsupported field after3.451998372s. PG GREEN:2 tests,191.28s; schema5.89442396s and four real STEP markers46.473947553/45.291489632/46.772537157/51.645160838s. The cases cover lever present, live transformation2772->2773, absent lever, and missing-instruction refusal, preserving quest tracks, receipts and Character revision. Inherited cancellation recovery also passed all3 real PG cases,142.00s. Cargo check, all-target/all-feature Clippy -D warnings, focused Rust unit,17 Python tests,21-packet authoring check and cargo/mounted fmt all passed. No full PG suite ran.
+
+Whole-quest statuses were not promoted by a generic-engine proof. Next: compose the Hoist instruction acquisition/UID3060 registry and the paired physical plate routes for Demon/Devil Helmet, then continue the remaining L5 entries in batches. Donor `quest_system2.lua:285-295` binds skeleton instruction UID20003; common chest UID6214 grants the construction plans and writes `FormorgarGlacierChest`, while `FormorgarMinesHoistChest` has no writer in any of the three retained source trees. Resolve this source defect with a documented conservative rule and an actual acquisition-to-travel PG path, preserving both instruction requirements and exact readable rewards.
+
+Cross-lane read: questpc2's current committed status had no matching L5 qualification. The requested qlane-meta status paths on questpc3/4/8 returned404; none was assumed qualified. Skip world changes owned by the world lanes, as the owner instructed. No agents spawned, credentials read, protected tooling edited, or reference dumps/binaries added.
+
+Historical checkpoints follow; their unfinished scopes and old environment/publication restrictions are not current instructions.
+
 # QUESTPC resume, 2026-11-06
 
 Task: QUESTPC / QUEST-FINISH, draft PR #3007. Local HEAD remains

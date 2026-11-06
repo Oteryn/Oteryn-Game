@@ -67,8 +67,8 @@
     "canonical": "oteryn:quest.authored.nimmersatt_s_lair",
     "title": "Nimmersatt's Lair",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "BLOCKED",
-    "blocker": "No accepted numeric Lava Wall health/damage rule: fresh creature-specific Wiki evidence still lists HP as unknown. Owner-captured values or accepted Oteryn tuning requested. Bottled Dragon Breath44179 native admission and the encounter bindings also remain unimplemented.",
+    "status": "UNFINISHED",
+    "blocker": "Remaining complete route: native Bottled Dragon Breath44179 admission and lava-wall encounter/action bindings. Owner follow-up authorizes documented conservative tuning if no numeric source rule exists; no owner fact is pending.",
     "from_lanes": [
       "questpc2"
     ],
@@ -80,8 +80,7 @@
     },
     "research_evidence": [
       ".questpc5/l5-reference/research.json"
-    ],
-    "pending_owner_question": "Captured Lava Wall health/damage or accepted Oteryn tuning."
+    ]
   },
   {
     "canonical": "oteryn:quest.authored.nomads_land_quest",
@@ -310,7 +309,7 @@
     "title": "Demon Helmet Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Paired pressure-plate StepIn/StepOut owner for the Gate of the Lost Souls. Callback Trigger has no StepOut; a sequential track flag cannot preserve the original physical plate restoration. qengine owns this shared piece. All three reward claims are separately exercised.",
+    "blocker": "Remaining complete route: two-player plate occupancy, three-wall removal/restoration with occupied-wall relocation, all relocation/end paths, and complete route PG qualification. StepOut itself is already implemented.",
     "from_lanes": [
       "questpc",
       "questpc6"
@@ -327,7 +326,7 @@
     "title": "Devil Helmet Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "StepOut paired with StepIn on plate uid25030, including creation/removal of435 on the other tile. Trigger only admits Use/StepIn, and passage effects operate on existing objects. qengine owns StepOut/reset. Reward/key receipts do not supply that pressure-plate authority.",
+    "blocker": "Remaining complete route: paired UID25030 creation/removal of item435 at the remote tile, relocation/end-path restoration, and complete route PG qualification. StepOut itself is already implemented.",
     "from_lanes": [
       "questpc",
       "questpc6"
@@ -344,7 +343,7 @@
     "title": "Formorgar Mines Hoist Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "UID3060 remote-lever branch is not implemented; instruction acquisition writers are not composed into this whole quest. Cancellation recovery is being tested before this batch can be considered ready.",
+    "blocker": "Remaining complete route: register UID3060 and compose both instruction acquisition paths. The generic remote-item destination predicate and cancellation recovery are now PG-qualified; no whole-quest promotion yet.",
     "from_lanes": [
       "questpc",
       "questpc7"
@@ -364,6 +363,9 @@
         "cases": 8,
         "scope": "UID3059/3061: neither instruction, each missing instruction independently, and both present; exact destination and no quest writes."
       }
+    ],
+    "mechanism_evidence": [
+      "qlane-meta/questpc5/cloud-remote-teleport-proof.json"
     ]
   },
   {
