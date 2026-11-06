@@ -318,7 +318,7 @@ async fn current_character(
 }
 
 /// Serve one admitted connection, drive it to its snapshot, run `exercise`, then close it.
-async fn connection<F>(
+pub(super) async fn connection<F>(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     exercise: F,

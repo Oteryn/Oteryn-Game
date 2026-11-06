@@ -43,6 +43,8 @@ pub mod training;
 
 #[path = "features/0014-container-tree/mod.rs"]
 pub mod container_tree;
+#[path = "features/0082-creature-push/mod.rs"]
+pub mod creature_push;
 #[path = "features/0012-item-equip-drop/mod.rs"]
 pub mod equipment;
 #[path = "features/0004-item-view-move/mod.rs"]
