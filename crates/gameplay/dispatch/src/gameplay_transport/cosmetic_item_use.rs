@@ -133,6 +133,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(receipt) = replay {
             return Ok(Some(outcome(receipt.disposition)));
         }
+        if rule.donor.starts_with("data-crystal/scripts/special/") {
+            return Ok(Some(outcome(UseDisposition::NotPossible)));
+        }
         if intent.use_with.is_some()
             || intent.use_with_map_item.is_some()
             || intent.use_with_position.is_some()
