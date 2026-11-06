@@ -1,5 +1,6 @@
 //! S17 P2: current-node-fenced, immutable, contiguous audit prefix commits.
 //! Receipt fields are private: an IO attempt cannot acknowledge the journal.
+mod bans;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::item_mint_audit::{EventEnvelopeV1, check_uuid_v7};
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
@@ -57,7 +58,7 @@ impl DurabilityRoot {
         for (i, r) in records.iter().enumerate() {
             if r.ordinal == 0
                 || r.ordinal > i64::MAX as u64
-                || !(1..=11).contains(&r.kind)
+                || !(1..=12).contains(&r.kind)
                 || r.cast_id.len() != 16
                 || r.subject_account.as_ref().is_some_and(|v| v.len() != 16)
                 || r.subject_character.as_ref().is_some_and(|v| v.len() != 16)

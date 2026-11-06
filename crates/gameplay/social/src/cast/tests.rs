@@ -478,3 +478,136 @@ fn a_capture_started_before_a_global_revocation_cannot_restore_unknown_old_conse
     );
     Ok(())
 }
+
+#[test]
+fn s17_media_obeys_scene_consent_delay_and_revocation() -> Result<(), Error> {
+    let mut owner = CastOwner::new(100)?;
+    let f = facts(1, 1, 1);
+    let state = owner.start(
+        f,
+        Settings {
+            delay_seconds: 1,
+            ..Settings::default()
+        },
+        0,
+    )?;
+    let id = owner.join(&ticket(state, 1, 1), 0)?;
+    owner.model_audit_commit();
+    let media = oteryn_protocol_oteryn::cast::PublicMedia::Map {
+        reset: true,
+        last: true,
+        tiles: vec![],
+    };
+    owner.publish_media(f, &[], vec![media.clone()], 0)?;
+    assert!(
+        !owner
+            .drain(id, 0)?
+            .iter()
+            .any(|c| matches!(c, Content::Media(_)))
+    );
+    assert!(
+        owner
+            .drain(id, 1000)?
+            .iter()
+            .any(|c| matches!(c, Content::Media(_)))
+    );
+    let mut bytes = *f.authority.commit().character_id().as_bytes();
+    bytes[15] ^= 1;
+    let other = CharacterId::from_bytes(bytes).map_err(|_| Error::Invalid)?;
+    owner.publish_media(f, &[other], vec![media], 1000)?;
+    assert!(
+        !owner
+            .drain(id, 2000)?
+            .iter()
+            .any(|c| matches!(c, Content::Media(_)))
+    );
+    Ok(())
+}
+
+#[test]
+fn s17_caster_reply_is_live_and_viewer_copy_delayed() -> Result<(), Error> {
+    let mut owner = CastOwner::new(100)?;
+    let f = facts(1, 1, 1);
+    let state = owner.start(
+        f,
+        Settings {
+            delay_seconds: 1,
+            ..Settings::default()
+        },
+        0,
+    )?;
+    let id = owner.join(&ticket(state, 1, 1), 0)?;
+    owner.model_audit_commit();
+    owner.reply(f, "Welcome", 0)?;
+    assert_eq!(
+        owner
+            .take_caster_chat(f.authority.current_game_session_id())
+            .len(),
+        1
+    );
+    assert!(
+        !owner
+            .drain(id, 0)?
+            .iter()
+            .any(|c| matches!(c, Content::Chat(_)))
+    );
+    assert!(
+        owner
+            .drain(id, 1000)?
+            .iter()
+            .any(|c| matches!(c, Content::Chat(_)))
+    );
+    Ok(())
+}
+
+#[test]
+fn s17_viewer_names_and_account_rate_limits_survive_session_changes() -> Result<(), Error> {
+    let mut owner = CastOwner::new(50)?;
+    let f = facts(1, 1, 1);
+    let state = owner.start(f, Settings::default(), 0)?;
+    let one = owner.join(&ticket(state, 1, 1), 0)?;
+    let two = owner.join(&ticket(state, 1, 2), 0)?;
+    owner.model_audit_commit();
+    for id in [one, two, one] {
+        owner.chat(id, "hi", 0)?;
+    }
+    assert_eq!(owner.chat(two, "fourth", 0), Err(Error::Full));
+    let lines = owner.take_caster_chat(f.authority.current_game_session_id());
+    assert_eq!(lines.len(), 3);
+    assert_eq!(lines[0].name, lines[2].name);
+    assert_ne!(lines[0].name, lines[1].name);
+    owner.mute(f, state.revision, one, true)?;
+    owner.model_audit_commit();
+    assert_eq!(owner.chat(two, "muted account", 3000), Err(Error::Muted));
+    owner.mute(f, state.revision, two, false)?;
+    owner.model_audit_commit();
+    owner.chat(two, "unmuted", 3000)?;
+    Ok(())
+}
+
+#[test]
+fn s17_quiet_viewer_is_named_to_caster_before_speaking() -> Result<(), Error> {
+    let mut owner = CastOwner::new(50)?;
+    let f = facts(1, 1, 1);
+    let state = owner.start(f, Settings::default(), 0)?;
+    let id = owner.join(&ticket(state, 1, 1), 0)?;
+    assert!(
+        owner
+            .take_caster_presence(f.authority.current_game_session_id())
+            .is_empty()
+    );
+    owner.model_audit_commit();
+    let names = owner.take_caster_presence(f.authority.current_game_session_id());
+    assert_eq!(names.len(), 1);
+    assert_eq!(names[0].handle, id.0);
+    assert!(names[0].name.starts_with("Viewer-"));
+    owner.kick(f, state.revision, id)?;
+    owner.model_audit_commit();
+    assert_eq!(
+        owner
+            .take_caster_presence(f.authority.current_game_session_id())
+            .len(),
+        1
+    );
+    Ok(())
+}

@@ -7,10 +7,12 @@ use unicode_normalization::UnicodeNormalization;
 pub struct ChatLine {
     pub handle: [u8; 16],
     pub text: Arc<str>,
+    pub name: Arc<str>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Content {
     Chat(ChatLine),
+    Media(Arc<oteryn_protocol_oteryn::cast::PublicMedia>),
     Metadata { viewers: u8, delay_seconds: u16 },
     Clear,
     Slate,
@@ -19,6 +21,7 @@ pub enum Content {
 #[derive(Default)]
 pub(super) struct Room {
     muted: HashSet<[u8; 16]>,
+    pub(super) presence: VecDeque<ChatLine>,
     caster: VecDeque<ChatLine>,
     buckets: HashMap<[u8; 16], (u64, u8)>,
     second: u64,
@@ -143,11 +146,105 @@ impl CastOwner {
         cast.chat.count += 1;
         let line = ChatLine {
             handle: id.0,
+            name: format!("Viewer-{}", super::access::hex(id.0)).into(),
             text: text.into(),
         };
         cast.chat.caster.push_back(line.clone()); // Live, regardless of viewer D.
         self.queue(target, due, Content::Chat(line));
         Ok(())
+    }
+    pub fn reply(&mut self, facts: TargetFacts, text: &str, now_ms: u64) -> Result<(), Error> {
+        self.tick(now_ms)?;
+        self.refresh(facts);
+        let text = validate_text(text)?;
+        let target = facts.authority.current_game_session_id();
+        let cast = self.casts.get_mut(&target).ok_or(Error::Unavailable)?;
+        if !cast.settings.chat_enabled || cast.chat.caster.len() >= 64 {
+            return Err(Error::Full);
+        }
+        if cast.chat.second != now_ms / 1000 {
+            cast.chat.second = now_ms / 1000;
+            cast.chat.count = 0;
+        }
+        let bucket = cast.chat.buckets.entry([0; 16]).or_insert((now_ms, 3));
+        let replenished = (now_ms - bucket.0) / 3000;
+        if replenished > 0 {
+            bucket.1 = bucket.1.saturating_add(replenished.min(3) as u8).min(3);
+            bucket.0 = now_ms;
+        }
+        if bucket.1 == 0 || cast.chat.count >= 20 {
+            return Err(Error::Full);
+        }
+        bucket.1 -= 1;
+        cast.chat.count += 1;
+        let line = ChatLine {
+            handle: [0; 16],
+            name: "Caster".into(),
+            text: text.into(),
+        };
+        cast.chat.caster.push_back(line.clone());
+        let due = now_ms + u64::from(cast.settings.delay_seconds) * 1000;
+        self.queue(target, due, Content::Chat(line));
+        Ok(())
+    }
+    /// Resolve moderation only against the caster's current authority and room.
+    pub(super) fn ban_subject(
+        &mut self,
+        facts: TargetFacts,
+        revision: u64,
+        id: ObserverId,
+    ) -> Result<[u8; 16], Error> {
+        self.refresh(facts);
+        let target = facts.authority.current_game_session_id();
+        let cast = self.casts.get(&target).ok_or(Error::Unavailable)?;
+        if cast.state.revision != revision {
+            return Err(Error::Conflict);
+        }
+        self.viewers
+            .get(&id)
+            .filter(|v| v.target == target)
+            .map(|v| v.account)
+            .ok_or(Error::Unavailable)
+    }
+    pub(super) fn remove_banned(
+        &mut self,
+        target: GameSessionId,
+        account: [u8; 16],
+    ) -> Result<(), Error> {
+        let ids: Vec<_> = self
+            .viewers
+            .iter()
+            .filter(|(_, v)| v.target == target && v.account == account)
+            .map(|(id, _)| *id)
+            .collect();
+        for id in ids {
+            self.leave(id)?;
+        }
+        Ok(())
+    }
+    pub fn take_caster_presence(&mut self, target: GameSessionId) -> Vec<ChatLine> {
+        if self
+            .casts
+            .get(&target)
+            .is_none_or(|c| c.audit_ordinal > self.audit.committed)
+        {
+            return Vec::new();
+        }
+        self.casts
+            .get_mut(&target)
+            .map_or_else(Vec::new, |c| c.chat.presence.drain(..).collect())
+    }
+    pub(super) fn presence(&mut self, target: GameSessionId, id: ObserverId, text: &str) {
+        if let Some(cast) = self.casts.get_mut(&target) {
+            if cast.chat.presence.len() >= 64 {
+                cast.chat.presence.pop_front();
+            }
+            cast.chat.presence.push_back(ChatLine {
+                handle: id.0,
+                name: format!("Viewer-{}", super::access::hex(id.0)).into(),
+                text: text.into(),
+            });
+        }
     }
     pub fn take_caster_chat(&mut self, target: GameSessionId) -> Vec<ChatLine> {
         if self
@@ -222,7 +319,7 @@ impl CastOwner {
                     ready.push(Content::Slate);
                     break;
                 }
-                if matches!(item.content, Content::Scene(_)) {
+                if matches!(item.content, Content::Scene(_) | Content::Media(_)) {
                     viewer.shown = item.consents;
                 }
                 if matches!(item.content, Content::Clear | Content::Slate) {

@@ -126,3 +126,89 @@ fn caster_control_state_exposes_its_opaque_cast_id_only_to_the_owner()
     );
     Ok(())
 }
+
+#[test]
+fn s17_public_media_is_strict_bounded_and_never_observer_input() -> Result<(), String> {
+    use oteryn_protocol_oteryn::cast::{DisplayTile, PublicMedia};
+    let media = PublicMedia::Map {
+        reset: true,
+        last: true,
+        tiles: vec![DisplayTile {
+            x: 100,
+            y: 200,
+            floor: -7,
+            appearances: vec![100, 200],
+        }],
+    };
+    let message = Message::Media {
+        epoch: 1,
+        sequence: 1,
+        media,
+    };
+    let envelope = Envelope {
+        generation: 1,
+        message,
+    };
+    let bytes = envelope.encode().map_err(|e| format!("{e:?}"))?;
+    assert_eq!(Envelope::decode(&bytes, false), Ok(envelope));
+    assert!(Envelope::decode(&bytes, true).is_err());
+    Ok(())
+}
+
+#[test]
+fn s17_media_speech_effects_and_output_names_roundtrip() -> Result<(), String> {
+    use oteryn_protocol_oteryn::{
+        cast::PublicMedia,
+        chat::ChatSpeechMode,
+        presentation::{PresentationEvent, PresentationEventKind, PresentationSource},
+        world_spatial::ActorPosition,
+    };
+    let position = ActorPosition {
+        x: 100,
+        y: 200,
+        floor: -7,
+    };
+    let effect = PresentationEvent {
+        decision_ordinal: 1,
+        emission_ordinal: 1,
+        kind: PresentationEventKind::MagicEffect {
+            position: ActorPosition {
+                floor: 7,
+                ..position
+            },
+            effect_id: 10,
+            source: PresentationSource::Own,
+        },
+    };
+    for media in [
+        PublicMedia::Effects(vec![effect]),
+        PublicMedia::Speech {
+            position,
+            mode: ChatSpeechMode::Say,
+            text: "visible speech".into(),
+        },
+    ] {
+        let bytes = media.encode().map_err(|e| format!("{e:?}"))?;
+        assert_eq!(PublicMedia::decode(&bytes), Ok(media));
+        let mut invalid = bytes;
+        invalid.push(0);
+        assert!(PublicMedia::decode(&invalid).is_err());
+    }
+    let forbidden = PublicMedia::Effects(vec![PresentationEvent {
+        kind: PresentationEventKind::AmbientSound { cue_id: 1 },
+        ..effect
+    }]);
+    assert!(forbidden.encode().is_err());
+    let named = Message::ChatLine {
+        epoch: 1,
+        sequence: 1,
+        handle: [1; 16],
+        text: format!("Viewer-{}: {}", "a".repeat(32), "x".repeat(256)),
+    };
+    assert_eq!(
+        Message::decode(&named.encode().map_err(|e| format!("{e:?}"))?),
+        Ok(named)
+    );
+    assert!(Message::Chat("x".repeat(257)).encode().is_err());
+    Ok(())
+}

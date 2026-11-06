@@ -166,6 +166,9 @@ where
         if write_frame(stream, &frame).await.is_err() {
             return Err(ServeEnd::Disconnected);
         }
+        if session.selected_capabilities.contains(290) {
+            authority.cast_heard(session.admitted, &line).await;
+        }
         // A marker takes no slot, so only a real line frees one.
         if !matches!(line, ChatLine::Dropped) {
             authority
@@ -635,6 +638,9 @@ where
         ambient_sound(stream, session, cue_id).await?;
     }
 
+    if session.selected_capabilities.contains(290) {
+        authority.cast_effects(session.admitted, &events).await;
+    }
     let item_events: Vec<_> = events
         .iter()
         .copied()

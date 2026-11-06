@@ -301,3 +301,40 @@ also byte-identical before and after regeneration, so the Item engine and
 source-claim checks above cover the final generated content. Only the generated
 SRX-1 base pin and Prey value table changed in those initial tested inputs; the
 final content suite and server tests use the refreshed files.
+
+| Additional first-merge checks | Result |
+| --- | --- |
+| `cargo test --locked -p oteryn-gameplay-content --quiet` (first merge) | PASS; 315 unit + 1 integration + 6 documentation tests, one pre-existing ignored test |
+| `cargo test --locked -p oteryn-game-server --test content_item_identity --test content_world_project_repository --quiet -- --test-threads=2` (first merge) | PASS after regeneration; 14 + 5 tests |
+
+### Final remote refresh
+
+The requested final fetch found main advanced to `91afbe0ba` by the SRV11
+cast/spectate change (#3016), while the task branch remained `16aa17f19`.
+The validated `ffef24ad6` repair was committed as merge `989ac9ca6`; the newer
+main was then merged without conflicts. Neither merge rebases or discards either
+parent. Regeneration is repeated on the combined branch. The commit author and
+committer are `blakinio <75369544+blakinio@users.noreply.github.com>`, and GitHub
+authentication is `blakinio`.
+
+Latest-main checks use the same commands in the merge-validation table above:
+
+| Check on combined `91afbe0ba` branch | Result |
+| --- | --- |
+| Full `oteryn-gameplay-content` suite, including ITEMHOLD-Q and Item reference regressions | PASS; 315 unit + 1 integration + 6 documentation tests; one existing ignored test |
+| Content Item identity / world repository server tests | PASS; 14 + 5 tests |
+| REST `content_` server tests | PASS; 123 tests |
+| Strict source recomputation | PASS; 34,111 Items, 476 bindings |
+| Materialized-tree validator | PASS; 97/97 |
+| Quest reward Item semantics `--check` | PASS; 525 admissions, unchanged shards |
+| `cargo fmt --all --check` | PASS |
+| Content crate clippy, all targets, `-D warnings` | PASS |
+| Python ITEMHOLD-Q catalogue tests | PASS; 9 tests |
+| Item engine suite | PASS; 599 checks and 3 + 4 unit tests |
+| `python tools/content-migration/regenerate_content.py --resolve --skip-checks` on latest main | PASS, including the final sequential bundle pin refresh |
+| Whole `content/` tree compared with first merge `989ac9ca6`, plus all 529 tested JSON SHA-256 hashes | PASS; byte-identical after final regeneration, so all completed checks cover the final content |
+| `git diff --check`, staged diff check and unresolved-conflict scan | PASS |
+| `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-check . /tmp/itemhold-q-latest-main-pin-check` | PASS; 32,839,269 bytes, digest `6157033be3cbe48fb8eb1261ce13579cb1e02ec40f457025d1b89ac3d2d62671` |
+
+No full nextest or full PG suite was run. No PR was opened, no protected branch
+was modified, and neither merge used rebase or force push.

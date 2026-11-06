@@ -173,3 +173,61 @@ impl CastOwner {
         Ok(())
     }
 }
+
+impl CastOwner {
+    /// Same consent binding and delay as scenes, including final-write purge.
+    /// Map chunks and public events never bypass a neutral privacy slate.
+    pub fn publish_media(
+        &mut self,
+        facts: TargetFacts,
+        visible: &[CharacterId],
+        media: Vec<oteryn_protocol_oteryn::cast::PublicMedia>,
+        now_ms: u64,
+    ) -> Result<(), Error> {
+        self.tick(now_ms)?;
+        self.refresh(facts);
+        if media.len() > 64 || media.iter().any(|m| m.encode().is_err()) {
+            return Err(Error::Invalid);
+        }
+        let target = facts.authority.current_game_session_id();
+        let cast = self.casts.get(&target).ok_or(Error::Unavailable)?;
+        let mut bindings = Vec::new();
+        for character in visible
+            .iter()
+            .filter(|id| id.as_bytes() != facts.authority.commit().character_id().as_bytes())
+        {
+            let Some((consent, _)) = self
+                .consents
+                .get(character)
+                .filter(|(c, observed)| c.allowed && now_ms.saturating_sub(*observed) <= 5000)
+            else {
+                return self.slate(facts, now_ms);
+            };
+            bindings.push((*character, consent.revision));
+        }
+        let due_ms = now_ms + u64::from(cast.settings.delay_seconds) * 1000;
+        let bindings: Arc<[(CharacterId, i64)]> = bindings.into();
+        let media: Vec<_> = media
+            .into_iter()
+            .map(|m| Content::Media(Arc::new(m)))
+            .collect();
+        let mut slow = Vec::new();
+        for (id, viewer) in self.viewers.iter_mut().filter(|(_, v)| v.target == target) {
+            if viewer.queue.len() + media.len() > VIEWER_QUEUE_ITEMS {
+                slow.push(*id);
+                continue;
+            }
+            for content in &media {
+                viewer.queue.push_back(Queued {
+                    due_ms,
+                    content: content.clone(),
+                    consents: Arc::clone(&bindings),
+                });
+            }
+        }
+        for id in slow {
+            self.leave(id)?;
+        }
+        Ok(())
+    }
+}

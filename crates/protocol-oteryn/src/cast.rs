@@ -2,6 +2,8 @@
 //! and player commands. All offers remain off until composed qualification.
 pub use crate::charm_wire::CyclopediaWireError as WireError;
 use crate::charm_wire::{push_message_field, push_varint_field, read_bytes, read_varint};
+mod media;
+pub use media::{DisplayTile, PublicMedia};
 pub const CAPABILITY_CAST_VIEW_V1: u32 = 289;
 pub const CAPABILITY_CAST_CONTROL_V1: u32 = 290;
 pub const CAPABILITY_CAST_CHAT_V1: u32 = 291;
@@ -39,6 +41,11 @@ impl Selection {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Message {
+    Media {
+        epoch: u64,
+        sequence: u64,
+        media: PublicMedia,
+    },
     /// Owner-only control result. Never valid in an observer envelope.
     CasterState {
         cast_id: [u8; 16],
@@ -133,6 +140,7 @@ impl Message {
     pub fn encode(&self) -> Result<Vec<u8>, WireError> {
         let mut b = Vec::new();
         let kind = match self {
+            Self::Media { .. } => 21,
             Self::CasterState { .. } => 20,
             Self::CasterChatEmpty => 19,
             Self::Scene { .. } => 18,
@@ -156,6 +164,18 @@ impl Message {
         };
         push_varint_field(&mut b, 1, kind);
         match self {
+            Self::Media {
+                epoch,
+                sequence,
+                media,
+            } => {
+                if *epoch == 0 || *sequence == 0 {
+                    return Err(WireError::Malformed);
+                }
+                push_varint_field(&mut b, 2, *epoch);
+                push_varint_field(&mut b, 3, *sequence);
+                push_message_field(&mut b, 4, &media.encode()?);
+            }
             Self::Scene {
                 epoch,
                 sequence,
@@ -240,7 +260,7 @@ impl Message {
                 action,
                 key,
             } => {
-                if !(1..=3).contains(action) || *key == [0; 16] {
+                if !(1..=4).contains(action) || *key == [0; 16] {
                     return Err(WireError::Malformed);
                 }
                 push_varint_field(&mut b, 2, *revision);
@@ -304,11 +324,11 @@ impl Message {
                 push_varint_field(&mut b, 2, *epoch);
                 push_varint_field(&mut b, 3, *sequence);
                 push_message_field(&mut b, 4, handle);
-                text_field(&mut b, 5, text)?;
+                line_field(&mut b, 5, text)?;
             }
             Self::CasterLine { handle, text } => {
                 push_message_field(&mut b, 2, handle);
-                text_field(&mut b, 3, text)?;
+                line_field(&mut b, 3, text)?;
             }
             Self::Leave | Self::Keepalive | Self::End | Self::CasterChatEmpty => {}
         }
@@ -321,6 +341,11 @@ impl Message {
         let mut r = Reader { bytes, cursor: 0 };
         let kind = r.var(1)?;
         let result = match kind {
+            21 => Self::Media {
+                epoch: r.var(2)?,
+                sequence: r.var(3)?,
+                media: PublicMedia::decode(r.data(4, 8192)?)?,
+            },
             20 => Self::CasterState {
                 revision: r.var(2)?,
                 epoch: r.var(3)?,
@@ -429,11 +454,11 @@ impl Message {
                 epoch: r.var(2)?,
                 sequence: r.var(3)?,
                 handle: r.id(4)?,
-                text: r.text(5)?,
+                text: r.line(5)?,
             },
             16 => Self::CasterLine {
                 handle: r.id(2)?,
-                text: r.text(3)?,
+                text: r.line(3)?,
             },
             17 => Self::End,
             _ => return Err(WireError::Malformed),
@@ -443,6 +468,13 @@ impl Message {
         }
         Ok(result)
     }
+}
+fn line_field(b: &mut Vec<u8>, field: u64, text: &str) -> Result<(), WireError> {
+    if text.is_empty() || text.len() > 320 || text.chars().any(char::is_control) {
+        return Err(WireError::Malformed);
+    }
+    push_message_field(b, field, text.as_bytes());
+    Ok(())
 }
 fn text_field(b: &mut Vec<u8>, field: u64, text: &str) -> Result<(), WireError> {
     if text.is_empty() || text.len() > 256 || text.chars().any(char::is_control) {
@@ -456,6 +488,11 @@ struct Reader<'a> {
     cursor: usize,
 }
 impl<'a> Reader<'a> {
+    fn line(&mut self, field: u64) -> Result<String, WireError> {
+        std::str::from_utf8(self.data(field, 320)?)
+            .map(str::to_owned)
+            .map_err(|_| WireError::Malformed)
+    }
     fn narrow<T: TryFrom<u64>>(&mut self, field: u64) -> Result<T, WireError> {
         self.var(field)?
             .try_into()
@@ -510,6 +547,7 @@ impl Envelope {
                 | Message::Keepalive
                 | Message::Chat(_)
                 | Message::Scene { .. }
+                | Message::Media { .. }
                 | Message::State { .. }
                 | Message::Slate { .. }
                 | Message::Clear { .. }
