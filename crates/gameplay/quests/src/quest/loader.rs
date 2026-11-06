@@ -227,6 +227,17 @@ pub fn load_embedded_quest_state(
         super::rotten_blood::ACCESS_DOOR_TRACK.into(),
         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
     );
+    // Dawnport is excluded from runtime, including overlays. Keep SOURCE audit counts intact.
+    const DAWNPORT: &str = "oteryn:quest.dawnport_quest";
+    lowered
+        .catalogue
+        .tracks
+        .retain(|_, track| track.quest != DAWNPORT);
+    lowered
+        .catalogue
+        .transitions
+        .retain(|_, transition| transition.quest != DAWNPORT);
+    lowered.catalogue.hashes.remove(DAWNPORT);
     Ok(lowered)
 }
 

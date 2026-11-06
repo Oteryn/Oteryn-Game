@@ -1573,6 +1573,13 @@ fn embedded_transitions(catalogue: &QuestStateCatalogue) -> TestResult<(String, 
     for quest in document["quests"].as_array().ok_or("quests")? {
         for transition in quest["transitions"].as_array().ok_or("transitions")? {
             let key = transition["key"].as_str().ok_or("key")?;
+            if transition["quest"] == "oteryn:quest.dawnport_quest" {
+                assert!(
+                    catalogue.transition(key).is_none(),
+                    "excluded transition {key}"
+                );
+                continue;
+            }
             let loaded = catalogue.transition(key).ok_or("transition")?;
             match catalogue.evaluate(loaded, &std::collections::BTreeMap::new(), 0) {
                 Ok(_)

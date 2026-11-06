@@ -13,6 +13,8 @@ use oteryn_gameplay_quests::quest::{QuestRefusal, QuestStateCatalogue};
 
 type TestResult = Result<(), Box<dyn Error>>;
 
+const DAWNPORT_QUEST: &str = "oteryn:quest.dawnport_quest";
+
 const DOCUMENT: &str = include_str!("../../../content/quests/missions/quest-state.json");
 
 /// A served content revision as `readiness.content_revision` declares it; boot loads the
@@ -140,12 +142,25 @@ fn computed_transitions_refuse_and_the_event_line_counts_them() -> TestResult {
     let grizzly_tracks = oteryn_gameplay_quests::quest::grizzly_adams::storage_keys();
     for transition in &transitions {
         let key = transition["key"].as_str().ok_or("key")?;
-        let loaded = catalogue.transition(key).ok_or(key.to_owned())?;
-        let not_supported =
-            catalogue.evaluate(loaded, &BTreeMap::new(), 0) == Err(QuestRefusal::NotSupported);
         let computed = effects(transition)?
             .iter()
             .any(|effect| explicit_computed(effect) || inexact(effect));
+        // Boot audit counters describe all SOURCE transitions, including excluded quests.
+        refused += usize::from(computed);
+        for effect in effects(transition)? {
+            explicit += usize::from(explicit_computed(effect));
+            inexact_effects += usize::from(inexact(effect));
+        }
+        if transition["quest"] == DAWNPORT_QUEST {
+            assert!(
+                catalogue.transition(key).is_none(),
+                "excluded transition {key}"
+            );
+            continue;
+        }
+        let loaded = catalogue.transition(key).ok_or(key.to_owned())?;
+        let not_supported =
+            catalogue.evaluate(loaded, &BTreeMap::new(), 0) == Err(QuestRefusal::NotSupported);
         // W15c fences the old single-write Grizzly fragments behind its compound
         // owner. The event line still counts the original lowered SOURCE document.
         let grizzly_fragment = transition["quest"]
@@ -156,11 +171,6 @@ fn computed_transitions_refuse_and_the_event_line_counts_them() -> TestResult {
                     .is_some_and(|track| grizzly_tracks.iter().any(|owned| owned == track))
             });
         assert_eq!(not_supported, computed || grizzly_fragment, "{key}");
-        refused += usize::from(computed);
-        for effect in effects(transition)? {
-            explicit += usize::from(explicit_computed(effect));
-            inexact_effects += usize::from(inexact(effect));
-        }
     }
     assert!(refused > 0 && explicit > 0 && inexact_effects > 0);
     assert_eq!(
@@ -178,11 +188,55 @@ fn computed_transitions_refuse_and_the_event_line_counts_them() -> TestResult {
 }
 
 #[test]
+fn dawnport_source_transitions_are_absent_from_the_boot_catalogue() -> TestResult {
+    let (catalogue, _) = boot_catalogue()?;
+    let mut excluded = 0;
+    for transition in document_transitions()? {
+        if transition["quest"] == DAWNPORT_QUEST {
+            let key = transition["key"].as_str().ok_or("key")?;
+            assert!(
+                catalogue.transition(key).is_none(),
+                "excluded transition {key}"
+            );
+            excluded += 1;
+        }
+    }
+    assert!(excluded > 0, "no Dawnport SOURCE transitions checked");
+    assert!(catalogue.definition_hash(DAWNPORT_QUEST).is_none());
+    Ok(())
+}
+
+#[test]
+fn every_served_source_transition_is_present_in_the_boot_catalogue() -> TestResult {
+    let (catalogue, _) = boot_catalogue()?;
+    let mut served = 0;
+    for transition in document_transitions()? {
+        if transition["quest"] != DAWNPORT_QUEST {
+            let key = transition["key"].as_str().ok_or("key")?;
+            assert!(
+                catalogue.transition(key).is_some(),
+                "missing served transition {key}"
+            );
+            served += 1;
+        }
+    }
+    assert!(served > 0, "no served SOURCE transitions checked");
+    Ok(())
+}
+
+#[test]
 fn an_exact_transition_of_the_boot_catalogue_applies() -> TestResult {
     let (catalogue, _) = boot_catalogue()?;
     let mut applied = 0;
     for transition in document_transitions()? {
         let key = transition["key"].as_str().ok_or("key")?;
+        if transition["quest"] == DAWNPORT_QUEST {
+            assert!(
+                catalogue.transition(key).is_none(),
+                "excluded transition {key}"
+            );
+            continue;
+        }
         let loaded = catalogue.transition(key).ok_or(key.to_owned())?;
         if let Ok(changes) = catalogue.evaluate(loaded, &BTreeMap::new(), 0) {
             assert_eq!(changes.len(), loaded.effects.len(), "{key}");
