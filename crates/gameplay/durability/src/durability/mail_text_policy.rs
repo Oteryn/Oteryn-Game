@@ -340,9 +340,8 @@ mod tests {
             .active()
             .and_then(|active| active.native_gameplay())
             .ok_or("production gameplay activation missing")?;
-        // Scroll is the existing materializable rewrite; MAIL E09 admits the letter and the
-        // parcel label (Canary items.xml 3505, 3507) at their accepted limits. Do not widen
-        // mint permission for the content-only books, the stamped letter or blackboards.
+        // MAIL E09 retains the letter/label limits. SRX-1 additionally admits
+        // portable documents; fixed text and Ground-only blackboards stay refused.
         let requested = TypedDefinitionRef {
             family: "Item".into(),
             production_key: "oteryn:item.tibia.i2815".into(),
@@ -355,18 +354,55 @@ mod tests {
                 ..requested.clone()
             })?;
         }
+        for (id, maximum, target) in [
+            (2813, 511, None),
+            (2814, 1023, None),
+            (2817, 1023, Some(2819)),
+            (2818, 1023, Some(2834)),
+            (2839, 1023, Some(2824)),
+            (7879, 1023, None),
+        ] {
+            let document = TypedDefinitionRef {
+                production_key: format!("oteryn:item.tibia.i{id}"),
+                ..requested.clone()
+            };
+            let policy = native.mail_text_policy(&document)?;
+            assert_eq!(
+                policy.write_once_target,
+                target.map(|id| TypedDefinitionRef {
+                    production_key: format!("oteryn:item.tibia.i{id}"),
+                    ..requested.clone()
+                })
+            );
+            let record = native
+                .item_policy(&document.production_key, &document.revision_ref)
+                .ok_or("document profile")?
+                .record();
+            assert_eq!(
+                qualified_profile(
+                    &record.production_definition,
+                    &record.admission,
+                    &record.semantics,
+                    &document
+                )?,
+                maximum
+            );
+        }
         for id in [
-            173, 177, 2598, 2605, 2813, 2814, 2816, 2817, 2818, 2819, 2824, 2834, 2837, 2839, 3506,
-            6386, 6533, 6538, 7879, 8747, 27932, 27933, 27934,
+            173, 177, 637, 639, 641, 2598, 2605, 2816, 2819, 2824, 2834, 2837, 3506, 6386, 6533,
+            6538, 8747, 27932, 27933, 27934,
         ] {
             let other = TypedDefinitionRef {
                 production_key: format!("oteryn:item.tibia.i{id}"),
                 ..requested.clone()
             };
-            assert!(matches!(
-                native.mail_text_policy(&other),
-                Err(ItemTextWriteError::NotWritable)
-            ));
+            assert!(
+                matches!(
+                    native.mail_text_policy(&other),
+                    Err(ItemTextWriteError::NotWritable)
+                ),
+                "{other:?}"
+            );
         }
         for other in [
             TypedDefinitionRef {

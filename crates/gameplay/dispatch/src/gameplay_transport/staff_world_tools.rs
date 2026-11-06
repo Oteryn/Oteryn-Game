@@ -119,6 +119,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Enrichment gets one attempt within the existing DB budget. Missing
         // facts or a transient read failure retain visibility until the next refresh.
         let deadline = tokio::time::Instant::now() + crate::durability::DB_PASS_DEADLINE;
+        // Share the gameplay lane: a background refresh must not take the
+        // durability holder halfway through another session's trade command.
+        // Leave a parked commit to its owner rather than resolving it here.
+        let Ok(Ok(permit)) = tokio::time::timeout_at(deadline, self.spell_lane.acquire()).await
+        else {
+            return true;
+        };
         let Ok(Some(fence)) = tokio::time::timeout_at(
             deadline,
             super::super::character_gameplay_fence::current(self, admitted.game_session_id, false),
@@ -167,6 +174,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             }
         }
+        // Terminal release acquires its own gameplay lane.
+        drop(permit);
         if status.banned || status.kicked {
             let _ = self.release_staff_session(admitted).await;
             return false;
