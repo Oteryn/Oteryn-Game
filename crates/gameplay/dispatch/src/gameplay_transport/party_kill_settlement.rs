@@ -475,7 +475,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Ok(awards) => awards,
                         Err(error) => return Ok(Err(error)),
                     };
-                    if endgame_kill {
+                    if endgame_kill && crate::durability::activity_handoff::boss_room::native_defeat_earned_in_transaction(
+                        &mut tx, entry.facts.death.runtime_scope(), entry.facts.death.scope_ownership_generation(),
+                        &entry.creature, super::kill_reward::personal_death_id(entry.facts.death),
+                    ).await? {
                         let death = death.as_slice();
                         // Quest/Hazard gains observe pre-gain XP and commit in the same
                         // transaction. There is no post-XP logout/crash gap to lose a taint.

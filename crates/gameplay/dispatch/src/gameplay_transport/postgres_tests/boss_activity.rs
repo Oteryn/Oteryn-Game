@@ -188,7 +188,14 @@ fn scenario(case: Case) -> TestResult {
             case,
             Case::Rewards | Case::LateRewards | Case::AwardContinuity
         );
-        let endgame_death = matches!(case, Case::SoulWarDefeat | Case::SoulWarLateDefeat | Case::SoulWarFinalDefeat | Case::RottenBloodDefeat | Case::PrimalDefeat);
+        let endgame_death = matches!(
+            case,
+            Case::SoulWarDefeat
+                | Case::SoulWarLateDefeat
+                | Case::SoulWarFinalDefeat
+                | Case::RottenBloodDefeat
+                | Case::PrimalDefeat
+        );
         let late = matches!(case, Case::LateRewards | Case::SoulWarLateDefeat);
         let with_death = matches!(
             case,
@@ -237,7 +244,9 @@ fn scenario(case: Case) -> TestResult {
         owner.active_generation = controller.active();
         owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
         let endgame_creature = match case {
-            Case::SoulWarEntry | Case::SoulWarDefeat | Case::SoulWarLateDefeat => Some("oteryn:creature.goshnar_s_spite"),
+            Case::SoulWarEntry | Case::SoulWarDefeat | Case::SoulWarLateDefeat => {
+                Some("oteryn:creature.goshnar_s_spite")
+            }
             Case::SoulWarFinalEntry => Some("oteryn:creature.goshnar_s_megalomania_purple"),
             Case::PrimalDefeat => Some("oteryn:creature.the_primal_menace"),
             Case::SoulWarFinalDefeat => Some("oteryn:creature.goshnar_s_megalomania_green"),
@@ -245,9 +254,14 @@ fn scenario(case: Case) -> TestResult {
             _ => None,
         };
         let (mut boss_key, policy) = if let Some(key) = endgame_creature {
-            let policy = owner.active_generation.ok_or("generation")?
-                .native_gameplay().ok_or("native gameplay")?
-                .policies().policies().iter()
+            let policy = owner
+                .active_generation
+                .ok_or("generation")?
+                .native_gameplay()
+                .ok_or("native gameplay")?
+                .policies()
+                .policies()
+                .iter()
                 .find(|policy| policy.definition_key == key)
                 .ok_or("source endgame creature")?;
             // The catalogue key is an alias: the durable owner must gate by the
@@ -308,7 +322,11 @@ fn scenario(case: Case) -> TestResult {
         }
         if endgame_death {
             owner.admit_progression_session(&mut admitted).await;
-            assert!(owner.progression_binding(admitted.game_session_id).is_some());
+            assert!(
+                owner
+                    .progression_binding(admitted.game_session_id)
+                    .is_some()
+            );
             deps.initialize(&owner).await;
         } else if case == Case::AwardContinuity {
             state_effects::prepare_source(&h, &mut owner, &mut admitted).await?;
@@ -518,77 +536,132 @@ fn scenario(case: Case) -> TestResult {
         }
         if let Some(key) = endgame_creature {
             let (_, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, false).await?;
-            assert_eq!(reply, BossActivityReply::Refused(BossActivityRefusal::Level));
+            assert_eq!(
+                reply,
+                BossActivityReply::Refused(BossActivityRefusal::Level)
+            );
             assert!(barrier.is_none());
-            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_activity_handoff_groups")
-                .fetch_one(&h.pool).await?, 0);
-            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_boss_cooldowns")
-                .fetch_one(&h.pool).await?, 0);
-            assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor)
-                .map_err(debug)?.position(), source_cell);
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_activity_handoff_groups")
+                    .fetch_one(&h.pool)
+                    .await?,
+                0
+            );
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_boss_cooldowns")
+                    .fetch_one(&h.pool)
+                    .await?,
+                0
+            );
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                source_cell
+            );
             if endgame_death {
                 endgame::prepare_level(&owner, admitted).await?;
             } else {
-            // Imported snapshots exercise admission only, not quest completion.
-            let mut seed = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
-            sqlx::query("UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid")
+                // Imported snapshots exercise admission only, not quest completion.
+                let mut seed = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *seed)
+                    .await?;
+                sqlx::query("UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
-            sqlx::query("UPDATE game_character_progression_state p SET level=250,total_experience=254237300,character_revision=r.character_revision FROM game_character_roots r WHERE p.character_id=r.character_id AND p.character_id=encode($1,'hex')::uuid")
+                sqlx::query("UPDATE game_character_progression_state p SET level=250,total_experience=254237300,character_revision=r.character_revision FROM game_character_roots r WHERE p.character_id=r.character_id AND p.character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
-            seed.commit().await?;
+                seed.commit().await?;
             }
             if case != Case::PrimalDefeat {
-            let (_, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, false).await?;
-            assert_eq!(reply, BossActivityReply::Refused(BossActivityRefusal::AuthorityRejected));
-            assert!(barrier.is_none());
+                let (_, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, false).await?;
+                assert_eq!(
+                    reply,
+                    BossActivityReply::Refused(BossActivityRefusal::AuthorityRejected)
+                );
+                assert!(barrier.is_none());
 
-            let mut seed = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
-            if matches!(case, Case::RottenBloodEntry | Case::RottenBloodDefeat) {
-                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,'oteryn:quest/rotten-blood',4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                let mut seed = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *seed)
+                    .await?;
+                if matches!(case, Case::RottenBloodEntry | Case::RottenBloodDefeat) {
+                    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,'oteryn:quest/rotten-blood',4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
                     .bind(fence.character_id.as_bytes().as_slice())
                     .bind(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_TRACK)
                     .execute(&mut *seed).await?;
-            } else {
-                sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access) VALUES(encode($1,'hex')::uuid,true)")
-                    .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
-            }
-            seed.commit().await?;
-            if !matches!(case, Case::SoulWarEntry | Case::SoulWarDefeat | Case::SoulWarLateDefeat) {
-                let (_, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, false).await?;
-                assert_eq!(reply, BossActivityReply::Refused(BossActivityRefusal::AuthorityRejected));
-                assert!(barrier.is_none());
-                let mut seed = h.pool.begin().await?;
-                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
-                if matches!(case, Case::RottenBloodEntry | Case::RottenBloodDefeat) {
-                    sqlx::query("INSERT INTO game_character_rotten_blood(character_id,child_flags) VALUES(encode($1,'hex')::uuid,15)")
-                        .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
                 } else {
-                    sqlx::query("UPDATE game_character_soul_war SET defeated_bosses=31,first_taint_at=floor(extract(epoch FROM transaction_timestamp()))::bigint-1209601 WHERE character_id=encode($1,'hex')::uuid")
-                        .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
+                    sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access) VALUES(encode($1,'hex')::uuid,true)")
+                    .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
                 }
                 seed.commit().await?;
-                if matches!(case, Case::SoulWarFinalEntry | Case::SoulWarFinalDefeat) {
-                    let (_, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, false).await?;
-                    assert_eq!(reply, BossActivityReply::Refused(BossActivityRefusal::AuthorityRejected));
-                    assert!(barrier.is_none(), "expired taints cannot admit the final boss");
+                if !matches!(
+                    case,
+                    Case::SoulWarEntry | Case::SoulWarDefeat | Case::SoulWarLateDefeat
+                ) {
+                    let (_, reply, barrier) =
+                        exchange(&owner, &mut admitted, &boss_key, false).await?;
+                    assert_eq!(
+                        reply,
+                        BossActivityReply::Refused(BossActivityRefusal::AuthorityRejected)
+                    );
+                    assert!(barrier.is_none());
                     let mut seed = h.pool.begin().await?;
-                    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
-                    sqlx::query("UPDATE game_character_soul_war SET first_taint_at=floor(extract(epoch FROM transaction_timestamp()))::bigint WHERE character_id=encode($1,'hex')::uuid")
+                    sqlx::query("SET LOCAL session_replication_role=replica")
+                        .execute(&mut *seed)
+                        .await?;
+                    if matches!(case, Case::RottenBloodEntry | Case::RottenBloodDefeat) {
+                        sqlx::query("INSERT INTO game_character_rotten_blood(character_id,child_flags) VALUES(encode($1,'hex')::uuid,15)")
                         .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
+                    } else {
+                        sqlx::query("UPDATE game_character_soul_war SET defeated_bosses=31,first_taint_at=floor(extract(epoch FROM transaction_timestamp()))::bigint-1209601 WHERE character_id=encode($1,'hex')::uuid")
+                        .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
+                    }
                     seed.commit().await?;
+                    if matches!(case, Case::SoulWarFinalEntry | Case::SoulWarFinalDefeat) {
+                        let (_, reply, barrier) =
+                            exchange(&owner, &mut admitted, &boss_key, false).await?;
+                        assert_eq!(
+                            reply,
+                            BossActivityReply::Refused(BossActivityRefusal::AuthorityRejected)
+                        );
+                        assert!(
+                            barrier.is_none(),
+                            "expired taints cannot admit the final boss"
+                        );
+                        let mut seed = h.pool.begin().await?;
+                        sqlx::query("SET LOCAL session_replication_role=replica")
+                            .execute(&mut *seed)
+                            .await?;
+                        sqlx::query("UPDATE game_character_soul_war SET first_taint_at=floor(extract(epoch FROM transaction_timestamp()))::bigint WHERE character_id=encode($1,'hex')::uuid")
+                        .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
+                        seed.commit().await?;
+                    }
                 }
             }
-            }
-            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_activity_handoff_groups")
-                .fetch_one(&h.pool).await?, 0);
-            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_boss_cooldowns")
-                .fetch_one(&h.pool).await?, 0);
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_activity_handoff_groups")
+                    .fetch_one(&h.pool)
+                    .await?,
+                0
+            );
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_boss_cooldowns")
+                    .fetch_one(&h.pool)
+                    .await?,
+                0
+            );
             // Valid source predicates must cross the real W02 scope barrier
             // through the canonical command key, not a preview-only success.
             sqlx::query("UPDATE game_boss_room_catalogue SET boss_key=$2 WHERE boss_key=$1")
-                .bind(&boss_key).bind(key).execute(&h.pool).await?;
+                .bind(&boss_key)
+                .bind(key)
+                .execute(&h.pool)
+                .await?;
             boss_key = key.to_owned();
         }
         let attack_continuity = if case == Case::Entry {
@@ -792,7 +865,10 @@ fn scenario(case: Case) -> TestResult {
             endgame::settle(&h, &destination, admitted, &policy, case).await?;
         }
         if let Some(key) = endgame_creature {
-            eprintln!("L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED {key} elapsed_ms={}", started.elapsed().as_millis());
+            eprintln!(
+                "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED {key} elapsed_ms={}",
+                started.elapsed().as_millis()
+            );
         }
         eprintln!("BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED");
         eprintln!("BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED");

@@ -50,6 +50,7 @@ use super::{ComposedFreshAdmission, operator_event};
 mod boss_reward_contribution;
 #[path = "boss_reward_settlement.rs"]
 mod boss_reward_settlement;
+pub(super) use boss_reward_settlement::personal_death_id;
 
 #[cfg(test)]
 #[allow(
@@ -1404,12 +1405,14 @@ pub fn record_creature_kill(
     let mut row = match reward {
         Ok(row) => row,
         Err(reason) => {
-            // Ordinary reward admission remains closed. A recognised Grizzly death
-            // with a present native principal may carry quest-only work; no fallback
-            // invents an XP amount, loot table, corpse Item or Bestiary race.
+            // Ordinary reward admission remains closed. A recognised native quest
+            // death with a present principal may carry its separately sourced work;
+            // no fallback invents XP, a loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
             if boss.is_none()
-                && (top.present().is_none() || !super::grizzly_kills::tracks_creature(&creature))
+                && (top.present().is_none()
+                    || !(super::grizzly_kills::tracks_creature(&creature)
+                        || tracks_native_progression(&creature)))
             {
                 refuse(reason.as_str(), &creature);
                 // Echo's first-species callback precedes ordinary loot admission in the
@@ -2530,10 +2533,16 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 Ok(party) => {
                     // Publish while the same Character revision slots and scope
                     // lane are held, so an activity handoff carries these marks.
-                    admission.states.title_refresh.mark(party.leveled.iter().copied());
+                    admission
+                        .states
+                        .title_refresh
+                        .mark(party.leveled.iter().copied());
                     admission.states.level_refresh.mark(party.leveled);
                     if let Ok(xp) = &party.xp {
-                        admission.states.soul_kills.mark(super::soul_kill_live::soul_hook(xp));
+                        admission
+                            .states
+                            .soul_kills
+                            .mark(super::soul_kill_live::soul_hook(xp));
                     }
                 }
                 Err(error) => {
@@ -2605,9 +2614,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         }
-        // Grizzly has already settled through the wrapper above. No ordinary
-        // progression, Task Board, equipment, proficiency or loot path is admitted
-        // by a missing reward row (Q11=B).
+        // Explicit native encounter XP and the Grizzly wrapper have settled.
+        // A missing reward row admits no additional progression, Task Board,
+        // equipment, proficiency or loot descendant.
         if entry.row.is_none() {
             return SettleReport {
                 verdict: SettleVerdict::Final,

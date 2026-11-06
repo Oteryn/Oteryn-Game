@@ -422,7 +422,8 @@ mod scoped_death_tests {
     }
 
     #[test]
-    fn native_death_fence_keeps_scope_kind_world_and_generation() -> std::result::Result<(), String> {
+    fn native_death_fence_keeps_scope_kind_world_and_generation() -> std::result::Result<(), String>
+    {
         use crate::foundation::{ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
         let channel = channel_bytes();
         let mut instance = vec![2];
@@ -435,8 +436,10 @@ mod scoped_death_tests {
             connection_generation: ConnectionGeneration::new(1).map_err(|e| format!("{e:?}"))?,
             character_lease_generation: 1,
             runtime_scope: channel_scope,
-            scope_ownership_generation: ScopeOwnershipGeneration::new(generation).map_err(|e| format!("{e:?}"))?,
-            expected_character_revision: crate::domain::CharacterRevision::new(1).map_err(|e| format!("{e:?}"))?,
+            scope_ownership_generation: ScopeOwnershipGeneration::new(generation)
+                .map_err(|e| format!("{e:?}"))?,
+            expected_character_revision: crate::domain::CharacterRevision::new(1)
+                .map_err(|e| format!("{e:?}"))?,
         };
         assert!(death_matches_fence(&channel, &fence));
         assert!(!death_matches_fence(&instance, &fence));
@@ -452,7 +455,8 @@ mod scoped_death_tests {
         for length in 0..instance.len() {
             assert!(!death_matches_fence(&instance[..length], &fence));
         }
-        fence.scope_ownership_generation = ScopeOwnershipGeneration::new(generation + 1).map_err(|e| format!("{e:?}"))?;
+        fence.scope_ownership_generation =
+            ScopeOwnershipGeneration::new(generation + 1).map_err(|e| format!("{e:?}"))?;
         assert!(!death_matches_fence(&instance, &fence));
         Ok(())
     }
