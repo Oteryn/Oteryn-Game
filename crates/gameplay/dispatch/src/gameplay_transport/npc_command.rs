@@ -35,6 +35,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+mod catalogue;
 mod classic_quests;
 mod coin_exchange;
 mod dark_trails;
@@ -51,6 +52,7 @@ mod quest_dialogue;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
+mod viola;
 mod wrath_sleeping_dragon;
 pub(super) use premium_purchase::resume_npc_talk;
 
@@ -72,8 +74,10 @@ struct SessionNpc {
     grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
     monk: Option<monk::Pending>,
+    viola: Option<viola::Pending>,
     quest_dialogue: quest_dialogue::State,
     endgame: Option<endgame::Pending>,
+    catalogue: Option<catalogue::Pending>,
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
     threatened_dreams: Option<threatened_dreams::Pending>,
@@ -753,6 +757,16 @@ pub(super) async fn npc_bank_talk(
     if let Some(step) = monk::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         return monk::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = viola::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return viola::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return catalogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = classic_quests::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

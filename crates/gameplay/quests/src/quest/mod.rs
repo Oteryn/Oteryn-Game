@@ -24,6 +24,7 @@ pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod cults_of_tibia;
 pub mod dark_trails;
+pub mod falcon;
 pub mod grave_danger;
 pub mod grizzly_adams;
 pub mod isle_of_evil;
@@ -32,7 +33,6 @@ pub mod loader;
 pub mod log;
 pub mod monk_shrines;
 pub mod native_rules;
-#[cfg(test)]
 pub mod npc_rules;
 mod quests_2_focus;
 pub mod rotten_blood;
@@ -72,6 +72,12 @@ pub const QUESTGATE0_RL_10: usize = 16;
 
 const KEY_PREFIX: &str = "oteryn:";
 const DEFINITION_HASH_VERSION: u8 = 2;
+
+/// QUEST-FINISH owner scope: Dawnport is reference data; Newhaven owns the start.
+#[must_use]
+pub(super) fn in_runtime_scope(quest: &str) -> bool {
+    quest != "oteryn:quest.dawnport_quest"
+}
 
 /// An Oteryn key (§13.2): `oteryn:` and a non-empty tail of `[A-Za-z0-9._:/-]`, at most
 /// [`QUESTSTATE0_RL_06`] bytes. A source key never reaches the store.
@@ -270,6 +276,8 @@ pub struct QuestStateCatalogue {
     tracks: BTreeMap<String, QuestTrack>,
     transitions: BTreeMap<String, QuestTransition>,
     hashes: BTreeMap<String, [u8; 32]>,
+    // Read-compatible NPC activation retains historical pins and absent-track meanings.
+    npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
 }
 
 impl QuestStateCatalogue {
@@ -372,6 +380,7 @@ impl QuestStateCatalogue {
             tracks: track_map,
             transitions: transition_map,
             hashes,
+            npc_legacy: BTreeMap::new(),
         })
     }
 
@@ -388,7 +397,7 @@ impl QuestStateCatalogue {
         if let Some(quest) = quests.find(|quest| self.hashes.contains_key(*quest)) {
             return Err(QuestCatalogueError::DuplicateKey(quest.clone()));
         }
-        Self::new(
+        let mut extended = Self::new(
             self.content_revision.clone(),
             self.tracks.values().cloned().chain(tracks).collect(),
             self.transitions
@@ -396,7 +405,9 @@ impl QuestStateCatalogue {
                 .cloned()
                 .chain(transitions)
                 .collect(),
-        )
+        )?;
+        extended.npc_legacy.clone_from(&self.npc_legacy);
+        Ok(extended)
     }
 
     /// A catalogue with no quest: every transition request is unknown.

@@ -129,6 +129,8 @@ fn source_entry_policy(encounter: Encounter) -> Option<SourceEntryPolicy> {
     // Primal: actions/bosses_levers/the_primal_manace.lua:23, same default20h.
     // Soul: lib/quests/soul_war.lua:288-293 lever positions; 330,353,392,415,443
     // select20h (Greed's later392 overrides372); final452,471 starts purple/72h.
+    // Current Wiki Soul War Quest/Spoiler revision 1134584 sets the final
+    // retry to 68h, overriding the donors' 72h; phase timers are separate.
     let (lever, retry_seconds) = match encounter.boss_key {
         "oteryn:creature.the_primal_menace" => ((33547, 32752, 14), 72_000),
         "oteryn:creature.goshnar_s_malice" => ((33678, 31599, 14), 72_000),
@@ -136,7 +138,7 @@ fn source_entry_policy(encounter: Encounter) -> Option<SourceEntryPolicy> {
         "oteryn:creature.goshnar_s_greed" => ((33775, 31665, 14), 72_000),
         "oteryn:creature.goshnar_s_hatred" => ((33772, 31601, 14), 72_000),
         "oteryn:creature.goshnar_s_cruelty" => ((33853, 31854, 6), 72_000),
-        "oteryn:creature.goshnar_s_megalomania_purple" => ((33675, 31634, 14), 259_200),
+        "oteryn:creature.goshnar_s_megalomania_purple" => ((33675, 31634, 14), 244_800),
         "oteryn:creature.ichgahal" => ((32979, 32333, 15), 72_000),
         "oteryn:creature.murcion" => ((32979, 32365, 15), 72_000),
         "oteryn:creature.vemiath" => ((33079, 32333, 15), 72_000),

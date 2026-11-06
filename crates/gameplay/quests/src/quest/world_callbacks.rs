@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-// The merged quest batches contain 224 static callbacks plus the dynamic altar.
+// Static callbacks and the dynamic altar share the same boot bound.
 pub const MAX_CALLBACKS: usize = 512;
 pub const MAX_EFFECTS: usize = 8;
 
@@ -59,9 +59,12 @@ pub struct Storage {
     pub minimum: i64,
     pub maximum: i64,
     pub set: i64,
-    /// A read-only gate: validate the locked value without resetting later progress.
+    /// Preserve the track value within a receipt-bearing quest transition.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
+    /// Validate quest progress without writing tracks, state, receipts or revisions.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub read_only: bool,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -123,6 +126,14 @@ pub struct Callback {
     pub sources: Vec<String>,
 }
 
+impl Callback {
+    /// A pure quest-state predicate, with no Quest mutation or receipt.
+    #[must_use]
+    pub fn is_read_only(&self) -> bool {
+        !self.storage.is_empty() && self.storage.iter().all(|storage| storage.read_only)
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Document {
@@ -133,6 +144,7 @@ struct Document {
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     if callbacks.len() >= MAX_CALLBACKS {
         return Err("callback bounds including Rotten Blood altar".into());
     }
@@ -163,6 +175,19 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
             || unique_storage.len() != callback.storage.len()
+            || (callback.storage.iter().any(|storage| storage.read_only)
+                && (!callback.is_read_only()
+                    || callback.trigger != Trigger::Use
+                    || callback.teleport.is_none()
+                    || callback.lever.is_some()
+                    || !callback.passages.is_empty()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.minimum_level.is_some()
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.native_rule.is_some()
+                    || callback.storage.iter().any(|storage| storage.preserve)))
             || callback.passages.len() > MAX_EFFECTS
             || callback.storage.len() > MAX_EFFECTS
             || callback
@@ -254,7 +279,7 @@ fn extend_callbacks(
     for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
         for storage in &callback.storage {
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
-                if callback.native_rule.is_none() && !storage.preserve {
+                if callback.native_rule.is_none() && !storage.preserve && !storage.read_only {
                     track.max = track.max.max(storage.set).max(storage.maximum);
                 }
             } else {
@@ -269,13 +294,18 @@ fn extend_callbacks(
                     quest: callback.quest.clone(),
                     initial: -1,
                     min: -1,
-                    max: if storage.preserve {
+                    max: if storage.preserve || storage.read_only {
                         storage.maximum
                     } else {
                         storage.set.max(storage.maximum)
                     },
                 });
             }
+        }
+        // Pure gates must not acquire a generic transition: even ADD(0)
+        // creates a Character revision, quest state and receipt.
+        if callback.is_read_only() {
+            continue;
         }
         transitions.push(QuestTransition {
             key: callback.key.clone(),
@@ -307,6 +337,43 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn read_only_world_callback_has_no_quest_write_transition() -> Result<(), String> {
+        let held: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json")).map_err(|e| e.to_string())?;
+        let callbacks = parse(&serde_json::json!({"schema": 1, "callbacks": [held["callbacks"][1].clone(), held["callbacks"][3].clone()]}).to_string())?;
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("catalogue")?,
+            &callbacks,
+        )?;
+        for callback in callbacks {
+            assert!(
+                catalogue.transition(&callback.key).is_none(),
+                "read-only USE acquired a write transition"
+            );
+            assert!(catalogue.track(&callback.storage[0].track).is_some());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_world_callbacks_reject_mixed_mutations() -> Result<(), String> {
+        let held: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json")).map_err(|e| e.to_string())?;
+        for case in 0..4 {
+            let mut callback = held["callbacks"][1].clone();
+            match case {
+                0 => callback["experience"] = 1.into(),
+                1 => callback["storage"][0]["preserve"] = true.into(),
+                2 => callback["trigger"] = "step_in".into(),
+                _ => callback["teleport"] = serde_json::Value::Null,
+            }
+            assert!(
+                parse(&serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string())
+                    .is_err()
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn dryad_garden_uses_source_unique_ids_in_both_directions() -> Result<(), String> {

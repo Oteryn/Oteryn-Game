@@ -90,7 +90,7 @@ pub(super) fn capacity(request: &RewardClaimMintRequest) -> Option<i16> {
 
 /// UUIDv7-shaped, domain-separated identities retain the reserved timestamp
 /// prefix. Retry/restart derives the same children, independently of process RNG.
-fn child_id(root: &[u8; 16], ordinal: usize, kind: u8) -> [u8; 16] {
+pub(super) fn child_id(root: &[u8; 16], ordinal: usize, kind: u8) -> [u8; 16] {
     let mut hash = Sha256::new();
     hash.update(b"oteryn:reward-claim-container:v1");
     hash.update(root);
@@ -154,11 +154,13 @@ pub(super) fn reservation_matches(
     reservation: &Reservation,
 ) -> std::result::Result<bool, DurabilityError> {
     let saved: sqlx::types::Json<Value> = row.try_get("contents_plan")?;
-    Ok(
-        row.try_get::<Option<i16>, _>("contents_capacity")? == capacity(request)
-            && saved.0 == plan(request, reservation)
-            && row.try_get::<Option<String>, _>("root_text")? == request.root_text,
-    )
+    let fluids: sqlx::types::Json<Value> = row.try_get("fluid_plan")?;
+    let charges: sqlx::types::Json<Value> = row.try_get("charges_plan")?;
+    Ok(charges.0 == super::charges::plan(request)
+        && fluids.0 == fluid::plan(request)
+        && row.try_get::<Option<i16>, _>("contents_capacity")? == capacity(request)
+        && saved.0 == plan(request, reservation)
+        && row.try_get::<Option<String>, _>("root_text")? == request.root_text)
 }
 
 /// The character fence already holds its root. This is the complete fresh

@@ -334,6 +334,16 @@ impl LoadedNpcCatalogue {
             .ok_or(BootError::ContentActivation("NPC catalogue content root"))?;
         let catalogue_sha256 = npc::catalogue_sha256(content)
             .map_err(|_| BootError::ContentActivation("NPC catalogue digest"))?;
+        let source = oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
+            .map_err(|_| BootError::ContentActivation("native NPC quest catalogue"))?;
+        let native_npcs = source
+            .programs()
+            .iter()
+            .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+            .chain(std::iter::once("oteryn:npc.viola"))
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
         Ok(Self {
             admitted: model
                 .npcs()
@@ -341,7 +351,10 @@ impl LoadedNpcCatalogue {
                 .map(|reference| reference.key.clone())
                 .collect(),
             catalogue_sha256,
-            talk: Arc::new(NpcTalkBook::from_model(&model)),
+            talk: Arc::new(NpcTalkBook::from_model_with_native_quests(
+                &model,
+                &native_npcs,
+            )),
         })
     }
 }

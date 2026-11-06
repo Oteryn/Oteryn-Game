@@ -20,6 +20,7 @@
 //! they wait for a slot or across the durable write, and every write is still refused by the
 //! existing session-generation gameplay fence in its own transaction.
 
+mod npc_program;
 mod appearance_revision;
 mod arena_match;
 mod atelier;

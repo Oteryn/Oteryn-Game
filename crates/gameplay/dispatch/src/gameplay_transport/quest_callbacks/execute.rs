@@ -19,6 +19,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: Option<CurrentCharacterGameplayFence>,
         slot: Option<&mut RevisionSlot>,
         optional_pvp: Option<bool>,
+        read_only_gate: Option<&ReadOnlyGate>,
     ) -> UseDisposition {
         if !runtime
             .player_control_facts(actor, session)
@@ -160,12 +161,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Exhausted;
         }
-        let mut success_message = if callback.storage.is_empty() {
+        if callback.is_read_only()
+            && !read_only_gate.is_some_and(|gate| {
+                gate.actor == actor
+                    && gate.session == session
+                    && gate.callback == callback.key
+                    && runtime.read_actor_position(actor) == Ok(gate.expected)
+            })
+        {
+            return UseDisposition::Rejected;
+        }
+        let mut success_message = if callback.storage.is_empty() || callback.is_read_only() {
             callback.success_message.clone()
         } else {
             None
         };
-        if !callback.storage.is_empty() {
+        if !callback.storage.is_empty() && !callback.is_read_only() {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
             else {

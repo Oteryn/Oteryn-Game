@@ -17,6 +17,112 @@ pub struct QuestWorldContext {
     pub movement_revision: u64,
 }
 
+impl super::DurabilityRoot {
+    /// Read a literal callback's quest gates under the live session and Character
+    /// root fences. This path never writes Quest state, receipts or revisions.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the read owner requires the same authority and world context as callback writes"
+    )]
+    pub async fn check_character_world_callback(
+        &self,
+        authority: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &super::runtime_scope_assignment::NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        callback_key: &str,
+        catalogue: std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+        permit: &SpellLanePermit,
+        context: QuestWorldContext,
+    ) -> Result<bool, super::character_progression::CharacterProgressionError> {
+        use super::character_authority::assert_recovery_fence;
+        use super::character_progression::{CharacterProgressionError, assert_item_only_fence};
+        use super::db::{
+            begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+        };
+        let callback = oteryn_gameplay_quests::quest::world_callbacks::load()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .into_iter()
+            .find(|callback| callback.key == callback_key && callback.is_read_only())
+            .ok_or(CharacterProgressionError::InvalidInput)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        let mut context = (permit, context);
+        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, (permit, context)| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_admission_relations(&mut tx).await?;
+                if let Err(error) = assert_item_only_fence(&mut tx, &fence.item_fence(), &node).await? {
+                    return Ok(Err(error));
+                }
+                if !context_is_current(&mut tx, permit, fence, context).await? {
+                    return Ok(Ok(false));
+                }
+                let current: Option<String> = sqlx::query_scalar(
+                    "SELECT content_revision FROM game_character_progression_state \
+                     WHERE character_id=encode($1,'hex')::uuid",
+                ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                if current.as_deref() != Some(catalogue.content_revision()) {
+                    return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                }
+                let pending: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns \
+                     WHERE character_id=encode($1,'hex')::uuid)",
+                ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                if pending {
+                    return Ok(Err(CharacterProgressionError::RespawnPending));
+                }
+                let pin = sqlx::query(
+                    "SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed \
+                     FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
+                ).bind(fence.character_id.as_bytes().as_slice()).bind(&callback.quest)
+                    .fetch_optional(&mut *tx).await?;
+                if let Some(pin) = pin {
+                    let pin = super::quest_state::QuestStateRecord {
+                        pinned_content_revision: pin.try_get("pinned_content_revision")?,
+                        definition_hash: pin.try_get::<Vec<u8>, _>("definition_hash")?.try_into()
+                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+                        completed: pin.try_get("completed")?,
+                    };
+                    if !read_only_pin_allows(&pin, &catalogue, &callback.quest)? {
+                        return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                    }
+                }
+                for storage in &callback.storage {
+                    let Some(track) = catalogue.track(&storage.track).filter(|track| track.quest == callback.quest) else {
+                        return Ok(Err(CharacterProgressionError::InvalidInput));
+                    };
+                    let value: Option<i64> = sqlx::query_scalar(
+                        "SELECT value FROM game_character_quest_tracks \
+                         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
+                    ).bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track)
+                        .bind(&callback.quest).fetch_optional(&mut *tx).await?;
+                    if !(storage.minimum..=storage.maximum).contains(&value.unwrap_or(track.initial)) {
+                        return Ok(Ok(false));
+                    }
+                }
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(Ok(true))
+            })
+        }).await?
+    }
+}
+
+fn read_only_pin_allows(
+    stored: &super::quest_state::QuestStateRecord,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    quest: &str,
+) -> Result<bool, DurabilityError> {
+    let current_hash = catalogue
+        .definition_hash(quest)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    // QUEST-STATE-0 §6: unchanged definitions retain their historical content
+    // pin; completed quests keep access even when the definition changes.
+    Ok(stored.definition_hash == current_hash || stored.completed)
+}
+
 struct Input {
     item: String,
     before: serde_json::Value,
@@ -355,4 +461,49 @@ async fn apply_input(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod read_only_pin_tests {
+    use super::*;
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
+
+    #[test]
+    fn read_only_callback_keeps_access_on_an_unchanged_historical_content_pin() -> Result<(), String>
+    {
+        let quest = "oteryn:quest.fixture.read_only";
+        let catalogue = QuestStateCatalogue::new(
+            "content-current",
+            vec![QuestTrack {
+                key: "oteryn:quest-progress/fixture/read-only".into(),
+                quest: quest.into(),
+                initial: -1,
+                min: -1,
+                max: 13,
+            }],
+            vec![],
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let mut stored = super::super::quest_state::QuestStateRecord {
+            pinned_content_revision: "content-previous".into(),
+            definition_hash: catalogue.definition_hash(quest).ok_or("hash")?,
+            completed: false,
+        };
+        assert_ne!(stored.pinned_content_revision, catalogue.content_revision());
+        assert!(
+            read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        stored.definition_hash[0] ^= 1;
+        assert!(
+            !read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        stored.completed = true;
+        assert!(
+            read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        Ok(())
+    }
 }

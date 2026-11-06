@@ -167,6 +167,8 @@ async fn prepare_items(
             quantity: 1,
             contents: Vec::new(),
             root_text: None,
+            root_fluid_subtype: None,
+            root_charges_remaining: None,
             backpack: backpack.clone(),
             content_revision: inventory.content_revision.clone(),
             ruleset_revision: inventory.ruleset_revision.clone(),

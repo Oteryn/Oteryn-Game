@@ -42,6 +42,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &crate::map::boot::BundleMap,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
+        if let Some(result) = self.use_viola_book(actor, command, map, target).await {
+            return Some(result);
+        }
+        if let Some(result) = self.use_falcon_chest(actor, command, map, target).await {
+            return Some(result);
+        }
         let native = self.active_generation?.native_gameplay()?;
         // This is a bounded, immutable Content pass over the embedded claim catalogue.
         // Unsupported shapes and unadmitted rewards remain closed in the existing binder.
@@ -95,7 +101,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 {
                     let mut runtime = self.runtime.lock().await;
-                    let states = self.states.spell_states.lock().await;
+                    let Ok(states) = self.states.spell_states.try_lock() else {
+                        return outcome(UseDisposition::Rejected);
+                    };
                     if !runtime
                         .player_control_facts(actor, command.game_session_id)
                         .is_ok_and(|facts| facts.control_loss.is_none())
@@ -158,6 +166,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 quantity: child.count,
                                 key_number: child.key_number,
                                 text: child.text.clone(),
+                                fluid_subtype: child.fluid_subtype,
+                                charges_remaining: child.charges_remaining,
                             }
                         })
                     })
@@ -177,6 +187,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     quantity: reward.count,
                     contents,
                     root_text: bound.root_text.clone(),
+                    root_fluid_subtype: bound.root_fluid_subtype,
+                    root_charges_remaining: bound.root_charges_remaining,
                     backpack,
                     content_revision: format!(
                         "sha256:{}",

@@ -95,6 +95,19 @@ def complete_native_stack(root, record, definition, binding):
 def grant_semantics(root, definition):
     """Carry source text facts without inventing an unqualified player-write policy."""
     semantics = copy.deepcopy(definition['semantics'])
+    # Canary04b83b5:data/items/items.xml:16088-16091. The admitted poem
+    # scroll has an unknown canonical weight, but this exact donor explicitly
+    # supplies 120 centi-oz. Preserve the canonical record and known native facts.
+    if (definition['identity']['key'] == 'oteryn:item.tibia.i5952'
+            and semantics['physical'].get('state') == 'KNOWN'
+            and semantics['physical']['value'].get('weight') == {'state': 'UNKNOWN'}):
+        raw = (root / SOURCE).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
+            raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
+        witnesses = ET.fromstring(raw).findall("item[@id='5952']/attribute[@key='weight']")
+        if len(witnesses) != 1 or witnesses[0].get('value') != '120':
+            raise ValueError('QUEST_CALLBACK_POEM_SCROLL_WEIGHT_DRIFT')
+        semantics['physical']['value']['weight'] = {'state': 'KNOWN', 'value': 120}
     text = semantics['readable_writeable']
     if (text.get('state') != 'KNOWN'
             or text['value']['writeable'] != writing.known(True)):
@@ -133,6 +146,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
+    # Crystal201189f chest.lua:508-513: Fanfare's key3520 uses the already
+    # admitted bone key2973. Its key-binding hold is separate from Item admission.
+    keys.add('oteryn:item.tibia.i2973')
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:
@@ -144,6 +160,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     for path in sorted((root / 'content/interactions/reward_claims').glob('reward-claim*.json')):
         for row in json.loads(path.read_bytes())['records']:
             definition = row['definition']
+            # QUEST-FINISH owner scope: retain the donor record as evidence,
+            # but do not admit Dawnport's rewards into the Newhaven start path.
+            if definition.get('quest', {}).get('key') == 'canary:quest/dawnport_quest':
+                continue
             demon_item = DEMON_HELMET_REWARDS.get(definition['identity']['key'])
             if demon_item is not None:
                 placements = definition['placements']
@@ -161,8 +181,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 keys.update(child['item']['key'] for child in placement['contents'])
             if definition.get('readiness') == 'ready':
                 for placement in definition['placements']:
-                    if placement.get('quest_transition'):
-                        keys.update(item['item']['key'] for item in placement['reward']['items'])
+                    # A ready source reward still needs the same exact native
+                    # Item admission when it has no quest-state side effect.
+                    keys.update(item['item']['key'] for item in placement['reward']['items'])
+    # Falcon repeat owner freezes one of these exact seven source rewards.
+    keys.update(f'oteryn:item.tibia.i{number}' for number in (9081, 28821, 28823, 9058, 6299, 3052, 3035))
     grizzly_path = root / 'content/quests/killing-in-the-name-of.json'
     if grizzly_path.is_file():
         grizzly = json.loads(grizzly_path.read_bytes())

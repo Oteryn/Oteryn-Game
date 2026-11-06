@@ -42,6 +42,13 @@ struct Pending {
     ingress_settled: bool,
 }
 
+struct ReadOnlyGate {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    callback: String,
+}
+
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
@@ -83,11 +90,14 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return false;
     };
     let selector = &callback.selector;
+    // A position-registered USE acts on the resolved object the player clicked;
+    // its native placement may be above ground. STEP still selects the floor.
     selector.position.is_none_or(|p| tile(p) == pos)
         && (selector.position.is_none()
             || selector.unique.is_some()
             || selector.action.is_some()
             || selector.appearance.is_some()
+            || callback.trigger == Trigger::Use
             || ordinal == 0)
         && map
             .facts
@@ -283,6 +293,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(fence),
                     Some(&mut slot),
                     optional_pvp,
+                    None,
                 )
                 .await;
             if result != UseDisposition::Committed {
@@ -355,6 +366,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let optional_pvp = self
                 .special_movement_policy(&permit, actor, command.game_session_id)
                 .await;
+            let read_only_gate = if callback.is_read_only() {
+                let (Some(fence), Some(catalogue)) = (fence, self.quest_catalogue.as_ref()) else {
+                    return UseDisposition::Rejected;
+                };
+                let (expected, context) = {
+                    let runtime = self.runtime.lock().await;
+                    let Ok(expected) = runtime.read_actor_position(actor) else {
+                        return UseDisposition::Rejected;
+                    };
+                    let Some(at) = native(expected.position()) else {
+                        return UseDisposition::Rejected;
+                    };
+                    if !super::map_door::reachable(at, resolved.pos) {
+                        return UseDisposition::TooFar;
+                    }
+                    if !self.states.world_gate.lock()
+                        .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
+                    {
+                        return UseDisposition::Exhausted;
+                    }
+                    let context = QuestWorldContext {
+                        map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                        content_revision: format!("sha256:{}", hex(&runtime.content_pin().server_artifact_digest())),
+                        placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+                        reset_epoch: self.reset_epoch,
+                        actor_placement: actor.placement_identity(),
+                        movement_revision: expected.revision(),
+                    };
+                    (expected, context)
+                };
+                let allowed = self.root.check_character_world_callback(
+                    self.character, self.holder, fence, &callback.key,
+                    std::sync::Arc::clone(catalogue), &permit, context,
+                ).await;
+                if !matches!(allowed, Ok(true)) {
+                    if let Some(message) = &callback.failure_message {
+                        self.states.chat.push_quest_feedback(command.game_session_id, message);
+                    }
+                    return UseDisposition::Rejected;
+                }
+                Some(ReadOnlyGate {
+                    actor, session: command.game_session_id, expected, callback: callback.key.clone(),
+                })
+            } else {
+                None
+            };
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             let Ok(expected) = runtime.read_actor_position(actor) else {
@@ -366,7 +423,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !super::map_door::reachable(at, resolved.pos) {
                 return UseDisposition::TooFar;
             }
-            if !self
+            if !callback.is_read_only() && !self
                 .states
                 .world_gate
                 .lock()
@@ -391,6 +448,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 slot.as_mut(),
                 optional_pvp,
+                read_only_gate.as_ref(),
             )
             .await;
             drop(states);
@@ -493,6 +551,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     slot.as_mut(),
                     optional_pvp,
+                    None,
                 )
                 .await;
             let unresolved =
