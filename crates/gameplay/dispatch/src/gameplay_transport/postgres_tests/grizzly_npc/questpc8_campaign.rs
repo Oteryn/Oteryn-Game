@@ -1,4 +1,5 @@
-//! One Character earns the chosen Crocodile/Carniphila/Hydra campaign.
+//! Native Grizzly progression for the three selected task/boss pairs.
+//! The authored final payout of 10,000 XP and 5,000 gold remains unserved.
 //! No task counters, boss victories, points or quest receipts are seeded.
 use super::*;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, MovementLocalPosition};
@@ -117,7 +118,7 @@ pub(super) async fn exercise(
         }
     }
     assert_eq!(value(owner, authority, quest::POINTS_STORAGE).await?, 12);
-    say(owner, admitted, npc, &mut command, &["hi"]).await?;
+    say(owner, admitted, npc, &mut command, &["hi", "promotion"]).await?;
     assert_eq!(value(owner, authority, quest::PROMOTION_STORAGE).await?, 0);
     // Level 130 is an external eligibility condition. Establish it with the
     // actual XP owner, never by changing a stored level or bypassing the guard.
