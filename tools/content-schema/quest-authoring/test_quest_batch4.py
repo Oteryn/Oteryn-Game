@@ -44,6 +44,18 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_hoist_step_reads_both_instructions_without_a_write(self):
+        source = Path(__file__).parent / 'batches/quests4/formogar_mine_hoist.json'
+        row = json.loads(source.read_text())['callbacks'][0]
+        for storage in row['storage']:
+            storage.pop('preserve', None)
+            storage['read_only'] = True
+        tool.validate_callback(row, 'formogar_mine_hoist')
+        mixed = copy.deepcopy(row)
+        mixed['storage'][1]['read_only'] = False
+        with self.assertRaises(ValueError):
+            tool.validate_callback(mixed, 'formogar_mine_hoist')
+
     def test_paired_plate_departure_is_stateless_and_cannot_teleport(self):
         row = callback('thais_lighthouse', 'thais-lighthouse-stairs-out')
         row.update(trigger='step_out', teleport=None, lever=[431, 430], reversible=True)

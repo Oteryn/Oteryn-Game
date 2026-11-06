@@ -24,6 +24,7 @@ pub struct Position {
 pub enum Trigger {
     Use,
     StepIn,
+    StepOut,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -177,7 +178,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || unique_storage.len() != callback.storage.len()
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
-                    || callback.trigger != Trigger::Use
+                    || !matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
                     || callback.teleport.is_none()
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()
@@ -246,7 +247,28 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .is_some_and(|rule| !valid_native_callback(callback, rule))
             || callback
                 .lever
-                .is_some_and(|p| p[0] == p[1] || callback.trigger != Trigger::Use)
+                .is_some_and(|p| {
+                    p[0] == p[1]
+                        || (callback.trigger != Trigger::Use
+                            && (!callback.reversible
+                                || !callback.storage.is_empty()
+                                || callback.teleport.is_some()
+                                || !callback.offerings.is_empty()
+                                || callback.item_on_target.is_some()))
+                })
+            // Departure restores Channel-local map facts only. It must never
+            // introduce another durable transition for the same movement cause.
+            || (callback.trigger == Trigger::StepOut
+                && (!callback.reversible
+                    || callback.teleport.is_some()
+                    || !callback.storage.is_empty()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.minimum_level.is_some()
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.native_rule.is_some()
+                    || callback.return_on_failure))
             || callback.passages.iter().any(|p| !valid_pos(p.position))
             || callback.offerings.iter().any(|o| {
                 !valid_pos(o.position)
@@ -364,7 +386,7 @@ mod tests {
             match case {
                 0 => callback["experience"] = 1.into(),
                 1 => callback["storage"][0]["preserve"] = true.into(),
-                2 => callback["trigger"] = "step_in".into(),
+                2 => callback["trigger"] = "step_out".into(),
                 _ => callback["teleport"] = serde_json::Value::Null,
             }
             assert!(

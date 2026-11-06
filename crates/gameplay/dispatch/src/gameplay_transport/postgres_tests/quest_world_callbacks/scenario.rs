@@ -40,7 +40,7 @@ fn scenario_case(
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(if paired_plate {
-        "thais-lighthouse-ladder"
+        "thais-lighthouse-stairs-in"
     } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
@@ -52,15 +52,6 @@ fn scenario_case(
     } else {
         name
     })?;
-    if paired_plate {
-        callback.key = "oteryn:quest-callback/thais-lighthouse-stairs-in".into();
-        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
-        callback.selector.unique = Some(25010);
-        callback.selector.appearance = None;
-        callback.lever = Some([431, 430]);
-        callback.passages[0].position = Position { x: 32225, y: 32282, floor: -9 };
-        callback.passages[0].appearance = 429;
-    }
     if target_swap {
         callback
             .item_on_target
@@ -158,11 +149,15 @@ fn scenario_case(
                 .clone(),
         ));
         if paired_plate {
-            let mut departure = serde_json::to_value(&callback)?;
-            departure["key"] = "oteryn:quest-callback/thais-lighthouse-stairs-out".into();
-            departure["trigger"] = "step_out".into();
-            let departure = serde_json::from_value(departure)?;
-            assert!(owner.states.quest_callbacks.fixture.set(vec![callback.clone(), departure]).is_ok());
+            let departure = super::callback("thais-lighthouse-stairs-out")?;
+            assert!(
+                owner
+                    .states
+                    .quest_callbacks
+                    .fixture
+                    .set(vec![callback.clone(), departure])
+                    .is_ok()
+            );
         }
         if lever_fixture || target_swap {
             assert!(
@@ -221,7 +216,15 @@ fn scenario_case(
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
         if paired_plate {
-            super::super::questpc5_l5::exercise_plate(&owner, &mut admitted, &h, deps.actor, &callback, trigger).await?;
+            super::super::questpc5_l5::exercise_plate(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,

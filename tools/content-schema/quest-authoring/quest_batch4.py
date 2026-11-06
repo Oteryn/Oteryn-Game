@@ -227,7 +227,14 @@ def validate_callback(callback, directory):
     require(valid_key(key) and key.startswith('oteryn:quest-callback/'), context + ': foreign or invalid key')
     require(QUEST_OWNERS[directory] is not None and callback['quest'] == QUEST_OWNERS[directory],
             key + ': foreign quest owner or owner not qualified')
-    require(callback['trigger'] in ('use', 'step_in'), key + ': invalid trigger')
+    require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
+    if callback['trigger'] == 'step_out':
+        require(callback['reversible'] and not callback.get('teleport')
+                and not callback['storage'] and not callback['offerings']
+                and not callback.get('item_on_target') and not callback.get('minimum_level')
+                and not callback.get('experience') and not callback.get('monk_reward')
+                and not callback.get('native_rule') and not callback['return_on_failure'],
+                key + ': departure must only restore map facts')
     selector = callback['selector']
     selector_fields = {'position', 'unique', 'action', 'appearance'}
     fields(selector, set(), selector_fields, key + ': selector')
@@ -242,7 +249,10 @@ def validate_callback(callback, directory):
     lever = callback.get('lever')
     if lever is not None:
         require(isinstance(lever, list) and len(lever) == 2 and lever[0] != lever[1]
-                and all(integer(value, 0, 65535) for value in lever) and callback['trigger'] == 'use',
+                and all(integer(value, 0, 65535) for value in lever)
+                and (callback['trigger'] == 'use' or callback['reversible']
+                     and not callback['storage'] and not callback.get('teleport')
+                     and not callback['offerings'] and not callback.get('item_on_target')),
                 key + ': invalid lever')
     if callback.get('teleport') is not None:
         position(callback['teleport'], key + ': teleport')
@@ -262,7 +272,7 @@ def validate_callback(callback, directory):
     if any(entry.get('read_only', False) for entry in callback['storage']):
         require(all(entry.get('read_only', False) and not entry.get('preserve', False)
                     for entry in callback['storage'])
-                and callback['trigger'] == 'use' and callback.get('teleport') is not None
+                and callback['trigger'] in ('use', 'step_in') and callback.get('teleport') is not None
                 and not callback.get('lever') and not callback['passages']
                 and not callback['offerings'] and not callback.get('item_on_target')
                 and callback.get('minimum_level') is None and callback.get('experience') is None

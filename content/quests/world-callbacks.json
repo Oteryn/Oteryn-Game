@@ -3709,14 +3709,14 @@
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         },
         {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         }
       ],
       "offerings": [],
@@ -3756,14 +3756,14 @@
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         },
         {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         }
       ],
       "offerings": [],
@@ -8684,6 +8684,78 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:6",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:7",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:42"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-stairs-in",
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 25010,
+        "action": null,
+        "appearance": null
+      },
+      "lever": [
+        431,
+        430
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32225,
+            "y": 32282,
+            "floor": -9
+          },
+          "appearance": 429,
+          "replacement": 7767
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:6-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-stairs-out",
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": null,
+        "unique": 25010,
+        "action": null,
+        "appearance": null
+      },
+      "lever": [
+        431,
+        430
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32225,
+            "y": 32282,
+            "floor": -9
+          },
+          "appearance": 429,
+          "replacement": 7767
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:24-35"
       ]
     },
     {
