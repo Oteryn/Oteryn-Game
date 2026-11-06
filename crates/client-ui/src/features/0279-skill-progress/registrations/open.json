@@ -1,0 +1,9 @@
+{
+  "mechanic": "0279-skill-progress",
+  "kind": "keybindings",
+  "id": "0279-skill-progress-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+SHIFT+K",
+  "entry": "input.rs::open_key"
+}

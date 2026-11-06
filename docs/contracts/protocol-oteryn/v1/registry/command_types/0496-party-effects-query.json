@@ -1,0 +1,10 @@
+{
+  "id": 496,
+  "name": "PARTY_EFFECTS_QUERY",
+  "owner_decision": "GAP-SV7 S13c",
+  "capability": 280,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/party-effects-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/party-effects-v1.md#reply",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 41
+}

@@ -18,6 +18,9 @@ pub async fn schedule_minted_item_in_transaction(
     ordinal: u32,
     occurred_at: i64,
 ) -> Result<(), SpellItemError> {
+    if !definition.decay_chain.is_empty() {
+        return schedule_field_chain_in_transaction(tx, authority, request, definition, item, ordinal, occurred_at).await;
+    }
     let Some(decay) = &definition.decay else {
         return Ok(());
     };
@@ -118,7 +121,7 @@ pub async fn drain_due_items_in_transaction(
        AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id)
        AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND (g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
-          AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state=2
+          AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
           AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric))
       ORDER BY p.expires_at_unix_ms,i.item_instance_id LIMIT $4 FOR UPDATE OF i,p"#)
@@ -280,7 +283,7 @@ pub async fn drain_due_field_chains_in_transaction(
        AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id AND done.source_stage=p.source_stage)
        AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND ((g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)) OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
-          AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state=2
+          AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
           AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric))
       ORDER BY p.expires_at_unix_ms,i.item_instance_id,p.source_stage LIMIT $4 FOR UPDATE OF i,p"#)
@@ -422,7 +425,7 @@ async fn schedule_field_chain_rows_in_transaction(
     if definition.decay_chain.len() > 32
         || definition.stack_maximum != 1
         || definition.container_capacity.is_some()
-        || !definition.ground_destination
+        || (!definition.ground_destination && !definition.inventory_destination)
     {
         return Err(SpellItemError::Rejected("field source chain qualification"));
     }

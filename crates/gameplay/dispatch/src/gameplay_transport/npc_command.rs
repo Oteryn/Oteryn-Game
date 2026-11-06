@@ -77,7 +77,6 @@ struct SessionNpc {
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
     threatened_dreams: Option<threatened_dreams::Pending>,
-    dragon: wrath_sleeping_dragon::Conversation,
     hireling: Option<hireling_services::State>,
 }
 

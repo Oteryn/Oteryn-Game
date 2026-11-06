@@ -534,6 +534,47 @@ async fn drink_from_a_vial(
         (fluid_of(130).await?, fluid_of(134).await?),
         (Some(10), None)
     );
+    // GAP-SV2/I10 re-verification: a full destination must never be overwritten
+    // or spill the source. Empty-source filling below remains a separate action.
+    // Owner-accepted difference: Crystal 201189f fluids.lua:70-81 spills it.
+    let full_vessel_started = std::time::Instant::now();
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,encode($3,'hex')::uuid)")
+        .bind(id(134).as_slice()).bind(id(42).as_slice()).bind(id(137).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let transitions = harness.count("game_item_fluid_transitions").await?;
+    for (command, source, target) in [(20, 134, 130), (21, 130, 134)] {
+        assert_eq!(
+            pour(command, source, target)
+                .await
+                .map(|outcome| outcome.disposition),
+            Some(UseDisposition::Rejected)
+        );
+        assert_eq!(
+            (fluid_of(130).await?, fluid_of(134).await?),
+            (Some(10), Some(1))
+        );
+        assert_eq!(
+            harness.count("game_item_fluid_transitions").await?,
+            transitions
+        );
+    }
+    eprintln!(
+        "GAP-SV2/I10 PostgreSQL: two full-vessel refusals preserved both fluids and transition history in {:?}",
+        full_vessel_started.elapsed()
+    );
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM game_item_fluid_states WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(id(134).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
     let filled = pour(11, 134, 130).await.map(|outcome| outcome.disposition);
     assert_eq!(filled, Some(UseDisposition::Committed));
     assert_eq!(

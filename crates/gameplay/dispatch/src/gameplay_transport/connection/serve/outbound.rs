@@ -275,13 +275,17 @@ where
             }
         }
         Dispatch::Reply(_, payload)
-            if command.command_type
+            if (command.command_type
                 == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
                 && oteryn_protocol_oteryn::depot_search::decode_reply(&payload).is_ok_and(
                     |reply| {
                         reply.outcome == oteryn_protocol_oteryn::depot_search::Outcome::Retrieved
                     },
-                ) =>
+                ))
+                || (command.command_type
+                    == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
+                    && payload.as_slice()
+                        == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8]) =>
         {
             let Some(view) = session.item_view.as_mut() else {
                 return Err(ServeEnd::Disconnected);

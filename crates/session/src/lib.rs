@@ -151,6 +151,8 @@ pub use oteryn_protocol_oteryn::{
 };
 mod vip_presence;
 pub use oteryn_protocol_oteryn::achievement_notices::{AchievementEarned, AchievementWatermark};
+pub use oteryn_protocol_oteryn::battle_instinct_status;
+pub use oteryn_protocol_oteryn::condition_status;
 pub use oteryn_protocol_oteryn::exiva;
 /// Imbuement shrine wire values used by the native client adapter.
 pub use oteryn_protocol_oteryn::imbuement;
@@ -159,6 +161,10 @@ pub use oteryn_protocol_oteryn::logout::LogoutResult;
 pub use oteryn_protocol_oteryn::loyalty_skills;
 pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide};
 pub use oteryn_protocol_oteryn::npc_shop;
+pub use oteryn_protocol_oteryn::party_effects;
+pub use oteryn_protocol_oteryn::rest_status;
+pub use oteryn_protocol_oteryn::skill_display;
+pub use oteryn_protocol_oteryn::skill_progress;
 /// Prey slot wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::vip_presence::{
     PresenceBatch as VipPresenceBatch, PresenceEntry as VipPresenceEntry,

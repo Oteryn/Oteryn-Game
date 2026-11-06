@@ -1,0 +1,17 @@
+{
+  "id": 276,
+  "name": "CONDITION_STATUS_V1",
+  "constant": "condition_status::CAPABILITY_CONDITION_STATUS_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    492
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

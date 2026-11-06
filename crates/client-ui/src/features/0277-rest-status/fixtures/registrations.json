@@ -1,0 +1,33 @@
+[
+  {
+    "mechanic": "0277-rest-status",
+    "kind": "keybindings",
+    "id": "0277-rest-status-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+R",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0277-rest-status",
+    "kind": "panels",
+    "id": "0277-rest-status-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0277-rest-status",
+    "kind": "handlers",
+    "id": "0277-rest-status-query",
+    "status": "supported",
+    "commands": [
+      493
+    ],
+    "direction": "client_to_server",
+    "capability": 277,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Food and rest bonuses are server-owned; the panel has no local authority settings."
+    }
+  }
+]

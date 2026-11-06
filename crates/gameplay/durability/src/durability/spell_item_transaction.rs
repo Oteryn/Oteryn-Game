@@ -1604,6 +1604,19 @@ pub fn item_definition_valid(value: &TypedDefinitionRef) -> bool {
         && value.revision_ref.len() <= 512
 }
 
+// Preserve old intents for non-chain grants; freeze complete ordinary chains at creation.
+fn with_item_decay_chain(mut intent: serde_json::Value, definition: &QualifiedItemDefinition) -> serde_json::Value {
+    if !definition.decay_chain.is_empty() {
+        intent["decay_chain"] = serde_json::Value::Array(definition.decay_chain.iter().map(|stage| serde_json::json!({
+            "definition": reference(&stage.definition), "duration_millis": stage.duration_millis,
+            "target": stage.target.as_ref().map(reference), "blocks_movement": stage.blocks_movement,
+            "blocks_projectile": stage.blocks_projectile, "immovable_block_solid": stage.immovable_block_solid
+        })).collect());
+        if definition.field_class == SpellFieldClass::NotField { intent["general_decay"] = serde_json::Value::Bool(true); }
+    }
+    intent
+}
+
 #[allow(
     clippy::expect_used,
     reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
@@ -1821,7 +1834,7 @@ fn encode_intent(
                 }
                 (
                     *item_instance_id,
-                    serde_json::json!({"kind":"mint_inventory","id":item_instance_id,"definition":reference(&definition.definition),"content_digest":definition.content_generation_digest.as_slice(),"quantity":quantity,"backpack":reference(&backpack.definition),"capacity":backpack.container_capacity,"overflow":allow_ground_overflow,"overflow_placement":ground(overflow_placement),"decay":definition.decay.as_ref().map(|d|serde_json::json!({"duration_millis":d.duration_millis,"target":d.target.as_ref().map(reference)}))}),
+                    with_item_decay_chain(serde_json::json!({"kind":"mint_inventory","id":item_instance_id,"definition":reference(&definition.definition),"content_digest":definition.content_generation_digest.as_slice(),"quantity":quantity,"backpack":reference(&backpack.definition),"capacity":backpack.container_capacity,"overflow":allow_ground_overflow,"overflow_placement":ground(overflow_placement),"decay":definition.decay.as_ref().map(|d|serde_json::json!({"duration_millis":d.duration_millis,"target":d.target.as_ref().map(reference)}))}), definition),
                 )
             }
             SpellItemOperation::MintGround {
@@ -1855,7 +1868,7 @@ fn encode_intent(
                 }
                 (
                     *item_instance_id,
-                    serde_json::json!({"kind":"mint_ground","id":item_instance_id,"definition":reference(&definition.definition),"content_digest":definition.content_generation_digest.as_slice(),"quantity":quantity,"placement":ground(placement),"lifetime_millis":lifetime_millis,"blocks_movement":blocks_movement,"blocks_projectile":blocks_projectile,"description":description,"decay_chain":definition.decay_chain.iter().map(|stage|serde_json::json!({"definition":reference(&stage.definition),"duration_millis":stage.duration_millis,"target":stage.target.as_ref().map(reference),"blocks_movement":stage.blocks_movement,"blocks_projectile":stage.blocks_projectile,"immovable_block_solid":stage.immovable_block_solid})).collect::<Vec<_>>()}),
+                    with_item_decay_chain(serde_json::json!({"kind":"mint_ground","id":item_instance_id,"definition":reference(&definition.definition),"content_digest":definition.content_generation_digest.as_slice(),"quantity":quantity,"placement":ground(placement),"lifetime_millis":lifetime_millis,"blocks_movement":blocks_movement,"blocks_projectile":blocks_projectile,"description":description,"decay_chain":definition.decay_chain.iter().map(|stage|serde_json::json!({"definition":reference(&stage.definition),"duration_millis":stage.duration_millis,"target":stage.target.as_ref().map(reference),"blocks_movement":stage.blocks_movement,"blocks_projectile":stage.blocks_projectile,"immovable_block_solid":stage.immovable_block_solid})).collect::<Vec<_>>()}), definition),
                 )
             }
         };

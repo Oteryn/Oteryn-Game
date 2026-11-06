@@ -139,6 +139,11 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/monster_ai_cycle.rs", 1),
             // RAIDS-1 (pkg4): a raid's live world steps its spawned monsters through the same gate.
             ("gameplay_transport/raid_live_world.rs", 1),
+            // W17: the physical Drome regression proves participant-only targeting.
+            (
+                "gameplay_transport/postgres_tests/reaudit_arena_lifecycle.rs",
+                1,
+            ),
         ],
     },
     Entry {

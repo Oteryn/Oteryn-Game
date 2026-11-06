@@ -184,21 +184,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 stage(&format!("equipment_refused:{_error:?}"));
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
-            // STARTER-1 (CP D1438): the starter grant of the Character's first entry, once per
-            // Character and template; a replay writes nothing.
-            if self
-                .root
-                .grant_starter_items(
-                    self.character,
-                    self.holder,
-                    &fence,
-                    &item_ref_admission::NativeItemWeights(native),
-                    &crate::durability::starter_grant::StarterTemplate::main(),
-                )
-                .await
-                .is_err()
+            let loadout = crate::durability::starter_grant::StartingLoadout::resolve(
+                build.vocation(),
+                |id| {
+                    let key = format!("oteryn:item.tibia.i{id}");
+                    let revision = native.item_index()?.revision(&key)?.to_owned();
+                    Some(crate::durability::item_mint::TypedDefinitionRef {
+                        family: "Item".into(),
+                        production_key: key,
+                        revision_ref: revision,
+                    })
+                },
+            );
+            if loadout.is_none()
+                && oteryn_gameplay_items::starter_grant::starting_loadout::items(build.vocation())
+                    .is_some()
             {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
+            }
+            // Crystal 201189f8 data/scripts/creaturescripts/player/send_first_items.lua:107-109:
+            // unlisted vocations (including promotions) receive no kit.
+            if let Some(loadout) = loadout {
+                // STARTER-1 (CP D1438): the starter grant of the Character's first entry, once per
+                // Character and template; a replay writes nothing.
+                if !matches!(
+                    self.root
+                        .grant_starting_loadout(
+                            self.character,
+                            self.holder,
+                            &fence,
+                            &item_ref_admission::NativeItemWeights(native),
+                            &loadout,
+                        )
+                        .await,
+                    Ok(
+                        crate::durability::starter_grant::StarterGrantOutcome::Minted(_)
+                            | crate::durability::starter_grant::StarterGrantOutcome::AlreadyGranted
+                            | crate::durability::starter_grant::StarterGrantOutcome::Skipped
+                    )
+                ) {
+                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
+                }
             }
             let gameplay =
                 crate::durability::character_progression::CurrentCharacterGameplayFence {

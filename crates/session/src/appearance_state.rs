@@ -146,6 +146,8 @@ mod mapping_tests;
 pub struct VisibleAppearance {
     pub entity: WorldSpatialEntity,
     pub look: Option<wire::Look>,
+    /// Server-reported (light level, indexed colour), absent when unlit.
+    pub light: Option<(u8, u8)>,
 }
 
 impl<S: SessionStream> Session<S> {
@@ -157,6 +159,11 @@ impl<S: SessionStream> Session<S> {
             .flat_map(WorldEntities::iter)
             .map(|entity| VisibleAppearance {
                 entity: *entity,
+                light: self
+                    .entities
+                    .as_ref()
+                    .and_then(|stored| stored.lights.get(&entity.entity.identity))
+                    .map(|light| (light.level, light.color)),
                 look: match entity.detail {
                     world_spatial_entities::EntityDetail::Actor { appearance_ref, .. } => self
                         .appearance

@@ -20,6 +20,7 @@ pub mod daily_reward_claim;
 pub mod daily_reward_delivery;
 mod daily_reward_effects;
 mod daily_reward_jokers;
+pub mod dawnport_departure;
 pub mod endgame_terminal;
 pub mod exercise_training;
 pub mod field_removal;
@@ -49,6 +50,7 @@ pub mod raid_schedule;
 pub mod staff;
 pub mod task_board;
 pub mod terrain_tool;
+pub mod tibiadrome;
 pub mod vip;
 pub mod vip_presence;
 // End sorted module declarations.

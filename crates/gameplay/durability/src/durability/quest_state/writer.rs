@@ -144,6 +144,8 @@ impl DurabilityRoot {
         } else {
             None
         };
+        let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let dance_achievement = super::super::quest_unnatural_selection::prepare(callback.as_ref())
@@ -720,6 +722,7 @@ impl DurabilityRoot {
                         super::super::quest_unnatural_selection::earn(&mut tx, fence, &request, callback,
                             &changes, dance_achievement.as_ref()).await?;
                     }
+                    super::wrath_sleeping_dragon::earn(&mut tx, fence, &request, &changes, wayfarer.as_ref()).await?;
                     if let Some(plan) = &grizzly_plan {
                         grizzly::earn(&mut tx, character, &request, plan, &content_revision).await?;
                     }
