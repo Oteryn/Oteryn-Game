@@ -63,7 +63,7 @@ async fn quote(
             return Ok(Err(TravelRefusal::UnavailableRoute));
         };
         // The Character root is locked by the quote/commit admission. Carrying includes
-        // equipment and all backpack descendants (depth <= 8, at most 500 carried Items),
+        // equipment and all backpack descendants (depth <= 8; the existing bounded carried tree),
         // and excludes depot/mail/stash custody. Nested bags cannot hide the cheese.
         let cheese: bool = sqlx::query_scalar(
             "WITH RECURSIVE roots AS ( \

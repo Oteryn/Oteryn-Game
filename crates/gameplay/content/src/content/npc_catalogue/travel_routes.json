@@ -2176,18 +2176,6 @@
     "carpet": false
   },
   {
-    "key": "oteryn:service.travel.petros/issavi",
-    "keyword": "issavi",
-    "price": 130,
-    "premium": true,
-    "x": 33902,
-    "y": 31462,
-    "floor": 6,
-    "postman": true,
-    "held": false,
-    "carpet": false
-  },
-  {
     "key": "oteryn:service.travel.petros/ankrahmun",
     "keyword": "ankrahmun",
     "price": 100,
@@ -2212,6 +2200,18 @@
     "carpet": false,
     "held": false,
     "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.petros/issavi",
+    "keyword": "issavi",
+    "price": 130,
+    "premium": true,
+    "x": 33902,
+    "y": 31462,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false
   },
   {
     "key": "oteryn:service.travel.petros/krailos",
@@ -2593,6 +2593,32 @@
     "carpet": true
   },
   {
+    "key": "oteryn:service.travel.tarak_inner/monument_tower",
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32939,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_sunken/passage",
+    "keyword": "passage",
+    "price": 0,
+    "premium": false,
+    "x": 32916,
+    "y": 31199,
+    "floor": 7,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.thorgrin/cormaya",
     "keyword": "cormaya",
     "price": 110,
@@ -2879,31 +2905,5 @@
     "postman": true,
     "held": false,
     "carpet": true
-  },
-  {
-    "key": "oteryn:service.travel.tarak_inner/monument_tower",
-    "keyword": "monument tower",
-    "price": 50,
-    "premium": false,
-    "x": 32939,
-    "y": 31182,
-    "floor": 7,
-    "postman": false,
-    "carpet": false,
-    "held": false,
-    "native_addition": true
-  },
-  {
-    "key": "oteryn:service.travel.tarak_sunken/passage",
-    "keyword": "passage",
-    "price": 0,
-    "premium": false,
-    "x": 32916,
-    "y": 31199,
-    "floor": 7,
-    "postman": false,
-    "carpet": false,
-    "held": false,
-    "native_addition": true
   }
 ]

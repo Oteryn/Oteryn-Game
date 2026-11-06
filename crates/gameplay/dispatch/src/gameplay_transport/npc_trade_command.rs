@@ -428,8 +428,22 @@ fn step_of(
                 .sum(),
             gold: trade.total_gold_units,
         }),
-        Err(NpcTradeError::Unavailable(_)) => Err(Box::new(NpcTradeStep::Unknown)),
-        Err(_) => Err(Box::new(NpcTradeStep::rejected())),
+        Err(NpcTradeError::Unavailable(_error)) => {
+            #[cfg(test)]
+            eprintln!(
+                "[DBG-NPCFIX] durable storage error kind {:?}",
+                std::mem::discriminant(&_error)
+            );
+            Err(Box::new(NpcTradeStep::Unknown))
+        }
+        Err(_error) => {
+            #[cfg(test)]
+            eprintln!(
+                "[DBG-NPCFIX] durable trade error kind {:?}",
+                std::mem::discriminant(&_error)
+            );
+            Err(Box::new(NpcTradeStep::rejected()))
+        }
     }
 }
 
