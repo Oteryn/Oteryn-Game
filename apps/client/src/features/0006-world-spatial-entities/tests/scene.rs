@@ -1,10 +1,77 @@
 use super::*;
 #[test]
+fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Result<(), BatchError> {
+    let tile = TileCoord::new(100, 200);
+    let mut scene =
+        Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
+    let mut entry = VisibleAppearance {
+        entity: oteryn_session::WorldSpatialEntity {
+            entity: oteryn_session::EntityRef {
+                identity: [8; 16],
+                generation: 1,
+            },
+            kind: oteryn_session::EntityKind::Creature,
+            position: oteryn_session::ActorPosition {
+                x: 101,
+                y: 200,
+                floor: 0,
+            },
+            display_name: Some(
+                oteryn_session::EntityDisplayName::new("Rat")
+                    .map_err(|_| BatchError::InvalidView)?,
+            ),
+            detail: EntityDetail::Actor {
+                direction: oteryn_session::StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        },
+        look: None,
+        light: None,
+        forge_stacks: None,
+    };
+    for (mark, expected) in [
+        (None, "Rat"),
+        (Some(1), "Rat - Influenced 1"),
+        (Some(5), "Rat - Influenced 5"),
+        (Some(15), "Rat - Fiendish"),
+        (None, "Rat"),
+    ] {
+        entry.forge_stacks = mark;
+        scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+        let glyphs = scene.cache.name(expected);
+        assert_eq!(
+            scene.names,
+            vec![(TileCoord::new(101, 200), glyphs)],
+            "{expected}"
+        );
+    }
+    entry.forge_stacks = Some(15);
+    entry.entity.display_name = None;
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert_eq!(scene.names[0].1, scene.cache.name("Fiendish"));
+    entry.entity.kind = oteryn_session::EntityKind::Player;
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert!(
+        scene.names.is_empty(),
+        "forge marks describe creatures only"
+    );
+    entry.entity.kind = oteryn_session::EntityKind::Creature;
+    entry.entity.position.floor = -1;
+    scene.set_presentations_from(&[entry], 0, None)?;
+    assert!(scene.names.is_empty());
+    scene.set_presentations_from(&[], 0, None)?;
+    assert!(scene.names.is_empty());
+    Ok(())
+}
+
+#[test]
 fn live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels() -> Result<(), BatchError> {
     let tile = TileCoord::new(100, 200);
     let mut scene =
         Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
     let mut entry = VisibleAppearance {
+        forge_stacks: None,
         light: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: Some(
@@ -79,6 +146,7 @@ fn other_actor_keeps_object_marker_and_local_player() -> Result<(), BatchError> 
         },
     };
     let mut appearance = VisibleAppearance {
+        forge_stacks: None,
         light: None,
         entity,
         look: Some(oteryn_session::Look::EmptyOutfit),
@@ -106,6 +174,7 @@ fn recenter_reuses_loaded_assets_outfits_glyphs_and_packed_atlas() -> Result<(),
     let mut scene = Scene::centered_on(world.clone(), None, tile, StepDir::South, &[])?;
     scene.set_own_identity([1; 16]);
     let entry = VisibleAppearance {
+        forge_stacks: None,
         light: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: Some(
@@ -191,6 +260,7 @@ fn play_view_rebuild_retains_the_same_cached_image() -> Result<(), BatchError> {
     let mut view = crate::play::PlayView::new(TileCoord::new(100, 200), 0, &[])?;
     view.set_own_identity([1; 16]);
     let entry = VisibleAppearance {
+        forge_stacks: None,
         light: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: Some(

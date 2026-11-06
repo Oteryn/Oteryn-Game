@@ -50,6 +50,7 @@ impl Application {
                 || play.link.spell_catalog_input(events)
                 || play.link.spell_bar_input(events)
                 || play.link.loyalty_skills_input(events)
+                || play.link.mechanics_status_input(events)
                 || play.link.condition_status_input(events)
                 || play.link.rest_status_input(events)
                 || play.link.battle_instinct_status_input(events)

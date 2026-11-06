@@ -43,6 +43,8 @@ pub mod training;
 
 #[path = "features/0014-container-tree/mod.rs"]
 pub mod container_tree;
+#[path = "features/0082-creature-push/mod.rs"]
+pub mod creature_push;
 #[path = "features/0012-item-equip-drop/mod.rs"]
 pub mod equipment;
 #[path = "features/0004-item-view-move/mod.rs"]
@@ -264,6 +266,8 @@ pub mod chat_public_channels;
 pub mod battle_instinct_status;
 #[path = "features/0276-condition-status/mod.rs"]
 pub mod condition_status;
+#[path = "features/0384-mechanics-status/mod.rs"]
+pub mod mechanics_status;
 #[path = "features/0280-party-effects/mod.rs"]
 pub mod party_effects;
 #[path = "features/0277-rest-status/mod.rs"]

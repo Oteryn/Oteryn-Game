@@ -46,6 +46,7 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
+    outbox.mechanics_status_initialize(session.feature_selected(384));
     outbox.condition_status_initialize(session.feature_selected(276));
     outbox.rest_status_initialize(session.feature_selected(277));
     outbox.battle_instinct_status_initialize(session.feature_selected(278));
@@ -132,6 +133,7 @@ pub async fn run_session<T: Stepper>(
                         225 => outbox.boss_difficulty_result(&result),
                         250 => outbox.hireling_management_result(&result),
                         276 => outbox.condition_status_result(&result),
+                        384 => outbox.mechanics_status_result(&result),
                         277 => outbox.rest_status_result(&result),
                         278 => outbox.battle_instinct_status_result(&result),
                         279 | 370 => outbox.skill_progress_result(&result),

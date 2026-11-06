@@ -42,6 +42,10 @@ pub fn panel_text(panel: &ConditionStatusPanel) -> String {
     let Some(status) = &panel.snapshot else {
         return "Loading conditions…".into();
     };
+    status_text(status)
+}
+/// Render an already decoded observation without duplicating the icon catalogue.
+pub fn status_text(status: &super::ConditionStatus) -> String {
     if status.conditions.is_empty() {
         return "No active conditions".into();
     }
