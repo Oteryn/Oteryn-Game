@@ -1,9 +1,14 @@
 use crate::play::PlayView;
 
 impl PlayView {
-    pub(in crate::play) fn death_notice(&self) -> Option<&'static str> {
-        self.death
-            .dead
-            .then_some("You are dead. Waiting for automatic respawn at your temple.")
+    pub(in crate::play) fn death_notice(&self) -> Option<String> {
+        if self.death.dead {
+            Some("You are dead. Waiting for automatic respawn at your temple.".into())
+        } else {
+            self.death
+                .protection
+                .as_ref()
+                .map(oteryn_client_ui::death_protection::notice)
+        }
     }
 }

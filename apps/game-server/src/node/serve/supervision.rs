@@ -42,6 +42,8 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         .and_then(|active| active.native_gameplay());
     let runtime = owners.runtime;
     let config = &material.config;
+    let (active_layers_epoch, active_layers) =
+        super::super::raid_scheduler::world_change_layers(owners.movement_cells);
     let raids = super::super::raid_scheduler::RaidScheduler {
         root,
         character: authority,
@@ -51,6 +53,8 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         channel: material.channel,
         generation,
         reset_epoch,
+        active_layers_epoch,
+        active_layers,
         bundle_digest: config
             .world_bundle
             .as_ref()

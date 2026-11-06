@@ -30,7 +30,7 @@ const OUT_OF_REACH: u8 = 6;
 const EXHAUSTED: u8 = 7;
 
 /// Grass 0..=12 x 0..=8 on floor 7 (Tibia-keyed, so every tile has spell facts); a wall at (5, 2); every tile with x >= 8 is a protection zone.
-fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
         self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,

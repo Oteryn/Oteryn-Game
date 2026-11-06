@@ -108,6 +108,21 @@ impl AppearanceState {
             .filter(|binding| binding.appearance_ref == reference)
     }
 
+    fn forge_marker(&self, entity: &WorldSpatialEntity) -> Option<u8> {
+        if entity.kind != world_spatial_entities::EntityKind::Creature {
+            return None;
+        }
+        let binding = self.bindings.get(&entity.entity)?;
+        match entity.detail {
+            world_spatial_entities::EntityDetail::Actor { appearance_ref, .. }
+                if appearance_ref == binding.appearance_ref =>
+            {
+                binding.forge_stacks
+            }
+            _ => None,
+        }
+    }
+
     pub(crate) fn resolve(
         &self,
         entity: world_spatial_entities::EntityRef,
@@ -157,7 +172,7 @@ pub struct VisibleAppearance {
     pub look: Option<wire::Look>,
     /// Server-reported (light level, indexed colour), absent when unlit.
     pub light: Option<(u8, u8)>,
-    /// Exact visible appearance binding: 1–5 influenced stacks, 15 fiendish.
+    /// Negotiated forge marker: 1..=5 influenced stacks; 15 fiendish.
     pub forge_stacks: Option<u8>,
 }
 
@@ -170,14 +185,10 @@ impl<S: SessionStream> Session<S> {
             .flat_map(WorldEntities::iter)
             .map(|entity| VisibleAppearance {
                 entity: *entity,
-                forge_stacks: match entity.detail {
-                    world_spatial_entities::EntityDetail::Actor { appearance_ref, .. } => self
-                        .appearance
-                        .as_ref()
-                        .and_then(|state| state.binding(entity.entity, appearance_ref))
-                        .and_then(|binding| binding.forge_stacks),
-                    _ => None,
-                },
+                forge_stacks: self
+                    .is_selected(wire::CAPABILITY_FORGE_CREATURE_V1)
+                    .then(|| self.appearance.as_ref()?.forge_marker(entity))
+                    .flatten(),
                 light: self
                     .entities
                     .as_ref()

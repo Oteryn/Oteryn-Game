@@ -26,6 +26,7 @@ pub struct Resources {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Reply {
+    CurrentDust { dust: u64, limit: u64 },
     Result(Receipt),
     History(Vec<(u64, Receipt)>),
 }
@@ -123,6 +124,12 @@ pub fn decode(bytes: &[u8]) -> Option<Reply> {
         return None;
     }
     let v: Value = serde_json::from_slice(bytes).ok()?;
+    if let (Some(dust), Some(limit)) = (
+        v.get("current_dust").and_then(Value::as_u64),
+        v.get("dust_limit").and_then(Value::as_u64),
+    ) {
+        return (dust <= limit).then_some(Reply::CurrentDust { dust, limit });
+    }
     if let Some(rows) = v.as_array() {
         if rows.len() > usize::from(MAX_HISTORY) {
             return None;

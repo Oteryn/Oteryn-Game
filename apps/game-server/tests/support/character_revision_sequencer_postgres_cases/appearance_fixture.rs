@@ -18,6 +18,7 @@ impl Harness {
             false,
             false,
             CreationFixture::Observer,
+            "starter-1",
         )
         .await
     }
@@ -31,6 +32,7 @@ impl Harness {
             true,
             false,
             CreationFixture::Observer,
+            "starter-1",
         )
         .await
     }

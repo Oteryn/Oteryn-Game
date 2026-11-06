@@ -374,18 +374,12 @@ pub(super) async fn execute(
             }
             let exists:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND world_id=$2::uuid AND lifecycle=1)")
                 .bind(target.as_bytes().as_slice()).bind(&r.world_id).fetch_one(&mut **tx).await?;
-            let (kind, duration) = match &r.action {
-                rules::Action::Inspect { .. } => ("INSPECT", 0),
-                rules::Action::Mute { duration_ms, .. } => (
-                    "MUTE",
-                    rules::decimal(duration_ms).ok_or(DurabilityError::InvalidStoredState)?,
-                ),
-                rules::Action::Unmute { .. } => ("UNMUTE", 0),
-                rules::Action::Kick { .. } => ("KICK", 0),
-            };
-            let mut committed = exists;
+            let kind = r.action.kind();
+            let duration = r.action.duration_ms();
+            let prepared = super::extended::prepare(tx, trust, auth, r, fence, exists).await?;
+            let mut committed = prepared.is_none() && exists;
             if let rules::Action::Unmute { sanction_id, .. } = &r.action {
-                committed=exists && sqlx::query_scalar::<_,bool>("SELECT true FROM game_character_sanctions WHERE environment=$1 AND sanction_id=$2::uuid AND character_id=encode($3,'hex')::uuid AND lifted_at_ms IS NULL FOR UPDATE")
+                committed=committed && sqlx::query_scalar::<_,bool>("SELECT true FROM game_character_sanctions WHERE environment=$1 AND sanction_id=$2::uuid AND character_id=encode($3,'hex')::uuid AND lifted_at_ms IS NULL FOR UPDATE")
                     .bind(env).bind(sanction_id).bind(target.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.unwrap_or(false);
             }
             let until: Option<i64> = if exists {
@@ -416,6 +410,8 @@ pub(super) async fn execute(
                 },
                 if committed {
                     wire_result::StaffCode::Ok
+                } else if let Some(code) = prepared {
+                    code
                 } else if exists && kind == "UNMUTE" {
                     wire_result::StaffCode::AlreadyReleased
                 } else {
@@ -425,8 +421,8 @@ pub(super) async fn execute(
             let requires_receipt = committed && kind != "INSPECT";
             // Deferred FKs/guards allow the operation, link, effect and audit to be one unit.
             insert_link(tx, trust, auth, "REQUEST").await?;
-            sqlx::query("INSERT INTO game_staff_operations(environment,operation_id,control_seq,kind,target_character_id,world_id,channel_id,starts_at_ms,duration_ms,result,outcome,outcome_sha256,requires_receipt) VALUES($1,$2::uuid,$3,$4,encode($5,'hex')::uuid,$6::uuid,$7::uuid,$8,$9,$10,$11,$12,$13)")
-                .bind(env).bind(&r.operation_id).bind(seq+1).bind(kind).bind(target.as_bytes().as_slice()).bind(&r.world_id).bind(&r.channel_id).bind(lower as i64).bind(duration as i64).bind(if committed {1i16}else{2i16}).bind(&outcome).bind(digest(&outcome)).bind(requires_receipt).execute(&mut **tx).await?;
+            sqlx::query("INSERT INTO game_staff_operations(environment,operation_id,control_seq,kind,target_character_id,world_id,channel_id,starts_at_ms,duration_ms,result,outcome,outcome_sha256,requires_receipt,issuer_character_id) VALUES($1,$2::uuid,$3,$4,encode($5,'hex')::uuid,$6::uuid,$7::uuid,$8,$9,$10,$11,$12,$13,encode($14,'hex')::uuid)")
+                .bind(env).bind(&r.operation_id).bind(seq+1).bind(kind).bind(target.as_bytes().as_slice()).bind(&r.world_id).bind(&r.channel_id).bind(lower as i64).bind(duration as i64).bind(if committed {1i16}else{2i16}).bind(&outcome).bind(digest(&outcome)).bind(requires_receipt).bind(fence.character_id.as_bytes().as_slice()).execute(&mut **tx).await?;
             if committed {
                 match &r.action {
                     rules::Action::Mute { .. } => {
@@ -442,7 +438,9 @@ pub(super) async fn execute(
                         sqlx::query("INSERT INTO game_staff_kicks(environment,operation_id,character_id,created_at_ms) VALUES($1,$2::uuid,encode($3,'hex')::uuid,$4)")
                             .bind(env).bind(&r.operation_id).bind(target.as_bytes().as_slice()).bind(lower as i64).execute(&mut **tx).await?;
                     }
+                    _ => {}
                 }
+                super::extended::apply(tx, trust, auth, r, fence, lower).await?;
             }
             let payload = audit_payload(&auth.envelope, &auth.fingerprint, &auth.roster, &outcome)?;
             sqlx::query("INSERT INTO game_staff_action_outbox(environment,operation_id,payload,starts_at_ms,expires_at_ms) VALUES($1,$2::uuid,$3,$4,$5)")
@@ -469,7 +467,7 @@ async fn insert_link(
         .bind(trust.environment()).bind(auth.seq().ok_or(DurabilityError::InvalidStoredState)? as i64).bind(kind).bind(digest(&auth.envelope.canonical)).bind(auth.previous()).bind(auth.activation()).bind(&auth.roster).bind(&auth.envelope.principal).bind(&auth.fingerprint).bind(&auth.envelope.canonical).bind(&auth.envelope.signature).bind(auth.operation()).execute(tx).await?;
     Ok(())
 }
-fn hex_id(bytes: &[u8; 16]) -> String {
+pub(super) fn hex_id(bytes: &[u8; 16]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 fn parse_hex_id(text: &str) -> [u8; 16] {
@@ -483,12 +481,7 @@ fn parse_hex_id(text: &str) -> [u8; 16] {
     out
 }
 fn parse_id(action: &rules::Action) -> [u8; 16] {
-    parse_hex_id(match action {
-        rules::Action::Inspect { character_id }
-        | rules::Action::Mute { character_id, .. }
-        | rules::Action::Unmute { character_id, .. } => character_id,
-        rules::Action::Kick { character_id } => character_id,
-    })
+    parse_hex_id(action.character_id())
 }
 
 fn channel(scope: crate::foundation::RuntimeScopeRefV1) -> Option<crate::foundation::ChannelId> {
@@ -514,19 +507,9 @@ async fn operation_matches(
     e: &SignedEnvelope,
     outcome: &[u8],
 ) -> Result<bool, DurabilityError> {
-    let (kind, target, duration) = match &r.action {
-        rules::Action::Inspect { character_id } => ("INSPECT", character_id, 0),
-        rules::Action::Mute {
-            character_id,
-            duration_ms,
-        } => (
-            "MUTE",
-            character_id,
-            rules::decimal(duration_ms).unwrap_or(0),
-        ),
-        rules::Action::Unmute { character_id, .. } => ("UNMUTE", character_id, 0),
-        rules::Action::Kick { character_id } => ("KICK", character_id, 0),
-    };
+    let kind = r.action.kind();
+    let target = r.action.character_id();
+    let duration = r.action.duration_ms();
     let result: wire_result::StaffResult = match wire_result::decode_result(outcome) {
         Ok(r) => r,
         Err(_) => return Ok(false),
@@ -551,16 +534,17 @@ async fn operation_matches(
         .bind(trust.environment()).bind(&r.operation_id).fetch_optional(&mut *tx).await?;
     Ok(match (&r.action, stored_result, effect) {
         (rules::Action::Mute { .. }, 1, Some((character, start, end, _, _))) => {
-            character == *target && start == starts && end - start == duration as i64
+            character == target && start == starts && end - start == duration as i64
         }
         (
             rules::Action::Unmute { sanction_id, .. },
             1,
             Some((character, _, _, sanction, lifted)),
-        ) => character == *target && sanction == *sanction_id && lifted == Some(starts),
+        ) => character == target && sanction == *sanction_id && lifted == Some(starts),
         (rules::Action::Kick { .. }, 1, None) => sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM game_staff_kicks WHERE environment=$1 AND operation_id=$2::uuid AND replace(character_id::text,'-','')=$3 AND created_at_ms=$4)")
             .bind(trust.environment()).bind(&r.operation_id).bind(target).bind(starts).fetch_one(&mut *tx).await?,
         (rules::Action::Inspect { .. }, _, None) | (_, 2, None) => true,
+        (action, 1, None) if action.is_extended() => super::extended::effect_matches(tx, trust, r, starts).await?,
         _ => false,
     })
 }

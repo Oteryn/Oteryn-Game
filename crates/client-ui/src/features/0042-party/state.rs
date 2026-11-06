@@ -19,6 +19,7 @@ pub struct PartyPanel {
     pub open: bool,
     pub chat_selected: bool,
     pub state: Option<party::PartyResult>,
+    pub received_at: Option<std::time::Instant>,
     pub selected_member: Option<u64>,
     pub selected_invitation: Option<u64>,
     pub pending: Option<PartyCommand>,

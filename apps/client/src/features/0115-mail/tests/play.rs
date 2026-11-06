@@ -18,10 +18,12 @@ struct Script {
 }
 struct Peer {
     exchanges: Arc<Script>,
+    inventory: Option<oteryn_session::CharacterInventory>,
 }
 impl Stepper for Peer {
+    fn inventory(&self) -> Option<oteryn_session::CharacterInventory> { self.inventory.clone() }
     fn feature_selected(&self, capability: u32) -> bool {
-        capability == 115
+        capability == 115 || (capability == 4 && self.inventory.is_some())
     }
     async fn feature(
         &mut self,
@@ -125,6 +127,7 @@ fn cp01_mail_scenario() -> Result<(), Error> {
                     let task = tokio::spawn(run_session(
                         Peer {
                             exchanges: Arc::clone(&exchanges),
+                            inventory: None,
                         },
                         incoming,
                         outbox,
@@ -161,7 +164,7 @@ fn cp01_mail_scenario() -> Result<(), Error> {
                     )
                     .await
                     .checked()?;
-                    assert_eq!(link.mail_panel().feedback, "Letter text saved");
+                    assert_eq!(link.mail_panel().feedback, "Item text saved");
                     assert_eq!(link.mail_panel().fields[2], "Alice\nThais\nHello 📨");
                     let post = wire::encode_intent(&wire::MailIntent::Post {
                         item_handle: 7,
@@ -248,4 +251,36 @@ impl<T, E: std::fmt::Debug> Checked<T> for Result<T, E> {
     fn checked(self) -> Result<T, Error> {
         self.map_err(|error| format!("{error:?}").into())
     }
+}
+
+#[test]
+fn srx1_native_writing_selected_item_utf8_save_and_write_once_refusal() -> Result<(), Error> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| -> Result<(), Error> {
+        oteryn_client_runtime::ClientRuntime::new().checked()?.block_on(async {
+            let exchanges = Arc::new(Script { entries: Mutex::new(VecDeque::new()), release: tokio::sync::Semaphore::new(0) });
+            let (link, incoming, outbox) = play_channel();
+            let item = oteryn_session::ItemEntry { handle: 7.try_into()?, item_definition_ref: 1.try_into()?, count: 1.try_into()?, sub_type: 0 };
+            let task = tokio::spawn(run_session(Peer { exchanges: Arc::clone(&exchanges), inventory: Some(oteryn_session::CharacterInventory { main_backpack: Some(oteryn_session::ItemEntry { handle: 1.try_into()?, ..item }), entries: vec![item], equipment: vec![] }) }, incoming, outbox));
+            ready(&link).await?;
+            assert!(link.inventory_select(item.handle));
+            let event = oteryn_input_actions::NormalizedInputEvent::Key {
+                code: oteryn_input_actions::KeyCode::new(16).checked()?,
+                state: oteryn_input_actions::ButtonState::Pressed,
+                modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control).with(oteryn_input_actions::Modifier::Alt), repeat: false,
+            };
+            assert!(link.mail_input(&[event]));
+            assert!(link.mail_panel().open);
+            assert_eq!(link.mail_panel().fields[0], "7", "native writer uses the selected server handle");
+            link.mail_edit(2, "One inscription: żółw 🐢".into());
+            let write = wire::encode_intent(&wire::MailIntent::WriteText { item_handle: 7, text: "One inscription: żółw 🐢".into() }).checked()?;
+            send(&link, &exchanges, Intent::Write, 124, write.clone(), CommandStatus::Accepted, vec![wire::MailOutcome::TextWritten as u8]).await?;
+            assert_eq!(link.mail_panel().feedback, "Item text saved");
+            send(&link, &exchanges, Intent::Write, 124, write, CommandStatus::Accepted, vec![wire::MailOutcome::NotWritable as u8]).await?;
+            assert_eq!(link.mail_panel().feedback, "This item cannot be written on");
+            assert_eq!(link.mail_panel().fields[2], "One inscription: żółw 🐢");
+            assert!(oteryn_client_ui::mail::panel_text(&link.mail_panel()).contains("cannot be written"));
+            drop(link); task.await?; Ok::<(), Error>(())
+        }).checked()??;
+        Ok(())
+    }).checked()?.join().map_err(|_| "writing scenario thread failed").checked()?
 }

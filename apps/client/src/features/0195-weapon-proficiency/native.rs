@@ -3,7 +3,7 @@ use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::weapon_proficiency::{Intent, WeaponProficiencyPanel, request};
 
 pub(in crate::play) fn action_clicked(id: usize, notification: usize) -> bool {
-    matches!(id, 101..=111) && notification == 0 // Win32 BN_CLICKED
+    matches!(id, 101..=114) && notification == 0 // Win32 BN_CLICKED
 }
 
 pub(in crate::play) fn display(p: &WeaponProficiencyPanel) -> String {
@@ -17,7 +17,7 @@ pub(in crate::play) fn display(p: &WeaponProficiencyPanel) -> String {
             "Ready"
         },
         p.feedback.unwrap_or(""),
-        oteryn_client_ui::weapon_proficiency::panel_text(p)
+        oteryn_client_ui::weapon_proficiency::panel_text(p).replace('\n', "\r\n")
     )
 }
 
@@ -31,12 +31,23 @@ pub(in crate::play) fn submit(
         return None;
     }
     if let Some(intent) = match id {
-        109 => Some(Intent::Browse),
-        110 => Some(Intent::PreviousPage),
-        111 => Some(Intent::NextPage),
+        112 => Some(Intent::Browse),
+        113 => Some(Intent::PreviousPage),
+        114 => Some(Intent::NextPage),
         _ => None,
     } {
         return request(p, intent);
+    }
+    if matches!(id, 109..=111) {
+        p.catalogue_offset = match id {
+            109 => 0,
+            110 => p.catalogue.as_ref().map_or(0, |page| {
+                let next = page.offset.saturating_add(page.entries.len() as u32);
+                if next < page.total { next } else { page.offset }
+            }),
+            _ => p.catalogue_offset.saturating_sub(8),
+        };
+        return request(p, Intent::Catalogue);
     }
     let intent = match id {
         101 => Intent::SelectPerk,
@@ -144,7 +155,7 @@ mod window {
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
                 740,
-                650,
+                685,
                 null_mut(),
                 null_mut(),
                 null_mut(),
@@ -199,6 +210,9 @@ mod window {
                 "Choose reshape",
                 "Decline offer",
                 "Clear modification",
+                "Refresh catalogue",
+                "Next catalogue",
+                "Previous catalogue",
             ]
             .iter()
             .enumerate()
@@ -218,26 +232,25 @@ mod window {
                 );
             }
             for (id, label) in [
-                (109, "Refresh weapons"),
-                (110, "Previous page"),
-                (111, "Next page"),
+                (112, "Refresh weapons"),
+                (113, "Previous page"),
+                (114, "Next page"),
             ] {
                 control(
                     hwnd,
                     "BUTTON",
                     label,
                     id,
-                    [10 + (id as i32 - 109) * 175, 310, 165, 28],
+                    [10 + (id as i32 - 112) * 175, 345, 165, 28],
                     WS_TABSTOP,
                 );
             }
-            actions.0.push(109);
             let output = control(
                 hwnd,
                 "EDIT",
                 "",
                 400,
-                [10, 355, 690, 240],
+                [10, 390, 690, 240],
                 ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
             );
             let mut message: MSG = std::mem::zeroed();

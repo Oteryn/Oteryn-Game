@@ -107,6 +107,22 @@ fn bounded(value: &str) -> bool {
     !value.is_empty() && value.len() <= MAX_CONTEXT_BYTES
 }
 
+/// SRX-2 owner-approved exception for a registered historical starter token only.
+/// Current tokens retain their existing control-owned interpretation proof; older
+/// tokens require explicit registration for this World. Runtime cannot register them.
+pub(super) async fn starter_revision_is_current_or_registered(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    world: &[u8],
+    starter: &str,
+    current: &str,
+) -> std::result::Result<bool, DurabilityError> {
+    if starter == current {
+        return Ok(true);
+    }
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_registered_starter_revisions WHERE world_id=encode($1,'hex')::uuid AND starter_template_revision=$2)")
+        .bind(world).bind(starter).fetch_one(&mut **tx).await?)
+}
+
 impl DurabilityRoot {
     /// Reconcile an uncertain bootstrap outcome by its operation identity alone,
     /// without re-authorizing: the committed result, or `None` if nothing
@@ -177,14 +193,10 @@ impl DurabilityRoot {
         })).await
     }
 
-    /// The interpretation stored on the active Character root `character_id`, under the
-    /// reconciled recovery fence: its profile, ruleset, content and starter template revisions.
-    /// A progression binding is built from the root's own revisions, never from the newest
-    /// global interpretation, which may have advanced since the Character was created
-    /// (ARCH-PROGRESSION-SOURCE-0 §1.3-§1.5). `Ok(None)` when the root's interpretation is not
-    /// the newest global interpretation (or none is configured): the gameplay fence of every
-    /// durable progression write refuses such a root with `ProgressionContextMismatch`
-    /// (§0.2), so it can hold no binding. `Rejected` when no active root exists. Read only.
+    /// Root-owned interpretation under the recovered authority. Profile, ruleset and
+    /// content remain current. Only an explicitly World-registered historical starter
+    /// revision may differ (owner-approved SRX-2); the root's tuple is never rewritten.
+    /// `Ok(None)` refuses an unregistered starter or any other context mismatch.
     pub async fn read_character_root_interpretation(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -199,7 +211,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let row = sqlx::query(
                         "SELECT profile_revision, ruleset_revision, content_revision, \
-                                starter_template_revision \
+                                starter_template_revision,uuid_send(world_id) AS world_bytes \
                            FROM game_character_roots \
                           WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1",
                     )
@@ -220,13 +232,22 @@ impl DurabilityRoot {
                         &text("starter_template_revision")?,
                     )
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    // The same comparison as the gameplay fence (`assert_gameplay_fence`): all
-                    // four revisions against the newest global interpretation.
+                    // Keep the read and the durable mutation fence on the same narrow rule.
                     let current = current_interpretation(&mut tx).await?;
+                    let compatible = if let Some((_, current)) = current {
+                        let stored = interpretation.revisions();
+                        let latest = current.revisions();
+                        let world: Vec<u8> = row.try_get("world_bytes")?;
+                        stored[..3] == latest[..3]
+                            && starter_revision_is_current_or_registered(
+                                &mut tx, &world, stored[3], latest[3],
+                            )
+                            .await?
+                    } else {
+                        false
+                    };
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(current
-                        .is_some_and(|(_, current)| current == interpretation)
-                        .then_some(interpretation)))
+                    Ok(Ok(compatible.then_some(interpretation)))
                 })
             })
             .await?
