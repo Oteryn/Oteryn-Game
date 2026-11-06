@@ -191,14 +191,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let result = match self.commit_task_board(fence, request, Some(&permit)).await {
             Ok(result) => result,
-            Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
-                crate::durability::DurabilityError::RootUnavailable,
-            )) => return TaskBoardReply::Rejected,
+            Err(
+                crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable,
+                ),
+            ) => return TaskBoardReply::Rejected,
             Err(_) => return TaskBoardReply::Unavailable,
         };
         drop(permit);
         self.refresh_quest_session(admitted.game_session_id, false)
             .await;
+        self.refresh_session_titles(admitted.game_session_id).await;
         // Encode the immutable receipt view, not a new read that could change the replay response.
         let encoded = if legacy {
             projection::legacy(&result).and_then(|reply| wire::encode_task_board_reply(&reply).ok())
@@ -213,7 +216,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterGameplayFence,
         request: TaskBoardCommand,
         permit: Option<&SpellLanePermit>,
-    ) -> Result<TaskBoardCommit, crate::durability::character_progression::CharacterProgressionError> {
+    ) -> Result<TaskBoardCommit, crate::durability::character_progression::CharacterProgressionError>
+    {
         let catalogue = Arc::new(match self.task_board_catalogue() {
             Some(catalogue) => catalogue,
             None if matches!(request.action, TaskBoardAction::CreditKill { .. }) => {
@@ -226,7 +230,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     progression: None,
                 }
             }
-            None => return Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput),
+            None => return Err(
+                crate::durability::character_progression::CharacterProgressionError::InvalidInput,
+            ),
         });
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let result = slot
