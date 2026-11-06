@@ -250,6 +250,13 @@
           "items": {
             "$ref": "#/$defs/input"
           }
+        },
+        "requires": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/requirement"
+          }
         }
       }
     },
@@ -270,6 +277,29 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 65535
+        }
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "track",
+        "minimum",
+        "maximum"
+      ],
+      "properties": {
+        "track": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^oteryn:[a-z0-9._/:-]+$"
+        },
+        "minimum": {
+          "type": "integer"
+        },
+        "maximum": {
+          "type": "integer"
         }
       }
     }

@@ -25,7 +25,8 @@ Each record has these fields:
 | `npc` | Canonical `oteryn:npc.<name>`, resolved through the current conversation. |
 | `keywords` | One to eight exact, trimmed, lowercase ASCII player messages. |
 | `topic`, `next_topic` | Current/committed conversation topic, unsigned 16-bit integers. |
-| `storage` | One to eight `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as `-1`. `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
+| `storage` | One to eight `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as the declared track initial value (new callback tracks default to `-1`). `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
+| `requires` | Optional, up to eight distinct read-only `{track, minimum, maximum}` prerequisites. Tracks must already be declared and cannot also occur in `storage`. Their original quest retains ownership. The writer locks them in sorted order with written tracks and rechecks their fresh values before any consumption or reward. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
 | `give` | Optional/null `{item, count, contents?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
@@ -71,3 +72,8 @@ The world callback writer composes these grants with its existing fenced USE
 receipt and storage transaction; the Channel owner applies only map projections.
 A world outfit reward requires nonempty, once-only storage guards and the current
 native generation. Existing world callbacks can omit that participant.
+
+L2 adds complete Battle Mage, Festive and Elementalist outfit conversations.
+Battle Mage addons retain Secret Library ownership of their prerequisite; Festive
+addons retain First Dragon ownership. Offers use the same prerequisites, while
+the durable writer independently rechecks them under transaction locks.

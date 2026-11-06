@@ -491,6 +491,9 @@ impl DurabilityRoot {
                     }).unwrap_or_default();
                     keys.extend(grizzly_keys.iter().map(String::as_str));
                     keys.extend(final_flags.iter().map(String::as_str));
+                    if let Some(callback) = &reward_callback {
+                        keys.extend(callback.requires.iter().map(|r| r.track.as_str()));
+                    }
                     keys.sort_unstable(); keys.dedup();
                     let rows = sqlx::query(
                         "SELECT track_key, quest_key, value FROM game_character_quest_tracks \
@@ -504,11 +507,24 @@ impl DurabilityRoot {
                     .await?;
                     let mut stored = BTreeMap::new();
                     for row in &rows {
-                        if row.try_get::<String, _>("quest_key")? != quest {
+                        let key: String = row.try_get("track_key")?;
+                        let read_only = reward_callback.as_ref().is_some_and(|c|
+                            c.requires.iter().any(|r| r.track == key));
+                        let expected_owner: &str = if read_only {
+                            &catalogue.track(&key).ok_or(DurabilityError::InvalidStoredState)?.quest
+                        } else { quest };
+                        if row.try_get::<String, _>("quest_key")? != expected_owner {
                             return Err(DurabilityError::InvalidStoredState);
                         }
-                        stored.insert(row.try_get::<String, _>("track_key")?, row.try_get("value")?);
+                        stored.insert(key, row.try_get("value")?);
                     }
+                    // Parent guards use the same root lock and sorted track locks as
+                    // owned writes. A conversation snapshot cannot authorize value.
+                    let refusal = refusal.or_else(|| {
+                        reward_callback.as_ref().is_some_and(|c|
+                            c.requires.iter().any(|r| !r.holds(&catalogue, &stored)))
+                            .then_some(QuestRefusal::StageMismatch)
+                    });
                     let refusal = refusal.or_else(|| {
                         (!final_flags.is_empty() && oteryn_gameplay_quests::quest::monk_shrines::completed_count(&stored) != 10)
                             .then_some(QuestRefusal::StageMismatch)

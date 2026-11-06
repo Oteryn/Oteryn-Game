@@ -20,6 +20,8 @@ struct Offer {
     topic: u16,
     next_topic: u16,
     storage: Vec<Storage>,
+    #[serde(default)]
+    requires: Vec<reward_callbacks::TrackRequirement>,
     reply: Vec<String>,
 }
 
@@ -35,9 +37,10 @@ pub(super) fn prepare(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
     .ok()?;
-    if offers.schema != 1 {
+    if offers.schema != 1 || offers.offers.iter().any(|o| o.requires.len() > 8) {
         return None;
     }
+    let catalogue = admission.quest_catalogue.as_deref()?;
     quest_dialogue::prepare(
         admission,
         actor,
@@ -56,6 +59,7 @@ pub(super) fn prepare(
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
+                    && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
             if let Some(callback) = selected.next() {
                 if selected.next().is_some() {
@@ -72,6 +76,7 @@ pub(super) fn prepare(
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
+                    && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             })?;
             Some(Choice {
                 transition: None,

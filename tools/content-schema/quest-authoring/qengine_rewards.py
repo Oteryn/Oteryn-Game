@@ -31,7 +31,8 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari')]
+        'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -140,16 +141,21 @@ def build():
     def storage(track, before, after, maximum=None, preserve=False):
         return {'track': track, 'minimum': before, 'maximum': before if maximum is None else maximum,
                 'set': after, **({'preserve': True} if preserve else {})}
-    def add(name, quest, npc, keywords, states, take=(), give=None, outfit=None, topic=0, next_topic=0):
+    def add(name, quest, npc, keywords, states, take=(), give=None, outfit=None, topic=0, next_topic=0,
+            requires=(), present=(), achievement=None):
         path = f'data-global/npc/{npc}.lua'
         callbacks.append({'key': 'oteryn:quest-reward/' + name, 'quest': 'oteryn:quest.' + quest,
             'npc': 'oteryn:npc.' + npc, 'keywords': keywords, 'topic': topic, 'next_topic': next_topic,
             'storage': states, 'take': [{'item': f'oteryn:item.tibia.i{i}', 'count': n} for i,n in take],
             'give': None if give is None else {'item': f'oteryn:item.tibia.i{give[0]}', 'count': give[1], 'contents': []},
             'outfit': None if outfit is None else {'outfit': 'oteryn:outfit.' + outfit[0], 'addons': outfit[1]},
-            'achievement': 'oteryn:achievement/backpack_tourist' if name == 'sam-backpack' else None,
+            'achievement': achievement or ('oteryn:achievement/backpack_tourist' if name == 'sam-backpack' else None),
             'reply': ['Thank you for your help.'],
             'sources': [f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']})
+        if requires:
+            callbacks[-1]['requires']=list(requires)
+        if present:
+            callbacks[-1]['present']=[{'item':f'oteryn:item.tibia.i{i}','count':n} for i,n in present]
     prefix = 'oteryn:quest-progress/quest/'
     add('pirate-sabre', 'outfit_and_addon_quests', 'morgan', ['firebird'],
         [storage(prefix+'u7_8/pirate_outfits/pirate_sabre_addon',4,5)], outfit=('pirate',1))
@@ -219,6 +225,54 @@ def build():
         offers.append({'npc':'oteryn:npc.palimuth','keywords':['job','addon'],
             'topic':0,'next_topic':6,'storage':callbacks[-1]['storage'],
             'reply':['Did you bring me the vampiric crest?']})
+    # Parent prerequisites stay read-only and retain their original quest owner.
+    def requirement(track,value):
+        return {'track':track,'minimum':value,'maximum':value}
+    library=prefix+'u11_80/the_secret_library/'
+    library_ready=[storage(library+'library_permission',6,7),storage(library+'questlog',-1,1,1)]
+    for name,value in [('small_islands',4),('liquid_death',8),('asuras',7),('falcon_bastion',3),('darashia',9),('mo_ta',8)]:
+        library_ready.append(storage(library+name+'/questline',value,value,preserve=True))
+    add('l2-battle-mage-base','the_secret_library_quest','dedoras',['check'],library_ready,
+        outfit=('battle_mage',0),achievement='oteryn:achievement/battle_mage')
+    library_done=[requirement(library+'library_permission',7)]
+    for name,bit,item,count,words in [('book',1,28792,5,['book','books','sturdy books']),('epaulettes',2,28793,20,['epaulettes'])]:
+        add('l2-battle-mage-'+name,'battle_mage_outfits_quest','dedoras',words,
+            [storage(prefix+'u11_80/battle_mage_outfits/addon'+str(bit),-1,1,0)],
+            take=[(item,count)],outfit=('battle_mage',bit),topic=3,requires=library_done)
+    for word,topic,next_topic in [('addon',0,1),('yes',1,2),('yes',2,3)]:
+        offers.append({'npc':'oteryn:npc.dedoras','keywords':[word],'topic':topic,
+            'next_topic':next_topic,'storage':[],'requires':library_done,
+            'reply':['I need five sturdy books for the first addon or twenty epaulettes for the second.']})
+    feathers=prefix+'u11_02/the_first_dragon/feathers'
+    add('l2-festive-base','the_first_dragon_quest','the_first_dragon',['reward'],
+        [storage(feathers,1,2)],outfit=('festive',0))
+    festive_ready=[requirement(feathers,2)]
+    # Muriel's captured offers require the stage that only those offers initialize.
+    # Bootstrap with parent completion and retained matching evidence; only the
+    # subsequent exact hand-in consumes items and earns the addon.
+    offers.append({'npc':'oteryn:npc.muriel','keywords':['addons'],'topic':0,'next_topic':1,
+        'storage':[],'requires':festive_ready,'reply':['Choose the first or second addon.']})
+    for name,bit,item,count,choice,word in [('mask',1,25088,3,'first','mask'),('feather',2,25089,50,'second','feather')]:
+        track=prefix+'u11_02/festive_outfits/addon'+str(bit)
+        add('l2-festive-'+name+'-start','festive_outfits_quest','muriel',[choice],
+            [storage(track,-1,1,0)],topic=1,requires=festive_ready,present=[(item,count)])
+        add('l2-festive-'+name,'festive_outfits_quest','muriel',[word,word+'s'],
+            [storage(track,1,2)],take=[(item,count)],outfit=('festive',bit),requires=festive_ready)
+    elementalist=prefix+'u9_1/elementalist_outfits/'
+    add('l2-elementalist-start','elementalist_outfits_quest','broken_servant_sentry',['yes'],
+        [storage(elementalist+'outfit',-1,1,0),storage(elementalist+'questline',-1,1,1)],topic=2)
+    add('l2-elementalist-base','elementalist_outfits_quest','broken_servant_sentry',['yes'],
+        [storage(elementalist+'outfit',1,2)],take=[(12601,20)],outfit=('elementalist',0),topic=4)
+    for name,bit,item,words in [('cap',1,12599,['cap','mage']),('staff',2,12803,['staff','spike'])]:
+        add('l2-elementalist-'+name,'elementalist_outfits_quest','broken_servant_sentry',words,
+            [storage(elementalist+'outfit',2,2,preserve=True),
+             storage(elementalist+'addon'+str(bit),-1,1,0)],take=[(item,1)],outfit=('elementalist',bit))
+    for before,maximum,first,second in [(-1,0,1,2),(1,1,3,4)]:
+        guard=[storage(elementalist+'outfit',before,before,maximum,preserve=True)]
+        offers.append({'npc':'oteryn:npc.broken_servant_sentry','keywords':['slime','mould','fungus','sample'],
+            'topic':0,'next_topic':first,'storage':guard,'reply':['Did you bring samples for me to analyse?']})
+        offers.append({'npc':'oteryn:npc.broken_servant_sentry','keywords':['yes'],
+            'topic':first,'next_topic':second,'storage':guard,'reply':['Let me analyse the samples.']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -283,10 +337,14 @@ def validate_callbacks(document):
     keys=set()
     for callback in document['callbacks']:
         storage=callback['storage']
+        requires=callback.get('requires',[])
         if (callback['key'] in keys
             or len({s['track'] for s in storage})!=len(storage)
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
             or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
+            or len({r['track'] for r in requires})!=len(requires)
+            or {r['track'] for r in requires}&{s['track'] for s in storage}
+            or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
             or all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage)
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])

@@ -2,6 +2,92 @@
   "schema": 1,
   "offers": [
     {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Let me analyse the samples."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Let me analyse the samples."
+      ]
+    },
+    {
       "npc": "oteryn:npc.cael",
       "keywords": [
         "crest"
@@ -114,6 +200,63 @@
       ]
     },
     {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
       "npc": "oteryn:npc.morgan",
       "keywords": [
         "forge"
@@ -131,6 +274,25 @@
           "set": 1,
           "preserve": true
         }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "addons"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "reply": [
+        "Choose the first or second addon."
       ]
     },
     {

@@ -15,7 +15,7 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
-fn scenario(name: &'static str) -> TestResult {
+pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -149,6 +149,9 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],
         "l1-warmaster-tribal" => &["tribal crest"],
         "l1-wayfarer-hat" => &["hat"],
+        "l2-battle-mage-book" | "l2-battle-mage-epaulettes" => &["addon", "yes", "yes"],
+        "l2-elementalist-start" | "l2-elementalist-base" => &["slime", "yes"],
+        "l2-festive-mask-start" | "l2-festive-feather-start" => &["addons"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
         "deepling-helmet" => &[
@@ -186,6 +189,16 @@ async fn wire_grant(
     admitted: &mut AdmittedSession,
     npc: EntityRef,
     callback: &RewardCallback,
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
+    wire_reward(owner, admitted, npc, callback, true).await
+}
+
+pub(super) async fn wire_reward(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    callback: &RewardCallback,
+    expect_outfit: bool,
 ) -> TestResult<(
     NpcIntentDisposition,
     Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
@@ -226,7 +239,7 @@ async fn wire_grant(
         })
         .collect::<TestResult<Vec<_>>>()?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let expected_outfit = callback.outfit.clone();
+    let expected_outfit = if expect_outfit { callback.outfit.clone() } else { None };
     let peer = tokio::spawn(async move {
         let mut catalogues = Vec::new();
         let mut result = None;
@@ -440,7 +453,7 @@ async fn counts(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_reward_sources),(SELECT count(*) FROM game_quest_callback_consumptions),(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT count(*) FROM game_account_appearance_unlock_receipts)").fetch_one(&h.pool).await?)
 }
 
-async fn into_bag(
+pub(super) async fn into_bag(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     item: [u8; 16],
@@ -589,6 +602,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-l2-") {
+        return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
+    }
     if name == "qengine-rewards-l1-legacy-decaying" {
         return legacy_decaying(owner, admitted, h).await;
     }

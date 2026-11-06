@@ -53,12 +53,26 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises(ValueError):
                 q.validate_callbacks(bad)
 
+    def test_readonly_prerequisites_reject_overlap_duplicates_and_inverted_bounds(self):
+        source=next(c for c in self.callbacks['callbacks'] if c.get('requires'))
+        for mutation in ('overlap','duplicate','inverted'):
+            bad=copy.deepcopy(self.callbacks)
+            callback=next(c for c in bad['callbacks'] if c['key']==source['key'])
+            if mutation=='overlap':
+                callback['requires'][0]['track']=callback['storage'][0]['track']
+            elif mutation=='duplicate':
+                callback['requires'].append(copy.deepcopy(callback['requires'][0]))
+            else:
+                callback['requires'][0]['maximum']=callback['requires'][0]['minimum']-1
+            with self.assertRaises(ValueError,msg=mutation):
+                q.validate_callbacks(bad)
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith('l1-')},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),11)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),3)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),20)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),6)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 
