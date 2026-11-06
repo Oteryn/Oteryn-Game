@@ -1,0 +1,274 @@
+[
+  {
+    "name": "claw_of_the_noxious_spawn.lua",
+    "path": "data/scripts/actions/tools/claw_of_the_noxious_spawn.lua",
+    "sha": "5e49dda6e05e841bd28d15a1c5baaca1c5beb1ce",
+    "size": 1100,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/claw_of_the_noxious_spawn.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/claw_of_the_noxious_spawn.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5e49dda6e05e841bd28d15a1c5baaca1c5beb1ce",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/claw_of_the_noxious_spawn.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/claw_of_the_noxious_spawn.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5e49dda6e05e841bd28d15a1c5baaca1c5beb1ce",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/claw_of_the_noxious_spawn.lua"
+    }
+  },
+  {
+    "name": "crowbar.lua",
+    "path": "data/scripts/actions/tools/crowbar.lua",
+    "sha": "c3352cdb976b7404ef95a0c2592c7ff4616f0684",
+    "size": 227,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/crowbar.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/crowbar.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/c3352cdb976b7404ef95a0c2592c7ff4616f0684",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/crowbar.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/crowbar.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/c3352cdb976b7404ef95a0c2592c7ff4616f0684",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/crowbar.lua"
+    }
+  },
+  {
+    "name": "crushers.lua",
+    "path": "data/scripts/actions/tools/crushers.lua",
+    "sha": "bf15983abd968dd3c4e1917d9d12317f7dda4ae7",
+    "size": 2891,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/crushers.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/crushers.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/bf15983abd968dd3c4e1917d9d12317f7dda4ae7",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/crushers.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/crushers.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/bf15983abd968dd3c4e1917d9d12317f7dda4ae7",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/crushers.lua"
+    }
+  },
+  {
+    "name": "kitchen_knife.lua",
+    "path": "data/scripts/actions/tools/kitchen_knife.lua",
+    "sha": "4e930b53d3a5f5f1152992266947e3c67f463bac",
+    "size": 252,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/kitchen_knife.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/kitchen_knife.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/4e930b53d3a5f5f1152992266947e3c67f463bac",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/kitchen_knife.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/kitchen_knife.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/4e930b53d3a5f5f1152992266947e3c67f463bac",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/kitchen_knife.lua"
+    }
+  },
+  {
+    "name": "machete.lua",
+    "path": "data/scripts/actions/tools/machete.lua",
+    "sha": "cb1ee5e4aede7840db19970302d2fb0edced3f2c",
+    "size": 227,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/machete.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/machete.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/cb1ee5e4aede7840db19970302d2fb0edced3f2c",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/machete.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/machete.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/cb1ee5e4aede7840db19970302d2fb0edced3f2c",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/machete.lua"
+    }
+  },
+  {
+    "name": "pick.lua",
+    "path": "data/scripts/actions/tools/pick.lua",
+    "sha": "61347aae87efe65d64a2156c6c15ab8adb7d9c27",
+    "size": 212,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/pick.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/pick.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/61347aae87efe65d64a2156c6c15ab8adb7d9c27",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/pick.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/pick.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/61347aae87efe65d64a2156c6c15ab8adb7d9c27",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/pick.lua"
+    }
+  },
+  {
+    "name": "prepared_bucket.lua",
+    "path": "data/scripts/actions/tools/prepared_bucket.lua",
+    "sha": "e15c68ef0c9ffa79360838aa5d6ff1261adc30f7",
+    "size": 2122,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/prepared_bucket.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/prepared_bucket.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/e15c68ef0c9ffa79360838aa5d6ff1261adc30f7",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/prepared_bucket.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/prepared_bucket.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/e15c68ef0c9ffa79360838aa5d6ff1261adc30f7",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/prepared_bucket.lua"
+    }
+  },
+  {
+    "name": "rope.lua",
+    "path": "data/scripts/actions/tools/rope.lua",
+    "sha": "a9c694c694166caec91eafdf5bdf0205171b8db5",
+    "size": 217,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/rope.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/rope.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/a9c694c694166caec91eafdf5bdf0205171b8db5",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/rope.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/rope.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/a9c694c694166caec91eafdf5bdf0205171b8db5",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/rope.lua"
+    }
+  },
+  {
+    "name": "scythe.lua",
+    "path": "data/scripts/actions/tools/scythe.lua",
+    "sha": "8bf2d1c7978f2f3d12a92e9110974f222e89e892",
+    "size": 222,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/scythe.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/scythe.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8bf2d1c7978f2f3d12a92e9110974f222e89e892",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/scythe.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/scythe.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8bf2d1c7978f2f3d12a92e9110974f222e89e892",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/scythe.lua"
+    }
+  },
+  {
+    "name": "shovel.lua",
+    "path": "data/scripts/actions/tools/shovel.lua",
+    "sha": "cb39228100974878fc6edde6210727dc09961f5c",
+    "size": 244,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/shovel.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/shovel.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/cb39228100974878fc6edde6210727dc09961f5c",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/shovel.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/shovel.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/cb39228100974878fc6edde6210727dc09961f5c",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/shovel.lua"
+    }
+  },
+  {
+    "name": "sickle.lua",
+    "path": "data/scripts/actions/tools/sickle.lua",
+    "sha": "a911a0f32b93ab284768549bd5a76cadcb8d6927",
+    "size": 275,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/sickle.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/sickle.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/a911a0f32b93ab284768549bd5a76cadcb8d6927",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/sickle.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/sickle.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/a911a0f32b93ab284768549bd5a76cadcb8d6927",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/sickle.lua"
+    }
+  },
+  {
+    "name": "sneaky_stabber_of_eliteness.lua",
+    "path": "data/scripts/actions/tools/sneaky_stabber_of_eliteness.lua",
+    "sha": "fc195fe285bfbab6fac8368c053d9793090fe064",
+    "size": 1220,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/sneaky_stabber_of_eliteness.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/sneaky_stabber_of_eliteness.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fc195fe285bfbab6fac8368c053d9793090fe064",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/sneaky_stabber_of_eliteness.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/sneaky_stabber_of_eliteness.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fc195fe285bfbab6fac8368c053d9793090fe064",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/sneaky_stabber_of_eliteness.lua"
+    }
+  },
+  {
+    "name": "spoon.lua",
+    "path": "data/scripts/actions/tools/spoon.lua",
+    "sha": "6b10aabfb76234a2109f2c4c29cf9f3fb454cc48",
+    "size": 217,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/spoon.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/spoon.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/6b10aabfb76234a2109f2c4c29cf9f3fb454cc48",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/spoon.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/spoon.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/6b10aabfb76234a2109f2c4c29cf9f3fb454cc48",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/spoon.lua"
+    }
+  },
+  {
+    "name": "squeezing_gear_of_girlpower.lua",
+    "path": "data/scripts/actions/tools/squeezing_gear_of_girlpower.lua",
+    "sha": "41625040ecd60fcd57f70acdb95ec10b136d7f50",
+    "size": 1445,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/squeezing_gear_of_girlpower.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/squeezing_gear_of_girlpower.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/41625040ecd60fcd57f70acdb95ec10b136d7f50",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/squeezing_gear_of_girlpower.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/squeezing_gear_of_girlpower.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/41625040ecd60fcd57f70acdb95ec10b136d7f50",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/squeezing_gear_of_girlpower.lua"
+    }
+  },
+  {
+    "name": "watch.lua",
+    "path": "data/scripts/actions/tools/watch.lua",
+    "sha": "a97fce78cbfac85b0d005e945cf2e590d1de61b7",
+    "size": 286,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/watch.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/watch.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/a97fce78cbfac85b0d005e945cf2e590d1de61b7",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/watch.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/watch.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/a97fce78cbfac85b0d005e945cf2e590d1de61b7",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/watch.lua"
+    }
+  },
+  {
+    "name": "watering_can.lua",
+    "path": "data/scripts/actions/tools/watering_can.lua",
+    "sha": "5b17237200291656336b842add9c81af499d39d9",
+    "size": 4848,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/watering_can.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/watering_can.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5b17237200291656336b842add9c81af499d39d9",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/watering_can.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/watering_can.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5b17237200291656336b842add9c81af499d39d9",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/watering_can.lua"
+    }
+  },
+  {
+    "name": "whacking_driller_of_fate.lua",
+    "path": "data/scripts/actions/tools/whacking_driller_of_fate.lua",
+    "sha": "2672bb42088efb83338b0bbe75bb6cf9d14fe410",
+    "size": 1224,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/whacking_driller_of_fate.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/whacking_driller_of_fate.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/2672bb42088efb83338b0bbe75bb6cf9d14fe410",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/whacking_driller_of_fate.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data/scripts/actions/tools/whacking_driller_of_fate.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/2672bb42088efb83338b0bbe75bb6cf9d14fe410",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/tools/whacking_driller_of_fate.lua"
+    }
+  }
+]

@@ -1,0 +1,1386 @@
+[
+  {
+    "quest": "Naginata Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/61/definition",
+    "native_lowering": null,
+    "missing_data": [],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Newhaven Legion Helmet Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/62/definition",
+    "native_lowering": null,
+    "missing_data": [
+      {
+        "code": "requirement_unknown",
+        "field": "min_level"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s3",
+        "name": "Dead Human / Corrupted Mines reward corpse",
+        "resolution": "unresolved"
+      }
+    ],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3374",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Legion Helmet"
+      }
+    ]
+  },
+  {
+    "quest": "Nightmare Teddy Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/63/definition",
+    "native_lowering": null,
+    "missing_data": [],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Noble Armor Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/64/definition",
+    "native_lowering": null,
+    "missing_data": [],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Orc Fortress Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/65/definition",
+    "native_lowering": null,
+    "missing_data": [],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Orc Shaman Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/66/definition",
+    "native_lowering": null,
+    "missing_data": [
+      {
+        "code": "claim_native_lowering_missing",
+        "source_key": "canary:reward-claim/kv/orcshaman"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item_resolution": "ambiguous",
+        "kind": "item",
+        "name": "Magic Light Wand"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item_resolution": "ambiguous",
+        "kind": "item",
+        "name": "Axe Ring"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3147",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Blank Rune"
+      }
+    ]
+  },
+  {
+    "quest": "Ornamented Shield Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/67/definition",
+    "native_lowering": null,
+    "missing_data": [
+      {
+        "code": "claim_native_lowering_missing",
+        "source_key": "canary:reward-claim/kv/ornamentedshield"
+      },
+      {
+        "code": "claim_item_semantics_missing",
+        "source_key": "canary:reward-claim/kv/ornamentedshield"
+      },
+      {
+        "code": "claim_source_data_missing",
+        "source_key": "canary:reward-claim/kv/ornamentedshield"
+      },
+      {
+        "code": "claim_native_lowering_missing",
+        "source_key": "canary:reward-claim/quest/pre_u6_0/ornamented_shield/rewards/ornamented_shield"
+      },
+      {
+        "code": "claim_item_semantics_missing",
+        "source_key": "canary:reward-claim/quest/pre_u6_0/ornamented_shield/rewards/ornamented_shield"
+      },
+      {
+        "code": "claim_source_data_missing",
+        "source_key": "canary:reward-claim/quest/pre_u6_0/ornamented_shield/rewards/ornamented_shield"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3424",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Ornamented Shield"
+      }
+    ]
+  },
+  {
+    "quest": "Panpipe Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/68/definition",
+    "native_lowering": null,
+    "missing_data": [
+      {
+        "code": "claim_native_lowering_missing",
+        "source_key": "canary:reward-claim/kv/panpipe"
+      },
+      {
+        "code": "claim_native_lowering_missing",
+        "source_key": "canary:reward-claim/quest/key/id4055"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2953",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Panpipes"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 2,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3033",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Small Amethyst"
+      }
+    ]
+  },
+  {
+    "quest": "Parchment Room Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/69/definition",
+    "native_lowering": null,
+    "missing_data": [
+      {
+        "code": "claim_native_lowering_missing",
+        "source_key": "canary:reward-claim/quest/u7_2/parchment_room/bag"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item_resolution": "unresolved",
+        "kind": "item",
+        "name": "Brown Bag"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item_resolution": "ambiguous",
+        "kind": "item",
+        "name": "Stealth Ring"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 2,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3034",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Talon"
+      }
+    ]
+  },
+  {
+    "quest": "Plate Armor Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/70/definition",
+    "native_lowering": null,
+    "missing_data": [],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Poison Daggers Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/71/definition",
+    "native_lowering": null,
+    "missing_data": [
+      {
+        "code": "claim_native_lowering_missing",
+        "source_key": "canary:reward-claim/kv/poisondaggers"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 2,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3299",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Poison Dagger"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 30,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3448",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Poison Arrow"
+      }
+    ]
+  },
+  {
+    "quest": "Power Bolts Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/72/definition",
+    "native_lowering": null,
+    "missing_data": [
+      {
+        "code": "claim_native_lowering_missing",
+        "source_key": "canary:reward-claim/kv/powerbolt1"
+      },
+      {
+        "code": "claim_native_lowering_missing",
+        "source_key": "canary:reward-claim/kv/powerbolt2"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 5,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3450",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Power Bolt"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 12,
+        "item_resolution": "ambiguous",
+        "kind": "item",
+        "name": "Burst Arrow"
+      }
+    ]
+  },
+  {
+    "quest": "Power Ring Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/73/definition",
+    "native_lowering": null,
+    "missing_data": [
+      {
+        "code": "claim_item_semantics_missing",
+        "source_key": "canary:reward-claim/kv/powerring2"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item_resolution": "ambiguous",
+        "kind": "item",
+        "name": "Power Ring"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3056",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Bronze Amulet"
+      }
+    ]
+  },
+  {
+    "quest": "Present Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/74/definition",
+    "native_lowering": null,
+    "missing_data": [
+      {
+        "code": "claim_native_lowering_missing",
+        "source_key": "canary:reward-claim/kv/present_box"
+      },
+      {
+        "code": "claim_item_semantics_missing",
+        "source_key": "canary:reward-claim/kv/present_box"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s2",
+        "name": "Bear Room Present chest",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s2",
+        "name": "Present",
+        "resolution": "ambiguous"
+      }
+    ],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2854",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Backpack"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3374",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Legion Helmet"
+      }
+    ]
+  },
+  {
+    "quest": "Purple Tome Quest",
+    "file": "content/quests/definitions/quests-00000-00099.json",
+    "pointer": "/records/75/definition",
+    "native_lowering": null,
+    "missing_data": [],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Nightmare Isles Mini World Change",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/73/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 1,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s5",
+        "name": "Nightmare Isles keepsake container",
+        "resolution": "unresolved"
+      }
+    ],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21982",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Nightmare Teddy"
+      }
+    ]
+  },
+  {
+    "quest": "Nightmare Outfits Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/74/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 1,
+        "field": "interactions_with_gaps"
+      },
+      {
+        "code": "reported_source_gap",
+        "count": 12,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s3",
+        "name": "The Dream Master",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s5",
+        "name": "The Dream Master",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s7",
+        "name": "The Dream Master",
+        "resolution": "unresolved"
+      }
+    ],
+    "prerequisites": [
+      "Dreamer's Challenge Quest"
+    ],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Nightmare Outfits"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Nightmare shield and lance addon"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Nightmare helmet addon"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "achievement",
+        "name": "Nightmare Walker"
+      }
+    ]
+  },
+  {
+    "quest": "No Rest for the Wicked Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/75/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 4,
+        "field": "interactions_with_gaps"
+      },
+      {
+        "code": "reported_source_gap",
+        "count": 16,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s3",
+        "name": "Azzilon warding ritual",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s3",
+        "name": "Azzilon troubled soul",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s5",
+        "name": "Azzilon vision of the past",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s6",
+        "name": "Azzilon troll provisioning objective",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s8",
+        "name": "Azzilon fishing objective",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s11",
+        "name": "Doomforge reward room",
+        "resolution": "unresolved"
+      }
+    ],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "access",
+        "name": "Doomforge reward room"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Fiend Slayer Outfits"
+      }
+    ]
+  },
+  {
+    "quest": "Nobleman Outfits Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/76/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 1,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s3",
+        "name": "Irmana",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s5",
+        "name": "Irmana",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s7",
+        "name": "Irmana",
+        "resolution": "unresolved"
+      }
+    ],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Nobleman Outfits"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Nobleman first addon"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Nobleman second addon"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "achievement",
+        "name": "Aristocrat"
+      }
+    ]
+  },
+  {
+    "quest": "Obsidian Knife Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/77/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 1,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s3",
+        "name": "A Sweaty Cyclops",
+        "resolution": "unresolved"
+      }
+    ],
+    "prerequisites": [
+      "Friends and Traders"
+    ],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i5908",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Obsidian Knife"
+      }
+    ]
+  },
+  {
+    "quest": "Opticording Sphere Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/78/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 1,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s1",
+        "name": "Ab'Dendriel northern torch",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s1",
+        "name": "Ab'Dendriel southern torch",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s2",
+        "name": "Crate (Heavy)",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s2",
+        "name": "Opticording Sphere",
+        "resolution": "ambiguous"
+      },
+      {
+        "stage": "s3",
+        "name": "Opticording Sphere",
+        "resolution": "ambiguous"
+      },
+      {
+        "stage": "s3",
+        "name": "Venore strange symbols",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s4",
+        "name": "Opticording Sphere",
+        "resolution": "ambiguous"
+      },
+      {
+        "stage": "s4",
+        "name": "Mushroom Gardens symbols",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s5",
+        "name": "Opticording Sphere",
+        "resolution": "ambiguous"
+      },
+      {
+        "stage": "s5",
+        "name": "Fiehonja symbols",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s6",
+        "name": "Opticording Sphere",
+        "resolution": "ambiguous"
+      },
+      {
+        "stage": "s6",
+        "name": "Horestis Tomb hieroglyphs",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s7",
+        "name": "Opticording Sphere",
+        "resolution": "ambiguous"
+      },
+      {
+        "stage": "s9",
+        "name": "Opticording Analyzer",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s11",
+        "name": "Opticorder Rectifier",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s13",
+        "name": "Cube pipes",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s13",
+        "name": "Cube valve",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s13",
+        "name": "Cube puzzles",
+        "resolution": "unresolved"
+      }
+    ],
+    "prerequisites": [
+      "Bigfoot's Burden Quest: Gnomebase Alpha rank2"
+    ],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i33330",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Monolith of the Planes Kit"
+      }
+    ]
+  },
+  {
+    "quest": "Oramond Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/79/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 6,
+        "field": "interactions_with_gaps"
+      },
+      {
+        "code": "reported_source_gap",
+        "count": 16,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s2",
+        "name": "Oramond roots",
+        "resolution": "unresolved"
+      }
+    ],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "access",
+        "name": "Oramond personal task completion"
+      }
+    ]
+  },
+  {
+    "quest": "Oriental Outfits Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/80/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 1,
+        "field": "interactions_with_gaps"
+      },
+      {
+        "code": "reported_source_gap",
+        "count": 3,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Oriental Outfits: first addon"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Oriental Outfits: second addon"
+      }
+    ]
+  },
+  {
+    "quest": "Oriental Trader Mini World Change",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/81/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 1,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "achievement",
+        "name": "Si, Ariki!"
+      }
+    ]
+  },
+  {
+    "quest": "Overhunting World Change",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/83/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 1,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s3",
+        "name": "Starving Wolf",
+        "resolution": "unresolved"
+      },
+      {
+        "stage": "s3",
+        "name": "Magic Wolf Trap",
+        "resolution": "unresolved"
+      }
+    ],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "access",
+        "name": "White Deer conservation task completion"
+      }
+    ]
+  },
+  {
+    "quest": "Pick Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/84/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 1,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item_resolution": "ambiguous",
+        "kind": "item",
+        "name": "Pick"
+      }
+    ]
+  },
+  {
+    "quest": "Pilgrimage of Ashes Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/85/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 1,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 20,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3035",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Platinum Coin"
+      }
+    ]
+  },
+  {
+    "quest": "Poltergeist Outfits Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/86/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s1",
+        "name": "Feaster of Souls Quest",
+        "resolution": "unresolved"
+      }
+    ],
+    "prerequisites": [
+      "Feaster of Souls Quest completed"
+    ],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Poltergeist Outfits: base"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Poltergeist Outfits: first addon"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Poltergeist Outfits: second addon"
+      }
+    ]
+  },
+  {
+    "quest": "Primal Ordeal Quest",
+    "file": "content/quests/definitions/quests-00100-00199.json",
+    "pointer": "/records/87/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 9,
+        "field": "interactions_with_gaps"
+      },
+      {
+        "code": "reported_source_gap",
+        "count": 32,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [
+      {
+        "stage": "s2",
+        "name": "Charged Flame",
+        "resolution": "ambiguous"
+      }
+    ],
+    "prerequisites": [
+      "Within the Tides Quest completed"
+    ],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i39546",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Primal Bag"
+      }
+    ]
+  },
+  {
+    "quest": "Nimmersatt's Lair",
+    "file": "content/quests/definitions/quests-00300-00351.json",
+    "pointer": "/records/19/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "canonical_reward_refs": [],
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "quest_native_lowering_missing"
+      },
+      {
+        "code": "authored_trigger_and_delivery_bindings_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Nomads Land Quest",
+    "file": "content/quests/definitions/quests-00300-00351.json",
+    "pointer": "/records/20/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "canonical_reward_refs": [],
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "quest_native_lowering_missing"
+      },
+      {
+        "code": "authored_trigger_and_delivery_bindings_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Nomads Mini World Change",
+    "file": "content/quests/definitions/quests-00300-00351.json",
+    "pointer": "/records/21/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "canonical_reward_refs": [],
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "quest_native_lowering_missing"
+      },
+      {
+        "code": "authored_trigger_and_delivery_bindings_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Noodles is Gone Mini World Change",
+    "file": "content/quests/definitions/quests-00300-00351.json",
+    "pointer": "/records/22/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "canonical_reward_refs": [],
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "quest_native_lowering_missing"
+      },
+      {
+        "code": "authored_trigger_and_delivery_bindings_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Orcsoberfest",
+    "file": "content/quests/definitions/quests-00300-00351.json",
+    "pointer": "/records/23/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "canonical_reward_refs": [],
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "quest_native_lowering_missing"
+      },
+      {
+        "code": "authored_trigger_and_delivery_bindings_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Poacher Caves Mini World Change",
+    "file": "content/quests/definitions/quests-00300-00351.json",
+    "pointer": "/records/24/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "canonical_reward_refs": [],
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "quest_native_lowering_missing"
+      },
+      {
+        "code": "authored_trigger_and_delivery_bindings_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Podzilla Quest",
+    "file": "content/quests/definitions/quests-00300-00351.json",
+    "pointer": "/records/25/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "canonical_reward_refs": [],
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "quest_native_lowering_missing"
+      },
+      {
+        "code": "authored_trigger_and_delivery_bindings_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": []
+  },
+  {
+    "quest": "Newhaven Quest",
+    "file": "content/quests/definitions/quests-00200-00299.json",
+    "pointer": "/records/78/definition",
+    "native_lowering": {
+      "canonical_interaction_refs": [],
+      "canonical_progress_refs": [],
+      "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+      "state": "WAITING_IMPLEMENTATION"
+    },
+    "missing_data": [
+      {
+        "code": "reported_source_gap",
+        "count": 3,
+        "field": "interactions_with_gaps"
+      },
+      {
+        "code": "reported_source_gap",
+        "count": 9,
+        "field": "unresolved_items"
+      },
+      {
+        "code": "quest_native_lowering_missing"
+      }
+    ],
+    "unresolved_target_items": [],
+    "prerequisites": [],
+    "rewards": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52732",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Guardian Ring"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3572",
+          "revision": "definition-r1"
+        },
+        "kind": "item",
+        "name": "Scarf"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1600,
+        "kind": "experience",
+        "name": "Experience"
+      }
+    ]
+  }
+]

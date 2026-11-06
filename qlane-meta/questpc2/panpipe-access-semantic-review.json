@@ -1,0 +1,279 @@
+{
+  "map_additions": [
+    {
+      "position": [
+        32652,
+        32107,
+        7
+      ],
+      "appearance": 1777,
+      "added": {
+        "unique": 5001
+      }
+    },
+    {
+      "position": [
+        33327,
+        32182,
+        7
+      ],
+      "appearance": 2474,
+      "added": {
+        "unique": 6173
+      }
+    },
+    {
+      "position": [
+        32448,
+        32042,
+        8
+      ],
+      "appearance": 6264,
+      "added": {
+        "action": 1035
+      }
+    },
+    {
+      "position": [
+        32451,
+        32048,
+        8
+      ],
+      "appearance": 2472,
+      "added": {
+        "unique": 6132
+      }
+    },
+    {
+      "position": [
+        32455,
+        32048,
+        8
+      ],
+      "appearance": 2472,
+      "added": {
+        "unique": 6133
+      }
+    },
+    {
+      "position": [
+        32643,
+        32128,
+        8
+      ],
+      "appearance": 1631,
+      "added": {
+        "action": 4055
+      }
+    },
+    {
+      "position": [
+        32644,
+        32131,
+        8
+      ],
+      "appearance": 2472,
+      "added": {
+        "unique": 6065
+      }
+    },
+    {
+      "position": [
+        32816,
+        32279,
+        8
+      ],
+      "appearance": 4240,
+      "added": {
+        "unique": 6170
+      }
+    },
+    {
+      "position": [
+        32814,
+        32281,
+        8
+      ],
+      "appearance": 4240,
+      "added": {
+        "unique": 6112
+      }
+    },
+    {
+      "position": [
+        32980,
+        31727,
+        9
+      ],
+      "appearance": 2469,
+      "added": {
+        "unique": 6020
+      }
+    },
+    {
+      "position": [
+        32981,
+        31727,
+        9
+      ],
+      "appearance": 2469,
+      "added": {
+        "unique": 6021
+      }
+    },
+    {
+      "position": [
+        32985,
+        31727,
+        9
+      ],
+      "appearance": 2469,
+      "added": {
+        "unique": 6022
+      }
+    },
+    {
+      "position": [
+        32981,
+        31760,
+        9
+      ],
+      "appearance": 6264,
+      "added": {
+        "action": 1040
+      }
+    },
+    {
+      "position": [
+        33089,
+        32030,
+        9
+      ],
+      "appearance": 2469,
+      "added": {
+        "unique": 6150
+      }
+    },
+    {
+      "position": [
+        32356,
+        32074,
+        10
+      ],
+      "appearance": 1791,
+      "added": {
+        "action": 40031
+      }
+    },
+    {
+      "position": [
+        32353,
+        32073,
+        11
+      ],
+      "appearance": 1646,
+      "added": {
+        "action": 1040
+      }
+    },
+    {
+      "position": [
+        33155,
+        31880,
+        11
+      ],
+      "appearance": 2473,
+      "added": {
+        "unique": 6068
+      }
+    },
+    {
+      "position": [
+        33444,
+        32605,
+        11
+      ],
+      "appearance": 2433,
+      "added": {
+        "unique": 6305
+      }
+    },
+    {
+      "position": [
+        32346,
+        32063,
+        12
+      ],
+      "appearance": 2472,
+      "added": {
+        "unique": 6135
+      }
+    },
+    {
+      "position": [
+        32424,
+        31591,
+        15
+      ],
+      "appearance": 2436,
+      "added": {
+        "unique": 6128
+      }
+    },
+    {
+      "position": [
+        32427,
+        31591,
+        15
+      ],
+      "appearance": 2436,
+      "added": {
+        "unique": 6129
+      }
+    },
+    {
+      "position": [
+        32421,
+        31594,
+        15
+      ],
+      "appearance": 2438,
+      "added": {
+        "unique": 6130
+      }
+    },
+    {
+      "position": [
+        33063,
+        31624,
+        15
+      ],
+      "appearance": 2474,
+      "added": {
+        "unique": 6076
+      }
+    }
+  ],
+  "map_regions": 15,
+  "native_added": [
+    "oteryn:item.tibia.i1631",
+    "oteryn:item.tibia.i1777",
+    "oteryn:item.tibia.i1791",
+    "oteryn:item.tibia.i21982",
+    "oteryn:item.tibia.i2436",
+    "oteryn:item.tibia.i2438",
+    "oteryn:item.tibia.i2473",
+    "oteryn:item.tibia.i2474",
+    "oteryn:item.tibia.i2822",
+    "oteryn:item.tibia.i2823",
+    "oteryn:item.tibia.i2848",
+    "oteryn:item.tibia.i6264",
+    "oteryn:item.tibia.i6265"
+  ],
+  "native_changed": [
+    "oteryn:item.tibia.i3318",
+    "oteryn:item.tibia.i3357",
+    "oteryn:item.tibia.i3370"
+  ],
+  "native_removed": []
+}

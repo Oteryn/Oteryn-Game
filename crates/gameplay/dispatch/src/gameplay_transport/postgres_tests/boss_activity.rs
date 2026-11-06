@@ -66,8 +66,10 @@ enum Case {
     SoulWarFinalEntry,
     RottenBloodEntry,
     SoulWarDefeat,
+    SoulWarLateDefeat,
     SoulWarFinalDefeat,
     RottenBloodDefeat,
+    PrimalDefeat,
 }
 
 #[test]
@@ -156,6 +158,16 @@ fn l3_instance_endgame_rotten_blood_native_death_progresses_once() -> TestResult
     run_scenario(Case::RottenBloodDefeat)
 }
 
+#[test]
+fn l3_instance_endgame_late_soul_war_death_cannot_earn_taint() -> TestResult {
+    run_scenario(Case::SoulWarLateDefeat)
+}
+
+#[test]
+fn l3_instance_endgame_primal_native_death_unlocks_hazard_once() -> TestResult {
+    run_scenario(Case::PrimalDefeat)
+}
+
 fn run_scenario(case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         eprintln!("BOSS_ACTIVITY POSTGRES_CASE_SKIPPED: no admin URL");
@@ -176,8 +188,8 @@ fn scenario(case: Case) -> TestResult {
             case,
             Case::Rewards | Case::LateRewards | Case::AwardContinuity
         );
-        let endgame_death = matches!(case, Case::SoulWarDefeat | Case::SoulWarFinalDefeat | Case::RottenBloodDefeat);
-        let late = case == Case::LateRewards;
+        let endgame_death = matches!(case, Case::SoulWarDefeat | Case::SoulWarLateDefeat | Case::SoulWarFinalDefeat | Case::RottenBloodDefeat | Case::PrimalDefeat);
+        let late = matches!(case, Case::LateRewards | Case::SoulWarLateDefeat);
         let with_death = matches!(
             case,
             Case::OfflineDeathMismatch | Case::OfflineDeathDeadline
@@ -225,8 +237,9 @@ fn scenario(case: Case) -> TestResult {
         owner.active_generation = controller.active();
         owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
         let endgame_creature = match case {
-            Case::SoulWarEntry | Case::SoulWarDefeat => Some("oteryn:creature.goshnar_s_spite"),
+            Case::SoulWarEntry | Case::SoulWarDefeat | Case::SoulWarLateDefeat => Some("oteryn:creature.goshnar_s_spite"),
             Case::SoulWarFinalEntry => Some("oteryn:creature.goshnar_s_megalomania_purple"),
+            Case::PrimalDefeat => Some("oteryn:creature.the_primal_menace"),
             Case::SoulWarFinalDefeat => Some("oteryn:creature.goshnar_s_megalomania_green"),
             Case::RottenBloodEntry | Case::RottenBloodDefeat => Some("oteryn:creature.bakragore"),
             _ => None,
@@ -513,6 +526,9 @@ fn scenario(case: Case) -> TestResult {
                 .fetch_one(&h.pool).await?, 0);
             assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor)
                 .map_err(debug)?.position(), source_cell);
+            if endgame_death {
+                endgame::prepare_level(&owner, admitted).await?;
+            } else {
             // Imported snapshots exercise admission only, not quest completion.
             let mut seed = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
@@ -521,6 +537,8 @@ fn scenario(case: Case) -> TestResult {
             sqlx::query("UPDATE game_character_progression_state p SET level=250,total_experience=254237300,character_revision=r.character_revision FROM game_character_roots r WHERE p.character_id=r.character_id AND p.character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
             seed.commit().await?;
+            }
+            if case != Case::PrimalDefeat {
             let (_, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, false).await?;
             assert_eq!(reply, BossActivityReply::Refused(BossActivityRefusal::AuthorityRejected));
             assert!(barrier.is_none());
@@ -537,7 +555,7 @@ fn scenario(case: Case) -> TestResult {
                     .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
             }
             seed.commit().await?;
-            if !matches!(case, Case::SoulWarEntry | Case::SoulWarDefeat) {
+            if !matches!(case, Case::SoulWarEntry | Case::SoulWarDefeat | Case::SoulWarLateDefeat) {
                 let (_, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, false).await?;
                 assert_eq!(reply, BossActivityReply::Refused(BossActivityRefusal::AuthorityRejected));
                 assert!(barrier.is_none());
@@ -561,6 +579,7 @@ fn scenario(case: Case) -> TestResult {
                         .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
                     seed.commit().await?;
                 }
+            }
             }
             assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_activity_handoff_groups")
                 .fetch_one(&h.pool).await?, 0);

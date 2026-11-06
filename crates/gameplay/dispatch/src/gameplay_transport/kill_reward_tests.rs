@@ -152,6 +152,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         facts,
         creature: "fixture:rat".into(),
         row: Some(row(drops)),
+        encounter_experience: None,
         bosstiary_only: None,
         boss_slot_bonuses: std::sync::Arc::new(std::sync::OnceLock::new()),
         ground: DeathGroundContext {

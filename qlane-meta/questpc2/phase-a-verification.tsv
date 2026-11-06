@@ -1,0 +1,12 @@
+phase-a-fmt-check	PASS
+phase-a-fixture-fmt-check	PASS
+phase-a-clippy	PASS
+phase-a-committed-selectors	PASS
+phase-a-selector-binding	PASS
+phase-a-n-regression	PASS
+phase-a-world-facts	PASS
+phase-a-content-claims	PASS
+phase-a-server-content	PASS
+phase-a-server-world	PASS
+phase-a-pin-check	PASS
+phase-a-diff-check	PASS
