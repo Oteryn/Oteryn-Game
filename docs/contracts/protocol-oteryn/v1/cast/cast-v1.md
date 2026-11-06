@@ -170,3 +170,15 @@ The preference adapter and Platform handoff are documented in
 `docs/contracts/S17_SRV11_GAME_PLATFORM_HANDOFF.md`. Offer/consumer qualification
 remains independently gated as in S17-A; this server package does not activate
 an unsupported native client.
+
+The caster camera normalizes runtime `z` to native negative map floors before
+joining entity and map captures. Actor floor planes and public speech use that
+native convention; presentation effects retain their existing positive wire
+floor convention. The map's `first_visible_floor` and window filter apply to
+all projected tiles, actors, local speech and effects. Roof-hidden floors are
+removed server-side, before any cast bytes are queued.
+
+The production scene preserves committed interest's own-actor-first ordering:
+public handle 1 is the caster camera anchor. Its relative x/y is (16,16), with
+the native floor packed into y as above. Floor perspective uses that anchor;
+map chunks never expose the caster's absolute world coordinates.

@@ -381,13 +381,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Reply::Capture(permit)) = node.service.apply(Operation::Capture(facts)).await else {
             return;
         };
-        let result = match self.cast_projection_value(admitted).await {
-            Some((visible, scene, consents, origin, _)) => match self.cast_map(admitted).await {
-                Some((map_origin, media)) if origin == map_origin => {
-                    Some((visible, scene, consents, media))
-                }
-                _ => None,
-            },
+        let result = match self.cast_map(admitted).await {
+            Some((viewport, media)) => self
+                .cast_projection_value(admitted, viewport)
+                .await
+                .map(|(visible, scene, consents, _)| (visible, scene, consents, media)),
             None => None,
         };
         // Current native transport, lease and scope are checked again after every
@@ -421,6 +419,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn cast_projection_value(
         &self,
         admitted: connection::AdmittedSession,
+        viewport: viewer::Viewport,
     ) -> Option<(
         Vec<domain::CharacterId>,
         oteryn_gameplay_social::cast::Scene,
@@ -428,15 +427,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             domain::CharacterId,
             crate::durability::cast_consent::CastConsent,
         )>,
-        world_spatial::ActorPosition,
         Vec<world_spatial::EntityRef>,
     )> {
         use world_spatial::EntityKind;
         let actor = admitted.runtime_actor?;
         let channel = self.observe_channel_entities(actor).await?;
-        let selected = world_spatial::SessionVisibility::default()
+        let mut selected = world_spatial::SessionVisibility::default()
             .snapshot(&channel, &mut |_| Ok(()))
             .ok()?;
+        if !viewport.matches_runtime(selected.actor_position) {
+            return None;
+        }
+        selected.entities.retain(|e| viewport.visible(e.position));
         let players = {
             let runtime = self.runtime.lock().await;
             // Lock order stays runtime -> spell states, without awaiting under
@@ -558,7 +560,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actors,
             },
             consent,
-            origin,
             shown,
         ))
     }

@@ -73,10 +73,20 @@ fn s17_viewer_map_uses_casters_committed_map_without_changing_actor() -> TestRes
                         .await
                         .initialize_pinned_test_position(deps.actor, position)
                         .map_err(debug)?;
-                    let (_, media) = owner
+                    let (camera, media) = owner
                         .cast_map(deps.admitted)
                         .await
                         .ok_or("production caster map")?;
+                    assert!(
+                        camera.matches_runtime(
+                            oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                                x: position.x,
+                                y: position.y,
+                                floor: position.floor
+                            }
+                        ),
+                        "ordinary positive runtime floor matches the native caster map"
+                    );
                     assert!(!media.is_empty());
                     let mut found = false;
                     for (i, m) in media.iter().enumerate() {
