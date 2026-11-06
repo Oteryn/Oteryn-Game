@@ -1,0 +1,405 @@
+{
+  "claims": [],
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "completeness": "NOT_ASSESSED",
+  "display_name": "Machinery of War Quest",
+  "identity": {
+    "key": "oteryn:quest.machinery_of_war_quest",
+    "revision": "quest-r1"
+  },
+  "kind": "script_only",
+  "missing_data": [
+    {
+      "code": "reported_source_gap",
+      "count": 1,
+      "field": "unresolved_items"
+    },
+    {
+      "code": "quest_native_lowering_missing"
+    }
+  ],
+  "native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "oteryn_recipe": {
+    "chosen_data_complete": true,
+    "payload": {
+      "covered_wiki_titles": [
+        "Machinery of War Quest"
+      ],
+      "donor_source_refs": [],
+      "identity": {
+        "key": "oteryn:quest.machinery_of_war_quest",
+        "revision": "quest-r1"
+      },
+      "recipe": {
+        "adaptations": [
+          "The source forty-four-kit maximum is deliberately selected as the collected budget; six repairs consume this authored budget according to their later binding. Orc wave timing is optional and no mandatory kills are invented. Fire Bug failures and repeated promotion farming become deterministic once-only objectives; War Hero is the chosen final rank achievement, not proof of original rank-point qualification."
+        ],
+        "repeat": {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "kind": "once"
+        },
+        "requirements": {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "min_level": 50,
+          "premium": false,
+          "prerequisites": []
+        },
+        "reward_intents": [
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "kind": "achievement",
+            "name": "War Hero"
+          }
+        ],
+        "source_notes": [
+          "This is an explicitly chosen Oteryn finite programme supplementary to the existing original SourceQuest identity. The original missions, interactions, claims, gates and UNKNOWN holds are retained; no duplicate canonical quest is created.",
+          "All quantities, requirement thresholds, sequencing, repeat policy and reward delivery are CHOSEN_OTERYN_APPROXIMATION, even when the same name or number occurs in a pinned source. Entity names are unresolved authored binding requests, never fabricated native IDs, Lua symbols or storage aliases.",
+          "Completion concerns only this chosen recipe. Unselected optional branches, full source fidelity, drop rates, original schedules, transport logic and executable Native delivery are not certified. Intermediate collect/use stages acquire and consume their own tools; reward_intents lists only final or stated milestone grants.",
+          "Original source identity: canary:quest/machinery_of_war_quest@canary-04b83b51+crystalserver-9f5a72c6; inherited source pins and catalogue title links are preserved exactly.",
+          "Source journal missions are absent for this original record; the selected concrete programme uses named wiki locations/rewards and donor components with explicit adaptations, not inferred numeric-owner joins."
+        ],
+        "source_refs": [
+          {
+            "content_sha256": "63ba47c3282fac407a1c94e8aa0cc9080c756be21a4f078e8d85ef8dcae55a35",
+            "pageid": 25543,
+            "provider": "tibia_fandom",
+            "relation": "base",
+            "revid": 843158,
+            "url": "https://tibia.fandom.com/index.php?curid=25543&oldid=843158"
+          },
+          {
+            "content_sha256": "c2e8f5719b1ea9fd88e5ffd43299893ac27fc06995b911c9bdefda3fc6d50116",
+            "pageid": 25591,
+            "provider": "tibia_fandom",
+            "relation": "spoiler",
+            "revid": 898558,
+            "url": "https://tibia.fandom.com/index.php?curid=25591&oldid=898558"
+          },
+          {
+            "content_sha256": "0d82bbc86e628c3c8e1b41cc0362f7b7cfb6052f497ac8b1caf49f50498ab5ef",
+            "pageid": 4477,
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "revid": 429397,
+            "url": "https://www.tibiawiki.com.br/index.php?curid=4477&oldid=429397"
+          }
+        ],
+        "stages": [
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s1",
+            "kind": "talk",
+            "next": [
+              "s2"
+            ],
+            "objective": "Ask Baxter outside Rain Castle for the orc-war commission.",
+            "targets": [
+              "Baxter"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 44,
+            "key": "s2",
+            "kind": "collect",
+            "next": [
+              "s3"
+            ],
+            "objective": "Obtain forty-four Bricklayers' Kits for the chosen repair budget.",
+            "target_items": [
+              {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7785",
+                  "revision": "definition-r1"
+                },
+                "name": "Bricklayers' Kit"
+              }
+            ],
+            "targets": [
+              "Bricklayers' Kit"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 6,
+            "key": "s3",
+            "kind": "use",
+            "next": [
+              "s4"
+            ],
+            "objective": "Repair four outposts and two walls in the Ferngrims Gate route.",
+            "target_items": [
+              {
+                "item_resolution": "unresolved",
+                "name": "Ferngrims Gate outposts"
+              },
+              {
+                "item_resolution": "unresolved",
+                "name": "Ferngrims Gate walls"
+              }
+            ],
+            "targets": [
+              "Ferngrims Gate outposts",
+              "Ferngrims Gate walls"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 8,
+            "key": "s4",
+            "kind": "use",
+            "next": [
+              "s5"
+            ],
+            "objective": "Set fire to eight Ballistae with the Fire Bug.",
+            "target_items": [
+              {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i5467",
+                  "revision": "definition-r1"
+                },
+                "name": "Fire Bug"
+              },
+              {
+                "item_resolution": "unresolved",
+                "name": "Ballista"
+              }
+            ],
+            "targets": [
+              "Fire Bug",
+              "Ballista"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 8,
+            "key": "s5",
+            "kind": "use",
+            "next": [
+              "s6"
+            ],
+            "objective": "Set fire to eight Catapults with the Fire Bug.",
+            "target_items": [
+              {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i5467",
+                  "revision": "definition-r1"
+                },
+                "name": "Fire Bug"
+              },
+              {
+                "item_resolution": "unresolved",
+                "name": "Catapult"
+              }
+            ],
+            "targets": [
+              "Fire Bug",
+              "Catapult"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 6,
+            "key": "s6",
+            "kind": "use",
+            "next": [
+              "s7"
+            ],
+            "objective": "Burn the three wheels on each of two Siege Towers.",
+            "target_items": [
+              {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i5467",
+                  "revision": "definition-r1"
+                },
+                "name": "Fire Bug"
+              },
+              {
+                "item_resolution": "unresolved",
+                "name": "Siege Tower wheels"
+              }
+            ],
+            "targets": [
+              "Fire Bug",
+              "Siege Tower wheels"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s7",
+            "kind": "collect",
+            "next": [
+              "s8"
+            ],
+            "objective": "Recover one set of current Orc War Plans.",
+            "target_items": [
+              {
+                "item_resolution": "unresolved",
+                "name": "Orc War Plans"
+              }
+            ],
+            "targets": [
+              "Orc War Plans"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s8",
+            "kind": "talk",
+            "next": [
+              "s9"
+            ],
+            "objective": "Deliver the plans and completed repair report to Baxter.",
+            "targets": [
+              "Baxter"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s9",
+            "kind": "complete",
+            "next": [],
+            "objective": "Record the completion of the chosen Machinery of War Quest programme and its selected reward intents.",
+            "targets": [
+              "Machinery of War Quest"
+            ]
+          }
+        ],
+        "summary": "Repair Thais' orc-border outposts, burn the siege engines and recover the war plans.",
+        "wiki_title": "Machinery of War Quest"
+      },
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/machinery_of_war_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "title_stage_keys": {
+        "Machinery of War Quest": [
+          "s1",
+          "s2",
+          "s3",
+          "s4",
+          "s5",
+          "s6",
+          "s7",
+          "s8",
+          "s9"
+        ]
+      }
+    },
+    "profile": "chosen_source_completion_v1",
+    "provenance": {
+      "path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+      "sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321"
+    },
+    "readiness": "waiting_native_bindings",
+    "recipe_refinement_provenance": {
+      "original_recipe_packet_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "path": "tools/content-schema/quest-authoring/samples/refinements242/refinements.json",
+      "qualification_sha256": "11a3afbc8f17df330ee1be94e68ee80b3b0a582e92234181459fecf3f63ac1a5",
+      "reviewed_input_sha256": "b725ee573b26a38bd9bf2ee1b9f66eb215fa7a6eaad2d1f7c9af76e53f544b62",
+      "sha256": "b69dbe6d580221b089d03e8952329c54a7e117abc02f11d476f56f18818254cf"
+    },
+    "runtime_enabled": false,
+    "source_definition_sha256": "82014a546b4373bf46f799aaa95ed7e52b4bc4fedcb489c0dec9329cc7411e3b",
+    "source_evidence_provenance": {
+      "candidate_count": 5,
+      "classification": "SCOPED_EVIDENCE_ONLY_NOT_SOURCE_CLOSURE",
+      "confirmation_count": 9,
+      "facts_count": 14,
+      "line_spans_rechecked": false,
+      "packet_sha256": "f48af6e10e8ba9a311442bd1f359aff091956e634743b7db08cdb31594faf58f",
+      "path": "tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json",
+      "profile": "scoped_source_enrichment_v1",
+      "raw_body_rechecked": false,
+      "receipt_sha256": "970cc0744e9abf31b9c4d1bd93d5723ae6c89bbb5f8bd9a5100d49015cc2b017",
+      "record_sha256": "9963b4043d99c9df85433a986701638fcb127da126d7943b49c90b6ccd292c7d",
+      "reduced_text_count": 7,
+      "runtime_enabled": false,
+      "source_hold_resolved": false,
+      "source_holds_preserved": true,
+      "source_revision_verified": false
+    },
+    "source_fidelity": "ORIGINAL_HOLDS_PRESERVED"
+  },
+  "readiness": "waiting_data",
+  "reported_source_readiness": {
+    "data_gaps": {
+      "interactions_with_gaps": 0,
+      "unresolved_items": 1
+    },
+    "features": [],
+    "interactions": 0,
+    "kind": "script_only",
+    "quest": "canary:quest/machinery_of_war_quest"
+  },
+  "requirements": {
+    "min_level": 50,
+    "premium": false
+  },
+  "requirements_from_wiki": {
+    "lvl": "50",
+    "premium": "no"
+  },
+  "requirements_unparsed": {},
+  "shown_in_quest_log": false,
+  "source_data": {
+    "gates": [],
+    "interaction_source_conflicts": [],
+    "interactions": [],
+    "progress": [],
+    "quest": {
+      "claims": [],
+      "display_name": "Machinery of War Quest",
+      "identity": {
+        "key": "canary:quest/machinery_of_war_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "kind": "script_only",
+      "requirements": {
+        "min_level": 50,
+        "premium": false
+      },
+      "requirements_from_wiki": {
+        "lvl": "50",
+        "premium": "no"
+      },
+      "shown_in_quest_log": false,
+      "wiki": {
+        "pageid": 25543,
+        "revid": 843158,
+        "title": "Machinery of War Quest"
+      }
+    },
+    "reference_gaps": []
+  },
+  "source_refs": {
+    "claims": [],
+    "gates": [],
+    "quest": {
+      "family": "Quest",
+      "key": "canary:quest/machinery_of_war_quest",
+      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+    }
+  },
+  "unresolved_claims": [],
+  "wiki": {
+    "pageid": 25543,
+    "revid": 843158,
+    "title": "Machinery of War Quest"
+  }
+}

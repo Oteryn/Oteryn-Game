@@ -1,0 +1,90 @@
+--- restart3 baseline
++++ current
+@@ -27,6 +27,22 @@
+                 started.elapsed()
+             );
+         }
++        Ok(())
++    })
++}
++
++#[test]
++fn newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary() -> TestResult {
++    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
++        return Ok(());
++    }
++    super::kill_reward_e2e::scenario_thread::run("newhaven-corruptor-stamina", || {
++        let started = Instant::now();
++        scenario("knight", false, false, true, false)?;
++        println!(
++            "NEWHAVEN_STAMINA_BOUNDARY POSTGRES_CASE_COMPLETED {:?}",
++            started.elapsed()
++        );
+         Ok(())
+     })
+ }
+@@ -316,7 +332,9 @@
+                 &runtime,
+                 actor,
+                 session,
+-                if fail_commit { 841 } else { 0 },
++                // This fixture's kill occurs over 60s after admission, so its
++                // first real XP award spends two minutes before loot freezes.
++                if fail_commit { 843 } else { 0 },
+             );
+         }
+         admitted.item_fence = Some(current.item_fence());
+@@ -444,12 +462,17 @@
+                 .execute(&h.pool).await?;
+             h.root.maintain_ready_once().await.map_err(debug)?;
+             let runtime = owner.runtime.lock().await;
+-            owner
+-                .states
+-                .spell_states
+-                .lock()
+-                .await
+-                .load_stamina(&runtime, actor, session, 840);
++            let mut states = owner.states.spell_states.lock().await;
++            assert_eq!(states.live_stamina(actor, session), Some(841));
++            // Admission reloads preserve hunting progress. Drive another hunting
++            // event one second after the first award's two-minute deadline.
++            let next_award = observed
++                .ok_or("captured hunting time")?
++                .get()
++                .checked_add(121_000_000)
++                .ok_or("next hunting time")?;
++            states.hunting_experience(&runtime, actor, session, next_award);
++            assert_eq!(states.live_stamina(actor, session), Some(840));
+             assert!(
+                 frozen_table.get().is_some(),
+                 "failed atomic attempt froze ordinary loot"
+@@ -529,7 +552,7 @@
+             category: None,
+             recipient: None,
+             recipient_id: None,
+-            fallback_to_main: true,
++            fallback_to_main: false,
+             filter_mode: None,
+             filter_definition_ref: None,
+         };
+@@ -542,8 +565,8 @@
+             &payload,
+         )
+         .await?;
+-        let result =
+-            oteryn_protocol_oteryn::quick_loot::decode_quick_loot_result(&reply).map_err(debug)?;
++        let result = oteryn_protocol_oteryn::quick_loot::decode_quick_loot_result(&reply)
++            .map_err(|error| format!("{vocation} Quick Loot reply: {error:?}"))?;
+         assert!(!result.items.is_empty(), "the real corpse is in reach");
+         assert!(result.items.iter().all(|item| item.accepted));
+         if let Some((item, quantity)) = mushroom {
+@@ -569,7 +592,8 @@
+             )
+             .await?;
+             assert_eq!(
+-                oteryn_protocol_oteryn::hotkey_equip::decode_reply(&reply).map_err(debug)?,
++                oteryn_protocol_oteryn::hotkey_equip::decode_reply(&reply)
++                    .map_err(|error| format!("{vocation} equip {key} reply: {error:?}"))?,
+                 ItemMoveOutcome::Moved,
+                 "{vocation} equips {key}"
+             );

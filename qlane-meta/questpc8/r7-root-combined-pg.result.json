@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- quest_catalogue_chests_medusa_exact_crystal_reward_use_and_replay quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes falcon_chests_postgres_real_use_frozen_draw_refusal_restart_and_fences catalogue_npc_source_acceptance_is_atomic_and_replay_bound soul_war_postgres_ endgame_entry_postgres_real_dispatch_cannot_allocate_or_reset_without_w02 --test-threads=2 --nocapture",
+  "exit": 101,
+  "duration_seconds": 743.603
+}

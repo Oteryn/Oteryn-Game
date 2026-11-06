@@ -1,0 +1,1108 @@
+{
+  "claims": [],
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "completeness": "NOT_ASSESSED",
+  "display_name": "Lion's Rock Quest",
+  "identity": {
+    "key": "oteryn:quest.lions_rock",
+    "revision": "quest-r1"
+  },
+  "kind": "script_only",
+  "missing_data": [
+    {
+      "code": "reported_source_gap",
+      "count": 4,
+      "field": "interactions_with_gaps"
+    },
+    {
+      "code": "reported_source_gap",
+      "count": 13,
+      "field": "unresolved_items"
+    },
+    {
+      "code": "quest_native_lowering_missing"
+    }
+  ],
+  "native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "oteryn_recipe": {
+    "chosen_data_complete": true,
+    "donor_source_data": {
+      "native_admission": false,
+      "original_holds_preserved": true,
+      "profile": "qualified_donor_source_refs_v1",
+      "quest_key": "oteryn:quest.lions_rock",
+      "refs": [
+        {
+          "category": "condition",
+          "json_pointer": "/records/368",
+          "packet_sha256": "a1400e5394e9f6222dfeef9175b76954f29e1b7b47422b1e0d972a2acf6f3ce9",
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/conditions.json",
+          "projection_scope": "FULL_SOURCE_GUARD",
+          "record_sha256": "73a515668b9801698304a156fad92e74e0ce44f808165a8e6f811bfc6188c5b1",
+          "source_target": "canary:interaction/lions_rock/movements_lions_rock_lions_rock_translation_scroll"
+        }
+      ],
+      "whole_quest_complete": false
+    },
+    "payload": {
+      "covered_wiki_titles": [
+        "Lion's Rock Quest"
+      ],
+      "donor_source_refs": [],
+      "identity": {
+        "key": "oteryn:quest.lions_rock",
+        "revision": "quest-r1"
+      },
+      "recipe": {
+        "adaptations": [
+          "Three individually bound offering trials replace the unspecified original puzzle details. All quantities are one and explicitly chosen. The jewel reward subset is fixed; pearl/bangle alternatives and repeat farming remain only Source references."
+        ],
+        "repeat": {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "kind": "once"
+        },
+        "requirements": {
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "min_level": 0,
+          "premium": true,
+          "prerequisites": []
+        },
+        "reward_intents": [
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "kind": "achievement",
+            "name": "Lion's Den Explorer"
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i9058",
+              "revision": "definition-r1"
+            },
+            "kind": "item",
+            "name": "Gold Ingot"
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3037",
+              "revision": "definition-r1"
+            },
+            "kind": "item",
+            "name": "Yellow Gem"
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "item_resolution": "ambiguous",
+            "kind": "item",
+            "name": "Red Gem"
+          }
+        ],
+        "source_notes": [
+          "This is an explicitly chosen Oteryn finite programme supplementary to the existing original SourceQuest identity. The original missions, interactions, claims, gates and UNKNOWN holds are retained; no duplicate canonical quest is created.",
+          "All quantities, requirement thresholds, sequencing, repeat policy and reward delivery are CHOSEN_OTERYN_APPROXIMATION, even when the same name or number occurs in a pinned source. Entity names are unresolved authored binding requests, never fabricated native IDs, Lua symbols or storage aliases.",
+          "Completion concerns only this chosen recipe. Unselected optional branches, full source fidelity, drop rates, original schedules, transport logic and executable Native delivery are not certified. Intermediate collect/use stages acquire and consume their own tools; reward_intents lists only final or stated milestone grants.",
+          "Original source identity: canary:quest/lions_rock@canary-04b83b51+crystalserver-9f5a72c6; inherited source pins and catalogue title links are preserved exactly.",
+          "Source journal missions are absent for this original record; the selected concrete programme uses named wiki locations/rewards and donor components with explicit adaptations, not inferred numeric-owner joins."
+        ],
+        "source_refs": [
+          {
+            "content_sha256": "691d9dea03fae736a18952d9fdfa09e73d557431815169a60ec6961ed7892e37",
+            "pageid": 69459,
+            "provider": "tibia_fandom",
+            "relation": "base",
+            "revid": 846852,
+            "url": "https://tibia.fandom.com/index.php?curid=69459&oldid=846852"
+          },
+          {
+            "content_sha256": "9092bc0971f478a2d363c9a369d74da2bdb966b75d19c934b26c0584954c90c2",
+            "pageid": 69463,
+            "provider": "tibia_fandom",
+            "relation": "spoiler",
+            "revid": 1041971,
+            "url": "https://tibia.fandom.com/index.php?curid=69463&oldid=1041971"
+          },
+          {
+            "content_sha256": "d5768d98077c94a6acbc1351e81b4d1a64373697a61c1980a6640feffabadede",
+            "pageid": 34999,
+            "provider": "tibiawiki_br",
+            "relation": "crosscheck",
+            "revid": 417414,
+            "url": "https://www.tibiawiki.com.br/index.php?curid=34999&oldid=417414"
+          }
+        ],
+        "stages": [
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s1",
+            "kind": "explore",
+            "next": [
+              "s2"
+            ],
+            "objective": "Reach Lion's Rock west of Darashia and inspect the trial entrance.",
+            "targets": [
+              "Lion's Rock"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 2,
+            "key": "s2",
+            "kind": "collect",
+            "next": [
+              "s3"
+            ],
+            "objective": "Gather one Cobra Tongue and one Lion's Mane Flower for the chosen trial offerings.",
+            "target_items": [
+              {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i9634",
+                  "revision": "definition-r1"
+                },
+                "name": "Cobra Tongue"
+              },
+              {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i21389",
+                  "revision": "definition-r1"
+                },
+                "name": "Lion's Mane Flower"
+              }
+            ],
+            "targets": [
+              "Cobra Tongue",
+              "Lion's Mane Flower"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s3",
+            "kind": "use",
+            "next": [
+              "s4"
+            ],
+            "objective": "Complete the first trial by presenting the Cobra Tongue.",
+            "target_items": [
+              {
+                "item_resolution": "unresolved",
+                "name": "Lion's Rock first trial"
+              },
+              {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i9634",
+                  "revision": "definition-r1"
+                },
+                "name": "Cobra Tongue"
+              }
+            ],
+            "targets": [
+              "Lion's Rock first trial",
+              "Cobra Tongue"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s4",
+            "kind": "use",
+            "next": [
+              "s5"
+            ],
+            "objective": "Complete the second trial by presenting the Lion's Mane Flower.",
+            "target_items": [
+              {
+                "item_resolution": "unresolved",
+                "name": "Lion's Rock second trial"
+              },
+              {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i21389",
+                  "revision": "definition-r1"
+                },
+                "name": "Lion's Mane Flower"
+              }
+            ],
+            "targets": [
+              "Lion's Rock second trial",
+              "Lion's Mane Flower"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s5",
+            "kind": "use",
+            "next": [
+              "s6"
+            ],
+            "objective": "Complete the third trial with the chosen holy-water offering.",
+            "target_items": [
+              {
+                "item_resolution": "unresolved",
+                "name": "Lion's Rock third trial"
+              },
+              {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i21466",
+                  "revision": "definition-r1"
+                },
+                "name": "Ewer with Holy Water"
+              }
+            ],
+            "targets": [
+              "Lion's Rock third trial",
+              "Ewer with Holy Water"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s6",
+            "kind": "use",
+            "next": [
+              "s7"
+            ],
+            "objective": "Translate the recovered scroll at the chosen inscription.",
+            "target_items": [
+              {
+                "item_resolution": "unresolved",
+                "name": "Lion's Rock scroll translation"
+              }
+            ],
+            "targets": [
+              "Lion's Rock scroll translation"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s7",
+            "kind": "use",
+            "next": [
+              "s8"
+            ],
+            "objective": "Open the chosen Lion's Heart treasure cache.",
+            "target_items": [
+              {
+                "item_resolution": "unresolved",
+                "name": "Lion's Heart treasure cache"
+              }
+            ],
+            "targets": [
+              "Lion's Heart treasure cache"
+            ]
+          },
+          {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "count": 1,
+            "key": "s8",
+            "kind": "complete",
+            "next": [],
+            "objective": "Record the completion of the chosen Lion's Rock Quest programme and its selected reward intents.",
+            "targets": [
+              "Lion's Rock Quest"
+            ]
+          }
+        ],
+        "summary": "Pass the three Lion's Rock trials and decipher the scroll to reach its treasures.",
+        "wiki_title": "Lion's Rock Quest"
+      },
+      "source_identity": {
+        "family": "Quest",
+        "key": "canary:quest/lions_rock",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "title_stage_keys": {
+        "Lion's Rock Quest": [
+          "s1",
+          "s2",
+          "s3",
+          "s4",
+          "s5",
+          "s6",
+          "s7",
+          "s8"
+        ]
+      }
+    },
+    "profile": "chosen_source_completion_v1",
+    "provenance": {
+      "path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+      "sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321"
+    },
+    "readiness": "waiting_native_bindings",
+    "recipe_refinement_provenance": {
+      "original_recipe_packet_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "path": "tools/content-schema/quest-authoring/samples/refinements242/refinements.json",
+      "qualification_sha256": "11a3afbc8f17df330ee1be94e68ee80b3b0a582e92234181459fecf3f63ac1a5",
+      "reviewed_input_sha256": "b725ee573b26a38bd9bf2ee1b9f66eb215fa7a6eaad2d1f7c9af76e53f544b62",
+      "sha256": "b69dbe6d580221b089d03e8952329c54a7e117abc02f11d476f56f18818254cf"
+    },
+    "runtime_enabled": false,
+    "source_definition_sha256": "01a5037f386e2ebdffbc928da14f850ddcfc7ecc996546fed9d60a91cdf6ee4a",
+    "source_evidence_provenance": {
+      "candidate_count": 4,
+      "classification": "SCOPED_EVIDENCE_ONLY_NOT_SOURCE_CLOSURE",
+      "confirmation_count": 0,
+      "facts_count": 4,
+      "line_spans_rechecked": false,
+      "packet_sha256": "f48af6e10e8ba9a311442bd1f359aff091956e634743b7db08cdb31594faf58f",
+      "path": "tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json",
+      "profile": "scoped_source_enrichment_v1",
+      "raw_body_rechecked": false,
+      "receipt_sha256": "970cc0744e9abf31b9c4d1bd93d5723ae6c89bbb5f8bd9a5100d49015cc2b017",
+      "record_sha256": "3c3324b40e9d73091a0841e5adb230c337eef074712432c0a2c191daad3a036e",
+      "reduced_text_count": 3,
+      "runtime_enabled": false,
+      "source_hold_resolved": false,
+      "source_holds_preserved": true,
+      "source_revision_verified": false
+    },
+    "source_fidelity": "ORIGINAL_HOLDS_PRESERVED"
+  },
+  "readiness": "waiting_data",
+  "reported_source_readiness": {
+    "data_gaps": {
+      "interactions_with_gaps": 4,
+      "unresolved_items": 13
+    },
+    "features": [
+      "achievement",
+      "item_consume",
+      "item_hand_out",
+      "quest_state",
+      "scheduler",
+      "teleport",
+      "trigger_step",
+      "trigger_use",
+      "world_object"
+    ],
+    "interactions": 8,
+    "kind": "script_only",
+    "quest": "canary:quest/lions_rock"
+  },
+  "requirements": {
+    "min_level": 0,
+    "premium": true
+  },
+  "requirements_from_wiki": {
+    "lvl": "0",
+    "premium": "yes"
+  },
+  "requirements_unparsed": {},
+  "shown_in_quest_log": false,
+  "source_data": {
+    "gates": [],
+    "interaction_source_conflicts": [],
+    "interactions": [
+      {
+        "anchors": [],
+        "identity": {
+          "key": "canary:interaction/lions_rock/actions_lions_rock_lions_get_holy_water",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "rules": [
+          {
+            "authoritative": false,
+            "effect": "message",
+            "owner": "Presentation",
+            "source_line": 102
+          },
+          {
+            "count": 1,
+            "item": {
+              "family": "Item",
+              "key": "canary:item/21466",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "owner": "Item",
+            "request": "hand_out"
+          },
+          {
+            "owner": "Quest",
+            "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
+            "request": "set_progress",
+            "transition": "canary:quest/tibia_tales#lion_s_rock:action_2",
+            "value_source_line": 104
+          },
+          {
+            "owner": "Quest",
+            "progress": "canary:quest-progress/quest/u8_1/tibia_tales/default_start",
+            "request": "set_progress",
+            "to": 1
+          }
+        ],
+        "source": {
+          "callback": "onUse",
+          "edge": "USE",
+          "target_registrations": [
+            "position({ x = 33137, y = 32351, z = 6 })"
+          ]
+        },
+        "unresolved": []
+      },
+      {
+        "anchors": [],
+        "identity": {
+          "key": "canary:interaction/lions_rock/actions_lions_rock_lions_get_lions_mane",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "rules": [
+          {
+            "authoritative": false,
+            "effect": "message",
+            "owner": "Presentation",
+            "source_line": 84
+          },
+          {
+            "count": 1,
+            "item": {
+              "family": "Item",
+              "key": "canary:item/21389",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            },
+            "owner": "Item",
+            "request": "hand_out"
+          },
+          {
+            "owner": "Quest",
+            "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
+            "request": "set_progress",
+            "transition": "canary:quest/tibia_tales#lion_s_rock:action_2",
+            "value_source_line": 86
+          },
+          {
+            "owner": "Quest",
+            "progress": "canary:quest-progress/quest/u8_1/tibia_tales/default_start",
+            "request": "set_progress",
+            "to": 1
+          },
+          {
+            "operation": "TRANSFORM",
+            "owner": "WorldObject",
+            "value_source_line": 88
+          }
+        ],
+        "source": {
+          "callback": "onUse",
+          "edge": "USE",
+          "target_registrations": [
+            "id(21388)"
+          ]
+        },
+        "unresolved": [
+          {
+            "line": 89,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          }
+        ]
+      },
+      {
+        "anchors": [],
+        "identity": {
+          "key": "canary:interaction/lions_rock/actions_lions_rock_lions_rock_fountain",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "then": [],
+                "when": {
+                  "negate": false,
+                  "object": {
+                    "field": "item_type",
+                    "item": {
+                      "family": "Item",
+                      "key": "canary:item/6389",
+                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                    },
+                    "op": "~=",
+                    "role": "source"
+                  }
+                }
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "then": [],
+                            "when": {
+                              "unresolved": {
+                                "line": 121
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "authoritative": false,
+                        "effect": "message",
+                        "owner": "Presentation",
+                        "source_line": 129
+                      },
+                      {
+                        "authoritative": false,
+                        "effect": "magic_effect",
+                        "owner": "Presentation"
+                      },
+                      {
+                        "achievement": {
+                          "family": "Achievement",
+                          "key": "canary:achievement/lion_s_den_explorer",
+                          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                        },
+                        "owner": "Achievement",
+                        "request": "grant"
+                      },
+                      {
+                        "operation": "TRANSFORM",
+                        "owner": "WorldObject",
+                        "value_source_line": 132
+                      },
+                      {
+                        "owner": "Item",
+                        "request": "hand_out",
+                        "value_source_line": 133
+                      },
+                      {
+                        "owner": "Quest",
+                        "progress": "canary:quest-progress/quest/u10_70/lions_rock/time",
+                        "request": "set_progress",
+                        "value_source_line": 134
+                      },
+                      {
+                        "owner": "Quest",
+                        "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
+                        "request": "set_progress",
+                        "to": 11,
+                        "transition": "canary:quest/tibia_tales#lion_s_rock:action_3"
+                      }
+                    ],
+                    "when": {
+                      "unresolved": {
+                        "line": 119
+                      }
+                    }
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "authoritative": false,
+                    "effect": "message",
+                    "owner": "Presentation",
+                    "source_line": 137
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "source": {
+          "callback": "onUse",
+          "edge": "USE",
+          "target_registrations": [
+            "position({ x = 33073, y = 32300, z = 9 })"
+          ]
+        },
+        "unresolved": [
+          {
+            "line": 123,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 126,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ]
+      },
+      {
+        "anchors": [],
+        "identity": {
+          "key": "canary:interaction/lions_rock/actions_lions_rock_lions_rock_sacrifices_test",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "rules": [
+          {
+            "operation": "TRANSFORM",
+            "owner": "WorldObject",
+            "repeated": true,
+            "value_source_line": 48
+          },
+          {
+            "operation": "TRANSFORM",
+            "owner": "WorldObject",
+            "repeated": true,
+            "value_source_line": 58
+          },
+          {
+            "authoritative": false,
+            "effect": "message",
+            "owner": "Presentation",
+            "repeated": true,
+            "source_line": 59
+          },
+          {
+            "owner": "Quest",
+            "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
+            "repeated": true,
+            "request": "set_progress",
+            "transition": "canary:quest/tibia_tales#lion_s_rock:other_1",
+            "value_source_line": 62
+          },
+          {
+            "owner": "Quest",
+            "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
+            "repeated": true,
+            "request": "set_progress",
+            "transition": "canary:quest/tibia_tales#lion_s_rock:other_2",
+            "value_source_line": 63
+          },
+          {
+            "owner": "Quest",
+            "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
+            "repeated": true,
+            "request": "set_progress",
+            "transition": "canary:quest/tibia_tales#lion_s_rock:other_3",
+            "value_source_line": 65
+          },
+          {
+            "owner": "Item",
+            "repeated": true,
+            "request": "consume",
+            "value_source_line": 67
+          },
+          {
+            "authoritative": false,
+            "effect": "magic_effect",
+            "owner": "Presentation",
+            "repeated": true
+          }
+        ],
+        "source": {
+          "callback": "onUse",
+          "edge": "USE",
+          "target_registrations": [
+            "id(9634, 21389, 21466)"
+          ]
+        },
+        "unresolved": [
+          {
+            "line": 45,
+            "reason": "loop with its own control flow"
+          },
+          {
+            "line": 51,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 60,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 69,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          },
+          {
+            "line": 52,
+            "reason": "loop with its own control flow"
+          }
+        ]
+      },
+      {
+        "anchors": [
+          {
+            "key": "p1",
+            "source_position": {
+              "x": 33122,
+              "y": 32308,
+              "z": 8
+            }
+          }
+        ],
+        "identity": {
+          "key": "canary:interaction/lions_rock/movements_lions_rock_lions_rock_entrance",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "then": [],
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                }
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "then": [
+                      {
+                        "authoritative": false,
+                        "effect": "magic_effect",
+                        "owner": "Presentation"
+                      },
+                      {
+                        "owner": "Movement",
+                        "request": "relocate",
+                        "scope": "in_scope",
+                        "target": {
+                          "anchor": "p1",
+                          "kind": "anchor"
+                        }
+                      },
+                      {
+                        "authoritative": false,
+                        "effect": "message",
+                        "owner": "Presentation",
+                        "source_line": 40
+                      },
+                      {
+                        "authoritative": false,
+                        "effect": "magic_effect",
+                        "owner": "Presentation"
+                      }
+                    ],
+                    "when": {
+                      "negate": false,
+                      "quest_stage": {
+                        "op": ">=",
+                        "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
+                        "value": 4
+                      }
+                    }
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "authoritative": false,
+                    "effect": "magic_effect",
+                    "owner": "Presentation"
+                  },
+                  {
+                    "owner": "Movement",
+                    "request": "relocate",
+                    "scope": "in_scope",
+                    "target": {
+                      "kind": "previous_position"
+                    }
+                  },
+                  {
+                    "authoritative": false,
+                    "effect": "message",
+                    "owner": "Presentation",
+                    "source_line": 45
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "source": {
+          "callback": "onStepIn",
+          "edge": "ON_ENTER",
+          "target_registrations": [
+            "position({ x = 33128, y = 32308, z = 8 })"
+          ]
+        },
+        "unresolved": []
+      },
+      {
+        "anchors": [],
+        "identity": {
+          "key": "canary:interaction/lions_rock/movements_lions_rock_lions_rock_message",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "then": [],
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                }
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "then": [
+                      {
+                        "authoritative": false,
+                        "effect": "message",
+                        "owner": "Presentation",
+                        "source_line": 137
+                      },
+                      {
+                        "owner": "Quest",
+                        "progress": "canary:quest-progress/quest/u10_70/lions_rock/inner_sanctum/message",
+                        "request": "set_progress",
+                        "to": 1
+                      }
+                    ],
+                    "when": {
+                      "negate": false,
+                      "quest_stage": {
+                        "op": "<",
+                        "progress": "canary:quest-progress/quest/u10_70/lions_rock/inner_sanctum/message",
+                        "value": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "source": {
+          "callback": "onStepIn",
+          "edge": "ON_ENTER",
+          "target_registrations": [
+            "position({ x = 33080, y = 32274, z = 10 })"
+          ]
+        },
+        "unresolved": []
+      },
+      {
+        "anchors": [],
+        "identity": {
+          "key": "canary:interaction/lions_rock/movements_lions_rock_lions_rock_signs",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "then": [],
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                }
+              }
+            ],
+            "otherwise": [
+              {
+                "authoritative": false,
+                "effect": "message",
+                "owner": "Presentation",
+                "repeated": true,
+                "source_line": 113
+              },
+              {
+                "authoritative": false,
+                "effect": "message",
+                "owner": "Presentation",
+                "repeated": true,
+                "source_line": 114
+              },
+              {
+                "owner": "Quest",
+                "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
+                "repeated": true,
+                "request": "set_progress",
+                "transition": "canary:quest/tibia_tales#lion_s_rock:movement_1",
+                "value_source_line": 116
+              }
+            ]
+          }
+        ],
+        "source": {
+          "callback": "onStepIn",
+          "edge": "ON_ENTER",
+          "target_registrations": [
+            "position(signs[b].pos)"
+          ]
+        },
+        "unresolved": [
+          {
+            "line": 109,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 115,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 110,
+            "reason": "loop with its own control flow"
+          }
+        ]
+      },
+      {
+        "anchors": [],
+        "identity": {
+          "key": "canary:interaction/lions_rock/movements_lions_rock_lions_rock_translation_scroll",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "then": [],
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                }
+              }
+            ],
+            "otherwise": [
+              {
+                "operation": "TRANSFORM",
+                "owner": "WorldObject",
+                "repeated": true,
+                "value_source_line": 78
+              },
+              {
+                "branch": [
+                  {
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "then": [
+                              {
+                                "operation": "TRANSFORM",
+                                "owner": "WorldObject",
+                                "value_source_line": 85
+                              },
+                              {
+                                "authoritative": false,
+                                "effect": "message",
+                                "owner": "Presentation",
+                                "source_line": 86
+                              },
+                              {
+                                "owner": "Quest",
+                                "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
+                                "request": "set_progress",
+                                "to": 5,
+                                "transition": "canary:quest/tibia_tales#lion_s_rock:other_4"
+                              },
+                              {
+                                "count": 1,
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/21467",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "owner": "Item",
+                                "request": "hand_out"
+                              },
+                              {
+                                "authoritative": false,
+                                "effect": "magic_effect",
+                                "owner": "Presentation"
+                              }
+                            ],
+                            "when": {
+                              "unresolved": {
+                                "line": 84
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ],
+                    "when": {
+                      "negate": false,
+                      "quest_stage": {
+                        "op": "==",
+                        "progress": "canary:quest-progress/quest/u10_70/lions_rock/questline",
+                        "value": 4
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "source": {
+          "callback": "onStepIn",
+          "edge": "ON_ENTER",
+          "target_registrations": [
+            "position(checkPos[a])"
+          ]
+        },
+        "unresolved": [
+          {
+            "line": 75,
+            "reason": "loop with its own control flow"
+          },
+          {
+            "line": 90,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          }
+        ]
+      }
+    ],
+    "progress": [],
+    "quest": {
+      "claims": [],
+      "display_name": "Lion's Rock Quest",
+      "identity": {
+        "key": "canary:quest/lions_rock",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "kind": "script_only",
+      "requirements": {
+        "min_level": 0,
+        "premium": true
+      },
+      "requirements_from_wiki": {
+        "lvl": "0",
+        "premium": "yes"
+      },
+      "shown_in_quest_log": false,
+      "wiki": {
+        "pageid": 69459,
+        "revid": 846852,
+        "title": "Lion's Rock Quest"
+      }
+    },
+    "reference_gaps": []
+  },
+  "source_refs": {
+    "claims": [],
+    "gates": [],
+    "quest": {
+      "family": "Quest",
+      "key": "canary:quest/lions_rock",
+      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+    }
+  },
+  "unresolved_claims": [],
+  "wiki": {
+    "pageid": 69459,
+    "revid": 846852,
+    "title": "Lion's Rock Quest"
+  }
+}

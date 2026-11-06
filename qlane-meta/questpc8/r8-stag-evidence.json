@@ -1,0 +1,251 @@
+{
+  "task_id": "questpc",
+  "lane": "stag_fixture",
+  "status": "three_own_tests_passed_in_mixed_batch_final_artifact_rerun_pending",
+  "source_log": ".questpc/r8-dispatch-central-pg-repaired.log",
+  "source_log_sha256": "09692e52ec7cfebab3cf0e5fc8b12aa82cfac2e12bdebcb72e25ca144d3accde",
+  "source_result": {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_corruptor quest_world_callbacks::literal_uses:: quest_world_callbacks_stag_fixture_refreshes_security_after_runtime_publication catalogue_npc_father_ catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal viola_mission_yes viola_book_postgres_real_use_repeat_replay_refusal_and_fences --test-threads=2 --nocapture",
+    "exit": 101,
+    "duration_seconds": 1140.391
+  },
+  "source_test_summary": "test result: FAILED. 6 passed; 10 failed; 0 ignored; 0 measured; 2491 filtered out; finished in 1077.92s",
+  "own_scope": {
+    "passed_tests": 3,
+    "failed_tests": 0,
+    "callback_markers": 16,
+    "fresh_session_markers": 1,
+    "total_markers": 17,
+    "all_markers_have_positive_duration": true
+  },
+  "tests": [
+    {
+      "test": "gameplay_transport::monk_save::postgres_tests::fresh_session::quest_world_callbacks_stag_fixture_refreshes_security_after_runtime_publication",
+      "status": "passed",
+      "completion_line_number": 57,
+      "marker_count": 1,
+      "summed_case_duration_seconds": "3.351517416"
+    },
+    {
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal",
+      "status": "passed",
+      "completion_line_number": 335,
+      "marker_count": 7,
+      "summed_case_duration_seconds": "325.333086956"
+    },
+    {
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes",
+      "status": "passed",
+      "completion_line_number": 584,
+      "marker_count": 9,
+      "summed_case_duration_seconds": "373.038540310"
+    }
+  ],
+  "deterministic_red": {
+    "source_log": ".questpc/r8-stag-freshness-red.log",
+    "source_log_sha256": "efb3dc9de4693a00e0077a206df555067dd42f3eddc86536006309b0a557eabc",
+    "outcome": "RejectedStaleAuthority",
+    "observed_age_seconds": 6,
+    "test_result": "0 passed; 1 failed",
+    "execution_duration_seconds": "2.82",
+    "preserved": true
+  },
+  "repair_invariants": [
+    "Observe initial Platform security/signing evidence after runtime readiness publication.",
+    "Retain the exact previously published runtime guard.",
+    "Keep the five-second accepted evidence deadline and strict Committed/Active/lease-generation assertions.",
+    "No sleeps, timeout extensions, skipped cases, retries or assertion weakening."
+  ],
+  "limitations": [
+    "The complete central batch failed: 6 tests passed and 10 other tests failed.",
+    "This evidence qualifies these three own tests only, not the complete batch or final native artifact snapshot.",
+    "Lead owns final rerun after new native artifacts and final shared clippy/fmt checks."
+  ],
+  "markers": [
+    {
+      "line_number": 56,
+      "kind": "fresh_session_regression",
+      "test": "gameplay_transport::monk_save::postgres_tests::fresh_session::quest_world_callbacks_stag_fixture_refreshes_security_after_runtime_publication",
+      "case": "delayed_runtime_fresh_security",
+      "duration": "3.351517416s",
+      "duration_seconds": "3.351517416",
+      "raw_line": "STAG_FRESH_SESSION POSTGRES_CASE_COMPLETED delayed_runtime_fresh_security duration=3.351517416s"
+    },
+    {
+      "line_number": 132,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal",
+      "callback_key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-2",
+      "stage": null,
+      "allowed": true,
+      "duration": "39.412961735s",
+      "duration_seconds": "39.412961735",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-2 stage=None allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=39.412961735s"
+    },
+    {
+      "line_number": 167,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal",
+      "callback_key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-3",
+      "stage": null,
+      "allowed": true,
+      "duration": "57.659683989s",
+      "duration_seconds": "57.659683989",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-3 stage=None allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=57.659683989s"
+    },
+    {
+      "line_number": 201,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal",
+      "callback_key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-4",
+      "stage": null,
+      "allowed": true,
+      "duration": "54.35040114s",
+      "duration_seconds": "54.35040114",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-4 stage=None allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=54.35040114s"
+    },
+    {
+      "line_number": 231,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal",
+      "callback_key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-5",
+      "stage": null,
+      "allowed": true,
+      "duration": "39.131106672s",
+      "duration_seconds": "39.131106672",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-5 stage=None allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=39.131106672s"
+    },
+    {
+      "line_number": 261,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal",
+      "callback_key": "oteryn:quest-callback/pirates-tail-cheesy-exit",
+      "stage": null,
+      "allowed": true,
+      "duration": "32.641064621s",
+      "duration_seconds": "32.641064621",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/pirates-tail-cheesy-exit stage=None allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=32.641064621s"
+    },
+    {
+      "line_number": 291,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-boat-return",
+      "stage": null,
+      "allowed": true,
+      "duration": "33.68623994s",
+      "duration_seconds": "33.68623994",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-boat-return stage=None allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=33.68623994s"
+    },
+    {
+      "line_number": 334,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-crypt-exit",
+      "stage": null,
+      "allowed": true,
+      "duration": "68.451628859s",
+      "duration_seconds": "68.451628859",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-crypt-exit stage=None allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=68.451628859s"
+    },
+    {
+      "line_number": 385,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-boat-to-ada",
+      "stage": null,
+      "allowed": false,
+      "duration": "76.730460263s",
+      "duration_seconds": "76.730460263",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-boat-to-ada stage=None allowed=false tracks_unchanged receipts_unchanged revision_unchanged duration=76.730460263s"
+    },
+    {
+      "line_number": 416,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-boat-to-ada",
+      "stage": 2,
+      "allowed": false,
+      "duration": "39.176490514s",
+      "duration_seconds": "39.176490514",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-boat-to-ada stage=Some(2) allowed=false tracks_unchanged receipts_unchanged revision_unchanged duration=39.176490514s"
+    },
+    {
+      "line_number": 449,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-boat-to-ada",
+      "stage": 3,
+      "allowed": true,
+      "duration": "39.550224932s",
+      "duration_seconds": "39.550224932",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-boat-to-ada stage=Some(3) allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=39.550224932s"
+    },
+    {
+      "line_number": 479,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-boat-to-ada",
+      "stage": 13,
+      "allowed": true,
+      "duration": "38.303345519s",
+      "duration_seconds": "38.303345519",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-boat-to-ada stage=Some(13) allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=38.303345519s"
+    },
+    {
+      "line_number": 509,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-mark-wall",
+      "stage": null,
+      "allowed": false,
+      "duration": "35.878893538s",
+      "duration_seconds": "35.878893538",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-mark-wall stage=None allowed=false tracks_unchanged receipts_unchanged revision_unchanged duration=35.878893538s"
+    },
+    {
+      "line_number": 543,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-mark-wall",
+      "stage": 10,
+      "allowed": false,
+      "duration": "39.449588156s",
+      "duration_seconds": "39.449588156",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-mark-wall stage=Some(10) allowed=false tracks_unchanged receipts_unchanged revision_unchanged duration=39.449588156s"
+    },
+    {
+      "line_number": 571,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-mark-wall",
+      "stage": 11,
+      "allowed": true,
+      "duration": "41.689723393s",
+      "duration_seconds": "41.689723393",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-mark-wall stage=Some(11) allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=41.689723393s"
+    },
+    {
+      "line_number": 573,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-mark-wall",
+      "stage": 13,
+      "allowed": true,
+      "duration": "32.824636168s",
+      "duration_seconds": "32.824636168",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-mark-wall stage=Some(13) allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=32.824636168s"
+    },
+    {
+      "line_number": 583,
+      "kind": "literal_callback",
+      "test": "gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::literal_uses::quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes",
+      "callback_key": "oteryn:quest-callback/order-of-the-stag-crypt-exit",
+      "stage": null,
+      "allowed": true,
+      "duration": "29.435177827s",
+      "duration_seconds": "29.435177827",
+      "raw_line": "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/order-of-the-stag-crypt-exit stage=None allowed=true tracks_unchanged receipts_unchanged revision_unchanged duration=29.435177827s"
+    }
+  ]
+}

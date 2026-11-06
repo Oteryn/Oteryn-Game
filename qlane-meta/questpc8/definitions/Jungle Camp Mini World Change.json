@@ -1,0 +1,147 @@
+{
+  "classification": "OTERYN_AUTHORED_APPROXIMATION",
+  "completeness_scope": "CHOSEN_OTERYN_RECIPE_ONLY",
+  "data_complete": true,
+  "definition_profile": "oteryn_authored_v1",
+  "display_name": "Jungle Camp Mini World Change",
+  "identity": {
+    "key": "oteryn:quest.authored.jungle_camp_mini_world_change",
+    "revision": "authored-r1"
+  },
+  "kind": "storyline",
+  "missing_data": [
+    {
+      "code": "quest_native_lowering_missing"
+    },
+    {
+      "code": "authored_trigger_and_delivery_bindings_missing"
+    }
+  ],
+  "native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "canonical_reward_refs": [],
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "provenance": {
+    "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+    "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+  },
+  "readiness": "waiting_native_bindings",
+  "recipe": {
+    "adaptations": [
+      "Both camps become sequential personal encounters rather than a daily random alternate. Five kills in each camp are chosen requirements. The source declares no guaranteed reward, and rare bosses Arthom the Hunter/Oodok Witchmaster are omitted."
+    ],
+    "repeat": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "kind": "once"
+    },
+    "requirements": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "min_level": 0,
+      "premium": true,
+      "prerequisites": []
+    },
+    "reward_intents": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 0,
+        "kind": "none",
+        "name": "No material reward"
+      }
+    ],
+    "source_notes": [
+      "The spoiler describes daily alternation between Hunter/Poacher and Dworc camps; the base reward field is empty.",
+      "All behavior and reward delivery are authored Oteryn choices; named entities are unresolved references, not canonical IDs. Native bindings, locations and runtime execution remain to be implemented."
+    ],
+    "source_refs": [
+      {
+        "content_sha256": "91835c5541a366c6362e0b9c1e76870c0f58e28e4fc4b235e85d22f9b56f1637",
+        "pageid": 76242,
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "revid": 847067,
+        "url": "https://tibia.fandom.com/index.php?curid=76242&oldid=847067"
+      },
+      {
+        "content_sha256": "354305b8ac714a3adb95337a6d2aa7d906533db6803d698ce39c2e0dccaf6588",
+        "pageid": 76243,
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "revid": 887148,
+        "url": "https://tibia.fandom.com/index.php?curid=76243&oldid=887148"
+      }
+    ],
+    "stages": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s1",
+        "kind": "explore",
+        "next": [
+          "s2"
+        ],
+        "objective": "Locate the Hunter Camp in Tiquanda and survey its perimeter.",
+        "targets": [
+          "Tiquanda Hunter Camp"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 5,
+        "key": "s2",
+        "kind": "kill",
+        "next": [
+          "s3"
+        ],
+        "objective": "Clear five hostile Hunters or Poachers from the camp route.",
+        "targets": [
+          "Hunter",
+          "Poacher"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s3",
+        "kind": "explore",
+        "next": [
+          "s4"
+        ],
+        "objective": "Cross to the Dworc Camp and survey its perimeter.",
+        "targets": [
+          "Tiquanda Dworc Camp"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 5,
+        "key": "s4",
+        "kind": "kill",
+        "next": [
+          "s5"
+        ],
+        "objective": "Clear five Dworcs from the second camp route.",
+        "targets": [
+          "Dworc Fleshhunter",
+          "Dworc Venomsniper",
+          "Dworc Voodoomaster"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s5",
+        "kind": "complete",
+        "next": [],
+        "objective": "Record completion and the selected Oteryn reward intents in the character journal.",
+        "targets": [
+          "Jungle Camp Mini World Change"
+        ]
+      }
+    ],
+    "summary": "Scout Tiquanda's competing jungle camps and clear a safe passage through both.",
+    "wiki_title": "Jungle Camp Mini World Change"
+  },
+  "runtime_enabled": false
+}

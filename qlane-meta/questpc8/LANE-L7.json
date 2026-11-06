@@ -1,0 +1,1974 @@
+{
+ "id": "L7",
+ "mechanisms": [
+  "native_reward_source_placement",
+  "calendar_repeatable_random_rewards",
+  "asymmetric_map_effects_multi_actor_moves"
+ ],
+ "entries": [
+  {
+   "canonical": "oteryn:quest.giant_smithhammer_quest",
+   "title": "Giant Smithhammer Quest",
+   "from_lane": "questpc7",
+   "status": "BLOCKED",
+   "mechanism": "asymmetric_map_effects_multi_actor_moves",
+   "titles": [
+    "Giant Smithhammer Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc7"
+   ],
+   "blocker": {
+    "kind": "shared_engine_dependency",
+    "dependency": "qengine.asymmetric_lever",
+    "missing_piece": "UID30024 must remove rock389 only when lever2772 and the remote rock coexist, and recreate it only when lever2773 and the rock is absent. In the other two combinations it leaves both unchanged. The current callback always toggles its own lever before preparing the configured passage; it has no remote-presence branch/no-op predicate. The owner assigned asymmetric levers to qengine. Reward receipts cannot prove this required source callback.",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/49/definition",
+     "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:62",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+    ],
+    "attempts": [
+     "Extracted both donor lever.lua bodies; compared all four lever/rock states to the current executor. Found the three reward claims under Explorer Society and added their exact source-position/item/quantity PG cohort; retained the accepted PR2770 Q5/A Item12510 substitute rather than overriding that decision."
+    ],
+    "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+   },
+   "sources": [
+    {
+     "title": "Giant Smithhammer Quest",
+     "canonical": "oteryn:quest.giant_smithhammer_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Plains of Havoc giant-smith cache) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/49/definition",
+       "content/quests/missions/completion-binding-plan.json:1#/records/119"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/111",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/49/definition",
+      "content/quests/missions/completion-binding-plan.json:1#/records/119"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Locate the smith's hidden cache in the Plains of Havoc.",
+      "targets": [
+       "Plains of Havoc giant-smith cache"
+      ]
+     }
+    },
+    {
+     "title": "Giant Smithhammer Quest",
+     "canonical": "oteryn:quest.giant_smithhammer_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc7",
+     "status": "BLOCKED",
+     "blocker": {
+      "kind": "shared_engine_dependency",
+      "dependency": "qengine.asymmetric_lever",
+      "missing_piece": "UID30024 must remove rock389 only when lever2772 and the remote rock coexist, and recreate it only when lever2773 and the rock is absent. In the other two combinations it leaves both unchanged. The current callback always toggles its own lever before preparing the configured passage; it has no remote-presence branch/no-op predicate. The owner assigned asymmetric levers to qengine. Reward receipts cannot prove this required source callback.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/49/definition",
+       "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:62",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+      ],
+      "attempts": [
+       "Extracted both donor lever.lua bodies; compared all four lever/rock states to the current executor. Found the three reward claims under Explorer Society and added their exact source-position/item/quantity PG cohort; retained the accepted PR2770 Q5/A Item12510 substitute rather than overriding that decision."
+      ],
+      "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+     },
+     "source": "in/questpc7.json#/14",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/49/definition",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:62",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Locate the smith's hidden cache in the Plains of Havoc.",
+      "targets": [
+       "Plains of Havoc giant-smith cache"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/111",
+    "in/questpc7.json#/14"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.life_ring_quest",
+   "title": "Life Ring Quest",
+   "from_lane": "questpc8",
+   "status": "BLOCKED",
+   "mechanism": "asymmetric_map_effects_multi_actor_moves",
+   "titles": [
+    "Life Ring Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc8"
+   ],
+   "blocker": {
+    "missing_piece": "The drawbridge must relocate all occupants when its six tiles close. The shared callback closes passages only when unoccupied and teleports only the triggering player. Implementing a private quest callback cannot add the missing multi-actor sealed movement/map commit. This relocation/reset feature is expressly reserved to qengine.",
+    "owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/67/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+     "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:82",
+     ".questpc8/wiki/Life Ring Quest_Spoiler.wiki:16"
+    ],
+    "attempts": [
+     "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+     "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+     "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+    ],
+    "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Life Ring Quest",
+     "canonical": "oteryn:quest.life_ring_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "AID30007 bridge toggle must relocate every creature on all six bridge tiles to32409,32231,z10 before changing water4610/bridge5770. Callback.teleport and execute.rs teleport only the clicking actor; no multi-occupant movement+map atomic batch exists. Shared displacement/party world engine belongs to QENGINE; an empty-bridge fixture would hide the reachable occupant path.",
+      "evidence": [
+       ".questpc/source-engine-gaps/actions_life_ring_lever.lua:26",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:126",
+       "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:142",
+       ".questpc/restart12-next-source-packets.json"
+      ],
+      "attempts": [
+       "Read and hash-verified the exact donor bridge script from the retained corpus.",
+       "Inspected Passage replacement/reversible support and the production callback teleport/map commit consumer. Ground replacement can express the visual bridge, but only one actor teleport is prepared/applied; source occupancy displacement cannot be composed in this lane module without the shared movement owner.",
+       "Kept all six source positions and the occupant requirement; did not qualify a reward-only or empty bridge surrogate."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/156",
+     "evidence": [
+      ".questpc/source-engine-gaps/actions_life_ring_lever.lua:26",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:126",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:142",
+      ".questpc/restart12-next-source-packets.json"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Locate the hidden Life Ring cave route near Thais.",
+      "targets": [
+       "Thais Life Ring cave route"
+      ]
+     }
+    },
+    {
+     "title": "Life Ring Quest",
+     "canonical": "oteryn:quest.life_ring_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc8",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "The drawbridge must relocate all occupants when its six tiles close. The shared callback closes passages only when unoccupied and teleports only the triggering player. Implementing a private quest callback cannot add the missing multi-actor sealed movement/map commit. This relocation/reset feature is expressly reserved to qengine.",
+      "owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/67/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+       "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:82",
+       ".questpc8/wiki/Life Ring Quest_Spoiler.wiki:16"
+      ],
+      "attempts": [
+       "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+       "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+       "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc8.json#/17",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/67/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:82",
+      ".questpc8/wiki/Life Ring Quest_Spoiler.wiki:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Locate the hidden Life Ring cave route near Thais.",
+      "targets": [
+       "Thais Life Ring cave route"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/156",
+    "in/questpc8.json#/17"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.mintwallin_cyclops_quest",
+   "title": "Mintwallin Cyclops Quest",
+   "from_lane": "questpc8",
+   "status": "BLOCKED",
+   "mechanism": "asymmetric_map_effects_multi_actor_moves",
+   "titles": [
+    "Mintwallin Cyclops Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc8"
+   ],
+   "blocker": {
+    "missing_piece": "The one-shot source lever removes itself, creates two blocking walls and removes nine others until floor reset. Callback has a two-appearance lever, a symmetric close flag and MAX_EFFECTS8; neither self-removal/reset nor the11 map effects fit. This asymmetric lever/reset engine is expressly reserved to qengine.",
+    "owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00000-00099.json:1#/records/60/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+     "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:60",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:12",
+     ".questpc8/wiki/Mintwallin Cyclops Quest_Spoiler.wiki:27"
+    ],
+    "attempts": [
+     "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+     "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+     "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+    ],
+    "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Mintwallin Cyclops Quest",
+     "canonical": "oteryn:quest.mintwallin_cyclops_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Source actionaid30008 removes its own lever, creates two fresh1270 walls at32592,32105/32106,z14 and removes nine1271 walls along32593..32601,32104,z14. The existing Passage callback only mutates bound existing entries; it has no absent-entry creation operand or asymmetric lever transaction. QENGINE owns the shared asymmetric lever/create/remove path, outside this lane module.",
+      "evidence": [
+       ".questpc/source-engine-gaps/mintwallin_asymmetric_lever.lua:9",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:40",
+       ".questpc/restart11-source-engine-gaps.json:1",
+       ".questpc/NOTE-coordination.md:16"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary.",
+       "Read and SHA256-verified the exact raw source blob from the already downloaded portable donor corpus; no new external fetch.",
+       "Compared source edge and create/remove/occupant requirements with the current production Callback/Trigger/Passage schema and current QENGINE allocation.",
+       "Retained existing native reward receipts without promoting them to a complete path. Did not replace StepOut with StepIn, bypass party conditions or invent absent map entries."
+      ],
+      "other_unfinished_composition": "The source contract includes item_consume and world_object; the chest scenario does not exercise that offering/access path.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/176",
+     "evidence": [
+      ".questpc/source-engine-gaps/mintwallin_asymmetric_lever.lua:9",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:40",
+      ".questpc/restart11-source-engine-gaps.json:1",
+      ".questpc/NOTE-coordination.md:16"
+     ],
+     "first_unqualified_stage": null
+    },
+    {
+     "title": "Mintwallin Cyclops Quest",
+     "canonical": "oteryn:quest.mintwallin_cyclops_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc8",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "The one-shot source lever removes itself, creates two blocking walls and removes nine others until floor reset. Callback has a two-appearance lever, a symmetric close flag and MAX_EFFECTS8; neither self-removal/reset nor the11 map effects fit. This asymmetric lever/reset engine is expressly reserved to qengine.",
+      "owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00000-00099.json:1#/records/60/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+       "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:60",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:12",
+       ".questpc8/wiki/Mintwallin Cyclops Quest_Spoiler.wiki:27"
+      ],
+      "attempts": [
+       "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+       "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+       "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc8.json#/31",
+     "evidence": [
+      "content/quests/definitions/quests-00000-00099.json:1#/records/60/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:60",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:12",
+      ".questpc8/wiki/Mintwallin Cyclops Quest_Spoiler.wiki:27"
+     ],
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/176",
+    "in/questpc8.json#/31"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.triangle_tower_quest",
+   "title": "Triangle Tower Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "asymmetric_map_effects_multi_actor_moves",
+   "titles": [
+    "Triangle Tower Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "UID30034 needs asymmetric wall remove1270/close1025; the reversible generic wall rule does not implement this source selector. Full source reward bag passed.",
+    "source": ".questpc4/evidence/wiki/Triangle Tower Quest_Spoiler.wiki:3",
+    "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+    "canonical_json_pointer": "/records/95/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Triangle Tower Quest_Spoiler.wiki:3; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/95/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Triangle Tower Quest",
+     "canonical": "oteryn:quest.triangle_tower_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "UID30034 needs asymmetric wall remove1270/close1025; the reversible generic wall rule does not implement this source selector. Full source reward bag passed.",
+      "source": ".questpc4/evidence/wiki/Triangle Tower Quest_Spoiler.wiki:3",
+      "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+      "canonical_json_pointer": "/records/95/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Triangle Tower Quest_Spoiler.wiki:3; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/95/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/75",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/75"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.waterfall_quest",
+   "title": "Waterfall Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "asymmetric_map_effects_multi_actor_moves",
+   "titles": [
+    "Waterfall Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "All three teleports and the bag passed, but the source-facing changes and splash effect are absent from the admitted callback representation.",
+    "source": ".questpc4/evidence/wiki/Waterfall Quest_Spoiler.wiki:1",
+    "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+    "canonical_json_pointer": "/records/99/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Waterfall Quest_Spoiler.wiki:1; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/99/definition).",
+     "Compared the current native callback registry: 3 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [
+     "oteryn:quest-callback/waterfall-cave-entry",
+     "oteryn:quest-callback/waterfall-cave-exit",
+     "oteryn:quest-callback/waterfall-cliff"
+    ],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Waterfall Quest",
+     "canonical": "oteryn:quest.waterfall_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "All three teleports and the bag passed, but the source-facing changes and splash effect are absent from the admitted callback representation.",
+      "source": ".questpc4/evidence/wiki/Waterfall Quest_Spoiler.wiki:1",
+      "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+      "canonical_json_pointer": "/records/99/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Waterfall Quest_Spoiler.wiki:1; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/99/definition).",
+       "Compared the current native callback registry: 3 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [
+       "oteryn:quest-callback/waterfall-cave-entry",
+       "oteryn:quest-callback/waterfall-cave-exit",
+       "oteryn:quest-callback/waterfall-cliff"
+      ],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/90",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/90"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.the_colours_of_magic",
+   "title": "The Colours of Magic",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "calendar_repeatable_random_rewards",
+   "titles": [
+    "The Colours of Magic"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The powder-to-participant interaction needs event-calendar and team-color authority plus source-qualified reward inputs; the authored recipe has no such native binding.",
+    "source": ".questpc4/evidence/wiki/The Colours of Magic_Spoiler.wiki:4",
+    "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
+    "canonical_json_pointer": "/records/38/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Colours of Magic_Spoiler.wiki:4; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/38/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "The Colours of Magic",
+     "canonical": "oteryn:quest.authored.the_colours_of_magic",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The powder-to-participant interaction needs event-calendar and team-color authority plus source-qualified reward inputs; the authored recipe has no such native binding.",
+      "source": ".questpc4/evidence/wiki/The Colours of Magic_Spoiler.wiki:4",
+      "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
+      "canonical_json_pointer": "/records/38/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Colours of Magic_Spoiler.wiki:4; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/38/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/10",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/10"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.the_secret_library_quest",
+   "title": "The Secret Library Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "calendar_repeatable_random_rewards",
+   "titles": [
+    "The Secret Library Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "Six Falcon chests require random output plus24-hour cooldown, and key0909 remains held; the once-only source fixture cannot represent that reward contract.",
+    "source": ".questpc4/evidence/wiki/The Secret Library Quest_Spoiler.wiki:7",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/40/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Secret Library Quest_Spoiler.wiki:7; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/40/definition).",
+     "Compared the current native callback registry: 15 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [
+     "oteryn:quest-callback/secret-library-darashia-challenge-return",
+     "oteryn:quest-callback/secret-library-darashia-color-return",
+     "oteryn:quest-callback/secret-library-darashia-return",
+     "oteryn:quest-callback/secret-library-falcon-access",
+     "oteryn:quest-callback/secret-library-falcon-anteroom-return",
+     "oteryn:quest-callback/secret-library-ghulosh-exit",
+     "oteryn:quest-callback/secret-library-gorzindel-exit",
+     "oteryn:quest-callback/secret-library-liquid-ruins-return",
+     "oteryn:quest-callback/secret-library-liquid-temple-return",
+     "oteryn:quest-callback/secret-library-lokathmor-exit",
+     "oteryn:quest-callback/secret-library-main-ascent",
+     "oteryn:quest-callback/secret-library-main-descent",
+     "oteryn:quest-callback/secret-library-mazzinor-exit",
+     "oteryn:quest-callback/secret-library-museum-last-room",
+     "oteryn:quest-callback/secret-library-svargrond-return"
+    ],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "The Secret Library Quest",
+     "canonical": "oteryn:quest.the_secret_library_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "Six Falcon chests require random output plus24-hour cooldown, and key0909 remains held; the once-only source fixture cannot represent that reward contract.",
+      "source": ".questpc4/evidence/wiki/The Secret Library Quest_Spoiler.wiki:7",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/40/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Secret Library Quest_Spoiler.wiki:7; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/40/definition).",
+       "Compared the current native callback registry: 15 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [
+       "oteryn:quest-callback/secret-library-darashia-challenge-return",
+       "oteryn:quest-callback/secret-library-darashia-color-return",
+       "oteryn:quest-callback/secret-library-darashia-return",
+       "oteryn:quest-callback/secret-library-falcon-access",
+       "oteryn:quest-callback/secret-library-falcon-anteroom-return",
+       "oteryn:quest-callback/secret-library-ghulosh-exit",
+       "oteryn:quest-callback/secret-library-gorzindel-exit",
+       "oteryn:quest-callback/secret-library-liquid-ruins-return",
+       "oteryn:quest-callback/secret-library-liquid-temple-return",
+       "oteryn:quest-callback/secret-library-lokathmor-exit",
+       "oteryn:quest-callback/secret-library-main-ascent",
+       "oteryn:quest-callback/secret-library-main-descent",
+       "oteryn:quest-callback/secret-library-mazzinor-exit",
+       "oteryn:quest-callback/secret-library-museum-last-room",
+       "oteryn:quest-callback/secret-library-svargrond-return"
+      ],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/47",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/47"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.the_travelling_trader_quest",
+   "title": "The Travelling Trader Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "calendar_repeatable_random_rewards",
+   "titles": [
+    "The Travelling Trader Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "Rashid's weekday-specific tests, item hand-ins and final merchant service entitlement lack a native calendar/transaction binding; one delivery callback is insufficient.",
+    "source": ".questpc4/evidence/wiki/The Travelling Trader Quest_Spoiler.wiki:19",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/45/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Travelling Trader Quest_Spoiler.wiki:19; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/45/definition).",
+     "Compared the current native callback registry: 2 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [
+     "oteryn:quest-callback/outlaw-camp-door",
+     "oteryn:quest-callback/travelling-trader-delivery"
+    ],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "The Travelling Trader Quest",
+     "canonical": "oteryn:quest.the_travelling_trader_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "Rashid's weekday-specific tests, item hand-ins and final merchant service entitlement lack a native calendar/transaction binding; one delivery callback is insufficient.",
+      "source": ".questpc4/evidence/wiki/The Travelling Trader Quest_Spoiler.wiki:19",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/45/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Travelling Trader Quest_Spoiler.wiki:19; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/45/definition).",
+       "Compared the current native callback registry: 2 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [
+       "oteryn:quest-callback/outlaw-camp-door",
+       "oteryn:quest-callback/travelling-trader-delivery"
+      ],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/53",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/53"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.tibia_anniversary",
+   "title": "Tibia Anniversary",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "calendar_repeatable_random_rewards",
+   "titles": [
+    "Tibia Anniversary"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The recurring anniversary pinata/sewing interactions lack exact native event and reward-instance bindings in the selected authored recipe.",
+    "source": ".questpc4/evidence/wiki/Tibia Anniversary_Spoiler.wiki:4",
+    "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
+    "canonical_json_pointer": "/records/43/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Tibia Anniversary_Spoiler.wiki:4; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/43/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Tibia Anniversary",
+     "canonical": "oteryn:quest.authored.tibia_anniversary",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The recurring anniversary pinata/sewing interactions lack exact native event and reward-instance bindings in the selected authored recipe.",
+      "source": ".questpc4/evidence/wiki/Tibia Anniversary_Spoiler.wiki:4",
+      "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
+      "canonical_json_pointer": "/records/43/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Tibia Anniversary_Spoiler.wiki:4; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/43/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/61",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/61"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.tinder_box_quest_chyllfroest",
+   "title": "Tinder Box Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "calendar_repeatable_random_rewards",
+   "titles": [
+    "Tinder Box Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "UID3263's source Apr1-May1/20-hour reward differs from the chosen permanent once-only recipe; native calendar/claim binding for that selected recipe is absent.",
+    "source": ".questpc4/evidence/wiki/Tinder Box Quest_Spoiler.wiki:1",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/53/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Tinder Box Quest_Spoiler.wiki:1; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/53/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Tinder Box Quest",
+     "canonical": "oteryn:quest.tinder_box_quest_chyllfroest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "UID3263's source Apr1-May1/20-hour reward differs from the chosen permanent once-only recipe; native calendar/claim binding for that selected recipe is absent.",
+      "source": ".questpc4/evidence/wiki/Tinder Box Quest_Spoiler.wiki:1",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/53/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Tinder Box Quest_Spoiler.wiki:1; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/53/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/64",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/64"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.treasure_island_quest",
+   "title": "Treasure Island Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "calendar_repeatable_random_rewards",
+   "titles": [
+    "Treasure Island Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "Pirate Treasure Map selection/consumption and the corresponding random buried reward lack a source-qualified native harvest/receipt binding.",
+    "source": ".questpc4/evidence/wiki/Treasure Island Quest_Spoiler.wiki:7",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/82/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Treasure Island Quest_Spoiler.wiki:7; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/82/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Treasure Island Quest",
+     "canonical": "oteryn:quest.treasure_island_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "Pirate Treasure Map selection/consumption and the corresponding random buried reward lack a source-qualified native harvest/receipt binding.",
+      "source": ".questpc4/evidence/wiki/Treasure Island Quest_Spoiler.wiki:7",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/82/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Treasure Island Quest_Spoiler.wiki:7; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/82/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/74",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/74"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.venore_daily_tasks_quest",
+   "title": "Venore Daily Tasks Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "calendar_repeatable_random_rewards",
+   "titles": [
+    "Venore Daily Tasks Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "Norman/Scott/Frank tasks require real treadmill/crane/grindstone/pathfinder effects and repeatable task receipts; the selected authored recipe lacks native bindings.",
+    "source": ".questpc4/evidence/wiki/Venore Daily Tasks Quest_Spoiler.wiki:8",
+    "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
+    "canonical_json_pointer": "/records/47/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Venore Daily Tasks Quest_Spoiler.wiki:8; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/47/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Venore Daily Tasks Quest",
+     "canonical": "oteryn:quest.authored.venore_daily_tasks_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "Norman/Scott/Frank tasks require real treadmill/crane/grindstone/pathfinder effects and repeatable task receipts; the selected authored recipe lacks native bindings.",
+      "source": ".questpc4/evidence/wiki/Venore Daily Tasks Quest_Spoiler.wiki:8",
+      "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
+      "canonical_json_pointer": "/records/47/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Venore Daily Tasks Quest_Spoiler.wiki:8; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/47/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/84",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/84"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.winterlight_solstice",
+   "title": "Winterlight Solstice",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "calendar_repeatable_random_rewards",
+   "titles": [
+    "Winterlight Solstice"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The seasonal Percht disguise/torch/fire sequence and final reward epoch lack a native calendar, appearance and world-encounter binding.",
+    "source": ".questpc4/evidence/wiki/Winterlight Solstice_Spoiler.wiki:2",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/64/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Winterlight Solstice_Spoiler.wiki:2; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/64/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Winterlight Solstice",
+     "canonical": "oteryn:quest.winterlight_solstice",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The seasonal Percht disguise/torch/fire sequence and final reward epoch lack a native calendar, appearance and world-encounter binding.",
+      "source": ".questpc4/evidence/wiki/Winterlight Solstice_Spoiler.wiki:2",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/64/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Winterlight Solstice_Spoiler.wiki:2; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/64/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/95",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/95"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+   "title": "Kingdom of Kormarak Quest",
+   "from_lane": "questpc8",
+   "status": "BLOCKED",
+   "mechanism": "native_reward_source_placement",
+   "titles": [
+    "Kingdom of Kormarak Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc8"
+   ],
+   "blocker": {
+    "missing_piece": "Missing native authored RewardClaim placement authority for the dead-human reward (Brass Armor, Brass Helmet, Hatchet,13 Throwing Stars). The shared binder requires a crystalserver legacy unique ID and rejects native authored selectors with NoCrystalUniqueId. The selected authored recipe has no donor claim that can legally be reused for these chosen rewards. A lane-only NPC/callback module cannot change the trusted map/RewardClaim binding contract and boot consumer; assigning a Crystal ID would counterfeit source provenance. Current regression test exercises that rejection on the actual binder.",
+    "owner": "shared-native-placement-owner",
+    "evidence": [
+     "content/quests/definitions/quests-00300-00351.json:1#/records/9/definition",
+     "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+     "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+    ],
+    "attempts": [
+     "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+     "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+     "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+    ],
+    "recheck": "Reopen when shared-native-placement-owner supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Kingdom of Kormarak Quest",
+     "canonical": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Thais Ancient Temple) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/9/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Kingdom of Kormarak Quest",
+       "content/quests/missions/completion-binding-plan.json:1#/records/25"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/149",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/9/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Kingdom of Kormarak Quest",
+      "content/quests/missions/completion-binding-plan.json:1#/records/25"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter the Ancient Temple under Thais and follow the north ladder route.",
+      "targets": [
+       "Thais Ancient Temple"
+      ]
+     }
+    },
+    {
+     "title": "Kingdom of Kormarak Quest",
+     "canonical": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc8",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Missing native authored RewardClaim placement authority for the dead-human reward (Brass Armor, Brass Helmet, Hatchet,13 Throwing Stars). The shared binder requires a crystalserver legacy unique ID and rejects native authored selectors with NoCrystalUniqueId. The selected authored recipe has no donor claim that can legally be reused for these chosen rewards. A lane-only NPC/callback module cannot change the trusted map/RewardClaim binding contract and boot consumer; assigning a Crystal ID would counterfeit source provenance. Current regression test exercises that rejection on the actual binder.",
+      "owner": "shared-native-placement-owner",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/9/definition",
+       "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+       "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+      ],
+      "attempts": [
+       "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+       "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+       "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when shared-native-placement-owner supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc8.json#/10",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/9/definition",
+      "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter the Ancient Temple under Thais and follow the north ladder route.",
+      "targets": [
+       "Thais Ancient Temple"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/149",
+    "in/questpc8.json#/10"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.magic_sword_quest",
+   "title": "Magic Sword Quest",
+   "from_lane": "questpc8",
+   "status": "BLOCKED",
+   "mechanism": "native_reward_source_placement",
+   "titles": [
+    "Magic Sword Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc8"
+   ],
+   "blocker": {
+    "missing_piece": "Missing native authored RewardClaim placement authority for the two southern Mintwallin vault rewards, with the chosen once-only sword/armour/wand allocation. The shared binder requires a crystalserver legacy unique ID and rejects native authored selectors with NoCrystalUniqueId. The selected authored recipe has no donor claim that can legally be reused for these chosen rewards. A lane-only NPC/callback module cannot change the trusted map/RewardClaim binding contract and boot consumer; assigning a Crystal ID would counterfeit source provenance. Current regression test exercises that rejection on the actual binder.",
+    "owner": "shared-native-placement-owner",
+    "evidence": [
+     "content/quests/definitions/quests-00300-00351.json:1#/records/14/definition",
+     "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+     "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+    ],
+    "attempts": [
+     "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+     "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+     "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+    ],
+    "recheck": "Reopen when shared-native-placement-owner supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Magic Sword Quest",
+     "canonical": "oteryn:quest.authored.magic_sword_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: southern Mintwallin archival vault) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/14/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Magic Sword Quest",
+       "content/quests/missions/completion-binding-plan.json:1#/records/30"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/167",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/14/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Magic Sword Quest",
+      "content/quests/missions/completion-binding-plan.json:1#/records/30"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the southern Mintwallin vault entrance and climb to the upper demon chamber.",
+      "targets": [
+       "southern Mintwallin archival vault"
+      ]
+     }
+    },
+    {
+     "title": "Magic Sword Quest",
+     "canonical": "oteryn:quest.authored.magic_sword_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc8",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Missing native authored RewardClaim placement authority for the two southern Mintwallin vault rewards, with the chosen once-only sword/armour/wand allocation. The shared binder requires a crystalserver legacy unique ID and rejects native authored selectors with NoCrystalUniqueId. The selected authored recipe has no donor claim that can legally be reused for these chosen rewards. A lane-only NPC/callback module cannot change the trusted map/RewardClaim binding contract and boot consumer; assigning a Crystal ID would counterfeit source provenance. Current regression test exercises that rejection on the actual binder.",
+      "owner": "shared-native-placement-owner",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/14/definition",
+       "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+       "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+      ],
+      "attempts": [
+       "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+       "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+       "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when shared-native-placement-owner supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc8.json#/25",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/14/definition",
+      "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the southern Mintwallin vault entrance and climb to the upper demon chamber.",
+      "targets": [
+       "southern Mintwallin archival vault"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/167",
+    "in/questpc8.json#/25"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.mastermind_potion_quest",
+   "title": "Mastermind Potion Quest",
+   "from_lane": "questpc8",
+   "status": "BLOCKED",
+   "mechanism": "native_reward_source_placement",
+   "titles": [
+    "Mastermind Potion Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc8"
+   ],
+   "blocker": {
+    "missing_piece": "Missing native authored RewardClaim placement authority for the two personal Formorgar caches and chosen consolidated201-gold reward. The shared binder requires a crystalserver legacy unique ID and rejects native authored selectors with NoCrystalUniqueId. The selected authored recipe has no donor claim that can legally be reused for these chosen rewards. A lane-only NPC/callback module cannot change the trusted map/RewardClaim binding contract and boot consumer; assigning a Crystal ID would counterfeit source provenance. Current regression test exercises that rejection on the actual binder.",
+    "owner": "shared-native-placement-owner",
+    "evidence": [
+     "content/quests/definitions/quests-00300-00351.json:1#/records/16/definition",
+     "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+     "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+    ],
+    "attempts": [
+     "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+     "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+     "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+    ],
+    "recheck": "Reopen when shared-native-placement-owner supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Mastermind Potion Quest",
+     "canonical": "oteryn:quest.authored.mastermind_potion_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Formorgar Mines first cache route) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/16/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Mastermind Potion Quest",
+       "content/quests/missions/completion-binding-plan.json:1#/records/32"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/171",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/16/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Mastermind Potion Quest",
+      "content/quests/missions/completion-binding-plan.json:1#/records/32"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter Formorgar Mines and descend the first marked route past the Nightmare floor.",
+      "targets": [
+       "Formorgar Mines first cache route"
+      ]
+     }
+    },
+    {
+     "title": "Mastermind Potion Quest",
+     "canonical": "oteryn:quest.authored.mastermind_potion_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc8",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Missing native authored RewardClaim placement authority for the two personal Formorgar caches and chosen consolidated201-gold reward. The shared binder requires a crystalserver legacy unique ID and rejects native authored selectors with NoCrystalUniqueId. The selected authored recipe has no donor claim that can legally be reused for these chosen rewards. A lane-only NPC/callback module cannot change the trusted map/RewardClaim binding contract and boot consumer; assigning a Crystal ID would counterfeit source provenance. Current regression test exercises that rejection on the actual binder.",
+      "owner": "shared-native-placement-owner",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/16/definition",
+       "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+       "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+      ],
+      "attempts": [
+       "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+       "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+       "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when shared-native-placement-owner supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc8.json#/29",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/16/definition",
+      "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter Formorgar Mines and descend the first marked route past the Nightmare floor.",
+      "targets": [
+       "Formorgar Mines first cache route"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/171",
+    "in/questpc8.json#/29"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.mystery_of_the_valley_quest",
+   "title": "Mystery of the Valley Quest",
+   "from_lane": "questpc8",
+   "status": "BLOCKED",
+   "mechanism": "native_reward_source_placement",
+   "titles": [
+    "Mystery of the Valley Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc8"
+   ],
+   "blocker": {
+    "missing_piece": "Missing native authored RewardClaim placement authority for the three distinct shrine fragments and final Guardian Statue reward. The shared binder requires a crystalserver legacy unique ID and rejects native authored selectors with NoCrystalUniqueId. The selected authored recipe has no donor claim that can legally be reused for these chosen rewards. A lane-only NPC/callback module cannot change the trusted map/RewardClaim binding contract and boot consumer; assigning a Crystal ID would counterfeit source provenance. Current regression test exercises that rejection on the actual binder.",
+    "owner": "shared-native-placement-owner",
+    "evidence": [
+     "content/quests/definitions/quests-00300-00351.json:1#/records/18/definition",
+     "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+     "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+    ],
+    "attempts": [
+     "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+     "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+     "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+    ],
+    "recheck": "Reopen when shared-native-placement-owner supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Mystery of the Valley Quest",
+     "canonical": "oteryn:quest.authored.mystery_of_the_valley_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s2 (collect: Fragment of a Statue (1st), Inukaya Shrine) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/18/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Mystery of the Valley Quest",
+       "content/quests/missions/completion-binding-plan.json:1#/records/34"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/177",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/18/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Mystery of the Valley Quest",
+      "content/quests/missions/completion-binding-plan.json:1#/records/34"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Odszukaj świątynię Inukayi i odbierz pierwszy fragment statuy.",
+      "targets": [
+       "Fragment of a Statue (1st)",
+       "Inukaya Shrine"
+      ]
+     }
+    },
+    {
+     "title": "Mystery of the Valley Quest",
+     "canonical": "oteryn:quest.authored.mystery_of_the_valley_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc8",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Missing native authored RewardClaim placement authority for the three distinct shrine fragments and final Guardian Statue reward. The shared binder requires a crystalserver legacy unique ID and rejects native authored selectors with NoCrystalUniqueId. The selected authored recipe has no donor claim that can legally be reused for these chosen rewards. A lane-only NPC/callback module cannot change the trusted map/RewardClaim binding contract and boot consumer; assigning a Crystal ID would counterfeit source provenance. Current regression test exercises that rejection on the actual binder.",
+      "owner": "shared-native-placement-owner",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/18/definition",
+       "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+       "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+      ],
+      "attempts": [
+       "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+       "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+       "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when shared-native-placement-owner supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc8.json#/32",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/18/definition",
+      "crates/gameplay/content/src/content/world_reward_claims.rs:1047",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_reward_claims.rs:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Odszukaj świątynię Inukayi i odbierz pierwszy fragment statuy.",
+      "targets": [
+       "Fragment of a Statue (1st)",
+       "Inukaya Shrine"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/177",
+    "in/questpc8.json#/32"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.torch_quest",
+   "title": "Torch Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "native_reward_source_placement",
+   "titles": [
+    "Torch Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The chosen recipe restores an obsolete quest, but its Academy lever/reward target has no canonical modern placement/UID binding; no target is invented from prose.",
+    "source": ".questpc4/evidence/wiki/Torch Quest_Spoiler.wiki:1",
+    "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
+    "canonical_json_pointer": "/records/45/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Torch Quest_Spoiler.wiki:1; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/45/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Torch Quest",
+     "canonical": "oteryn:quest.authored.torch_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The chosen recipe restores an obsolete quest, but its Academy lever/reward target has no canonical modern placement/UID binding; no target is invented from prose.",
+      "source": ".questpc4/evidence/wiki/Torch Quest_Spoiler.wiki:1",
+      "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
+      "canonical_json_pointer": "/records/45/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Torch Quest_Spoiler.wiki:1; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/45/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/71",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/71"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.vampire_shield_quest",
+   "title": "Vampire Shield Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "native_reward_source_placement",
+   "titles": [
+    "Vampire Shield Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "Native doors5102 at(33190,31684,-14)/(33195,31684,-14) have attrs=None, so neither carries the required1070 level70 action. Generic expertise-door support already exists; exact source placement/action admission is missing. The retained corpus contains no startup/tables/door_level.lua to resolve that binding without inventing it.",
+    "source": ".questpc4/evidence/wiki/Vampire Shield Quest_Spoiler.wiki:9",
+    "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+    "canonical_json_pointer": "/records/98/definition",
+    "native_evidence": [
+     ".questpc4/VAMPIRE-GATE-CENSUS.json:1",
+     "crates/gameplay/world/src/map/facts.rs:220",
+     "crates/gameplay/world/src/map/door_registry.rs:278"
+    ],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Vampire Shield Quest_Spoiler.wiki:9; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/98/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects.",
+     "Decoded native B3 region-z14-x129-y123; both level doors5102 have no attributes. Searched the retained corpus archive for startup/tables/door_level.lua; no matching member exists. Generic expertise-door support was found and retained."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Vampire Shield Quest",
+     "canonical": "oteryn:quest.vampire_shield_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "Native doors5102 at(33190,31684,-14)/(33195,31684,-14) have attrs=None, so neither carries the required1070 level70 action. Generic expertise-door support already exists; exact source placement/action admission is missing. The retained corpus contains no startup/tables/door_level.lua to resolve that binding without inventing it.",
+      "source": ".questpc4/evidence/wiki/Vampire Shield Quest_Spoiler.wiki:9",
+      "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+      "canonical_json_pointer": "/records/98/definition",
+      "native_evidence": [
+       ".questpc4/VAMPIRE-GATE-CENSUS.json:1",
+       "crates/gameplay/world/src/map/facts.rs:220",
+       "crates/gameplay/world/src/map/door_registry.rs:278"
+      ],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Vampire Shield Quest_Spoiler.wiki:9; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/98/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects.",
+       "Decoded native B3 region-z14-x129-y123; both level doors5102 have no attributes. Searched the retained corpus archive for startup/tables/door_level.lua; no matching member exists. Generic expertise-door support was found and retained."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/83",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/83"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.voodoo_doll_quest",
+   "title": "Voodoo Doll Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "native_reward_source_placement",
+   "titles": [
+    "Voodoo Doll Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The source shows swamp reward boxes but the chosen authored recipe supplies no canonical chest UIDs/native selectors; no arbitrary placement is substituted.",
+    "source": ".questpc4/evidence/wiki/Voodoo Doll Quest_Spoiler.wiki:9",
+    "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
+    "canonical_json_pointer": "/records/48/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Voodoo Doll Quest_Spoiler.wiki:9; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/48/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Voodoo Doll Quest",
+     "canonical": "oteryn:quest.authored.voodoo_doll_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The source shows swamp reward boxes but the chosen authored recipe supplies no canonical chest UIDs/native selectors; no arbitrary placement is substituted.",
+      "source": ".questpc4/evidence/wiki/Voodoo Doll Quest_Spoiler.wiki:9",
+      "canonical_location": "content/quests/definitions/quests-00300-00351.json:1",
+      "canonical_json_pointer": "/records/48/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Voodoo Doll Quest_Spoiler.wiki:9; checked the selected canonical definition at content/quests/definitions/quests-00300-00351.json:1 (/records/48/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/85",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/85"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.wrath_of_the_emperor_quest",
+   "title": "Wrath of the Emperor Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "native_reward_source_placement",
+   "titles": [
+    "Wrath of the Emperor Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "UID14092 is Canary-only without a pinned Crystal counterpart in the shared source fixture; the Magistratus/dragon-dream storyline also needs its own qualified completion route.",
+    "source": ".questpc4/evidence/wiki/Wrath of the Emperor Quest_Spoiler.wiki:102",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/65/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Wrath of the Emperor Quest_Spoiler.wiki:102; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/65/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Wrath of the Emperor Quest",
+     "canonical": "oteryn:quest.wrath_of_the_emperor_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "UID14092 is Canary-only without a pinned Crystal counterpart in the shared source fixture; the Magistratus/dragon-dream storyline also needs its own qualified completion route.",
+      "source": ".questpc4/evidence/wiki/Wrath of the Emperor Quest_Spoiler.wiki:102",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/65/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Wrath of the Emperor Quest_Spoiler.wiki:102; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/65/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/98",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/98"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.braindeath_quest",
+   "title": "Braindeath Quest",
+   "from_lane": "questpc",
+   "status": "UNFINISHED",
+   "mechanism": "none",
+   "titles": [
+    "Braindeath Quest"
+   ],
+   "from_lanes": [
+    "questpc"
+   ],
+   "blocker": {
+    "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Beregar lava passage) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+    "evidence": [
+     "content/quests/definitions/quests-00200-00299.json:1#/records/90/definition",
+     "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Braindeath Quest",
+     "content/quests/missions/completion-binding-plan.json:1#/records/6"
+    ],
+    "attempts": [
+     "Read this canonical definition and chosen recipe, including source references.",
+     "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+     "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Braindeath Quest",
+     "canonical": "oteryn:quest.authored.braindeath_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Beregar lava passage) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/90/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Braindeath Quest",
+       "content/quests/missions/completion-binding-plan.json:1#/records/6"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/37",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/90/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Braindeath Quest",
+      "content/quests/missions/completion-binding-plan.json:1#/records/6"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the lava passage below Beregar",
+      "targets": [
+       "Beregar lava passage"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "qualified_observations": [
+    {
+     "title": "Braindeath Quest",
+     "canonical": "oteryn:quest.authored.braindeath_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc5",
+     "status": "QUALIFIED",
+     "blocker": {
+      "missing_piece": null,
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc5.json#/29",
+     "evidence": null,
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the lava passage below Beregar",
+      "targets": [
+       "Beregar lava passage"
+      ]
+     }
+    }
+   ],
+   "qualification_conflict_note": "A QUALIFIED observation does not erase another row with incomplete or broader scope.",
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/37"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.killing_in_the_name_of_quest",
+   "title": "Killing in the Name of... Quest",
+   "from_lane": "questpc8",
+   "status": "UNFINISHED",
+   "mechanism": "none",
+   "titles": [
+    "Killing in the Name of... Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc8"
+   ],
+   "blocker": {
+    "missing_piece": "No complete real-dispatch PG qualification for s2 (kill: Crocodile) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/64/definition",
+     "content/quests/missions/completion-binding-plan.json:1#/records/248"
+    ],
+    "attempts": [
+     "Read this canonical definition and chosen recipe, including source references.",
+     "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+     "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Killing in the Name of... Quest",
+     "canonical": "oteryn:quest.killing_in_the_name_of_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s2 (kill: Crocodile) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/64/definition",
+       "content/quests/missions/completion-binding-plan.json:1#/records/248"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/147",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/64/definition",
+      "content/quests/missions/completion-binding-plan.json:1#/records/248"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Hunt three hundred Crocodiles for the first chosen task.",
+      "targets": [
+       "Crocodile"
+      ]
+     }
+    },
+    {
+     "title": "Killing in the Name of... Quest",
+     "canonical": "oteryn:quest.killing_in_the_name_of_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc8",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s2 (kill: Crocodile) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/64/definition",
+       "content/quests/missions/completion-binding-plan.json:1#/records/248"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc8.json#/8",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/64/definition",
+      "content/quests/missions/completion-binding-plan.json:1#/records/248"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Hunt three hundred Crocodiles for the first chosen task.",
+      "targets": [
+       "Crocodile"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/147",
+    "in/questpc8.json#/8"
+   ]
+  }
+ ],
+ "count": 23,
+ "depends_on_qengine2": true,
+ "qengine2_primary_consumer": false,
+ "qualification_only_count": 2
+}

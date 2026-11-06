@@ -1,0 +1,236 @@
+{
+  "classification": "OTERYN_AUTHORED_APPROXIMATION",
+  "completeness_scope": "CHOSEN_OTERYN_RECIPE_ONLY",
+  "data_complete": true,
+  "definition_profile": "oteryn_authored_v1",
+  "display_name": "Measuring Tibia Quest",
+  "identity": {
+    "key": "oteryn:quest.authored.measuring_tibia_quest",
+    "revision": "authored-r1"
+  },
+  "kind": "storyline",
+  "missing_data": [
+    {
+      "code": "quest_native_lowering_missing"
+    },
+    {
+      "code": "authored_trigger_and_delivery_bindings_missing"
+    }
+  ],
+  "native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "canonical_reward_refs": [],
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "provenance": {
+    "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+    "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+  },
+  "readiness": "waiting_native_bindings",
+  "recipe": {
+    "adaptations": [
+      "One fixed landmark per named region replaces seven random points per subarea and the Cyclopedia UI. Distinct-area milestones remain ten, fifteen and twenty, using incremental survey counts ten/five/five rather than requiring forty-five regions. Intermediate outfit rewards are recorded at each Charos report. Map percentages, raid warnings, twenty-two regional achievements and map-completion titles are outside this chosen quest. Minimum level zero is an Oteryn choice because the base does not specify one."
+    ],
+    "repeat": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "kind": "once"
+    },
+    "requirements": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "min_level": 0,
+      "premium": true,
+      "prerequisites": []
+    },
+    "reward_intents": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Discoverer Outfits"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Discoverer first addon"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "outfit",
+        "name": "Discoverer second addon"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "achievement",
+        "name": "Widely Travelled"
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "kind": "achievement",
+        "name": "Measuring the World"
+      }
+    ],
+    "source_notes": [
+      "The spoiler names twenty map areas and Charos' outfit thresholds ten/fifteen/twenty, Widely Travelled and Measuring the World. Existing donor Charos teleport-travel storage is not treated as survey ownership.",
+      "All behavior and reward delivery are authored Oteryn choices; named entities are unresolved references, not canonical IDs. Native bindings, locations and runtime execution remain to be implemented."
+    ],
+    "source_refs": [
+      {
+        "content_sha256": "ba0b3a1d9ab223ff234ccf0e75ec7b37b412e5766be8fd711ed91ead0a51c7b9",
+        "pageid": 85619,
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "revid": 935112,
+        "url": "https://tibia.fandom.com/index.php?curid=85619&oldid=935112"
+      },
+      {
+        "content_sha256": "f017ee066d13ab566d18b934d15d43011ddfa7d3692e29a786dfca8145c70b21",
+        "pageid": 85620,
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "revid": 1198901,
+        "url": "https://tibia.fandom.com/index.php?curid=85620&oldid=1198901"
+      },
+      {
+        "content_sha256": "143318ffbd5df154feae65ba3d31e4ee0638139813f1127e685c352cbcc49f45",
+        "pageid": 44517,
+        "provider": "tibiawiki_br",
+        "relation": "crosscheck",
+        "revid": 443653,
+        "url": "https://www.tibiawiki.com.br/index.php?curid=44517&oldid=443653"
+      }
+    ],
+    "stages": [
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s1",
+        "kind": "talk",
+        "next": [
+          "s2"
+        ],
+        "objective": "Ask Charos for a personal atlas and the first ten regional surveys.",
+        "targets": [
+          "Charos",
+          "personal atlas"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 10,
+        "key": "s2",
+        "kind": "explore",
+        "next": [
+          "s3"
+        ],
+        "objective": "Survey one authored landmark in each of the first ten atlas regions. Require ten distinct regions cumulatively.",
+        "targets": [
+          "Ab'Dendriel",
+          "Carlin",
+          "Edron",
+          "Feyrist",
+          "Hrodmir",
+          "Kazordoon",
+          "Kilmaresh",
+          "Krailos",
+          "Marapur",
+          "Northern Darama"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s3",
+        "kind": "talk",
+        "next": [
+          "s4"
+        ],
+        "objective": "Report ten surveyed regions to Charos for the basic outfit.",
+        "targets": [
+          "Charos",
+          "Discoverer basic outfit"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 5,
+        "key": "s4",
+        "kind": "explore",
+        "next": [
+          "s5"
+        ],
+        "objective": "Survey the next five regions, bringing the cumulative total to fifteen. Retain all previous surveys.",
+        "targets": [
+          "Oramond",
+          "Roshamuul",
+          "Quirefang",
+          "Southern Darama",
+          "Thais"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s5",
+        "kind": "talk",
+        "next": [
+          "s6"
+        ],
+        "objective": "Report fifteen distinct surveyed regions to Charos for the first addon.",
+        "targets": [
+          "Charos",
+          "Discoverer first addon"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 5,
+        "key": "s6",
+        "kind": "explore",
+        "next": [
+          "s7"
+        ],
+        "objective": "Survey the final five regions, bringing the cumulative total to twenty. Retain all previous surveys.",
+        "targets": [
+          "Tiquanda",
+          "Vandura",
+          "Venore",
+          "Yalahar",
+          "Zao"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s7",
+        "kind": "talk",
+        "next": [
+          "s8"
+        ],
+        "objective": "Report all twenty regions to Charos for the second addon and final achievements.",
+        "targets": [
+          "Charos",
+          "Discoverer second addon"
+        ]
+      },
+      {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s8",
+        "kind": "complete",
+        "next": [],
+        "objective": "Record completion and the selected Oteryn reward intents in the character journal.",
+        "targets": [
+          "Measuring Tibia Quest"
+        ]
+      }
+    ],
+    "summary": "Map twenty fixed regional landmarks and collect Charos' Discoverer milestones.",
+    "wiki_title": "Measuring Tibia Quest"
+  },
+  "runtime_enabled": false
+}

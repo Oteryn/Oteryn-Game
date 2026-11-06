@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-quests --all-targets --all-features --quiet -- -D warnings",
+  "exit": 0,
+  "duration_seconds": 8.056
+}

@@ -1,0 +1,63 @@
+{
+  "claims": [
+    {
+      "family": "RewardClaim",
+      "key": "oteryn:reward-claim.quest.u8_5.lone_medusa",
+      "revision": "reward-claim-r1"
+    }
+  ],
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "completeness": "NOT_ASSESSED",
+  "display_name": "Lone Medusa Quest",
+  "identity": {
+    "key": "oteryn:quest.lone_medusa_quest",
+    "revision": "quest-r1"
+  },
+  "kind": "reward_only",
+  "missing_data": [],
+  "readiness": "definition_ready",
+  "reported_source_readiness": {
+    "data_gaps": {
+      "interactions_with_gaps": 0,
+      "unresolved_items": 0
+    },
+    "features": [
+      "reward_claim",
+      "trigger_use"
+    ],
+    "interactions": 0,
+    "kind": "reward_only",
+    "quest": "canary:quest/lone_medusa_quest"
+  },
+  "requirements": {
+    "min_level": 0,
+    "premium": true
+  },
+  "requirements_from_wiki": {
+    "lvl": "0",
+    "premium": "yes"
+  },
+  "requirements_unparsed": {},
+  "shown_in_quest_log": false,
+  "source_refs": {
+    "claims": [
+      {
+        "family": "RewardClaim",
+        "key": "canary:reward-claim/quest/u8_5/lone_medusa",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      }
+    ],
+    "gates": [],
+    "quest": {
+      "family": "Quest",
+      "key": "canary:quest/lone_medusa_quest",
+      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+    }
+  },
+  "unresolved_claims": [],
+  "wiki": {
+    "pageid": 52501,
+    "revid": 843873,
+    "title": "Lone Medusa Quest"
+  }
+}
