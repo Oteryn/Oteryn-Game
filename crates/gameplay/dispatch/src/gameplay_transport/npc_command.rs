@@ -46,9 +46,9 @@ pub(super) mod hireling_services;
 mod isle_of_evil;
 mod liquid_black;
 mod monk;
+mod npc_item_exchanges;
 mod premium_purchase;
 mod quest_dialogue;
-mod questpc2_item_exchanges;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
@@ -617,7 +617,7 @@ pub(super) async fn npc_bank_talk(
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef};
-    if let Some(outcome) = questpc2_item_exchanges::talk(admission, actor, command, &intent).await {
+    if let Some(outcome) = npc_item_exchanges::talk(admission, actor, command, &intent).await {
         return outcome;
     }
     if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {

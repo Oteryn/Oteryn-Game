@@ -134,6 +134,82 @@ fn pick_exchange_fixed_recipe_and_audit_refuse_other_sources() {
 }
 
 #[test]
+fn present_exchange_exact_recipe_empty_container_and_closed_audit() {
+    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+    value.cause.npc_key = present_exchange::NPC.into();
+    value.item = facts(
+        present_exchange::output().clone(),
+        ItemStackClass::NonStackable,
+    );
+    assert_eq!(priced(&value).unwrap(), (0, 1));
+    let mut entries = [entry(10, 1, present_exchange::input().clone(), 1)];
+    let plan =
+        pick_exchange::plan_with_input(&value, 1, &entries, present_exchange::input()).unwrap();
+    assert_eq!(plan.lines.len(), 2);
+    assert_eq!(plan.lines[0].quantity_after, 0);
+    assert_eq!(plan.lines[1].quantity_after, 1);
+    assert!(matches!(
+        pick_exchange::plan_with_input(&value, 0, &entries, present_exchange::input()),
+        Err(NpcTradeError::DoesNotFit)
+    ));
+    entries[0].not_default = true;
+    assert!(matches!(
+        pick_exchange::plan_with_input(&value, 1, &entries, present_exchange::input()),
+        Err(NpcTradeError::ItemNotFound)
+    ));
+    let world = WorldId::decode(&id(1)).unwrap();
+    let channel = crate::foundation::ChannelId::decode(&id(2)).unwrap();
+    let fence = CurrentCharacterItemFence {
+        character_id: CharacterId::from_bytes(id(3)).unwrap(),
+        game_session_id: GameSessionId::decode(&id(50)).unwrap(),
+        connection_generation: crate::foundation::ConnectionGeneration::new(1).unwrap(),
+        character_lease_generation: 1,
+        runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world, channel),
+        scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1).unwrap(),
+    };
+    let message = trade_message(&fence, world, channel, &id(4), &value, (1, 0, false), &plan);
+    assert_eq!(
+        super::super::npc_trade_audit::check_npc_trade(&message),
+        Ok(())
+    );
+    let mut wrong_source = message.clone();
+    wrong_source.lines[0]
+        .before
+        .as_mut()
+        .unwrap()
+        .definition
+        .as_mut()
+        .unwrap()
+        .production_key = "oteryn:item.tibia.i3462".into();
+    assert_eq!(
+        super::super::npc_trade_audit::check_npc_trade(&wrong_source),
+        Err(AuditError::InvalidInput)
+    );
+    let mut wrong_npc = message;
+    wrong_npc.cause.as_mut().unwrap().npc_key = "oteryn:npc.al_dee".into();
+    assert_eq!(
+        super::super::npc_trade_audit::check_npc_trade(&wrong_npc),
+        Err(AuditError::InvalidInput)
+    );
+    value.item.definition = pick_exchange::output().clone();
+    assert!(matches!(
+        validate(&value, false),
+        Err(NpcTradeError::InvalidInput)
+    ));
+    value.item.definition = present_exchange::output().clone();
+    value.quantity = 2;
+    assert!(matches!(
+        validate(&value, false),
+        Err(NpcTradeError::InvalidInput)
+    ));
+    value.quantity = 1;
+    assert!(matches!(
+        validate(&value, true),
+        Err(NpcTradeError::InvalidInput)
+    ));
+}
+
+#[test]
 fn obsidian_knife_two_inputs_partial_steel_and_closed_audit() {
     let mut value = request(NpcTradeSide::Exchange, 1, 0);
     value.cause.npc_key = obsidian_knife::NPC.into();

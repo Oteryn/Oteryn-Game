@@ -34,6 +34,7 @@ use oteryn_gameplay_economy::npc_trade as rules;
 mod grizzly;
 mod obsidian_knife;
 mod pick_exchange;
+mod present_exchange;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
 };
@@ -336,6 +337,7 @@ fn is_coin(definition: &TypedDefinitionRef) -> bool {
 fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u32)>> {
     if request.cause.side == NpcTradeSide::Exchange {
         if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::validate(request, sell_all)?; }
+        else if request.cause.npc_key == present_exchange::NPC { present_exchange::validate(request, sell_all)?; }
         else { pick_exchange::validate(request, sell_all)?; }
     }
     validate_sell_bound(request,sell_all,rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
@@ -768,6 +770,8 @@ impl DurabilityRoot {
                         }
                         let fits = if knife {
                             pick_exchange::fits(&mut tx, fence, *weights, &[obsidian_knife::steel(), obsidian_knife::lance()], obsidian_knife::knife()).await?
+                        } else if request.cause.npc_key == present_exchange::NPC {
+                            pick_exchange::fits(&mut tx, fence, *weights, &[present_exchange::input()], present_exchange::output()).await?
                         } else { pick_exchange::fits(&mut tx, fence, *weights, &[pick_exchange::input()], pick_exchange::output()).await? };
                         if !fits { return Ok(Err(NpcTradeError::DoesNotFit)); }
                     }
@@ -782,6 +786,7 @@ impl DurabilityRoot {
                             .map(|plan| (plan, total, units)),
                         (Some(_), NpcTradeSide::Exchange) => {
                             if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::plan(&request, capacity, &entries) }
+                            else if request.cause.npc_key == present_exchange::NPC { pick_exchange::plan_with_input(&request, capacity, &entries, present_exchange::input()) }
                             else { pick_exchange::plan(&request, capacity, &entries) }
                         }.map(|plan| (plan, 0, 1)),
                     }};
@@ -938,7 +943,7 @@ fn trade_message(
     let definition = |line: &NpcTradeLine| match line.coin {
         Some(coin) => request.coins.of(coin),
         None if request.cause.side == NpcTradeSide::Exchange && line.kind == NpcTradeLineKind::ItemBurn => {
-            if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::input_for(line, &plan.lines) } else { pick_exchange::input() }
+            if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::input_for(line, &plan.lines) } else if request.cause.npc_key == present_exchange::NPC { present_exchange::input() } else { pick_exchange::input() }
         },
         None => &request.item.definition,
     };

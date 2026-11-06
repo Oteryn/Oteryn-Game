@@ -2,6 +2,20 @@
 use super::*;
 
 pub(super) fn check(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
+    check_recipe(
+        value,
+        "oteryn:npc.al_dee",
+        "oteryn:item.tibia.i3462",
+        "oteryn:item.tibia.i3456",
+    )
+}
+
+pub(super) fn check_recipe(
+    value: &OneItemNpcTradeV1,
+    npc: &str,
+    input: &str,
+    output: &str,
+) -> Result<(), AuditError> {
     let cause = value.cause.as_ref().ok_or(AuditError::InvalidInput)?;
     let [take, give] = value.lines.as_slice() else {
         return Err(AuditError::InvalidInput);
@@ -13,7 +27,7 @@ pub(super) fn check(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
             d.family == "Item" && d.production_key == key && d.revision_ref == "definition-r1"
         })
     };
-    if cause.npc_key != "oteryn:npc.al_dee"
+    if cause.npc_key != npc
         || cause.catalogue_revision == 0
         || cause.offer_index != 0
         || value.quantity != 1
@@ -27,8 +41,8 @@ pub(super) fn check(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
         || give.kind != LINE_ITEM_MINT
         || before.quantity != 1
         || after.quantity != 1
-        || !matches(before, "oteryn:item.tibia.i3462")
-        || !matches(after, "oteryn:item.tibia.i3456")
+        || !matches(before, input)
+        || !matches(after, output)
     {
         return Err(AuditError::InvalidInput);
     }

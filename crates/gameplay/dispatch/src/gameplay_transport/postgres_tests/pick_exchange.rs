@@ -66,29 +66,56 @@ const KNIFE_CASE: ExchangeCase = ExchangeCase {
     tag: "obsidian_knife",
 };
 
+// TIBIAWIKI_STRUCTURED: .questpc2/wiki/Present Quest_Spoiler.wiki:1-21;
+// Item joins: captured data/items/items.xml:5953 (present), :9797 (helmet).
+const PRESENT_CASE: ExchangeCase = ExchangeCase {
+    npc: "oteryn:npc.seymour",
+    keyword: "present box",
+    output: "oteryn:item.tibia.i3374",
+    inputs: &[("oteryn:item.tibia.i2856", 1)],
+    before: 1,
+    after: 0,
+    expected_inputs: &[],
+    tag: "present_exchange",
+};
+
+#[test]
+fn present_exchange_seymour_atomic_confirmation_refusal_and_replay() -> TestResult {
+    execute(&PRESENT_CASE, false)
+}
+
 #[test]
 fn pick_exchange_atomic_confirmation_refusal_and_replay() -> TestResult {
-    execute(&PICK_CASE)
+    execute(&PICK_CASE, false)
 }
 
 #[test]
 fn obsidian_knife_uzgod_atomic_exchange_cooldown_and_replay() -> TestResult {
-    execute(&KNIFE_CASE)
+    execute(&KNIFE_CASE, false)
 }
 
-fn execute(case: &'static ExchangeCase) -> TestResult {
+#[test]
+fn present_exchange_seymour_filled_box_is_preserved() -> TestResult {
+    execute(&PRESENT_CASE, true)
+}
+
+fn execute(case: &'static ExchangeCase, filled: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(case).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(case, filled).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "NPC item exchange thread panicked")??;
     eprintln!(
         "POSTGRES_CASE_COMPLETED {} atomic confirmation/refusal/replay elapsed_ms={}",
-        case.tag,
+        if filled {
+            "present_exchange_filled"
+        } else {
+            case.tag
+        },
         started.elapsed().as_millis()
     );
     Ok(())
@@ -154,7 +181,7 @@ async fn wire(
     results
 }
 
-fn scenario(case: &ExchangeCase) -> TestResult {
+fn scenario(case: &ExchangeCase, filled: bool) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, case.tag, true, false).await?;
         prepare_current_session(&h).await?;
@@ -245,6 +272,20 @@ fn scenario(case: &ExchangeCase) -> TestResult {
             }
         };
         super::item_look::seed_main_backpack(&h, case.inputs).await?;
+        if filled {
+            let mut tx = h.pool.begin().await?;
+            // Lane-private initial custody only; no production guard is changed.
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3462','definition-r1',1,1,encode($3,'hex')::uuid)")
+                .bind(id(90).as_slice()).bind(id(42).as_slice()).bind(id(72).as_slice())
+                .execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+                .bind(id(90).as_slice()).bind(id(42).as_slice()).bind(id(71).as_slice()).bind(id(72).as_slice())
+                .execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)
@@ -307,6 +348,21 @@ fn scenario(case: &ExchangeCase) -> TestResult {
             ],
         )
         .await?;
+        if filled {
+            assert_eq!(replies[2].0, CommandStatus::Rejected);
+            assert_eq!(
+                decode_npc_intent_result(&replies[2].1).map_err(debug)?,
+                NpcIntentDisposition::Rejected
+            );
+            assert_eq!(counts(&h, case).await?, (case.before, 0, 0, 0));
+            let retained: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.item_instance_id=encode($1,'hex')::uuid AND e.parent_item_instance_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1")
+                .bind(id(90).as_slice()).bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(retained, 1);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         assert_eq!(replies[2].0, CommandStatus::Accepted);
         assert_eq!(
             decode_npc_intent_result(&replies[2].1).map_err(debug)?,

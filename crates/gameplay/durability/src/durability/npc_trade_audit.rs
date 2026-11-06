@@ -347,7 +347,9 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
     let side = cause.side;
     if side == SIDE_EXCHANGE {
         if cause.npc_key == "oteryn:npc.uzgod" { obsidian_knife::check(value)?; }
-        else { pick_exchange::check(value)?; }
+        else if cause.npc_key == "oteryn:npc.seymour" {
+            pick_exchange::check_recipe(value, "oteryn:npc.seymour", "oteryn:item.tibia.i2856", "oteryn:item.tibia.i3374")?;
+        } else { pick_exchange::check(value)?; }
     }
     let hireling_sell=sell_hireling::audit_source(value);
     if side==SIDE_SELL && value.house_key.is_some() && !hireling_sell {return Err(AuditError::InvalidInput); }

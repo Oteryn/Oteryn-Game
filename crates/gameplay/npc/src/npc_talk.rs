@@ -155,7 +155,7 @@ impl NpcTalkBook {
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}\0oriental-trader-v1\0al-dee-exchange-v1\0uzgod-knife-v1",
+                "{}\0{}\0{}\0oriental-trader-v1\0al-dee-exchange-v1\0uzgod-knife-v1\0seymour-present-v1",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
@@ -225,6 +225,14 @@ impl NpcTalkBook {
                 // consumers. This admits their greeting, not their Lua/script
                 // branches; dispatch owns every confirmation and durable write.
                 (greeting.into(), "Farewell.".into(), None, Vec::new())
+            } else if reference.key == "oteryn:npc.seymour" {
+                // TIBIAWIKI_STRUCTURED: Present Quest/Spoiler, Seymour transcript.
+                (
+                    "Hello, |PLAYERNAME|. Welcome to the Academy of Rookgaard. May I sign you up as a student?".into(),
+                    "Good bye, |PLAYERNAME|! And remember: No running up and down in the academy!".into(),
+                    None,
+                    Vec::new(),
+                )
             } else if reference.key == "oteryn:npc.uzgod" {
                 // Source Obsidian Knife transcript; the confirmed item exchange is native.
                 (
@@ -374,7 +382,7 @@ impl NpcTalkBook {
                         || isle_messages.is_some()
                         || matches!(
                             reference.key.as_str(),
-                            "oteryn:npc.al_dee" | "oteryn:npc.uzgod"
+                            "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod"
                         ),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())

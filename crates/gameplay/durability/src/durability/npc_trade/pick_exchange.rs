@@ -38,10 +38,19 @@ pub(super) fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<()> 
 }
 
 pub(super) fn plan(request: &NpcTradeRequest, capacity: usize, entries: &[Entry]) -> Result<Plan> {
+    plan_with_input(request, capacity, entries, input())
+}
+
+pub(super) fn plan_with_input(
+    request: &NpcTradeRequest,
+    capacity: usize,
+    entries: &[Entry],
+    input: &TypedDefinitionRef,
+) -> Result<Plan> {
     let source = entries
         .iter()
         .find(|entry| {
-            entry.live && !entry.not_default && entry.quantity == 1 && entry.definition == *input()
+            entry.live && !entry.not_default && entry.quantity == 1 && entry.definition == *input
         })
         .ok_or(NpcTradeError::ItemNotFound)?;
     if entries.len() > capacity {

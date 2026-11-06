@@ -1,5 +1,5 @@
-//! Pick and Obsidian Knife source dialogue over the existing NPC item transaction.
-//! Al Dee: npc-br revid420190; Uzgod: saved Obsidian Knife Wiki transcript.
+//! Fixed source item exchange dialogue over the existing NPC item transaction.
+//! Al Dee: npc-br revid420190; Uzgod and Seymour: saved quest Wiki transcripts.
 use super::super::{
     ComposedFreshAdmission, connection::UseCommand, item_ref_admission::NativeItemWeights,
     npc_trade_command,
@@ -39,9 +39,18 @@ const KNIFE_RECIPE: Recipe = Recipe {
     success: "Here you have it.",
     cancel: None,
 };
+const PRESENT_RECIPE: Recipe = Recipe {
+    npc: "oteryn:npc.seymour",
+    keyword: "box",
+    output: "oteryn:item.tibia.i3374",
+    prompt: "Do you have a suitable present box for me?",
+    success: "THANK YOU! Here is a helmet that will serve you well.",
+    cancel: None,
+};
 fn recipe(npc: &str) -> Option<&'static Recipe> {
     match npc {
         "oteryn:npc.al_dee" => Some(&PICK_RECIPE),
+        "oteryn:npc.seymour" => Some(&PRESENT_RECIPE),
         "oteryn:npc.uzgod" => Some(&KNIFE_RECIPE),
         _ => None,
     }
@@ -273,6 +282,17 @@ pub(super) async fn talk(
         admission
             .root
             .exchange_obsidian_knife(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                &NativeItemWeights(native),
+            )
+            .await
+    } else if recipe.npc == "oteryn:npc.seymour" {
+        admission
+            .root
+            .exchange_present_for_helmet(
                 admission.character,
                 admission.holder,
                 fence,
