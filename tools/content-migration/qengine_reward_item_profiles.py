@@ -48,7 +48,7 @@ def capture(root=ROOT):
                  if key in {'charges', 'duration', 'decayto', 'stopduration'}}
         # This source quest item uses the existing absolute-deadline Item owner.
         # Preserve its duration in source.profile; the reward owner still refuses
-        # timed hand-ins until that composition is separately qualified.
+        # persisted timed states until that composition is separately qualified.
         if timed and not (item_id == 4829 and timed == {'duration': '86400'}):
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']

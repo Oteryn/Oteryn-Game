@@ -64,5 +64,5 @@ tracks together and does not mint armor. The armor remains a mine chest claim.
 `ape-syrup`, `ape-parchment`, `ape-egg`, `ape-mushroom`, `ape-hair`). Offers bind
 each confirmation to its source topic and storage predicates. These are stage
 definitions, not a whole-quest qualification claim. The witches' cap retains
-its source 24-hour temporal facts; the existing reward owner refuses timed
-instances, so its timed hand-in is not qualified by ordinary-item tests.
+its source 24-hour temporal facts; the existing reward owner refuses instances
+with persisted timed state, so its timed hand-in is not qualified by ordinary-item tests.
