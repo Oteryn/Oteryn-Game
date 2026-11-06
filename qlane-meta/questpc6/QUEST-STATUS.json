@@ -884,7 +884,7 @@
       "runtime_enabled": false
     },
     "blocker": {
-      "missing_piece": "Pressure-plate creation/removal is now implemented and PG-proved. The created sewer ordinary dropdown interaction and a complete access-to-reward route still require implementation/qualification; no full quest qualification is claimed.",
+      "missing_piece": "Inherited pressure lifecycle and ordinary sewer dropdown now pass all six focused PostgreSQL cases. Complete quest access-to-reward qualification remains to be implemented and tested.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/23/definition",
         "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
@@ -947,7 +947,39 @@
         "log": ".questpc6/pressure-final-pg.log",
         "test_duration_seconds": 82.83
       },
-      "qualification": "not claimed; full source reward/access and created-object interaction still require qualification"
+      "qualification": "not claimed; full source reward/access and created-object interaction still require qualification",
+      "dropdown_verification": {
+        "base_head": "db355fae2d4900be2728eca6d645f72376134b5a",
+        "result": "PASS 6/6 focused PostgreSQL cases; 122.25 seconds test execution",
+        "markers": [
+          {
+            "name": "devil-helmet-sewer-use-existing",
+            "duration_seconds": 67.499530243
+          },
+          {
+            "name": "devil-helmet-sewer-unrelated",
+            "duration_seconds": 68.579628871
+          },
+          {
+            "name": "devil-helmet-sewer-use",
+            "duration_seconds": 76.197874362
+          },
+          {
+            "name": "devil-helmet-sewer",
+            "duration_seconds": 77.111506536
+          },
+          {
+            "name": "devil-helmet-sewer-existing",
+            "duration_seconds": 53.420082913
+          },
+          {
+            "name": "devil-helmet-sewer-use-blocked",
+            "duration_seconds": 53.658634442
+          }
+        ],
+        "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib devil_helmet_pressure_plate_ -- --nocapture",
+        "scope": "Inherited pressure lifecycle and ordinary sewer USE, replay and missing landing refusal. Whole chosen quest path remains unfinished."
+      }
     }
   },
   {

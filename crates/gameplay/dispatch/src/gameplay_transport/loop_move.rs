@@ -1081,28 +1081,56 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sewer_ground_projection_retains_callback_identity_and_pinned_removal() -> Result<(), Box<dyn std::error::Error>> {
+    fn sewer_ground_projection_retains_callback_identity_and_pinned_removal()
+    -> Result<(), Box<dyn std::error::Error>> {
         use crate::map::boot::tests as fixture;
         let (bytes, _) = fixture::bundle();
         let bundle = oteryn_world_bundle::bundle::read(&bytes)?;
         let facts = crate::map::facts::BundleFacts::palette(&bundle.manifest, |key| {
-            fixture::items(if key == "oteryn:item.tibia.i435" { "item:coin" } else { key })
-        }).map_err(|error| format!("{error:?}"))?;
-        let pos = TilePos { x: 7, y: 0, floor: -7 };
+            fixture::items(if key == "oteryn:item.tibia.i435" {
+                "item:coin"
+            } else {
+                key
+            })
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let pos = TilePos {
+            x: 7,
+            y: 0,
+            floor: -7,
+        };
         assert!(facts.create_world_change_item(pos, 435));
         let pinned = facts.pinned();
         let ground = HashMap::new();
-        let projection = LoopGroundFacts { inner: &pinned, ground: &ground };
+        let projection = LoopGroundFacts {
+            inner: &pinned,
+            ground: &ground,
+        };
         let entries = projection.movement_items(pos);
         assert_eq!(entries, facts.movement_items(pos));
-        let [entry] = entries.as_slice() else { return Err("one sewer".into()); };
-        let view::EntrySource::Added(id) = entry.source else { return Err("added sewer".into()); };
+        let [entry] = entries.as_slice() else {
+            return Err("one sewer".into());
+        };
+        let view::EntrySource::Added(id) = entry.source else {
+            return Err("added sewer".into());
+        };
         assert_eq!(projection.movement_item(id.get()), Some((pos, id)));
         assert!(facts.remove_movement_item(pos, 435));
-        assert_eq!(projection.movement_items(pos), entries, "pinned map retains the issued handle");
-        let current = LoopGroundFacts { inner: &facts, ground: &ground };
+        assert_eq!(
+            projection.movement_items(pos),
+            entries,
+            "pinned map retains the issued handle"
+        );
+        let current = LoopGroundFacts {
+            inner: &facts,
+            ground: &ground,
+        };
         assert!(current.movement_items(pos).is_empty());
-        assert_eq!(current.movement_item(id.get()), None, "removed handle is stale");
+        assert_eq!(
+            current.movement_item(id.get()),
+            None,
+            "removed handle is stale"
+        );
         Ok(())
     }
 

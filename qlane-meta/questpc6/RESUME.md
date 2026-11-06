@@ -1,3 +1,33 @@
+# Cloud continuation — 2026-11-06
+
+Current branch: `claude/happy-davinci-ijz3wy-questpc6`; fetched remote and
+started from `db355fae2d4900be2728eca6d645f72376134b5a`. Current owner execution
+rules supersede all historical no-commit/no-push, detached-head and /home/mole
+instructions below. One writer; no PR and no main integration.
+
+Startup verified a real PostgreSQL 18.6 connection. Source
+`/workspace/oteryn-env/env.sh` for each Cargo command; never print its values.
+The initial offline command failed dependency resolution (`schemars` missing),
+but normal locked Cargo resolution succeeded. No dependency manifest/lock change.
+
+Inherited sewer continuation is verified: six focused PostgreSQL cases passed,
+122.25 seconds execution, six POSTGRES_CASE_COMPLETED markers recorded in
+QUEST-STATUS.json. This includes created/existing sewer USE, exact replay,
+missing landing refusal, physical creation/removal and unrelated UID refusal.
+No whole quest has been newly marked QUALIFIED. Formatted only the inherited
+loop_move sewer projection test. Dispatch all-target check PASS (4m15s); all-target/all-feature Clippy
+-D warnings PASS (5m22s); dispatch fmt check PASS; inherited projection
+unit PASS 1/1. Reviewed the formatting diff and six PG terminal results; no
+behavior or test assertions changed. Full command logs are under `/tmp/questpc6-*.log`.
+
+Cross-lane inventory: no LANE-*.json exists; QSPLIT-PLAN.md is only an L1–L7
+mechanism/count summary, with no per-entry allocation. Existing lane ledger has
+33 rows. Per-entry allocation clarification is pending; no world-change work
+or owner-excluded Dawnport work is being changed. Continue current Game-owned
+mechanisms; do not manufacture completion based on reward-only evidence.
+
+---
+
 # QUESTPC resume, 2026-11-06
 
 Task: QUESTPC / QUEST-FINISH, draft PR #3007. Local HEAD remains
