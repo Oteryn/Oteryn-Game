@@ -1,45 +1,41 @@
 # questpc8 — AUTHORING
 
-Current owner execution rules supersede old publication bans and /home/mole paths.
-Work directly on claude/happy-davinci-ijz3wy-questpc8; commit and fast-forward push
-with the required identity/trailers after each green batch. No PR/main/force,
-workflow/repository-tool edits, binaries, reference copies or credential reads.
-Source /workspace/oteryn-env/env.sh for Cargo/PG; startup already succeeded.
+Owner continuation: work directly on claude/happy-davinci-ijz3wy-questpc8;
+fetch/merge remote movement before every fast-forward push. Push every finished
+slice immediately and at least every 30 minutes. Investigation limit is ten
+minutes; record conservative decisions in CONTRACT-NOTES.md. Do not stop while
+L7 entries remain. Earlier publication bans and /home/mole paths are superseded.
 
-Active scope is LANE-L7.json: 23 entries, three qualified elsewhere (Triangle
-Tower, Waterfall, Vampire Shield), twenty still in authoring. The older rows
-outside L7 in QUEST-STATUS.json are historical, not added scope. Shared engines,
-NPCs, items and authored bindings are this lane's responsibility.
+Scope: LANE-L7.json, 23 entries; Triangle Tower, Waterfall and Vampire Shield are
+qualified elsewhere. Twenty entries remain in authoring pending all checks;
+Killing in the Name of now has complete chosen-path PG proof, pending final
+static checks/regeneration before its status is promoted. Historical non-L7
+rows are not additional scope. No PR/main/force/rebase or credential reads.
 
-Native authored placement prerequisite implemented for the authored-cache cohort
-(Mastermind Potion, Mystery of the Valley, Torch, Voodoo Doll). The binder accepts
-an explicit native ordinal plus position/appearance, mutually exclusive with
-legacy IDs. Exact object selection and the existing fenced reservation/MINT and
-replay owners are preserved. These are component proofs, not full quest proofs;
-all twenty L7 entries still require their complete stage/reward composition.
+Current slice reuses qengine2 engine head 5a6de28c1 for atomic NPC items/outfits
+and world effects. Preserves this lane's NPC executor and Smithhammer no-op fix.
+Adds bounded authored XP/completion fields, exact immutable receipt predicates,
+and a definition-hash marker sealing the full reward plan. Optional source task
+repeats rearm boss flags; exact successful report receipts preserve the chosen
+campaign's victories without changing source behavior.
 
-PG RED: missing selector failed after 23.62s. PG GREEN: authored no-UID placement,
-seven invalid selectors, stale authority, normal mint, command and cold-owner
-replay passed in 26.170233947s with POSTGRES_CASE_COMPLETED. Existing source-UID
-Steel Boots PG passed in 25.586263619s. Also passed: 9 binder units (charge/fluid
-and excluded-owner rules included), 123 content integration tests, 5 world
-repository tests (31.72s), all-features cargo check, all-target/features strict
-Clippy, cargo fmt and explicit mounted-file rustfmt. Pin-refresh and pin-check
-passed; the inherited stale pin was regenerated to
-2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968,
-with matching derived preproduction digest references. No binary was added.
-Commands, markers and log hashes: native-placement-validation.json.
+PG RED 171.08s (extra XP 0 rather than 10000); final selected PG PASS 1/1,
+179.886708384s with POSTGRES_CASE_COMPLETED. No counters, boss wins, points or
+quest receipts seeded. All three task/boss pairs, repeats/rank, missing-victory
+and missing-backpack refusals, exact extra XP/currency, completion and command/
+restored-quest replay proved. Receipt ownership/bounds units PASS 2/2, 1.15s.
+Proof: cloud-hunting-campaign-proof.json. Full logs retained under /tmp.
 
-qengine2 checked at 5a6de28c1. It supplies reusable atomic item/outfit reward and
-world-effect support, but no chosen-program graph or authored ordinal selector.
-Reuse its implementations where applicable rather than creating parallel owners.
+Next: complete final fmt/check/strict Clippy on changed crates, finish active
+regeneration and source callback regression PG, then promote Killing in the
+Name of. Continue with Braindeath's exploration/kill/coffin programme and the
+remaining authored/world/calendar entries. Shared support is this lane's job.
+Source coffin: (32546,31522,11), UID6283, appearance1983; chosen rewards are red
+backpack2867, great health potion239 x2 and platinum3035 x13. Original source
+container additionally has rope/shovel/mana potion, intentionally source notes.
+Source reference: Crystal 201189f data-global/startup/tables/chest.lua:2709-2715.
 
-Next: compose the remaining programmes, beginning with Braindeath's Beregar
-exploration/kill/coffin and the Grizzly chosen campaign's exact final 10000 XP /
-5000 gold. Existing grizzly_npc/questpc8_campaign.rs already drives real source
-kills, portals and reports for the selected Crocodile/Carniphila/Hydra pairs;
-it explicitly lacks the final authored payout. Preserve the complete chosen
-11-stage campaign, including all three task/boss pairs. A coffin source location
-was found at (32546,31522,11), UID6283, in Crystal 201189f data-global/startup/
-tables/chest.lua:2709-2715; use only as reference evidence and retain chosen
-Oteryn quantities. Continue without ending at this checkpoint.
+Environment startup succeeded. Source /workspace/oteryn-env/env.sh for every
+Cargo/PG shell. Active repository regeneration was started as session67722,
+log /tmp/questpc8-engine-regenerate.log; check completion before another run.
+Do not rerun the successful campaign PG without a material change or concern.

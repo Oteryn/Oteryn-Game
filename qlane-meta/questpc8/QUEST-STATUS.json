@@ -311,7 +311,7 @@
       "runtime_enabled": false
     },
     "blocker": {
-      "missing_piece": "The chosen Crocodile-kill progression and final 10000-XP/5000-gold completion are not composed; the existing source hunting programme pays different rewards."
+      "missing_piece": "Complete chosen campaign PG passed in 179.886708384s; final static checks and regeneration validation are in progress before whole-entry promotion."
     },
     "first_unqualified_stage": {
       "key": "s11",
@@ -348,7 +348,16 @@
     "disposition": "authoring",
     "qualified_elsewhere": [],
     "mechanism": "none",
-    "round": "L7"
+    "round": "L7",
+    "qualified_components": [
+      {
+        "scope": "all eleven chosen stages, native task/boss reports, rank, final 10000 XP and 5000 gold, refusal and replay",
+        "test": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards -- --nocapture",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards",
+        "duration_seconds": 179.886708384,
+        "proof": "cloud-hunting-campaign-proof.json"
+      }
+    ]
   },
   {
     "title": "Kilmaresh Quest",

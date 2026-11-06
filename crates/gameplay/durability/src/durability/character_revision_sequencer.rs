@@ -449,6 +449,39 @@ impl RevisionSlot {
         .await
     }
 
+    /// Commit a content-bound NPC exchange and all its value participants.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the revision slot forwards the complete existing Quest and reward admission context"
+    )]
+    pub async fn commit_quest_reward(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        admission: super::reward_claim_mint::quest::QuestRewardAdmission<'_>,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_quest_reward(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    admission,
+                )
+            },
+        )
+        .await
+    }
+
     /// Generated Task Board state and its quest receipts share this revision slot.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_task_board(
@@ -521,6 +554,7 @@ impl RevisionSlot {
         catalogue: std::sync::Arc<QuestStateCatalogue>,
         permit: &super::spell_owner_commit::SpellLanePermit,
         context: super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
@@ -535,6 +569,7 @@ impl RevisionSlot {
                     std::sync::Arc::clone(&catalogue),
                     permit,
                     context.clone(),
+                    native,
                 )
             },
         )
