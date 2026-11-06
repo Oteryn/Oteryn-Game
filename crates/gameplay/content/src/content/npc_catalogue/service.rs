@@ -393,6 +393,49 @@ fn classify(
         return Some(NpcOfferHeldReason::UnknownItem);
     }
     let count = count_of(offer);
+    if offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
+        && count == 1
+        && offer.sub_type.is_none()
+        && !offer.parity_pending
+        && default_state_purchase(service, key, offer.unit_price).is_some_and(|charges| {
+            if charges == 0 {
+                facts.fluid(key)
+            } else {
+                facts.charged(key)
+            }
+        })
+    {
+        return None;
+    }
+    // These retail buybacks consume one physical item, never a quantity of charges.
+    // The durable trade owner still rejects instances carrying mutable timed state.
+    if offer.direction == ProjectV2ServiceOfferDirection::BuyFromPlayer
+        && count == 1
+        && offer.sub_type.is_none()
+        && !offer.parity_pending
+        && facts.charged(key)
+        && matches!(
+            (service, key, offer.unit_price),
+            (
+                "oteryn:service.trade.nah_bob",
+                "oteryn:item.tibia.i3284",
+                1_000
+            ) | (
+                "oteryn:service.trade.rashid",
+                "oteryn:item.tibia.i814"
+                    | "oteryn:item.tibia.i815"
+                    | "oteryn:item.tibia.i816"
+                    | "oteryn:item.tibia.i817",
+                1_500
+            ) | (
+                "oteryn:service.trade.rashid",
+                "oteryn:item.tibia.i9302" | "oteryn:item.tibia.i9303" | "oteryn:item.tibia.i9304",
+                3_000
+            )
+        )
+    {
+        return None;
+    }
     if let Some(charges) = facts.timed_charges(key) {
         if count != charges {
             return Some(NpcOfferHeldReason::TimedCountMismatch);
