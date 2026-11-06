@@ -443,7 +443,41 @@ impl BundleWorld {
     ) -> Option<Vec<BundleSpawnFacts>> {
         let mut sources = table_activation_spawns(&self.spawns, &profile)?;
         if let Some(daily) = &self.daily {
-            sources.extend(super::daily::grimvale_spawns(self, daily, profile)?);
+            sources.extend(super::daily::grimvale_spawns(self, daily, &profile)?);
+            let definitions = oteryn_gameplay_world_change::variants::definitions().ok()?;
+            let managed: std::collections::BTreeSet<_> = definitions
+                .iter()
+                .flat_map(|d| &d.variants)
+                .flat_map(|v| &v.spawns)
+                .map(|s| {
+                    (
+                        i32::from(s.position.0),
+                        i32::from(s.position.1),
+                        i16::from(s.position.2),
+                    )
+                })
+                .collect();
+            for (points, _) in &mut sources {
+                points.retain(|p| !managed.contains(&p.0));
+            }
+            sources.retain(|s| !s.0.is_empty());
+            for spawn in daily.variants.active().flat_map(|v| &v.spawns) {
+                let (health, blockable) = profile(&spawn.creature)?;
+                sources.push((
+                    vec![(
+                        (
+                            i32::from(spawn.position.0),
+                            i32::from(spawn.position.1),
+                            i16::from(spawn.position.2),
+                        ),
+                        u64::from(spawn.respawn_ms),
+                        spawn.creature.clone(),
+                        health,
+                        blockable,
+                    )],
+                    BUNDLE_OCCUPANCY_RETRY_MS,
+                ));
+            }
         }
         Some(sources)
     }

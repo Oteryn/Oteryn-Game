@@ -53,8 +53,10 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             assert!(is_active(&all, key), "{key}");
         } else if entry["status"] == "QUALIFIED" {
             qualified += 1;
-            assert_eq!(key, "stampede");
-            assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
+            assert!(["stampede", "fury_gates", "nightmare_isles", "nomads"].contains(&key));
+            if key == "stampede" {
+                assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
+            }
             assert!(is_active(&all, key));
         } else {
             assert_eq!(entry["status"], "HELD");
@@ -62,7 +64,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         }
     }
     assert_eq!(ready, 4);
-    assert_eq!(qualified, 1);
+    assert_eq!(qualified, 4);
     for key in [
         "river_runs_deep",
         "spider_nest",
@@ -186,7 +188,7 @@ fn worldchg_stampede_uses_accepted_daily_gate_and_preserves_legacy_snapshots()
 }
 
 #[test]
-fn worldchg_portal_candidates_preserve_sourced_pairs_without_claiming_native_admission()
+fn worldchg_portal_sources_preserve_pairs_after_variant_admission()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let candidate: serde_json::Value = serde_json::from_slice(&std::fs::read(
@@ -237,8 +239,8 @@ fn worldchg_portal_candidates_preserve_sourced_pairs_without_claiming_native_adm
                 }
             );
         }
-        // Source facts do not bypass the still-unimplemented W1/native gate consumers.
-        assert!(!oteryn_gameplay_world_change::owner::is_active(
+        // The independent WVAR recipes now admit these sourced pairs; candidate flags remain source-only.
+        assert!(oteryn_gameplay_world_change::owner::is_active(
             &oteryn_gameplay_world_change::daily::DailyWorldChanges::roll(7, 6, 13, |_| 0),
             record["key"].as_str().ok_or("key")?,
         ));

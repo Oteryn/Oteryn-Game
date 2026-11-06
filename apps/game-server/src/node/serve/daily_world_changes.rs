@@ -23,6 +23,7 @@ fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily
         fungus: changes.their_masters_voice,
         grimvale_full_moon: changes.grimvale_full_moon,
         trader: changes.oriental_trader.map(|town| town.layer()),
+        variants: changes.variants,
     }
 }
 
@@ -229,17 +230,16 @@ mod tests {
             "../../../../../content/encounters/world-changes/layers.json"
         ))
         .expect("layers");
-        let mut appearances: BTreeSet<u16> = (12059..=12065).chain([432, 486]).collect();
-        let grounds: BTreeSet<u16> = (12059..=12065).chain([408, 432, 464, 486, 494]).collect();
+        let mut appearances: BTreeSet<u16> =
+            (12059..=12065).chain([231, 432, 486, 776, 10840]).collect();
+        let mut grounds: BTreeSet<u16> = (12059..=12065)
+            .chain([231, 408, 432, 464, 486, 494])
+            .collect();
         for layer in layers["layers"].as_array().expect("layer array") {
-            if !layer["key"]
-                .as_str()
-                .expect("key")
-                .starts_with("oriental_trader/")
-            {
-                continue;
-            }
             for tile in layer["tiles"].as_array().expect("tiles") {
+                if let Some(first) = tile["entries"].as_array().expect("entries").first() {
+                    grounds.insert(u16::try_from(first[0].as_u64().expect("ground")).expect("u16"));
+                }
                 for entry in tile["entries"].as_array().expect("entries") {
                     let id = u16::try_from(entry[0].as_u64().expect("id")).expect("u16");
                     appearances.insert(id);
@@ -250,7 +250,9 @@ mod tests {
         // resolve their references from the active Item catalogue, not a test-only palette.
         let palette: Vec<_> = appearances
             .into_iter()
-            .filter(|id| grounds.contains(id) && !(12059..=12063).contains(id))
+            .filter(|id| {
+                (grounds.contains(id) || [776, 10840].contains(id)) && !(12059..=12063).contains(id)
+            })
             .map(|id| PaletteEntry {
                 family: Family::Item,
                 id: u32::from(id),
@@ -300,6 +302,42 @@ mod tests {
                 }
             }
         }
+        for (x, y, z, appearance) in [(33290u16, 31785u16, 13i8, 776u16), (33498, 32613, 8, 10840)]
+        {
+            let ground = palette.iter().position(|p| p.id == 432).expect("ground") as u32;
+            let marker = palette
+                .iter()
+                .position(|p| p.id == u32::from(appearance))
+                .expect("marker") as u32;
+            sectors
+                .entry((-z, y / 32, x / 32))
+                .or_insert_with(|| Sector {
+                    floor: -z,
+                    sy: y / 32,
+                    sx: x / 32,
+                    tiles: Vec::new(),
+                })
+                .tiles
+                .push(Tile {
+                    x,
+                    y,
+                    flags: 0,
+                    house: 0,
+                    zones: Vec::new(),
+                    items: vec![
+                        Item {
+                            palette: ground,
+                            depth: 0,
+                            attrs: Attrs::default(),
+                        },
+                        Item {
+                            palette: marker,
+                            depth: 0,
+                            attrs: Attrs::default(),
+                        },
+                    ],
+                });
+        }
         for sector in sectors.values_mut() {
             sector.tiles.sort_by_key(|t| (t.y, t.x));
         }
@@ -321,7 +359,7 @@ mod tests {
                 min_y: 31000,
                 max_x: 34000,
                 max_y: 33000,
-                floors: (-9..=-1).collect(),
+                floors: (-15..=-1).collect(),
             },
             palette,
             draft_areas: Vec::new(),
@@ -383,6 +421,64 @@ mod tests {
                 },
             )
             .expect("physical boot")
+    }
+
+    #[test]
+    fn wvar_maps_restore_portal_markers_select_one_camp_and_revert() {
+        use crate::map::view::placement_key;
+        use oteryn_gameplay_world_change::variants;
+        let mut day = DailyWorldChanges::roll(7, 1, 1, |_| u64::MAX);
+        day.variants = Default::default();
+        let inactive = boot_physical(&day);
+        for definition in variants::definitions().expect("definitions") {
+            for (index, variant) in definition.variants.iter().enumerate() {
+                day.variants = Default::default();
+                day.variants.0[definition.slot] = Some(index as u8);
+                day.variants.1 = variants::recipe_digest();
+                let map = boot_physical(&day);
+                let restart = boot_physical(&day);
+                for tag in &variant.tags {
+                    let (x, y, z) = tag.position;
+                    let pos = TilePos { x, y, floor: -z };
+                    assert!(
+                        (0..8).any(|ordinal| placement_key(pos, ordinal).is_some_and(|key| map
+                            .facts()
+                            .quest_callback_matches(
+                                key,
+                                tag.unique,
+                                tag.action,
+                                Some(tag.appearance)
+                            )))
+                    );
+                    assert_eq!(
+                        map.base().tile(x, y, -z).map(|t| t.ids().to_vec()),
+                        restart.base().tile(x, y, -z).map(|t| t.ids().to_vec())
+                    );
+                }
+                if definition.key == "nomads" {
+                    let sources = map
+                        .activation_spawns(|_| Some((100, false)))
+                        .expect("spawns");
+                    let nomads: Vec<_> = sources
+                        .iter()
+                        .flat_map(|s| &s.0)
+                        .filter(|p| p.2.contains("nomad") || p.2 == "oteryn:creature.dog")
+                        .collect();
+                    assert_eq!(nomads.len(), variant.spawns.len());
+                    assert!(
+                        inactive
+                            .activation_spawns(|_| Some((100, false)))
+                            .expect("inactive")
+                            .iter()
+                            .flat_map(|s| &s.0)
+                            .all(|p| !p.2.contains("nomad") && p.2 != "oteryn:creature.dog")
+                    );
+                }
+            }
+        }
+        day.variants = Default::default();
+        let reverted = boot_physical(&day);
+        assert_eq!(reverted, inactive);
     }
 
     #[test]

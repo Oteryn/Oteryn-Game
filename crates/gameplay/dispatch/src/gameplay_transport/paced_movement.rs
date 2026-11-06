@@ -206,6 +206,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let snapshot = match origin {
                     Some(origin) => {
                         let snapshot = self
+                            .world_change_step(&permit, actor, session, origin, snapshot)
+                            .await;
+                        let snapshot = self
                             .citizen_step(actor, session, direction, origin, snapshot)
                             .await;
                         let snapshot = self

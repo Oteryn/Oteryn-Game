@@ -13,6 +13,7 @@ pub struct DailyMap {
     pub grimvale_full_moon: bool,
     /// One of the three committed `oriental_trader/<town>` layer keys.
     pub trader: Option<&'static str>,
+    pub variants: oteryn_gameplay_world_change::variants::Selected,
 }
 
 impl DailyMap {
@@ -66,11 +67,30 @@ impl Projection {
                 needed.insert(appearance, Some(ground));
             }
         }
-        if let Some(town) = daily.trader {
+        for town in daily.trader.into_iter().chain(
+            daily
+                .variants
+                .active()
+                .flat_map(|v| v.layers.iter().map(String::as_str)),
+        ) {
             for tile in source_layer(town)?.tiles {
                 for (appearance, _, _) in tile.entries {
                     needed.entry(appearance).or_insert(None);
                 }
+            }
+        }
+        for tile in daily.variants.active().flat_map(|v| &v.tiles) {
+            for (appearance, _, _) in &tile.entries {
+                needed.entry(*appearance).or_insert(None);
+            }
+        }
+        for tile in oteryn_gameplay_world_change::variants::definitions()
+            .map_err(refusal)?
+            .iter()
+            .flat_map(|d| &d.inactive_tiles)
+        {
+            for (appearance, _, _) in &tile.entries {
+                needed.entry(*appearance).or_insert(None);
             }
         }
         for (appearance, terrain) in needed {
@@ -145,12 +165,39 @@ fn source_layer(town: &str) -> Result<Layer, Error> {
 }
 
 fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>, Error> {
-    let Some(town) = daily.trader else {
-        return Ok(BTreeMap::new());
-    };
-    let layer = source_layer(town)?;
     let mut out = BTreeMap::<u32, Sector>::new();
-    for tile in layer.tiles {
+    let mut tiles = Vec::new();
+    tiles.extend(
+        oteryn_gameplay_world_change::variants::definitions()
+            .map_err(refusal)?
+            .iter()
+            .flat_map(|d| &d.inactive_tiles)
+            .map(|t| LayerTile {
+                position: t.position,
+                flags: t.flags,
+                entries: t.entries.clone(),
+            }),
+    );
+    for layer in daily.trader.into_iter().chain(
+        daily
+            .variants
+            .active()
+            .flat_map(|v| v.layers.iter().map(String::as_str)),
+    ) {
+        tiles.extend(source_layer(layer)?.tiles);
+    }
+    tiles.extend(
+        daily
+            .variants
+            .active()
+            .flat_map(|v| &v.tiles)
+            .map(|t| LayerTile {
+                position: t.position,
+                flags: t.flags,
+                entries: t.entries.clone(),
+            }),
+    );
+    for tile in tiles {
         let (x, y, z) = tile.position;
         if x < manifest.world.min_x
             || x >= manifest.world.max_x
@@ -158,7 +205,7 @@ fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>
             || y >= manifest.world.max_y
             || !manifest.world.floors.contains(&-z)
         {
-            return Err(refusal("trader layer outside world"));
+            return Err(refusal("variant layer outside world"));
         }
         let sector = Sector {
             floor: -z,
@@ -181,7 +228,11 @@ fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>
                 })
             })
             .collect::<Result<_, Error>>()?;
-        out.entry(key(&sector)).or_insert(sector).tiles.push(Tile {
+        let output = &mut out.entry(key(&sector)).or_insert(sector).tiles;
+        if let Some(previous) = output.iter().position(|t| t.x == x && t.y == y) {
+            output.remove(previous);
+        }
+        output.push(Tile {
             x,
             y,
             flags: tile.flags.unwrap_or(0),
@@ -286,6 +337,48 @@ pub(super) fn visit(
             sector.tiles = tiles.into_values().collect();
         }
         fungus(manifest, &mut sector, daily)?;
+        // Managed passages are never admitted by raw base teleport attributes.
+        // Their current World/Character/session consumer is the sole entry owner.
+        for portal in oteryn_gameplay_world_change::variants::definitions()
+            .map_err(refusal)?
+            .iter()
+            .flat_map(|d| &d.variants)
+            .flat_map(|v| &v.portals)
+        {
+            let (x, y, z) = portal.position;
+            if sector.floor == -z
+                && let Some(tile) = sector.tiles.iter_mut().find(|t| t.x == x && t.y == y)
+            {
+                for item in &mut tile.items {
+                    item.attrs.teleport = None;
+                }
+            }
+        }
+        for tag in daily.variants.active().flat_map(|v| &v.tags) {
+            let (x, y, z) = tag.position;
+            if sector.floor != -z {
+                continue;
+            }
+            if let Some(tile) = sector.tiles.iter_mut().find(|t| t.x == x && t.y == y) {
+                if tile.house != 0 {
+                    return Err(refusal("variant tag overlaps a house"));
+                }
+                let entry = tile
+                    .items
+                    .iter_mut()
+                    .find(|i| {
+                        i.depth == 0
+                            && manifest
+                                .palette
+                                .get(i.palette as usize)
+                                .and_then(|p| palette_appearance(&p.key))
+                                == Some(tag.appearance)
+                    })
+                    .ok_or_else(|| refusal("variant return marker missing"))?;
+                entry.attrs.action = tag.action;
+                entry.attrs.unique = tag.unique;
+            }
+        }
         visitor(manifest, sector)
     })?;
     visited.manifest = projection.manifest.clone();

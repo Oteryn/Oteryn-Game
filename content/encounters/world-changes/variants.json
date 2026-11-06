@@ -1,0 +1,1955 @@
+[
+  {
+    "slot": 0,
+    "key": "fury_gates",
+    "chance_permille": 343,
+    "source": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/world_changes/fury_gates.lua; portal-bindings-candidate.json sources with exact line/SHA256 witnesses; EVENTS-WORLD-1 W15",
+    "assumption": null,
+    "variants": [
+      {
+        "key": "abdendriel",
+        "weight": 1,
+        "layers": [
+          "fury_gates/abdendriel"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              32680,
+              31719,
+              7
+            ],
+            "destination": [
+              33290,
+              31786,
+              13
+            ],
+            "premium": true,
+            "promoted": true,
+            "min_level": 60,
+            "appearance": 6116,
+            "action": 9710,
+            "unique": null
+          },
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "destination": [
+              32680,
+              31720,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ]
+      },
+      {
+        "key": "ankrahmun",
+        "weight": 1,
+        "layers": [
+          "fury_gates/ankrahmun"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              33268,
+              32841,
+              7
+            ],
+            "destination": [
+              33290,
+              31786,
+              13
+            ],
+            "premium": true,
+            "promoted": true,
+            "min_level": 60,
+            "appearance": 6117,
+            "action": 9710,
+            "unique": null
+          },
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "destination": [
+              33269,
+              32841,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ]
+      },
+      {
+        "key": "carlin",
+        "weight": 1,
+        "layers": [
+          "fury_gates/carlin"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              32263,
+              31847,
+              7
+            ],
+            "destination": [
+              33290,
+              31786,
+              13
+            ],
+            "premium": true,
+            "promoted": true,
+            "min_level": 60,
+            "appearance": 6116,
+            "action": 9710,
+            "unique": null
+          },
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "destination": [
+              32263,
+              31848,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ]
+      },
+      {
+        "key": "darashia",
+        "weight": 1,
+        "layers": [
+          "fury_gates/darashia"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              33303,
+              32371,
+              7
+            ],
+            "destination": [
+              33290,
+              31786,
+              13
+            ],
+            "premium": true,
+            "promoted": true,
+            "min_level": 60,
+            "appearance": 6117,
+            "action": 9710,
+            "unique": null
+          },
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "destination": [
+              33304,
+              32371,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ]
+      },
+      {
+        "key": "edron",
+        "weight": 1,
+        "layers": [
+          "fury_gates/edron"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              33221,
+              31922,
+              7
+            ],
+            "destination": [
+              33290,
+              31786,
+              13
+            ],
+            "premium": true,
+            "promoted": true,
+            "min_level": 60,
+            "appearance": 6116,
+            "action": 9710,
+            "unique": null
+          },
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "destination": [
+              33221,
+              31923,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ]
+      },
+      {
+        "key": "kazordoon",
+        "weight": 1,
+        "layers": [
+          "fury_gates/kazordoon"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              32575,
+              31980,
+              7
+            ],
+            "destination": [
+              33290,
+              31786,
+              13
+            ],
+            "premium": true,
+            "promoted": true,
+            "min_level": 60,
+            "appearance": 6116,
+            "action": 9710,
+            "unique": null
+          },
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "destination": [
+              32575,
+              31981,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ]
+      },
+      {
+        "key": "libertybay",
+        "weight": 1,
+        "layers": [
+          "fury_gates/libertybay"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              32348,
+              32692,
+              7
+            ],
+            "destination": [
+              33290,
+              31786,
+              13
+            ],
+            "premium": true,
+            "promoted": true,
+            "min_level": 60,
+            "appearance": 6116,
+            "action": 9710,
+            "unique": null
+          },
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "destination": [
+              32348,
+              32693,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ]
+      },
+      {
+        "key": "porthope",
+        "weight": 1,
+        "layers": [
+          "fury_gates/porthope"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              32530,
+              32711,
+              7
+            ],
+            "destination": [
+              33290,
+              31786,
+              13
+            ],
+            "premium": true,
+            "promoted": true,
+            "min_level": 60,
+            "appearance": 6116,
+            "action": 9710,
+            "unique": null
+          },
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "destination": [
+              32530,
+              32712,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ]
+      },
+      {
+        "key": "thais",
+        "weight": 1,
+        "layers": [
+          "fury_gates/thais"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              32264,
+              32164,
+              7
+            ],
+            "destination": [
+              33290,
+              31786,
+              13
+            ],
+            "premium": true,
+            "promoted": true,
+            "min_level": 60,
+            "appearance": 6117,
+            "action": 9710,
+            "unique": null
+          },
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "destination": [
+              32265,
+              32164,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ]
+      },
+      {
+        "key": "venore",
+        "weight": 1,
+        "layers": [
+          "fury_gates/venore"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              32834,
+              32081,
+              7
+            ],
+            "destination": [
+              33290,
+              31786,
+              13
+            ],
+            "premium": true,
+            "promoted": true,
+            "min_level": 60,
+            "appearance": 6116,
+            "action": 9710,
+            "unique": null
+          },
+          {
+            "position": [
+              33290,
+              31785,
+              13
+            ],
+            "destination": [
+              32834,
+              32082,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 776,
+            "action": 9715,
+            "unique": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "slot": 1,
+    "key": "nightmare_isles",
+    "chance_permille": 1000,
+    "source": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/world_changes/nightmare_isles.lua; portal-bindings-candidate.json sources with exact line/SHA256 witnesses; EVENTS-WORLD-1 W15",
+    "assumption": null,
+    "variants": [
+      {
+        "key": "ankrahmun-north",
+        "weight": 1,
+        "layers": [
+          "nightmare_isle/ankrahmun-north"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33498,
+              32613,
+              8
+            ],
+            "appearance": 10840,
+            "action": null,
+            "unique": 35020
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              33255,
+              32676,
+              7
+            ],
+            "destination": [
+              33497,
+              32616,
+              8
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 10840,
+            "action": null,
+            "unique": 64003
+          },
+          {
+            "position": [
+              33498,
+              32613,
+              8
+            ],
+            "destination": [
+              33255,
+              32678,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 10840,
+            "action": null,
+            "unique": 35020
+          }
+        ]
+      },
+      {
+        "key": "darashia-north",
+        "weight": 1,
+        "layers": [
+          "nightmare_isle/darashia-north"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33498,
+              32613,
+              8
+            ],
+            "appearance": 10840,
+            "action": null,
+            "unique": 35020
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              33215,
+              32271,
+              7
+            ],
+            "destination": [
+              33497,
+              32616,
+              8
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 10840,
+            "action": null,
+            "unique": 64002
+          },
+          {
+            "position": [
+              33498,
+              32613,
+              8
+            ],
+            "destination": [
+              33215,
+              32273,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 10840,
+            "action": null,
+            "unique": 35020
+          }
+        ]
+      },
+      {
+        "key": "darashia-west",
+        "weight": 1,
+        "layers": [
+          "nightmare_isle/darashia-west"
+        ],
+        "tiles": [],
+        "tags": [
+          {
+            "position": [
+              33498,
+              32613,
+              8
+            ],
+            "appearance": 10840,
+            "action": null,
+            "unique": 35020
+          }
+        ],
+        "spawns": [],
+        "npcs": [],
+        "portals": [
+          {
+            "position": [
+              33033,
+              32398,
+              7
+            ],
+            "destination": [
+              33497,
+              32616,
+              8
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 10842,
+            "action": null,
+            "unique": 64001
+          },
+          {
+            "position": [
+              33498,
+              32613,
+              8
+            ],
+            "destination": [
+              33032,
+              32400,
+              7
+            ],
+            "premium": false,
+            "promoted": false,
+            "min_level": 0,
+            "appearance": 10840,
+            "action": null,
+            "unique": 35020
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "slot": 2,
+    "key": "nomads",
+    "chance_permille": 799,
+    "source": "https://tibia.fandom.com/index.php?curid=76252&oldid=1128611; Crystal9f5a72:data-global/world/world-monster.xml:45684,46164-46169,46786,46791 SHA256 0f034cccf3e52cbc9e628ce2c581267c37b0d3904b0921c76cae2955d82e8657; Crystal201189f:data-global/world/world.otbm SHA256 c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85",
+    "assumption": "Owner-authorized conservative camp assignment: donor four surface spawn groups assigned to wiki four camps; female group matches count, other geographic pairing inferred. Blue counts5/4/3 and dog follow wiki; missing positions are bounded offsets near donor anchor. Camp tents/mats/chests/fur bags are removed when camp unselected; Tarpit has no chest. Original inactive ground and vegetation are retained. No new chest rewards are minted.",
+    "inactive_tiles": [
+      {
+        "position": [
+          33200,
+          32613,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33201,
+          32613,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33205,
+          32613,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33200,
+          32614,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33201,
+          32614,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33202,
+          32614,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33200,
+          32615,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33201,
+          32615,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33203,
+          32616,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33204,
+          32616,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33205,
+          32616,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33203,
+          32617,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33204,
+          32617,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33205,
+          32617,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33200,
+          32618,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33202,
+          32619,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33203,
+          32619,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33202,
+          32620,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33203,
+          32620,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33123,
+          32658,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33124,
+          32658,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33123,
+          32659,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33124,
+          32659,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33122,
+          32662,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33123,
+          32662,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33122,
+          32663,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "position": [
+          33123,
+          32663,
+          7
+        ],
+        "flags": null,
+        "entries": [
+          [
+            231,
+            null,
+            null
+          ]
+        ]
+      }
+    ],
+    "variants": [
+      {
+        "key": "northeast_shadow_tomb",
+        "weight": 1,
+        "layers": [],
+        "tiles": [],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              33208,
+              32590,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33207,
+              32594,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33207,
+              32595,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33209,
+              32592,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33210,
+              32592,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33208,
+              32593,
+              7
+            ],
+            "creature": "oteryn:creature.dog",
+            "respawn_ms": 90000
+          }
+        ],
+        "npcs": [],
+        "portals": []
+      },
+      {
+        "key": "northeast_ancient_ruins_tomb",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              33200,
+              32613,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                257,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33201,
+              32613,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                258,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33205,
+              32613,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                7343,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33200,
+              32614,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                259,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33201,
+              32614,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                260,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33202,
+              32614,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                2472,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33200,
+              32615,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                2511,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33201,
+              32615,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                2512,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33203,
+              32616,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                2513,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33204,
+              32616,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                253,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33205,
+              32616,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                254,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33203,
+              32617,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                2514,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33204,
+              32617,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                255,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33205,
+              32617,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                256,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33200,
+              32618,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                2512,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33202,
+              32619,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                257,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33203,
+              32619,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                258,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33202,
+              32620,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                259,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33203,
+              32620,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                260,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              33204,
+              32614,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_female",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33202,
+              32615,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_female",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33206,
+              32615,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_female",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33202,
+              32618,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_female",
+            "respawn_ms": 90000
+          }
+        ],
+        "npcs": [],
+        "portals": []
+      },
+      {
+        "key": "south_tarpit_tomb",
+        "weight": 1,
+        "layers": [],
+        "tiles": [
+          {
+            "position": [
+              33123,
+              32658,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                253,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33124,
+              32658,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                254,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33123,
+              32659,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                255,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33124,
+              32659,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                256,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33122,
+              32662,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                253,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33123,
+              32662,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                254,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33122,
+              32663,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                255,
+                null,
+                null
+              ]
+            ]
+          },
+          {
+            "position": [
+              33123,
+              32663,
+              7
+            ],
+            "flags": null,
+            "entries": [
+              [
+                231,
+                null,
+                null
+              ],
+              [
+                256,
+                null,
+                null
+              ]
+            ]
+          }
+        ],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              33120,
+              32660,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33121,
+              32660,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33124,
+              32665,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33124,
+              32661,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          }
+        ],
+        "npcs": [],
+        "portals": []
+      },
+      {
+        "key": "south_ancient_ruins_tomb",
+        "weight": 1,
+        "layers": [],
+        "tiles": [],
+        "tags": [],
+        "spawns": [
+          {
+            "position": [
+              33141,
+              32657,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33143,
+              32659,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          },
+          {
+            "position": [
+              33142,
+              32662,
+              7
+            ],
+            "creature": "oteryn:creature.nomad_blue",
+            "respawn_ms": 90000
+          }
+        ],
+        "npcs": [],
+        "portals": []
+      }
+    ]
+  }
+]

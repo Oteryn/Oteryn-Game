@@ -487,7 +487,7 @@
       "key": "fury_gates",
       "title": "Fury Gates Mini World Change",
       "quest": "oteryn:quest.fury_gates_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -508,6 +508,10 @@
         {
           "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
           "locator": "W6:Furyosa requires_world_change=fury_gates; existing raid:furyfate.furyosa"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "fury_gates: generic WVAR recipe; sources and assumptions are explicit"
         }
       ],
       "source_refs": [
@@ -528,11 +532,8 @@
           "url": "https://tibia.fandom.com/index.php?curid=76236&oldid=887144"
         }
       ],
-      "reason": "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. The Furyosa scheduler precondition is bound and denies new firings while the title is HELD. Native W1 variant/layer-set composition, return AID restoration and eligible callbacks remain unimplemented.",
-      "missing_facts": [
-        "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. The Furyosa scheduler precondition is bound and denies new firings while the title is HELD. Native W1 variant/layer-set composition, return AID restoration and eligible callbacks remain unimplemented."
-      ],
-      "hold_kind": "NATIVE_IMPLEMENTATION_GAP; no missing donor fact identified for basic gates",
+      "reason": "WVAR admitted variant recipes, one persisted reset selection, generic layer/spawn composition and current-fenced passage consumer. Exact donor entry/return pairings and restored return marker; eligibility is checked by the existing Character and Premium owners.",
+      "missing_facts": [],
       "binding": {
         "kind": "raid",
         "raid_key": "raid:furyfate.furyosa"
@@ -897,7 +898,7 @@
       "key": "nightmare_isles",
       "title": "Nightmare Isles Mini World Change",
       "quest": "oteryn:quest.nightmare_isles_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -914,6 +915,10 @@
         {
           "path": "content/encounters/world-changes/portal-bindings-candidate.json",
           "locator": "nightmare_isles:source pairings and native startup-marker omission; native_admission=false"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "nightmare_isles: generic WVAR recipe; sources and assumptions are explicit"
         }
       ],
       "source_refs": [
@@ -934,17 +939,14 @@
           "url": "https://tibia.fandom.com/index.php?curid=76249&oldid=887167"
         }
       ],
-      "reason": "1000 permille and three equal entrances; exact shared-dungeon entry/return positions and base creatures are sourced. Native W1 variant/layer-set composition, missing return UID restoration and current-fenced entry/return callbacks remain unimplemented.",
-      "missing_facts": [
-        "1000 permille and three equal entrances; exact shared-dungeon entry/return positions and base creatures are sourced. Native W1 variant/layer-set composition, missing return UID restoration and current-fenced entry/return callbacks remain unimplemented."
-      ],
-      "hold_kind": "NATIVE_IMPLEMENTATION_GAP; no missing donor fact identified for basic gates"
+      "reason": "WVAR admitted variant recipes, one persisted reset selection, generic layer/spawn composition and current-fenced passage consumer. Exact donor entry/return pairings and restored return marker; eligibility is checked by the existing Character and Premium owners.",
+      "missing_facts": []
     },
     {
       "key": "nomads",
       "title": "Nomads Mini World Change",
       "quest": "oteryn:quest.authored.nomads_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -961,6 +963,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "nomads: generic WVAR recipe; sources and assumptions are explicit"
         }
       ],
       "source_refs": [
@@ -981,10 +987,8 @@
           "url": "https://tibia.fandom.com/index.php?curid=76252&oldid=1128611"
         }
       ],
-      "reason": "W 15/D 1055 fixes 799 permille, four camps and equal weights 1. Native camp/spawn/chest membership and selection-to-map binding are absent; base Nomad spawns do not establish camp variants.",
-      "missing_facts": [
-        "W 15/D 1055 fixes 799 permille, four camps and equal weights 1. Native camp/spawn/chest membership and selection-to-map binding are absent; base Nomad spawns do not establish camp variants."
-      ],
+      "reason": "WVAR admitted variant recipes, one persisted reset selection, generic layer/spawn composition and current-fenced passage consumer. Nomad donor camp-to-variant assignments and missing spawn offsets use the owner-authorized conservative rule recorded in variants.json.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 799,

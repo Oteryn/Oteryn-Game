@@ -70,6 +70,6 @@ pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
         "grimvale" => day.grimvale_full_moon,
         "stampede" => day.stampede,
         // Flower Month's waves are still held; the NPC alone is not completion.
-        _ => false,
+        _ => day.variant(key).is_some(),
     }
 }

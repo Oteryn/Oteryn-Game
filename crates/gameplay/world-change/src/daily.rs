@@ -118,6 +118,8 @@ pub struct DailyWorldChanges {
     /// Old immutable decisions stay inactive until their next server save.
     #[serde(default)]
     pub stampede: bool,
+    #[serde(default)]
+    pub variants: crate::variants::Selected,
 }
 
 impl DailyWorldChanges {
@@ -155,6 +157,7 @@ impl DailyWorldChanges {
                 _ => OrientalTraderTown::LibertyBay,
             });
         Self {
+            variants: crate::variants::Selected::select(&mut draw),
             stampede: (u128::from(draw(stampede)) * 1000) >> 64
                 < u128::from(candidates.stampede_permille),
             reset_epoch,
@@ -168,7 +171,15 @@ impl DailyWorldChanges {
 
     /// The NPCs this day adds to the live map: `(key, (x, y, z))`.
     pub fn npcs(&self) -> impl Iterator<Item = (&'static str, (u16, u16, i8))> {
-        self.flower_month.then_some(ROSEMARIE).into_iter()
+        self.flower_month.then_some(ROSEMARIE).into_iter().chain(
+            self.variants
+                .active()
+                .flat_map(|v| v.npcs.iter().map(|n| (n.key.as_str(), n.position))),
+        )
+    }
+
+    pub fn variant(&self, key: &str) -> Option<usize> {
+        self.variants.variant(key)
     }
 
     /// The Items this day adds to the live map: `(appearance, (x, y, z))`.
@@ -222,6 +233,7 @@ mod tests {
                 grimvale_full_moon: true,
                 flower_month: true,
                 stampede: true,
+                variants: all.variants,
             }
         );
         let none = roll([u64::MAX; 5], 5, 12);

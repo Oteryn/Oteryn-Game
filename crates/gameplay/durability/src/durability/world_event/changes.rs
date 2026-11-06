@@ -18,6 +18,8 @@ pub fn roll(
     unix_ms: i64,
 ) -> Result<DailyWorldChanges, DurabilityError> {
     let candidates = authored_candidates()?;
+    oteryn_gameplay_world_change::variants::definitions()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
     let mut hash = Sha256::new();
     hash.update(b"oteryn.world_change.daily.v1\0");
     hash.update(world.as_bytes());
@@ -78,6 +80,10 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
                     && entry["trigger"]["day"] == 13 =>
             {
                 grimvale = true;
+                continue;
+            }
+            Some(key) if oteryn_gameplay_world_change::variants::definitions()
+                .map_err(|_| DurabilityError::InvalidStoredState)?.iter().any(|d| d.key == key) => {
                 continue;
             }
             _ => return Err(DurabilityError::InvalidStoredState),
@@ -159,20 +165,26 @@ pub(super) async fn record(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     epoch: u64,
+    activate_variants: bool,
 ) -> Result<DailyWorldChanges, DurabilityError> {
     let existing: Option<serde_json::Value> = sqlx::query_scalar("SELECT decision FROM game_world_change_days WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_optional(&mut **tx).await?;
     if let Some(existing) = existing {
         let day: DailyWorldChanges =
             serde_json::from_value(existing).map_err(|_| DurabilityError::InvalidStoredState)?;
-        if day.reset_epoch != epoch {
+        if day.reset_epoch != epoch || !day.variants.compatible() {
             return Err(DurabilityError::InvalidStoredState);
         }
         return Ok(day);
     }
     let timestamp: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM activated_at)*1000)::bigint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
-    let selected = roll(world, epoch, timestamp)?;
+    let mut selected = roll(world, epoch, timestamp)?;
+    if !activate_variants {
+        // Legacy daily effects may backfill from immutable reset time; new WVAR
+        // content is admitted exclusively by reset finalization, never boot.
+        selected.variants = Default::default();
+    }
     let decision =
         serde_json::to_value(selected).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_world_change_days(world_id,reset_epoch,decision) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3) ON CONFLICT DO NOTHING")
@@ -198,10 +210,55 @@ pub async fn load(
     if current.as_deref() != Some(epoch.to_string().as_str()) {
         return Ok(None);
     }
-    record(tx, world, epoch).await.map(Some)
+    record(tx, world, epoch, false).await.map(Some)
 }
 
 impl DurabilityRoot {
+    /// Current Character/session/generation admission, composed with the existing
+    /// Premium owner in the same transaction as the current World decision read.
+    pub async fn world_change_passage<G: crate::durability::npc_travel::NpcTravelGate>(
+        &self,
+        authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+        fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+        epoch: u64,
+        position: oteryn_gameplay_world_change::variants::Position,
+        gate: &G,
+    ) -> Result<Option<oteryn_gameplay_world_change::variants::Position>, crate::durability::character_progression::CharacterProgressionError> {
+        use crate::durability::{character_progression::{assert_gameplay_fence, CharacterProgressionError}, db::begin_type2_transaction};
+        if !matches!(fence.runtime_scope, crate::foundation::RuntimeScopeRefV1::Channel { .. }) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let recovery = authority.record_for(self).map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        let mut gate = gate;
+        self.try_issue_semantic_pass()?.run_with_context(&mut gate, move |holder, deadline, gate| Box::pin(async move {
+            let mut tx = begin_type2_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            // Premium precedes Character-root locking, as in the travel owner.
+            let account: Option<String> = sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+            let premium = if let Some(account) = account {
+                gate.travel_permitted(&mut tx, crate::durability::character_authority::uuid_text(&account)?).await?
+            } else { false };
+            if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? { return Ok(Err(error)); }
+            let Some(day) = load(&mut tx, fence.runtime_scope.world_id(), epoch).await? else { return Ok(Ok(None)); };
+            let portal = day.variants.active().flat_map(|v| &v.portals).find(|p| p.position == position);
+            let Some(portal) = portal else { return Ok(Ok(None)); };
+            let level: Option<i64> = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+                .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+            let promoted = crate::durability::character_promotion::read_durable_promotion(&mut tx, fence.character_id).await?;
+            let destination = (!portal.premium || premium)
+                .then_some(())
+                .filter(|_| !portal.promoted || promoted)
+                .filter(|_| level.is_some_and(|level| level >= i64::from(portal.min_level)))
+                .map(|_| portal.destination);
+            tx.commit(deadline).await?;
+            Ok(Ok(destination))
+        })).await?
+    }
+
     pub async fn world_changes(
         &self,
         world: WorldId,
