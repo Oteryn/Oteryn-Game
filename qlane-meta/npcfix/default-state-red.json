@@ -1,0 +1,1 @@
+{"command": ["/home/mole/oteryn-cache/codex-bin/cargo", "test", "--offline", "--locked", "-p", "oteryn-game-server", "--test", "content_npc_catalogue", "npcfix_retail_services_and_greeting_match_the_audited_repairs", "--", "--nocapture"], "exit_code": 101, "expected_red": true, "restored_exact_source": true}

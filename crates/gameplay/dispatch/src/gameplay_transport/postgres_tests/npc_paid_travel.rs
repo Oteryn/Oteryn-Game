@@ -861,8 +861,8 @@ fn scenario() -> TestResult {
                     .await?;
                 sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(240).as_slice()).execute(&mut *tx).await?;
                 sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(241).as_slice()).execute(&mut *tx).await?;
-                sqlx::query("UPDATE game_item_instances SET lifecycle=2 WHERE item_instance_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
-                    .bind(id(240).as_slice()).bind(id(241).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("UPDATE game_item_instances SET lifecycle=2,quantity=0,last_transaction_id=encode($3,'hex')::uuid WHERE item_instance_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+                    .bind(id(240).as_slice()).bind(id(241).as_slice()).bind(id(242).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
             }
             let track = route.quest_gate.clone().or_else(|| route.yalahar_town_gate.as_ref()

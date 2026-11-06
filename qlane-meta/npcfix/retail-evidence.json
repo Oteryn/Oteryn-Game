@@ -1,0 +1,37 @@
+{
+  "spell_teaching_superseded": {
+    "date": "2026-01-27",
+    "version": "15.22",
+    "npcs": [
+      "razan",
+      "shalmar"
+    ],
+    "sources": [
+      "https://www.tibiawiki.com.br/wiki/Razan",
+      "https://www.tibiawiki.com.br/wiki/Shalmar",
+      "https://tibia.fandom.com/wiki/Updates/15.22.c93366"
+    ],
+    "native_owner": "crates/gameplay/dispatch/src/gameplay_transport/automatic_spell_progression.rs",
+    "disposition": "Do not reintroduce historical paid teaching."
+  },
+  "albinius": {
+    "item": "oteryn:item.tibia.i23986",
+    "direction": "BuyFromPlayer",
+    "price": 30,
+    "source": "../npcaudit/.npcaudit/research/albinius.md"
+  },
+  "a_ghostly_guardian": {
+    "source": "../npcaudit/.npcaudit/_cache/reader1/transcript/a_ghostly_guardian.html",
+    "greeting_player_name": "Mogh in the capture is the speaker; use existing |PLAYERNAME| substitution."
+  },
+  "deseus": {
+    "disposition": "Historical NPC; excluded after fresh retail classification",
+    "source": "https://tibia.fandom.com/wiki/Deprecated_NPCs",
+    "cross_check": "https://tibia.fandom.com/wiki/Category:Deprecated",
+    "audit_status_preserved": "MISSING"
+  },
+  "scarab_cheese": {
+    "source": "https://www.tibiawiki.com.br/index.php?stableid=303337&title=The_Travelling_Trader_Quest",
+    "rule": "Carried Scarab Cheese prevents ship travel; not a quest completion gate."
+  }
+}

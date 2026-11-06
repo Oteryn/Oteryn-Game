@@ -1,0 +1,93 @@
+crates/gameplay/npc/src/npc_talk.rs:472:pub struct NpcReply<K> {
+crates/gameplay/npc/src/npc_talk.rs:476:    pub continuations: Vec<String>,
+crates/gameplay/npc/src/npc_talk.rs:517:            return Some(NpcReply {
+crates/gameplay/npc/src/npc_talk.rs:520:                continuations: Vec::new(),
+crates/gameplay/npc/src/npc_talk.rs:531:            return Some(NpcReply {
+crates/gameplay/npc/src/npc_talk.rs:534:                continuations: keyword.reply[1..].to_vec(),
+crates/gameplay/npc/src/npc_talk.rs:542:            return Some(NpcReply {
+crates/gameplay/npc/src/npc_talk.rs:545:                continuations: Vec::new(),
+crates/gameplay/npc/src/npc_talk.rs:574:    Some(NpcReply {
+crates/gameplay/npc/src/npc_talk.rs:577:        continuations: Vec::new(),
+crates/gameplay/content/src/content/npc_catalogue/replies.rs:21:pub struct NpcReplyLine {
+crates/gameplay/content/src/content/npc_catalogue/service.rs:26:pub fn default_state_purchase(shop: &str, item: &str, price: u64) -> Option<u32> {
+crates/gameplay/content/src/content/npc_catalogue/service.rs:41:pub fn merchant_access(npc: &str) -> Option<(&'static str, &'static str, i64)> {
+crates/gameplay/content/src/content/npc_catalogue/service.rs:63:pub fn postage_price(npc: &str, item: &str, completed: bool) -> Option<u64> {
+crates/gameplay/content/src/content/npc_catalogue/service.rs:90:    use super::postage_price;
+crates/gameplay/content/src/content/npc_catalogue/service.rs:93:    fn npc_postage_prices_preserve_ordinary_discounted_and_robson_terms() {
+crates/gameplay/content/src/content/npc_catalogue/service.rs:100:                postage_price(&npc, "oteryn:item.tibia.i3505", false),
+crates/gameplay/content/src/content/npc_catalogue/service.rs:104:                postage_price(&npc, "oteryn:item.tibia.i3505", true),
+crates/gameplay/content/src/content/npc_catalogue/service.rs:108:                postage_price(&npc, "oteryn:item.tibia.i3503", false),
+crates/gameplay/content/src/content/npc_catalogue/service.rs:112:                postage_price(&npc, "oteryn:item.tibia.i3503", true),
+crates/gameplay/content/src/content/npc_catalogue/service.rs:118:                postage_price("oteryn:npc.robson", "oteryn:item.tibia.i3503", completed),
+crates/gameplay/content/src/content/npc_catalogue/service.rs:122:                postage_price("oteryn:npc.robson", "oteryn:item.tibia.i3505", completed),
+crates/gameplay/content/src/content/npc_catalogue/service.rs:126:                postage_price("oteryn:npc.unknown", "oteryn:item.tibia.i3503", completed),
+crates/gameplay/content/src/content/npc_catalogue/service.rs:288:pub struct NpcBankDialogue {
+crates/gameplay/content/src/content/npc_catalogue/service.rs:400:        && default_state_purchase(service, key, offer.unit_price).is_some_and(|charges| {
+crates/gameplay/content/src/content/npc_catalogue/service.rs:529:                    offer.postman_unit_price.unwrap_or(offer.unit_price),
+crates/gameplay/content/src/content/npc_catalogue/service.rs:635:                        Some(NpcBankDialogue {
+crates/gameplay/content/src/content/npc_catalogue/grizzly_shop.rs:27:    fn offer(&self) -> ProjectV2ServiceOffer {
+crates/gameplay/content/src/content/npc_catalogue/grizzly_shop.rs:28:        ProjectV2ServiceOffer {
+crates/gameplay/content/src/content/npc_catalogue/grizzly_shop.rs:36:            postman_unit_price: None,
+apps/game-server/tests/content_world_project_repository.rs:2535:            oteryn_game_server::content::npc_catalogue::service::merchant_access(&format!(
+apps/game-server/tests/content_world_project_v2.rs:675:            offers: vec![ProjectV2ServiceOffer {
+apps/game-server/tests/content_world_project_v2.rs:683:                postman_unit_price: None,
+crates/gameplay/content/src/content/project/v2.rs:1145:pub struct ProjectV2ServiceOffer {
+crates/gameplay/content/src/content/project/v2.rs:1151:    pub postman_unit_price: Option<u64>,
+crates/gameplay/content/src/content/project/v2.rs:1166:impl ProjectV2ServiceOffer {
+crates/gameplay/content/src/content/project/v2.rs:1864:        offer.postman_unit_price.is_some_and(|price| {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:165:) -> ProjectV2ServiceOffer {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:166:    ProjectV2ServiceOffer {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:174:        postman_unit_price: None,
+crates/gameplay/durability/src/durability/npc_trade.rs:711:                    if let Some((quest, track, value)) = oteryn_gameplay_content::content::npc_catalogue::service::merchant_access(&request.cause.npc_key) {
+crates/gameplay/durability/src/durability/npc_trade.rs:722:                        && oteryn_gameplay_content::content::npc_catalogue::service::postage_price(
+crates/gameplay/durability/src/durability/npc_trade.rs:733:                        let expected = oteryn_gameplay_content::content::npc_catalogue::service::postage_price(
+crates/gameplay/dispatch/src/lifted_tests/content_npc_service_tests.rs:58:fn offer(key: &str, direction: Dir, price: u64, count: Option<u32>) -> ProjectV2ServiceOffer {
+crates/gameplay/dispatch/src/lifted_tests/content_npc_service_tests.rs:59:    ProjectV2ServiceOffer {
+crates/gameplay/dispatch/src/lifted_tests/content_npc_service_tests.rs:67:        postman_unit_price: None,
+crates/protocol-oteryn/src/tests/team_finder_members_tests.rs:253:fn duplicate_zero_handles_and_impossible_continuations_are_refused() {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command_tests.rs:383:) -> ProjectV2ServiceOffer {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command_tests.rs:384:    ProjectV2ServiceOffer {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command_tests.rs:396:        postman_unit_price: None,
+crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:281:        && let Some(charges) = crate::content::npc_catalogue::service::default_state_purchase(
+crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:967:    for text in std::iter::once(reply.text).chain(reply.continuations) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/session_transfer.rs:35:                SessionNpc {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/session_transfer.rs:60:            SessionNpc {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/grizzly_shop.rs:72:                (crate::content::npc_catalogue::service::merchant_access(key).is_none()
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/grizzly_shop.rs:73:                    || state.merchant_access.contains(key))
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/grizzly_shop.rs:87:                    && let Some(price) = source.postman_unit_price
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/grizzly_shop.rs:154:        let row = |id, price| ProjectV2ServiceOffer {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/grizzly_shop.rs:166:            postman_unit_price: None,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:61:struct SessionNpc {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:70:    merchant_access: std::collections::BTreeSet<String>,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:437:        if postman_completed && let Some(price) = source.postman_unit_price {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:626:                    .chain(reply.continuations)
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:691:    let merchant_access = admission
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:708:                        crate::content::npc_catalogue::service::merchant_access(npc).is_some_and(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:718:        sessions.entry(session).or_default().merchant_access = merchant_access;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_shop.rs:216:        let offer = ProjectV2ServiceOffer {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_shop.rs:228:            postman_unit_price: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs:398:                    crate::content::npc_catalogue::service::merchant_access(&npc_key)
+tools/codex/cloud-wp3-maintenance.sh:4:# Cached Codex Cloud continuations should be cheap. Do not perform dependency
+tools/content-schema/npc-authoring/build_service_relations.py:189:    for entry in report['merchant_access']:
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:3172:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:3182:            "postman_unit_price": 5
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:3283:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:3293:            "postman_unit_price": 5
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:3395:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:3405:            "postman_unit_price": 5
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:6925:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:6935:            "postman_unit_price": 5
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:7037:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:7047:            "postman_unit_price": 5
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:7097:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:7107:            "postman_unit_price": 5
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:7816:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:7826:            "postman_unit_price": 5
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:9660:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:9670:            "postman_unit_price": 5
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:9911:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:9921:            "postman_unit_price": 5
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:14496:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:14506:            "postman_unit_price": 5
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:17499:            "postman_unit_price": 10
+tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json:17509:            "postman_unit_price": 5
