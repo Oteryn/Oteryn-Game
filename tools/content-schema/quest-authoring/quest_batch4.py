@@ -62,7 +62,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'sources',
+    'success_message', 'native_rule', 'effects', 'sources',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -220,6 +220,83 @@ def validate_native(callback, context):
         context + ': native rule has unrelated effects or feedback')
 
 
+def validate_effects(callback, context):
+    """The optional Channel effects share the Rust world_callbacks closed shape."""
+    effects = callback.get('effects', {})
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter'}
+    fields(effects, set(), allowed, context + ': effects')
+    transform = effects.get('transform')
+    require(transform is None or integer(transform, 1, 65535), context + ': invalid transform')
+    facing = effects.get('facing')
+    require(facing is None or facing in ('north', 'east', 'south', 'west')
+            and callback.get('teleport') is not None, context + ': invalid destination facing')
+    require(callback['trigger'] != 'step_out' or not callback['return_on_failure'],
+            context + ': stepout cannot return to the departed tile')
+    require(callback.get('native_rule') is None or all(value is None for value in effects.values()),
+            context + ': native rule has unrelated effects')
+    magic = effects.get('magic')
+    if magic is not None:
+        fields(magic, {'position', 'effect'}, {'position', 'effect'}, context + ': magic')
+        position(magic['position'], context + ': magic')
+        require(integer(magic['effect'], 1, 65535), context + ': invalid magic effect')
+    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter'))
+    require(operations <= 1 and (operations == 0 or callback['trigger'] == 'use'
+            and callback.get('lever') is not None and not callback['storage']
+            and not callback['passages'] and callback.get('teleport') is None),
+            context + ': incompatible map effects')
+    pair = effects.get('portals')
+    if pair is not None:
+        fields(pair, {'appearance', 'portals'}, {'appearance', 'portals', 'lifetime_us'}, context + ': pair')
+        require(integer(pair['appearance'], 1, 65535)
+                and (pair.get('lifetime_us') is None or integer(pair['lifetime_us'], 1, 2**64-1)),
+                context + ': invalid portal appearance/lifetime')
+        require(isinstance(pair['portals'], list) and len(pair['portals']) == 2, context + ': paired endpoints required')
+        positions = []
+        for portal in pair['portals']:
+            fields(portal, {'position', 'destination'}, {'position', 'destination'}, context + ': portal')
+            positions.append(position(portal['position'], context + ': portal'))
+            position(portal['destination'], context + ': destination')
+        require(positions[0] != positions[1], context + ': duplicate portal endpoint')
+    cycle = effects.get('item_cycle')
+    if cycle is not None:
+        fields(cycle, {'position', 'remove', 'create'}, {'position', 'remove', 'create'}, context + ': cycle')
+        position(cycle['position'], context + ': cycle')
+        require(integer(cycle['remove'], 1, 65535) and integer(cycle['create'], 1, 65535)
+                and cycle['remove'] != cycle['create'], context + ': invalid item cycle')
+    encounter = effects.get('encounter')
+    if encounter is not None:
+        names = {'minimum_level', 'players', 'monsters', 'room_min', 'room_max'}
+        fields(encounter, names, names, context + ': encounter')
+        require(integer(encounter['minimum_level'], 1, 2**32-1) and not callback['reversible'],
+                context + ': invalid encounter level/reversal')
+        lower = position(encounter['room_min'], context + ': room min')
+        upper = position(encounter['room_max'], context + ': room max')
+        require(lower[2] == upper[2] and lower[0] <= upper[0] and lower[1] <= upper[1],
+                context + ': invalid encounter room')
+
+        def in_room(at):
+            return at[2] == lower[2] and lower[0] <= at[0] <= upper[0] and lower[1] <= at[1] <= upper[1]
+
+        for name in ('players', 'monsters'):
+            require(isinstance(encounter[name], list) and 1 <= len(encounter[name]) <= MAX_EFFECTS,
+                    context + ': invalid encounter ' + name)
+        origins, destinations, monsters = set(), set(), set()
+        for player in encounter['players']:
+            fields(player, {'from', 'to'}, {'from', 'to'}, context + ': member')
+            origin = position(player['from'], context + ': staging tile')
+            destination = position(player['to'], context + ': landing tile')
+            require(origin not in origins and destination not in destinations
+                    and not in_room(origin) and in_room(destination), context + ': invalid encounter member')
+            origins.add(origin)
+            destinations.add(destination)
+        for monster in encounter['monsters']:
+            fields(monster, {'position', 'creature'}, {'position', 'creature'}, context + ': monster')
+            at = position(monster['position'], context + ': spawn tile')
+            require(at not in monsters and at not in destinations and in_room(at)
+                    and valid_key(monster['creature']), context + ': invalid encounter spawn')
+            monsters.add(at)
+
+
 def validate_callback(callback, directory):
     context = directory + ' callback'
     fields(callback, CALLBACK_REQUIRED, CALLBACK_FIELDS, context)
@@ -227,7 +304,7 @@ def validate_callback(callback, directory):
     require(valid_key(key) and key.startswith('oteryn:quest-callback/'), context + ': foreign or invalid key')
     require(QUEST_OWNERS[directory] is not None and callback['quest'] == QUEST_OWNERS[directory],
             key + ': foreign quest owner or owner not qualified')
-    require(callback['trigger'] in ('use', 'step_in'), key + ': invalid trigger')
+    require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
     selector = callback['selector']
     selector_fields = {'position', 'unique', 'action', 'appearance'}
     fields(selector, set(), selector_fields, key + ': selector')
@@ -290,6 +367,7 @@ def validate_callback(callback, directory):
     text_message(callback.get('success_message'), key + ': success_message')
     provenance(callback['sources'], key)
     validate_native(callback, key)
+    validate_effects(callback, key)
 
 
 def source_only(value, context):

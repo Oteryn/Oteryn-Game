@@ -216,14 +216,21 @@ impl Harness {
         initialized: bool,
         seed_session: bool,
     ) -> TestResult<Self> {
-        Self::create_seeded(admin, tag, initialized, seed_session, false).await
+        Self::create_seeded(
+            admin,
+            tag,
+            initialized,
+            seed_session,
+            CreationFixture::Historical,
+        )
+        .await
     }
     async fn create_seeded(
         admin: String,
         tag: &str,
         initialized: bool,
         seed_session: bool,
-        appearance: bool,
+        creation: CreationFixture,
     ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
@@ -240,19 +247,7 @@ impl Harness {
                 .map_err(debug)?;
         }
         let node = registered_node(&root, 1).await?;
-        seed_character(
-            &pool,
-            &root,
-            &node,
-            initialized,
-            seed_session,
-            if appearance {
-                CreationFixture::Own
-            } else {
-                CreationFixture::Historical
-            },
-        )
-        .await?;
+        seed_character(&pool, &root, &node, initialized, seed_session, creation).await?;
         Ok(Self {
             database,
             root,
@@ -280,7 +275,9 @@ impl Harness {
     }
 }
 
-fn bootstrap_binding(appearance: bool, observer: bool) -> Vec<u8> {
+fn bootstrap_binding(creation: CreationFixture) -> Vec<u8> {
+    let appearance = creation != CreationFixture::Historical;
+    let observer = creation == CreationFixture::Observer;
     let original_id = id;
     let id = |tag| {
         original_id(if observer && ![42, 43].contains(&tag) {
@@ -313,8 +310,8 @@ fn bootstrap_binding(appearance: bool, observer: bool) -> Vec<u8> {
             .to_be_bytes(),
     );
     binding.extend_from_slice(name.as_bytes());
-    if appearance {
-        binding.push(2);
+    if let Some(sex) = creation.sex() {
+        binding.push(sex as u8);
     }
     binding
 }
@@ -394,7 +391,6 @@ async fn seed_character(
     seed_session: bool,
     creation: CreationFixture,
 ) -> TestResult {
-    let appearance = creation != CreationFixture::Historical;
     let observer = creation == CreationFixture::Observer;
     let original_id = id;
     let id = |tag| {
@@ -429,7 +425,7 @@ async fn seed_character(
     .bind(id(41).as_slice())
     .bind(id(40).as_slice())
     .bind(id(42).as_slice())
-    .bind(if appearance { Some(2_i16) } else { None })
+    .bind(creation.sex())
     .bind(name)
     .execute(pool)
     .await?;
@@ -443,7 +439,7 @@ async fn seed_character(
            encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,1,120)",
     )
     .bind(id(30).as_slice())
-    .bind(bootstrap_binding(appearance, observer))
+    .bind(bootstrap_binding(creation))
     .bind(id(40).as_slice())
     .bind(id(41).as_slice())
     .bind(id(42).as_slice())
@@ -458,7 +454,7 @@ async fn seed_character(
          (1,$3,encode($1,'hex')::uuid,$2) ON CONFLICT(issuer_scope) DO UPDATE SET source_revision=EXCLUDED.source_revision,issuer_decision_id=EXCLUDED.issuer_decision_id,intent_binding=EXCLUDED.intent_binding",
     )
     .bind(id(31).as_slice())
-    .bind(bootstrap_binding(appearance, observer))
+    .bind(bootstrap_binding(creation))
     .bind(if observer { 2_i64 } else { 1_i64 })
     .execute(pool)
     .await?;

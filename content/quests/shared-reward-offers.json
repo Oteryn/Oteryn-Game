@@ -1,0 +1,217 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "holy water"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "reply": [
+        "Who sent you?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.morgan",
+      "keywords": [
+        "forge"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "What would you like me to forge?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_sword",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "flou"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "explain"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "helmet"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sam",
+      "keywords": [
+        "old backpack",
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "Did you find my old backpack?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ]
+    }
+  ]
+}
