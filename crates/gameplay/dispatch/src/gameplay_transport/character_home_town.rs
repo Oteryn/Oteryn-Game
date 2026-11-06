@@ -391,7 +391,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let states = self.states.spell_states.lock().await;
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
-        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             &runtime,
             self.movement_cells,
             actor,

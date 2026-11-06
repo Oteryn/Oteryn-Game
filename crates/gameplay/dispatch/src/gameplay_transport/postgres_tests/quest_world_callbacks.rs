@@ -11,6 +11,18 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
+    if name == "triangle-tower-lever" {
+        // This source-equivalent adapter is deliberately absent from production:
+        // the established Triangle callback owns the physical lever selector.
+        let fixtures: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../tools/content-schema/quest-authoring/samples/qengine-access-test-fixtures.json"
+        )))?;
+        let row = fixtures["callbacks"].as_array().ok_or("access fixtures")?.iter()
+            .find(|row| row["key"].as_str().is_some_and(|key| key.ends_with(name)))
+            .ok_or("item-cycle fixture")?;
+        return Ok(serde_json::from_value(row.clone())?);
+    }
     oteryn_gameplay_quests::quest::world_callbacks::load()?
         .into_iter()
         .find(|c| c.key.ends_with(name))
@@ -232,6 +244,35 @@ pub(super) fn world(
             .entry((position.floor, position.x, position.y))
             .or_default();
     }
+    for passage in &callback.passages {
+        if passage.replacement == Some(7767) {
+            let p = passage.position;
+            cells.entry((p.floor, p.x, p.y - 1)).or_default();
+            cells.entry((p.floor - 1, p.x, p.y)).or_default();
+        }
+    }
+    let mut effect_positions = Vec::new();
+    if let Some(pair) = &callback.effects.portals {
+        for portal in &pair.portals {
+            effect_positions.extend([portal.position, portal.destination]);
+        }
+    }
+    if let Some(cycle) = &callback.effects.item_cycle {
+        effect_positions.push(cycle.position);
+    }
+    if let Some(encounter) = &callback.effects.encounter {
+        for player in &encounter.players {
+            effect_positions.extend([player.from, player.to]);
+        }
+        effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
+    }
+    for p in effect_positions {
+        for x in p.x - 1..=p.x + 1 {
+            for y in p.y - 1..=p.y + 1 {
+                cells.entry((p.floor, x, y)).or_default();
+            }
+        }
+    }
     let appearance = callback.selector.appearance.unwrap_or(100);
     data.manifest.palette.push(bundle::PaletteEntry {
         key: format!("oteryn:terrain.tibia.i{appearance}"),
@@ -409,6 +450,55 @@ pub(super) fn world(
                 attrs: Default::default(),
             });
     }
+    let mut effect_appearances = Vec::new();
+    effect_appearances.extend(callback.effects.transform);
+    if callback.effects.transform.is_some() {
+        effect_appearances.extend([430, 431]);
+    }
+    if let Some(pair) = &callback.effects.portals {
+        effect_appearances.push(pair.appearance);
+    }
+    if let Some(cycle) = &callback.effects.item_cycle {
+        effect_appearances.extend([cycle.remove, cycle.create]);
+    }
+    for appearance in effect_appearances {
+        let key = format!("oteryn:terrain.tibia.i{appearance}");
+        if data.manifest.palette.iter().any(|entry| entry.key == key) {
+            continue;
+        }
+        let id = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key,
+            family: bundle::Family::Terrain,
+            id,
+            terrain: Some(bundle::Terrain {
+                kind: if [1270, 1025].contains(&appearance) {
+                    bundle::TerrainKind::Wall
+                } else {
+                    bundle::TerrainKind::Common
+                },
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+    }
+    if let Some(cycle) = &callback.effects.item_cycle {
+        let index = data
+            .manifest
+            .palette
+            .iter()
+            .position(|p| p.key == format!("oteryn:terrain.tibia.i{}", cycle.remove))
+            .ok_or("cycle palette")?;
+        let p = cycle.position;
+        cells
+            .entry((p.floor, p.x, p.y))
+            .or_default()
+            .push(sector::Item {
+                palette: u32::try_from(index)?,
+                depth: 0,
+                attrs: Default::default(),
+            });
+    }
     if callback.key == "oteryn:quest-callback/triangle-tower-wall" {
         // Preserve the native basement exit rather than authoring a second callback.
         let region = oteryn_world_bundle_compiler::b3::decode_region(
@@ -580,10 +670,13 @@ pub(super) async fn wire(
         result.ok_or_else(|| "no command result".into())
     };
     let reader = tokio::spawn(async move {
-        let result: TestResult<Vec<u8>> = receiving.await;
+        let result: TestResult<_> = receiving.await;
         result.map_err(|error| error.to_string())
     });
     let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
+    if let ConnectionEnd::AdmittedThenClosed(_, error) = &end {
+        eprintln!("quest wire command={id} type={kind} closed={error:?}");
+    }
     drop(server);
     let result = reader.await?.map_err(Into::into);
     if let ConnectionEnd::AdmittedThenDisconnected(a) | ConnectionEnd::AdmittedThenClosed(a, _) =

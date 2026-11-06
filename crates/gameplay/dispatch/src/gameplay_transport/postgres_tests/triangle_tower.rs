@@ -121,7 +121,7 @@ pub(super) async fn exercise(
             .read_actor_position(actor)
             .map_err(super::fixture::debug)?;
         let closed = crate::map::floor::BundleDoors(world.facts().doors());
-        let proof = crate::map::floor::prepare_quest_callback_teleport(
+        let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
             &runtime,
             owner.movement_cells,
             actor,

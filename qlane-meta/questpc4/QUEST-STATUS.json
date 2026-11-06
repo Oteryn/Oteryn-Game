@@ -3201,5 +3201,59 @@
       "generated_files": "No World/provider inputs changed; only the authored embedded callback gained an exact alternative."
     }
   },
-  "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context."
+  "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
+  "shared_engine_integration": {
+    "status": "QUALIFIED_MECHANISM",
+    "branch": "claude/happy-davinci-ijz3wy-qengine2",
+    "source_head": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+    "reuse": "Atomic NPC exchanges, retained possession, outfits/addons, paired portal lifecycle, encounter and item-cycle callbacks.",
+    "compatibility": "Preserve positional magic arrays and numeric facing receipt serialization; compose source-equivalent callbacks without duplicate registry keys; join unknown native item facts without replacing established identity or contradicting known facts.",
+    "checks_passed": [
+      "17 callback units before final compatibility roundtrip test",
+      "5 shared-effect authoring tests",
+      "11 reward authoring tests",
+      "5 access binding tests",
+      "2 native fact-join tests",
+      "16 legacy batch-four authoring tests",
+      "registered native files check:42",
+      "World pin refresh/check cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298",
+      "19 callback units including dual wire forms and exact-selector alias refusal",
+      "6 shared-effect authoring tests including source-equivalent selector alias composition",
+      "30 native reference artifact tests:226.13s",
+      "5 World repository tests:54.17s",
+      "PG portal lifecycle:62.676085037s",
+      "PG tool3304:108.001341949s",
+      "PG tool9598:105.110234778s",
+      "PG consuming target-swap:80.539803408s",
+      "PG Yalaharian retained crest/addon:127.035601844s",
+      "all-target/all-feature clippy-D warnings on nine changed Rust crates",
+      "all-target/all-feature dispatch check",
+      "Final selector PG:3/0 in333.17s; generic item cycle56.629430778s, Waterfall cliff54.758655472s/splash54.257122316s/cave-entry56.783252039s/cave-exit55.583192602s, existing Triangle cycle/exit55.159470722s; all completion markers",
+      "Post-fix dispatch all-target/all-feature check:1m33s",
+      "Post-fix quests/dispatch all-target/all-feature clippy-D warnings:43.52s",
+      "Final cargo fmt --all --check",
+      "Final reward authoring:11/0",
+      "Final git diff --check"
+    ],
+    "whole_quest_qualification": "No new whole quest is claimed.20 active L6 entries remain in progress.",
+    "other_lane_status_check": "Fetched questpc2,3,5,6,7,8; no newly QUALIFIED matching active canonical entry found. Deleted questpc3 metadata also inspected at c5cdcd6ae: Realm of Dreams, Skeleton Decoration and Small Ruby are IN_PROGRESS; no new qualification to skip.",
+    "red_proofs": [
+      {
+        "case": "qengine_waterfall_facing_and_splash",
+        "log": "/tmp/questpc4-engine-waterfall-red.log",
+        "duration_seconds": 78.947167861,
+        "marker": "POSTGRES_CASE_COMPLETED waterfall-cliff success=false",
+        "failure": "Test adapter issued USE for a STEP callback; NothingToUse instead of Committed."
+      },
+      {
+        "case": "triangle_tower_source_wall_cycle_over_use_wire",
+        "log": "/tmp/questpc4-engine-triangle-red.log",
+        "duration_seconds": 66.93,
+        "failure": "Production exact lever selector matched two callback keys; NothingToUse instead of Committed. Literal wire command and PostgreSQL fixture executed."
+      }
+    ],
+    "selector_fix": "Retain the established source-equivalent Triangle callback; generated alias fixture is test-only. Reject exact selector aliases across all production registries. Keep shared item-cycle assertions and the existing full source-cycle/exit assertions. Route Waterfall legacy content through the strict STEP/facing/splash test adapter.",
+    "review_gate": "Freeze this locally green candidate, run required independent exact-head review, disposition findings before pushing. No PR. Review log /tmp/questpc4-engine-review-run.log and findings /tmp/questpc4-engine-review.txt.",
+    "next": "Continue20 active whole L6 entries after this shared-engine integration is pushed; no engine/fact handoff. Verify native MapBase pickup/reset path first, then add missing shared floor container/assembly and conditional NPC mechanisms."
+  }
 }
