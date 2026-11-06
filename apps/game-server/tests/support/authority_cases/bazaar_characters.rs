@@ -38,6 +38,28 @@ fn bazaar_characters_postgres_lock_bind_transfer_unlock_replay_and_fences() -> T
 fn u(tag: u8) -> String {
     uuid(id(tag))
 }
+async fn assert_bazaar_admission_refused(
+    pool: &sqlx::PgPool,
+    character: &str,
+    account: u8,
+    world: u8,
+) -> TestResult {
+    let error = sqlx::query(
+        "INSERT INTO game_durability_admission_character_guards VALUES \
+         ($1::uuid,$2::uuid,$3::uuid,true,1,NULL,1,'test',1,'bazaar-stale',1,0,'{}')",
+    )
+    .bind(character)
+    .bind(u(account))
+    .bind(u(world))
+    .execute(pool)
+    .await
+    .err()
+    .ok_or("Bazaar admission fence accepted an invalid source")?;
+    let database = error.as_database_error().ok_or("expected SQL refusal")?;
+    assert_eq!(database.code().as_deref(), Some("23514"));
+    assert_eq!(database.message(), "Bazaar admission owner/lifecycle fence");
+    Ok(())
+}
 fn hash(raw: &[u8]) -> String {
     Sha256::digest(raw)
         .iter()
@@ -287,6 +309,7 @@ async fn characters_flow(database: &Database) -> TestResult {
         .await?;
     let locked = decide("LockBazaarCharacter", 70, &lock_wire).await;
     let facts = receipt(&locked, "CHAR_CMD_OK")?;
+    assert_bazaar_admission_refused(&pool, &character, 31, WORLD).await?;
     let lock = facts["result_data"]["lock_id"].as_str().ok_or("lock id")?;
     assert_eq!(
         facts["result_data"]["signed_snapshot"]["snapshot"]["character_revision"],
@@ -468,6 +491,9 @@ async fn characters_flow(database: &Database) -> TestResult {
     assert_eq!(state.try_get::<String, _>("account_id")?, u(32));
     assert_eq!(state.try_get::<i16, _>("lifecycle")?, 1);
     assert_eq!(state.try_get::<String, _>("character_revision")?, "5");
+    // An unlocked Bazaar transfer still fences the former owner and wrong World.
+    assert_bazaar_admission_refused(&pool, &character, 31, WORLD).await?;
+    assert_bazaar_admission_refused(&pool, &character, 32, 99).await?;
     assert!(
         root.open_character_authority(&fence).await.is_ok(),
         "ownership lineage and revision chain must reload"

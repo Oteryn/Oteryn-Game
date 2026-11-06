@@ -120,7 +120,11 @@ END $$;
 -- No stale Platform eligibility can reopen a locked root or an old owner.
 CREATE FUNCTION game_bazaar_admission_guard() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
- IF NEW.eligible AND EXISTS(SELECT 1 FROM game_character_roots r WHERE r.character_id=NEW.character_id AND (r.lifecycle<>1 OR r.account_id<>NEW.account_id OR r.world_id<>NEW.world_id)) THEN
+ -- Add the Bazaar fence only to locked or Bazaar-transitioned roots. Other
+ -- admission evidence retains its existing owner/World validation path.
+ IF NEW.eligible AND EXISTS(SELECT 1 FROM game_character_roots r WHERE r.character_id=NEW.character_id
+ AND (r.lifecycle<>1 OR EXISTS(SELECT 1 FROM game_bazaar_character_transitions t WHERE t.character_id=r.character_id))
+ AND (r.lifecycle<>1 OR r.account_id<>NEW.account_id OR r.world_id<>NEW.world_id)) THEN
  RAISE EXCEPTION 'Bazaar admission owner/lifecycle fence' USING ERRCODE='23514'; END IF;
  RETURN NEW;
 END $$;
