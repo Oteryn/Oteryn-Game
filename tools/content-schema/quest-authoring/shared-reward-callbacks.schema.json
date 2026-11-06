@@ -243,6 +243,13 @@
               "pattern": "^oteryn:achievement/[a-z0-9_/-]+$"
             }
           ]
+        },
+        "present": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/input"
+          }
         }
       }
     },

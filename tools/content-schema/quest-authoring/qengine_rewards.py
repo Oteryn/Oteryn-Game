@@ -31,7 +31,7 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'costello', 'budrik', 'sam')]
+        'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari')]
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
@@ -170,6 +170,40 @@ def build():
     for word,topic,next_topic in [('flou',0,1),('explain',1,2),('yes',2,3),('no',3,4),('yes',4,5),('yes',5,6),('yes',6,7),('helmet',7,8)]:
         offers.append({'npc':'oteryn:npc.navigator','keywords':[word],'topic':topic,'next_topic':next_topic,
             'reply':['Listen carefully.'],'storage':[storage('oteryn:quest-progress/navigator',-1,4,0)]})
+    # L1: keep parent QuestState ownership for shared prerequisite tracks.
+    frontier = prefix + 'u8_54/the_new_frontier/'
+    yalahar = prefix + 'u8_4/in_service_of_yalahar/'
+    for name, bit, item, word in [('crest',1,10199,'crest'), ('tribal',2,10198,'tribal crest')]:
+        add('l1-warmaster-'+name, 'the_new_frontier_quest', 'cael', ['yes'],
+            [storage(frontier+'questline',27,27,preserve=True),
+             storage(frontier+'warmaster_addon_'+str(bit),-1,1,0)],
+            take=[(item,1)],outfit=('warmaster',bit),topic=60+bit-1)
+        offers.append({'npc':'oteryn:npc.cael','keywords':[word], 'topic':0,
+            'next_topic':60+bit-1,'storage':callbacks[-1]['storage'],
+            'reply':['Can I have that '+('serpent' if bit==1 else 'tribal')+' crest?']})
+    for name, bit, item, words in [('cape',1,11701,['cape','first addon']), ('hat',2,11700,['hat','second addon'])]:
+        track='oteryn:quest-progress/wayfarer_outfit'+('' if bit==1 else '_1')
+        add('l1-wayfarer-'+name,'wayfarer_outfits_quest','cranky_lizard_crone',['yes'],
+            [storage(track,-1,1,0)],take=[(item,1)],outfit=('wayfarer',bit),topic=bit)
+        offers.append({'npc':'oteryn:npc.cranky_lizard_crone','keywords':words,
+            'topic':0,'next_topic':bit,'storage':callbacks[-1]['storage'],
+            'reply':['Do you have the '+('old cape' if bit==1 else 'sedge hat')+' with you?']})
+    for npc,side in [('palimuth',1),('yalahari',2)]:
+        add('l1-yalaharian-base-'+npc,'in_service_of_yalahar_quest',npc,['mission'],
+            [storage(yalahar+'questline',52,53),
+             storage(yalahar+'side_decision',side,side,preserve=True),
+             storage(yalahar+'door_to_reward',0,1),
+             storage(yalahar+'mission10',3,4)],outfit=('yalaharian',0))
+    for name,side,bit in [('sage',1,1),('villain',2,2)]:
+        add('l1-yalaharian-'+name,'in_service_of_yalahar_quest','palimuth',['yes'],
+            [storage(yalahar+'questline',54,55),
+             storage(yalahar+'side_decision',side,side,preserve=True)],
+            outfit=('yalaharian',bit),topic=6)
+        # The captured NPC checks possession and retains the original crest.
+        callbacks[-1]['present']=[{'item':'oteryn:item.tibia.i9041','count':1}]
+        offers.append({'npc':'oteryn:npc.palimuth','keywords':['job','addon'],
+            'topic':0,'next_topic':6,'storage':callbacks[-1]['storage'],
+            'reply':['Did you bring me the vampiric crest?']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -215,6 +249,7 @@ def validate_callbacks(document):
         if (callback['key'] in keys
             or len({s['track'] for s in storage})!=len(storage)
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
+            or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
             or any(s['minimum']>s['maximum'] for s in storage)
             or all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage)
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])

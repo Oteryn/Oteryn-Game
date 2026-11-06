@@ -63,6 +63,40 @@ fn qengine_rewards_backpack_exchange() -> TestResult {
     scenario("qengine-rewards-backpack")
 }
 
+#[test]
+fn qengine_l1_warmaster_crest() -> TestResult {
+    scenario("qengine-rewards-l1-warmaster")
+}
+#[test]
+fn qengine_l1_wayfarer_cape() -> TestResult {
+    scenario("qengine-rewards-l1-wayfarer")
+}
+#[test]
+fn qengine_l1_yalaharian_sage() -> TestResult {
+    scenario("qengine-rewards-l1-yalaharian")
+}
+
+#[test]
+fn qengine_l1_warmaster_tribal() -> TestResult {
+    scenario("qengine-rewards-l1-warmaster-tribal")
+}
+#[test]
+fn qengine_l1_wayfarer_hat() -> TestResult {
+    scenario("qengine-rewards-l1-wayfarer-hat")
+}
+#[test]
+fn qengine_l1_yalaharian_base_palimuth() -> TestResult {
+    scenario("qengine-rewards-l1-yalaharian-base-palimuth")
+}
+#[test]
+fn qengine_l1_yalaharian_base_yalahari() -> TestResult {
+    scenario("qengine-rewards-l1-yalaharian-base-yalahari")
+}
+#[test]
+fn qengine_l1_yalaharian_villain() -> TestResult {
+    scenario("qengine-rewards-l1-yalaharian-villain")
+}
+
 async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -100,6 +134,11 @@ async fn talk(
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
         "knight-sword" => &["forge"],
+        "l1-warmaster-crest" => &["crest"],
+        "l1-wayfarer-cape" => &["cape"],
+        "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],
+        "l1-warmaster-tribal" => &["tribal crest"],
+        "l1-wayfarer-hat" => &["hat"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
         "deepling-helmet" => &[
@@ -541,6 +580,14 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let key = match name {
+        "qengine-rewards-l1-warmaster-tribal" => "l1-warmaster-tribal",
+        "qengine-rewards-l1-wayfarer-hat" => "l1-wayfarer-hat",
+        "qengine-rewards-l1-yalaharian-base-palimuth" => "l1-yalaharian-base-palimuth",
+        "qengine-rewards-l1-yalaharian-base-yalahari" => "l1-yalaharian-base-yalahari",
+        "qengine-rewards-l1-yalaharian-villain" => "l1-yalaharian-villain",
+        "qengine-rewards-l1-warmaster" => "l1-warmaster-crest",
+        "qengine-rewards-l1-wayfarer" => "l1-wayfarer-cape",
+        "qengine-rewards-l1-yalaharian" => "l1-yalaharian-sage",
         "qengine-rewards-pirate" => "pirate-sabre",
         "qengine-rewards-knight" => "knight-sword",
         "qengine-rewards-deepling" => "deepling-helmet",
@@ -589,7 +636,7 @@ pub(super) async fn exercise(
     }
     let before = counts(h).await?;
     // Missing inputs must refuse without even a consumption receipt or progress change.
-    if !callback.take.is_empty() {
+    if !callback.take.is_empty() || !callback.present.is_empty() {
         assert_eq!(
             talk(owner, admitted, npc, command, &callback.keywords[0]).await?,
             NpcIntentDisposition::Rejected
@@ -608,7 +655,7 @@ pub(super) async fn exercise(
         y: 31677,
         floor: -15,
     };
-    for (i, input) in callback.take.iter().enumerate() {
+    for (i, input) in callback.take.iter().chain(&callback.present).enumerate() {
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
@@ -634,7 +681,7 @@ pub(super) async fn exercise(
             )
             .await?;
         }
-        if i + 1 < callback.take.len() {
+        if i + 1 < callback.take.len() + callback.present.len() {
             assert_eq!(
                 talk(owner, admitted, npc, command, &callback.keywords[0]).await?,
                 NpcIntentDisposition::Rejected
@@ -688,6 +735,21 @@ pub(super) async fn exercise(
             .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
         into_bag(owner, admitted, *coin.as_bytes(), *main.as_bytes(), 8101).await?;
     }
+    let mut held_evidence = Vec::new();
+    for evidence in &callback.present {
+        let item: sqlx::types::Uuid = sqlx::query_scalar("SELECT item_instance_id FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1 ORDER BY item_instance_id LIMIT 1")
+            .bind(&evidence.item).fetch_one(&h.pool).await?;
+        let fence = owner.current_quest_fence(admitted.game_session_id).await
+            .map_err(|_| "fence")?.ok_or("fence")?;
+        super::quest_world_callbacks::input_item(owner, fence.item_fence(),
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: at, item: "oteryn:item.tibia.i2854".into(), count: 1,
+            }, 300, true).await?;
+        let bag: sqlx::types::Uuid = sqlx::query_scalar("SELECT item_instance_id FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i2854' ORDER BY item_instance_id LIMIT 1")
+            .fetch_one(&h.pool).await?;
+        into_bag(owner, admitted, *item.as_bytes(), *bag.as_bytes(), 8200).await?;
+        held_evidence.push(item);
+    }
     let original = counts(h).await?;
     let (disposition, catalogues, committed_command) =
         wire_grant(owner, admitted, npc, &callback).await?;
@@ -723,6 +785,19 @@ pub(super) async fn exercise(
                 .bind(&input.item).fetch_one(&h.pool).await?;
             assert_eq!(remaining, 7, "only the required stack count is removed");
         }
+    }
+    for item in held_evidence {
+        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=$1")
+            .bind(item).fetch_one(&h.pool).await?, 1,
+            "the exact original crest stays in its closed nested custody");
+    }
+    for evidence in &callback.present {
+        let remaining: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
+            .bind(&evidence.item).fetch_one(&h.pool).await?;
+        assert_eq!(remaining, i64::from(evidence.count));
+        let consumed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key=$1")
+            .bind(&callback.key).fetch_one(&h.pool).await?;
+        assert_eq!(consumed, 0, "possession keeps the original crest and custody receipt");
     }
     if let Some(reward) = &callback.give {
         let minted:(String,i64)=sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.claim_production_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
@@ -775,6 +850,10 @@ pub(super) async fn exercise(
             .find(|o| o.key == outfit.outfit)
             .ok_or("earned outfit absent from client catalogue")?;
         assert_eq!(option.permitted_addons & outfit.addons, outfit.addons);
+        if key.starts_with("l1-yalaharian-") {
+            assert_eq!(option.permitted_addons, outfit.addons,
+                "Palimuth and Azerus sides must never grant each other's addon");
+        }
         let bytes = observation.catalogue.encode().map_err(debug)?;
         assert_eq!(
             oteryn_protocol_oteryn::appearance::Catalogue::decode(&bytes).map_err(debug)?,
@@ -783,6 +862,12 @@ pub(super) async fn exercise(
         let expected_look = match key {
             "pirate-sabre" => 151,
             "knight-sword" => 139,
+            "l1-warmaster-crest" | "l1-warmaster-tribal" => 336,
+            "l1-wayfarer-cape" | "l1-wayfarer-hat" => 366,
+            "l1-yalaharian-sage"
+            | "l1-yalaharian-villain"
+            | "l1-yalaharian-base-palimuth"
+            | "l1-yalaharian-base-yalahari" => 324,
             _ => 464,
         };
         assert_eq!(
