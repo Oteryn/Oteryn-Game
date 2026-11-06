@@ -130,6 +130,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
+        // NX-5 owner scope excludes Crystal's OT-only random addon/mount actions.
+        // Historical receipts above remain readable; no new source is spent.
+        if matches!(
+            rule.mode,
+            oteryn_gameplay_items::item_cosmetics::Mode::RandomOutfit
+                | oteryn_gameplay_items::item_cosmetics::Mode::RandomMount
+        ) {
+            return Ok(Some(UseOutcome {
+                disposition: UseDisposition::NotPossible,
+                ..UseOutcome::rejected()
+            }));
+        }
+
         if let Some(receipt) = replay {
             return Ok(Some(outcome(receipt.disposition)));
         }
@@ -291,7 +304,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && memo.request.target == request.target
                 && memo.request.intent == request.intent
         });
-        if let Some(effects) = states.settle_novelty_effect(&runtime, actor, request, &receipt)? {
+        if let Some((effects, position)) =
+            states.settle_novelty_effect(&runtime, actor, request, &receipt)?
+        {
+            states.publish_novelty_visuals(&runtime, actor, position, &effects);
             self.states.chat.publish_item_speech(
                 &runtime,
                 actor,

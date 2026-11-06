@@ -407,6 +407,7 @@ pub(super) async fn exchange(
         current_source,
         current_target,
         false,
+        None,
     )
     .await
 }
@@ -428,10 +429,43 @@ pub(super) async fn exchange_latest_source(
         current_source,
         None,
         true,
+        None,
     )
     .await
 }
 
+/// Drain presentation deltas after the result, through the real production publisher.
+pub(super) async fn exchange_with_visuals(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    current_source: Option<std::num::NonZeroU32>,
+) -> TestResult<(
+    AdmittedSession,
+    UseDisposition,
+    Vec<u8>,
+    Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+)> {
+    let visuals = std::cell::RefCell::new(Vec::new());
+    let (end, result, actual) = exchange_selected_source(
+        owner,
+        admitted,
+        command_id,
+        payload,
+        current_source,
+        None,
+        false,
+        Some(&visuals),
+    )
+    .await?;
+    Ok((end, result, actual, visuals.into_inner()))
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "test helper preserves existing exchange inputs and adds an optional wire recorder"
+)]
 async fn exchange_selected_source(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -440,6 +474,9 @@ async fn exchange_selected_source(
     current_source: Option<std::num::NonZeroU32>,
     current_target: Option<std::num::NonZeroU32>,
     latest_source: bool,
+    visuals: Option<
+        &std::cell::RefCell<Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>>,
+    >,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     if owner.root.has_ready_demand() {
         owner.root.maintain_ready_once().await.map_err(debug)?;
@@ -623,16 +660,50 @@ async fn exchange_selected_source(
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
         client.shutdown().await?;
+        let mut result = None;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = match super::item_look::read_frame(&mut client).await {
+                Ok(raw) => raw,
+                Err(error)
+                    if visuals.is_some()
+                        && result.is_some()
+                        && error.downcast_ref::<std::io::Error>().is_some_and(|error| {
+                            error.kind() == std::io::ErrorKind::UnexpectedEof
+                        }) =>
+                {
+                    return Ok::<_, Box<dyn std::error::Error>>((
+                        result.ok_or("missing result")?,
+                        actual,
+                    ));
+                }
+                Err(error) => return Err(error),
+            };
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+            if envelope.message_type() == crate::foundation::MessageType::StateDelta
+                && let Some(visuals) = visuals
+            {
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+                if delta.domain_id
+                    == oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS
+                {
+                    visuals.borrow_mut().extend(
+                        oteryn_protocol_oteryn::presentation::decode_item_effect_batch(
+                            delta.payload,
+                        )
+                        .map_err(debug)?,
+                    );
+                }
+            }
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
-                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
-                if result.command_id == command_id {
+                let reply = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                if reply.command_id == command_id {
                     let disposition =
-                        oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
+                        oteryn_protocol_oteryn::world_object::decode_use_result(reply.payload)
                             .map_err(debug)?;
-                    return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
+                    if visuals.is_none() {
+                        return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
+                    }
+                    result = Some(disposition);
                 }
             }
         }

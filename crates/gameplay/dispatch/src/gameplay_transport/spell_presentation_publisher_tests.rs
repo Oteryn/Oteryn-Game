@@ -449,3 +449,56 @@ fn production_sound_normalizes_native_floors_for_the_allocated_wire() {
         }
     ));
 }
+
+#[test]
+fn nx5_private_toy_effect_is_fenced_and_never_visible_to_other_observers() {
+    let (runtime, actor, other, session) = runtime();
+    let other_session = runtime
+        .positioned_actor_census()
+        .unwrap()
+        .into_iter()
+        .find(|(a, _, _)| *a == other)
+        .unwrap()
+        .2
+        .unwrap();
+    let position = runtime.read_actor_position(actor).unwrap().position();
+    let mut publisher = SoundPublisher::default();
+    publisher.record_item_effect(&runtime, actor, position, 1, true);
+    assert!(
+        publisher
+            .observe(&runtime, other, other_session, 0, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    assert!(
+        publisher
+            .observe(&runtime, actor, other_session, 0, true)
+            .is_none()
+    );
+    let (revision, cues) = publisher
+        .observe(&runtime, actor, session, 0, true)
+        .unwrap();
+    assert_eq!(cues.len(), 1);
+    assert!(matches!(
+        cues[0].kind,
+        oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect {
+            effect_id: 1,
+            ..
+        }
+    ));
+    assert!(
+        publisher
+            .observe(&runtime, actor, session, revision, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    assert!(
+        publisher
+            .observe(&runtime, actor, session, 0, false)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+}

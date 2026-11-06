@@ -81,6 +81,13 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
             "path": Path(os.path.relpath(path, "content")).as_posix(),
             "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
         }
+    cosmetics = "content/cosmetics/outfits/native-cosmetics.json"
+    if (root / cosmetics).is_file():
+        manifest["schema"] = "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6"
+        manifest["cosmetics"] = {
+            "path": "cosmetics/outfits/native-cosmetics.json",
+            "sha256": hashlib.sha256((root / cosmetics).read_bytes()).hexdigest(),
+        }
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 

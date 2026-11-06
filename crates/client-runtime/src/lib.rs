@@ -2,6 +2,8 @@
 
 #[path = "features/0288-ambient-sound/protocol.rs"]
 pub mod ambient_sound;
+#[path = "features/0350-item-effects/protocol.rs"]
+pub mod item_effects;
 
 /// Account achievement pages from core command 10.
 #[path = "features/local-account-achievements/mod.rs"]

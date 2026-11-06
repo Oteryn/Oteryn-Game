@@ -715,7 +715,9 @@ impl NativeGameplayInput {
         };
         let cosmetics = match manifest.cosmetics {
             Some(pin) => {
+                let locator = directory.join(&pin.path);
                 let pin = load(pin, native_cosmetics::MAX_BYTES)?;
+                let pin = native_cosmetics::materialize(pin, &locator)?;
                 if native_cosmetics::decode(&pin.bytes)?.is_none() {
                     return Err(invalid("native gameplay v6 requires authored cosmetics"));
                 }

@@ -332,8 +332,11 @@ async fn live<A: FreshAdmissionAuthority>(
         revision,
         sequence,
         ambient_revision: 0,
+        item_effects_revision: 0,
         sound_cursor: if selected_capabilities
-            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1)
+            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1)
+            || selected_capabilities
+                .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1)
             || selected_capabilities
                 .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
         {

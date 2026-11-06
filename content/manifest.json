@@ -292,6 +292,12 @@
       "path": "content/cosmetics/mounts/mounts-00000-00251.json"
     },
     {
+      "path": "content/cosmetics/outfits/authoring.json"
+    },
+    {
+      "path": "content/cosmetics/outfits/native-cosmetics.json"
+    },
+    {
       "path": "content/craft/index.json"
     },
     {

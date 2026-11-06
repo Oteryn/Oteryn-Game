@@ -54,9 +54,15 @@ fn scenario(
 ) -> TestResult {
     let key = match case {
         Some(
-            positive::Case::Parts | positive::Case::OmittedGrant | positive::Case::ConcurrentGrant,
+            positive::Case::Parts
+            | positive::Case::OmittedGrant
+            | positive::Case::ConcurrentGrant
+            | positive::Case::ProductionParts,
         ) => "oteryn:item.tibia.i36938",
-        Some(positive::Case::Outfit) => "oteryn:item.tibia.i16252",
+        Some(positive::Case::Outfit | positive::Case::ProductionOutfit) => {
+            "oteryn:item.tibia.i16252"
+        }
+        Some(positive::Case::ProductionMount) => "oteryn:item.tibia.i23538",
         _ if afflicted => "oteryn:item.tibia.i12551",
         _ => "oteryn:item.tibia.i6579",
     };
@@ -78,10 +84,34 @@ fn scenario(
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
+        let production = matches!(
+            case,
+            Some(
+                positive::Case::ProductionOutfit
+                    | positive::Case::ProductionParts
+                    | positive::Case::ProductionOtOnly
+                    | positive::Case::ProductionMount
+            )
+        );
         let cosmetic_packet = if ot_only.is_some() {
             Some(ot_only::packet()?)
+        } else if production {
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json");
+            Some(
+                crate::content::native_gameplay::NativeGameplayInput::from_manifest(&path)
+                    .map_err(debug)?
+                    .cosmetics
+                    .bytes,
+            )
         } else {
-            case.map(|_| packet::cosmetics_packet()).transpose()?
+            match case {
+                Some(_) => Some(packet::cosmetics_packet()?),
+                None => Some(
+                    crate::content::native_gameplay::NativeGameplayInput::unavailable_cosmetics()
+                        .bytes,
+                ),
+            }
         };
         let (controller, pin) =
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
@@ -89,16 +119,13 @@ fn scenario(
             );
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
-        if cosmetic_packet.is_none() {
+        if case.is_none() && ot_only.is_none() {
             assert!(
                 native.cosmetics().is_none(),
-                "current READY_UNPOPULATED catalogue"
+                "explicit unavailable-section fixture"
             );
         } else {
-            assert!(
-                native.cosmetics().is_some(),
-                "explicit synthetic test authoring"
-            );
+            assert!(native.cosmetics().is_some(), "explicit admitted authoring");
         }
         assert!(oteryn_gameplay_items::item_cosmetics::rule(key).is_some());
         if ot_only.is_some() {
@@ -242,9 +269,10 @@ fn scenario(
             Some(
                 positive::Case::Parts
                 | positive::Case::OmittedGrant
-                | positive::Case::ConcurrentGrant,
+                | positive::Case::ConcurrentGrant
+                | positive::Case::ProductionParts,
             ) => vec![(key, 1); 5],
-            Some(positive::Case::Outfit) => vec![
+            Some(positive::Case::Outfit | positive::Case::ProductionOutfit) => vec![
                 (key, 1),
                 ("oteryn:item.tibia.i16253", 1),
                 ("oteryn:item.tibia.i16254", 1),
@@ -418,4 +446,14 @@ fn srx4_ot_cosmetic_items_refuse_with_complete_synthetic_catalogue_on_postgres()
         }
     }
     Ok(())
+}
+
+pub(super) fn nx5_production_case(kind: u8) -> TestResult {
+    let case = match kind {
+        0 => positive::Case::ProductionOutfit,
+        1 => positive::Case::ProductionParts,
+        2 => positive::Case::ProductionOtOnly,
+        _ => positive::Case::ProductionMount,
+    };
+    run_all(false, false, Some(case))
 }
