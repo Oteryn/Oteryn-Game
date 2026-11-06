@@ -137,8 +137,14 @@ pub(super) async fn settle(
     } else {
         let (flags, completed): (i16, bool) = sqlx::query_as("SELECT defeated_bosses,megalomania_completed FROM game_character_soul_war")
             .fetch_one(&h.pool).await?;
-        if case == Case::SoulWarDefeat { assert_eq!(flags, 4); }
-        else { assert!(completed); }
+        if case == Case::SoulWarLateDefeat {
+            assert_eq!(flags, 0, "late native death cannot earn a room victory");
+            assert!(!completed);
+        } else if case == Case::SoulWarDefeat {
+            assert_eq!(flags, 4);
+        } else {
+            assert!(completed);
+        }
     }
     assert_eq!(owner.drain_kill_rewards(admitted.game_session_id).await, DrainOutcome::Drained);
     let (leveled, base): (bool, i64) = sqlx::query_as("SELECT EXISTS(SELECT 1 FROM game_character_xp_receipts x JOIN game_party_kill_xp_members m ON m.reward_occurrence_id=x.reward_occurrence_id WHERE x.level_after>x.level_before),(SELECT base_xp FROM game_party_kill_xp_receipts)")
