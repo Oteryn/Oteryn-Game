@@ -317,9 +317,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some(origin) = pending.origin else {
                     return false;
                 };
-                if self.runtime.lock().await.read_actor_position(pending.actor)
-                    != Ok(pending.expected)
-                {
+                let departed = {
+                    let runtime = self.runtime.lock().await;
+                    if !runtime
+                        .player_control_facts(pending.actor, session)
+                        .is_ok_and(|facts| facts.control_loss.is_none())
+                    {
+                        return false;
+                    }
+                    let Ok(current) = runtime.read_actor_position(pending.actor) else {
+                        return false;
+                    };
+                    current != pending.expected
+                };
+                if departed && !matches!(self.current_quest_fence(session).await, Ok(Some(_))) {
                     return false;
                 }
                 {
@@ -340,6 +351,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // A cancelled read reserved no mutation. The volatile record
                     // is not an access proof: repeat the fenced read on re-entry.
                     records.remove(&session);
+                }
+                // A push or other committed relocation cancels this unreserved
+                // travel attempt. Never project it from an obsolete position.
+                if departed {
+                    continue;
                 }
                 self.movement_quest_callback(
                     &permit,

@@ -127,7 +127,7 @@ fn questpc5_l5_hoist_instruction_gates_are_read_only() -> TestResult {
                 (Some(1), Some(1)),
                 (Some(1), None),
             ] {
-                exercise_with_missing(callback.clone(), 100, 1, stage, missing, false)?;
+                exercise_with_missing(callback.clone(), 100, 1, stage, missing, false, false)?;
             }
         }
         Ok(())
@@ -146,8 +146,15 @@ fn questpc5_l5_hoist_cancelled_read_reconciles_before_next_command() -> TestResu
             y: 31125,
             floor: -9,
         });
-        exercise_with_missing(callback.clone(), 100, 1, Some(1), None, true)?;
-        exercise_with_missing(callback, 100, 1, Some(1), Some(0), true)
+        exercise_with_missing(callback.clone(), 100, 1, Some(1), None, true, false)?;
+        exercise_with_missing(callback, 100, 1, Some(1), Some(0), true, false)?;
+        let mut callback = super::callback("formogar-hoist-3059")?;
+        callback.selector.position = Some(Position {
+            x: 32157,
+            y: 31125,
+            floor: -9,
+        });
+        exercise_with_missing(callback, 100, 1, Some(1), None, true, true)
     })
 }
 
@@ -156,7 +163,7 @@ fn position((x, y, floor): (u16, u16, i8)) -> Position {
 }
 
 fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>) -> TestResult {
-    exercise_with_missing(callback, appearance, ordinal, stage, None, false)
+    exercise_with_missing(callback, appearance, ordinal, stage, None, false, false)
 }
 
 fn exercise_with_missing(
@@ -166,6 +173,7 @@ fn exercise_with_missing(
     stage: Option<i64>,
     missing: Option<usize>,
     recovery: bool,
+    departed: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let step = callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
@@ -461,6 +469,27 @@ fn exercise_with_missing(
                     )
                 ));
                 assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+                if departed {
+                    let mut runtime = owner.runtime.lock().await;
+                    let current = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                    let map = owner.bundle_map().ok_or("map")?;
+                    let closed = crate::map::floor::BundleDoors(map.facts.doors());
+                    let proof = crate::map::floor::prepare_quest_callback_teleport(
+                        &runtime,
+                        owner.movement_cells,
+                        deps.actor,
+                        admitted.game_session_id,
+                        current,
+                        local(Position {
+                            y: trigger.y - 1,
+                            ..trigger
+                        }),
+                        false,
+                        &closed,
+                    )
+                    .map_err(debug)?;
+                    runtime.commit_source_step(proof).map_err(debug)?;
+                }
             }
             let reply = wire(
                 &owner,
@@ -476,7 +505,7 @@ fn exercise_with_missing(
             .await?;
             assert_eq!(
                 decode_step_result(&reply).map_err(debug)?,
-                if recovery && allowed {
+                if recovery && allowed && !departed {
                     StepDisposition::Blocked
                 } else {
                     StepDisposition::Moved
@@ -509,8 +538,13 @@ fn exercise_with_missing(
                 .read_actor_position(deps.actor)
                 .map_err(debug)?
                 .position(),
-            if allowed {
+            if allowed && !departed {
                 local(callback.teleport.ok_or("destination")?)
+            } else if departed {
+                MovementLocalPosition {
+                    y: origin.y - 1,
+                    ..origin
+                }
             } else if recovery {
                 MovementLocalPosition {
                     x: origin.x - 1,
@@ -542,7 +576,7 @@ fn exercise_with_missing(
                 .await?;
         assert_eq!(receipts, receipts_before);
         eprintln!(
-            "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} missing={missing:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
+            "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} missing={missing:?} allowed={allowed} departed={departed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
             callback.key,
             started.elapsed()
         );
