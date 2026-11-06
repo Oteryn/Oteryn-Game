@@ -823,6 +823,25 @@ impl ChannelAttackStates {
         true
     }
 
+    /// A previously selected player ceases to be a target when invisibility starts.
+    pub(in crate::gameplay_transport) fn settle_invisible_target(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        states: &super::actor_spell::ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) {
+        if let Some(index) = self.index(actor, session)
+            && self.entries[index]
+                .state
+                .target()
+                .is_some_and(|target| states.player_hidden_from(runtime, actor, target, now))
+        {
+            self.entries[index].clear_target();
+        }
+    }
+
     /// Stop attacking (reconnect, control loss); the in-fight deadline is kept (§3 Reconnect).
     pub fn clear_target(&mut self, actor: ExactActorRef, session: GameSessionId) {
         if let Some(index) = self.index(actor, session) {
@@ -1166,6 +1185,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // ATTACK-0 §4: a `pacified` applied over the held target clears it before the chase
             // reads it.
             attack.settle_pacified_target(&runtime, &states, actor, session);
+            attack.settle_invisible_target(&runtime, &states, actor, session, now);
             attack.chase_decision(&runtime, room, actor, session, now, |cell| {
                 chase_path_tile(cells, blocking, cell)
             })?

@@ -461,6 +461,7 @@ async fn assert_effect(
     potion: ConditionPotion,
     h: &Harness,
 ) -> TestResult {
+    super::cl6_status::check_timer(owner, actor, session, potion.key(), true, 600_000).await?;
     let (start, end): (String, String) = sqlx::query_as("SELECT applied_owner_micros::text,expires_owner_micros::text FROM game_item_condition_potion_receipts WHERE condition_key=$1 ORDER BY applied_owner_micros DESC LIMIT 1")
         .bind(potion.key()).fetch_one(&h.pool).await?;
     let (start, end) = (start.parse::<u64>()?, end.parse::<u64>()?);

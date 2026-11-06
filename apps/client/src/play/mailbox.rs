@@ -163,6 +163,7 @@ pub(super) struct Mailbox {
     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
     pub(super) wheel_shutdown: bool,
     pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
+    pub(super) mechanics_status: oteryn_client_ui::mechanics_status::MechanicsStatusPanel,
     pub(super) condition_status: oteryn_client_ui::condition_status::ConditionStatusPanel,
     pub(super) rest_status: oteryn_client_ui::rest_status::RestStatusPanel,
     pub(super) battle_instinct_status:
@@ -391,6 +392,7 @@ impl Outbox {
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.condition_status = Default::default();
+        mailbox.mechanics_status = Default::default();
         mailbox.rest_status = Default::default();
         mailbox.battle_instinct_status = Default::default();
         mailbox.skill_progress = Default::default();
@@ -429,6 +431,7 @@ impl Outbox {
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.condition_status = Default::default();
+        mailbox.mechanics_status = Default::default();
         mailbox.rest_status = Default::default();
         mailbox.battle_instinct_status = Default::default();
         mailbox.skill_progress = Default::default();

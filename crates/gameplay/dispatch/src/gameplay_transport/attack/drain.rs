@@ -1548,6 +1548,10 @@ pub(super) fn select_swing(
 ) -> Option<SelectedSwing> {
     let target = entry.state.target()?;
     let player = states.get(runtime, entry.actor, entry.session)?;
+    if states.player_hidden_from(runtime, entry.actor, target, now) {
+        entry.clear_target();
+        return None;
+    }
     if states.is_dead(entry.actor) {
         entry.clear_target();
         return None;

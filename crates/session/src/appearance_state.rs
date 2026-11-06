@@ -98,6 +98,16 @@ pub(crate) fn validate_result(
     Ok(())
 }
 impl AppearanceState {
+    fn binding(
+        &self,
+        entity: world_spatial_entities::EntityRef,
+        reference: u32,
+    ) -> Option<&wire::Binding> {
+        self.bindings
+            .get(&entity)
+            .filter(|binding| binding.appearance_ref == reference)
+    }
+
     fn forge_marker(&self, entity: &WorldSpatialEntity) -> Option<u8> {
         if entity.kind != world_spatial_entities::EntityKind::Creature {
             return None;
@@ -118,8 +128,7 @@ impl AppearanceState {
         entity: world_spatial_entities::EntityRef,
         reference: u32,
     ) -> Option<&wire::Look> {
-        let binding = self.bindings.get(&entity)?;
-        (binding.appearance_ref == reference).then_some(&binding.look)
+        self.binding(entity, reference).map(|binding| &binding.look)
     }
 }
 

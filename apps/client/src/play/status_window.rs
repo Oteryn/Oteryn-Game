@@ -54,6 +54,7 @@ macro_rules! panel {
     };
 }
 panel!(condition_status, ConditionStatusPanel, 276, 492);
+panel!(mechanics_status, MechanicsStatusPanel, 384, 669);
 panel!(rest_status, RestStatusPanel, 277, 493);
 panel!(battle_instinct_status, BattleInstinctStatusPanel, 278, 494);
 impl StatusPanel for oteryn_client_ui::skill_progress::SkillProgressPanel {

@@ -155,6 +155,8 @@ pub(super) async fn prepare_inner(
         actor,
         attack_target,
         &roster,
+        states,
+        now,
     )
     .await?;
     let caster_position = spatial.caster_position;
@@ -166,7 +168,7 @@ pub(super) async fn prepare_inner(
         bindings,
     } = qualify_targets(
         tx, root, authority, runtime, states, room, objects, spell, intent, profile, actor, named,
-        pvp_modes, &players, &creatures, spatial,
+        pvp_modes, &players, &creatures, spatial, now,
     )
     .await?;
     let PaidPreparation {
@@ -244,6 +246,8 @@ async fn prepare_spatial(
         MovementPositionSnapshot,
         Option<GameSessionId>,
     )],
+    states: &ChannelSpellStates,
+    now: SemanticTimeMicros,
 ) -> Result<SpatialPhase, SpellCastDisposition> {
     let position = runtime
         .read_actor_position(actor)
@@ -281,6 +285,9 @@ async fn prepare_spatial(
                     .flatten()
                 })
                 .ok_or(SpellCastDisposition::TargetIllegal)?;
+            if states.player_hidden_from(runtime, actor, creature, now) {
+                return Err(SpellCastDisposition::TargetIllegal);
+            }
             let seen = runtime
                 .read_actor_position(creature)
                 .map_err(|_| SpellCastDisposition::TargetIllegal)?;
@@ -481,6 +488,7 @@ async fn qualify_targets(
     players: &[(ExactActorRef, GameSessionId, PlayerSpellState)],
     creatures: &[crate::foundation::CompanionSnapshot],
     spatial: SpatialPhase,
+    now: SemanticTimeMicros,
 ) -> Result<TargetPhase, SpellCastDisposition> {
     let SpatialPhase {
         position,
@@ -573,6 +581,16 @@ async fn qualify_targets(
         None
     };
     let selected_actor = selected.and_then(|c| bindings.iter().find(|b| b.source_id == c.id));
+    // A position or player name cannot bypass direct-target visibility. Untargeted
+    // area effects still resolve their tiles, including unseen occupants.
+    if (profile.header.targeting.needs_target
+        || named.is_some()
+        || intent.target == SpellTarget::AttackTarget)
+        && selected_actor
+            .is_some_and(|target| states.player_hidden_from(runtime, actor, target.actor, now))
+    {
+        return Err(SpellCastDisposition::TargetIllegal);
+    }
     if let (SpellTarget::AttackTarget, Some(target)) = (intent.target, attack_target_tile) {
         let distance = target
             .x

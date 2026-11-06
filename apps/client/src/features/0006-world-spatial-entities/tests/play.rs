@@ -84,13 +84,23 @@ fn live_names_reach_scene_and_disappear_with_visibility() -> Result<(), BatchErr
             health_percent: 100,
         },
     };
-    view.set_presentations(vec![oteryn_session::VisibleAppearance {
+    let mut appearance = oteryn_session::VisibleAppearance {
         forge_stacks: None,
         light: None,
         entity,
         look: None,
-    }])?;
+    };
+    view.set_presentations(vec![appearance.clone()])?;
     assert_eq!(view.scene().name_count(), 1);
+    let unmarked = view.scene().sprites().len();
+    for stacks in [1, 5, 15] {
+        appearance.forge_stacks = Some(stacks);
+        view.set_presentations(vec![appearance.clone()])?;
+        assert!(view.scene().sprites().len() > unmarked);
+    }
+    appearance.forge_stacks = None;
+    view.set_presentations(vec![appearance])?;
+    assert_eq!(view.scene().sprites().len(), unmarked);
     view.set_presentations(Vec::new())?;
     assert_eq!(view.scene().name_count(), 0);
     Ok(())

@@ -69,6 +69,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     // CL26s1: private-channel prerequisite of public channels (259); ids stay ascending.
     chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
+    oteryn_protocol_oteryn::creature_push::CAPABILITY_CREATURE_PUSH_V1,
     oteryn_protocol_oteryn::channel_list::CAPABILITY_CHANNEL_LIST_V1,
     oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1,
     property_services::pvp_expert::CAPABILITY_PVP_EXPERT_V1,
@@ -96,6 +97,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
     // CL26s3: native daily reward wall, query, and claim controls.
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
+    oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1,
     oteryn_protocol_oteryn::daily_reward::CAPABILITY_DAILY_REWARD_V2,
     oteryn_protocol_oteryn::weapon_proficiency::CAPABILITY_WEAPON_PROFICIENCY_V1,
     oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
@@ -128,6 +130,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     potion_durations::CAPABILITY_POTION_DURATIONS_V1,
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
+    mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -169,6 +172,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     task_board::CAPABILITY_TASK_BOARD_V1,
     oteryn_protocol_oteryn::server_save_countdown::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1,
     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
+    oteryn_protocol_oteryn::creature_push::CAPABILITY_CREATURE_PUSH_V1,
     oteryn_protocol_oteryn::channel_list::CAPABILITY_CHANNEL_LIST_V1,
     oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1,
     property_services::pvp_expert::CAPABILITY_PVP_EXPERT_V1,
@@ -214,6 +218,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::staff_tools::CAPABILITY_STAFF_TOOLS_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
+    mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
     potion_durations::CAPABILITY_POTION_DURATIONS_V1,
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
@@ -242,6 +247,45 @@ mod target_move_tests {
             assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
         }
         assert!(gated_routes().any(|(id, commands, _)| id == 64 && commands.contains(&81)));
+    }
+}
+
+#[cfg(test)]
+mod creature_push_tests {
+    use super::*;
+
+    #[test]
+    fn creature_push_is_advertised_and_routed_with_its_prerequisites() {
+        for capability in [6, 13, 82] {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+        }
+        assert!(gated_routes().any(|(id, commands, _)| id == 82 && commands.contains(&98)));
+    }
+}
+
+#[cfg(test)]
+mod weapon_proficiency_tests {
+    use super::*;
+
+    #[test]
+    fn proficiency_browse_is_advertised_and_routed_with_item_identity() {
+        for capability in [4, 195] {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+        }
+        assert!(gated_routes().any(|(id, commands, _)| id == 195 && commands.contains(&641)));
+    }
+}
+
+#[cfg(test)]
+mod hotkey_equip_tests {
+    use super::*;
+
+    #[test]
+    fn hotkey_equip_carried_is_advertised_with_its_command_owner() {
+        for capability in [179, 180] {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+        }
+        assert!(gated_routes().any(|(id, commands, _)| id == 179 && commands.contains(&348)));
     }
 }
 

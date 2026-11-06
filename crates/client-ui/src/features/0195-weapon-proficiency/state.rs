@@ -14,5 +14,7 @@ pub struct WeaponProficiencyPanel {
     pub revision: u64,
     pub shaping_choice: u8,
     pub result: Option<String>,
+    pub page: Option<oteryn_client_runtime::weapon_proficiency::ProficiencyPage>,
+    pub requested_offset: u32,
     pub feedback: Option<&'static str>,
 }

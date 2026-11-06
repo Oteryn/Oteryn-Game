@@ -282,6 +282,9 @@ impl ProductionProficiencyCatalogue {
             content_revision: content_revision.to_owned(),
         })
     }
+    pub(super) fn weapon_keys(&self) -> impl Iterator<Item = &str> {
+        self.data.bindings().keys().map(String::as_str)
+    }
     pub(super) fn empty_track(&self, item_key: &str) -> Option<LiveProficiencyTrack> {
         let shape = self.resolved(item_key)?.shape;
         Some(LiveProficiencyTrack {

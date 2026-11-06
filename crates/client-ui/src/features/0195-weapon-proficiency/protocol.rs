@@ -10,6 +10,9 @@ use oteryn_client_runtime::{
 use std::num::NonZeroU32;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
+    Browse,
+    NextPage,
+    PreviousPage,
     Catalogue,
     SelectPerk,
     Modify,
@@ -28,6 +31,34 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
     if p.pending {
         p.feedback = Some("Waiting for the server");
         return None;
+    }
+    if matches!(
+        intent,
+        Intent::Browse | Intent::NextPage | Intent::PreviousPage
+    ) {
+        let offset = match intent {
+            Intent::NextPage => {
+                let page = p.page.as_ref()?;
+                let next = page
+                    .offset
+                    .checked_add(u32::try_from(page.rows.len()).ok()?)?;
+                if next >= page.total || page.rows.is_empty() {
+                    return None;
+                }
+                next
+            }
+            Intent::PreviousPage => p.page.as_ref()?.offset.saturating_sub(20),
+            _ => 0,
+        };
+        p.pending = true;
+        p.feedback = None;
+        p.command_kind = 641;
+        p.requested_offset = offset;
+        return Some(FeatureCommand {
+            capability: 195,
+            kind: 641,
+            payload: offset.to_be_bytes().to_vec(),
+        });
     }
     if intent == Intent::Catalogue {
         p.pending = true;
@@ -65,7 +96,11 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
             },
             Intent::DeclineOffer => ModificationOperation::ReshapeChoose { choice: None },
             Intent::Clear => ModificationOperation::Clear,
-            Intent::SelectPerk | Intent::Catalogue => return None,
+            Intent::SelectPerk
+            | Intent::Catalogue
+            | Intent::Browse
+            | Intent::NextPage
+            | Intent::PreviousPage => return None,
         };
         let request = ModificationRequest {
             definition,
@@ -97,6 +132,19 @@ pub fn apply_result(p: &mut WeaponProficiencyPanel, result: &GatedCommandResult)
     ) {
         p.feedback = Some("The server refused the proficiency action");
         return false;
+    }
+    if p.command_kind == 641 {
+        match oteryn_client_runtime::weapon_proficiency::ProficiencyPage::decode(&result.payload) {
+            Some(page) if page.offset == p.requested_offset => {
+                p.page = Some(page);
+                p.feedback = None;
+                return true;
+            }
+            _ => {
+                p.feedback = Some("The server returned an invalid proficiency page");
+                return false;
+            }
+        }
     }
     if p.command_kind == 660 {
         let Some(page) =

@@ -161,6 +161,7 @@ pub use oteryn_protocol_oteryn::imbuement;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
 pub use oteryn_protocol_oteryn::loyalty_skills;
+pub use oteryn_protocol_oteryn::mechanics_status;
 pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide};
 pub use oteryn_protocol_oteryn::npc_shop;
 pub use oteryn_protocol_oteryn::party_effects;

@@ -43,8 +43,10 @@ pub(in crate::gameplay_transport) async fn observe(
     let mut bindings = Vec::new();
     let now = admission.owner_now().get();
     for entity in entities {
-        if let Some(entry) = hirelings.iter().find(|entry| entry.actor.placement_identity() == entity.identity
-            && entry.actor.actor_local_generation() == entity.generation) {
+        if let Some(entry) = hirelings.iter().find(|entry| {
+            entry.actor.placement_identity() == entity.identity
+                && entry.actor.actor_local_generation() == entity.generation
+        }) {
             bindings.push(wire::Binding {
                 context,
                 appearance_ref: 1,
@@ -52,7 +54,11 @@ pub(in crate::gameplay_transport) async fn observe(
                 root_revision: 1,
                 condition_revision: entry.revision,
                 owner_time_us: now,
-                look: wire::Look::Outfit { look_type: u32::from(entry.look_type), colours: entry.colors.map(u16::from), addons: 0 },
+                look: wire::Look::Outfit {
+                    look_type: u32::from(entry.look_type),
+                    colours: entry.colors.map(u16::from),
+                    addons: 0,
+                },
                 selection_revision: None,
                 forge_stacks: None,
             });
@@ -62,6 +68,14 @@ pub(in crate::gameplay_transport) async fn observe(
             actor.placement_identity() == entity.identity
                 && actor.actor_local_generation() == entity.generation
         })?;
+        if states.player_hidden_from(
+            &runtime,
+            observer,
+            *actor,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now),
+        ) {
+            continue;
+        }
         let Some(target_session) = *target_session else {
             let creature = runtime.companion_snapshot(*actor).ok()?;
             let look = if let Some(look_type) = creature.state.policy.outfit_appearance() {
@@ -110,7 +124,11 @@ pub(in crate::gameplay_transport) async fn observe(
         let current = house::read_state(admission, fence, content.earned_grant_keys()).await?;
         let in_house = runtime.house_actor_state(*actor, target_session).is_ok();
         let player = if in_house {
-            states.actors.iter().find(|(held, held_session, _)| *held == *actor && *held_session == target_session).map(|(_, _, state)| state)?
+            states
+                .actors
+                .iter()
+                .find(|(held, held_session, _)| *held == *actor && *held_session == target_session)
+                .map(|(_, _, state)| state)?
         } else {
             states.get(&runtime, *actor, target_session)?
         };
@@ -121,9 +139,13 @@ pub(in crate::gameplay_transport) async fn observe(
             addons: base.addons,
         };
         let owned = if in_house {
-            runtime.house_actor_conditions_at(*actor, target_session, now).ok()?
+            runtime
+                .house_actor_conditions_at(*actor, target_session, now)
+                .ok()?
         } else {
-            runtime.actor_conditions_at(*actor, Some(target_session), now).ok()?
+            runtime
+                .actor_conditions_at(*actor, Some(target_session), now)
+                .ok()?
         };
         let spell = player.owned_conditions();
         if !spell.accepts_time(now) || !owned.accepts_time(now) {
@@ -175,8 +197,7 @@ pub(in crate::gameplay_transport) async fn observe(
         }
         // The selection and root are re-read after observer preparation. Runtime pin,
         // incarnation and condition state stay locked through this bounded DB read.
-        if house::read_state(admission, fence, content.earned_grant_keys()).await? != current
-        {
+        if house::read_state(admission, fence, content.earned_grant_keys()).await? != current {
             return None;
         }
         bindings.push(wire::Binding {
@@ -184,7 +205,9 @@ pub(in crate::gameplay_transport) async fn observe(
             appearance_ref: 1,
             entity,
             root_revision: fence.expected_character_revision.get(),
-            condition_revision: player.revision().checked_add(runtime.actor_staff_visibility(*actor).ok()?.2)?,
+            condition_revision: player
+                .revision()
+                .checked_add(runtime.actor_staff_visibility(*actor).ok()?.2)?,
             owner_time_us: now,
             look,
             selection_revision,

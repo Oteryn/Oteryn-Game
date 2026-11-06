@@ -79,7 +79,7 @@ fn reaudit_title_predicates_expired_award_can_be_earned_again() -> TestResult {
                         assert!(
                             h.root
                                 .qualify_and_unlock_character_title(
-                                    &authority, &h.node, fence, title, now, None
+                                    &authority, &h.node, fence, title, now, None, None
                                 )
                                 .await
                                 .map_err(debug)?
@@ -87,7 +87,7 @@ fn reaudit_title_predicates_expired_award_can_be_earned_again() -> TestResult {
                     } else {
                         let granted = h
                             .root
-                            .refresh_character_titles(&authority, &h.node, fence, now, None)
+                            .refresh_character_titles(&authority, &h.node, fence, now, None, None)
                             .await
                             .map_err(debug)?;
                         assert!(granted.contains(&title));
@@ -100,6 +100,7 @@ fn reaudit_title_predicates_expired_award_can_be_earned_again() -> TestResult {
                             fence,
                             fence.character_id,
                             now,
+                            None,
                             None,
                         )
                         .await
@@ -172,6 +173,7 @@ fn mastery_scenario() -> TestResult {
                     fence,
                     CharacterTitle::AdeptArmorer,
                     1_800_000_000_000,
+                    None,
                     None
                 )
                 .await
@@ -323,7 +325,9 @@ fn scenario() -> TestResult {
         let title = CharacterTitle::AdeptEnhancer;
         assert!(
             h.root
-                .qualify_and_unlock_character_title(&authority, &h.node, fence, title, now, None)
+                .qualify_and_unlock_character_title(
+                    &authority, &h.node, fence, title, now, None, None
+                )
                 .await
                 .map_err(debug)?,
             "all native Grade III mods must qualify Adept Enhancer"
@@ -340,6 +344,7 @@ fn scenario() -> TestResult {
                 fence,
                 fence.character_id,
                 now,
+                None,
                 None,
             )
             .await
@@ -358,6 +363,7 @@ fn scenario() -> TestResult {
                 fence.character_id,
                 now,
                 None,
+                None,
             )
             .await
             .map_err(debug)?;
@@ -368,7 +374,7 @@ fn scenario() -> TestResult {
         workshop(&h, &mut state).await?;
         let granted = h
             .root
-            .refresh_character_titles(&authority, &h.node, fence, now, None)
+            .refresh_character_titles(&authority, &h.node, fence, now, None, None)
             .await
             .map_err(debug)?;
         assert!(
@@ -386,6 +392,7 @@ fn scenario() -> TestResult {
                 fence.character_id,
                 now,
                 None,
+                None,
             )
             .await
             .map_err(debug)?;
@@ -398,6 +405,7 @@ fn scenario() -> TestResult {
                     fence,
                     CharacterTitle::ReigningDromeChampion,
                     now,
+                    None,
                     None
                 )
                 .await
