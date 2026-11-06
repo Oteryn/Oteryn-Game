@@ -61,8 +61,8 @@ fn giant_smithhammer_source_lever_opens_and_restores_the_wall() -> TestResult {
         super::quest_world_callbacks::scenario(
             "giant-smithhammer",
             Position {
-                x: 32779,
-                y: 32230,
+                x: 32778,
+                y: 32232,
                 floor: -8,
             },
             false,

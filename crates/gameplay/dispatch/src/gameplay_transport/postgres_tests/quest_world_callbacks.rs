@@ -289,7 +289,12 @@ fn world_ordinal(
             palette: 1,
             depth: 0,
             attrs: sector::Attrs {
-                unique: callback.selector.unique,
+                unique: if callback.key == "oteryn:quest-callback/giant-smithhammer" {
+                    // The exact native lever at32778,32232,z8 has no UID.
+                    None
+                } else {
+                    callback.selector.unique
+                },
                 action: callback.selector.action,
                 ..Default::default()
             },

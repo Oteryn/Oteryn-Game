@@ -17,6 +17,8 @@ class StandaloneChestsSource(unittest.TestCase):
             (32774, 32253, 8, 2472),
             (32776, 32253, 8, 2472),
             (32778, 32253, 8, 2472),
+            (32778, 32232, 8, 2772),
+            (32780, 32231, 8, 389),
         ]:
             path = ROOT / f'content/world/placements/region-z{z:02}-x{x // 256:03}-y{y // 256:03}.b3'
             _, _, _, sectors = decode_region(path.read_bytes())

@@ -90,6 +90,18 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return false;
     };
     let selector = &callback.selector;
+    // The source UID30024 lever survives at this exact native position without
+    // script attributes. Keep the donor selector and bind only this native alias.
+    // samples/native-rewards/standalone-chests.json records the immutable map proof.
+    let native_smithhammer = callback.key == "oteryn:quest-callback/giant-smithhammer"
+        && selector.unique == Some(30024)
+        && pos
+            == tile(Position {
+                x: 32778,
+                y: 32232,
+                floor: -8,
+            })
+        && !map.facts.house_tile(pos);
     // A position-registered USE acts on the resolved object the player clicked;
     // its native placement may be above ground. STEP still selects the floor.
     selector.position.is_none_or(|p| tile(p) == pos)
@@ -99,13 +111,15 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             || selector.appearance.is_some()
             || callback.trigger == Trigger::Use
             || ordinal == 0)
-        && map
-            .facts
-            .quest_callback_matches(key, selector.unique, selector.action, None)
+        && (native_smithhammer
+            || map
+                .facts
+                .quest_callback_matches(key, selector.unique, selector.action, None))
         && (map
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
             || ((selector.position.is_some()
+                || native_smithhammer
                 || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE)
                 && selector.appearance.is_some_and(|appearance| {
                     // The Crystal plate callback is registered by item appearance. Plain
@@ -122,7 +136,12 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                                 .nth(usize::from(ordinal))
                         })
                         .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
-                        .is_some_and(|facts| facts.appearance_id == appearance)
+                        .is_some_and(|facts| {
+                            facts.appearance_id == appearance
+                                || (native_smithhammer
+                                    && callback.lever == Some([2772, 2773])
+                                    && facts.appearance_id == 2773)
+                        })
                 })))
 }
 

@@ -1311,16 +1311,36 @@ pub(super) fn catalogue_source_world(
     data.manifest.palette.truncate(1);
     let mut appearances = BTreeMap::new();
     let mut tiles = BTreeMap::<(i8, u16, u16), sector::Tile>::new();
+    let movable_native_chest = chest.claim.starts_with(
+        "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.",
+    );
+    let mut item_definitions = BTreeMap::new();
     for (x, y, floor, unique, appearance) in placements {
         let palette = if let Some(index) = appearances.get(&appearance) {
             *index
         } else {
             let index = u32::try_from(data.manifest.palette.len())?;
+            if movable_native_chest {
+                item_definitions.insert(
+                    format!("oteryn:item.tibia.i{appearance}"),
+                    crate::map::facts::ItemDefinition {
+                        reference: std::num::NonZeroU32::new(index + 1).ok_or("source item reference")?,
+                        solid: Some(false),
+                        blocks_projectile: false,
+                        pickupable: true,
+                        door: false,
+                    },
+                );
+            }
             data.manifest.palette.push(bundle::PaletteEntry {
-                key: format!("oteryn:terrain.tibia.i{appearance}"),
-                family: bundle::Family::Terrain,
+                key: if movable_native_chest {
+                    format!("oteryn:item.tibia.i{appearance}")
+                } else {
+                    format!("oteryn:terrain.tibia.i{appearance}")
+                },
+                family: if movable_native_chest { bundle::Family::Item } else { bundle::Family::Terrain },
                 id: index,
-                terrain: Some(bundle::Terrain {
+                terrain: (!movable_native_chest).then_some(bundle::Terrain {
                     kind: bundle::TerrainKind::Common,
                     walkable: None,
                     ground_speed: None,
@@ -1423,7 +1443,7 @@ pub(super) fn catalogue_source_world(
             .map_err(super::fixture::debug)?,
         crate::foundation::ChannelId::decode(&super::fixture::id(43))
             .map_err(super::fixture::debug)?,
-        |_| None,
+        |key| item_definitions.get(key).copied(),
     )
     .map_err(super::fixture::debug)
 }

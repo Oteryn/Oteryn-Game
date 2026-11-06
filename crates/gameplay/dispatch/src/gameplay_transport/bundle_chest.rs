@@ -5,7 +5,9 @@ use super::ComposedFreshAdmission;
 use super::connection::{EarnedNotice, UseCommand, UseOutcome};
 use super::item_ref_admission::{NativeItemWeights, generation_item_facts, pinned_index};
 use super::world_map::{MapViewSource, resolve_map_target};
-use crate::content::world_reward_claims::{bind_embedded_reward_claims, bind_hydra_egg};
+use crate::content::world_reward_claims::{
+    bind_embedded_reward_claims, bind_hydra_egg, bind_standalone_chests,
+};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::reward_claim_mint::{
     RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
@@ -52,7 +54,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         // This is a bounded, immutable Content pass over the embedded claim catalogue.
         // Unsupported shapes and unadmitted rewards remain closed in the existing binder.
-        let mut report = bind_embedded_reward_claims(map.overlay.base().as_ref(), &|item| {
+        let admitted = |item: &crate::content::TypedDefinitionRef| {
             generation_item_facts(native, &item_ref(item)).is_ok_and(|facts| {
                 facts.container_capacity.is_none_or(|capacity| capacity > 0)
                     && !matches!(
@@ -60,9 +62,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         crate::durability::item_transfer::ItemStackClass::Unknown
                     )
             })
-        })
-        .ok()?;
-        if let Some(claim) = bind_hydra_egg(map.overlay.base().as_ref(), |key, id, appearance| {
+        };
+        let mut report =
+            bind_embedded_reward_claims(map.overlay.base().as_ref(), &admitted).ok()?;
+        let matches = |key, id, appearance| {
             crate::map::view::placement_of(key).is_some_and(|(position, ordinal)| {
                 !map.facts.house_tile(position)
                     && map
@@ -72,8 +75,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             entry.appearance_id == appearance && !entry.bound && !entry.pickupable
                         })
             })
-        }) {
+        };
+        if let Some(claim) = bind_hydra_egg(map.overlay.base().as_ref(), matches) {
             report.served.push(claim);
+        }
+        for claim in bind_standalone_chests(map.overlay.base().as_ref(), &admitted, matches).ok()? {
+            if !report
+                .served
+                .iter()
+                .any(|existing| existing.key == claim.key)
+            {
+                report.served.push(claim);
+            }
         }
         let source = MapViewSource {
             overlay: &map.overlay,

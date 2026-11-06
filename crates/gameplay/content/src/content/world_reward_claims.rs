@@ -8,8 +8,10 @@
 
 mod hydra_egg;
 mod native_state;
+mod standalone_chests;
 
 pub use hydra_egg::bind_hydra_egg;
+pub use standalone_chests::bind_standalone_chests;
 
 use crate::content::{
     ContentError, DefinitionFamily, DefinitionRevisionRef, PlacementKey, ProductionKey,

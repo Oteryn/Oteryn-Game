@@ -1,0 +1,135 @@
+{
+  "schema": "OTERYN_STANDALONE_NATIVE_CHEST_SOURCE/v1",
+  "quests": [
+    "oteryn:quest.authored.braindeath_quest",
+    "oteryn:quest.giant_smithhammer_quest"
+  ],
+  "source_claims": [
+    "content/interactions/reward_claims/reward-claim-variants-00100-00104.json:BPTheUndeathStare",
+    "content/interactions/reward_claims/reward-claims-00100-00199.json:GiantSmithHammer"
+  ],
+  "source_aliases": {
+    "Braindeath Quest": "TheHiddenCityOfBeregar.BPTheUndeathStare; five exact contents in one Red Backpack",
+    "Giant Smithhammer Quest": "ExplorerSociety.GiantSmithHammer; talon, portable hammer and100gold plus source wall lever"
+  },
+  "accepted_override": "tools/content-schema/quest-authoring/quest_callback_coverage.py:275 PR2770 Q5/A retains accepted Item12510 over donor3208",
+  "native_claim_objects": [
+    {
+      "position": [
+        32546,
+        31522,
+        11
+      ],
+      "native_map": "content/world/placements/region-z11-x127-y123.b3",
+      "entries": [
+        [
+          [
+            5815,
+            0,
+            null
+          ],
+          [
+            1983,
+            0,
+            null
+          ]
+        ]
+      ],
+      "legacy_uid": 6283,
+      "native_map_sha256": "7d41a7c38b1d8364ac7d54fcefc12701450f3df932976928c91586629cca6e99"
+    },
+    {
+      "position": [
+        32778,
+        32253,
+        8
+      ],
+      "native_map": "content/world/placements/region-z08-x128-y125.b3",
+      "entries": [
+        [
+          [
+            351,
+            0,
+            null
+          ],
+          [
+            2472,
+            0,
+            null
+          ]
+        ]
+      ],
+      "legacy_uid": 6079,
+      "native_map_sha256": "76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f"
+    },
+    {
+      "position": [
+        32776,
+        32253,
+        8
+      ],
+      "native_map": "content/world/placements/region-z08-x128-y125.b3",
+      "entries": [
+        [
+          [
+            352,
+            0,
+            null
+          ],
+          [
+            2472,
+            0,
+            null
+          ]
+        ]
+      ],
+      "legacy_uid": 6078,
+      "native_map_sha256": "76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f"
+    },
+    {
+      "position": [
+        32774,
+        32253,
+        8
+      ],
+      "native_map": "content/world/placements/region-z08-x128-y125.b3",
+      "entries": [
+        [
+          [
+            355,
+            0,
+            null
+          ],
+          [
+            2472,
+            0,
+            null
+          ]
+        ]
+      ],
+      "legacy_uid": 6077,
+      "native_map_sha256": "76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f"
+    }
+  ],
+  "native_lever": {
+    "position": [
+      32778,
+      32232,
+      8
+    ],
+    "appearance": 2772,
+    "legacy_uid": 30024,
+    "native_attributes": null,
+    "wall": {
+      "position": [
+        32780,
+        32231,
+        8
+      ],
+      "appearance": 389
+    },
+    "native_map": "content/world/placements/region-z08-x128-y125.b3",
+    "native_map_sha256": "76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f"
+  },
+  "boundary": "Only these four exact plain native chest objects and this exact native lever; no legacy UID or action attribute is added to the map. Existing checked reward recipes, source callback and receipt identities remain authoritative."
+}
