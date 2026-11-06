@@ -1,4 +1,4 @@
-//! The five read-only status panels share native window ownership and a one-second refresh.
+//! The read-only status panels share native window ownership and a one-second refresh.
 #![allow(
     unsafe_code,
     reason = "Win32 controls stay on their creating UI thread"
@@ -83,6 +83,7 @@ impl StatusPanel for oteryn_client_ui::skill_progress::SkillProgressPanel {
     }
 }
 panel!(party_effects, PartyEffectsPanel, 280, 496);
+panel!(potion_durations, PotionDurationsPanel, 381, 662);
 
 unsafe extern "system" fn window_proc(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     // SAFETY: the window's creating thread owns the refresh flag until DestroyWindow.
@@ -231,10 +232,11 @@ fn run<P: StatusPanel>(
                     panel.ended();
                 }
             }
-            if held.as_ref() != Some(panel) {
-                SetWindowTextW(text, wide(&panel.text()).as_ptr());
-                EnableWindow(refresh, i32::from(panel.ready()));
-                held = Some(panel.clone());
+            let rendered = (panel.text(), panel.ready());
+            if held.as_ref() != Some(&rendered) {
+                SetWindowTextW(text, wide(&rendered.0).as_ptr());
+                EnableWindow(refresh, i32::from(rendered.1));
+                held = Some(rendered);
             }
             drop(mailbox);
             std::thread::sleep(Duration::from_millis(30));

@@ -1,0 +1,15 @@
+{
+  "schema": "OTERYN_NX5_COSMETIC_GRANT_SOURCES/v1",
+  "sources": [
+    {
+      "path": "tools/content-schema/native-gameplay/item-cosmetic-actions.json",
+      "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+      "sha256": "485fbdfc2a1672dd80ebe44e47077a03a55776b5e37e03d7adb6f1eebe987da2"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs",
+      "revision": "81504ec792c186a3adcdc95aef8610d0862334cf",
+      "sha256": "40f96bac31fc44fc5293d471569472d70a1dd100bbacd8b6b861bd0708db1273"
+    }
+  ]
+}

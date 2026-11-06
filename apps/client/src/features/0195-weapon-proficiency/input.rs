@@ -22,6 +22,7 @@ impl PlayLink {
         {
             lock(&self.mailbox).weapon_proficiency.open = true;
         }
+        self.weapon_proficiency_request(Intent::Catalogue);
         true
     }
 }

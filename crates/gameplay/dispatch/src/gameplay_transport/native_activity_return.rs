@@ -131,6 +131,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 ActivityReturnReason::Death { .. }
                     | ActivityReturnReason::OwnerLost
                     | ActivityReturnReason::IdleLogout
+                    | ActivityReturnReason::StaffKickLost { .. }
+                    | ActivityReturnReason::StaffKick { .. }
                     | ActivityReturnReason::Abandoned { .. }
                     | ActivityReturnReason::CapabilityMismatch { .. }
             )
@@ -157,6 +159,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 | ActivityReturnReason::Death { .. }
                 | ActivityReturnReason::Logout
                 | ActivityReturnReason::IdleLogout
+                | ActivityReturnReason::StaffKickLost { .. }
+                | ActivityReturnReason::StaffKick { .. }
                 | ActivityReturnReason::Abandoned { .. }
                 | ActivityReturnReason::CapabilityMismatch { .. }
         ) {
@@ -263,6 +267,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     ActivityReturnReason::IdleLogout => 7,
                     ActivityReturnReason::Abandoned { .. } => 8,
                     ActivityReturnReason::CapabilityMismatch { .. } => 9,
+                    ActivityReturnReason::StaffKick { .. } => 10,
+                    ActivityReturnReason::StaffKickLost { .. } => 11,
                     _ => return refuse(ActivityRefusal::InvalidInput),
                 }
             },
@@ -350,12 +356,20 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         match reason {
             ActivityReturnReason::Abandoned { transport }
+            | ActivityReturnReason::StaffKick { transport }
                 if command.is_some()
                     || !online
                     || current.current_transport() != Some(transport)
                     || admitted
                         .controller
                         .is_none_or(|controller| controller.transport != transport) =>
+            {
+                return refuse(ActivityRefusal::AuthorityRejected);
+            }
+            ActivityReturnReason::StaffKickLost { epoch }
+                if command.is_some()
+                    || online
+                    || current.current_control_loss_epoch() != Some(epoch) =>
             {
                 return refuse(ActivityRefusal::AuthorityRejected);
             }

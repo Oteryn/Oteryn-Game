@@ -3,6 +3,7 @@ use std::num::NonZeroU64;
 
 pub const CAPABILITY_ITEM_FORGE_V1: u32 = 152;
 pub const COMMAND_TYPE_ITEM_FORGE: u32 = 181;
+pub const COMMAND_TYPE_FORGE_DUST_QUERY: u32 = 668;
 pub const MAX_HISTORY: u8 = 50;
 pub const REQUEST_BYTES: usize = 51;
 

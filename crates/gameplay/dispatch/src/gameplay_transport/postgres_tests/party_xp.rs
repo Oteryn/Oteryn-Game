@@ -54,6 +54,15 @@ pub(super) enum Case {
     TaskBoardPrechange,
     TaskBoardOrdered,
     SoulWarTerminal,
+    CharmCarnage,
+    CharmIncoming,
+    CharmNumb,
+    CharmCleanse,
+    CharmCripple,
+    CharmFatalHold,
+    CharmMana,
+    CharmBless,
+    CharmParry,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -208,12 +217,21 @@ pub(super) fn run(case: Case) -> TestResult {
 async fn scenario(h: &Harness, case: Case) -> TestResult {
     let task_board_case = case;
     let case = match case {
-        Case::TaskBoardParty
+        Case::CharmCarnage
+        | Case::TaskBoardParty
         | Case::TaskBoardUnbound
         | Case::TaskBoardPrechange
         | Case::TaskBoardOrdered => Case::OneHit,
         Case::TaskBoardForeign => Case::Foreign,
-        Case::TaskBoardTalisman => Case::Offence,
+        Case::TaskBoardTalisman
+        | Case::CharmIncoming
+        | Case::CharmNumb
+        | Case::CharmCleanse
+        | Case::CharmCripple
+        | Case::CharmFatalHold
+        | Case::CharmMana
+        | Case::CharmBless
+        | Case::CharmParry => Case::Offence,
         other => other,
     };
     let now: i64 =
@@ -568,6 +586,40 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(case, Case::Eqmod2) {
         return super::equipment_mods::qualify(&mut owner, h, &players).await;
+    }
+    if matches!(task_board_case, Case::CharmBless) {
+        return super::srx2_charm_consumers::bless(&mut owner, h, &players).await;
+    }
+    if matches!(task_board_case, Case::CharmMana) {
+        return super::srx2_charm_consumers::mana(&mut owner, &players).await;
+    }
+    if matches!(task_board_case, Case::CharmCripple | Case::CharmFatalHold) {
+        return super::srx2_charm_consumers::control(
+            &mut owner,
+            &players,
+            if matches!(task_board_case, Case::CharmCripple) {
+                "cripple"
+            } else {
+                "fatal_hold"
+            },
+        )
+        .await;
+    }
+    if matches!(task_board_case, Case::CharmParry) {
+        return super::srx2_charm_consumers::incoming(&mut owner, &players, "parry").await;
+    }
+    if matches!(task_board_case, Case::CharmNumb) {
+        return super::srx2_charm_consumers::incoming(&mut owner, &players, "numb").await;
+    }
+    if matches!(task_board_case, Case::CharmCleanse) {
+        return super::srx2_charm_consumers::incoming(&mut owner, &players, "cleanse").await;
+    }
+    if matches!(task_board_case, Case::CharmIncoming) {
+        return super::srx2_charm_consumers::incoming(&mut owner, &players, "adrenaline_burst")
+            .await;
+    }
+    if matches!(task_board_case, Case::CharmCarnage) {
+        return super::srx2_charm_consumers::carnage(&mut owner, h, &players).await;
     }
     if matches!(case, Case::Offence) {
         return super::equipped_offence::qualify(&mut owner, h, &players).await;

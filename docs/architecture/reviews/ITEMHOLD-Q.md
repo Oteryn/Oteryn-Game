@@ -250,3 +250,54 @@ All remaining ITEMHOLD-Q catalogue and selected source-claim holds are resolved.
 The initial candidate was preserved locally before fast-forwarding to `1516faabd`;
 none of its duplicated nine-item work was reapplied. No full nextest or full PG suite
 was run, no protected branch was modified, and no PR was opened.
+
+## PR #3017 merge repair (2026-11-06)
+
+Merged main `ffef24ad6` into `16aa17f19` with a merge commit, preserving
+main's starter admissions, cosmetics and small Item update provider, and the
+ITEMHOLD-Q admissions and exact source recipes. No source admission was dropped.
+The rejection regression now uses held Item 1000 (dry grass, unknown semantics)
+and unknown Item 54609: main now legitimately admits starter Item 34017.
+
+Conflicts: `content/creatures/prey-slot-values.json`,
+`content/spells.manifest.json`, `docs/balance/PREY-SLOT-VALUE-2026-11-01.md`,
+`docs/balance/PREY-TIME-SIM-2026-11-01.md`,
+`tools/content-schema/native-gameplay/loot-tables.json`, and
+`tools/content-schema/native-gameplay/prey-model-results.json`. The registered
+regeneration driver also handled `content/items/index.json`. The loot table
+was rebuilt with `build_full_spell_artifact.py --refresh-loot-tables`; all other
+derived conflicts and bundle pins use `regenerate_content.py --resolve
+--skip-checks`, followed by the checks recorded below. No generated output or pin
+was edited by hand.
+
+An early content test run was stopped after it exposed the expected stale
+pre-merge Item update base pin. Only the post-regeneration results below count
+as final validation.
+
+The generator completed its catalogue steps; its final `pin-refresh` process
+was killed by the memory limit while an early pin-check was running concurrently.
+The duplicate check was stopped. The final two bundle commands below ran
+sequentially and passed; no generator or validation rule was weakened.
+
+| Merge validation command | Result |
+| --- | --- |
+| `python tools/content-schema/native-gameplay/build_full_spell_artifact.py --refresh-loot-tables` | PASS; rebuilt the merged loot admission facts |
+| `python tools/content-migration/regenerate_content.py --resolve --skip-checks` | Catalogue outputs regenerated and conflicts staged; final pin refresh resumed separately after the memory kill described above |
+| `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh .` | PASS; reproduced main's bundle digest `6157033be3cbe48fb8eb1261ce13579cb1e02ec40f457025d1b89ac3d2d62671` |
+| `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-check . /tmp/itemhold-q-merge-pin-check-final` | PASS; 32,839,269 bytes, same digest |
+| `python tools/content-migration/validate_world_project_v2_to_tree.py` | PASS; strict source recomputation, 34,111 Items and 476 Item bindings |
+| `python tools/content-schema/validate_materialized_game_tree.py` | PASS; 97/97 materialized, 10 world markers, 1,257 successor files |
+| `python tools/content-migration/quest_reward_item_semantics.py --check` | PASS; 525 admissions, no changed shards |
+| `cargo fmt --all --check` | PASS |
+| `cargo clippy --locked -p oteryn-gameplay-content --all-targets --quiet -- -D warnings` | PASS after regeneration |
+| `python tools/content-migration/test_itemhold_q.py` | PASS; 9 tests after regeneration |
+| `python tools/content-schema/item-authoring/test_engine_items.py` | PASS; 599 checks and 3 + 4 unit tests |
+| `python -m unittest test_reward_claim_variant_authoring test_reward_claim_variant_migration test_container_native` (reward-claim-authoring directory) | PASS; 42 tests |
+| `cargo test --locked -p oteryn-game-server --test integration_rest content_ --quiet -- --test-threads=2` | PASS; 123 tests after regeneration |
+| SHA-256 comparison of all 529 content JSON inputs before and after the final pin refresh | PASS; unchanged |
+
+The canonical Item shards, native base provider and reward-claim shards were
+also byte-identical before and after regeneration, so the Item engine and
+source-claim checks above cover the final generated content. Only the generated
+SRX-1 base pin and Prey value table changed in those initial tested inputs; the
+final content suite and server tests use the refreshed files.

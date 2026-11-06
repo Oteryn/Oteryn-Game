@@ -1,0 +1,19 @@
+[
+  {
+    "mechanic": "0292-cast-consent",
+    "kind": "handlers",
+    "id": "0292-cast-consent-unsupported",
+    "status": "unsupported",
+    "reason": "S17-A is server phase 1; native client is a later task.",
+    "commands": [
+      503
+    ],
+    "not_applicable": {
+      "state": "Native cast UI is a later task.",
+      "protocol": "Native cast UI is a later task.",
+      "view": "Native cast UI is a later task.",
+      "input": "Native cast UI is a later task.",
+      "settings": "Native cast UI is a later task."
+    }
+  }
+]

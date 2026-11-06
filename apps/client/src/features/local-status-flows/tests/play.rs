@@ -274,6 +274,26 @@ flow!(
     }
 );
 
+flow!(
+    nx8_potion_durations_native_queue_refusal_replay_logout,
+    potion_durations,
+    potion_durations_panel,
+    potion_durations_request,
+    potion_durations_input,
+    potion_durations_initialize,
+    381,
+    662,
+    23,
+    oteryn_session::potion_durations::PotionDurations {
+        active: vec![oteryn_session::potion_durations::PotionDuration {
+            source: 1,
+            item_id: 36727,
+            percent: 0,
+            remaining_ms: 3600000
+        }]
+    }
+);
+
 #[test]
 fn nx7_complete_skills_native_play_queue_decode_and_display() -> Result<(), Error> {
     std::thread::Builder::new()

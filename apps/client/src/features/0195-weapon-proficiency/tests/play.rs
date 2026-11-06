@@ -91,11 +91,11 @@ fn native_proficiency_browse_decodes_experience_and_pages_the_complete_list()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::play_channel;
     use oteryn_client_runtime::weapon_proficiency::{ProficiencyPage, ProficiencyRow};
-    for id in 109..=111 {
+    for id in 109..=114 {
         assert!(native_controls::action_clicked(id, 0));
         assert!(!native_controls::action_clicked(id, 1));
     }
-    assert!(!native_controls::action_clicked(112, 0));
+    assert!(!native_controls::action_clicked(115, 0));
     let (link, mut commands, outbox) = play_channel();
     outbox.weapon_proficiency_initialize(true);
     link.weapon_proficiency_request(Intent::Browse);
@@ -106,6 +106,13 @@ fn native_proficiency_browse_decodes_experience_and_pages_the_complete_list()
         (command.capability, command.kind, command.payload),
         (195, 641, vec![0, 0, 0, 0])
     );
+    let mut native_panel = WeaponProficiencyPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let native_query = native_controls::submit(&mut native_panel, 112, [""; 6], false)
+        .ok_or("missing native browse query")?;
+    assert_eq!((native_query.kind, native_query.payload), (641, vec![0; 4]));
     let page = ProficiencyPage {
         offset: 0,
         total: 2,
@@ -128,6 +135,20 @@ fn native_proficiency_browse_decodes_experience_and_pages_the_complete_list()
     assert!(text.contains("12345 XP"));
     assert!(text.contains("Sword"));
     assert!(text.contains("1 / 2"));
+    native_panel = panel;
+    let native_next = native_controls::submit(&mut native_panel, 114, [""; 6], false)
+        .ok_or("missing native next page")?;
+    assert_eq!(
+        (native_next.kind, native_next.payload),
+        (641, 1u32.to_be_bytes().to_vec())
+    );
+    native_panel.pending = false;
+    let native_previous = native_controls::submit(&mut native_panel, 113, [""; 6], false)
+        .ok_or("missing native previous page")?;
+    assert_eq!(
+        (native_previous.kind, native_previous.payload),
+        (641, vec![0; 4])
+    );
     link.weapon_proficiency_request(Intent::NextPage);
     let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
         return Err("missing next page".into());
@@ -179,4 +200,87 @@ fn proficiency_page_rejects_truncation_trailing_and_oversized_rows()
     page.offset = u32::MAX;
     assert!(page.encode().is_none());
     Ok(())
+}
+
+#[test]
+fn nx8_proficiency_catalogue_can_be_requested_from_native_panel() {
+    let mut panel = WeaponProficiencyPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let command = native_controls::submit(&mut panel, 109, ["", "", "", "", "", ""], false);
+    assert_eq!(
+        command.map(|command| (command.kind, command.payload)),
+        Some((660, vec![0, 0, 0, 0]))
+    );
+}
+
+#[test]
+fn nx8_proficiency_catalogue_displays_experience_full_perks_and_pages() {
+    use oteryn_client_runtime::weapon_proficiency::{
+        ProficiencyCatalogueEntry, ProficiencyCatalogueLevel, ProficiencyCataloguePage,
+    };
+    let mut panel = WeaponProficiencyPanel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(native_controls::submit(&mut panel, 109, [""; 6], false).is_some());
+    let page = ProficiencyCataloguePage {
+        offset: 0,
+        total: 9,
+        entries: (0..8)
+            .map(|i| ProficiencyCatalogueEntry {
+                definition: i + 1,
+                weapon: format!("oteryn:item.weapon{i}"),
+                name: format!("Weapon {i}"),
+                experience: 2345,
+                thresholds: [500, 1500, 3000, 7000, 15000, 30000, 60000, 120000, 240000],
+                levels: vec![ProficiencyCatalogueLevel {
+                    selected: Some(1),
+                    perks: vec![
+                        "Attack damage +1".into(),
+                        "Defence +2".into(),
+                        "Sword +1".into(),
+                    ],
+                }],
+            })
+            .collect(),
+    };
+    let result = GatedCommandResult {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: page.encode().unwrap_or_default(),
+    };
+    assert!(apply_result(&mut panel, &result));
+    let text = native_controls::display(&panel);
+    for expected in [
+        "2345 XP",
+        "Weapons 1-8 of 9",
+        "Attack damage +1",
+        "Defence +2",
+        "Sword +1",
+        "Weapon 7",
+    ] {
+        assert!(text.contains(expected), "{expected}: {text}");
+    }
+    let next = native_controls::submit(&mut panel, 110, [""; 6], false);
+    assert_eq!(
+        next.map(|command| command.payload),
+        Some(8_u32.to_be_bytes().to_vec())
+    );
+    panel.pending = false;
+    let previous = native_controls::submit(&mut panel, 111, [""; 6], false);
+    assert_eq!(
+        previous.map(|command| command.payload),
+        Some(0_u32.to_be_bytes().to_vec())
+    );
+    assert!(!apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            payload: vec![0; 10],
+            ..result
+        }
+    ));
+    assert!(panel.feedback.is_some());
 }

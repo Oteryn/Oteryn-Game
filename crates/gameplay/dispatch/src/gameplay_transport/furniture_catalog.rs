@@ -1628,3 +1628,12 @@ mod tests {
         assert_eq!(construction_kit_to(6371), Some(6355));
     }
 }
+
+#[path = "furniture_catalog_names.rs"]
+mod names;
+pub(super) fn name(item: u32) -> Option<&'static str> {
+    names::NAMES
+        .binary_search_by_key(&item, |row| row.0)
+        .ok()
+        .map(|index| names::NAMES[index].1)
+}

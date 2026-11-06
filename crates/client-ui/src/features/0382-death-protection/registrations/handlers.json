@@ -1,0 +1,16 @@
+{
+  "mechanic": "0382-death-protection",
+  "kind": "handlers",
+  "id": "0382-death-protection-query",
+  "status": "supported",
+  "commands": [
+    664
+  ],
+  "direction": "client_to_server",
+  "capability": 382,
+  "entry": "protocol.rs::decode",
+  "not_applicable": {
+    "settings": "Death consequences are immutable server receipts.",
+    "input": "The native HUD queries automatically after login and respawn."
+  }
+}

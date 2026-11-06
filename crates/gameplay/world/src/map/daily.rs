@@ -43,7 +43,6 @@ impl Projection {
         daily: &DailyMap,
         item: &impl Fn(&str) -> Option<super::facts::ItemDefinition>,
     ) -> Result<Self, Error> {
-        // CheckedBundle already verified these bytes and the manifest's bounds/digest.
         let length = data
             .get(8..12)
             .and_then(|b| <[u8; 4]>::try_from(b).ok())
@@ -52,8 +51,15 @@ impl Projection {
         let bytes = data
             .get(bundle::HEADER..bundle::HEADER + length)
             .ok_or_else(|| refusal("manifest bounds"))?;
-        let mut manifest: Manifest =
-            serde_json::from_slice(bytes).map_err(|_| refusal("manifest"))?;
+        let (manifest, _) = bundle::decode_manifest(bytes)?;
+        Self::from_manifest(manifest, daily, item)
+    }
+
+    pub(super) fn from_manifest(
+        mut manifest: Manifest,
+        daily: &DailyMap,
+        item: &impl Fn(&str) -> Option<super::facts::ItemDefinition>,
+    ) -> Result<Self, Error> {
         let mut needed = BTreeMap::new();
         if daily.fungus
             && let Some(ground) = manifest
@@ -226,14 +232,61 @@ pub(super) fn visit(
     data: &[u8],
     limits: LoadLimits,
     projection: Option<&Projection>,
-    mut visitor: impl FnMut(&Manifest, Sector) -> Result<(), Error>,
+    visitor: impl FnMut(&Manifest, Sector) -> Result<(), Error>,
 ) -> Result<bundle::Visited, Error> {
     let Some(projection) = projection else {
         return bundle::visit_budgeted(data, limits.caps, limits.budget, visitor);
     };
+    let mut visited = None;
+    project(
+        projection,
+        |visitor| {
+            visited = Some(bundle::visit_budgeted(
+                data,
+                limits.caps,
+                limits.budget,
+                visitor,
+            )?);
+            Ok(())
+        },
+        visitor,
+    )?;
+    let mut visited = visited.ok_or_else(|| refusal("missing projected stream"))?;
+    visited.manifest = projection.manifest.clone();
+    Ok(visited)
+}
+
+pub(super) fn project_bundle(
+    decoded: &mut bundle::Bundle,
+    projection: &Projection,
+) -> Result<(), Error> {
+    let mut sectors = Vec::new();
+    project(
+        projection,
+        |visitor| {
+            for sector in &decoded.sectors {
+                visitor(&decoded.manifest, sector.clone())?;
+            }
+            Ok(())
+        },
+        |_, sector| {
+            sectors.push(sector);
+            Ok(())
+        },
+    )?;
+    decoded.manifest = projection.manifest.clone();
+    decoded.sectors = sectors;
+    Ok(())
+}
+
+fn project(
+    projection: &Projection,
+    stream: impl FnOnce(&mut dyn FnMut(&Manifest, Sector) -> Result<(), Error>) -> Result<(), Error>,
+    mut visitor: impl FnMut(&Manifest, Sector) -> Result<(), Error>,
+) -> Result<(), Error> {
     let daily = &projection.daily;
     let mut pending = None;
-    let mut visited = bundle::visit_budgeted(data, limits.caps, limits.budget, |_, mut sector| {
+    stream(&mut |_, mut sector| {
         let manifest = &projection.manifest;
         let pending = match &mut pending {
             Some(pending) => pending,
@@ -288,13 +341,12 @@ pub(super) fn visit(
         fungus(manifest, &mut sector, daily)?;
         visitor(manifest, sector)
     })?;
-    visited.manifest = projection.manifest.clone();
     if let Some(pending) = pending {
         for sector in pending.into_values() {
-            visitor(&visited.manifest, sector)?;
+            visitor(&projection.manifest, sector)?;
         }
     }
-    Ok(visited)
+    Ok(())
 }
 
 /// Crystal grimvale_respawn_event.lua:5-29. At most one eligible position per x-column.

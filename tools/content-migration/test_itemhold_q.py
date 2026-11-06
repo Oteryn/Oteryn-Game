@@ -12,7 +12,8 @@ sys.path.insert(0, str(ROOT / 'tools/content-schema/reward-claim-authoring'))
 from reward_claim_authoring import stack_problem
 
 RESOLVED = (3572, 3054, 14156, 12369, 39546, 3083, 3056, 2881, 2882, 52732, 33330, 44179)
-HELD = (34017, 54609)
+# Main admits starter Item 34017; retain a held catalogue row and an unknown ID.
+HELD = (1000, 54609)
 
 
 class ItemholdQTests(unittest.TestCase):
