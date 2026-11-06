@@ -1,19 +1,33 @@
 [
   {
     "mechanic": "0207-house-furniture-wrap",
+    "id": "0207-house-furniture-wrap-command-402",
+    "status": "supported",
     "kind": "handlers",
-    "id": "0207-house-furniture-wrap-unsupported",
-    "status": "unsupported",
-    "reason": "Native furniture wrap input is not yet migrated.",
     "commands": [
       402
     ],
+    "direction": "client_to_server",
+    "capability": 207,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Server authoritative.",
-      "protocol": "Codec is owned by protocol-oteryn.",
-      "view": "Uses existing world and inventory views.",
-      "input": "Pending native wrap action.",
-      "settings": "No client setting."
+      "settings": "No persistent furniture setting."
     }
+  },
+  {
+    "mechanic": "0207-house-furniture-wrap",
+    "id": "0207-house-furniture-wrap-open",
+    "status": "supported",
+    "kind": "keybindings",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+F",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0207-house-furniture-wrap",
+    "id": "0207-house-furniture-wrap-panel",
+    "status": "supported",
+    "kind": "panels",
+    "entry": "view.rs::panel_text"
   }
 ]

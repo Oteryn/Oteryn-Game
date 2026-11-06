@@ -158,8 +158,23 @@ impl RaidArea {
         spawn_index: u16,
         attempt: u8,
     ) -> Result<RaidPosition, RaidError> {
-        self.validate()?;
         if attempt >= RAID_PLACEMENT_ATTEMPTS {
+            return Err(RaidError::InvalidState);
+        }
+        self.candidate_shared(random, wave, entry, spawn_index, attempt)
+    }
+
+    /// Flower Month's independently bounded shared budget (Crystal flower_month.lua:28-46).
+    pub fn candidate_shared(
+        self,
+        random: &RaidRandom,
+        wave: u16,
+        entry: u16,
+        spawn_index: u16,
+        attempt: u8,
+    ) -> Result<RaidPosition, RaidError> {
+        self.validate()?;
+        if attempt >= 250 {
             return Err(RaidError::InvalidState);
         }
         let index = (u64::from(wave) << 48)
@@ -272,6 +287,16 @@ mod tests {
         })?;
         assert!(placed.is_some());
         assert_eq!(reads, 7);
+        Ok(())
+    }
+
+    #[test]
+    fn flower_shared_sampling_accepts_249_but_xml_retains_its_ten_attempt_bound()
+    -> Result<(), RaidError> {
+        let random = RaidRandom::new([7; 32], [8; 16]);
+        assert!(area().candidate(&random, 0, 0, 0, 10).is_err());
+        assert!(area().contains(area().candidate_shared(&random, 0, 0, 24, 249)?));
+        assert!(area().candidate_shared(&random, 0, 0, 24, 250).is_err());
         Ok(())
     }
 

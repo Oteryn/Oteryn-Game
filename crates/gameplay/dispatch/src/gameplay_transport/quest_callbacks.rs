@@ -4,6 +4,8 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
+#[path = "daily_world_gates.rs"]
+mod daily_world_gates;
 mod execute;
 mod rewards;
 mod soul_war_reward;
@@ -454,6 +456,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect::<Vec<_>>();
         // Ambiguous content never chooses one action by incidental registration order.
         let [(callback, key)] = selected.as_slice() else {
+            if selected.is_empty() {
+                return self
+                    .step_daily_world_gate(permit, actor, session, origin, entered)
+                    .await;
+            }
             return entered;
         };
         let Some(command) = step_command(actor, session, entered.revision(), self.reset_epoch)

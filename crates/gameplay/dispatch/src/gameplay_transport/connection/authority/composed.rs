@@ -5,6 +5,9 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
+        self.refresh_staff(admitted).await
+    }
     #[cfg(test)]
     fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
         Some(self.root)
@@ -458,6 +461,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 admitted.continuity.connection_generation,
             )
             .await;
+    }
+
+    fn take_newhaven_inventory_changed(&self, session: GameSessionId) -> bool {
+        self.states
+            .tutorial_sessions
+            .take_inventory_changed(session)
     }
 
     fn take_tutorial_notice(
@@ -991,6 +1000,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         target: Option<item_view::ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
         self.dispatch_soulpit_items(actor, command, &intent, source, target)
+            .await
+    }
+
+    async fn use_dispenser_action(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_dispenser(actor, command, &intent, source, target)
             .await
     }
 

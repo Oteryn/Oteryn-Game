@@ -34,6 +34,7 @@ mod market_catalogue;
 
 pub mod mount_taming;
 
+mod item_profile_updates;
 mod native_cosmetics;
 mod starting_loadout_input;
 
@@ -188,6 +189,8 @@ struct ProvisioningManifest {
     item_profiles: Option<FilePin>,
     #[serde(default)]
     starting_loadout_item_profiles: Option<FilePin>,
+    #[serde(default)]
+    item_profile_updates: Option<FilePin>,
     #[serde(default)]
     spell_appearances: Option<FilePin>,
     #[serde(default)]
@@ -715,7 +718,9 @@ impl NativeGameplayInput {
         };
         let cosmetics = match manifest.cosmetics {
             Some(pin) => {
+                let locator = directory.join(&pin.path);
                 let pin = load(pin, native_cosmetics::MAX_BYTES)?;
+                let pin = native_cosmetics::materialize(pin, &locator)?;
                 if native_cosmetics::decode(&pin.bytes)?.is_none() {
                     return Err(invalid("native gameplay v6 requires authored cosmetics"));
                 }
@@ -764,10 +769,16 @@ impl NativeGameplayInput {
             creature_profiles: load(manifest.creature_profiles, MAX_CREATURE_PROFILES)?,
             presentation_profiles: load(manifest.presentation_profiles, MAX_PROFILES)?,
             item_profiles: starting_loadout_input::merge(
-                manifest
-                    .item_profiles
-                    .map(|pin| load(pin, MAX_ITEM_PROFILES))
-                    .transpose()?,
+                item_profile_updates::merge(
+                    manifest
+                        .item_profiles
+                        .map(|pin| load(pin, MAX_ITEM_PROFILES))
+                        .transpose()?,
+                    manifest
+                        .item_profile_updates
+                        .map(|pin| load(pin, MAX_PROFILES))
+                        .transpose()?,
+                )?,
                 manifest
                     .starting_loadout_item_profiles
                     .map(|pin| load(pin, MAX_PROFILES))

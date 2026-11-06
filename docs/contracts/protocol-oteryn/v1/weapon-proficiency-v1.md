@@ -116,3 +116,22 @@ Donor evidence (OTS_HYPOTHESIS_ONLY): Canary 47dfd51f45280a59a1d3e50ba7edd573d72
 identity, XP and selected perks. Accepted Oteryn transport difference: the native
 server catalogue is paged rather than supplied by proprietary client static data.
 This adds a read projection and changes no gameplay rule. Wiki cross-check: wiki-pending.
+
+## Catalogue
+
+NX-8 command `660` on capability `195` reads the current actor's full promoted
+weapon catalogue, including weapons with no progress. The request is one big
+endian `u32` offset into the immutable, bytewise item-key ordered bindings.
+The native panel requests page zero when opened and has next/previous and refresh
+controls. No durable state changes occur.
+
+The bounded reply (at most 65536 bytes) contains offset and total (`u32`), entry
+count (`u8`, at most 8), then entries: definition reference (`u32`; zero means
+absent from the selected Item generation), weapon key and display name (length-prefixed UTF-8 each),
+live experience (`u32`, zero for a new track), nine cumulative level thresholds
+(`u32`), level count (`u8`, 1..7), then each level's selected perk (`u8`, 255 for
+none), perk count (`u8`, 1..3) and complete source-ordered perk descriptions.
+Strings have `u16` byte lengths, at most 512 bytes. All integers are big endian;
+trailing bytes, malformed selections and oversized pages are rejected.
+Experience comes from the session track owner, including earned progress not yet
+checkpointed; it is never inferred from history receipts.

@@ -2,7 +2,8 @@
 #![allow(unsafe_code)]
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::party::{Intent, PartyPanel, panel_text, request};
+use oteryn_client_ui::party::{Intent, PartyPanel, request};
+use oteryn_client_ui::party_member_effects::panel_text;
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
@@ -121,8 +122,16 @@ fn run(
                 WS_TABSTOP,
             );
         }
-        let status = control(hwnd, "STATIC", "", 109, [10, 320, 620, 140], 0);
+        let status = control(
+            hwnd,
+            "EDIT",
+            "",
+            109,
+            [10, 320, 620, 140],
+            ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL,
+        );
         let mut held: Option<PartyPanel> = None;
+        let mut next_refresh = std::time::Instant::now();
         let mut message: MSG = std::mem::zeroed();
         loop {
             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -168,6 +177,15 @@ fn run(
                     mailbox.party.feedback = Some("The session has ended");
                 }
             }
+            if std::time::Instant::now() >= next_refresh && mailbox.party.pending.is_none() {
+                if let Some(command) = request(&mut mailbox.party, Intent::Refresh)
+                    && commands.send(PlayCommand::Party(command)).is_err()
+                {
+                    mailbox.party.pending = None;
+                    mailbox.party.feedback = Some("The session has ended");
+                }
+                next_refresh = std::time::Instant::now() + std::time::Duration::from_secs(1);
+            }
             if held.as_ref() != Some(&mailbox.party) {
                 let enabled = i32::from(mailbox.party.can_manage_member());
                 windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
@@ -204,9 +222,9 @@ fn run(
                         }
                     }
                 }
-                SetWindowTextW(status, wide(&panel_text(&mailbox.party)).as_ptr());
                 held = Some(mailbox.party.clone());
             }
+            SetWindowTextW(status, wide(&panel_text(&mailbox.party)).as_ptr());
             drop(mailbox);
             std::thread::sleep(std::time::Duration::from_millis(20));
         }

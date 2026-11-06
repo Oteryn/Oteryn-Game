@@ -1,0 +1,17 @@
+{
+  "id": 381,
+  "name": "POTION_DURATIONS_V1",
+  "constant": "potion_durations::CAPABILITY_POTION_DURATIONS_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    662
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}
