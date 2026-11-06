@@ -631,6 +631,7 @@ jobs:
   # It needs nothing, so it finishes while scope and lanes still run.
   runner_route:
     name: Merge gate / Molehill runner routing
+    if: github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     permissions: {}
