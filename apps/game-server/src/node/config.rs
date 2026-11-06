@@ -169,6 +169,8 @@ pub struct AccountCharactersConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CharacterCommandsConfig {
+    #[serde(default)]
+    pub account_deletion: crate::durability::character_command::account_deletion::Config,
     pub client_certificate_file: PathBuf,
     pub client_key_file: PathBuf,
     pub source_authority: String,
@@ -607,6 +609,16 @@ impl NodeConfig {
             }
         }
         if let Some(commands) = &platform.character_commands {
+            if !outside(&commands.account_deletion.epoch_fence_file, &self.character)
+                || platform.account_characters.as_ref().is_some_and(|p| {
+                    p.epoch_fence_file == commands.account_deletion.epoch_fence_file
+                })
+                || platform.public_projections.as_ref().is_some_and(|p| {
+                    p.epoch_fence_file == commands.account_deletion.epoch_fence_file
+                })
+            {
+                return reject("platform.character_commands.account_deletion.epoch_fence_file");
+            }
             let status = platform.runtime_status.as_ref();
             let projection = platform.account_characters.as_ref();
             for (key, path) in [
@@ -1311,6 +1323,7 @@ source_authority = "oteryn:character-authority:primary"
             .platform
             .character_commands
             .expect("section");
+        assert!(commands.account_deletion.enabled);
         // The projection and the command consumer are one Character Authority.
         assert_eq!(
             commands.source_authority,

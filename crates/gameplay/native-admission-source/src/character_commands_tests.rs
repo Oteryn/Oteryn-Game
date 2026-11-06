@@ -456,6 +456,25 @@ fn drive(script: Vec<Result<Vec<u8>, Failure>>, decisions: Vec<Decision>) -> Dri
 const ACCEPTED: &[u8] = br#"{"contract_version":1,"result":"accepted"}"#;
 
 #[test]
+fn account_deletion_consumer_reads_intents_and_leaves_pending_without_receipts() {
+    for command in ["CloseAccount", "ResolveAccountClosure"] {
+        let (sent, seen, _) = drive(
+            vec![
+                Ok(page(&[(command, OP1, "17")])),
+                Ok(b"immutable-intent".to_vec()),
+            ],
+            vec![Decision::Transient],
+        );
+        assert_eq!(seen, [(command.into(), "immutable-intent".into())]);
+        assert_eq!(sent[1].0, Operation::ReadCharacterCommandIntentV1);
+        assert!(
+            sent.iter()
+                .all(|(operation, _)| *operation != Operation::PublishCharacterCommandReceiptV1)
+        );
+    }
+}
+
+#[test]
 fn consumer_reads_decides_and_publishes_the_stored_receipt() {
     let o2 = op(2);
     let list = page(&[
@@ -598,4 +617,210 @@ fn throttling_backs_off_and_relists_the_same_page() {
             .iter()
             .all(|b| b.contains(r#""after_source_revision":"0""#))
     );
+}
+
+#[test]
+fn deletion_consumer_invalidates_then_observes_independent_lifecycle_before_deciding() {
+    struct LifecycleAuthority {
+        events: Arc<Mutex<Vec<&'static str>>>,
+        observed: bool,
+        receipt: Vec<u8>,
+    }
+    impl Decider for LifecycleAuthority {
+        fn lifecycle_recovery_generation(&self) -> Option<u64> {
+            Some(3)
+        }
+        async fn begin_closure_lifecycle_read(
+            &mut self,
+            _: &super::super::account_closure::LifecycleRequest,
+        ) {
+            self.observed = false;
+            self.events.lock().unwrap().push("invalidate");
+        }
+        async fn observe_closure_lifecycle(
+            &mut self,
+            request: &super::super::account_closure::LifecycleRequest,
+            raw: &[u8],
+        ) {
+            self.observed = super::super::account_closure::decode_lifecycle(request, raw).is_ok();
+            self.events.lock().unwrap().push("observe");
+        }
+        async fn decide(&mut self, command: &str, _: &str, _: Input<'_>) -> Decision {
+            assert_eq!(command, CLOSE_ACCOUNT_COMMAND);
+            self.events.lock().unwrap().push("decide");
+            if self.observed {
+                Decision::Publish {
+                    receipt: self.receipt.clone(),
+                    result_code: "CHAR_CMD_OK".into(),
+                }
+            } else {
+                Decision::Transient
+            }
+        }
+        async fn acknowledge_receipt(&mut self, _: &str, _: &str) {
+            self.events.lock().unwrap().push("ack");
+        }
+    }
+    let closure: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../docs/contracts/fixtures/account-deletion/closure.json"
+    ))
+    .unwrap();
+    let lifecycle: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../docs/contracts/fixtures/account-deletion/lifecycle.json"
+    ))
+    .unwrap();
+    let intent = closure["vectors"][0]["wire"]
+        .as_str()
+        .unwrap()
+        .as_bytes()
+        .to_vec();
+    let receipt = closure["vectors"][1]["wire"]
+        .as_str()
+        .unwrap()
+        .as_bytes()
+        .to_vec();
+    let parsed: serde_json::Value = serde_json::from_slice(&intent).unwrap();
+    for available in [false, true] {
+        let sent = Arc::new(Mutex::new(Vec::new()));
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let mut script = VecDeque::from([
+            Ok(intent.clone()),
+            if available {
+                Ok(lifecycle["vectors"][1]["wire"]
+                    .as_str()
+                    .unwrap()
+                    .as_bytes()
+                    .to_vec())
+            } else {
+                Err(Failure::Unavailable)
+            },
+        ]);
+        if available {
+            script.push_back(Ok(br#"{"contract_version":2,"result":"accepted"}"#.to_vec()));
+        }
+        let mut consumer = Consumer::new(
+            Clock::default(),
+            Source {
+                script: Arc::new(Mutex::new(script)),
+                sent: sent.clone(),
+            },
+            LifecycleAuthority {
+                events: events.clone(),
+                observed: true,
+                receipt: receipt.clone(),
+            },
+            "oteryn:character-authority:primary".into(),
+            |_| {},
+        );
+        let entry = PendingEntry {
+            command: CLOSE_ACCOUNT_COMMAND.into(),
+            key: Key {
+                source_revision: 30,
+                operation_id: parsed["operation_id"].as_str().unwrap().into(),
+            },
+        };
+        let mut run = pin!(consumer.process(&entry));
+        assert!(matches!(
+            run.as_mut().poll(&mut Context::from_waker(Waker::noop())),
+            Poll::Ready(_)
+        ));
+        if available {
+            assert_eq!(
+                *events.lock().unwrap(),
+                ["invalidate", "observe", "decide", "ack"]
+            );
+            assert_eq!(sent.lock().unwrap()[2].1.as_bytes(), receipt);
+        } else {
+            assert_eq!(*events.lock().unwrap(), ["invalidate", "decide"]);
+            assert_eq!(sent.lock().unwrap().len(), 2);
+        }
+        assert_eq!(
+            sent.lock().unwrap()[1].0,
+            Operation::ReadAccountClosureLifecycleV1
+        );
+        assert_eq!(
+            sent.lock().unwrap()[1].1,
+            lifecycle["vectors"][0]["wire"].as_str().unwrap()
+        );
+    }
+}
+
+#[test]
+fn closure_publisher_is_independent_of_pending_list_and_quarantines_conflicts() {
+    struct Publishing {
+        publication: Option<super::super::account_closure::Publication>,
+        events: Arc<Mutex<Vec<&'static str>>>,
+    }
+    impl Decider for Publishing {
+        async fn decide(&mut self, _: &str, _: &str, _: Input<'_>) -> Decision {
+            self.events.lock().unwrap().push("unexpected-decision");
+            Decision::Transient
+        }
+        async fn next_closure_publication(
+            &mut self,
+        ) -> Option<super::super::account_closure::Publication> {
+            match self.publication.take() {
+                Some(p) => Some(p),
+                None => std::future::pending().await,
+            }
+        }
+        async fn acknowledge_closure_publication(
+            &mut self,
+            _: &super::super::account_closure::Publication,
+        ) {
+            self.events.lock().unwrap().push("ack");
+        }
+        async fn quarantine_closure_publication(
+            &mut self,
+            _: &super::super::account_closure::Publication,
+        ) {
+            self.events.lock().unwrap().push("quarantine");
+        }
+    }
+    for (operation, refusal) in [
+        (Operation::PublishAccountClosureV1, None),
+        (Operation::PublishAccountClosureV1, Some(Failure::Conflict)),
+        (
+            Operation::PublishCharacterCommandReceiptV1,
+            Some(Failure::NotFound),
+        ),
+    ] {
+        let conflict = refusal.is_some();
+        let sent = Arc::new(Mutex::new(Vec::new()));
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let publication = super::super::account_closure::Publication {
+            operation,
+            body: "stored-canonical-snapshot".into(),
+        };
+        let answer = if let Some(failure) = refusal {
+            Err(failure)
+        } else {
+            Ok(br#"{"contract_version":2,"result":"accepted"}"#.to_vec())
+        };
+        let publisher = run_account_closure_publications(
+            Clock::default(),
+            Source {
+                script: Arc::new(Mutex::new(VecDeque::from([answer]))),
+                sent: sent.clone(),
+            },
+            Publishing {
+                publication: Some(publication.clone()),
+                events: events.clone(),
+            },
+            |_| {},
+        );
+        let mut run = pin!(publisher);
+        assert!(matches!(
+            run.as_mut().poll(&mut Context::from_waker(Waker::noop())),
+            Poll::Pending
+        ));
+        assert_eq!(
+            *sent.lock().unwrap(),
+            [(publication.operation, publication.body)]
+        );
+        assert_eq!(
+            *events.lock().unwrap(),
+            [if conflict { "quarantine" } else { "ack" }]
+        );
+    }
 }

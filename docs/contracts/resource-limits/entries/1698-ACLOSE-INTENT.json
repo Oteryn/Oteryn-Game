@@ -1,0 +1,20 @@
+{
+  "id": "ACLOSE-INTENT",
+  "owner_contract": "OTERYN_GAME_ACCOUNT_DELETION_FINALIZATION_V1.md",
+  "resource": "Immutable closure intent",
+  "unit": "bytes",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded resumable account closure; unavailable owners remain pending.",
+  "client_visible": false,
+  "boundary_tests": [
+    "account_deletion_postgres_producer_replays_resolves_and_fences"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/character_command/account_deletion/"
+  ]
+}

@@ -144,7 +144,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
+            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 AND NOT game_account_closure_detached(r.character_id)").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
             let Some(row) = row else { return Ok(Err(CharacterAuthorityError::Rejected)); };
             let record = decode_current_row(&row)?;
             commit_semantic_transaction(tx, deadline).await?;

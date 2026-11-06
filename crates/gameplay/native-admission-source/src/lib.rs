@@ -1,6 +1,7 @@
 use oteryn_gameplay_admission_evidence as admission_evidence;
 use std::{fmt, io};
 pub mod account_characters;
+pub mod account_closure;
 pub mod character_commands;
 pub mod descriptor;
 pub mod http1_mtls;

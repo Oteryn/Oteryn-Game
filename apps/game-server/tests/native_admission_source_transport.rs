@@ -404,7 +404,10 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     | Operation::PublishWorldOnlineV1
                     | Operation::PublishWorldTotalsV1
                     | Operation::PublishPublicProjectionWatermarkV1
-                    | Operation::PublishGameRestoreNoticeV1 => {
+                    | Operation::PublishGameRestoreNoticeV1
+                    | Operation::ReadAccountClosureLifecycleV1
+                    | Operation::PublishAccountClosureV1
+                    | Operation::PublishAccountClosureWatermarkV1 => {
                         return Err(io::Error::new(io::ErrorKind::InvalidData, "operation"));
                     }
                 };
@@ -471,7 +474,10 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                 | Operation::PublishWorldOnlineV1
                 | Operation::PublishWorldTotalsV1
                 | Operation::PublishPublicProjectionWatermarkV1
-                | Operation::PublishGameRestoreNoticeV1 => {
+                | Operation::PublishGameRestoreNoticeV1
+                | Operation::ReadAccountClosureLifecycleV1
+                | Operation::PublishAccountClosureV1
+                | Operation::PublishAccountClosureWatermarkV1 => {
                     return Err("operation".into());
                 }
             };

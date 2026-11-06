@@ -25,6 +25,11 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// A closing account uses the existing activity/terminal-release owners.
+    fn account_closure_check(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     #[cfg(test)]
     fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
         None

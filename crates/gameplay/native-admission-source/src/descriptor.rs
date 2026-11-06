@@ -40,6 +40,9 @@ pub enum Operation {
     ReadCharacterCommandIntentV1,
     /// Character command receipt publication (same contract, §4.3).
     PublishCharacterCommandReceiptV1,
+    ReadAccountClosureLifecycleV1,
+    PublishAccountClosureV1,
+    PublishAccountClosureWatermarkV1,
     ListPendingStoreOperationsV1,
     ReadStoreOperationIntentV1,
     PublishStoreDeliveryReceiptV1,
@@ -81,6 +84,9 @@ impl Operation {
             Self::ListPendingCharacterCommandsV1 => super::character_commands::PENDING_PATH,
             Self::ReadCharacterCommandIntentV1 => super::character_commands::READ_PATH,
             Self::PublishCharacterCommandReceiptV1 => super::character_commands::RECEIPT_PATH,
+            Self::ReadAccountClosureLifecycleV1 => super::account_closure::LIFECYCLE_PATH,
+            Self::PublishAccountClosureV1 => super::account_closure::PATH,
+            Self::PublishAccountClosureWatermarkV1 => super::account_closure::WATERMARK_PATH,
             Self::ListPendingStoreOperationsV1 => super::store::PENDING_PATH,
             Self::ReadStoreOperationIntentV1 => super::store::READ_PATH,
             Self::PublishStoreDeliveryReceiptV1 => super::store::RECEIPT_PATH,
@@ -113,9 +119,10 @@ impl Operation {
             }
             Self::ListPendingCharacterCommandsV1 => super::character_commands::LIST_REQUEST_BYTES,
             Self::ReadCharacterCommandIntentV1 => super::character_commands::READ_REQUEST_BYTES,
-            Self::PublishCharacterCommandReceiptV1 => {
-                super::character_commands::RECEIPT_REQUEST_BYTES
-            }
+            Self::PublishCharacterCommandReceiptV1 => super::account_closure::RECEIPT_BYTES,
+            Self::ReadAccountClosureLifecycleV1 => 512,
+            Self::PublishAccountClosureV1 => super::account_closure::SNAPSHOT_BYTES,
+            Self::PublishAccountClosureWatermarkV1 => super::account_closure::WATERMARK_BYTES,
             Self::ListPendingStoreOperationsV1
             | Self::ReadStoreOperationIntentV1
             | Self::ReadStoreBalanceV1

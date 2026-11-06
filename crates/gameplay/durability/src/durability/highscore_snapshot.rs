@@ -46,10 +46,10 @@ pub const CUT_CHARACTERS_MAX: usize = 50_000;
 pub const CUT_SOURCE_PAGE_ROWS: usize = 1_000;
 /// One keyset page of the cut's eligible Characters in CharacterId order. Its World range and
 /// order are an index range scan of `game_character_roots_highscore_world_character` (0129).
-pub const CHARACTER_SOURCE_PAGE_SQL: &str = "SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND b.vocation<>'none' AND ($2::text IS NULL OR r.character_id>$2::text::uuid) ORDER BY r.character_id LIMIT $3";
+pub const CHARACTER_SOURCE_PAGE_SQL: &str = "SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id) AND b.vocation<>'none' AND ($2::text IS NULL OR r.character_id>$2::text::uuid) ORDER BY r.character_id LIMIT $3";
 /// One keyset page of the cut's account representatives in AccountId order. Its World range and
 /// order are an index range scan of `game_character_roots_highscore_world_account` (0129).
-pub const ACCOUNT_REPRESENTATIVE_PAGE_SQL: &str = "SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND ($2::text IS NULL OR r.account_id>$2::text::uuid) ORDER BY r.account_id,p.level DESC,r.character_id LIMIT $3";
+pub const ACCOUNT_REPRESENTATIVE_PAGE_SQL: &str = "SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id) AND ($2::text IS NULL OR r.account_id>$2::text::uuid) ORDER BY r.account_id,p.level DESC,r.character_id LIMIT $3";
 
 /// The bounds of one World cut. Production uses [`CutLimits::REGISTERED`]; a fixture may only
 /// tighten them, never pass the registered hard maximums.
@@ -823,12 +823,12 @@ async fn read_in_transaction(
     let start = i64::from(page - 1) * i64::try_from(PAGE_ROWS).map_err(|_| corrupt())?;
     let end = start + i64::try_from(PAGE_ROWS).map_err(|_| corrupt())?;
     let filter = i16::try_from(filter).map_err(|_| corrupt())?;
-    let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND position>$3 AND position<=$4 ORDER BY position LIMIT 50")
+    let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND position>$3 AND position<=$4 ORDER BY position LIMIT 50")
         .bind(id).bind(filter).bind(start).bind(end).fetch_all(&mut **tx).await?
         .into_iter().map(stored_row).collect::<Result<Vec<_>>>()?;
-    let has_more = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND position>$3)")
+    let has_more = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND position>$3)")
         .bind(id).bind(filter).bind(end).fetch_one(&mut **tx).await?;
-    let own_row = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND character_id=encode($3,'hex')::uuid")
+    let own_row = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND character_id=encode($3,'hex')::uuid")
         .bind(id).bind(filter).bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
         .map(stored_row).transpose()?;
     Ok(SnapshotPage {

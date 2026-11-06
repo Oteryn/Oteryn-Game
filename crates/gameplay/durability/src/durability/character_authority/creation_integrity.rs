@@ -43,7 +43,7 @@ pub(super) async fn verify(
          SELECT 1 FROM game_character_roots r \
            LEFT JOIN game_character_name_reservations n \
              ON n.name_key = r.name_key AND n.character_id = r.character_id \
-          WHERE n.name_key IS NULL \
+          WHERE n.name_key IS NULL AND NOT EXISTS (SELECT 1 FROM game_account_closure_members q JOIN game_account_closures qc USING(account_id) WHERE q.character_id=r.character_id AND q.step=3 AND q.close_operation_id=qc.close_operation_id AND qc.state IN ('FINALIZING','FINALIZED') AND qc.decision='FINALIZE') \
          UNION ALL \
          SELECT 1 FROM game_character_audit_legal_holds h \
            LEFT JOIN game_character_audit_outbox a USING (event_id) \

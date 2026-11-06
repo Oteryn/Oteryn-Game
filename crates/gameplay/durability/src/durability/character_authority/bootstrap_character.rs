@@ -74,6 +74,9 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(record));
             }
+            if super::super::character_command::account_deletion::operation_exists(&mut tx, &operation).await? {
+                return Ok(Err(CharacterAuthorityError::Conflict));
+            }
             // Source-time validity against trusted Game time; arrival or retry
             // time never refreshes the intent.
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
