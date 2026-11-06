@@ -2938,28 +2938,28 @@
     "entries": [
       {
         "canonical": "oteryn:quest.the_hidden_city_of_beregar_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "Royal Rescue's minecart/rail route and NPC hand-ins remain unbound; all seven source reward placements passed separately."
       },
       {
         "canonical": "oteryn:quest.the_order_of_the_stag_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "The Etzel Writ/mandatory source quest progression and Eldoran finale have no selected native dialogue/USE/delivery binding; a death-binding packet alone does not implement the story."
       },
       {
         "canonical": "oteryn:quest.the_paradox_tower_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "The Riddler answer branches and source reward/loss selection remain without a native conditional dialogue/reward binding; skull entry and chest recipes are partial only."
       },
       {
         "canonical": "oteryn:quest.the_spirit_will_get_you_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "Cranky Lizard Crone's spirit interaction and final award lack an exact native conditional/delivery binding; its chosen-source targets remain evidence only."
       },
       {
         "canonical": "oteryn:quest.in_service_of_yalahar_quest",
         "status": "IN_PROGRESS",
-        "blocker": "Reusable tool retention and atomic Mission01 increment now execute for UID3073. Remaining: the other three sewer pipes and their transient effects, multitool9598 alternative, complete NPC exchanges/story progression and Azerus encounter/access/rewards. No external-engine wait is authorized.",
+        "blocker": "Both exact source tools3304/9598 now execute UID3073 without changing the tool and commit latch plus Mission01 exactly once. Remaining: the other three sewer pipes and their transient effects, complete NPC exchanges/story progression and Azerus encounter/access/rewards. Continue implementation; no external-engine wait.",
         "partial_qualification": {
           "status": "QUALIFIED",
           "scope": "Generic fenced transaction and UID3073 crowbar action; not whole In Service of Yalahar qualification.",
@@ -2986,17 +2986,44 @@
           "assumptions": [
             "Retain the existing accepted Mission01 runtime initial value 0 from content/quests/missions/quest-state.json; this action increments it exactly once.",
             "The PG room proves the generic transaction with the literal source UID, not native collision or whole-quest traversal."
-          ]
+          ],
+          "accepted_definitions": [
+            "oteryn:item.tibia.i3304",
+            "oteryn:item.tibia.i9598"
+          ],
+          "alternative_red": {
+            "duration_seconds": 48.2,
+            "postgres_marker": "POSTGRES_DATABASE_READY l6_reusable_tool",
+            "result": "0 passed / 1 failed",
+            "actual": "Rejected with only multitool9598 carried"
+          },
+          "final_variant_green": [
+            {
+              "item": 9598,
+              "duration_seconds": 50.671081124,
+              "marker": "POSTGRES_CASE_COMPLETED l6-reusable-tool-multitool"
+            },
+            {
+              "item": 3304,
+              "duration_seconds": 48.677923539,
+              "marker": "POSTGRES_CASE_COMPLETED l6-reusable-tool"
+            }
+          ],
+          "final_consuming_regression": {
+            "duration_seconds": 51.229794228,
+            "result": "1 passed / 0 failed",
+            "marker": "POSTGRES_CASE_COMPLETED qcb3_consuming_tool_regression"
+          }
         }
       },
       {
         "canonical": "oteryn:quest.chayenne_realm",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "Live area-clear, field/switch/lever puzzle and key/book-gated access composition."
       },
       {
         "canonical": "oteryn:quest.the_ancient_tombs_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "The seven-pharaoh item assembly and Ashmunrah access/reward composition remain unbound; the existing seventeen callbacks cover only part of the tomb mechanisms.",
         "partial_qualification": {
           "scope": "Five successful instrument USE transitions, position/appearance binding independently checked against native B3; literal STEP approach, replay and fail-closed out-of-order/completed-attempt tests. Not tomb collision, source wrong-instrument damage/reset, doors, drops, assembly or whole quest.",
@@ -3008,42 +3035,42 @@
       },
       {
         "canonical": "oteryn:quest.cradle_of_monsters",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "Dangerous Apparatus, collection-container outputs and the Ingol laboratory mission chain remain unresolved native USE/receipt bindings."
       },
       {
         "canonical": "oteryn:quest.the_cursed_crystal",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "The Wooden Grinder, medusa-blood mixture and crystal portal need source-specific item transformation targets; the held recipe supplies identity candidates only."
       },
       {
         "canonical": "oteryn:quest.the_outlaw_camp_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "The Power Ring/oil/barrel mechanism and numbered-key route are not fully bound; the entry callback and source reward chests are not a whole access-puzzle test."
       },
       {
         "canonical": "oteryn:quest.the_rookie_guard_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "The rookgaard catapult/web/herb missions and sequential reward deliveries have unresolved native targets; no full Vascalir route is admitted."
       },
       {
         "canonical": "oteryn:quest.the_scatterbrained_sorcerer_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "Eclesius' sweep/feed/blending-device tasks need concrete native tool, timer and item effects; the current identity associations do not select an executable task branch."
       },
       {
         "canonical": "oteryn:quest.too_hot_to_handle_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "The crypt tool transformations,500-point hazard progression and final Gnomevisor access/reward need exact native instance/occurrence bindings; chosen recipe stages are not executable."
       },
       {
         "canonical": "oteryn:quest.treasure_hunt_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "Klaus' four map pieces, dice levers and treasure progression have unresolved native selector/receipt bindings; no map-piece identity implies an executable puzzle."
       },
       {
         "canonical": "oteryn:quest.authored.waterskin_of_mead_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "The mission9-gated Furry Bag/fluid-container reward and barrel's exact native selector are not bound; the authored recipe alone cannot mint source mead."
       },
       {
@@ -3060,7 +3087,7 @@
       },
       {
         "canonical": "oteryn:quest.dreamer_s_challenge_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "Shared reset/pickup and conditional puzzle-world owner for the carrot/Fire Bug/Death Ring entrance and later plate/maze state. The seven stateless exits execute, but a teleport-only callback cannot atomically validate and consume the puzzle offerings, reset the physical puzzle and choose failure recovery. qengine owns reset/pickup; item exchanges additionally need qengine2."
       },
       {
@@ -3072,22 +3099,22 @@
       },
       {
         "canonical": "oteryn:quest.lions_rock",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "The source treasure route has timed/resettable trial objects and the Lion Heart cache. Existing entry-refusal test proves refusal at Questline0 only. Callback has no reset/pickup epoch owner, and a native authored reward cannot borrow a Crystal UID. Reset/pickup is expressly reserved to qengine; the native placement binder also needs a shared contract."
       },
       {
         "canonical": "oteryn:quest.machinery_of_war_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "Burning the ballistae/catapults/siege wheels with the reusable Fire Bug requires resetting world-object state and non-consuming tool application. Current ItemOnTarget requires positive consumption and Callback has no reset epoch/timer; count0 is rejected. Reset/pickup world owner is expressly reserved to qengine."
       },
       {
         "canonical": "oteryn:quest.skeleton_decoration_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "Reward is inside a world barrel; shared map-container pickup/reset ownership is required. Current personal once-claim owner cannot represent floor-reset custody."
       },
       {
         "canonical": "oteryn:quest.authored.small_ruby_quest",
-        "status": "UNFINISHED",
+        "status": "IN_PROGRESS",
         "blocker": "The production reset finalizer exists. Remaining: committed B3 mutable Item pickup/remint bridge; `NativeMovementCollisionIndex::Bundle` has no `source_world`, required by `CurrentNativeMapInitialization`. Actual reward is Item3030 count1 at (32437,32174,15), beneath Item2123. Preserve shared floor-reset custody; do not substitute a personal claim."
       }
     ],
@@ -3098,7 +3125,7 @@
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-reusable-tools-01",
+    "latest_batch": "cloud-exact-tools-02",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -3126,7 +3153,34 @@
         "assumptions": [
           "Retain the existing accepted Mission01 runtime initial value 0 from content/quests/missions/quest-state.json; this action increments it exactly once.",
           "The PG room proves the generic transaction with the literal source UID, not native collision or whole-quest traversal."
-        ]
+        ],
+        "accepted_definitions": [
+          "oteryn:item.tibia.i3304",
+          "oteryn:item.tibia.i9598"
+        ],
+        "alternative_red": {
+          "duration_seconds": 48.2,
+          "postgres_marker": "POSTGRES_DATABASE_READY l6_reusable_tool",
+          "result": "0 passed / 1 failed",
+          "actual": "Rejected with only multitool9598 carried"
+        },
+        "final_variant_green": [
+          {
+            "item": 9598,
+            "duration_seconds": 50.671081124,
+            "marker": "POSTGRES_CASE_COMPLETED l6-reusable-tool-multitool"
+          },
+          {
+            "item": 3304,
+            "duration_seconds": 48.677923539,
+            "marker": "POSTGRES_CASE_COMPLETED l6-reusable-tool"
+          }
+        ],
+        "final_consuming_regression": {
+          "duration_seconds": 51.229794228,
+          "result": "1 passed / 0 failed",
+          "marker": "POSTGRES_CASE_COMPLETED qcb3_consuming_tool_regression"
+        }
       }
     },
     "active_counts": {
@@ -3138,13 +3192,13 @@
     "latest_batch_checks": {
       "result": "PASS",
       "cargo_fmt": true,
-      "cargo_check_changed_crates": true,
-      "clippy_all_targets_all_features_D_warnings": true,
+      "cargo_check_changed_crates": "exit0,20.43s",
+      "clippy_all_targets_all_features_D_warnings": "exit0,57.00s",
       "callback_units": "15 passed / 0 failed",
-      "content_integration": "123 passed / 0 failed, final tree2.47s",
-      "world_repository": "5 passed / 0 failed, final tree54.97s",
-      "repository_content_regeneration": "exit0; registered checks passed",
-      "pin_check": "PASS; bundle digest unchanged ec1fc25ee29632c23012be0191f7a3fdcd609ccdd23214286238c953e8a6caab"
+      "focused_postgres": "two tool variants and consuming regression; all passed with nonzero duration markers",
+      "content_integration": "123 passed / 0 failed,2.50s",
+      "pin_refresh_and_check": "PASS; unchanged world bundle ec1fc25ee29632c23012be0191f7a3fdcd609ccdd23214286238c953e8a6caab",
+      "generated_files": "No World/provider inputs changed; only the authored embedded callback gained an exact alternative."
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context."

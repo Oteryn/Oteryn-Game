@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let ancient_instruments = name == "l6-ancient-instruments";
-    let reusable_tool = name == "l6-reusable-tool";
+    let reusable_tool = name.starts_with("l6-reusable-tool");
     let monk = name.starts_with("monk-guidance");
     let classic_npc = matches!(name, "nx6-wayfarer" | "classic-quests-npc" | "classic-rottin-disrepair" | "threatened-dreams-npc" | "conditional-quest-greetings");
     let rotten_purchase = name == "rotten-blood-access-purchase";
@@ -248,6 +248,7 @@ fn scenario_case(
         } else if reusable_tool {
             super::super::l6_reusable_tools::exercise(
                 &mut owner, &mut admitted, &h, &authority, fence,
+                if name.ends_with("multitool") { "oteryn:item.tibia.i9598" } else { "oteryn:item.tibia.i3304" },
             ).await?;
         } else if callback.item_on_target.is_some()
             || name == "outlaw-camp-door"

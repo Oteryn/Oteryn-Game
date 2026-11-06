@@ -17,21 +17,30 @@ pub(super) const TRACK: &str =
 
 #[test]
 fn l6_reusable_tool_preserves_instance_and_refuses_missing_tool() -> TestResult {
+    run_case("l6-reusable-tool")
+}
+
+#[test]
+fn l6_reusable_multitool_preserves_instance_and_refuses_missing_tool() -> TestResult {
+    run_case("l6-reusable-tool-multitool")
+}
+
+fn run_case(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    eprintln!("POSTGRES_CASE_STARTED l6_reusable_tool");
+    eprintln!("POSTGRES_CASE_STARTED {name}");
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| {
-            super::quest_world_callbacks::scenario("l6-reusable-tool", TRIGGER, false)
+        .spawn(move || {
+            super::quest_world_callbacks::scenario(name, TRIGGER, false)
                 .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "reusable tool scenario panicked")??;
     eprintln!(
-        "POSTGRES_CASE_COMPLETED l6_reusable_tool duration={:?}",
+        "POSTGRES_CASE_COMPLETED {name} duration={:?}",
         started.elapsed()
     );
     Ok(())
@@ -56,6 +65,7 @@ pub(super) async fn exercise(
     harness: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     fence: CurrentCharacterGameplayFence,
+    tool: &str,
 ) -> TestResult {
     eprintln!("POSTGRES_DATABASE_READY l6_reusable_tool");
     let mission = "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/mission01";
@@ -95,7 +105,7 @@ pub(super) async fn exercise(
         fence.item_fence(),
         &oteryn_gameplay_quests::quest::world_callbacks::Offering {
             position: TRIGGER,
-            item: "oteryn:item.tibia.i3304".into(),
+            item: tool.into(),
             count: 1,
         },
         60,
@@ -103,8 +113,8 @@ pub(super) async fn exercise(
     )
     .await?;
     let snapshot = sqlx::query_scalar::<_, serde_json::Value>(
-        "SELECT to_jsonb(i) FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.definition_production_key='oteryn:item.tibia.i3304' LIMIT 1"
-    ).bind(fence.character_id.as_bytes().as_slice()).bind(owner.world_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
+        "SELECT to_jsonb(i) FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.definition_production_key=$3 LIMIT 1"
+    ).bind(fence.character_id.as_bytes().as_slice()).bind(owner.world_id.as_bytes().as_slice()).bind(tool).fetch_one(&harness.pool).await?;
     owner.clock_origin -= std::time::Duration::from_secs(2);
     let committed = wire(owner, admitted, 2, 2, payload.clone()).await?;
     assert_eq!(
@@ -142,8 +152,8 @@ pub(super) async fn exercise(
         UseDisposition::Rejected
     );
     let after = sqlx::query_scalar::<_, serde_json::Value>(
-        "SELECT to_jsonb(i) FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.definition_production_key='oteryn:item.tibia.i3304' LIMIT 1"
-    ).bind(fence.character_id.as_bytes().as_slice()).bind(owner.world_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
+        "SELECT to_jsonb(i) FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.definition_production_key=$3 LIMIT 1"
+    ).bind(fence.character_id.as_bytes().as_slice()).bind(owner.world_id.as_bytes().as_slice()).bind(tool).fetch_one(&harness.pool).await?;
     assert_eq!(after, snapshot);
     let state = owner
         .root

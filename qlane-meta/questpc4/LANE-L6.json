@@ -10,7 +10,7 @@
       "canonical": "oteryn:quest.the_hidden_city_of_beregar_quest",
       "title": "The Hidden City of Beregar Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "conditional_npc_story_access",
       "titles": [
         "The Hidden City of Beregar Quest"
@@ -74,7 +74,7 @@
       "canonical": "oteryn:quest.the_order_of_the_stag_quest",
       "title": "The Order of the Stag Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "conditional_npc_story_access",
       "titles": [
         "The Order of the Stag Quest"
@@ -138,7 +138,7 @@
       "canonical": "oteryn:quest.the_paradox_tower_quest",
       "title": "The Paradox Tower Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "conditional_npc_story_access",
       "titles": [
         "The Paradox Tower Quest"
@@ -206,7 +206,7 @@
       "canonical": "oteryn:quest.the_spirit_will_get_you_quest",
       "title": "The Spirit Will Get You Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "conditional_npc_story_access",
       "titles": [
         "The Spirit Will Get You Quest"
@@ -280,7 +280,7 @@
         "questpc8"
       ],
       "blocker": {
-        "missing_piece": "Reusable tool retention and atomic Mission01 increment now execute for UID3073. Remaining: the other three sewer pipes and their transient effects, multitool9598 alternative, complete NPC exchanges/story progression and Azerus encounter/access/rewards. No external-engine wait is authorized.",
+        "missing_piece": "Both exact source tools3304/9598 now execute UID3073 without changing the tool and commit latch plus Mission01 exactly once. Remaining: the other three sewer pipes and their transient effects, complete NPC exchanges/story progression and Azerus encounter/access/rewards. Continue implementation; no external-engine wait.",
         "owner": "shared-world-callback-owner",
         "evidence": [
           "content/quests/definitions/quests-00100-00199.json:1#/records/63/definition",
@@ -386,7 +386,7 @@
         "in/questpc.json#/quests/135",
         "in/questpc8.json#/2"
       ],
-      "partial_qualification": "cloud-reusable-tools-01; generic operation and UID3073 only"
+      "partial_qualification": "cloud-exact-tools-02; both exact source tools, UID3073 only"
     },
     {
       "canonical": "oteryn:quest.chayenne_realm",
@@ -434,7 +434,7 @@
       "canonical": "oteryn:quest.the_ancient_tombs_quest",
       "title": "The Ancient Tombs Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "item_assembly_reusable_tool_use",
       "titles": [
         "The Ancient Tombs Quest"
@@ -534,7 +534,7 @@
       "canonical": "oteryn:quest.cradle_of_monsters",
       "title": "The Cradle of Monsters Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "item_assembly_reusable_tool_use",
       "titles": [
         "The Cradle of Monsters Quest"
@@ -598,7 +598,7 @@
       "canonical": "oteryn:quest.the_cursed_crystal",
       "title": "The Cursed Crystal Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "item_assembly_reusable_tool_use",
       "titles": [
         "The Cursed Crystal Quest"
@@ -662,7 +662,7 @@
       "canonical": "oteryn:quest.the_outlaw_camp_quest",
       "title": "The Outlaw Camp Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "item_assembly_reusable_tool_use",
       "titles": [
         "The Outlaw Camp Quest"
@@ -730,7 +730,7 @@
       "canonical": "oteryn:quest.the_rookie_guard_quest",
       "title": "The Rookie Guard Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "item_assembly_reusable_tool_use",
       "titles": [
         "The Rookie Guard Quest"
@@ -794,7 +794,7 @@
       "canonical": "oteryn:quest.the_scatterbrained_sorcerer_quest",
       "title": "The Scatterbrained Sorcerer Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "item_assembly_reusable_tool_use",
       "titles": [
         "The Scatterbrained Sorcerer Quest"
@@ -858,7 +858,7 @@
       "canonical": "oteryn:quest.too_hot_to_handle_quest",
       "title": "Too Hot to Handle Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "item_assembly_reusable_tool_use",
       "titles": [
         "Too Hot to Handle Quest"
@@ -922,7 +922,7 @@
       "canonical": "oteryn:quest.treasure_hunt_quest",
       "title": "Treasure Hunt Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "item_assembly_reusable_tool_use",
       "titles": [
         "Treasure Hunt Quest"
@@ -986,7 +986,7 @@
       "canonical": "oteryn:quest.authored.waterskin_of_mead_quest",
       "title": "Waterskin of Mead Quest",
       "from_lane": "questpc4",
-      "status": "ACTIONABLE",
+      "status": "IN_PROGRESS",
       "mechanism": "item_assembly_reusable_tool_use",
       "titles": [
         "Waterskin of Mead Quest"
@@ -1285,7 +1285,7 @@
       "canonical": "oteryn:quest.dreamer_s_challenge_quest",
       "title": "Dreamer's Challenge Quest",
       "from_lane": "questpc6",
-      "status": "BLOCKED",
+      "status": "IN_PROGRESS",
       "mechanism": "world_reset_pickup_epochs",
       "titles": [
         "Dreamer's Challenge Quest"
@@ -1511,7 +1511,7 @@
       "canonical": "oteryn:quest.lions_rock",
       "title": "Lion's Rock Quest",
       "from_lane": "questpc8",
-      "status": "BLOCKED",
+      "status": "IN_PROGRESS",
       "mechanism": "world_reset_pickup_epochs",
       "titles": [
         "Lion's Rock Quest"
@@ -1627,7 +1627,7 @@
       "canonical": "oteryn:quest.machinery_of_war_quest",
       "title": "Machinery of War Quest",
       "from_lane": "questpc8",
-      "status": "BLOCKED",
+      "status": "IN_PROGRESS",
       "mechanism": "world_reset_pickup_epochs",
       "titles": [
         "Machinery of War Quest"

@@ -33,6 +33,7 @@
       "offerings": [],
       "item_on_target": {
         "item": "oteryn:item.tibia.i3304",
+        "alternatives": ["oteryn:item.tibia.i9598"],
         "count": 1,
         "replacement": null,
         "target_replacement": null,

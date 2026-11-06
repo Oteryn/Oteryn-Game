@@ -2,7 +2,7 @@
 
 Source: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/lib/register_actions.lua#L884-L927
 
-Retrieved source SHA-256: `5121124402c29aead613174c80e94e6b8d5c7db1e62ad152ad68f1280fc3df6d`. Lines 884–886 accept Crowbar 3304 or multitool 9598. Lines 921–927 bind UID 3073, require SewerPipe03 < 1, set it to 1, increment Mission01 and retain the source item. This mechanism slice exercises the crowbar; it is not whole-quest qualification or proof of the multitool alternative. The fixture uses a bounded synthetic room with the literal source UID, not a claim about native collision or placement.
+Retrieved source SHA-256: `5121124402c29aead613174c80e94e6b8d5c7db1e62ad152ad68f1280fc3df6d`. Lines 884–886 accept Crowbar 3304 or multitool 9598. Lines 921–927 bind UID 3073, require SewerPipe03 < 1, set it to 1, increment Mission01 and retain the source item. The initial slice exercised the crowbar; cloud-exact-tools-02 also proves the exact multitool alternative. Neither is whole-quest qualification. The fixture uses a bounded synthetic room with the literal source UID, not a claim about native collision or placement.
 
 RED: `cargo test --locked --offline -p oteryn-gameplay-dispatch --lib l6_reusable_tool_preserves_instance_and_refuses_missing_tool -- --nocapture`, PostgreSQL STARTED and DATABASE_READY markers; 0 passed / 1 failed; 47.58 seconds. Actual USE returned NothingToUse instead of missing-tool refusal because the binding did not exist. Full log: `/tmp/questpc4-reusable-red.log`.
 
@@ -17,3 +17,12 @@ Checks completed: cargo fmt; changed-crate cargo check; clippy for quests/durabi
 Review: existing callback serialization remains unchanged when the new flags are false. Zero-count inputs remain rejected. Reusable tools require count 1 and forbid item replacement. The same transaction locks live carried custody before applying both Quest effects. No migration, protocol field, currency or charge grant was added. No test was weakened or skipped.
 
 Repository tooling also refreshed 17 stale raid references to the unchanged starting-head region `content/world/placements/region-z07-x128-y127.b3`, whose actual SHA-256 is `3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071`; its dependent catalogue digest was regenerated. Raid behavior and the B3 itself are unchanged.
+
+
+## Exact alternatives, cloud-exact-tools-02
+
+Pinned source lines884–886 accept both3304 and9598. New PG RED: only9598 carried, actual Rejected instead of Committed,48.20s with DATABASE_READY. The bounded selector now accepts at most four exact definitions, rejects duplicate/invalid identities, locks one matching live carried instance and retains it. Empty alternative lists stay omitted from serialization, preserving existing callback binding bytes.
+
+Final PG: multitool50.671081124s, crowbar48.677923539s, both completion markers and2 passed/0 failed; consuming target-swap regression51.229794228s,1/0. Each tool case preserves the entire Item row through commit, replay, stale revision and completed refusal. No charge or output grant was introduced.
+
+PASS: fmt, changed-crate check, all-target/all-feature clippy-D warnings,15 callback units,123 content integration tests, repo pin-refresh and pin-check. World/provider inputs remain unchanged; the existing bundle digest is unchanged. Full source logs are /tmp/questpc4-multitool-red.log, /tmp/questpc4-multitool-green.log and /tmp/questpc4-alternatives-*.log.

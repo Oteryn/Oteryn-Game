@@ -83,6 +83,9 @@ use native::valid_native_callback;
 #[serde(deny_unknown_fields)]
 pub struct ItemOnTarget {
     pub item: String,
+    /// Exact interchangeable source definitions, never wildcard identity matching.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub alternatives: Vec<String>,
     pub count: u16,
     pub replacement: Option<String>,
     pub target_replacement: Option<u16>,
@@ -253,6 +256,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
+                let accepted: BTreeSet<_> = std::iter::once(item.item.as_str())
+                    .chain(item.alternatives.iter().map(String::as_str))
+                    .collect();
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
                     || callback.storage.is_empty()
@@ -261,6 +267,12 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || item.count > 100
                     || (item.reusable && (item.count != 1 || item.replacement.is_some()))
                     || !super::valid_quest_key(&item.item)
+                    || item.alternatives.len() > 3
+                    || accepted.len() != item.alternatives.len() + 1
+                    || item
+                        .alternatives
+                        .iter()
+                        .any(|key| !super::valid_quest_key(key))
                     || item
                         .replacement
                         .as_ref()
@@ -395,6 +407,21 @@ mod tests {
         let mut bad = source.clone();
         bad["callbacks"][0]["item_on_target"]["replacement"] = "oteryn:item.tibia.i3304".into();
         assert!(parse(&bad.to_string()).is_err());
+        for alternatives in [
+            serde_json::json!(["oteryn:item.tibia.i3304"]),
+            serde_json::json!(["oteryn:item.tibia.i9598", "oteryn:item.tibia.i9598"]),
+            serde_json::json!([""]),
+            serde_json::json!([
+                "oteryn:item.a",
+                "oteryn:item.b",
+                "oteryn:item.c",
+                "oteryn:item.d"
+            ]),
+        ] {
+            let mut bad = source.clone();
+            bad["callbacks"][0]["item_on_target"]["alternatives"] = alternatives;
+            assert!(parse(&bad.to_string()).is_err());
+        }
         for (field, value) in [
             ("preserve", serde_json::json!(true)),
             ("maximum", serde_json::json!(i64::MAX)),
