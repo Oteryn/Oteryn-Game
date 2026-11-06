@@ -266,6 +266,14 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
+        self.inner.movement_item(id)
+    }
+
+    fn movement_items(&self, pos: TilePos) -> Vec<crate::map::view::ComposedEntry> {
+        self.inner.movement_items(pos)
+    }
+
     fn base_hidden(&self, key: u64) -> bool {
         self.inner.base_hidden(key)
     }
@@ -1071,6 +1079,32 @@ pub(super) async fn observe_container(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sewer_ground_projection_retains_callback_identity_and_pinned_removal() -> Result<(), Box<dyn std::error::Error>> {
+        use crate::map::boot::tests as fixture;
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes)?;
+        let facts = crate::map::facts::BundleFacts::palette(&bundle.manifest, |key| {
+            fixture::items(if key == "oteryn:item.tibia.i435" { "item:coin" } else { key })
+        }).map_err(|error| format!("{error:?}"))?;
+        let pos = TilePos { x: 7, y: 0, floor: -7 };
+        assert!(facts.create_world_change_item(pos, 435));
+        let pinned = facts.pinned();
+        let ground = HashMap::new();
+        let projection = LoopGroundFacts { inner: &pinned, ground: &ground };
+        let entries = projection.movement_items(pos);
+        assert_eq!(entries, facts.movement_items(pos));
+        let [entry] = entries.as_slice() else { return Err("one sewer".into()); };
+        let view::EntrySource::Added(id) = entry.source else { return Err("added sewer".into()); };
+        assert_eq!(projection.movement_item(id.get()), Some((pos, id)));
+        assert!(facts.remove_movement_item(pos, 435));
+        assert_eq!(projection.movement_items(pos), entries, "pinned map retains the issued handle");
+        let current = LoopGroundFacts { inner: &facts, ground: &ground };
+        assert!(current.movement_items(pos).is_empty());
+        assert_eq!(current.movement_item(id.get()), None, "removed handle is stale");
+        Ok(())
+    }
 
     #[test]
     fn projection_retries_only_temporary_holder_refusal() -> Result<(), Box<dyn std::error::Error>>

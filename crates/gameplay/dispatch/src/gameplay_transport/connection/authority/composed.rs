@@ -945,6 +945,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         if let Some(outcome) = self
+            .use_bundle_dropdown(
+                actor,
+                command,
+                None,
+                source.filter(|_| {
+                    intent.use_with.is_none()
+                        && intent.use_with_map_item.is_none()
+                        && intent.use_with_position.is_none()
+                }),
+            )
+            .await
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
             .use_reward_bag_intent(actor, command, &intent, source)
             .await?
         {

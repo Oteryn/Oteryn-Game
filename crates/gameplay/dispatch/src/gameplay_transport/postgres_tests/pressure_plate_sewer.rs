@@ -77,7 +77,12 @@ pub(super) async fn exercise(
 ) -> TestResult {
     if name.contains("-use") {
         use crate::gameplay_transport::connection::FreshAdmissionAuthority;
-        admitted.continuity.selected_capabilities = crate::gameplay_transport::capabilities::SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18]).ok_or("map USE capabilities")?;
+        admitted.continuity.selected_capabilities =
+            crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, 11, 15, 18],
+            )
+            .ok_or("map USE capabilities")?;
     }
     let position = TilePos {
         x: 32482,
@@ -102,7 +107,10 @@ pub(super) async fn exercise(
         (2, StepDirection::West, 0),
         (3, StepDirection::East, 1),
         (4, StepDirection::West, 0),
-    ].into_iter().filter(|_| name != "devil-helmet-sewer-use-existing") {
+    ]
+    .into_iter()
+    .filter(|_| name != "devil-helmet-sewer-use-existing")
+    {
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))
@@ -163,10 +171,23 @@ pub(super) async fn exercise(
         );
     }
     if name.contains("-use") {
-        owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
         let step_id = if name.ends_with("use-existing") { 1 } else { 5 };
-        let step = wire(owner, admitted, step_id, 1, encode_step_intent(StepDirection::East)).await?;
-        assert_eq!(decode_step_result(&step).map_err(debug)?, StepDisposition::Moved);
+        let step = wire(
+            owner,
+            admitted,
+            step_id,
+            1,
+            encode_step_intent(StepDirection::East),
+        )
+        .await?;
+        assert_eq!(
+            decode_step_result(&step).map_err(debug)?,
+            StepDisposition::Moved
+        );
         assert_eq!(sewers(owner, position)?, 1);
         let (reply, payload) = use_sewer(owner, admitted, step_id + 1, position).await?;
         let expected = if name.ends_with("blocked") {
@@ -174,12 +195,44 @@ pub(super) async fn exercise(
         } else {
             oteryn_protocol_oteryn::world_object::UseDisposition::Committed
         };
-        assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?, expected);
-        let after = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
-        assert_eq!(after.position(), local(if name.ends_with("blocked") { trigger } else { Position { x: position.x, y: position.y, floor: -15 } }));
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+            expected
+        );
+        let after = owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?;
+        assert_eq!(
+            after.position(),
+            local(if name.ends_with("blocked") {
+                trigger
+            } else {
+                Position {
+                    x: position.x,
+                    y: position.y,
+                    floor: -15,
+                }
+            })
+        );
         assert_eq!(wire(owner, admitted, step_id + 1, 2, payload).await?, reply);
-        assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?, after, "USE replay must not descend twice");
-        assert_eq!(sewers(owner, position)?, usize::from(name.ends_with("blocked")), "dropdown must dispatch the committed plate StepOut");
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?,
+            after,
+            "USE replay must not descend twice"
+        );
+        assert_eq!(
+            sewers(owner, position)?,
+            usize::from(name.ends_with("blocked")),
+            "dropdown must dispatch the committed plate StepOut"
+        );
     }
     assert_eq!(
         owner
@@ -221,8 +274,12 @@ async fn use_sewer(
 ) -> TestResult<(Vec<u8>, Vec<u8>)> {
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
-    use oteryn_protocol_oteryn::world_map::{MapOrigin, STATE_DOMAIN_WORLD_MAP_VIEW, decode_world_map_snapshot};
-    use oteryn_protocol_oteryn::world_object::{UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent};
+    use oteryn_protocol_oteryn::world_map::{
+        MapOrigin, STATE_DOMAIN_WORLD_MAP_VIEW, decode_world_map_snapshot,
+    };
+    use oteryn_protocol_oteryn::world_object::{
+        UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
+    };
     use tokio::io::AsyncWriteExt;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let receiving = async move {
@@ -231,38 +288,81 @@ async fn use_sewer(
             let raw = super::item_look::read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&raw).map_err(debug)?;
             if envelope.message_type() == MessageType::SnapshotChunk {
-                let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload()).map_err(debug)?;
+                let (_, domains) =
+                    oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())
+                        .map_err(debug)?;
                 for domain in domains {
-                    if domain.domain_id != STATE_DOMAIN_WORLD_MAP_VIEW { continue; }
+                    if domain.domain_id != STATE_DOMAIN_WORLD_MAP_VIEW {
+                        continue;
+                    }
                     let snapshot = decode_world_map_snapshot(domain.payload).map_err(debug)?;
                     for tile in snapshot.tiles {
-                        if (tile.position.x, tile.position.y, tile.position.floor) != (i32::from(position.x), i32::from(position.y), i16::from(position.floor)) { continue; }
+                        if (tile.position.x, tile.position.y, tile.position.floor)
+                            != (
+                                i32::from(position.x),
+                                i32::from(position.y),
+                                i16::from(position.floor),
+                            )
+                        {
+                            continue;
+                        }
                         for item in tile.items {
-                            if item.appearance_id != 435 { continue; }
+                            if item.appearance_id != 435 {
+                                continue;
+                            }
                             target = Some(match item.origin {
                                 MapOrigin::Handle(handle) => UseTarget::Item(handle),
-                                MapOrigin::BaseOrdinal { ordinal, object_revision } => {
+                                MapOrigin::BaseOrdinal {
+                                    ordinal,
+                                    object_revision,
+                                } => {
                                     let mut placement = snapshot.header.bundle_digest.to_vec();
-                                    placement.extend_from_slice(&crate::map::view::placement_key(position, ordinal).ok_or("placement")?.to_be_bytes());
-                                    UseTarget::WorldObject(WorldObjectTarget { placement, expected_revision: object_revision })
+                                    placement.extend_from_slice(
+                                        &crate::map::view::placement_key(position, ordinal)
+                                            .ok_or("placement")?
+                                            .to_be_bytes(),
+                                    );
+                                    UseTarget::WorldObject(WorldObjectTarget {
+                                        placement,
+                                        expected_revision: object_revision,
+                                    })
                                 }
-                                MapOrigin::DisplayOnly => return Err("sewer is display-only".into()),
+                                MapOrigin::DisplayOnly => {
+                                    return Err("sewer is display-only".into());
+                                }
                             });
                         }
                     }
                 }
             }
-            if envelope.message_type() == MessageType::SnapshotCommit { break; }
+            if envelope.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
         }
-        let payload = encode_item_use_intent(&UseIntent { target: target.ok_or("visible sewer")?, use_with: None, use_with_map_item: None, use_with_position: None }).map_err(debug)?;
-        let frame = oteryn_protocol_oteryn::encode_client_command(1, &oteryn_protocol_oteryn::ClientCommandValue { command_id, command_type: 2, payload: &payload }).map_err(debug)?;
+        let payload = encode_item_use_intent(&UseIntent {
+            target: target.ok_or("visible sewer")?,
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
+        })
+        .map_err(debug)?;
+        let frame = oteryn_protocol_oteryn::encode_client_command(
+            1,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id,
+                command_type: 2,
+                payload: &payload,
+            },
+        )
+        .map_err(debug)?;
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
         loop {
             let raw = super::item_look::read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&raw).map_err(debug)?;
             if envelope.message_type() == MessageType::CommandResult {
-                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
+                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                    .map_err(debug)?;
                 assert_eq!(result.command_id, command_id);
                 let reply = result.payload.to_vec();
                 client.shutdown().await?;
@@ -277,6 +377,10 @@ async fn use_sewer(
     let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
     drop(server);
     let result = reader.await?.map_err(Into::into);
-    if let ConnectionEnd::AdmittedThenDisconnected(a) | ConnectionEnd::AdmittedThenClosed(a, _) = end { *admitted = a; }
+    if let ConnectionEnd::AdmittedThenDisconnected(a) | ConnectionEnd::AdmittedThenClosed(a, _) =
+        end
+    {
+        *admitted = a;
+    }
     result
 }

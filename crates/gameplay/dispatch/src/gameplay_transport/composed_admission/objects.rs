@@ -3,6 +3,8 @@ use crate::gameplay_transport::connection::UseCommand;
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::overlay::TilePos;
 
+mod dropdown;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn use_bundle_key(
         &self,
@@ -367,6 +369,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(map) = self.bundle_map() {
             if let Some(outcome) = self.use_quest_callback(actor, command, map, &target).await {
+                return outcome;
+            }
+            if let Some(outcome) = self
+                .use_bundle_dropdown(actor, command, Some(&target), None)
+                .await
+            {
                 return outcome;
             }
             if let Some(outcome) = self.use_bundle_chest(actor, command, map, &target).await {
