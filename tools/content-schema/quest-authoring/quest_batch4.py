@@ -168,9 +168,14 @@ def text_message(value, context):
             context + ': invalid message')
 
 
-def provenance(value, context):
+def provenance(value, context, *, outfit=False):
     require(isinstance(value, list) and value, context + ': empty provenance')
     for reference in value:
+        if outfit and isinstance(reference,str):
+            pinned=re.fullmatch(r'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:(data-global/[a-zA-Z0-9_./-]+\.lua):sha256:[a-f0-9]{64}',reference)
+            if pinned:
+                require('..' not in pinned.group(1).split('/'),context + ': invalid source path')
+                continue
         match = SOURCE.fullmatch(reference) if isinstance(reference, str) else None
         require(match is not None, context + ': callback source must use the exact Crystal pin and line')
         source_path, first, last = match.groups()
@@ -223,8 +228,17 @@ def validate_native(callback, context):
 def validate_effects(callback, context):
     """The optional Channel effects share the Rust world_callbacks closed shape."""
     effects = callback.get('effects', {})
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward'}
     fields(effects, set(), allowed, context + ': effects')
+    outfit = effects.get('outfit_reward')
+    if outfit is not None:
+        fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')
+        require(isinstance(outfit['outfit'],str) and len(outfit['outfit'])<=160
+                and re.fullmatch(r'oteryn:outfit\.[a-z0-9_]+',outfit['outfit']) is not None
+                and integer(outfit['addons'],0,3), context + ': invalid outfit reward')
+        require(callback['trigger']=='use' and callback['storage']
+                and any(not s.get('preserve',False) and not s['minimum']<=s['set']<=s['maximum']
+                        for s in callback['storage']), context + ': repeatable outfit reward')
     transform = effects.get('transform')
     require(transform is None or integer(transform, 1, 65535), context + ': invalid transform')
     facing = effects.get('facing')
@@ -365,7 +379,7 @@ def validate_callback(callback, directory):
     require(callback.get('monk_reward') is None, key + ': Monk rewards are outside batch four')
     text_message(callback.get('failure_message'), key + ': failure_message')
     text_message(callback.get('success_message'), key + ': success_message')
-    provenance(callback['sources'], key)
+    provenance(callback['sources'], key, outfit=callback.get('effects',{}).get('outfit_reward') is not None)
     validate_native(callback, key)
     validate_effects(callback, key)
 

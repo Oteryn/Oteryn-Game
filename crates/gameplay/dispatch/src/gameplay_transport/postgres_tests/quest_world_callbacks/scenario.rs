@@ -24,6 +24,7 @@ fn scenario_case(
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
     let qengine_reward = name.starts_with("qengine-rewards-");
+    let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
     let classic_npc = qengine_reward
         || matches!(
             name,
@@ -72,7 +73,7 @@ fn scenario_case(
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = if qengine_reward {
+        let h = if qengine_reward || outfit_world {
             Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await
         } else {
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
@@ -207,7 +208,18 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if qengine_reward {
+        if outfit_world {
+            super::super::qengine_access::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                trigger,
+            )
+            .await?;
+        } else if qengine_reward {
             super::super::qengine_rewards::exercise(
                 &mut owner,
                 &mut admitted,
@@ -673,7 +685,8 @@ fn scenario_case(
                         request.clone(),
                         catalogue.clone(),
                         &permit,
-                        context.clone()
+                        context.clone(),
+                        None,
                     )
                     .await
                     .map_err(debug)?,
@@ -693,7 +706,9 @@ fn scenario_case(
                     ..request
                 };
                 assert!(matches!(slot.commit_world_callback(owner.root, owner.character, owner.holder,
-                    stale, fresh_request, catalogue, &permit, context).await,
+                    stale, fresh_request, catalogue, &permit, context,
+                    None,
+                ).await,
                     Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
                 drop(slot);
                 drop(permit);

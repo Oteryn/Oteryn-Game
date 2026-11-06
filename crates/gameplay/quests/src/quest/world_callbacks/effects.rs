@@ -1,4 +1,4 @@
-//! Bounded volatile effects, committed by the existing Channel callback owner.
+//! Bounded world effects. The Quest writer owns durable outfit grants; Channel owns projections.
 use super::*;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -13,6 +13,8 @@ pub enum Facing {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     pub transform: Option<u16>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
@@ -86,7 +88,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
-    if effects.transform == Some(0)
+    if effects.outfit_reward.as_ref().is_some_and(|r| {
+        callback.trigger != Trigger::Use
+            || callback.storage.is_empty()
+            || callback
+                .storage
+                .iter()
+                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || r.addons > 3
+            || r.outfit.len() > 160
+            || !r.outfit.strip_prefix("oteryn:outfit.").is_some_and(|tail| {
+                !tail.is_empty()
+                    && tail
+                        .bytes()
+                        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+            })
+    }) || effects.transform == Some(0)
         || (effects.facing.is_some() && callback.teleport.is_none())
         || effects
             .magic

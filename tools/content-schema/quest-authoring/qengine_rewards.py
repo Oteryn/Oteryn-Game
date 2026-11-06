@@ -32,7 +32,10 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'costello', 'budrik', 'sam', *questl2_rewards.NPCS)]
+        'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari', *questl2_rewards.NPCS)]
+    paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
+              'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
+              'data-global/startup/tables/item.lua']
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
@@ -103,6 +106,11 @@ def build():
     mappings.append({'grant_key': 'oteryn:appearance-grant/quest/soul-war/revenant-base',
         'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.revenant'},
         'compatible_provenance': ['crystal-201189f-soul-war-revenant-v1']})
+    # Keep the accepted Rotten Blood base receipt usable after catalogue promotion.
+    # This owner deliberately has no admitted addon grant.
+    mappings.append({'grant_key': 'oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base',
+        'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.decaying_defender'},
+        'compatible_provenance': ['owner-pr2784-decaying-defender-base-v1']})
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
     palette_path = 'tools/game-atlas-appearances/export.py'
     palette_source = {'reference': palette_path + '#outfit_color', 'revision': 'rounded-hsi-133-v1',
@@ -127,7 +135,7 @@ def build():
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}
         author['promotions'].append({'path': path, 'value': cosmetics.pointer(doc, path),
             'state': 'PROMOTED', 'decision': DECISION,
-            'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') else 'STRUCTURED_REFERENCE_DATA',
+            'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA',
             'source': citation})
     callbacks = []
     def storage(track, before, after, maximum=None, preserve=False):
@@ -172,6 +180,47 @@ def build():
         offers.append({'npc':'oteryn:npc.navigator','keywords':[word],'topic':topic,'next_topic':next_topic,
             'reply':['Listen carefully.'],'storage':[storage('oteryn:quest-progress/navigator',-1,4,0)]})
     questl2_rewards.append(callbacks, offers, inputs, PIN)
+    # L1: keep parent QuestState ownership for shared prerequisite tracks.
+    frontier = prefix + 'u8_54/the_new_frontier/'
+    yalahar = prefix + 'u8_4/in_service_of_yalahar/'
+    for name, bit, item, word in [('crest',1,10199,'crest'), ('tribal',2,10198,'tribal crest')]:
+        add('l1-warmaster-'+name, 'the_new_frontier_quest', 'cael', ['yes'],
+            [storage(frontier+'questline',27,27,preserve=True),
+             storage(frontier+'warmaster_addon_'+str(bit),-1,1,0)],
+            take=[(item,1)],outfit=('warmaster',bit),topic=60+bit-1)
+        offers.append({'npc':'oteryn:npc.cael','keywords':[word], 'topic':0,
+            'next_topic':60+bit-1,'storage':callbacks[-1]['storage'],
+            'reply':['Can I have that '+('serpent' if bit==1 else 'tribal')+' crest?']})
+    for name, bit, item, words in [('cape',1,11701,['cape','first addon']), ('hat',2,11700,['hat','second addon'])]:
+        track='oteryn:quest-progress/wayfarer_outfit'+('' if bit==1 else '_1')
+        add('l1-wayfarer-'+name,'wayfarer_outfits_quest','cranky_lizard_crone',['yes'],
+            [storage(track,-1,1,0)],take=[(item,1)],outfit=('wayfarer',bit),topic=bit)
+        offers.append({'npc':'oteryn:npc.cranky_lizard_crone','keywords':words,
+            'topic':0,'next_topic':bit,'storage':callbacks[-1]['storage'],
+            'reply':['Do you have the '+('old cape' if bit==1 else 'sedge hat')+' with you?']})
+    for npc,side in [('palimuth',1),('yalahari',2)]:
+        states=[storage(yalahar+'questline',52,53),
+                storage(yalahar+'door_to_reward',-1,1,1),
+                storage(yalahar+'mission10',-1,4,4)]
+        # Palimuth's completion checks questline only; Yalahari also requires
+        # his side. The remaining tracks are assignments, not prerequisites.
+        if npc=='yalahari':
+            states.insert(1,storage(yalahar+'side_decision',side,side,preserve=True))
+        add('l1-yalaharian-base-'+npc,'in_service_of_yalahar_quest',npc,['mission'],
+            states,outfit=('yalaharian',0))
+        path='data-global/npc/'+npc+'.lua'
+        lines='244-259' if npc=='palimuth' else '246-252'
+        callbacks[-1]['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
+    for name,side,bit in [('sage',1,1),('villain',2,2)]:
+        add('l1-yalaharian-'+name,'in_service_of_yalahar_quest','palimuth',['yes'],
+            [storage(yalahar+'questline',54,55),
+             storage(yalahar+'side_decision',side,side,preserve=True)],
+            outfit=('yalaharian',bit),topic=6)
+        # The captured NPC checks possession and retains the original crest.
+        callbacks[-1]['present']=[{'item':'oteryn:item.tibia.i9041','count':1}]
+        offers.append({'npc':'oteryn:npc.palimuth','keywords':['job','addon'],
+            'topic':0,'next_topic':6,'storage':callbacks[-1]['storage'],
+            'reply':['Did you bring me the vampiric crest?']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -206,11 +255,33 @@ def build():
             citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
         greetings.append({'npc':npc,**messages,'sources':citations})
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
+    access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')
+    worlds=[]
+    for name,quest,path,at,appearance,states,outfit in [
+        ('l1-warmaster-wardrobe','the_new_frontier_quest',
+         'data-global/scripts/quests/the_new_frontier/action_outfit.lua',(33053,31020,7),5862,
+         [storage(frontier+'questline',26,27),storage(frontier+'mission09/reward_door',0,1)],'warmaster'),
+        ('l1-wayfarer-wardrobe','wrath_of_the_emperor_quest',
+         'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',(33073,31173,8),11431,
+         [storage(prefix+'u8_6/wrath_of_the_emperor/mission12',0,1),
+          storage('oteryn:quest-progress/1150',-1,1,1)],'wayfarer')]:
+        world=access.callback(name,quest,'use',path,at=access.position(*at),appearance=appearance,
+            outfit_reward={'outfit':'oteryn:outfit.'+outfit,'addons':0})
+        world['storage']=states
+        world['sources']=[f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']
+        if outfit=='wayfarer':
+            table='data-global/startup/tables/item.lua'
+            if not re.search(r'\[3200\]\s*=\s*\{\s*itemId\s*=\s*11431,\s*itemPos\s*=\s*\{\s*x\s*=\s*33073,\s*y\s*=\s*31173,\s*z\s*=\s*8', inputs[table].decode()):
+                raise ValueError('Wayfarer source wardrobe binding drift')
+            world['sources'].append(f'crystal:{PIN}:{table}:sha256:{sha(inputs[table])}')
+        worlds.append(world)
+    generated['content/quests/shared-outfit-callbacks.json']=encoded({'schema':1,'callbacks':worlds})
+
     sys.path.insert(0,str(ROOT/'tools/content-migration'))
     import qengine_reward_item_profiles as reward_items
     import register_spell_families as native
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
-    reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,encoded)
+    reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,native.spell_import.canonical_bytes)
     return generated
 
 
@@ -223,6 +294,7 @@ def validate_callbacks(document):
         if (callback['key'] in keys
             or len({s['track'] for s in storage})!=len(storage)
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
+            or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
             or any(s['minimum']>s['maximum'] for s in storage)
             or (not callback.get('repeatable',False)
                 and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
@@ -245,7 +317,7 @@ def main():
         if args.check:
             if not target.is_file() or target.read_bytes()!=raw:
                 raise ValueError('stale QENGINE reward output: '+path)
-        else:
+        elif not target.is_file() or target.read_bytes()!=raw:
             target.write_bytes(raw)
 
 if __name__=='__main__':

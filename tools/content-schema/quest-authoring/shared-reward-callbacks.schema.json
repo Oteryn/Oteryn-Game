@@ -247,6 +247,13 @@
         "repeatable": {
           "type": "boolean",
           "default": false
+        },
+        "present": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/input"
+          }
         }
       }
     },

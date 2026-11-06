@@ -1,9 +1,17 @@
 """Source-backed L2 exchanges using QENGINE-2's existing transaction owner."""
 import hashlib
+import re
 
 
 NPCS = ('dorian', 'hairycles', 'jorge', 'kroox')
-ITEMS = {227, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933, 7935, 7936, 19083, 19151}
+ITEMS = {
+    227, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
+    7935, 7936, 19083, 19150, 19151, 19152, 19153, 19154, 19155,
+    19156, 22026, 22027, 22028, 23676, 23677, 23678, 23679, 23680,
+    23681, 23682, 23683, 25979, 25980, 25981, 25982, 28894, 28895,
+    28896, 28897, 31265, 31266, 31267, 31268, 34210, 37058, 37059,
+    37060, 43510, 43511, 43517,
+}
 
 
 def append(callbacks, offers, inputs, pin):
@@ -55,12 +63,22 @@ def append(callbacks, offers, inputs, pin):
                      'doPlayerAddItem(creature, items[i].id, 1)'):
         if required not in jorge:
             raise ValueError('Jorge token recipe drift: ' + required)
-    add('token-abacus', 'hunting_for_tokens', 'jorge', ['abacus'],
-        [state('exchange/hunting_for_tokens/souvenirs', -1, -1, preserve=True)],
-        'You just swapped 20 silver raid tokens for 1 Abacus.',
-        take=[(19083, 20)], give=(19151, 1), topic=1, repeatable=True,
-        source_text='"You just swapped 20 silver raid tokens for 1 " .. items[i].name .. "."',
-        offer=(['souvenir'], 'All listed souvenirs are at 20 silver raid tokens each. Which one of them do you want?'))
+    souvenirs = re.findall(r'\{ name = "([^"]+)", id = (\d+) \}', jorge)
+    if len(souvenirs) != 37:
+        raise ValueError('Jorge source souvenir menu drift')
+    for index, (name, item) in enumerate(souvenirs):
+        key = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+        add('token-' + key, 'hunting_for_tokens', 'jorge', [name.lower()],
+            [state('exchange/hunting_for_tokens/souvenirs', -1, -1, preserve=True)],
+            'You just swapped 20 silver raid tokens for 1 ' + name + '.',
+            take=[(19083, 20)], give=(int(item), 1), topic=1, repeatable=True,
+            source_text='"You just swapped 20 silver raid tokens for 1 " .. items[i].name .. "."',
+            offer=(['souvenir'], 'All listed souvenirs are at 20 silver raid tokens each. Which one of them do you want?')
+                  if index == 0 else None)
+        line = next(i for i, text in enumerate(jorge.splitlines(), 1)
+                    if f'name = "{name}", id = {item}' in text)
+        callbacks[-1]['sources'].append(
+            f'crystal:{pin}:data-global/npc/jorge.lua:{line}:sha256:{hashlib.sha256(inputs["data-global/npc/jorge.lua"]).hexdigest()}')
 
     sam = 'u7_5/sams_old_backpack/'
     add('sam-kroox', 'sam_s_old_backpack_quest', 'kroox',

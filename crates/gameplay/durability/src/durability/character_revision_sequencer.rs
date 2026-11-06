@@ -553,6 +553,7 @@ impl RevisionSlot {
         catalogue: std::sync::Arc<QuestStateCatalogue>,
         permit: &super::spell_owner_commit::SpellLanePermit,
         context: super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
@@ -567,6 +568,7 @@ impl RevisionSlot {
                     std::sync::Arc::clone(&catalogue),
                     permit,
                     context.clone(),
+                    native,
                 )
             },
         )

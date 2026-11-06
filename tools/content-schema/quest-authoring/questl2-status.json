@@ -33,6 +33,13 @@
         "file": "data-global/npc/tereban_functions.lua",
         "lines": "175-180",
         "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d"
+      },
+      "post_merge_regression": {
+        "postgres_test": "questl2_eleven_tracks_commit_atomically",
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-atomic-eleven",
+        "duration_seconds": 48.602533763,
+        "passed": 1,
+        "failed": 0
       }
     },
     {
@@ -150,8 +157,36 @@
     },
     {
       "title": "Hunting for Tokens",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "test": "questl2_token_menu_first_thirteen",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-token-menu-0",
+          "duration_seconds": 91.714992175,
+          "passed": true
+        },
+        {
+          "test": "questl2_token_menu_middle_thirteen",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-token-menu-1",
+          "duration_seconds": 81.391798247,
+          "passed": true
+        },
+        {
+          "test": "questl2_token_menu_last_eleven",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-token-menu-2",
+          "duration_seconds": 91.716837279,
+          "passed": true
+        }
+      ],
+      "source": "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jorge.lua:64-100,125-128:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+      "souvenirs": 37,
+      "proves": [
+        "Every pinned souvenir can be purchased through the real NPC wire dispatcher by an admitted player",
+        "Each purchase consumes twenty carried silver raid tokens and grants exactly one selected souvenir",
+        "Exact command replay cannot consume or mint again",
+        "An unpaid repeat refuses without receipts or items",
+        "The Abacus supports multiple independently paid occurrences"
+      ]
     },
     {
       "title": "Into The Bone Pit",
@@ -326,11 +361,11 @@
   ],
   "validation": {
     "quest_unit_tests": {
-      "passed": 255,
+      "passed": 256,
       "failed": 0
     },
     "reward_authoring_tests": {
-      "passed": 29,
+      "passed": 39,
       "failed": 0,
       "pattern": "test_*rewards.py"
     },
@@ -342,10 +377,10 @@
       "packages": [
         "oteryn-gameplay-quests",
         "oteryn-gameplay-dispatch",
-        "oteryn-gameplay-durability",
-        "oteryn-game-server"
+        "oteryn-gameplay-durability"
       ],
       "all_targets": true,
+      "all_features": true,
       "deny_warnings": true,
       "exit_code": 0
     },
@@ -362,8 +397,7 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "d4071ed1808cc027b4d52501d886887b5615966f5d8e58e0a38ae2032d49ea78",
-      "unchanged": true
+      "digest": "d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5"
     },
     "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed",
     "content_tests": {
@@ -373,17 +407,60 @@
     },
     "native_profiles": {
       "added": [
-        19083,
-        19151
+        "oteryn:item.tibia.i10198",
+        "oteryn:item.tibia.i10199",
+        "oteryn:item.tibia.i11700",
+        "oteryn:item.tibia.i11701",
+        "oteryn:item.tibia.i19150",
+        "oteryn:item.tibia.i19152",
+        "oteryn:item.tibia.i19153",
+        "oteryn:item.tibia.i19154",
+        "oteryn:item.tibia.i19155",
+        "oteryn:item.tibia.i19156",
+        "oteryn:item.tibia.i22026",
+        "oteryn:item.tibia.i22027",
+        "oteryn:item.tibia.i22028",
+        "oteryn:item.tibia.i23676",
+        "oteryn:item.tibia.i23677",
+        "oteryn:item.tibia.i23678",
+        "oteryn:item.tibia.i23679",
+        "oteryn:item.tibia.i23680",
+        "oteryn:item.tibia.i23681",
+        "oteryn:item.tibia.i23682",
+        "oteryn:item.tibia.i23683",
+        "oteryn:item.tibia.i25979",
+        "oteryn:item.tibia.i25980",
+        "oteryn:item.tibia.i25981",
+        "oteryn:item.tibia.i25982",
+        "oteryn:item.tibia.i28894",
+        "oteryn:item.tibia.i28895",
+        "oteryn:item.tibia.i28896",
+        "oteryn:item.tibia.i28897",
+        "oteryn:item.tibia.i31265",
+        "oteryn:item.tibia.i31267",
+        "oteryn:item.tibia.i34210",
+        "oteryn:item.tibia.i37058",
+        "oteryn:item.tibia.i37059",
+        "oteryn:item.tibia.i37060",
+        "oteryn:item.tibia.i43510",
+        "oteryn:item.tibia.i43511",
+        "oteryn:item.tibia.i43517",
+        "oteryn:item.tibia.i9041"
       ],
-      "changed": 0,
-      "removed": 0
+      "changed": [
+        "oteryn:item.tibia.i31266",
+        "oteryn:item.tibia.i31268"
+      ],
+      "removed": []
     }
   },
   "cross_lane_inspection": {
     "qengine2": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-    "questpc5": "f78cf159d8a2eef2703091197ea661d26537137a",
-    "questpc6": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
-    "next": "Reuse QENGINE2 shared predicates and world rewards; reuse NPC program and item bridges from PC lanes while preserving Dawnport and world-change exclusions."
+    "questpc5": "2d9db9c5abdb62abc8f9883984b5ad5bc22244c8",
+    "questpc6": "3bfd856061e5aa89668747ec7405af8c2b8cf7f5",
+    "next": "Continue source-backed full journeys and reuse the inspected PC5 travel/issuance and PC6 conditional reset mechanisms as needed.",
+    "reused": [
+      "QENGINE2 possession predicates and world outfit reward composition"
+    ]
   }
 }
