@@ -2622,6 +2622,7 @@ async fn boot_and_serve(
         return Ok(());
     };
     let channel_boot::PreparedChannel {
+        soulpit_template,
         activity_templates,
         active_content,
         qualified_room,
@@ -2717,6 +2718,7 @@ async fn boot_and_serve(
         config.store_purchases.as_str()
     );
     let owners = GameplaySeamOwners {
+        soulpit_template: soulpit_template.as_ref(),
         cast: crate::gameplay_transport::cast::CastRuntimeConfig::from_env(
             *proof.fact().node_id().as_bytes(),
         )

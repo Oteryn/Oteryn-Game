@@ -70,6 +70,13 @@ pub struct ItemDefinition {
     pub door: bool,
 }
 
+/// Pinned room-local Terrain physics; it grants no Item identity or inventory behavior.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct TerrainPhysics {
+    pub solid: bool,
+    pub blocks_projectile: bool,
+}
+
 /// Why the bundle's palette cannot be served.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FactsRefusal {
@@ -135,10 +142,18 @@ impl BundleFacts {
         manifest: &Manifest,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<Self, FactsRefusal> {
+        Self::palette_with_terrain(manifest, item, &|_| None)
+    }
+
+    pub(super) fn palette_with_terrain(
+        manifest: &Manifest,
+        item: impl Fn(&str) -> Option<ItemDefinition>,
+        terrain: &impl Fn(&str) -> Option<TerrainPhysics>,
+    ) -> Result<Self, FactsRefusal> {
         let palette = manifest
             .palette
             .iter()
-            .map(|entry| palette_facts(entry, &item))
+            .map(|entry| palette_facts_with_terrain(entry, &item, terrain))
             .collect::<Result<Vec<_>, _>>()?;
         let mut ids: Vec<(u32, u32)> = palette
             .iter()
@@ -191,10 +206,9 @@ impl BundleFacts {
     /// Whether palette entry `index` blocks a tile: a `wall` Terrain or a solid Item. An index
     /// outside the palette blocks.
     pub fn blocks(&self, index: u32) -> bool {
-        self.palette.get(index as usize).is_none_or(|entry| {
-            entry.facts.terrain_kind == Some(TerrainKind::Wall)
-                || (entry.family == Family::Item && entry.solid)
-        })
+        self.palette
+            .get(index as usize)
+            .is_none_or(|entry| entry.facts.terrain_kind == Some(TerrainKind::Wall) || entry.solid)
     }
 
     /// Records the placements, house tiles and doors of one sector of `manifest`, and adds to
@@ -785,9 +799,18 @@ fn terrain_floor(entry: &PaletteEntry) -> bool {
     }
 }
 
+#[cfg(test)]
 fn palette_facts(
     entry: &PaletteEntry,
     item: &impl Fn(&str) -> Option<ItemDefinition>,
+) -> Result<PaletteFacts, FactsRefusal> {
+    palette_facts_with_terrain(entry, item, &|_| None)
+}
+
+fn palette_facts_with_terrain(
+    entry: &PaletteEntry,
+    item: &impl Fn(&str) -> Option<ItemDefinition>,
+    terrain: &impl Fn(&str) -> Option<TerrainPhysics>,
 ) -> Result<PaletteFacts, FactsRefusal> {
     let reference = entry
         .id
@@ -807,7 +830,13 @@ fn palette_facts(
         count: 1,
         sub_type: 0,
     };
-    let mut solid = false;
+    let source_terrain = (entry.family == Family::Terrain)
+        .then(|| terrain(&entry.key))
+        .flatten();
+    let mut solid = source_terrain.is_some_and(|physics| physics.solid);
+    if let Some(physics) = source_terrain {
+        facts.blocks_projectile = physics.blocks_projectile;
+    }
     let mut door = PaletteDoor::No;
     if entry.family == Family::Item {
         let definition = item(&entry.key)

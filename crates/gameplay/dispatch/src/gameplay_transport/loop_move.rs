@@ -647,6 +647,32 @@ pub(super) async fn move_loop_item(
         destination,
     };
     let command_ref = CommandRef::new(command.game_session_id, command_id);
+    let planting_pending = if matches!(loop_request.destination, LoopDestination::Ground(_)) {
+        let runtime = admission.runtime.lock().await;
+        let Ok(intent) = serde_json::to_vec(&loop_request) else {
+            return LoopMoveResult::Unknown;
+        };
+        match admission
+            .states
+            .spell_states
+            .lock()
+            .await
+            .sounds
+            .prepare_planting_cue(
+                &runtime,
+                actor,
+                fence,
+                command_ref,
+                intent,
+                None,
+                Some(loop_request.clone()),
+            ) {
+            Ok(existing) => Some(existing),
+            Err(()) => return refused(LoopMoveRefusal::Rejected),
+        }
+    } else {
+        None
+    };
     let seed_target = if seed_target.is_some() {
         match admission
             .root
@@ -670,23 +696,39 @@ pub(super) async fn move_loop_item(
     } else {
         None
     };
-    let seed_result = match seed_target {
-        Some(target) => {
-            admission
-                .root
-                .commit_item_loop_seed_drop(
-                    &permit,
-                    admission.character,
-                    admission.holder,
-                    fence,
-                    CommandRef::new(command.game_session_id, command_id),
-                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-                    loop_request.clone(),
-                    target,
-                )
-                .await
-        }
-        None => Ok(None),
+    let seed_result = match admission
+        .root
+        .commit_item_loop_materialized_seed_drop(
+            &permit,
+            admission.character,
+            admission.holder,
+            fence,
+            command_ref,
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+            native,
+            loop_request.clone(),
+        )
+        .await
+    {
+        Ok(None) => match seed_target {
+            Some(target) => {
+                admission
+                    .root
+                    .commit_item_loop_seed_drop(
+                        &permit,
+                        admission.character,
+                        admission.holder,
+                        fence,
+                        CommandRef::new(command.game_session_id, command_id),
+                        &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                        loop_request.clone(),
+                        target,
+                    )
+                    .await
+            }
+            None => Ok(None),
+        },
+        result => result,
     };
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),
@@ -700,12 +742,60 @@ pub(super) async fn move_loop_item(
                     &fence,
                     CommandRef::new(command.game_session_id, command_id),
                     &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-                    loop_request,
+                    loop_request.clone(),
                 )
                 .await
         }
         Err(error) => Err(error),
     };
+    let mut planting_cue_uncertain = false;
+    if let Some(existing) = planting_pending {
+        let receipt = match &committed {
+            Ok(Ok(_)) => match admission
+                .root
+                .read_item_loop_planting_presentation(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    command_ref,
+                    &loop_request,
+                    native,
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                )
+                .await
+            {
+                Ok(receipt) => receipt,
+                Err(_) => {
+                    planting_cue_uncertain = true;
+                    None
+                }
+            },
+            Ok(Err(_)) => None,
+            Err(_) => {
+                planting_cue_uncertain = true;
+                None
+            }
+        };
+        let emit_replay = existing
+            || committed
+                .as_ref()
+                .is_ok_and(|result| result.as_ref().is_ok_and(|receipt| !receipt.replayed));
+        if !planting_cue_uncertain {
+            let runtime = admission.runtime.lock().await;
+            if admission
+                .states
+                .spell_states
+                .lock()
+                .await
+                .sounds
+                .finish_planting_cue(&runtime, actor, command_ref, receipt.as_ref(), emit_replay)
+                .is_err()
+            {
+                planting_cue_uncertain = true;
+            }
+        }
+    }
     // Publish the tile-order event while the same Channel lane still excludes
     // observers. Even pickup + re-drop between two view polls must append the item.
     if touches_ground && matches!(committed, Ok(Ok(_))) {
@@ -733,6 +823,9 @@ pub(super) async fn move_loop_item(
         .lock()
         .await
         .forget_weapon(actor, command.game_session_id);
+    if planting_cue_uncertain {
+        return LoopMoveResult::Unknown;
+    }
     match committed {
         Ok(Ok(_receipt)) => LoopMoveResult::Committed,
         Ok(Err(refusal)) => LoopMoveResult::Refused(refusal),

@@ -22,6 +22,8 @@ use sqlx::{Postgres, Row, Transaction};
 
 mod entry;
 mod progress;
+mod returning;
+pub(crate) use returning::write as write_return_in_transaction;
 
 pub const SOULPIT_ACTIVITY_KEY: &str = "oteryn:activity.soulpit";
 

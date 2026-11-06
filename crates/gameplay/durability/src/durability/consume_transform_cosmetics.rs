@@ -205,13 +205,15 @@ async fn prepare_with_custody(
                 .try_into()
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
             before: row.try_get("before_item")?,
-            parent: row
-                .try_get::<Vec<u8>, _>("parent")?
-                .try_into()
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
+            parent: Some(
+                row.try_get::<Vec<u8>, _>("parent")?
+                    .try_into()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            ),
             ordinal: row.try_get("ordinal")?,
             count: 1,
             source_kind: row.try_get("source_kind")?,
+            drop: None,
         });
     }
     let effect = CosmeticEffect {

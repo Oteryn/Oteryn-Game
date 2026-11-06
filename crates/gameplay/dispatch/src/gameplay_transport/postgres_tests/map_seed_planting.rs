@@ -740,7 +740,7 @@ fn scenario(case: Case) -> TestResult {
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn drop_exchange(
+pub(super) async fn drop_exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     command_id: u64,

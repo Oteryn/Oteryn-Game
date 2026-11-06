@@ -1,5 +1,13 @@
 # GAP-SV8 — movement spells, planting, Soulpit and Animus
 
+Current continuation base: `d3b15da91c7633516566ae8bd8729c99d126034b`.
+The production implementation section below supersedes historical STOPPED notes.
+M11a/M11b are already integrated; W17 is excluded. Only migration 0975 is added;
+no capability, command or message number is allocated by SV8.
+The base has duplicate state domain102; its existing Item Effects domain moves to
+next-free104 while cast view keeps102, per the base head commit. Capability350
+and all commands retain their assigned numbers; clients use the shared constant.
+
 Base: `origin/main` / `c8b3890e601e6073713dcac2ea9ee271f4a257e8`.
 W17 was removed by the owner's follow-up; this package contains no W17 changes.
 No migration, capability, wire command or protocol message number is allocated.
@@ -199,3 +207,245 @@ successful validation. `git diff --check` passes.
 are recorded above, but the remaining mechanic implementations were not completed
 in this continuation. The delivered code delta repairs only the two inherited
 validation failures; it does not claim new playable Soulpit or mastery acquisition.
+
+## Production implementation on srvpkg4
+
+- **oteryn-choice — W19b materialized AddItem:**
+  `durability/item_loop_move/materialized_planting.rs` selects the single live
+  empty pot from current Ground custody and invokes the ordinary native move,
+  then `consume_transform_seed_drop.rs` consumes the newly dropped seed and
+  transforms the pot inside that same fenced Type2 transaction. Exact loop-command
+  replay precedes selection, because a committed planting has retired the pot.
+  The immutable receipt binds the Ground seed to the same-XID move line; migration
+  0975 keeps the existing predecessor, source/target and audit checks. Failure
+  rolls back the move, seed, pot and timers together. Existing materialized USE
+  remains in `consume_transform_planting.rs`. Donor Crystal
+  `201189f871d23597b82caf88fd611454a2ddefb8`,
+  `data/scripts/movements/seeds.lua:3-17` and
+  `data/scripts/actions/items/ice_flower_seeds.lua:3-17` distinguish the two
+  callbacks. Ordinary seeds use the donor 324→330→306 absolute decay stages;
+  ice seeds retain 14031→14032→306. No second planting transaction is created.
+  **oteryn-choice — native planting presentation:** reuse srvpkg4's existing
+  capability350 ITEM_EFFECTS_V1, its item-only codec and native feature0350 route
+  (`apps/client/src/features/0350-item-effects/protocol.rs:2-10`), which delegates
+  to the existing native MagicEffect renderer. No generic capability23 activation
+  is introduced. A bounded journal hold is reserved before SQL; exact committed
+  receipts publish POFF3 once, rollback releases the hold, and uncertain outcomes
+  retain it for existing pending-effect reconciliation. Ordinary item moves cannot
+  emit a planting cue. The existing ambient101 and item104 publication domains
+  keep their independent bounds; the base's MAX+1 mixed observation test remains
+  unchanged. The actual production refresh router separates batches before encoding
+  (`connection/serve/refresh.rs:620-653,717-765`). Both the focused CPU regression
+  and real planting PG fixture use the existing item-only codec.
+  **oteryn-choice — Ground context qualification:** native root admission keeps
+  the complete same-transaction locked census. A differing context is compatible
+  only for current Channel roots with exact map/content/position/generation and
+  the existing immutable map-mint or Ground-action source proof. Admission DTOs
+  are normalized after qualification; original custody and returned rows retain
+  their original contexts. The direct spell census remains strict. This follows
+  the materialized USE owner's existing source-provenance pattern and admits the
+  donor AddItem callback without bypassing ordinary move/capacity ownership.
+- **oteryn-choice — W07 source scene:** the active Canary public bundle has the
+  staging/return objects but air at the donor combat destination. Use a dedicated
+  immutable source room, booted through the existing bundle writer, reader and
+  collision owner, rather than treating absent public tiles as walkable.
+  `build_soulpit_room.py` reproduces 579 Crystal tiles/118 loader identities from
+  `data-global/world/world.otbm` at the Crystal cut above, git blob
+  `e61658ec0ab7b70ec35025ae969426d6fc57ae75`, SHA-256
+  `c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85`.
+  Source bounds/entry/obelisk/exit follow Crystal
+  `data-global/lib/others/soulpit.lua:31-58,138-140,178-179`.
+  **oteryn-choice — room-local appearance identities:** 71 existing Item entries
+  keep their admitted canonical references. The other 47 are non-pickupable,
+  non-door terrain/decor appearances; they use bundle-local Terrain references,
+  whose map-protocol meaning is local to the scene, never inventory Item IDs.
+  Their separately typed capture physics preserves ground, solid and projectile
+  independently (eight solid decorations do not block projectiles). Ordinary
+  bundle boot keeps its existing behavior. This follows the existing terrain
+  appearance route and source loader facts (`src/items/items.cpp:236-247`,
+  `src/items/functions/item/item_parse.cpp:110-129,213-214`). It grants no inventory
+  identity or materialization permission. No canonical Item, WorldProject, shard,
+  global provenance or pin is rewritten. The source extractor emits sorted,
+  column-described records, one placement per line; no donor map asset is shipped.
+- **oteryn-choice — W07 entry/return:** the production BossActivityHandoff uses
+  the existing shared ActivityHandoffOwner and physical Instance reservation.
+  `activity_handoff/soulpit.rs` joins the core debit and encounter creation to
+  the prepared handoff transaction before its group commits or sources terminate.
+  Pending native attempts retain the exact selection for uncertain-outcome retry.
+  Crystal `data-global/scripts/quests/soulpit/soulpit_fight.lua:37-77` validates
+  the complete staging roster before core consumption. The existing shared return
+  and recovery owner retains the source Channel and its exit placement; clients
+  cannot supply a return Channel or position. The native driver applies committed
+  wave steps to actual Instance actors and retains per-generation cadence ownership.
+  The dynamic activity turn retains one owned return intent per original session
+  and scope generation; the production cadence/USE caller invokes the existing
+  generic native return pipeline directly, as the existing boss-activity owner does.
+  A dedicated drain mutex serializes publication, and pending intents retain the
+  exact original admission and prevent Instance retirement until shared publication
+  or an already-published successor lineage is proved. No runtime lock crosses SQL.
+- **oteryn-choice — W08 acquisition:** complete through the existing transactional
+  `soulpit/progress.rs` survivor credit, with no separate mastery grant command.
+  Crystal `data-global/scripts/quests/soulpit/soulpit_fight.lua:100-106` and
+  `src/creatures/players/animus_mastery/animus_mastery.cpp:33-61` are the acquisition
+  donor. The linked completion fixture enters through real USE and the shared
+  physical Instance. Native lethal reward snapshots feed existing fenced party-XP
+  and proficiency settlement without ordinary loot, Bestiary, task or Forge grants.
+  Donor XP scaling: Crystal `src/creatures/monsters/monster.cpp:747-750,2341-2348`;
+  weapon proficiency 1500: `src/creatures/players/player.cpp:6584-6607,12932-12936`.
+
+**oteryn-choice — lethal reward ordering:** freeze the full native Soulpit damage
+and XP snapshot in the lethal combat turn. Both the ordinary reward drain and
+actual player-death settlement drain that same fenced reward owner before
+experience loss. This preserves the donor immediate kill reward ordering even
+when the final boss kill and player death occur before the next activity tick;
+there is no second XP writer. Crystal `src/creatures/monsters/monster.cpp:747-750,2341-2348`
+and `src/creatures/players/player.cpp:6584-6607,12932-12936` supply the reward rules.
+The production PostgreSQL regression uses a positive count of actual physical
+boss kills and the real death receipt, including exact replay and no mastery for
+a participant who dies before completion.
+
+**oteryn-choice — current Instance read authority:** production entry exposed a
+Channel-only equipment reader. The additive `character_equipment/activity_read.rs`
+reader proves the actual current Instance gameplay fence, node, committed shared
+handoff participant, destination session/generation and saved destination content
+pin, with no published return. It derives the retained origin Channel only as
+read metadata and reuses the sealed custody reader. The same private proof serves
+read-only lifecycle/premium facts; no item-move or other mutation authority is
+extended. This follows the existing House read adapter and the shared room/arena
+handoff ownership pattern; donor fight admission remains Crystal
+`data-global/scripts/quests/soulpit/soulpit_fight.lua:37-77`. The real Instance
+fixture rejects a wrong content pin and the retired source session, and initializes
+its level requirement using native progression and the fenced XP writer.
+
+**oteryn-choice — proficiency at shared transfer:** real physical Boss settlement
+exposed two existing transfer gaps. Training proficiency saves rejected every
+Instance despite the downstream current gameplay fence supporting that scope.
+Only Training now accepts a genuine current Instance; other causes retain their
+restrictions. Shared entry/return force the existing source proficiency checkpoint
+before taking the transfer lane, then refuse any dirty or retained checkpoint
+under that lane. No second proficiency writer or SQL grant is added. This retains
+the Crystal `src/creatures/players/player.cpp:6584-6607,12932-12936` 1500-point rule
+across the actual session handoff, rather than waiting for a normal save interval.
+
+**oteryn-choice — exact retained exit retry:** a failed SQL return can retain its
+physical transfer reservation. The original actor/session/fence/command/target
+intent resumes that existing attempt before fresh `spell_idle` admission; changed
+bindings refuse. Fresh exits still pass the ordinary current actor and idle checks.
+This follows the existing shared return retry owner and Crystal's exit callback,
+without introducing a caller-supplied destination or another return transaction.
+
+**oteryn-choice — source-qualified wave positions:** a real PG wave exposed the
+old rectangle sampler: seven invalid positions could acknowledge an empty wave.
+Crystal `data/libs/systems/zones.lua:12-36` first filters the Zone and uniformly
+samples its valid tile list; `data/libs/functions/tile.lua:39-83` requires ground,
+no solid/projectile/immovable-solid property and deliberately ignores creatures.
+The immutable scene has 638 rectangle cells, 573 materialized tiles, 509 ground
+tiles and 163 qualified spawn tiles. Production now samples only that qualified
+list, with replacement, through the current native movement/projectile owners.
+`src/items/item.cpp:1224-1225` defines immovable-solid as a subset of solid.
+The fixed Boss position follows `soulpit_fight.lua:117`; normal positions follow
+that same line's Zone call. The retained carrier wave request is consulted before
+new drawing, so a lost Spawned acknowledgement replays its exact actors/positions
+even when the scene changes. No additional actor is invented on failed creation.
+
+Crystal `src/lua/functions/core/game/game_functions.cpp:306-308` defaults Soulpit
+creation to extended=false/force=false, and `src/items/tile.cpp:624-662` retains
+physical creation refusals. **Accepted existing native physical-owner difference:**
+that donor's canPushCreatures exception for occupied pushable monsters
+(`tile.cpp:637-658`) is not granted by Oteryn's existing creation owner; this
+package retains its stricter vacancy requirement rather than synthesizing a push
+or forcing an actor onto another actor. The admitted Rat fixture has
+canPushCreatures=false, so its occupied-cell behavior matches the donor.
+
+**oteryn-choice — deterministic real PG encounter:** a test-only constructor
+supplies a valid fixed v7 handoff nonce, chosen through the exact shared production
+selector against the real qualified scene. All four planned waves avoid fixture
+occupancy; the fourth protects the donor's fixed Boss position without adding a
+production exclusion. Production Default still uses SecureIdentifiers. Control
+allocation, native actors, USE dispatch, core consumption and SQL transactions are
+unchanged. This guarantees the death-order fixture actually kills a physical Boss,
+while the separate CPU tests retain partial/empty physical attempt semantics.
+
+W08 reuses the live client flow: capability 168 / command 232
+(`crates/protocol-oteryn/src/animus_mastery.rs:3-4`). The selected-capability and
+current-session query at `gameplay_transport/animus_mastery.rs:42-71` reads the
+same `game_character_animus_masteries` completion set through
+`durability/animus_mastery.rs:73-94,127-128`. Client
+`apps/client/src/play/session_loop.rs:177-180` routes the result to
+`apps/client/src/features/0168-animus-mastery/protocol.rs:8-14`; the native panel
+uses the existing decoder in `crates/client-ui/src/features/0168-animus-mastery/state.rs:27-44`
+and the Window/Refresh flow at `apps/client/src/features/0168-animus-mastery/native.rs:39,99,133-150`.
+No alternate mastery grant, panel or transport allocation is introduced.
+
+Validation provenance: W19b has an executed pre-fix rollback regression (ordinary
+native move committed before planting existed). W07/W08 implementation and fixture
+authoring overlapped; no genuine pre-implementation live-production RED run was
+captured. The old rejected destination fixture is not counted as PG execution.
+The source selector repair did have a genuine physical-wave PG failure first.
+
+### Fresh srvpkg4 validation
+
+The first clippy attempt detected the base duplicate domain102 at protocol build.
+The minimal integration repair above is included before the fresh validation rerun.
+
+The srvpkg4 presentation integration preserves its independent ambient and item
+flows. The older SV8 combined-cap23 selection was removed before final validation;
+the existing ambient overflow assertion is unchanged, and the new regression
+checks the actual item-only batch after the production split.
+
+Final frozen source checks: `cargo fmt --all --check` and explicit rustfmt checks
+of **86** changed Rust files passed. All **nine** changed crates (including session)
+passed `cargo clippy --locked ... --all-targets -- -D warnings` in **4m 01s**.
+The capture generator's `--check` reproduced 579 tiles and SHA-256
+`e497528182cd0673699edc86adc7450af21f8f92fe8a4df44e309492cb64de55`.
+No global content, import, ruleset or deployment pin differs from srvpkg4.
+
+The existing client item-effects negotiation test first failed with
+`UnsupportedPushedDomain { domain_id: 104 }`: the base had a literal102 route.
+The session dispatcher now uses the shared item-effects constant, and its
+independent route expectation records104. No assertion was removed or loosened.
+The full session library then passed **171/171 in 21.10 s**. The full protocol
+library passed **713/713 in 1.42 s**; the world library passed **222**, with **one
+existing ignored** test, in **75.90 s**, including all47 local Terrain identities,
+all579 captured placements and the163 qualified spawn cells. The focused native
+item-batch CPU regression passed1/1 in0.00s.
+
+Mandatory PostgreSQL18.6 cases executed with `OTERYN_REQUIRE_PG=1`:
+
+| W19b native wire case | Duration |
+| --- | ---: |
+| Nested carried pot USE | 53.754963072 s |
+| Preserve carried plant USE | 64.536657658 s |
+| Preserve Ground plant USE | 57.606214757 s |
+| Ground empty pot USE | 53.419866764 s |
+| Ordinary materialized pot seed drop | 52.392153887 s |
+| Ground seed remainder | 52.720425048 s |
+| Split-stack materialized pot seed drop | 52.113627555 s |
+
+W19b passed **7/7 in386.55s**. Each drop case checks real commit, injected rollback,
+exact replay and one committed POFF; USE preserves the existing identity/decay
+rules. All seven emitted `W19 POSTGRES_CASE_COMPLETED` and `PG_EXECUTED` markers.
+The fixture negotiates existing capability350 and round-trips its item-only codec.
+
+W07 production cases passed **3/3 in168.17s**. Actual Boss-kill/player-death ordering
+observed XP4462 before loss and emitted the real physical Boss witness; its death
+boundary took **495.224772ms**. Four actual waves, persistent1500 weapon points,
+one mastery, replay and shared Channel return passed in **53.286462926s**.
+Atomic entry, first-wave progression and authenticated exit passed in
+**52.932314518s**, including two real SQL aborts, altered-target/stale-generation
+refusals, and exact unchanged-command return replay. All three emitted their
+explicit `PG_EXECUTED` marker.
+
+Linked W07/W08 atomic completion/mastery commit passed **56.54s**, SQL boundary
+**422.656662ms**; post-Animus-insert rollback passed **66.16s**, boundary
+**319.260944ms**. Both emitted `POSTGRES_CASE_COMPLETED` and retained their actual
+post-insert witness, current-fence and complete rollback assertions. Total **2/2,
+122.70s**. No selected PG case was skipped or ignored. The server code tested by
+these12 cases is unchanged by the later client-only routing repair; its client
+behavior is covered by the full171-test session run above.
+
+**Final status: W19b DONE; W07 DONE; W08 DONE.** M11a/M11b are already in the base;
+W17 is excluded. Migration0975 is the only added migration. No new capability or
+command ID is allocated; existing Item Effects uses domain104 to repair the base
+collision while cast view keeps102. No full nextest or full PG suite was run.
+No protected path or merged migration changed, and no commit or push was made.

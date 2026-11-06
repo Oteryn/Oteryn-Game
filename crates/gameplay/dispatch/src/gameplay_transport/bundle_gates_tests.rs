@@ -799,7 +799,13 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
     ("gameplay_transport/postgres_tests/item_cosmetics.rs", 1),
-    ("gameplay_transport/postgres_tests/item_seed_planting.rs", 1),
+    // W19b reconstructs its fenced owner after the injected rollback.
+    ("gameplay_transport/postgres_tests/item_seed_planting.rs", 2),
+    ("gameplay_transport/postgres_tests/soulpit_production.rs", 2),
+    // W07 owns a separately qualified physical Instance; the public World
+    // construction below must still withhold its original qualified room.
+    ("gameplay_transport/soulpit/production.rs", 1),
+    ("gameplay_transport/soulpit/production/entry.rs", 1),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
     (
         "gameplay_transport/postgres_tests/novelty_items/scenario.rs",

@@ -758,6 +758,36 @@ impl QualifiedNativeEntryRoom {
         Some(view)
     }
 
+    /// A bounded private activity over the same qualified bundle and content generation.
+    pub(crate) fn bundle_activity_view(
+        &self,
+        bounds: [i32; 6],
+        start: crate::content::LogicalCell,
+    ) -> Option<Self> {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+        let NativeMovementCollisionIndex::Bundle(index) = self.movement_cells.index() else {
+            return None;
+        };
+        if bounds[0] > bounds[2] || bounds[1] > bounds[3] || bounds[4] > bounds[5] {
+            return None;
+        }
+        let scope = self.movement_cells.scope().clone();
+        let index = index.activity_region(scope.clone(), bounds);
+        if index.lookup(&scope, start) != Ok(CollisionClass::Walkable) {
+            return None;
+        }
+        let mut view = self.clone();
+        view.entry_start = NativeEntryStart {
+            x: start.x,
+            y: start.y,
+            floor: i16::try_from(start.z).ok()?,
+        };
+        view.movement_cells.index = NativeMovementCollisionIndex::Bundle(index);
+        view.movement_cells.spell_tiles = self.movement_cells.spell_tiles.activity_region(bounds);
+        view.spawn_source = None;
+        Some(view)
+    }
+
     /// BUNDLE-COMBAT-ENABLE-1: the qualified room as a bundle World's Channel serves it. The
     /// compiled Content (and so the server and client digests) and the door content stay this
     /// room's own; the cells, frame binding, map revision and start are the bundle's, the same

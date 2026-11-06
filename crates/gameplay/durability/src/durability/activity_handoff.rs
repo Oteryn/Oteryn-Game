@@ -29,6 +29,7 @@ use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
 mod entry;
+mod soulpit;
 mod transfer_recovery;
 pub use transfer_recovery::ActivityTransferRecovery;
 pub(crate) use transfer_recovery::OfflineActivityMismatchRelease;
@@ -268,7 +269,9 @@ impl ActivityHandoffOwner {
         request
             .participants
             .sort_by_key(|p| *p.source.character_id.as_bytes());
-        if !entry::valid_request(&request, boss_room) {
+        if request.activity_key == crate::durability::soulpit::SOULPIT_ACTIVITY_KEY
+            || !entry::valid_request(&request, boss_room)
+        {
             return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
         }
         let recovery = authority
@@ -280,14 +283,15 @@ impl ActivityHandoffOwner {
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = super::db::begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    let result =
-                        entry::enter_in_transaction(&mut tx, &root, &node, &request, boss_room)
-                            .await?;
+                    let result = entry::enter_in_transaction(
+                        &mut tx, &root, &node, &request, boss_room, None,
+                    )
+                    .await?;
                     if !matches!(result, ActivityEnterOutcome::Refused(_)) {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                     }
                     Ok(result)
                 })

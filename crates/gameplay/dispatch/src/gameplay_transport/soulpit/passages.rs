@@ -108,6 +108,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
+        // The original admission froze the actor before SQL. An uncertain
+        // shared return must reconcile before asking that reserved actor to
+        // pass fresh idle/position checks; only its exact saved intent can do so.
+        let retained = self
+            .activity_runtimes
+            .soulpit_returns
+            .lock()
+            .ok()?
+            .iter()
+            .find(|intent| intent.session == command.game_session_id && intent.command.is_some())
+            .cloned();
+        if let Some(retained) = retained {
+            if retained.command != Some(command.command_id)
+                || retained.admitted.runtime_actor != Some(actor)
+                || retained.admitted.item_fence != command.item_fence
+                || retained.exit_target.as_ref() != Some(target)
+            {
+                return Some(UseOutcome::rejected());
+            }
+            return Some(
+                match self
+                    .settle_soulpit_returns(Some(command.game_session_id))
+                    .await
+                {
+                    Ok(()) => super::outcome(UseDisposition::Committed),
+                    Err(()) => UseOutcome::rejected(),
+                },
+            );
+        }
         let map = self.bundle_map()?;
         let generation = self.active_generation?;
         let source = super::super::world_map::MapViewSource {
@@ -177,10 +206,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         Some(
             match owner
-                .return_from_soulpit(self, actor, command.game_session_id)
+                .return_from_soulpit(
+                    self,
+                    actor,
+                    command.game_session_id,
+                    command.command_id,
+                    target.clone(),
+                )
                 .await
             {
-                Ok(()) => super::outcome(UseDisposition::Committed),
+                Ok(()) => match self
+                    .settle_soulpit_returns(Some(command.game_session_id))
+                    .await
+                {
+                    Ok(()) => super::outcome(UseDisposition::Committed),
+                    Err(()) => UseOutcome::rejected(),
+                },
                 Err(()) => UseOutcome::rejected(),
             },
         )

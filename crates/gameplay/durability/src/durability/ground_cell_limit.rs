@@ -9,7 +9,7 @@ use super::item_mint::GroundItemInstance;
 use super::item_mint::{GroundPlacement, TypedDefinitionRef};
 use super::spell_item_transaction::{
     SpellItemError, SpellItemScopeAuthority, assert_spell_item_scope_with_recovery,
-    locked_tile_rows_for_scope,
+    locked_tile_rows_for_scope_with_materialized_context,
 };
 use super::spell_items_abi::{SpellGroundTarget, decode_ground_cell};
 use super::spell_owner_commit::SpellLanePermit;
@@ -195,15 +195,25 @@ pub async fn check_ground_cell_root_admission_in_transaction(
 ) -> Result<Vec<GroundItemInstance>, GroundCellAdmissionError> {
     decode_ground_cell(&target.spatial_position)
         .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
-    let rows = locked_tile_rows_for_scope(tx, authority, target).await?;
+    let rows =
+        locked_tile_rows_for_scope_with_materialized_context(tx, authority, target, true).await?;
     let world = WorldId::decode(&authority.world_bytes())
         .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
     let remaining = native_roots(rows, authority, world)?;
+    // The sealed census has independently proven every differing context through
+    // its exact map/action source and current scope/map/content. Normalize only
+    // admission DTOs; retain original placement in both storage and the return.
+    let mut admission = remaining.clone();
+    for item in &mut admission {
+        item.ground
+            .native_room_placement_context
+            .clone_from(&target.placement_context);
+    }
     check_ground_cell_root_admission_for_scope(
         authority.runtime_scope(),
         authority.generation(),
         target,
-        &remaining,
+        &admission,
         inserted,
     )
     .map_err(GroundCellAdmissionError::Limit)?;

@@ -95,7 +95,7 @@ pub(super) async fn write(
     })
 }
 
-fn intent(request: &SoulpitStepRequest) -> Value {
+pub(super) fn intent(request: &SoulpitStepRequest) -> Value {
     let participants: Vec<_> = request.survivors.iter().map(|fence| json!({
         "character":hex(fence.character_id.as_bytes()),"session":hex(fence.game_session_id.as_bytes()),
         "connection":fence.connection_generation.get(),"lease":fence.character_lease_generation,
@@ -122,7 +122,7 @@ fn scope_intent(scope: RuntimeScopeRefV1) -> Value {
     }
 }
 
-fn apply(
+pub(super) fn apply(
     encounter: &mut SoulpitEncounter,
     action: &SoulpitAction,
     now: u64,

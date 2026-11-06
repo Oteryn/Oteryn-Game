@@ -4,6 +4,25 @@ use crate::monster_owner_cycle::respawn_job::RespawnExit;
 use oteryn_foundation::CancellationToken;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// One real owner cadence: the dynamic activity turn produces intentions, and
+    /// the existing generic shared return owner performs their transactions.
+    pub(in crate::gameplay_transport) async fn tick_soulpits(
+        &self,
+        now: u64,
+        global_tick: bool,
+    ) -> Result<Option<u64>, ()> {
+        let mut deadline = match self.states.boss_activity_handoff.get() {
+            Some(owner) => owner.drive_soulpit(self, now, global_tick).await?,
+            None => None,
+        };
+        if self.settle_soulpit_returns(None).await.is_err() {
+            crate::gameplay_transport::operator_event("soulpit_return_deferred");
+            let retry = now.saturating_add(100_000);
+            deadline = Some(deadline.map_or(retry, |due| due.min(retry)));
+        }
+        Ok(deadline)
+    }
+
     pub(in crate::gameplay_transport) async fn run_soulpits(
         &self,
         shutdown: &CancellationToken,
@@ -16,18 +35,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if global_tick {
                 global_due = now.saturating_add(1_000_000);
             }
-            let deadline = if let Some(owner) = self.states.boss_activity_handoff.get() {
-                match stopping_first(owner.drive_soulpit(self, now, global_tick), shutdown).await {
+            let deadline =
+                match stopping_first(self.tick_soulpits(now, global_tick), shutdown).await {
                     None => return RespawnExit::Shutdown,
                     Some(Ok(deadline)) if deadline.is_none_or(|due| due > now) => deadline,
                     Some(Ok(_)) | Some(Err(())) => {
                         self.runtime.lock().await.retire_owner_cycle();
                         return RespawnExit::StaleOwner;
                     }
-                }
-            } else {
-                None
-            };
+                };
             // Crystal 201189f data/scripts/globalevents/encounters.lua:12. The activity
             // owner also wakes exactly for the separate four-second spawn and ten-minute
             // kick events; only global ticks may clear a wave after its 4.5-second gate.

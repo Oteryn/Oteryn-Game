@@ -30,7 +30,7 @@ pub struct SoulpitEntryIntent {
     pub selected: Option<SoulpitCoreSelection>,
 }
 
-/// The #2769 adapter owns allocation, all participant validation, session handoff and return.
+/// The shared adapter owns allocation, participant validation, session handoff and return.
 /// It must call the Soulpit entry writer inside its existing Type2 transaction before source
 /// sessions end. A missing ready scope refuses without consuming the selected core. It also
 /// owns logout/death/recovery routing and calls the Soulpit lifecycle writer for those facts.
@@ -58,17 +58,21 @@ pub trait BossActivityHandoff: Send + Sync {
 
     /// Called only after an authenticated USE of the source exit object. The caller
     /// proves the current target revision and reach; the adapter revalidates membership
-    /// in the current Soulpit handoff and uses its existing return/recovery owner.
-    fn return_from_soulpit<'a>(
+    /// in the current Soulpit handoff and retains an owned return intention. The
+    /// authenticated passage caller then invokes the existing shared return owner
+    /// directly; the dynamic callback never wraps that generic pipeline.
+    fn return_from_soulpit<'a, 'assets: 'a, 'authority: 'a, 'services: 'a>(
         &'a self,
-        admission: &'a ComposedFreshAdmission<'_, '_, '_>,
+        admission: &'a ComposedFreshAdmission<'assets, 'authority, 'services>,
         actor: ExactActorRef,
         session: GameSessionId,
+        command_id: u64,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> Pin<Box<dyn Future<Output = Result<(), ()>> + Send + 'a>>;
 }
 
-/// Installed once by the shared activity composition root. Absence is no capacity, not a
-/// request to create a Channel teleport or to burn a core ahead of an unavailable owner.
+/// The shared composition root defaults to the production Instance adapter. An explicit
+/// adapter can be installed before first use; ready allocation still fences every entry.
 #[derive(Default)]
 pub struct BossActivityHandoffSlot(OnceLock<Arc<dyn BossActivityHandoff>>);
 
@@ -81,6 +85,10 @@ impl BossActivityHandoffSlot {
     }
 
     pub(super) fn get(&self) -> Option<Arc<dyn BossActivityHandoff>> {
-        self.0.get().cloned()
+        Some(
+            self.0
+                .get_or_init(|| Arc::new(super::production::ProductionSoulpitHandoff::default()))
+                .clone(),
+        )
     }
 }

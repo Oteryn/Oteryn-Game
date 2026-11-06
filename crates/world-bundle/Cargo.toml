@@ -12,7 +12,7 @@ category = "world-bundle"
 release-role = "production"
 
 [features]
-# The byte writer serves the compiler and test fixtures; production only reads bundles.
+# The byte writer serves the compiler, fixtures and bounded source-template boot.
 writer = []
 
 [dependencies]

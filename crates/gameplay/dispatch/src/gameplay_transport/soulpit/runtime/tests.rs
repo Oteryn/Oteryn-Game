@@ -15,12 +15,30 @@ fn id(seed: u8) -> [u8; 16] {
     value
 }
 
+#[derive(Clone, Copy)]
+struct SpawnTile {
+    ground: bool,
+    solid: bool,
+    projectile: bool,
+    immovable_solid: bool,
+    immovable_path: bool,
+}
 struct Scene {
     allow_spawn: bool,
+    known_cells: Option<std::collections::BTreeMap<(i32, i32, i16), SpawnTile>>,
 }
 impl ActivityHandoffScene for Scene {
-    fn permits_spawn(&self, _: MovementLocalPosition) -> bool {
-        self.allow_spawn
+    fn permits_spawn(&self, at: MovementLocalPosition) -> bool {
+        match &self.known_cells {
+            None => self.allow_spawn,
+            Some(cells) => cells.get(&(at.x, at.y, at.floor)).is_some_and(|tile| {
+                tile.ground
+                    && !tile.solid
+                    && !tile.projectile
+                    && !tile.immovable_solid
+                    && !tile.immovable_path
+            }),
+        }
     }
     fn attack_target(&self, _: ExactActorRef) -> Option<ExactActorRef> {
         None
@@ -98,7 +116,10 @@ impl Owner {
             continuity,
             content,
             native,
-            scene: Scene { allow_spawn },
+            scene: Scene {
+                allow_spawn,
+                known_cells: None,
+            },
             stored: SoulpitStoredEncounter {
                 revision: 1,
                 species: "oteryn:creature.rat".into(),
@@ -185,12 +206,14 @@ impl ActivityHandoffOwnerRuntime for Owner {
             })
         })
     }
-    fn register_creatures(
-        &mut self,
-        actors: &[SoulpitWaveActor],
-    ) -> Result<(), SoulpitRuntimeError> {
-        self.registrations.push(actors.to_vec());
-        Ok(())
+    fn register_creatures<'a>(
+        &'a mut self,
+        actors: &'a [SoulpitWaveActor],
+    ) -> ActivityFuture<'a, ()> {
+        Box::pin(async move {
+            self.registrations.push(actors.to_vec());
+            Ok(())
+        })
     }
     fn settle_boss_rewards(&mut self, reward: SoulpitBossReward) -> ActivityFuture<'_, ()> {
         Box::pin(async move {
@@ -499,3 +522,6 @@ fn lethal_boss_reward_precedes_both_timeout_drivers_and_replayed_return_never_re
             Ok(())
         })
 }
+
+#[path = "tests_spawn.rs"]
+mod tests_spawn;

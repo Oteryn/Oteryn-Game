@@ -451,6 +451,60 @@ fn production_sound_normalizes_native_floors_for_the_allocated_wire() {
 }
 
 #[test]
+fn ambient_and_full_journal_keep_planting_poff_in_a_separate_item_batch() {
+    use oteryn_protocol_oteryn::presentation::{
+        MAX_PRESENTATION_EVENTS, PresentationEventKind, PresentationSource,
+        decode_item_effect_batch, encode_item_effect_batch,
+    };
+    let (runtime, actor, other, session) = runtime();
+    let at = runtime.read_actor_position(actor).unwrap().position();
+    let mut publisher = SoundPublisher::default();
+    publisher.ambient(&runtime, actor, session, Some("thais-city"), 1049);
+    for _ in 0..MAX_PRESENTATION_EVENTS - 1 {
+        publisher.record(&runtime, other, at, 3, 0);
+    }
+    publisher.record_item_effect(&runtime, actor, at, 3, false);
+    let (cursor, events) = publisher
+        .observe(&runtime, actor, session, 0, true)
+        .unwrap();
+    assert_eq!(events.len(), MAX_PRESENTATION_EVENTS + 1);
+    assert!(
+        events
+            .iter()
+            .any(|event| matches!(event.kind, PresentationEventKind::AmbientSound { .. }))
+    );
+    assert_eq!(
+        events
+            .iter()
+            .filter(|event| matches!(
+                event.kind,
+                PresentationEventKind::MagicEffect {
+                    effect_id: 3,
+                    source: PresentationSource::Own,
+                    ..
+                }
+            ))
+            .count(),
+        1
+    );
+    // Match the production refresh router: ambient and item cues have independent domains.
+    let item_events = events
+        .iter()
+        .copied()
+        .filter(|event| matches!(event.kind, PresentationEventKind::MagicEffect { .. }))
+        .collect::<Vec<_>>();
+    let bytes = encode_item_effect_batch(&item_events).unwrap();
+    assert_eq!(decode_item_effect_batch(&bytes).unwrap(), item_events);
+    assert!(
+        publisher
+            .observe(&runtime, actor, session, cursor, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+}
+
+#[test]
 fn nx5_private_toy_effect_is_fenced_and_never_visible_to_other_observers() {
     let (runtime, actor, other, session) = runtime();
     let other_session = runtime

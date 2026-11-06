@@ -386,6 +386,22 @@ impl QualifiedSpellTiles {
         }
     }
 
+    pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Self {
+        let mut view = self.clone();
+        view.source_bounds = Some(match self.source_bounds {
+            Some([x0, y0, x1, y1, z0, z1]) => [
+                x0.max(bounds[0]),
+                y0.max(bounds[1]),
+                x1.min(bounds[2]),
+                y1.min(bounds[3]),
+                z0.max(bounds[4]),
+                z1.min(bounds[5]),
+            ],
+            None => bounds,
+        });
+        view
+    }
+
     /// The scope is independently checked against the current runtime pin by the
     /// Movement owner before lookup. Matching these stored bytes alone is not
     /// evidence that the generation remains active.
@@ -396,9 +412,6 @@ impl QualifiedSpellTiles {
     ) -> Result<&QualifiedSpellTile, SpellTileLookupError> {
         if active_scope != &self.scope {
             return Err(SpellTileLookupError::ScopeMismatch);
-        }
-        if let Some(bundle) = &self.bundle {
-            return bundle.lookup(cell);
         }
         if self.unknown_cells.contains(&cell)
             || self
@@ -413,6 +426,9 @@ impl QualifiedSpellTiles {
                 })
         {
             return Err(SpellTileLookupError::Unknown);
+        }
+        if let Some(bundle) = &self.bundle {
+            return bundle.lookup(cell);
         }
         self.tiles
             .as_ref()

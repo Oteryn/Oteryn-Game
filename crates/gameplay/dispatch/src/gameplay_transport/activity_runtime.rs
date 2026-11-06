@@ -129,6 +129,18 @@ pub struct ActivityConnectionSwitch {
 
 #[derive(Default)]
 pub struct ActivityRuntimeRegistry<'a> {
+    soulpit_template:
+        Mutex<Option<&'a crate::content::bosses::soulpit_template::QualifiedSoulpitRoomTemplate>>,
+    pub(super) soulpit_cycle: tokio::sync::Mutex<()>,
+    pub(super) soulpit_return_cycle: tokio::sync::Mutex<()>,
+    pub(super) soulpit_returns: Mutex<Vec<super::soulpit::production::SoulpitReturnIntent>>,
+    pub(super) soulpit_entries: Mutex<
+        HashMap<
+            super::native_activity::ActivityAttemptKey,
+            super::soulpit::production::PreparedEntry,
+        >,
+    >,
+    pub(super) soulpit_runs: Mutex<HashMap<ScopeKey, super::soulpit::production::SoulpitRun>>,
     templates: Mutex<
         HashMap<
             String,
@@ -209,6 +221,23 @@ impl ActivityRefusalPrune {
 }
 
 impl<'a> ActivityRuntimeRegistry<'a> {
+    pub(super) fn register_soulpit_template(
+        &self,
+        template: &'a crate::content::bosses::soulpit_template::QualifiedSoulpitRoomTemplate,
+    ) -> Result<(), ()> {
+        let mut current = self.soulpit_template.lock().map_err(|_| ())?;
+        if current.is_some_and(|value| !std::ptr::eq(value, template)) {
+            return Err(());
+        }
+        *current = Some(template);
+        Ok(())
+    }
+    pub(super) fn soulpit_template(
+        &self,
+    ) -> Option<&'a crate::content::bosses::soulpit_template::QualifiedSoulpitRoomTemplate> {
+        *self.soulpit_template.lock().ok()?
+    }
+
     pub(super) fn register_template(
         &self,
         template: &'a crate::content::bosses::activity_template::QualifiedActivityRoomTemplate,

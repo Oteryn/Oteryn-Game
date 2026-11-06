@@ -19,6 +19,8 @@ mod cadence;
 mod entry;
 mod handoff;
 mod passages;
+pub(super) mod production;
+mod rewards;
 pub mod runtime;
 pub use handoff::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,

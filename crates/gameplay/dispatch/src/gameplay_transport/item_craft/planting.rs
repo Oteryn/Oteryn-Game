@@ -49,6 +49,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 request.source = memo.request.source;
                 request.target = memo.request.target;
             }
+            if let Some(pending) = states.sounds.planting_use_request(actor, &request) {
+                request = pending;
+            }
         }
         // An exact historical use is answered before its consumed seed/pot handles resolve.
         if let Some(result) = self
@@ -71,6 +74,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .as_deref()
                 .is_some_and(|recipe| recipe.starts_with("oteryn:planting."))
             {
+                let runtime = self.runtime.lock().await;
+                self.states
+                    .spell_states
+                    .lock()
+                    .await
+                    .sounds
+                    .finish_planting_cue(&runtime, actor, request.command, Some(&result), true)?;
                 return Ok(outcome(result.disposition));
             }
             return self
@@ -221,7 +231,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let context = {
             let runtime = self.runtime.lock().await;
-            let states = self.states.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             if states.is_dead(actor)
                 || !states.spell_idle(&runtime, actor, command.game_session_id)
                 || runtime.owner_fence().is_err()
@@ -232,8 +242,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(outcome(UseDisposition::Rejected));
             }
-            // Donor POFF remains captured in the receipt. Capability23 has no live
-            // consumer; it must not reserve or enqueue an undrainable presentation.
+            states.sounds.prepare_planting_cue(
+                &runtime,
+                actor,
+                fence,
+                request.command,
+                request.intent.clone(),
+                Some(request.clone()),
+                None,
+            )?;
             GroundActionContext::from_native_owner(
                 room,
                 &runtime,
@@ -261,6 +278,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if receipt.disposition == UseDisposition::Committed {
             self.states.loop_ground.invalidate();
         }
+        let runtime = self.runtime.lock().await;
+        self.states
+            .spell_states
+            .lock()
+            .await
+            .sounds
+            .finish_planting_cue(&runtime, actor, request.command, Some(&receipt), true)?;
         Ok(outcome(receipt.disposition))
     }
 }

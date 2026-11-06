@@ -152,6 +152,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         facts,
         creature: "fixture:rat".into(),
         row: Some(row(drops)),
+        soulpit_experience: None,
         bosstiary_only: None,
         boss_slot_bonuses: std::sync::Arc::new(std::sync::OnceLock::new()),
         ground: DeathGroundContext {
@@ -1375,4 +1376,238 @@ fn talisman_spoils_scales_each_chance_rounds_up_and_caps() {
     table.entries[0].probability_ppm = Some(999_999);
     apply_talisman_loot_bonus(&mut table, i64::MAX);
     assert_eq!(table.entries[0].probability_ppm, Some(1_000_000));
+}
+
+#[test]
+fn native_soulpit_lethal_freezes_xp_and_weapon_without_ordinary_kill_queue() -> Result<(), String> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            use crate::domain::soulpit::BossAbility;
+            use crate::foundation::{
+                CharacterLease, CommandId, CommandRef, MovementLocalPosition, NodeId,
+                RuntimeScopeRefV1,
+            };
+            use oteryn_gameplay_entities::carrier::{
+                OwnerDamageCommand, soulpit::SoulpitWaveRequest,
+            };
+            fn debug(error: impl std::fmt::Debug) -> String {
+                format!("{error:?}")
+            }
+            let world = WorldId::decode(&id(1)).map_err(debug)?;
+            let scope = RuntimeScopeRefV1::instance(world, id(2)).map_err(debug)?;
+            let (controller, _) =
+                crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                    world, None,
+                );
+            let native = controller
+                .active()
+                .and_then(|active| active.native_gameplay())
+                .ok_or("native")?;
+            let pin = crate::foundation::ChannelContentPin::from_activation(
+                world,
+                1,
+                native.source_digest(),
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (32373, 31151, 8),
+            );
+            let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
+                scope,
+                NodeId::decode(&id(3)).map_err(debug)?,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                16,
+                pin,
+            )
+            .map_err(debug)?;
+            runtime
+                .install_companion_policies(native.policies().clone())
+                .map_err(debug)?;
+            let bystander_session = session(52);
+            let unrelated_session = session(99);
+            let session = session(50);
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let player = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .initialize_first_entry_position(player)
+                .map_err(debug)?;
+            let character = CharacterId::decode(&id(51)).map_err(debug)?;
+            runtime
+                .bind_attacker_lease(
+                    player,
+                    session,
+                    CharacterLease::new(character, 1).map_err(debug)?,
+                )
+                .map_err(debug)?;
+            let reservation = runtime
+                .reserve_fresh_session(bystander_session)
+                .map_err(debug)?;
+            let bystander = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .initialize_first_entry_position(bystander)
+                .map_err(debug)?;
+            let handoff = id(4);
+            let actors = {
+                let kernel = runtime.borrow_soulpit_kernel().map_err(debug)?;
+                kernel
+                    .carrier
+                    .spawn_soulpit_wave(
+                        kernel.continuity,
+                        kernel.content,
+                        native.policies(),
+                        SoulpitWaveRequest {
+                            handoff_id: handoff,
+                            wave: 4,
+                            species: "oteryn:creature.rat".into(),
+                            positions: std::array::from_fn(|index| {
+                                if index == 6 {
+                                    MovementLocalPosition {
+                                        x: 32376,
+                                        y: 31144,
+                                        floor: 8,
+                                    }
+                                } else {
+                                    MovementLocalPosition {
+                                        x: 32362 + index as i32,
+                                        y: 31132,
+                                        floor: 8,
+                                    }
+                                }
+                            }),
+                            boss_ability: BossAbility::Overpower,
+                            now_micros: 4_000_000,
+                        },
+                        |_| true,
+                    )
+                    .map_err(debug)?
+            };
+            let target = actors[6].ok_or("boss actor")?.actor;
+            let queue = KillSettlementQueue::default();
+            queue.proficiency_equipment(player, session, 1, Some("weapon-before-lethal"));
+            let target_identity = runtime
+                .borrow_combat_death()
+                .creature_target_identity(target)
+                .map_err(debug)?
+                .to_vec();
+            let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+            runtime
+                .borrow_exact_actor_commit_at(10_000)
+                .commit_damage_for_bound_attacker(
+                    target,
+                    player,
+                    CommandRef::new(session, CommandId::new(1).map_err(debug)?),
+                    0,
+                    OwnerDamageCommand {
+                        target: &target_identity,
+                        occurrence: &[],
+                        binding: b"soulpit-native-lethal",
+                        damage: health,
+                    },
+                )
+                .map_err(debug)?;
+            let sink = KillSink {
+                prey: None,
+                activity: &[],
+                queue: &queue,
+                rewards: native.reward_table(),
+                charms: None,
+            };
+            let principal = CapturedRewardPrincipal {
+                character,
+                lease_generation: 1,
+                session,
+                actor: player,
+            };
+            let observed =
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(10_000_000);
+            record_creature_kill(
+                &mut runtime,
+                sink,
+                target,
+                principal,
+                10_000,
+                Some(observed),
+            );
+            queue.proficiency_equipment(player, session, 2, Some("weapon-after-lethal"));
+            record_creature_kill(
+                &mut runtime,
+                sink,
+                target,
+                principal,
+                10_000,
+                Some(observed),
+            );
+            assert!(
+                !queue.has_session(session),
+                "Soulpit must not enter the ordinary kill queue"
+            );
+            assert!(queue.has_pending_soulpit_reward_for_session(session));
+            assert!(queue.has_pending_soulpit_reward_for_session(bystander_session));
+            assert!(!queue.has_pending_soulpit_reward_for_session(unrelated_session));
+            let pending = queue.pending_soulpit_rewards(session);
+            assert_eq!(pending.len(), 1);
+            assert_eq!(pending[0].death.actor, target);
+            assert_eq!(pending[0].death.tag.handoff_id, handoff);
+            assert_eq!(pending[0].death_at_ms, 10_000);
+            assert_eq!(pending[0].experience, 140);
+            assert_eq!(pending[0].death.damage_shares.len(), 1);
+            let members = [crate::foundation::ActivityTransferMember {
+                source_actor: player,
+                source_session: session,
+                source_lease: CharacterLease::new(character, 1).map_err(debug)?,
+                destination_session: unrelated_session,
+                destination_lease: CharacterLease::new(character, 2).map_err(debug)?,
+                destination_cell: MovementLocalPosition {
+                    x: 32373,
+                    y: 31151,
+                    floor: 8,
+                },
+            }];
+            assert!(super::super::native_activity::seal_activity_kills(&queue, &members).is_err());
+            let state = queue.state();
+            assert_eq!(
+                state.soulpit_rewards.len(),
+                1,
+                "exact native lethal replays capture once"
+            );
+            let frozen = &state.soulpit_rewards[0];
+            assert_eq!(frozen.entry.experience_amount(), Some(140));
+            assert!(
+                frozen.entry.row.is_none(),
+                "XP must not fabricate a corpse/loot row"
+            );
+            assert!(frozen.entry.is_soulpit());
+            assert_eq!(frozen.entry.damage_shares.len(), 1);
+            assert_eq!(frozen.entry.damage_shares[0].session, Some(session));
+            assert_eq!(frozen.entry.activity_observed_at, Some(observed));
+            let frozen_weapon = state
+                .proficiency_deaths
+                .iter()
+                .find(|death| death.target == target)
+                .and_then(|death| death.contributors.first())
+                .ok_or("frozen contributor")?;
+            assert_eq!(frozen_weapon.weapon, "weapon-before-lethal");
+            assert_eq!(frozen_weapon.last_damage_at_ms, 10_000);
+            let occurrence = frozen.entry.facts.occurrence;
+            drop(state);
+            queue.acknowledge_soulpit_reward(target, occurrence);
+            assert!(!queue.has_pending_soulpit_reward_for_session(session));
+            assert!(!queue.has_pending_soulpit_reward_for_session(bystander_session));
+            assert!(queue.pending_soulpit_rewards(session).is_empty());
+            let mut marks = super::super::native_activity::seal_activity_kills(&queue, &members)
+                .map_err(debug)?;
+            super::super::native_activity::finish_activity_kills(
+                &queue,
+                &mut marks,
+                ReleaseEnd::Retryable,
+            );
+            Ok(())
+        })
+        .map_err(|error| error.to_string())?
+        .join()
+        .map_err(|_| "Soulpit lethal fixture panicked".to_owned())?
 }

@@ -228,7 +228,7 @@ pub(super) async fn return_in_transaction(
                 .bind(r.handoff_id.as_slice()).fetch_optional(&mut **tx).await?;
             now >= row.try_get::<i64,_>("deadline")? && !matches!(boss_state, Some(2 | 4))
         },
-        ActivityReturnReason::Defeated => sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid AND state=2 AND exit_deadline <= $2)")
+        ActivityReturnReason::Defeated => sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid AND state=2 AND exit_deadline <= $2) OR EXISTS (SELECT 1 FROM game_soulpit_encounters WHERE handoff_id=encode($1,'hex')::uuid AND terminal AND checkpoint->>'phase'='Completed')")
             .bind(r.handoff_id.as_slice()).bind(now).fetch_one(&mut **tx).await?,
     };
     if !due {
@@ -317,6 +317,7 @@ pub(super) async fn return_in_transaction(
             ActivityRefusal::AuthorityRejected,
         ));
     }
+    super::super::soulpit::write_return_in_transaction(tx, r, recovering).await?;
     // This is the same issuance/transport/publisher operation as enter, in reverse.
     super::entry::issue_successor(
         tx,

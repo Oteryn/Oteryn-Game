@@ -270,6 +270,40 @@ impl ChannelActorCarrier {
 
     /// Executes each donor spawn attempt once. A blocked cell or full existing carrier is
     /// recorded as None, matching Game.createSoulPitMonster's skipped failure; no redraw.
+    /// Recover the exact physical selection after an uncertain durable Spawned ack.
+    /// This reads a retained receipt under current Instance continuity; it neither
+    /// allocates actors nor admits another content generation or handoff.
+    pub fn retained_soulpit_wave_request(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        handoff_id: [u8; 16],
+        wave: u8,
+        content_digest: [u8; 32],
+    ) -> Result<Option<SoulpitWaveRequest>, CarrierError> {
+        self.require_soulpit_instance(continuity)?;
+        if handoff_id == [0; 16] || content_digest == [0; 32] {
+            return Err(CarrierError::InvalidCommitBinding);
+        }
+        wave_stacks(wave).map_err(|_| CarrierError::InvalidCommitBinding)?;
+        let Some(state) = &self.soulpit else {
+            return Ok(None);
+        };
+        if state.handoff_id != handoff_id {
+            return Err(CarrierError::PlanConflict);
+        }
+        let Some(prior) = state
+            .waves
+            .iter()
+            .find(|receipt| receipt.request.wave == wave)
+        else {
+            return Ok(None);
+        };
+        if prior.content != content_digest {
+            return Err(CarrierError::PlanConflict);
+        }
+        Ok(Some(prior.request.clone()))
+    }
+
     pub fn spawn_soulpit_wave(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -644,7 +678,25 @@ impl ChannelActorCarrier {
     }
 }
 
+/// A generation-checked borrow of the existing runtime's physical Soulpit owner.
+/// The caller's runtime lock bounds this borrow; it cannot survive a durable await.
+pub struct SoulpitOwnerKernel<'a> {
+    pub carrier: &'a mut ChannelActorCarrier,
+    pub continuity: &'a NamespaceContinuityGuard,
+    pub content: &'a ChannelContentPin,
+}
+
 impl ChannelRuntimeV1 {
+    pub fn borrow_soulpit_kernel(&mut self) -> Result<SoulpitOwnerKernel<'_>, CarrierError> {
+        self.owner_fence()?;
+        self.carrier.require_soulpit_instance(&self.continuity)?;
+        Ok(SoulpitOwnerKernel {
+            carrier: &mut self.carrier,
+            continuity: &self.continuity,
+            content: &self.content,
+        })
+    }
+
     /// Projects only Soulpit's combat tag/health into an existing real creature fixture
     /// so the current magnitude consumer can be tested before #2769 composes its Instance
     /// wrapper. This is not activity or Instance admission; the real Instance admission

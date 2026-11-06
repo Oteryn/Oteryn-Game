@@ -1333,6 +1333,17 @@ pub async fn locked_tile_rows_for_scope(
     authority: &SpellItemScopeAuthority,
     target: &SpellGroundTarget,
 ) -> Result<Vec<sqlx::postgres::PgRow>> {
+    locked_tile_rows_for_scope_with_materialized_context(tx, authority, target, false).await
+}
+
+/// Ground root census may reconcile a source-qualified map/action placement context with
+/// the independently qualified current frame. All physical rows retain their original data.
+pub(crate) async fn locked_tile_rows_for_scope_with_materialized_context(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    target: &SpellGroundTarget,
+    qualify_materialized_context: bool,
+) -> Result<Vec<sqlx::postgres::PgRow>> {
     let current: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
         .fetch_one(&mut **tx)
         .await?;
@@ -1343,14 +1354,28 @@ pub async fn locked_tile_rows_for_scope(
     }
     let (scope_kind, channel, instance) =
         super::item_mint::ground_scope_columns(authority.runtime_scope());
-    let unknown:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$7 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($8,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR (g.spatial_position=$3 AND (g.map_revision<>$4 OR g.content_revision<>$5 OR g.native_room_placement_context<>$6))))")
-        .bind(authority.world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(&target.spatial_position).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).bind(scope_kind).bind(instance.map(|id| id.to_vec())).fetch_one(&mut **tx).await?;
+    let unknown:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$7 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($8,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR (g.spatial_position=$3 AND (g.map_revision<>$4 OR g.content_revision<>$5 OR g.native_room_placement_context<>$6 AND NOT ($9 AND g.scope_kind=1 AND g.runtime_scope_ownership_generation=$10::text::numeric AND (game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id)))))))")
+        .bind(authority.world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(&target.spatial_position).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).bind(scope_kind).bind(instance.map(|id| id.to_vec())).bind(qualify_materialized_context).bind(authority.generation().to_string()).fetch_one(&mut **tx).await?;
     if unknown {
         return Err(SpellItemError::Rejected(
             "unreconciled opaque or incompatible Ground placement",
         ));
     }
-    let rows = sqlx::query(TILE_ROWS)
+    let compatible_rows;
+    let query = if qualify_materialized_context {
+        compatible_rows = TILE_ROWS
+            .replace(
+                "SELECT i.item_instance_id",
+                "SELECT (g.native_room_placement_context=$6 OR (g.scope_kind=1 AND (game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id)))) AS ground_context_qualified,i.item_instance_id",
+            )
+            .replace(" AND g.native_room_placement_context=$6", "");
+        compatible_rows.as_str()
+    } else {
+        TILE_ROWS
+    };
+    // Both query variants derive exclusively from fixed repository SQL literals;
+    // every authority/placement value remains a separately bound parameter.
+    let rows = sqlx::query(sqlx::AssertSqlSafe(query))
         .bind(authority.world.as_slice())
         .bind(channel.map(|id| id.to_vec()))
         .bind(&target.spatial_position)
@@ -1367,6 +1392,11 @@ pub async fn locked_tile_rows_for_scope(
         ));
     }
     for row in &rows {
+        if qualify_materialized_context && !row.try_get::<bool, _>("ground_context_qualified")? {
+            return Err(SpellItemError::Rejected(
+                "unqualified materialized Ground context",
+            ));
+        }
         if integer(row.try_get("ground_scope_generation")?)? != authority.ownership_generation {
             return Err(SpellItemError::Rejected(
                 "Ground custody belongs to an unreconciled scope generation",
@@ -1605,14 +1635,19 @@ pub fn item_definition_valid(value: &TypedDefinitionRef) -> bool {
 }
 
 // Preserve old intents for non-chain grants; freeze complete ordinary chains at creation.
-fn with_item_decay_chain(mut intent: serde_json::Value, definition: &QualifiedItemDefinition) -> serde_json::Value {
+fn with_item_decay_chain(
+    mut intent: serde_json::Value,
+    definition: &QualifiedItemDefinition,
+) -> serde_json::Value {
     if !definition.decay_chain.is_empty() {
         intent["decay_chain"] = serde_json::Value::Array(definition.decay_chain.iter().map(|stage| serde_json::json!({
             "definition": reference(&stage.definition), "duration_millis": stage.duration_millis,
             "target": stage.target.as_ref().map(reference), "blocks_movement": stage.blocks_movement,
             "blocks_projectile": stage.blocks_projectile, "immovable_block_solid": stage.immovable_block_solid
         })).collect());
-        if definition.field_class == SpellFieldClass::NotField { intent["general_decay"] = serde_json::Value::Bool(true); }
+        if definition.field_class == SpellFieldClass::NotField {
+            intent["general_decay"] = serde_json::Value::Bool(true);
+        }
     }
     intent
 }
@@ -1834,7 +1869,10 @@ fn encode_intent(
                 }
                 (
                     *item_instance_id,
-                    with_item_decay_chain(serde_json::json!({"kind":"mint_inventory","id":item_instance_id,"definition":reference(&definition.definition),"content_digest":definition.content_generation_digest.as_slice(),"quantity":quantity,"backpack":reference(&backpack.definition),"capacity":backpack.container_capacity,"overflow":allow_ground_overflow,"overflow_placement":ground(overflow_placement),"decay":definition.decay.as_ref().map(|d|serde_json::json!({"duration_millis":d.duration_millis,"target":d.target.as_ref().map(reference)}))}), definition),
+                    with_item_decay_chain(
+                        serde_json::json!({"kind":"mint_inventory","id":item_instance_id,"definition":reference(&definition.definition),"content_digest":definition.content_generation_digest.as_slice(),"quantity":quantity,"backpack":reference(&backpack.definition),"capacity":backpack.container_capacity,"overflow":allow_ground_overflow,"overflow_placement":ground(overflow_placement),"decay":definition.decay.as_ref().map(|d|serde_json::json!({"duration_millis":d.duration_millis,"target":d.target.as_ref().map(reference)}))}),
+                        definition,
+                    ),
                 )
             }
             SpellItemOperation::MintGround {
@@ -1868,7 +1906,10 @@ fn encode_intent(
                 }
                 (
                     *item_instance_id,
-                    with_item_decay_chain(serde_json::json!({"kind":"mint_ground","id":item_instance_id,"definition":reference(&definition.definition),"content_digest":definition.content_generation_digest.as_slice(),"quantity":quantity,"placement":ground(placement),"lifetime_millis":lifetime_millis,"blocks_movement":blocks_movement,"blocks_projectile":blocks_projectile,"description":description,"decay_chain":definition.decay_chain.iter().map(|stage|serde_json::json!({"definition":reference(&stage.definition),"duration_millis":stage.duration_millis,"target":stage.target.as_ref().map(reference),"blocks_movement":stage.blocks_movement,"blocks_projectile":stage.blocks_projectile,"immovable_block_solid":stage.immovable_block_solid})).collect::<Vec<_>>()}), definition),
+                    with_item_decay_chain(
+                        serde_json::json!({"kind":"mint_ground","id":item_instance_id,"definition":reference(&definition.definition),"content_digest":definition.content_generation_digest.as_slice(),"quantity":quantity,"placement":ground(placement),"lifetime_millis":lifetime_millis,"blocks_movement":blocks_movement,"blocks_projectile":blocks_projectile,"description":description,"decay_chain":definition.decay_chain.iter().map(|stage|serde_json::json!({"definition":reference(&stage.definition),"duration_millis":stage.duration_millis,"target":stage.target.as_ref().map(reference),"blocks_movement":stage.blocks_movement,"blocks_projectile":stage.blocks_projectile,"immovable_block_solid":stage.immovable_block_solid})).collect::<Vec<_>>()}),
+                        definition,
+                    ),
                 )
             }
         };

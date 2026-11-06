@@ -101,8 +101,12 @@ pub(super) async fn write(
                 .map_err(|_| SoulpitError::NotOnEntryTile)?,
             y: u16::try_from(participant.try_get::<i32, _>("entry_y")?)
                 .map_err(|_| SoulpitError::NotOnEntryTile)?,
-            floor: i8::try_from(participant.try_get::<i16, _>("entry_floor")?)
-                .map_err(|_| SoulpitError::NotOnEntryTile)?,
+            // Source captures retain native -z, bundle runtimes retain source +z.
+            // The shared record remains the exact physical snapshot in its own frame.
+            floor: match participant.try_get::<i16, _>("entry_floor")? {
+                8 => -8,
+                floor => i8::try_from(floor).map_err(|_| SoulpitError::NotOnEntryTile)?,
+            },
         };
         let slot = entry_slot(position).ok_or(SoulpitError::NotOnEntryTile)?;
         let level = u32::try_from(participant.try_get::<i64, _>("level")?)

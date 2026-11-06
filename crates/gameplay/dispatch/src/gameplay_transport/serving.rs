@@ -98,6 +98,12 @@ pub async fn serve_gameplay(
         .register_current_runtime()
         .await
         .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    if let Some(template) = owners.soulpit_template {
+        authority
+            .activity_runtimes
+            .register_soulpit_template(template)
+            .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    }
     for template in owners.activity_templates {
         authority
             .activity_runtimes

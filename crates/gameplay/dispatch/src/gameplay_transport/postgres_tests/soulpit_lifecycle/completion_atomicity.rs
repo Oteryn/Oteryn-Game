@@ -1,203 +1,189 @@
-//! Real completion/Animus PostgreSQL cases awaiting the shared #2769 admission fixture.
-//! ANSWER 6543794006 requires their complete assertions now, but forbids fabricated
-//! COMMITTED groups, disabled guards, or counting a model as database qualification.
+//! Completion/Animus boundaries after actual production USE and native Instance entry.
+//! All existing event, rollback, survivor and exact replay assertions remain enabled.
 
-use super::super::{Dependencies, TestResult, prepare_current_session};
-use super::{Harness, debug, id, run};
+use super::super::TestResult;
+use super::{Harness, debug, id};
 use crate::domain::soulpit::{EncounterEffect, EncounterPhase};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::soulpit::{SoulpitAction, SoulpitStepOutcome, SoulpitStepRequest};
 use crate::foundation::RuntimeScopeRefV1;
 use sqlx::Row;
-use std::{future::Future, pin::Pin};
 
-/// The #2769 fixture must use its real shared entry owner to commit a one-player fight
-/// from staging slot zero, with a fresh species, before returning the current destination
-/// gameplay fence. It must install native content, source inventory and the source actor
-/// using the existing fixtures, and bind a legitimate destination Instance session.
-/// A PREPARED group, allocated Instance or synthetic fence does not meet this contract.
+/// Produced only after the shared production fixture admits the actual source actor,
+/// consumes its core and binds the fresh native destination Instance session.
 struct AdmittedSoulpit {
     handoff_id: [u8; 16],
     destination: CurrentCharacterGameplayFence,
 }
 
-type AdmissionFuture<'a> = Pin<Box<dyn Future<Output = TestResult<AdmittedSoulpit>> + Send + 'a>>;
-type SharedAdmissionFixture = for<'a> fn(&'a Harness, &'a Dependencies) -> AdmissionFuture<'a>;
-
-// Packaging #2769 links its accepted fixture here, then runs these cases with --ignored.
-// This is deliberately a compile-visible test prerequisite, not an environment switch or
-// an alternate session/admission writer. The current qualified base supplies no adapter.
-const SHARED_OWNER_ADMISSION: Option<SharedAdmissionFixture> = None;
-
-const INJECTED_FAILURE: &str = "soulpit atomicity injected failure after Animus insert";
-
 #[test]
-#[ignore = "requires #2769 legitimate destination Instance admission; PostgreSQL atomicity is NOT_RUN on this base"]
 fn soulpit_survivor_completion_and_animus_commit_together_postgres() -> TestResult {
-    super::super::kill_reward_e2e::scenario_thread::run("soulpit-animus-commit", || run_case(false))
+    super::super::soulpit_production::completion_atomicity_case(false)
 }
 
 #[test]
-#[ignore = "requires #2769 legitimate destination Instance admission; PostgreSQL atomicity is NOT_RUN on this base"]
 fn soulpit_failure_after_animus_insert_rolls_back_completion_postgres() -> TestResult {
-    super::super::kill_reward_e2e::scenario_thread::run("soulpit-animus-rollback", || {
-        run_case(true)
-    })
+    super::super::soulpit_production::completion_atomicity_case(true)
 }
 
-fn run_case(inject_failure: bool) -> TestResult {
+/// Linked to the real USE dispatch and physical Instance handoff fixture. The
+/// production source/destination owners remain live throughout these durable
+/// boundary assertions; no COMMITTED handoff or destination session is fabricated.
+pub(in super::super) async fn assert_shared_completion(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    destination: crate::gameplay_transport::connection::AdmittedSession,
+    handoff_id: [u8; 16],
+    inject_failure: bool,
+) -> TestResult {
+    let began = std::time::Instant::now();
     let marker = if inject_failure {
         "SOULPIT_ANIMUS_ROLLBACK"
     } else {
         "SOULPIT_ANIMUS_COMMIT"
     };
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
-        eprintln!("{marker} POSTGRES_CASE_NOT_RUN: no configured PostgreSQL route");
-        return Ok(());
-    }
-    let Some(admit) = SHARED_OWNER_ADMISSION else {
-        eprintln!(
-            "{marker} POSTGRES_CASE_NOT_RUN: #2769 legitimate destination admission is not linked"
-        );
-        return Err("#2769 must supply its accepted destination Instance fixture before this ignored case can run".into());
+    let authority = owner.character;
+    let fence = crate::gameplay_transport::character_gameplay_fence::current(
+        owner,
+        destination.game_session_id,
+        true,
+    )
+    .await
+    .ok_or("real destination gameplay fence")?;
+    let admitted = AdmittedSoulpit {
+        handoff_id,
+        destination: fence,
     };
-    run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "soulpit_animus_atomicity", true, false)
-            .await?;
-        super::super::reset();
-        prepare_current_session(&h).await?;
-        let deps = Dependencies::new()?;
-        let admitted = admit(&h, &deps).await?;
-        assert!(matches!(
+    assert!(matches!(
+        admitted.destination.runtime_scope,
+        RuntimeScopeRefV1::Instance { .. }
+    ));
+    let initial = h
+        .root
+        .read_soulpit_encounter(
+            authority,
+            &h.node,
+            admitted.handoff_id,
             admitted.destination.runtime_scope,
-            RuntimeScopeRefV1::Instance { .. }
-        ));
-        let seal = h.recovery.seal_current().map_err(debug)?;
-        let authority = h
-            .root
-            .open_character_authority(&seal)
-            .await
-            .map_err(debug)?;
-        let initial = h
-            .root
-            .read_soulpit_encounter(
-                &authority,
-                &h.node,
-                admitted.handoff_id,
-                admitted.destination.runtime_scope,
-                admitted.destination.scope_ownership_generation,
-            )
-            .await
-            .map_err(debug)?
-            .ok_or("shared fixture did not commit its Soulpit entry")?;
-        assert_eq!(
-            initial.revision, 0,
-            "fixture must start at the committed entry"
-        );
-        let initial_snapshot = initial.encounter.snapshot();
-        assert_eq!(initial_snapshot.phase, EncounterPhase::Preparing);
-        assert_eq!(initial_snapshot.wave, 1);
-        assert_eq!(initial_snapshot.surviving_slots, vec![0]);
-        let mut lifecycle = Lifecycle {
-            h: &h,
-            authority: &authority,
-            admitted,
-            species: initial.species,
-            revision: initial.revision,
-            next_occurrence: 150,
-        };
-        assert_eq!(
-            lifecycle.reward_counts().await?,
-            (0, 0),
-            "fixture species must be uncompleted"
-        );
-        let completion = lifecycle
-            .clear_four_waves(initial_snapshot.started_at_micros)
-            .await?;
-        let before = lifecycle.database_snapshot().await?;
-        let before_events = lifecycle.event_count().await?;
-        assert_eq!(
-            before_events, 39,
-            "all four waves must be written before completion"
-        );
-        let live = lifecycle.stored().await?;
-        assert_eq!(live.encounter.snapshot().phase, EncounterPhase::Fighting);
-        assert_eq!(live.encounter.snapshot().wave, 4);
-        assert_eq!(live.encounter.snapshot().monsters_alive, 0);
+            admitted.destination.scope_ownership_generation,
+        )
+        .await
+        .map_err(debug)?
+        .ok_or("shared fixture did not commit its Soulpit entry")?;
+    assert_eq!(
+        initial.revision, 0,
+        "fixture must start at the committed entry"
+    );
+    let initial_snapshot = initial.encounter.snapshot();
+    assert_eq!(initial_snapshot.phase, EncounterPhase::Preparing);
+    assert_eq!(initial_snapshot.wave, 1);
+    assert_eq!(initial_snapshot.surviving_slots, vec![0]);
+    let mut lifecycle = Lifecycle {
+        h,
+        authority,
+        admitted,
+        species: initial.species,
+        revision: initial.revision,
+        next_occurrence: 150,
+    };
+    assert_eq!(
+        lifecycle.reward_counts().await?,
+        (0, 0),
+        "fixture species must be uncompleted"
+    );
+    let completion = lifecycle
+        .clear_four_waves(initial_snapshot.started_at_micros)
+        .await?;
+    let before = lifecycle.database_snapshot().await?;
+    let before_events = lifecycle.event_count().await?;
+    assert_eq!(
+        before_events, 39,
+        "all four waves must be written before completion"
+    );
+    let live = lifecycle.stored().await?;
+    assert_eq!(live.encounter.snapshot().phase, EncounterPhase::Fighting);
+    assert_eq!(live.encounter.snapshot().wave, 4);
+    assert_eq!(live.encounter.snapshot().monsters_alive, 0);
 
-        if inject_failure {
-            install_failure_after_animus(&h).await?;
-            let error = h
-                .root
-                .advance_soulpit(&authority, &h.node, completion)
-                .await
-                .expect_err("survivor receipt accepted the injected failure");
-            assert!(
-                format!("{error:?}").contains(INJECTED_FAILURE),
-                "failure did not occur after the new Animus insertion: {error:?}"
-            );
-            assert_eq!(
-                lifecycle.database_snapshot().await?,
-                before,
-                "completion failure retained projection, event, survivor receipt or Animus changes"
-            );
-            assert_eq!(lifecycle.reward_counts().await?, (0, 0));
-            assert_eq!(lifecycle.event_count().await?, before_events);
-            let retained = lifecycle.stored().await?;
-            assert_eq!(retained.revision, live.revision);
-            assert_eq!(retained.encounter, live.encounter);
-            sqlx::query(
-                "DROP TRIGGER soulpit_test_reject_survivor ON game_soulpit_survival_rewards",
-            )
+    if inject_failure {
+        install_failure_after_animus(h).await?;
+        let _error = h
+            .root
+            .advance_soulpit(authority, &h.node, completion)
+            .await
+            .expect_err("survivor receipt accepted the injected failure");
+        // Database error text is deliberately redacted by the production owner.
+        // Sequence advancement survives rollback and proves the rejecting trigger
+        // observed this transaction's freshly inserted Animus row exactly once.
+        let probe: (i64, bool) =
+            sqlx::query_as("SELECT last_value,is_called FROM soulpit_test_after_animus")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(
+            probe,
+            (1, true),
+            "failure did not follow the new Animus insert"
+        );
+        assert_eq!(
+            lifecycle.database_snapshot().await?,
+            before,
+            "completion failure retained projection, event, survivor receipt or Animus changes"
+        );
+        assert_eq!(lifecycle.reward_counts().await?, (0, 0));
+        assert_eq!(lifecycle.event_count().await?, before_events);
+        let retained = lifecycle.stored().await?;
+        assert_eq!(retained.revision, live.revision);
+        assert_eq!(retained.encounter, live.encounter);
+        sqlx::query("DROP TRIGGER soulpit_test_reject_survivor ON game_soulpit_survival_rewards")
             .execute(&h.pool)
             .await?;
-            sqlx::query("DROP FUNCTION soulpit_test_reject_survivor()")
-                .execute(&h.pool)
-                .await?;
-        } else {
-            let written = h
-                .root
-                .advance_soulpit(&authority, &h.node, completion.clone())
-                .await
-                .map_err(debug)?;
-            assert!(!written.replayed);
-            assert_eq!(written.revision, live.revision + 1);
-            assert_eq!(
-                written.effect,
-                EncounterEffect::Completed {
-                    surviving_slots: vec![0]
-                }
-            );
-            assert_eq!(
-                written.encounter.snapshot().phase,
-                EncounterPhase::Completed
-            );
-            lifecycle.assert_committed_together(&completion).await?;
-            assert_eq!(lifecycle.reward_counts().await?, (1, 1));
-            assert_eq!(lifecycle.event_count().await?, before_events + 1);
-            let committed = lifecycle.database_snapshot().await?;
-            let replay = h
-                .root
-                .advance_soulpit(&authority, &h.node, completion)
-                .await
-                .map_err(debug)?;
-            assert!(replay.replayed);
-            assert_eq!(replay.revision, written.revision);
-            assert_eq!(replay.effect, written.effect);
-            assert_eq!(replay.encounter, written.encounter);
-            assert_eq!(
-                lifecycle.database_snapshot().await?,
-                committed,
-                "historical completion replay changed an event, reward or mastery"
-            );
-        }
-        eprintln!("{marker} POSTGRES_CASE_COMPLETED");
-        drop(lifecycle);
-        drop(authority);
-        drop(seal);
-        h.cleanup().await
-    })
+        sqlx::query("DROP FUNCTION soulpit_test_reject_survivor()")
+            .execute(&h.pool)
+            .await?;
+        sqlx::query("DROP SEQUENCE soulpit_test_after_animus")
+            .execute(&h.pool)
+            .await?;
+    } else {
+        let written = h
+            .root
+            .advance_soulpit(authority, &h.node, completion.clone())
+            .await
+            .map_err(debug)?;
+        assert!(!written.replayed);
+        assert_eq!(written.revision, live.revision + 1);
+        assert_eq!(
+            written.effect,
+            EncounterEffect::Completed {
+                surviving_slots: vec![0]
+            }
+        );
+        assert_eq!(
+            written.encounter.snapshot().phase,
+            EncounterPhase::Completed
+        );
+        lifecycle.assert_committed_together(&completion).await?;
+        assert_eq!(lifecycle.reward_counts().await?, (1, 1));
+        assert_eq!(lifecycle.event_count().await?, before_events + 1);
+        let committed = lifecycle.database_snapshot().await?;
+        let replay = h
+            .root
+            .advance_soulpit(authority, &h.node, completion)
+            .await
+            .map_err(debug)?;
+        assert!(replay.replayed);
+        assert_eq!(replay.revision, written.revision);
+        assert_eq!(replay.effect, written.effect);
+        assert_eq!(replay.encounter, written.encounter);
+        assert_eq!(
+            lifecycle.database_snapshot().await?,
+            committed,
+            "historical completion replay changed an event, reward or mastery"
+        );
+    }
+    eprintln!("{marker} POSTGRES_CASE_COMPLETED");
+    eprintln!("{marker} duration={:?}", began.elapsed());
+    Ok(())
 }
 
 struct Lifecycle<'a, 'root, 'recovery> {
@@ -366,6 +352,12 @@ impl Lifecycle<'_, '_, '_> {
 async fn install_failure_after_animus(h: &Harness) -> TestResult {
     // A new rejecting test trigger adds a failure; every production guard remains enabled.
     // xmin's low 32 bits identify the insert's XID even if the database has crossed an epoch.
+    sqlx::query("CREATE SEQUENCE soulpit_test_after_animus")
+        .execute(&h.pool)
+        .await?;
+    sqlx::query("GRANT USAGE ON SEQUENCE soulpit_test_after_animus TO PUBLIC")
+        .execute(&h.pool)
+        .await?;
     sqlx::query(
         "CREATE FUNCTION soulpit_test_reject_survivor() RETURNS trigger LANGUAGE plpgsql AS $$ \
         BEGIN \
@@ -374,6 +366,7 @@ async fn install_failure_after_animus(h: &Harness) -> TestResult {
                 AND m.xmin::text=mod(pg_current_xact_id()::text::numeric,4294967296)::text) THEN \
             RAISE EXCEPTION 'soulpit atomicity probe did not observe the new Animus insert'; \
           END IF; \
+          PERFORM nextval('soulpit_test_after_animus'); \
           RAISE EXCEPTION 'soulpit atomicity injected failure after Animus insert'; \
         END $$",
     )
@@ -382,5 +375,172 @@ async fn install_failure_after_animus(h: &Harness) -> TestResult {
     sqlx::query("CREATE TRIGGER soulpit_test_reject_survivor BEFORE INSERT ON game_soulpit_survival_rewards \
         FOR EACH ROW EXECUTE FUNCTION soulpit_test_reject_survivor()")
         .execute(&h.pool).await?;
+    Ok(())
+}
+
+/// Real admitted Instance, native weapon definition and valid candidate shape;
+/// refusals must come from the specific scope/current-revision authority fences.
+pub(in super::super) async fn prove_instance_proficiency_fences(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    destination: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use crate::durability::character_proficiency::{
+        DurableProficiencyState, ProficiencyCause, ProficiencyChangeRequest,
+        ProficiencyDefinitions, ProficiencyLineCandidate, ProficiencyOccurrence,
+    };
+    use crate::durability::character_progression::CharacterProgressionError;
+    let definitions = owner
+        .proficiency_catalogue
+        .clone()
+        .ok_or("native proficiency catalogue")?;
+    let resolved = definitions
+        .resolve_weapon("oteryn:item.tibia.i3264")
+        .ok_or("native admitted Soulpit weapon proficiency")?;
+    let before = DurableProficiencyState::new(
+        resolved.canonical_item_key,
+        resolved.definition_key,
+        resolved.definition_revision,
+        0,
+        vec![None; usize::from(resolved.shape.track_shape().perk_levels())],
+    )
+    .map_err(|error| format!("native training candidate preparation: {error:?}"))?;
+    before
+        .validate_shape(resolved.shape)
+        .map_err(|error| format!("native training candidate preparation: {error:?}"))?;
+    let after = DurableProficiencyState::new(
+        before.item_key(),
+        before.definition_key(),
+        before.definition_revision(),
+        1,
+        before.selections().to_vec(),
+    )
+    .map_err(|error| format!("native training candidate preparation: {error:?}"))?;
+    after
+        .validate_shape(resolved.shape)
+        .map_err(|error| format!("native training candidate preparation: {error:?}"))?;
+    let current = owner
+        .current_quest_fence(destination.game_session_id)
+        .await
+        .map_err(|_| "Instance proficiency current fence")?
+        .ok_or("current Instance")?;
+    assert!(matches!(
+        current.runtime_scope,
+        RuntimeScopeRefV1::Instance { .. }
+    ));
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_proficiency_receipts")
+        .fetch_one(&h.pool)
+        .await?;
+    // Candidate-shape proof only: the Instance scope guard refuses this request
+    // before any SQL write; it does not claim this is a committed Channel track.
+    let selection_progress = resolved.shape.track_shape().class().thresholds()[0];
+    assert_eq!(
+        resolved
+            .shape
+            .track_shape()
+            .unlocked_perk_levels(selection_progress),
+        1
+    );
+    let selection_before = DurableProficiencyState::new(
+        before.item_key(),
+        before.definition_key(),
+        before.definition_revision(),
+        u64::from(selection_progress),
+        before.selections().to_vec(),
+    )
+    .map_err(|error| format!("selection before constructor: {error:?}"))?;
+    selection_before
+        .validate_shape(resolved.shape)
+        .map_err(|error| format!("selection before native shape: {error:?}"))?;
+    let mut selected = selection_before.selections().to_vec();
+    selected[0] = Some(0);
+    let selection_after = DurableProficiencyState::new(
+        before.item_key(),
+        before.definition_key(),
+        before.definition_revision(),
+        u64::from(selection_progress),
+        selected,
+    )
+    .map_err(|error| format!("selection after constructor: {error:?}"))?;
+    selection_after
+        .validate_shape(resolved.shape)
+        .map_err(|error| format!("selection after native shape: {error:?}"))?;
+    let non_training = ProficiencyChangeRequest::new(
+        ProficiencyOccurrence::from_bytes(id(220))
+            .map_err(|error| format!("selection occurrence: {error:?}"))?,
+        ProficiencyCause::PerkSelection,
+        vec![
+            ProficiencyLineCandidate::new(
+                ProficiencyCause::PerkSelection,
+                selection_before,
+                selection_after,
+            )
+            .map_err(|error| format!("selection candidate: {error:?}"))?,
+        ],
+        Some(current.expected_character_revision),
+        definitions.digest(),
+    )
+    .map_err(|error| format!("selection request constructor: {error:?}"))?;
+    assert!(
+        matches!(
+            owner
+                .root
+                .commit_character_proficiency(
+                    owner.character,
+                    owner.holder,
+                    current,
+                    non_training,
+                    definitions.clone()
+                )
+                .await,
+            Err(CharacterProgressionError::InvalidInput)
+        ),
+        "non-training writers retain their existing Channel scope restriction"
+    );
+    let training = ProficiencyChangeRequest::new(
+        ProficiencyOccurrence::from_bytes(id(221))
+            .map_err(|error| format!("native training occurrence or line: {error:?}"))?,
+        ProficiencyCause::Training,
+        vec![
+            ProficiencyLineCandidate::new(ProficiencyCause::Training, before, after)
+                .map_err(|error| format!("native training occurrence or line: {error:?}"))?,
+        ],
+        None,
+        definitions.digest(),
+    )
+    .map_err(|error| format!("native training candidate preparation: {error:?}"))?;
+    let mut stale = current;
+    stale.expected_character_revision = crate::domain::CharacterRevision::new(
+        current
+            .expected_character_revision
+            .get()
+            .checked_add(1)
+            .ok_or("revision overflow")?,
+    )
+    .map_err(|error| format!("native training candidate preparation: {error:?}"))?;
+    assert!(
+        matches!(
+            owner
+                .root
+                .commit_character_proficiency(
+                    owner.character,
+                    owner.holder,
+                    stale,
+                    training,
+                    definitions
+                )
+                .await,
+            Err(CharacterProgressionError::CharacterRevisionMismatch)
+        ),
+        "Instance training still proves its exact current Character revision"
+    );
+    let retained: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_character_proficiency_receipts")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(
+        retained, count,
+        "rejected Instance intents write no proficiency receipt"
+    );
     Ok(())
 }

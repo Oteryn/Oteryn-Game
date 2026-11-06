@@ -587,6 +587,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(SpellCastOutcome::rejected());
         }
+        // Crystal 201189f soulpit_fight.lua:1 blocks Familiars in this zone.
+        // Entry already removes companions; the actual private template also
+        // refuses a fresh familiar cast before eligibility, payment or allocation.
+        if self
+            .activity_runtimes
+            .get(actor.runtime_scope(), actor.scope_generation().get())
+            .and_then(|owner| owner.template)
+            .is_some_and(|template| {
+                template.key == crate::content::bosses::soulpit_template::TEMPLATE_KEY
+            })
+        {
+            return Some(SpellCastOutcome::rejected());
+        }
         {
             let states = self.states.spell_states.lock().await;
             if states.pending_familiars.iter().any(|p| {
