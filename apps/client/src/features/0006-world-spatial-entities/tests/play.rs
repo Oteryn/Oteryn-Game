@@ -84,12 +84,23 @@ fn live_names_reach_scene_and_disappear_with_visibility() -> Result<(), BatchErr
             health_percent: 100,
         },
     };
-    view.set_presentations(vec![oteryn_session::VisibleAppearance {
+    let mut appearance = oteryn_session::VisibleAppearance {
+        forge_stacks: None,
         light: None,
         entity,
         look: None,
-    }])?;
+    };
+    view.set_presentations(vec![appearance.clone()])?;
     assert_eq!(view.scene().name_count(), 1);
+    let unmarked = view.scene().sprites().len();
+    for stacks in [1, 5, 15] {
+        appearance.forge_stacks = Some(stacks);
+        view.set_presentations(vec![appearance.clone()])?;
+        assert!(view.scene().sprites().len() > unmarked);
+    }
+    appearance.forge_stacks = None;
+    view.set_presentations(vec![appearance])?;
+    assert_eq!(view.scene().sprites().len(), unmarked);
     view.set_presentations(Vec::new())?;
     assert_eq!(view.scene().name_count(), 0);
     Ok(())
@@ -100,6 +111,7 @@ fn own_identity_draws_once_between_step_and_appearance_publish() -> Result<(), B
     let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
     view.set_own_identity([1; 16]);
     let own = oteryn_session::VisibleAppearance {
+        forge_stacks: None,
         light: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: None,
@@ -172,6 +184,7 @@ fn live_presentations_keep_target_clock_and_light_through_rebuilds() -> Result<(
     let selected = view.scene().target();
     assert!(selected.is_some());
     let appearance = oteryn_session::VisibleAppearance {
+        forge_stacks: None,
         light: None,
         entity,
         look: None,

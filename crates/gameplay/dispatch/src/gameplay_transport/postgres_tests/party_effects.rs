@@ -211,6 +211,14 @@ pub(super) async fn check_buffs(
         "enlighten_party" => 4,
         _ => return Err("party spell fixture".into()),
     };
+    let full = super::cl6_status::query_actor(owner, actor, session).await?;
+    let member = full.members.iter().find(|member| member.character == *fence.character_id.as_bytes()).ok_or("CL6 party member")?;
+    assert!(member.conditions.is_some(), "same-Channel member must have a qualified condition observation");
+    let projected = member.party_spell_remaining_ms[index];
+    if affected { assert!(projected > 0 && projected <= 120000, "CL6 {spell}: {projected}"); }
+    else { assert_eq!(projected, 0, "CL6 out-of-range member"); }
+    assert!(full.members.len() >= 3, "native projection includes other members, not only self");
+    eprintln!("CL6_PARTY POSTGRES_ASSERTION_EXECUTED spell={spell} affected={affected}");
     let remaining = snapshot.party_spell_remaining_ms[index];
     if affected {
         assert!(remaining > 0 && remaining <= 120000, "{spell}: {remaining}");

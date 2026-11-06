@@ -341,3 +341,23 @@ fn nx7_complete_skills_native_play_queue_decode_and_display() -> Result<(), Erro
         .join()
         .map_err(|_| "NX-7 play thread panicked")?
 }
+
+flow!(
+    cl6_mechanics_status_native_queue_refusal_replay_logout,
+    mechanics_status,
+    mechanics_status_panel,
+    mechanics_status_request,
+    mechanics_status_input,
+    mechanics_status_initialize,
+    384,
+    669,
+    24,
+    oteryn_session::mechanics_status::MechanicsStatus {
+        observed_unix_ms: 100,
+        dust: 73,
+        dust_limit: 100,
+        deaths: vec![oteryn_session::mechanics_status::DeathConsumption { at_unix_ms: 50, consumed: vec!["oteryn:blessing.twist_of_fate".into()] }],
+        timers: vec![oteryn_session::mechanics_status::EffectTimer { key: "wealth_duplex".into(), remaining_ms: 1234, online_only: true }],
+        members: vec![oteryn_session::mechanics_status::MemberEffects { bonuses: [0; 5], party_spell_remaining_ms: [0; 5], character: [1;16], name: "Friend".into(), conditions: Some(oteryn_session::condition_status::ConditionStatus { conditions: vec![oteryn_session::condition_status::ActiveCondition { icon: 13, sub_id: 0, remaining_ms: 4001 }] }) }],
+    }
+);

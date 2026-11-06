@@ -84,6 +84,7 @@ pub mod loop_training;
 pub mod loyalty_skills;
 pub mod mail;
 pub mod market;
+pub mod mechanics_status;
 pub mod npc_service;
 pub mod npc_shop;
 pub mod party;

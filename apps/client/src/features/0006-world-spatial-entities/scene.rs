@@ -94,11 +94,27 @@ impl Scene {
             } else {
                 self.actor_draws.push((tile, draws));
             }
-            if self.view.contains(tile)
-                && let Some(name) = entity.display_name
-                && let Ok(name) = name.as_str()
-            {
-                self.names.push((tile, self.cache.name(name)));
+            if self.view.contains(tile) {
+                let name = entity
+                    .display_name
+                    .as_ref()
+                    .and_then(|name| name.as_str().ok());
+                let mark = if entity.kind == oteryn_session::EntityKind::Creature {
+                    match entry.forge_stacks {
+                        Some(stacks @ 1..=5) => Some(format!("Influenced {stacks}")),
+                        Some(15) => Some(String::from("Fiendish")),
+                        _ => None,
+                    }
+                } else {
+                    None
+                };
+                let label = match (name, mark) {
+                    (Some(name), Some(mark)) => format!("{name} - {mark}"),
+                    (Some(name), None) => name.to_owned(),
+                    (None, Some(mark)) => mark,
+                    (None, None) => continue,
+                };
+                self.names.push((tile, self.cache.name(&label)));
             }
         }
         if !entries.is_empty() {

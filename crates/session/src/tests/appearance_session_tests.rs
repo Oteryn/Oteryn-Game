@@ -12,11 +12,13 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
 -> Result<(), BoxError> {
     block_on(async {
         for result_first in [true, false] {
-            let (snapshot, entity, spatial) = appearance_fixture::snapshot()?;
+            let (mut snapshot, entity, spatial) = appearance_fixture::snapshot()?;
+            snapshot.bindings[0].forge_stacks = Some(5);
             let domain = (21, 1, 1, snapshot.encode().map_err(|e| format!("{e:?}"))?);
             let original = snapshot.bindings[0].look.clone();
             let mut binding = snapshot.bindings[0].clone();
             binding.root_revision = 2;
+            binding.forge_stacks = Some(15);
             binding.look = appearance::Look::Outfit {
                 look_type: 129,
                 colours: [2, 1, 0, 2],
@@ -70,6 +72,7 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
                 Ok::<_, BoxError>(())
             });
             let mut session = Session::admit(client, entity_admission()?).await?;
+            assert_eq!(session.visible_appearances()[0].forge_stacks, Some(5));
             assert_eq!(
                 session.visible_appearances()[0].look.as_ref(),
                 Some(&original)
@@ -105,6 +108,7 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
                 );
             }
             session.service_liveness(Duration::from_millis(50)).await?;
+            assert_eq!(session.visible_appearances()[0].forge_stacks, Some(15));
             assert_eq!(
                 *session
                     .appearance

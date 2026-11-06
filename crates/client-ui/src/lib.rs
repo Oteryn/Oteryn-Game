@@ -264,6 +264,8 @@ pub mod chat_public_channels;
 pub mod battle_instinct_status;
 #[path = "features/0276-condition-status/mod.rs"]
 pub mod condition_status;
+#[path = "features/0384-mechanics-status/mod.rs"]
+pub mod mechanics_status;
 #[path = "features/0280-party-effects/mod.rs"]
 pub mod party_effects;
 #[path = "features/0277-rest-status/mod.rs"]

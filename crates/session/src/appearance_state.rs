@@ -98,13 +98,22 @@ pub(crate) fn validate_result(
     Ok(())
 }
 impl AppearanceState {
+    fn binding(
+        &self,
+        entity: world_spatial_entities::EntityRef,
+        reference: u32,
+    ) -> Option<&wire::Binding> {
+        self.bindings
+            .get(&entity)
+            .filter(|binding| binding.appearance_ref == reference)
+    }
+
     pub(crate) fn resolve(
         &self,
         entity: world_spatial_entities::EntityRef,
         reference: u32,
     ) -> Option<&wire::Look> {
-        let binding = self.bindings.get(&entity)?;
-        (binding.appearance_ref == reference).then_some(&binding.look)
+        self.binding(entity, reference).map(|binding| &binding.look)
     }
 }
 
@@ -148,6 +157,8 @@ pub struct VisibleAppearance {
     pub look: Option<wire::Look>,
     /// Server-reported (light level, indexed colour), absent when unlit.
     pub light: Option<(u8, u8)>,
+    /// Exact visible appearance binding: 1–5 influenced stacks, 15 fiendish.
+    pub forge_stacks: Option<u8>,
 }
 
 impl<S: SessionStream> Session<S> {
@@ -159,6 +170,14 @@ impl<S: SessionStream> Session<S> {
             .flat_map(WorldEntities::iter)
             .map(|entity| VisibleAppearance {
                 entity: *entity,
+                forge_stacks: match entity.detail {
+                    world_spatial_entities::EntityDetail::Actor { appearance_ref, .. } => self
+                        .appearance
+                        .as_ref()
+                        .and_then(|state| state.binding(entity.entity, appearance_ref))
+                        .and_then(|binding| binding.forge_stacks),
+                    _ => None,
+                },
                 light: self
                     .entities
                     .as_ref()
