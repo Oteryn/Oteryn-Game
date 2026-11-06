@@ -1,3 +1,35 @@
+# Active Cloud continuation
+
+Branch `claude/happy-davinci-ijz3wy-questpc-pc2`; earlier snapshot6c09e0365 and
+concurrent Elvenbane qualification4e12ac30e are merged and pushed. Owner's restart
+authorizes this replacement writer; no permission question blocks implementation.
+
+StepOut mechanic slice: reused L5 ordered departure/entry and bounded schema after
+checking qengine2. Added superseded-event retirement and destination-entry recovery,
+with runtime/state guards and revision slot released before re-entry. Occupied-wall
+refusal remains intact. No new SQL, wire command, reward identity or charge logic.
+Focused PG final:2/2 pass,154.68s; departure45.883254093s, Behemoth108.76648093s,
+both POSTGRES_CASE_COMPLETED. REDs: unknownStepOut3.61s, pinned-session46.82s,
+lost destination entry47.09s. Exact logs/hashes:cloud-departure-validation.json.
+Check(alltargets/allfeatures)PASS4m11s; Python15/15; source generation21 packets,
+zero drift. Strict clippy flagged a stdMutex guard's lexical scope around await;
+replaced explicit drop with a lexical block, no allowance. Rerun and schema unit
+are currently active/queued. PG proof precedes only that lexical scope repair.
+Complete those checks immediately and publish their evidence as the next small
+commit; do not rerun broad suites. No new whole-quest qualification in this slice.
+
+All18 historical shared-engine BLOCKED rows reopened as active UNFINISHED work;
+only owner-excluded Dawnport remains BLOCKED. Counts are machine-derived in JSON.
+Next concrete batch: Devil Helmet sewer435 create/remove on UID25030; Mintwallin
+atomic lever removal+two1270 creates+nine1271 removals; Demon Helmet two-player
+plates+top-creature wall ejection. Reuse qengine2 atomic world projection staging,
+then compose exact source callbacks and reward paths. CONTRACT-NOTES.md records
+source URLs and conservative decisions. Do not defer shared mechanisms.
+
+OWNER PRESSURE: push each finished tested mechanic/quest slice immediately, with
+no more than30 minutes between pushes. Spend at most10 minutes on any individual
+investigation; choose/document the conservative rule and continue. No full suite.
+
 # Current Cloud continuation — 2026-11-06
 
 AUTHORING on `claude/happy-davinci-ijz3wy-questpc-pc2`, resumed from `9bf74b42d`.

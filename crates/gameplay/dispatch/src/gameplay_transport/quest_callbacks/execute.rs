@@ -54,9 +54,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
         }
-        let close = callback
-            .lever
-            .is_some_and(|pair| after.appearance_id == pair[1]);
+        let close = match callback.trigger {
+            Trigger::Use => callback
+                .lever
+                .is_some_and(|pair| after.appearance_id == pair[1]),
+            Trigger::StepIn => false,
+            Trigger::StepOut => true,
+        };
         if close && !callback.reversible {
             return UseDisposition::NothingToUse;
         }

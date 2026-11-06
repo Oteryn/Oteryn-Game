@@ -1,0 +1,69 @@
+{
+  "scope": "Reusable stateless StepOut engine slice on committed paced player movement; no new whole-quest qualification.",
+  "reuse": {
+    "qengine2_checked": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+    "stepout_source": "2d9db9c5abdb62abc8f9883984b5ad5bc22244c8",
+    "paths": [
+      "crates/gameplay/quests/src/quest/world_callbacks.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs"
+    ]
+  },
+  "pg": {
+    "result": "2 passed; 0 failed",
+    "duration_seconds": 154.68,
+    "cases": {
+      "committed_departure_restores_static_passages_without_quest_writes": 45.883254093,
+      "behemoth_lever_and_all_reward_claims": 108.76648093
+    }
+  },
+  "red": {
+    "unsupported_step_out_seconds": 3.61,
+    "superseded_departure_pins_session_seconds": 46.82,
+    "destination_entry_not_resumed_seconds": 47.09
+  },
+  "checks": {
+    "cargo_check_all_targets_all_features": "passed in 4m11s before lexical mutex scope repair",
+    "python_tests": "15 passed",
+    "source_generation": "21 packets; zero stale outputs",
+    "strict_clippy": "rerun active after replacing explicit guard drop with lexical scope; no lint allowance added",
+    "rust_schema_unit": "queued after strict clippy"
+  },
+  "logs": {
+    "red": {
+      "log": "qlane-meta/questpc/cloud-departure-red.log",
+      "sha256": "d7cfb33c21006e59f55494b5e2cff593434f1b495705d01b0df681239e6d00da"
+    },
+    "green": {
+      "log": "qlane-meta/questpc/cloud-departure-green.log",
+      "sha256": "470f88a60a76c2b16f363fa8183b868d4e71b1fdea8cf9f29559d894c4368c41"
+    },
+    "recovery-red": {
+      "log": "qlane-meta/questpc/cloud-departure-recovery-red.log",
+      "sha256": "5855d7c4eea0bb40df0d45059d4c0455704b99378b9947e97b011b27cbb4114b"
+    },
+    "recovery-green": {
+      "log": "qlane-meta/questpc/cloud-departure-recovery-green.log",
+      "sha256": "c1f23928d3539663711a8c0c99842281d148c7344a501353c083575c1042cd9a"
+    },
+    "entry-confirmed-red": {
+      "log": "qlane-meta/questpc/cloud-departure-entry-confirmed-red.log",
+      "sha256": "13b4b544a0b48d4985aea0b4e13de57b148e4055f3bb73bbf1f1b427312c4e64"
+    },
+    "final-pg": {
+      "log": "qlane-meta/questpc/cloud-departure-final-pg.log",
+      "sha256": "2f4c97d47a9bc32eb570172c6d5f6b4dee2c17f7c35c3956ba841dd77926198e"
+    },
+    "check": {
+      "log": "qlane-meta/questpc/cloud-departure-check.log",
+      "sha256": "7b4f44cd7672418e8feb460ffd9415b9bf3e1b7a083273867a874683d84b2f28"
+    },
+    "python-final": {
+      "log": "qlane-meta/questpc/cloud-departure-python-final.log",
+      "sha256": "0d6c2b0307b9968df7cc6b6d70b8fc4884d54508c5e906daef45465183b90965"
+    },
+    "generation-final": {
+      "log": "qlane-meta/questpc/cloud-departure-generation-final.log",
+      "sha256": "1c9bfd6344727313032b6a8ba6dc3f2ecf00b39eddf6946a02e77dc72dd0b56e"
+    }
+  }
+}

@@ -44,6 +44,23 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_departure_callbacks_restore_only_stateless_map_effects(self):
+        source = callback('thais_lighthouse', 'departure')
+        source.update(trigger='step_out', reversible=True, teleport=None, lever=[431, 430])
+        tool.validate_callback(source, 'thais_lighthouse')
+        for change in (
+            {'reversible': False},
+            {'storage': [{'track': 'oteryn:quest-track/test', 'minimum': -1, 'maximum': 1, 'set': 1}]},
+            {'offerings': [{'position': {'x': 100, 'y': 200, 'floor': -7},
+                            'item': 'oteryn:item.tibia.i3031', 'count': 1}]},
+            {'teleport': {'x': 101, 'y': 200, 'floor': -7}},
+            {'return_on_failure': True},
+        ):
+            invalid = copy.deepcopy(source)
+            invalid.update(change)
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                tool.validate_callback(invalid, 'thais_lighthouse')
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)

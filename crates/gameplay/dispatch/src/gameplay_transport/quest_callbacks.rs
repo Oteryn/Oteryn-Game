@@ -255,6 +255,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         callbacks()
     }
 
+    #[cfg(test)]
+    pub(super) fn queue_departure_for_test(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: MovementPositionSnapshot,
+        entered: MovementPositionSnapshot,
+        callback: &Callback,
+        placement: (u64, u64),
+    ) -> bool {
+        if callback.trigger != Trigger::StepOut || !callback.storage.is_empty() {
+            return false;
+        }
+        let Some(command) = step_command(actor, session, entered.revision(), self.reset_epoch)
+        else {
+            return false;
+        };
+        let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+            return false;
+        };
+        if records.contains_key(&session) {
+            return false;
+        }
+        records.insert(
+            session,
+            Pending {
+                actor,
+                session,
+                expected: entered,
+                callback: callback.key.clone(),
+                key: placement.0,
+                revision: placement.1,
+                cause: QuestCause::Step(command),
+                origin: Some(origin),
+                context: None,
+                ingress_settled: false,
+            },
+        );
+        true
+    }
+
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
@@ -297,6 +338,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
                 return false;
             }
+            if callback.trigger == Trigger::StepOut
+                && matches!(pending.cause, QuestCause::Step(_))
+                && pending.context.is_none()
+            {
+                let revision = map.facts.object_revision(pending.key);
+                if revision == u64::MAX {
+                    return false;
+                }
+                if revision > pending.revision {
+                    {
+                        let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                            return false;
+                        };
+                        if !records.get(&session).is_some_and(|current| {
+                            current.actor == pending.actor
+                                && current.expected == pending.expected
+                                && current.callback == pending.callback
+                                && current.cause == pending.cause
+                                && current.key == pending.key
+                                && current.revision == pending.revision
+                                && current.context.is_none()
+                        }) {
+                            return false;
+                        }
+                        // A later pressure event owns this projection; an older
+                        // stateless departure cannot replace it.
+                        records.remove(&session);
+                    }
+                    drop(states);
+                    drop(runtime);
+                    drop(slot);
+                    if !self.resume_departure_entry(&permit, &pending).await {
+                        return false;
+                    }
+                    continue;
+                }
+            }
             let result = self
                 .execute_quest_callback(
                     &permit,
@@ -333,8 +411,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                 }
             }
+            if callback.trigger == Trigger::StepOut {
+                drop(states);
+                drop(runtime);
+                drop(slot);
+                if !self.resume_departure_entry(&permit, &pending).await {
+                    return false;
+                }
+            }
         }
         true
+    }
+
+    async fn resume_departure_entry(&self, permit: &SpellLanePermit, pending: &Pending) -> bool {
+        let Some(origin) = pending.origin else {
+            return false;
+        };
+        // Re-enter without the previous revision slot or runtime/state guards:
+        // the destination may itself need a fenced Quest transition.
+        self.movement_quest_callback(
+            permit,
+            pending.actor,
+            pending.session,
+            origin,
+            pending.expected,
+            Trigger::StepIn,
+        )
+        .await;
+        !self.has_pending_quest_callback(pending.session)
     }
 
     pub(super) async fn use_quest_callback(
@@ -505,10 +609,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         origin: MovementPositionSnapshot,
         entered: MovementPositionSnapshot,
     ) -> MovementPositionSnapshot {
+        if origin.position() == entered.position() {
+            return entered;
+        }
+        let entered = self
+            .movement_quest_callback(permit, actor, session, origin, entered, Trigger::StepOut)
+            .await;
+        if self.has_pending_quest_callback(session) {
+            return entered;
+        }
+        self.movement_quest_callback(permit, actor, session, origin, entered, Trigger::StepIn)
+            .await
+    }
+
+    // Reuse L5's ordered departure/entry path. Both edges observe the same
+    // committed movement, with departure selecting the original tile.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "both movement edges retain the exact actor, session and committed snapshots"
+    )]
+    async fn movement_quest_callback(
+        &self,
+        permit: &SpellLanePermit,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: MovementPositionSnapshot,
+        entered: MovementPositionSnapshot,
+        trigger: Trigger,
+    ) -> MovementPositionSnapshot {
         let Some(map) = self.bundle_map() else {
             return entered;
         };
-        let Some(at) = native(entered.position()) else {
+        let observed = if trigger == Trigger::StepOut {
+            origin
+        } else {
+            entered
+        };
+        let Some(at) = native(observed.position()) else {
             return entered;
         };
         let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
@@ -523,7 +660,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(
                     self.callback_content()
                         .iter()
-                        .filter(move |c| c.trigger == Trigger::StepIn && matches(map, c, key))
+                        .filter(move |c| c.trigger == trigger && matches(map, c, key))
                         .map(move |c| (c, key)),
                 )
             })

@@ -32,6 +32,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let departure = name == "departure-map-regression";
     let monk = name.starts_with("monk-guidance");
     let classic_npc = matches!(
         name,
@@ -50,7 +51,7 @@ fn scenario_case(
     );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if classic_npc {
+    let mut callback = callback(if classic_npc || departure {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -76,6 +77,9 @@ fn scenario_case(
     }
     if stateless_destination.is_some() {
         match callback.trigger {
+            oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepOut => {
+                return Err("stateless destination scenario requires entry or USE".into());
+            }
             oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn => {
                 assert_eq!(callback.selector.position, Some(trigger));
             }
@@ -98,10 +102,28 @@ fn scenario_case(
             }
         }
     }
-    let world = world(&callback, trigger)?;
+    if departure {
+        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+        callback.selector.appearance = None;
+        callback.reversible = true;
+    }
+    let world = if departure {
+        super::world_ordinal(&callback, trigger, 2772, 1)?
+    } else {
+        world(&callback, trigger)?
+    };
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
+        let departure_callback = if departure {
+            println!("POSTGRES_CASE_STARTED quest_departure database_created=true");
+            let mut value = serde_json::to_value(&callback)?;
+            value["key"] = "oteryn:quest-callback/departure-map-regression".into();
+            value["trigger"] = "step_out".into();
+            Some(serde_json::from_value::<Callback>(value)?)
+        } else {
+            None
+        };
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -174,7 +196,31 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
-        if lever_fixture || target_swap {
+        if departure {
+            let mut entry = callback.clone();
+            entry.key = "oteryn:quest-callback/departure-entry-feedback".into();
+            entry.selector.position = Some(Position {
+                x: trigger.x - 1,
+                ..trigger
+            });
+            entry.selector.unique = None;
+            entry.lever = None;
+            entry.reversible = false;
+            entry.passages.clear();
+            entry.success_message = Some("The destination entry was processed.".into());
+            assert!(
+                owner
+                    .states
+                    .quest_callbacks
+                    .fixture
+                    .set(vec![
+                        callback.clone(),
+                        departure_callback.ok_or("departure callback")?,
+                        entry,
+                    ])
+                    .is_ok()
+            );
+        } else if lever_fixture || target_swap {
             assert!(
                 owner
                     .states
@@ -230,7 +276,16 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if let Some(expected_destination) = stateless_destination {
+        if departure {
+            super::super::quest_departure::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                &callback,
+            )
+            .await?;
+        } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,
                 &mut admitted,

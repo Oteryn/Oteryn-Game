@@ -227,7 +227,14 @@ def validate_callback(callback, directory):
     require(valid_key(key) and key.startswith('oteryn:quest-callback/'), context + ': foreign or invalid key')
     require(QUEST_OWNERS[directory] is not None and callback['quest'] == QUEST_OWNERS[directory],
             key + ': foreign quest owner or owner not qualified')
-    require(callback['trigger'] in ('use', 'step_in'), key + ': invalid trigger')
+    require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
+    if callback['trigger'] == 'step_out':
+        require(callback['reversible'] and callback.get('teleport') is None
+                and not callback['storage'] and not callback['offerings']
+                and callback.get('item_on_target') is None and callback.get('minimum_level') is None
+                and callback.get('experience') is None and callback.get('monk_reward') is None
+                and callback.get('native_rule') is None and not callback['return_on_failure'],
+                key + ': departure must only restore map facts')
     selector = callback['selector']
     selector_fields = {'position', 'unique', 'action', 'appearance'}
     fields(selector, set(), selector_fields, key + ': selector')
@@ -242,7 +249,10 @@ def validate_callback(callback, directory):
     lever = callback.get('lever')
     if lever is not None:
         require(isinstance(lever, list) and len(lever) == 2 and lever[0] != lever[1]
-                and all(integer(value, 0, 65535) for value in lever) and callback['trigger'] == 'use',
+                and all(integer(value, 0, 65535) for value in lever)
+                and (callback['trigger'] == 'use' or callback['reversible']
+                     and not callback['storage'] and callback.get('teleport') is None
+                     and not callback['offerings'] and callback.get('item_on_target') is None),
                 key + ': invalid lever')
     if callback.get('teleport') is not None:
         position(callback['teleport'], key + ': teleport')

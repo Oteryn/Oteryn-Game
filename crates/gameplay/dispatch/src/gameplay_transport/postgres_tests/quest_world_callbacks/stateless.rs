@@ -80,6 +80,7 @@ pub(super) async fn exercise(
     let receipts_before = receipt_count(h, fence).await?;
 
     let (command, payload) = match callback.trigger {
+        Trigger::StepOut => return Err("destination scenario requires entry or USE".into()),
         Trigger::StepIn => (
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
             encode_step_intent(StepDirection::East),
@@ -121,6 +122,7 @@ pub(super) async fn exercise(
     };
     let reply = wire(owner, admitted, 1, command, payload).await?;
     match callback.trigger {
+        Trigger::StepOut => return Err("destination scenario requires entry or USE".into()),
         Trigger::StepIn => assert_eq!(
             decode_step_result(&reply).map_err(debug)?,
             StepDisposition::Moved

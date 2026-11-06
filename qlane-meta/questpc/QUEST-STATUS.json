@@ -4,11 +4,11 @@
   "lifecycle": "AUTHORING on claude/happy-davinci-ijz3wy-questpc-pc2; green batch commits and fast-forward pushes authorized; no frozen integration candidate.",
   "counts": {
     "QUALIFIED": 57,
-    "UNFINISHED": 102,
-    "BLOCKED": 19
+    "UNFINISHED": 120,
+    "BLOCKED": 1
   },
   "owner_excluded_with_blocked_status": 1,
-  "qualification_boundary": "QUALIFIED is explicitly scoped per row. Standalone source contracts prove every original reward claim and native source placement through production USE, replay and refusal. Additional authored programme routes are retained separately and are not certified by claim tests. Historical source readiness holds remain unchanged. BLOCKED requires an owner exclusion or a concrete engine piece outside this lane; missing tests/composition are UNFINISHED and must be implemented.",
+  "qualification_boundary": "QUALIFIED is explicitly scoped per row. Standalone source contracts prove every original reward claim and native source placement through production USE, replay and refusal. Additional authored programme routes are retained separately and are not certified by claim tests. Historical source readiness holds remain unchanged. BLOCKED is reserved for owner exclusions. Historical engine ownership restrictions are archived and superseded; all remaining source implementation belongs to this lane.",
   "binding_queue_boundary": "Historical binding queues are not exhaustive runtime registries. Their null fields identify outstanding composition/evidence, not proof that no bespoke adapter exists.",
   "inputs": {
     "tools/content-schema/quest-authoring/samples/completion-matrix/all373.json": "6de3467edfd66bafc99b591007b932a2b76a2ad2a637c021d65b14dc8e7c7717",
@@ -192,7 +192,7 @@
       "title": "A Pirate's Tail Quest",
       "canonical": "oteryn:quest.a_pirates_tail",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/6/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [],
       "queued_stage_binding": {
@@ -200,7 +200,15 @@
         "native_dispatch_binding": null,
         "runtime_enabled": false
       },
-      "blocker": {
+      "first_unqualified_stage": {
+        "key": "s2",
+        "kind": "kill",
+        "objective": "Repel a fixed Pirat coastal raid instead of waiting for random raids.",
+        "targets": [
+          "Pirat"
+        ]
+      },
+      "historical_blocker": {
         "missing_piece": "The shared movement engine resolves the existing native teleport34111 at33734,31273,z7 to33966,31378,z15 before source two-boss quest gating can inspect the entry tile. Source expects33922,31370,z7. A gate before native teleport or an owning map correction is required outside this lane's NPC/quest modules; QENGINE owns the shared portal/access path.",
         "evidence": [
           "content/quests/world-callbacks-held/batch3-b-a_pirates_tail_quest.json:1#/holds/0",
@@ -218,14 +226,7 @@
         ],
         "other_unfinished_composition": "Raid/world progress and held portal/encounter callbacks are not composed with the source item/NPC branches into a complete quest. Shared world engine work remains allocated to QENGINE."
       },
-      "first_unqualified_stage": {
-        "key": "s2",
-        "kind": "kill",
-        "objective": "Repel a fixed Pirat coastal raid instead of waiting for random raids.",
-        "targets": [
-          "Pirat"
-        ]
-      }
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Adorned UH Rune Quest",
@@ -610,7 +611,7 @@
       "title": "Arito's Task Quest",
       "canonical": "oteryn:quest.tibia_tales",
       "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [],
       "queued_stage_binding": {
@@ -618,7 +619,16 @@
         "native_dispatch_binding": null,
         "runtime_enabled": false
       },
-      "blocker": {
+      "first_unqualified_stage": {
+        "key": "s2",
+        "kind": "talk",
+        "objective": "Broker Arito's agreement with Muhad and report the peace.",
+        "targets": [
+          "Arito",
+          "Muhad"
+        ]
+      },
+      "historical_blocker": {
         "missing_piece": "The source entrance requires scimitar onAddItem/AID50366 to consume Item3307 and transform cracks6298 to5858, then water-pool2886 onAddItem to reveal the cave7181. Both map transformations revert independently after120seconds. The callback trigger model has only Use/StepIn and no deposited-item event or fenced timed map reset; QENGINE owns this shared reset/entrance machinery. NPC dialogue plus the100platinum reward alone cannot complete the path.",
         "evidence": [
           ".questpc/source-engine-gaps/nomad_entrance.lua:46",
@@ -634,15 +644,7 @@
           "Confirmed current closed Callback trigger/effect shape cannot express this entrance; did not replace depositing/pouring with clicking a dummy lever, and did not build across the shared engine ownership boundary."
         ]
       },
-      "first_unqualified_stage": {
-        "key": "s2",
-        "kind": "talk",
-        "objective": "Broker Arito's agreement with Muhad and report the peace.",
-        "targets": [
-          "Arito",
-          "Muhad"
-        ]
-      }
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Assassin Outfits Quest",
@@ -789,7 +791,7 @@
       "title": "Barbarian Arena Quest",
       "canonical": "oteryn:quest.barbarian_arena_quest",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/12/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [
         {
@@ -843,7 +845,15 @@
         "native_dispatch_binding": null,
         "runtime_enabled": false
       },
-      "blocker": {
+      "first_unqualified_stage": {
+        "key": "s2",
+        "kind": "kill",
+        "objective": "Defeat the ten Greenhorn arena combatants.",
+        "targets": [
+          "Greenhorn arena combatants"
+        ]
+      },
+      "historical_blocker": {
         "missing_piece": "Source AID25100/25200 requires an exclusive pit occupant lease, resetPit, timed kick/cancellation and dynamic encounter spawn. Each credited arena death removes a pillar, creates a new AID25200 portal and advances the next pit. This is the shared encounter/party access and reset owner assigned to QENGINE; the closed Use/StepIn Callback has no encounter lease/spawn/death-created portal operation. Reward-only receipts cannot prove the three sequential ten-fight tiers.",
         "evidence": [
           ".questpc/source-engine-gaps/svargrond_arena-movements_arena_enter.lua:22",
@@ -859,14 +869,7 @@
           "Reconciled existing native reward cohort; kept its component evidence and did not certify the missing encounter lifecycle or build across QENGINE ownership."
         ]
       },
-      "first_unqualified_stage": {
-        "key": "s2",
-        "kind": "kill",
-        "objective": "Defeat the ten Greenhorn arena combatants.",
-        "targets": [
-          "Greenhorn arena combatants"
-        ]
-      }
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Barbarian Axe Quest",
@@ -2455,7 +2458,7 @@
       "title": "Cults of Tibia Quest",
       "canonical": "oteryn:quest.cults_of_tibia_quest",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/26/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [
         {
@@ -2490,7 +2493,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "blocker": {
+      "historical_blocker": {
         "missing_piece": "Barkless exit AIDs5530/5531 require source StepOut with fromPosition-dependent sulphur/tar refusal and teleport; Trigger only supports Use/StepIn. Shared StepOut belongs to QENGINE.",
         "evidence": [
           ".questpc/source-engine-gaps/cults_of_tibia-movements_tar.lua:124",
@@ -2503,7 +2506,8 @@
           "Inspected production Trigger and callback schema; Use/StepIn cannot observe leaving a tile or item arrival.",
           "Kept source requirements intact; no StepIn approximation or synthetic completion was substituted. Shared engine ownership prevents implementing it in this lane."
         ]
-      }
+      },
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Dangerous Depths Quest",
@@ -2974,7 +2978,7 @@
       "title": "Demon Helmet Quest",
       "canonical": "oteryn:quest.demon_helmet_quest",
       "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/21/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [
         {
@@ -2998,7 +3002,15 @@
         "native_dispatch_binding": null,
         "runtime_enabled": false
       },
-      "blocker": {
+      "first_unqualified_stage": {
+        "key": "s1",
+        "kind": "explore",
+        "objective": "Descend through the Edron Hero Cave to the expertise gate.",
+        "targets": [
+          "Edron Hero Cave"
+        ]
+      },
+      "historical_blocker": {
         "missing_piece": "Source movement-walls.lua requires both-player pressure plates, StepOut restoration and occupied-wall ejection. The shared Callback trigger enum exposes only Use/StepIn; these effects cannot be attached from this lane's NPC/quest module. QENGINE owns StepOut and encounter/party access under the current allocation.",
         "evidence": [
           ".questpc/source-engine-gaps/demon_helmet_walls.lua:44",
@@ -3017,14 +3029,8 @@
         ],
         "other_unfinished_composition": "No complete real-dispatch PG qualification for s1 (explore: Edron Hero Cave) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage."
       },
-      "first_unqualified_stage": {
-        "key": "s1",
-        "kind": "explore",
-        "objective": "Descend through the Edron Hero Cave to the expertise gate.",
-        "targets": [
-          "Edron Hero Cave"
-        ]
-      }
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
+      "active_batch": "Source world-object composition; stateless StepOut foundation implemented and PG exercised. No whole-title promotion."
     },
     {
       "title": "Demon Outfits Quest",
@@ -3188,7 +3194,7 @@
       "title": "Devil Helmet Quest",
       "canonical": "oteryn:quest.devil_helmet_quest",
       "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/23/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [
         {
@@ -3222,7 +3228,16 @@
         "native_dispatch_binding": null,
         "runtime_enabled": false
       },
-      "blocker": {
+      "first_unqualified_stage": {
+        "key": "s1",
+        "kind": "explore",
+        "objective": "Reach the Cyclops chamber under the Ancient Temple.",
+        "targets": [
+          "Ancient Temple",
+          "Cyclops chamber"
+        ]
+      },
+      "historical_blocker": {
         "missing_piece": "Source movements_sewer.lua requires an onStepOut edge to remove sewer435 when the player leaves UID25030. The shared Callback Trigger atworld_callbacks.rs:24 has only Use/StepIn. QENGINE owns this missing shared movement edge; a chest test cannot supply it from the lane module.",
         "evidence": [
           ".questpc/source-engine-gaps/devil_helmet_sewer.lua:27",
@@ -3241,15 +3256,8 @@
         ],
         "other_unfinished_composition": "No complete real-dispatch PG qualification for s1 (explore: Ancient Temple, Cyclops chamber) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage."
       },
-      "first_unqualified_stage": {
-        "key": "s1",
-        "kind": "explore",
-        "objective": "Reach the Cyclops chamber under the Ancient Temple.",
-        "targets": [
-          "Ancient Temple",
-          "Cyclops chamber"
-        ]
-      }
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
+      "active_batch": "Source world-object composition; stateless StepOut foundation implemented and PG exercised. No whole-title promotion."
     },
     {
       "title": "Devovorga's Essence Mini World Change",
@@ -3447,7 +3455,7 @@
       "title": "Draconia Quest",
       "canonical": "oteryn:quest.draconia_quest",
       "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/26/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [
         {
@@ -3476,7 +3484,17 @@
         "native_dispatch_binding": null,
         "runtime_enabled": false
       },
-      "blocker": {
+      "first_unqualified_stage": {
+        "key": "s1",
+        "kind": "use",
+        "objective": "Enter Hellgate with Key 3012 and reach Draconia.",
+        "targets": [
+          "Key 3012",
+          "Hellgate",
+          "Draconia"
+        ]
+      },
+      "historical_blocker": {
         "missing_piece": "The complete source requires party-occupied floor switches for Key3007, shared resettable key pickups, and an exit portal conditional on four current lever placements. QENGINE owns paired/conditional portals, shared pickup/reset and party switch access; the current callback model has only Use/StepIn and no cross-placement fenced lever read-set. Personal reward claim receipts alone cannot complete this path.",
         "evidence": [
           ".questpc/wiki-r8/Draconia Quest_Spoiler.wiki:11",
@@ -3491,16 +3509,7 @@
           "Read full source wiki route: daily key stock and two-player floor switch progression remain mandatory; did not replace them with personal claims or qualify unchanged reward-only tests."
         ]
       },
-      "first_unqualified_stage": {
-        "key": "s1",
-        "kind": "use",
-        "objective": "Enter Hellgate with Key 3012 and reach Draconia.",
-        "targets": [
-          "Key 3012",
-          "Hellgate",
-          "Draconia"
-        ]
-      }
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Dragon Corpse Quest",
@@ -3956,7 +3965,7 @@
       "title": "Elemental Spheres Quest",
       "canonical": "oteryn:quest.elemental_spheres_quest",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/37/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [],
       "queued_stage_binding": {
@@ -3987,7 +3996,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "blocker": {
+      "historical_blocker": {
         "missing_piece": "Dropping the matching overlord corpse onto a charged altar must atomically inspect all seven charged positions, consume corpse, summon boss, and fence global storage. onAddItem and shared encounter/altar occupancy are absent from Trigger and assigned to QENGINE.",
         "evidence": [
           ".questpc/source-engine-gaps/elemental_spheres-movements_summon_overlord.lua:83",
@@ -4000,7 +4009,8 @@
           "Inspected production Trigger and callback schema; Use/StepIn cannot observe leaving a tile or item arrival.",
           "Kept source requirements intact; no StepIn approximation or synthetic completion was substituted. Shared engine ownership prevents implementing it in this lane."
         ]
-      }
+      },
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Elementalist Outfits Quest",
@@ -4956,7 +4966,7 @@
       "title": "Formorgar Mines Hoist Quest",
       "canonical": "oteryn:quest.formogar_mine_hoist",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/46/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [],
       "queued_stage_binding": {
@@ -4984,7 +4994,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "blocker": {
+      "historical_blocker": {
         "missing_piece": "Source hoist UID3060 chooses z11 or z9 by the current2772 lever at32156,31125,z10. Only static UID3059/3061 routes exist. Callback.teleport has one fixed destination and no other-placement revision read-set, so a concurrent lever change cannot be fenced with a lane-local computed destination. Shared paired/conditional portal ownership and map-read validation belong to QENGINE.",
         "evidence": [
           ".questpc/source-engine-gaps/hoist-movements_hoist.lua:18",
@@ -4997,7 +5007,8 @@
           "Compared complete original3059/3060/3061 inventory with production static3059/3061 callbacks.",
           "Traced execute teleport preparation: a lane-local choice based on a separate lever would lack a checked read-set at commit. Holding a runtime lock across durable guard awaits is forbidden. Did not substitute a fixed destination or qualify only the two implemented siblings."
         ]
-      }
+      },
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Formorgar Mines Quest",
@@ -5405,7 +5416,7 @@
       "title": "Goblin Merchant Quest",
       "canonical": "oteryn:quest.goblin_merchant_quest",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [],
       "queued_stage_binding": {
@@ -5413,7 +5424,16 @@
         "native_dispatch_binding": null,
         "runtime_enabled": false
       },
-      "blocker": {
+      "first_unqualified_stage": {
+        "key": "s2",
+        "kind": "use",
+        "objective": "Place three Advertisement Signs on cracked swamp stones.",
+        "targets": [
+          "Advertisement Sign",
+          "Cracked Stone"
+        ]
+      },
+      "historical_blocker": {
         "missing_piece": "The source route to Rafzan requires the two-floor elevator. A caller pulling winch17940/17944 with the platform on the other floor must relocate every occupant of the source platform to a safety tile, move the platform items between floors and apply the asymmetric paired transforms. Only the player actually inside the arrived platform may ride. The closed Callback exposes one clicking-actor teleport and static passages; it has no cross-floor item move or batch occupant relocation. QENGINE owns shared paired portals/asymmetric lever and multi-occupant displacement, so this entrance cannot be faithfully composed inside the NPC task module.",
         "evidence": [
           ".questpc/source-engine-gaps/rafzane_elevator.lua:42",
@@ -5430,15 +5450,7 @@
           "Compared existing Callback passages/teleport schema against those effects and retained the source elevator under source-engine-gaps. Did not implement a teleport that incorrectly moves the clicking player or leaves other occupants behind."
         ]
       },
-      "first_unqualified_stage": {
-        "key": "s2",
-        "kind": "use",
-        "objective": "Place three Advertisement Signs on cracked swamp stones.",
-        "targets": [
-          "Advertisement Sign",
-          "Cracked Stone"
-        ]
-      }
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Goblin Temple Quest",
@@ -5561,7 +5573,7 @@
       "title": "Grave Danger Quest",
       "canonical": "oteryn:quest.grave_danger_quest",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/53/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [],
       "queued_stage_binding": {
@@ -5600,7 +5612,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "blocker": {
+      "historical_blocker": {
         "missing_piece": "Gaffir firewall must transform32021->5062 on entry and5062->32021 on StepOut and revoke special containers. Trigger has no StepOut; shared StepOut belongs to QENGINE.",
         "evidence": [
           ".questpc/source-engine-gaps/grave_danger-movements_firewall_gaffir.lua:28",
@@ -5613,7 +5625,8 @@
           "Inspected production Trigger and callback schema; Use/StepIn cannot observe leaving a tile or item arrival.",
           "Kept source requirements intact; no StepIn approximation or synthetic completion was substituted. Shared engine ownership prevents implementing it in this lane."
         ]
-      }
+      },
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Griffin Shield Quest",
@@ -5797,7 +5810,7 @@
       "title": "Heart of Destruction Quest",
       "canonical": "oteryn:quest.heart_of_destruction_quest",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/57/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [],
       "queued_stage_binding": {
@@ -5825,7 +5838,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "blocker": {
+      "historical_blocker": {
         "missing_piece": "Vortex crackler four-player plate ownership is cancelled by StepOut23471. Trigger has no StepOut and the local callback has no shared party occupancy owner; QENGINE owns both.",
         "evidence": [
           ".questpc/source-engine-gaps/heart_of_destruction-movements_vortex_crackler.lua:95",
@@ -5838,7 +5851,8 @@
           "Inspected production Trigger and callback schema; Use/StepIn cannot observe leaving a tile or item arrival.",
           "Kept source requirements intact; no StepIn approximation or synthetic completion was substituted. Shared engine ownership prevents implementing it in this lane."
         ]
-      }
+      },
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Heaven Blossom Quest",
@@ -5877,7 +5891,7 @@
       "title": "Hero of Rathleton Quest",
       "canonical": "oteryn:quest.hero_of_rathleton_quest",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/58/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [],
       "queued_stage_binding": {
@@ -5885,7 +5899,15 @@
         "native_dispatch_binding": null,
         "runtime_enabled": false
       },
-      "blocker": {
+      "first_unqualified_stage": {
+        "key": "s1",
+        "kind": "explore",
+        "objective": "Investigate the voice in the darkness beneath Rathleton.",
+        "targets": [
+          "Rathleton underground voice"
+        ]
+      },
+      "historical_blocker": {
         "missing_piece": "The native source map has no action24872 placement for hero-rathleton-exit. BundleFacts requires the stored source attribute; an NPC module cannot create the absent source world placement or guess its position. Owning map/import binding is required before the complete path is executable.",
         "evidence": [
           "content/quests/world-callbacks-held/batch3-b-hero_of_rathleton.json:37",
@@ -5902,20 +5924,13 @@
         ],
         "other_unfinished_composition": "The pipe greeting/access receipt is proven separately; later item, combat and held world callbacks lack a complete composed dispatch proof."
       },
-      "first_unqualified_stage": {
-        "key": "s1",
-        "kind": "explore",
-        "objective": "Investigate the voice in the darkness beneath Rathleton.",
-        "targets": [
-          "Rathleton underground voice"
-        ]
-      }
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Hidden Threats Quest",
       "canonical": "oteryn:quest.hidden_threats_quest",
       "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/43/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [
         {
@@ -5959,7 +5974,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "blocker": {
+      "historical_blocker": {
         "missing_piece": "Leaving one of five corym reward-room tiles must advance QuestLine2->3 only after both key fragments. This is source StepOut, absent from Trigger; shared StepOut belongs to QENGINE.",
         "evidence": [
           ".questpc/source-engine-gaps/hidden_threats-movement-chests_check.lua:3",
@@ -5972,7 +5987,8 @@
           "Inspected production Trigger and callback schema; Use/StepIn cannot observe leaving a tile or item arrival.",
           "Kept source requirements intact; no StepIn approximation or synthetic completion was substituted. Shared engine ownership prevents implementing it in this lane."
         ]
-      }
+      },
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Hive Born World Change",
@@ -6347,7 +6363,7 @@
       "title": "In Service of Yalahar Quest",
       "canonical": "oteryn:quest.in_service_of_yalahar_quest",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/63/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [],
       "queued_stage_binding": {
@@ -6355,7 +6371,16 @@
         "native_dispatch_binding": null,
         "runtime_enabled": false
       },
-      "blocker": {
+      "first_unqualified_stage": {
+        "key": "s2",
+        "kind": "use",
+        "objective": "Clear the four marked sewer pipes with a crowbar.",
+        "targets": [
+          "Crowbar",
+          "Yalahar blocked sewer pipe"
+        ]
+      },
+      "historical_blocker": {
         "missing_piece": "The native source map has no unique3091 placement for the mechanism-3091 callback. BundleFacts requires the original stored UID; the source position is not an authorized replacement. Owning map/import binding is required outside the lane module before the complete path can run.",
         "evidence": [
           "content/quests/world-callbacks-held/batch3-a-in_service_of_yalahar.json:1#/holds/0/reasons/1",
@@ -6372,15 +6397,7 @@
         ],
         "other_unfinished_composition": "Mission start is proven separately; material/kill progress and held world/access callbacks are not one complete executable quest path."
       },
-      "first_unqualified_stage": {
-        "key": "s2",
-        "kind": "use",
-        "objective": "Clear the four marked sewer pipes with a crowbar.",
-        "targets": [
-          "Crowbar",
-          "Yalahar blocked sewer pipe"
-        ]
-      }
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Insectoid Invasion World Change",
@@ -7221,7 +7238,7 @@
       "title": "Life Ring Quest",
       "canonical": "oteryn:quest.life_ring_quest",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/67/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [
         {
@@ -7255,7 +7272,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "blocker": {
+      "historical_blocker": {
         "missing_piece": "AID30007 bridge toggle must relocate every creature on all six bridge tiles to32409,32231,z10 before changing water4610/bridge5770. Callback.teleport and execute.rs teleport only the clicking actor; no multi-occupant movement+map atomic batch exists. Shared displacement/party world engine belongs to QENGINE; an empty-bridge fixture would hide the reachable occupant path.",
         "evidence": [
           ".questpc/source-engine-gaps/actions_life_ring_lever.lua:26",
@@ -7268,7 +7285,8 @@
           "Inspected Passage replacement/reversible support and the production callback teleport/map commit consumer. Ground replacement can express the visual bridge, but only one actor teleport is prepared/applied; source occupancy displacement cannot be composed in this lane module without the shared movement owner.",
           "Kept all six source positions and the occupant requirement; did not qualify a reward-only or empty bridge surrogate."
         ]
-      }
+      },
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Lion Trophy Quest",
@@ -7798,7 +7816,7 @@
       "title": "Magic Sword Quest",
       "canonical": "oteryn:quest.authored.magic_sword_quest",
       "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/14/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [],
       "queued_stage_binding": {
@@ -7827,7 +7845,7 @@
           "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
         ]
       },
-      "blocker": {
+      "historical_blocker": {
         "missing_piece": "Historical Magic Sword rewards are shared normal-chest stock that resets after weeks, not personal once claims. Current map pickup selects only depth0 and plan_map_item_mint refuses every container (RL05=0), so the two source chests cannot expose their nested shared stock and reset lifecycle. Shared source-container pickup/reset is assigned to QENGINE; a lane-local once reward would change who can take the stock and its repeat policy.",
         "evidence": [
           ".questpc/phase-a-source/Magic Sword Quest_Spoiler.wiki:29",
@@ -7841,7 +7859,8 @@
           "Traced production map pickup depth filtering and the explicit container refusal; inspected map-mint reset lifecycle boundary.",
           "Retained known north/south reward split and shared-stock repeat semantics. Did not fabricate a UID, put a historical vault into the current monument, or substitute per-character once claims for source stock."
         ]
-      }
+      },
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
     },
     {
       "title": "Make Believe Quest",
@@ -8251,7 +8270,7 @@
       "title": "Mintwallin Cyclops Quest",
       "canonical": "oteryn:quest.mintwallin_cyclops_quest",
       "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/60/definition",
-      "status": "BLOCKED",
+      "status": "UNFINISHED",
       "scope": "complete pinned quest path",
       "reward_claims": [
         {
@@ -8260,7 +8279,7 @@
           "retained_test": "quest_catalogue_chests_phase_a_11_use_replay_and_refusal"
         }
       ],
-      "blocker": {
+      "historical_blocker": {
         "missing_piece": "Source actionaid30008 removes its own lever, creates two fresh1270 walls at32592,32105/32106,z14 and removes nine1271 walls along32593..32601,32104,z14. The existing Passage callback only mutates bound existing entries; it has no absent-entry creation operand or asymmetric lever transaction. QENGINE owns the shared asymmetric lever/create/remove path, outside this lane module.",
         "evidence": [
           ".questpc/source-engine-gaps/mintwallin_asymmetric_lever.lua:9",
@@ -8278,7 +8297,9 @@
           "Retained existing native reward receipts without promoting them to a complete path. Did not replace StepOut with StepIn, bypass party conditions or invent absent map entries."
         ],
         "other_unfinished_composition": "The source contract includes item_consume and world_object; the chest scenario does not exercise that offering/access path."
-      }
+      },
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
+      "active_batch": "Source world-object composition; stateless StepOut foundation implemented and PG exercised. No whole-title promotion."
     },
     {
       "title": "Mystery of the Valley Quest",
@@ -8360,7 +8381,7 @@
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Elvenbane independent PG validation passed; new implementation paused pending single-writer clarification.",
+    "active": "Owner pressure: publish the tested StepOut mechanic slice immediately; strict clippy/schema follow-up active, then continue source object composition. No pending owner permission.",
     "concurrent_remote_head": "4e12ac30e",
     "validation": {
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
@@ -8368,6 +8389,78 @@
       "marker": "POSTGRES_CASE_COMPLETED elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal duration=63.295355405s",
       "log": "qlane-meta/questpc/cloud-replacement-elvenbane.log",
       "sha256": "05aa791fc57d0126485958d19c6f2d4d4fdc648a8cc9e7d91743c5de9ef3e0c5"
+    },
+    "owner_pressure": "Push every completed tested slice immediately and at least every 30 minutes; cap each investigation at 10 minutes and document conservative decisions in CONTRACT-NOTES.md."
+  },
+  "engine_progress": {
+    "stateless_departure": {
+      "scope": "Reusable stateless StepOut engine slice on committed paced player movement; no new whole-quest qualification.",
+      "reuse": {
+        "qengine2_checked": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+        "stepout_source": "2d9db9c5abdb62abc8f9883984b5ad5bc22244c8",
+        "paths": [
+          "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs"
+        ]
+      },
+      "pg": {
+        "result": "2 passed; 0 failed",
+        "duration_seconds": 154.68,
+        "cases": {
+          "committed_departure_restores_static_passages_without_quest_writes": 45.883254093,
+          "behemoth_lever_and_all_reward_claims": 108.76648093
+        }
+      },
+      "red": {
+        "unsupported_step_out_seconds": 3.61,
+        "superseded_departure_pins_session_seconds": 46.82,
+        "destination_entry_not_resumed_seconds": 47.09
+      },
+      "checks": {
+        "cargo_check_all_targets_all_features": "passed in 4m11s before lexical mutex scope repair",
+        "python_tests": "15 passed",
+        "source_generation": "21 packets; zero stale outputs",
+        "strict_clippy": "rerun active after replacing explicit guard drop with lexical scope; no lint allowance added",
+        "rust_schema_unit": "queued after strict clippy"
+      },
+      "logs": {
+        "red": {
+          "log": "qlane-meta/questpc/cloud-departure-red.log",
+          "sha256": "d7cfb33c21006e59f55494b5e2cff593434f1b495705d01b0df681239e6d00da"
+        },
+        "green": {
+          "log": "qlane-meta/questpc/cloud-departure-green.log",
+          "sha256": "470f88a60a76c2b16f363fa8183b868d4e71b1fdea8cf9f29559d894c4368c41"
+        },
+        "recovery-red": {
+          "log": "qlane-meta/questpc/cloud-departure-recovery-red.log",
+          "sha256": "5855d7c4eea0bb40df0d45059d4c0455704b99378b9947e97b011b27cbb4114b"
+        },
+        "recovery-green": {
+          "log": "qlane-meta/questpc/cloud-departure-recovery-green.log",
+          "sha256": "c1f23928d3539663711a8c0c99842281d148c7344a501353c083575c1042cd9a"
+        },
+        "entry-confirmed-red": {
+          "log": "qlane-meta/questpc/cloud-departure-entry-confirmed-red.log",
+          "sha256": "13b4b544a0b48d4985aea0b4e13de57b148e4055f3bb73bbf1f1b427312c4e64"
+        },
+        "final-pg": {
+          "log": "qlane-meta/questpc/cloud-departure-final-pg.log",
+          "sha256": "2f4c97d47a9bc32eb570172c6d5f6b4dee2c17f7c35c3956ba841dd77926198e"
+        },
+        "check": {
+          "log": "qlane-meta/questpc/cloud-departure-check.log",
+          "sha256": "7b4f44cd7672418e8feb460ffd9415b9bf3e1b7a083273867a874683d84b2f28"
+        },
+        "python-final": {
+          "log": "qlane-meta/questpc/cloud-departure-python-final.log",
+          "sha256": "0d6c2b0307b9968df7cc6b6d70b8fc4884d54508c5e906daef45465183b90965"
+        },
+        "generation-final": {
+          "log": "qlane-meta/questpc/cloud-departure-generation-final.log",
+          "sha256": "1c9bfd6344727313032b6a8ba6dc3f2ecf00b39eddf6946a02e77dc72dd0b56e"
+        }
+      }
     }
   }
 }

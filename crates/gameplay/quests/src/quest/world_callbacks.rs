@@ -24,6 +24,7 @@ pub struct Position {
 pub enum Trigger {
     Use,
     StepIn,
+    StepOut,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -246,7 +247,28 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .is_some_and(|rule| !valid_native_callback(callback, rule))
             || callback
                 .lever
-                .is_some_and(|p| p[0] == p[1] || callback.trigger != Trigger::Use)
+                .is_some_and(|p| {
+                    p[0] == p[1]
+                        || (callback.trigger != Trigger::Use
+                            && (!callback.reversible
+                                || !callback.storage.is_empty()
+                                || callback.teleport.is_some()
+                                || !callback.offerings.is_empty()
+                                || callback.item_on_target.is_some()))
+                })
+            // A departure restores Channel map facts; it cannot write a second
+            // durable consequence for the same committed movement command.
+            || (callback.trigger == Trigger::StepOut
+                && (!callback.reversible
+                    || callback.teleport.is_some()
+                    || !callback.storage.is_empty()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.minimum_level.is_some()
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.native_rule.is_some()
+                    || callback.return_on_failure))
             || callback.passages.iter().any(|p| !valid_pos(p.position))
             || callback.offerings.iter().any(|o| {
                 !valid_pos(o.position)
@@ -337,6 +359,48 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn departure_callbacks_restore_only_stateless_map_effects() -> Result<(), String> {
+        let mut source: serde_json::Value =
+            serde_json::from_str(EMBEDDED).map_err(|error| error.to_string())?;
+        let mut callback = source["callbacks"]
+            .as_array_mut()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|callback| callback["key"] == "oteryn:quest-callback/behemoth")
+            .ok_or("behemoth")?
+            .clone();
+        callback["trigger"] = "step_out".into();
+        callback["reversible"] = true.into();
+        let document =
+            |callback| serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
+        assert!(parse(&document(callback.clone())).is_ok());
+        for case in 0..5 {
+            let mut invalid = callback.clone();
+            match case {
+                0 => invalid["reversible"] = false.into(),
+                1 => {
+                    invalid["storage"] = serde_json::json!([{
+                        "track":"oteryn:quest-track/test", "minimum":-1, "maximum":1, "set":1
+                    }])
+                }
+                2 => {
+                    invalid["offerings"] = serde_json::json!([{
+                        "position":{"x":33293,"y":31680,"floor":-15},
+                        "item":"oteryn:item.tibia.i3031", "count":1
+                    }])
+                }
+                3 => invalid["teleport"] = serde_json::json!({"x":33293,"y":31680,"floor":-15}),
+                _ => invalid["return_on_failure"] = true.into(),
+            }
+            assert!(
+                parse(&document(invalid)).is_err(),
+                "departure restriction {case}"
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn read_only_world_callback_has_no_quest_write_transition() -> Result<(), String> {
