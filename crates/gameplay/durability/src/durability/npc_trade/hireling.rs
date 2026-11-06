@@ -42,7 +42,7 @@ impl Extra {
                 if source.item_id==23721 && request.cause.side==NpcTradeSide::Sell {
                     return Err(NpcTradeError::RequirementNotMet);
                 }
-                let price=match request.cause.side {NpcTradeSide::Buy=>source.buy,NpcTradeSide::Sell=>source.sell};
+                let price=match request.cause.side {NpcTradeSide::Buy=>source.buy,NpcTradeSide::Sell=>source.sell,NpcTradeSide::Exchange=>return Err(NpcTradeError::InvalidInput)};
                 let wrapped = request.cause.side == NpcTradeSide::Buy
                     && crate::domain::hireling::catalogue::wrapped_buy(selection.source_row).is_some();
                 let item_id = if wrapped { crate::domain::hireling::catalogue::DECORATION_KIT_ITEM_ID } else { source.item_id };
@@ -192,11 +192,11 @@ impl DurabilityRoot {
     }
     pub async fn commit_hireling_trade(&self,authority:&ReconciledCharacterAuthority<'_, '_>,node:&NodeIncarnationProof,
         fence:CurrentCharacterItemFence,request:NpcTradeRequest,selection:HirelingTradeSelection,sell_all:bool)->Result<NpcTradeOutcome> {
-        self.commit_trade(authority,node,fence,request,TradeCommitOptions { sell_all, hireling:Some(Extra::Trade(selection)), weights:None }).await
+        self.commit_trade(authority,node,fence,request,TradeCommitOptions { sell_all, hireling:Some(Extra::Trade(selection)), weights:None, exchange:None }).await
     }
     pub async fn commit_hireling_package(&self,authority:&ReconciledCharacterAuthority<'_, '_>,node:&NodeIncarnationProof,
         fence:CurrentCharacterItemFence,request:NpcTradeRequest,selection:HirelingPackageSelection,
         weights:&dyn ItemWeightLookup)->Result<NpcTradeOutcome> {
-        self.commit_trade(authority,node,fence,request,TradeCommitOptions { sell_all:false, hireling:Some(Extra::Package(Box::new(selection))), weights:Some(weights) }).await
+        self.commit_trade(authority,node,fence,request,TradeCommitOptions { sell_all:false, hireling:Some(Extra::Package(Box::new(selection))), weights:Some(weights), exchange:None }).await
     }
 }

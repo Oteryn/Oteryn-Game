@@ -98,9 +98,11 @@ fn priced(request: &NpcTradeRequest) -> Result<(u64, u32)> {
 
 #[test]
 fn a_sell_all_names_one_unit_of_a_count_one_sell_offer() {
-    assert!(validate(&request(NpcTradeSide::Sell, 1, 99), true)
-        .unwrap()
-        .is_none());
+    assert!(
+        validate(&request(NpcTradeSide::Sell, 1, 99), true)
+            .unwrap()
+            .is_none()
+    );
     let mut count = request(NpcTradeSide::Sell, 1, 1);
     count.offer_count = 2;
     for (name, value) in [
@@ -109,7 +111,11 @@ fn a_sell_all_names_one_unit_of_a_count_one_sell_offer() {
         ("a count of 2", count),
         (
             "a price above the SELL ceiling",
-            request(NpcTradeSide::Sell, 1, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX + 1),
+            request(
+                NpcTradeSide::Sell,
+                1,
+                rules::NPC_TRADE_SELL_GOLD_UNITS_MAX + 1,
+            ),
         ),
     ] {
         assert!(
@@ -271,6 +277,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
             let (total, units) = priced(&value).unwrap();
             assert_eq!((total, units), (u64::from(quantity) * 3, expected_units));
             let plan = match side {
+                NpcTradeSide::Exchange => unreachable!("this case iterates BUY and SELL"),
                 NpcTradeSide::Buy => plan_buy(
                     &value,
                     total,
@@ -290,7 +297,15 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
                 )
                 .unwrap(),
             };
-            let message = trade_message(&fence, world, channel, &id(4), &value, (quantity, total, false), &plan);
+            let message = trade_message(
+                &fence,
+                world,
+                channel,
+                &id(4),
+                &value,
+                (quantity, total, false),
+                &plan,
+            );
             assert_eq!(
                 (
                     message.quantity,
@@ -300,6 +315,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
                 (quantity, 3, total)
             );
             let moved_units = match side {
+                NpcTradeSide::Exchange => unreachable!("this case iterates BUY and SELL"),
                 NpcTradeSide::Buy => {
                     message
                         .lines
@@ -334,6 +350,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
             // and all other states: no integral positive offer count can explain it.
             let mut broken = message;
             match side {
+                NpcTradeSide::Exchange => unreachable!("this case iterates BUY and SELL"),
                 NpcTradeSide::Buy => {
                     broken
                         .lines
@@ -408,4 +425,58 @@ fn only_albinius_exact_blank_scroll_offer_activates_the_durable_gate() {
     value.unit_price -= 1;
     value.cause.npc_key = "oteryn:npc.someone_else".into();
     assert!(!is_albinius_blank_scroll(&value));
+}
+
+#[test]
+fn raid_tokens_take_one_plain_stack_and_count_slots_after_whole_burn() {
+    let token_definition = definition("Item", "oteryn:item.tibia.i19083");
+    let mut token = facts(
+        token_definition.clone(),
+        ItemStackClass::Stackable {
+            proven_maximum: Some(100),
+        },
+    );
+    token.weight = Some(100);
+    let mut request = request(NpcTradeSide::Exchange, 1, 0);
+    request.cause.npc_key = oteryn_gameplay_quests::quest::raid_tokens::NPC.into();
+    request.cause.offer_index = 0;
+    let output = oteryn_gameplay_quests::quest::raid_tokens::offers().unwrap()[0].0;
+    request.item = facts(
+        definition("Item", &format!("oteryn:item.tibia.i{output}")),
+        ItemStackClass::NonStackable,
+    );
+    request.item.weight = Some(100);
+    raid_tokens::validate(&request, &token).unwrap();
+    let nineteen = entry(10, 1, token_definition.clone(), 19);
+    let one = entry(11, 2, token_definition.clone(), 1);
+    assert!(matches!(
+        raid_tokens::plan(&request, &token, 20, &[one, nineteen]),
+        Err(NpcTradeError::InsufficientFunds)
+    ));
+    let twenty = entry(12, 3, token_definition.clone(), 20);
+    let plan = raid_tokens::plan(&request, &token, 1, &[twenty]).unwrap();
+    assert_eq!(
+        (
+            plan.lines[0].quantity_after,
+            plan.lines[1].quantity_after,
+            plan.lines[1].placement_ordinal
+        ),
+        (0, 1, 4)
+    );
+    let hundred = entry(13, 4, token_definition.clone(), 100);
+    assert!(matches!(
+        raid_tokens::plan(&request, &token, 1, &[hundred]),
+        Err(NpcTradeError::DoesNotFit)
+    ));
+    let mut modified = entry(14, 5, token_definition, 20);
+    modified.not_default = true;
+    assert!(matches!(
+        raid_tokens::plan(&request, &token, 20, &[modified]),
+        Err(NpcTradeError::InsufficientFunds)
+    ));
+    request.cause.npc_key = "oteryn:npc.sam".into();
+    assert!(matches!(
+        raid_tokens::validate(&request, &token),
+        Err(NpcTradeError::InvalidInput)
+    ));
 }

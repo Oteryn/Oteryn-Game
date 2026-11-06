@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_RAID_TOKEN_EXCHANGES/v1",
-  "quest": "oteryn:quest.hunting_for_tokens_quest",
+  "quest": "oteryn:quest.hunting_for_tokens",
   "npc": "oteryn:npc.jorge",
   "source": {
     "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",

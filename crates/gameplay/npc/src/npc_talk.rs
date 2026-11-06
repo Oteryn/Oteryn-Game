@@ -306,14 +306,15 @@ impl NpcTalkBook {
             } else if native_quest
                 && matches!(
                     reference.key.as_str(),
-                    "oteryn:npc.strange_pipe"
+                    "oteryn:npc.jorge"
+                        | "oteryn:npc.strange_pipe"
                         | "oteryn:npc.strange_pipe_1"
                         | "oteryn:npc.strange_pipe_2"
                         | "oteryn:npc.strange_pipe_3"
                 )
             {
-                // Crystal201189f: each pipe's unconditional storage callback
-                // inherits these NpcHandler messages; it declares no override.
+                // Source Jorge and each pipe inherit these NpcHandler messages;
+                // their scripts declare no greeting override.
                 // The native dispatcher still commits the access write first.
                 (
                     "Greetings, |PLAYERNAME|.".into(),

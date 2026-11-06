@@ -340,7 +340,7 @@ impl LoadedNpcCatalogue {
             .programs()
             .iter()
             .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
-            .chain(std::iter::once("oteryn:npc.viola"))
+            .chain(["oteryn:npc.jorge", "oteryn:npc.viola"])
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect::<Vec<_>>();

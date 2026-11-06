@@ -62,7 +62,7 @@ pub(super) async fn install<const N: usize>(
         .programs()
         .iter()
         .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
-        .chain(std::iter::once("oteryn:npc.viola"))
+        .chain(["oteryn:npc.jorge", "oteryn:npc.viola"])
         .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();

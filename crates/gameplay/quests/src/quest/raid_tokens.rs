@@ -49,7 +49,7 @@ fn parse(document: &str) -> Result<Vec<(u16, String)>, NpcRuleError> {
     let invalid = || NpcRuleError::Invalid("Jorge source exchange table".into());
     let document: Document = serde_json::from_str(document).map_err(|_| invalid())?;
     if document.schema != "OTERYN_RAID_TOKEN_EXCHANGES/v1"
-        || document.quest != "oteryn:quest.hunting_for_tokens_quest"
+        || document.quest != "oteryn:quest.hunting_for_tokens"
         || document.npc != NPC
         || document.source.revision != "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
         || document.source.path != "data-global/npc/jorge.lua"

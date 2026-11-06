@@ -29,6 +29,7 @@ use prost::Message;
 use sha2::{Digest, Sha256};
 use super::npc_trade::sell_hireling;
 mod hireling;
+mod raid_tokens;
 pub use hireling::{OneItemHirelingPackageV1, OneItemHouseFurnitureKitV1};
 
 /// BUY rows (NPC-0 §5.5): 20 coin BURN lines, 2 change MINTs and the item MINT.
@@ -80,6 +81,7 @@ pub use oteryn_gameplay_economy::npc_trade::{
 
 pub const SIDE_BUY: u32 = 1;
 pub const SIDE_SELL: u32 = 2;
+pub const SIDE_EXCHANGE: u32 = 3;
 pub const LINE_COIN_BURN: u32 = 1;
 pub const LINE_COIN_MINT: u32 = 2;
 pub const LINE_ITEM_BURN: u32 = 3;
@@ -339,6 +341,7 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
         _=>return Err(AuditError::InvalidInput),
     }
     let side = cause.side;
+    if side == SIDE_EXCHANGE { return raid_tokens::check(value); }
     let hireling_sell=sell_hireling::audit_source(value);
     if side==SIDE_SELL && value.house_key.is_some() && !hireling_sell {return Err(AuditError::InvalidInput); }
     let (burn_kind, mint_kinds, total_max) = match side {

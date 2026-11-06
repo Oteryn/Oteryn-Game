@@ -49,6 +49,7 @@ mod liquid_black;
 mod monk;
 mod premium_purchase;
 mod quest_dialogue;
+mod raid_tokens;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
@@ -78,6 +79,7 @@ struct SessionNpc {
     quest_dialogue: quest_dialogue::State,
     endgame: Option<endgame::Pending>,
     catalogue: Option<catalogue::Pending>,
+    raid_tokens: Option<raid_tokens::Conversation>,
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
     threatened_dreams: Option<threatened_dreams::Pending>,
@@ -621,6 +623,9 @@ pub(super) async fn npc_bank_talk(
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef};
+    if let Some(outcome) = raid_tokens::resume(admission, command, &intent).await {
+        return outcome;
+    }
     if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {
         return outcome;
     }
@@ -709,6 +714,11 @@ pub(super) async fn npc_bank_talk(
             _trade_permit = Some(permit);
         }
         runtime = admission.runtime.lock().await;
+    }
+    if let Some(step) = raid_tokens::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return raid_tokens::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = coin_exchange::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

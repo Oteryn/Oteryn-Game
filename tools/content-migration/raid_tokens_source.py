@@ -52,7 +52,7 @@ def document(root=ROOT):
             or 'doPlayerAddItem(creature, items[i].id, 1)' not in text):
         raise ValueError('RAID_TOKENS_SOURCE_EXCHANGE')
     return {'schema': 'OTERYN_RAID_TOKEN_EXCHANGES/v1',
-            'quest': 'oteryn:quest.hunting_for_tokens_quest', 'npc': 'oteryn:npc.jorge',
+            'quest': 'oteryn:quest.hunting_for_tokens', 'npc': 'oteryn:npc.jorge',
             'source': {'revision': REVISION, 'path': SOURCE, 'sha256': SHA},
             'input': {'id': 19083, 'count': 20},
             'repeat': 'unlimited',
