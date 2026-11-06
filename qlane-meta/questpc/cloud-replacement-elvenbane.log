@@ -1,0 +1,106 @@
+    Updating crates.io index
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+   Compiling oteryn-protocol-oteryn v0.1.0 (/workspace/Oteryn-Game/crates/protocol-oteryn)
+   Compiling oteryn-gameplay-domain v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/domain)
+   Compiling oteryn-world-bundle v0.1.0 (/workspace/Oteryn-Game/crates/world-bundle)
+   Compiling oteryn-gameplay-content v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/content)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)
+   Compiling oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)
+   Compiling oteryn-gameplay-social-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social-rules)
+   Compiling oteryn-gameplay-foundation v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/foundation)
+   Compiling oteryn-gameplay-housing v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/housing)
+   Compiling oteryn-gameplay-economy v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/economy)
+   Compiling oteryn-gameplay-world-change v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world-change)
+   Compiling oteryn-gameplay-node-files v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/node-files)
+   Compiling oteryn-session v0.1.0 (/workspace/Oteryn-Game/crates/session)
+   Compiling oteryn-client-ui v0.1.0 (/workspace/Oteryn-Game/crates/client-ui)
+   Compiling oteryn-client-runtime v0.1.0 (/workspace/Oteryn-Game/crates/client-runtime)
+   Compiling oteryn-renderer v0.1.0 (/workspace/Oteryn-Game/crates/renderer)
+   Compiling oteryn-session-tcp v0.1.0 (/workspace/Oteryn-Game/crates/session-tcp)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+   Compiling oteryn-world-bundle-compiler v0.1.0 (/workspace/Oteryn-Game/tools/world-bundle-compiler)
+   Compiling oteryn-gameplay-weather v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/weather)
+   Compiling oteryn-dev-client v0.1.0 (/workspace/Oteryn-Game/tools/dev-client)
+   Compiling oteryn-gameplay-progression v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/progression)
+   Compiling oteryn-gameplay-entities v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/entities)
+   Compiling oteryn-gameplay-characters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/characters)
+   Compiling oteryn-gameplay-items v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/items)
+   Compiling oteryn-gameplay-combat-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat-rules)
+   Compiling oteryn-gameplay-encounter-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounter-rules)
+   Compiling oteryn-gameplay-spell-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell-rules)
+   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)
+   Compiling oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)
+   Compiling oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)
+   Compiling oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)
+   Compiling oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)
+   Compiling oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)
+   Compiling oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)
+   Compiling oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 11s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b07c00d46acdf173)
+
+running 1 test
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=3
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield (32591, 31647, -3) native_source=true duration=6.022098963s
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=3
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star (32590, 31647, -3) native_source=true duration=5.950572789s
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=3
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1 (32588, 31645, -3) native_source=true duration=5.994277996s
+test gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal has been running for over 60 seconds
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=3
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2 (32588, 31644, -3) native_source=true duration=6.13481149s
+POSTGRES_CASE_COMPLETED elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal duration=63.295355405s
+test gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2540 filtered out; finished in 63.30s
+
