@@ -2,6 +2,224 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-reward/ape-egg",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4839",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, the egg! Mighty warrior you be! Thank you. Hairycles will put it at safe place immediately."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hairycles.lua:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ape-hair",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 16,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 15,
+          "maximum": 15,
+          "set": 16
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/holy_ape_hair",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4832",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Incredible! You got a hair of holy Bong! This will raise the spirit of my people. You are truly a friend. But one last mission awaits you."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hairycles.lua:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ape-moss",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/whisper_moss",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4827",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah yes! That's it. Thank you for bringing mighty whisper moss to Hairycles. It will help but still much is to be done. Just ask for other mission if you ready."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hairycles.lua:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ape-mushroom",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 13,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/fibula_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4829",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Incredible, you brought a witches' cap! Now me can prepare mighty charm of life. Yet still other {missions} will await you, friend."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hairycles.lua:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ape-parchment",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4831",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You brought scroll with lizard text? Good! I will see what text tells me! Come back when ready for other mission."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hairycles.lua:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ape-syrup",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4828",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You so good! Brought syrup to me! Thank you, will prepare cure now. Just ask for {mission} if you want help again."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hairycles.lua:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/deepling-helmet",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.navigator",
@@ -204,6 +422,314 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sam.lua:sha256:ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sam-kroox",
+      "quest": "oteryn:quest.sam_s_old_backpack_quest",
+      "npc": "oteryn:npc.kroox",
+      "keywords": [
+        "sam sent me",
+        "sam send me"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The problem is, some giant spiders made the tunnels where the storage is their new home. Good luck."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kroox.lua:sha256:080ef330bea12ad63d9d9aecdf259e669df0eb448287907f583aa04fa5e64497"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-bridge",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7871",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Excellent, that serves this fool right. I fear in your next mission, you'll have to get your hands dirty. Just ask me to learn more about it."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-fish",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7936",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "This little goldfish will bring us a hefty ransom! Just ask me if you're ready for another mission."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-goblet",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission05",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7870",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "That goblet is hardly worth all this trouble but we had to insist on our payment. However, I assume you are eager for more missions, so just ask."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-invitation",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7933",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You're too valuable to us. Speaking about your value, I might have some other mission for you."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-letter",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission07",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7935",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Excellent, that little letter will do the trick for sure ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-tusks",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3044",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "What a fine material. That will be worth a coin or two. So far, so good. Ask me for another mission if you're ready for it."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/thieves-vase",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission02",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i227",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "What an ugly vase. But who am I to question the taste of our customers? Anyway, I might have another mission in store for you."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d"
       ]
     }
   ]

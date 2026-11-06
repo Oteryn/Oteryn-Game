@@ -14,6 +14,7 @@ import sys
 import tarfile
 import xml.etree.ElementTree as ET
 from jsonschema import Draft202012Validator
+import questl2_rewards
 
 ROOT = Path(__file__).resolve().parents[3]
 PIN = '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d'
@@ -31,7 +32,7 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'costello', 'budrik', 'sam')]
+        'morgan', 'navigator', 'costello', 'budrik', 'sam', *questl2_rewards.NPCS)]
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
@@ -170,6 +171,7 @@ def build():
     for word,topic,next_topic in [('flou',0,1),('explain',1,2),('yes',2,3),('no',3,4),('yes',4,5),('yes',5,6),('yes',6,7),('helmet',7,8)]:
         offers.append({'npc':'oteryn:npc.navigator','keywords':[word],'topic':topic,'next_topic':next_topic,
             'reply':['Listen carefully.'],'storage':[storage('oteryn:quest-progress/navigator',-1,4,0)]})
+    questl2_rewards.append(callbacks, offers, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -192,6 +194,12 @@ def build():
             if not matches:
                 origin='data/npclib/npc_system/npc_handler.lua'
                 matches=list(re.finditer(r'\[MESSAGE_'+constant+r'\]\s*=\s*"([^"\n]*)"',inputs[origin].decode()))
+            if npc == 'oteryn:npc.hairycles' and field == 'greet':
+                # The initial source greeting admits interaction. Later quest
+                # hand-ins still require the complete callback's own predicates.
+                if len(matches) != 2 or matches[0].group(1) != 'Oh! Hello! Hello! Did not notice!':
+                    raise ValueError('Hairycles source greeting drift')
+                matches = matches[:1]
             if len(matches)!=1: raise ValueError('ambiguous NPC greeting '+npc+field)
             messages[field]=matches[0].group(1)
             line=inputs[origin][:matches[0].start()].count(b'\n')+1

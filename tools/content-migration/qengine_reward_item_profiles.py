@@ -1,4 +1,4 @@
-"""Qualify the four missing physical Items required by shared quest exchanges.
+"""Qualify missing physical Items required by shared quest exchanges.
 
 Uses the existing native source importer and exact canonical identity bindings.
 Known canonical facts win. No use effect, subtype, timer or custom script is
@@ -13,8 +13,10 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
+sys.path.insert(0, str(ROOT / 'tools/content-schema/quest-authoring'))
+import questl2_rewards
 
-IDS = {133, 139, 875, 3244}
+IDS = {133, 139, 875, 3244} | questl2_rewards.ITEMS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -42,7 +44,12 @@ def capture(root=ROOT):
     records=[]
     for item_id in sorted(IDS):
         node=xml[item_id]
-        if {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        timed = {key: value for key, value in source.attrs(node).items()
+                 if key in {'charges', 'duration', 'decayto', 'stopduration'}}
+        # This source quest item uses the existing absolute-deadline Item owner.
+        # Preserve its duration in source.profile; the reward owner still refuses
+        # timed hand-ins until that composition is separately qualified.
+        if timed and not (item_id == 4829 and timed == {'duration': '86400'}):
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):

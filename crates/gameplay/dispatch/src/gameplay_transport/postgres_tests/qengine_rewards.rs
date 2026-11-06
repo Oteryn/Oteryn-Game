@@ -63,6 +63,41 @@ fn qengine_rewards_backpack_exchange() -> TestResult {
     scenario("qengine-rewards-backpack")
 }
 
+#[test]
+fn questl2_ape_city_syrup_exchange() -> TestResult {
+    scenario("qengine-rewards-l2-ape-syrup")
+}
+#[test]
+fn questl2_thieves_vase_exchange() -> TestResult {
+    scenario("qengine-rewards-l2-thieves-vase")
+}
+#[test]
+fn questl2_sam_kroox_access() -> TestResult {
+    scenario("qengine-rewards-l2-sam-kroox")
+}
+
+macro_rules! questl2_exchange_cases {
+    ($($test:ident => $key:literal),+ $(,)?) => {
+        $(#[test]
+        fn $test() -> TestResult {
+            scenario(concat!("qengine-rewards-l2-", $key))
+        })+
+    };
+}
+
+questl2_exchange_cases! {
+    questl2_ape_city_egg_exchange => "ape-egg",
+    questl2_ape_city_hair_exchange => "ape-hair",
+    questl2_ape_city_moss_exchange => "ape-moss",
+    questl2_ape_city_parchment_exchange => "ape-parchment",
+    questl2_thieves_bridge_exchange => "thieves-bridge",
+    questl2_thieves_fish_exchange => "thieves-fish",
+    questl2_thieves_goblet_exchange => "thieves-goblet",
+    questl2_thieves_invitation_exchange => "thieves-invitation",
+    questl2_thieves_letter_exchange => "thieves-letter",
+    questl2_thieves_tusks_exchange => "thieves-tusks",
+}
+
 async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -102,6 +137,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "knight-sword" => &["forge"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
+        key if key.starts_with("ape-") || key.starts_with("thieves-") => &["mission"],
         "deepling-helmet" => &[
             "flou", "explain", "yes", "no", "yes", "yes", "yes", "helmet",
         ],
@@ -547,7 +583,9 @@ pub(super) async fn exercise(
         "qengine-rewards-hallowed" => "hallowed-holy-water",
         "qengine-rewards-outfox" => "outfox-helmet",
         "qengine-rewards-backpack" => "sam-backpack",
-        _ => return Err("unknown reward scenario".into()),
+        _ => name
+            .strip_prefix("qengine-rewards-l2-")
+            .ok_or("unknown reward scenario")?,
     };
     let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
         .into_iter()

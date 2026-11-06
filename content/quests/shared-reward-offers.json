@@ -22,6 +22,315 @@
       ]
     },
     {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you finished your mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission02",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Have you finished your mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Have you finished your mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Have you finished your mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission05",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Have you finished your mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Have you finished your mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dorian",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission07",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "reply": [
+        "Have you finished your mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/whisper_moss",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Oh, you brought me whisper moss? Good hairless ape you are! Can me take it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "You brought me that cough syrup from human healer me asked for?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "You got scroll from lizard village in south east?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "reply": [
+        "You bring Hairycles egg of hydra?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 13,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/fibula_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        }
+      ],
+      "reply": [
+        "You brought Hairycles witches' cap from Fibula?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 16,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 15,
+          "maximum": 15,
+          "set": 16
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/holy_ape_hair",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "You brought hair of holy ape?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.morgan",
       "keywords": [
         "forge"

@@ -3,11 +3,11 @@
 `content/quests/shared-reward-callbacks.json` is loaded by the Quest catalogue and
 the real NPC talk dispatcher. Author records against
 `shared-reward-callbacks.schema.json`; `qengine_rewards.validate_callbacks` checks
-the cross-field constraints. `qengine_rewards.py --check` reproduces the six
+the cross-field constraints. `qengine_rewards.py --check` reproduces the twenty
 source compositions and the promoted native outfit catalogue from the committed
 Crystal corpus, without network access.
 
-The existing native source importer admits the four additional physical Item
+The existing native source importer admits the fifteen additional physical Item
 profiles used by those exchanges. Its pinned Canary XML/client appearance
 inputs, canonical-fact checks and exact identity bindings are recorded in
 `tools/content-schema/native-gameplay/qengine-reward-item-profiles.json`.
@@ -55,4 +55,14 @@ outputs with a lane-only document.
 Current compositions: `pirate-sabre`, `knight-sword`, `deepling-helmet`,
 `hallowed-holy-water`, `outfox-helmet`, and `sam-backpack`, each prefixed by
 `oteryn:quest-reward/`. The last is Sam's backpack hand-in and achievement;
-Kroox's later armor delivery remains a separate quest stage.
+Kroox's later permission grant is `sam-kroox`: it updates the NPC and mine-door
+tracks together and does not mint armor. The armor remains a mine chest claim.
+
+`questl2_rewards.py` adds Dorian's seven exact deliveries (`thieves-tusks`,
+`thieves-vase`, `thieves-invitation`, `thieves-bridge`, `thieves-goblet`,
+`thieves-fish`, `thieves-letter`) and Hairycles' six hand-ins (`ape-moss`,
+`ape-syrup`, `ape-parchment`, `ape-egg`, `ape-mushroom`, `ape-hair`). Offers bind
+each confirmation to its source topic and storage predicates. These are stage
+definitions, not a whole-quest qualification claim. The witches' cap retains
+its source 24-hour temporal facts; the existing reward owner refuses timed
+instances, so its timed hand-in is not qualified by ordinary-item tests.

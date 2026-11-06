@@ -1,0 +1,103 @@
+"""Source-backed L2 exchanges using QENGINE-2's existing transaction owner."""
+import hashlib
+
+
+NPCS = ('dorian', 'hairycles', 'kroox')
+ITEMS = {227, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933, 7935, 7936}
+
+
+def append(callbacks, offers, inputs, pin):
+    def state(track, before, after, maximum=None, preserve=False):
+        return {'track': 'oteryn:quest-progress/quest/' + track,
+                'minimum': before, 'maximum': before if maximum is None else maximum,
+                'set': after, **({'preserve': True} if preserve else {})}
+
+    def add(name, quest, npc, keywords, storage, reply, take=(), topic=0, offer=None):
+        path = f'data-global/npc/{npc}.lua'
+        callback = {
+            'key': 'oteryn:quest-reward/' + name,
+            'quest': 'oteryn:quest.' + quest, 'npc': 'oteryn:npc.' + npc,
+            'keywords': keywords, 'topic': topic, 'next_topic': 0,
+            'storage': storage,
+            'take': [{'item': f'oteryn:item.tibia.i{item}', 'count': count}
+                     for item, count in take],
+            'give': None, 'outfit': None, 'achievement': None,
+            'reply': [reply],
+            'sources': [f'crystal:{pin}:{path}:sha256:{hashlib.sha256(inputs[path]).hexdigest()}'],
+        }
+        # Keep literal success text tied to the pinned source, rather than
+        # silently inventing a reward branch when the source corpus changes.
+        if reply not in inputs[path].decode():
+            raise ValueError('L2 reward reply is absent from donor: ' + name)
+        callbacks.append(callback)
+        if offer is not None:
+            words, text = offer
+            if text not in inputs[path].decode():
+                raise ValueError('L2 offer is absent from donor: ' + name)
+            offers.append({'npc': callback['npc'], 'keywords': words, 'topic': 0,
+                           'next_topic': topic, 'storage': storage, 'reply': [text]})
+
+    sam = 'u7_5/sams_old_backpack/'
+    add('sam-kroox', 'sam_s_old_backpack_quest', 'kroox',
+        ['sam sent me', 'sam send me'],
+        [state(sam + 'sams_old_backpack_npc', 1, 2),
+         state(sam + 'sams_old_backpack_door', -1, 1, 1)],
+        'The problem is, some giant spiders made the tunnels where the storage is their new home. Good luck.')
+
+    thieves = 'u8_2/the_thieves_guild_quest/'
+    deliveries = [
+        ('tusks', 3044, 10, 1, 2,
+         "What a fine material. That will be worth a coin or two. So far, so good. Ask me for another mission if you're ready for it."),
+        ('vase', 227, 1, 2, 3,
+         'What an ugly vase. But who am I to question the taste of our customers? Anyway, I might have another mission in store for you.'),
+        ('invitation', 7933, 1, 2, 3,
+         "You're too valuable to us. Speaking about your value, I might have some other mission for you."),
+        ('bridge', 7871, 1, 7, 8,
+         "Excellent, that serves this fool right. I fear in your next mission, you'll have to get your hands dirty. Just ask me to learn more about it."),
+        ('goblet', 7870, 1, 1, 2,
+         'That goblet is hardly worth all this trouble but we had to insist on our payment. However, I assume you are eager for more missions, so just ask.'),
+        ('fish', 7936, 1, 3, 4,
+         "This little goldfish will bring us a hefty ransom! Just ask me if you're ready for another mission."),
+        ('letter', 7935, 1, 1, 2,
+         "Excellent, that little letter will do the trick for sure ..."),
+    ]
+    for index, (name, item, count, before, after, reply) in enumerate(deliveries, 1):
+        add('thieves-' + name, 'the_thieves_guild_quest', 'dorian', ['yes'],
+            [state(thieves + f'mission{index:02}', before, after),
+             state(thieves + 'questline', index, index + 1)],
+            reply, [(item, count)], topic=index + 1,
+            offer=(['mission'], 'Have you finished your mission?'))
+
+    ape = 'u7_6/the_ape_city/'
+    deliveries = [
+        ('moss', 4827, 1, 2, 3,
+         "Ah yes! That's it. Thank you for bringing mighty whisper moss to Hairycles. It will help but still much is to be done. Just ask for other mission if you ready.",
+         'Oh, you brought me whisper moss? Good hairless ape you are! Can me take it?'),
+        ('syrup', 4828, 3, 4, 4,
+         'You so good! Brought syrup to me! Thank you, will prepare cure now. Just ask for {mission} if you want help again.',
+         'You brought me that cough syrup from human healer me asked for?'),
+        ('parchment', 4831, 5, 6, 7,
+         'You brought scroll with lizard text? Good! I will see what text tells me! Come back when ready for other mission.',
+         'You got scroll from lizard village in south east?'),
+        ('egg', 4839, 9, 10, 11,
+         'Ah, the egg! Mighty warrior you be! Thank you. Hairycles will put it at safe place immediately.',
+         'You bring Hairycles egg of hydra?'),
+        ('mushroom', 4829, 11, 12, 13,
+         "Incredible, you brought a witches' cap! Now me can prepare mighty charm of life. Yet still other {missions} will await you, friend.",
+         "You brought Hairycles witches' cap from Fibula?"),
+        ('hair', 4832, 15, 16, 16,
+         'Incredible! You got a hair of holy Bong! This will raise the spirit of my people. You are truly a friend. But one last mission awaits you.',
+         'You brought hair of holy ape?'),
+    ]
+    for name, item, before, after, topic, reply, offer in deliveries:
+        storage = [state(ape + 'questline', before, after)]
+        if name == 'moss':
+            storage.append(state('u7_6/whisper_moss', 1, 1, preserve=True))
+        elif name == 'hair':
+            storage.append(state(ape + 'holy_ape_hair', 1, 1, preserve=True))
+        elif name == 'mushroom':
+            # The source closes the temporary Fibula door on delivery.
+            storage.append(state(ape + 'fibula_door', -1, -1, 1))
+        add('ape-' + name, 'the_ape_city_quest', 'hairycles', ['yes'],
+            storage, reply, [(item, 1)], topic=topic,
+            offer=None if offer is None else (['mission'], offer))

@@ -24,6 +24,39 @@
       ]
     },
     {
+      "npc": "oteryn:npc.dorian",
+      "greet": "Greetings, |PLAYERNAME|! Why do you disturb me?",
+      "farewell": "Good bye, |PLAYERNAME|!",
+      "walkaway": "Good bye, |PLAYERNAME|!",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:234:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:233:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:232:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "greet": "Oh! Hello! Hello! Did not notice!",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hairycles.lua:56:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.kroox",
+      "greet": "Welcome to Kroox Quality Armor, |PLAYERNAME|! Wanna take a look, ask me for a trade.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kroox.lua:82:sha256:080ef330bea12ad63d9d9aecdf259e669df0eb448287907f583aa04fa5e64497",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.morgan",
       "greet": "Hello there.",
       "farewell": "Good bye.",
