@@ -330,7 +330,7 @@ pub(super) async fn prepare_channel(
     }))
 }
 
-// The legacy epoch-zero bootstrap must never manufacture an activation decision.
+// Epoch zero has no committed day. Never manufacture a local activation roll here.
 fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldChanges {
     oteryn_gameplay_world_change::daily::DailyWorldChanges {
         reset_epoch: 0,
@@ -340,14 +340,12 @@ fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldC
         grimvale_full_moon: false,
         flower_month: false,
         stampede: false,
-        fury_gates: None,
-        nightmare_isles: None,
     }
 }
 #[cfg(test)]
 mod worldchg_bootstrap_tests {
     #[test]
-    fn worldchg_portal_layers_uninitialized_epoch_has_no_activation() {
+    fn worldchg_bootstrap_uninitialized_epoch_has_no_activation() {
         let day = super::bootstrap_world_changes();
         for key in [
             "thawing",
@@ -355,13 +353,8 @@ mod worldchg_bootstrap_tests {
             "oriental_trader",
             "grimvale",
             "stampede",
-            "fury_gates",
-            "nightmare_isles",
         ] {
-            assert!(
-                !oteryn_gameplay_world_change::owner::is_active(&day, key),
-                "uninitialized World activated {key}"
-            );
+            assert!(!oteryn_gameplay_world_change::owner::is_active(&day, key));
         }
     }
 }

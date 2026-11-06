@@ -85,16 +85,12 @@ impl OrientalTraderTown {
 }
 
 /// The draws a day takes, in this order, each its own purpose.
-pub const DRAW_PURPOSES: [&str; 9] = [
+pub const DRAW_PURPOSES: [&str; 5] = [
     "thawing",
     "their-masters-voice",
     "oriental-trader",
     "oriental-trader-town",
     "stampede",
-    "fury-gates",
-    "fury-gates-variant",
-    "nightmare-isles",
-    "nightmare-isles-variant",
 ];
 
 /// Authored daily candidate probabilities. Native effect identities and variant
@@ -105,8 +101,6 @@ pub struct DailyCandidates {
     pub voice_percent: u8,
     pub trader_percent: u8,
     pub stampede_permille: u16,
-    pub fury_permille: u16,
-    pub nightmare_permille: u16,
 }
 
 /// The world changes of one day.
@@ -124,10 +118,6 @@ pub struct DailyWorldChanges {
     /// Old immutable decisions stay inactive until their next server save.
     #[serde(default)]
     pub stampede: bool,
-    #[serde(default)]
-    pub fury_gates: Option<u8>,
-    #[serde(default)]
-    pub nightmare_isles: Option<u8>,
 }
 
 impl DailyWorldChanges {
@@ -143,8 +133,6 @@ impl DailyWorldChanges {
                 voice_percent: THEIR_MASTERS_VOICE_PERCENT,
                 trader_percent: ORIENTAL_TRADER_PERCENT,
                 stampede_permille: 125,
-                fury_permille: 343,
-                nightmare_permille: 1000,
             },
             draw,
         )
@@ -157,17 +145,7 @@ impl DailyWorldChanges {
         candidates: DailyCandidates,
         mut draw: impl FnMut(&str) -> u64,
     ) -> Self {
-        let [
-            thawing,
-            voice,
-            trader,
-            town,
-            stampede,
-            fury,
-            fury_variant,
-            nightmare,
-            nightmare_variant,
-        ] = DRAW_PURPOSES;
+        let [thawing, voice, trader, town, stampede] = DRAW_PURPOSES;
         let thawing = percent_roll(draw(thawing), u64::from(candidates.thawing_percent));
         let their_masters_voice = percent_roll(draw(voice), u64::from(candidates.voice_percent));
         let oriental_trader = percent_roll(draw(trader), u64::from(candidates.trader_percent))
@@ -176,20 +154,7 @@ impl DailyWorldChanges {
                 1 => OrientalTraderTown::Carlin,
                 _ => OrientalTraderTown::LibertyBay,
             });
-        let mut portal = |chance, activation, variant, count| {
-            ((u128::from(draw(activation)) * 1000) >> 64 < u128::from(chance))
-                .then(|| choice(draw(variant), count) as u8)
-        };
-        let fury_gates = portal(candidates.fury_permille, fury, fury_variant, 10);
-        let nightmare_isles = portal(
-            candidates.nightmare_permille,
-            nightmare,
-            nightmare_variant,
-            3,
-        );
         Self {
-            fury_gates,
-            nightmare_isles,
             stampede: (u128::from(draw(stampede)) * 1000) >> 64
                 < u128::from(candidates.stampede_permille),
             reset_epoch,
@@ -243,7 +208,7 @@ mod tests {
         let roll = |draws: [u64; 5], month, day| {
             DailyWorldChanges::roll(9, month, day, |purpose| {
                 let index = DRAW_PURPOSES.iter().position(|p| *p == purpose);
-                index.and_then(|i| draws.get(i)).copied().unwrap_or(0)
+                draws[index.unwrap_or(0)]
             })
         };
         let all = roll([0, 0, 0, at(2, 3), 0], 6, 13);
@@ -257,8 +222,6 @@ mod tests {
                 grimvale_full_moon: true,
                 flower_month: true,
                 stampede: true,
-                fury_gates: Some(0),
-                nightmare_isles: Some(0),
             }
         );
         let none = roll([u64::MAX; 5], 5, 12);

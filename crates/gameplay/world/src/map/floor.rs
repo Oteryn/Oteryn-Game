@@ -90,7 +90,6 @@ pub fn palette_mask(family: Family, key: &str) -> u8 {
 pub struct FloorTable {
     tiles: BTreeMap<TilePos, u8>,
     teleports: BTreeMap<TilePos, TilePos>,
-    fury_gates: BTreeSet<TilePos>,
 }
 
 impl FloorTable {
@@ -109,17 +108,6 @@ impl FloorTable {
     /// The destination of the teleport at `pos`, if the tile teleports.
     pub fn teleport(&self, pos: TilePos) -> Option<TilePos> {
         self.teleports.get(&pos).copied()
-    }
-
-    /// Guarded source callbacks are committed by the locked player movement owner only.
-    pub fn guard_fury_gate(&mut self, from: TilePos) {
-        self.fury_gates.insert(from);
-    }
-    pub fn fury_gate_destination(&self, at: TilePos) -> Option<TilePos> {
-        self.fury_gates
-            .contains(&at)
-            .then(|| self.teleport(at))
-            .flatten()
     }
 
     /// How many tiles teleport.
@@ -348,13 +336,7 @@ fn teleported(
     landable: &impl Fn(Cell) -> bool,
     cell: Cell,
 ) -> Cell {
-    let Some(to) = pos(cell.0, cell.1, cell.2).and_then(|from| {
-        if table.fury_gates.contains(&from) {
-            None
-        } else {
-            table.teleport(from)
-        }
-    }) else {
+    let Some(to) = pos(cell.0, cell.1, cell.2).and_then(|from| table.teleport(from)) else {
         return cell;
     };
     let target = (i32::from(to.x), i32::from(to.y), -i32::from(to.floor));

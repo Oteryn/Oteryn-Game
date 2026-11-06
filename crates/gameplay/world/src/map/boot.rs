@@ -312,13 +312,6 @@ fn scan(
                 floor: sector.floor,
             };
             floors.add(at, mask);
-            if tile
-                .items
-                .iter()
-                .any(|item| item.depth == 0 && item.attrs.action == Some(9710))
-            {
-                floors.guard_fury_gate(at);
-            }
             // NEWHAVEN-TELEPORT-1: the teleport attribute of a top-level entry; its floor byte
             // is the native floor (format document §5), which the reader checked is in the World.
             if let Some((x, y, floor)) = tile
@@ -1015,22 +1008,17 @@ pub mod tests {
     /// [`floor_bundle`], plus a stair up onto a hole whose floor below leads back to the stair
     /// (`cycle`): stair `i1947` (north) on `z` 8 at (3, 3) and (3, 2), the hole on `z` 7 at (3, 2).
     pub fn floor_bundle_with(cycle: bool) -> (Vec<u8>, BundlePins) {
-        floor_bundle_of(cycle, false, false)
+        floor_bundle_of(cycle, false)
     }
 
     /// NEWHAVEN-TELEPORT-1: [`floor_bundle`], plus a row of teleports (palette Item `i37001`)
     /// on `z` 8 at `y` 1: (0, 1) to (5, 1), (3, 1) to the missing tile (9, 1) and (4, 1) to (6, 1)
     /// under a solid box; (5, 1) is plain grass in a protection zone (tile flag bit 0).
     pub fn teleport_bundle() -> (Vec<u8>, BundlePins) {
-        floor_bundle_of(false, true, false)
+        floor_bundle_of(false, true)
     }
 
-    /// WORLDCHG-Q: guarded entry using the ordinary teleport fixture terrain.
-    pub fn fury_gate_bundle() -> (Vec<u8>, BundlePins) {
-        floor_bundle_of(false, true, true)
-    }
-
-    fn floor_bundle_of(cycle: bool, teleports: bool, fury: bool) -> (Vec<u8>, BundlePins) {
+    fn floor_bundle_of(cycle: bool, teleports: bool) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
             self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -1126,9 +1114,6 @@ pub mod tests {
             let teleport = |x, to: (u16, u16)| {
                 let mut tile = tile(x, 1, &[0, 5]);
                 tile.items[1].attrs.teleport = Some((to.0, to.1, (-8i8).to_ne_bytes()[0]));
-                if fury && x == 0 {
-                    tile.items[1].attrs.action = Some(9710);
-                }
                 tile
             };
             lower.extend([

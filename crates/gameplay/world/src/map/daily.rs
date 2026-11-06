@@ -13,8 +13,6 @@ pub struct DailyMap {
     pub grimvale_full_moon: bool,
     /// One of the three committed `oriental_trader/<town>` layer keys.
     pub trader: Option<&'static str>,
-    pub fury_gates: Option<u8>,
-    pub nightmare_isles: Option<u8>,
 }
 
 impl DailyMap {
@@ -68,8 +66,8 @@ impl Projection {
                 needed.insert(appearance, Some(ground));
             }
         }
-        for layer in selected_layers(daily)? {
-            for tile in source_layer(&layer)?.tiles {
+        if let Some(town) = daily.trader {
+            for tile in source_layer(town)?.tiles {
                 for (appearance, _, _) in tile.entries {
                     needed.entry(appearance).or_insert(None);
                 }
@@ -146,183 +144,51 @@ fn source_layer(town: &str) -> Result<Layer, Error> {
         .ok_or_else(|| refusal("unknown trader town"))
 }
 
-#[derive(Deserialize)]
-struct PortalPacket {
-    records: Vec<PortalRecord>,
-}
-#[derive(Deserialize)]
-struct PortalRecord {
-    key: String,
-    return_marker: PortalMarker,
-    variants: Vec<PortalVariant>,
-    #[serde(default)]
-    internal_portals: Vec<InternalPortal>,
-}
-#[derive(Deserialize)]
-struct PortalMarker {
-    position: (u16, u16, i8),
-    appearance: u16,
-}
-#[derive(Deserialize)]
-struct PortalVariant {
-    layer: String,
-    position: (u16, u16, i8),
-    destination: (u16, u16, i8),
-    return_destination: (u16, u16, i8),
-}
-#[derive(Deserialize)]
-struct InternalPortal {
-    action_id: u16,
-    appearance: u16,
-    position: (u16, u16, i8),
-    destination: (u16, u16, i8),
-}
-fn portals(
-    daily: &DailyMap,
-) -> Result<Vec<(&'static PortalRecord, &'static PortalVariant)>, Error> {
-    static PACKET: std::sync::OnceLock<Result<PortalPacket, serde_json::Error>> =
-        std::sync::OnceLock::new();
-    let packet = PACKET
-        .get_or_init(|| {
-            serde_json::from_str(include_str!(
-                "../../../../../content/encounters/world-changes/portal-bindings-candidate.json"
-            ))
-        })
-        .as_ref()
-        .map_err(|_| refusal("portal bindings"))?;
-    let mut selected = Vec::new();
-    for record in &packet.records {
-        let index = match record.key.as_str() {
-            "fury_gates" => daily.fury_gates,
-            "nightmare_isles" => daily.nightmare_isles,
-            _ => return Err(refusal("unknown portal family")),
-        };
-        if let Some(index) = index {
-            let variant = record
-                .variants
-                .get(usize::from(index))
-                .ok_or_else(|| refusal("invalid committed portal variant"))?;
-            selected.push((record, variant));
-        }
-    }
-    Ok(selected)
-}
-fn selected_layers(daily: &DailyMap) -> Result<Vec<String>, Error> {
-    let mut names: Vec<_> = daily.trader.into_iter().map(str::to_owned).collect();
-    names.extend(
-        portals(daily)?
-            .into_iter()
-            .map(|(_, variant)| variant.layer.clone()),
-    );
-    Ok(names)
-}
-fn bind_portals(manifest: &Manifest, sector: &mut Sector, daily: &DailyMap) -> Result<(), Error> {
-    for (record, variant) in portals(daily)? {
-        let marker = &record.return_marker;
-        for tile in &mut sector.tiles {
-            let at = (tile.x, tile.y, -sector.floor);
-            if at == variant.position {
-                let entry = tile
-                    .items
-                    .iter_mut()
-                    .find(|item| {
-                        item.attrs.action == Some(9710)
-                            || matches!(item.attrs.unique, Some(64001..=64003))
-                    })
-                    .ok_or_else(|| refusal("missing selected portal marker"))?;
-                let (x, y, z) = variant.destination;
-                entry.attrs.teleport = Some((x, y, (-z) as u8));
-            }
-            for internal in &record.internal_portals {
-                if at == internal.position {
-                    let entry = tile
-                        .items
-                        .iter_mut()
-                        .find(|item| {
-                            item.depth == 0
-                                && manifest
-                                    .palette
-                                    .get(item.palette as usize)
-                                    .and_then(|p| palette_appearance(&p.key))
-                                    == Some(internal.appearance)
-                        })
-                        .ok_or_else(|| refusal("missing internal portal appearance"))?;
-                    entry.attrs.action = Some(internal.action_id);
-                    let (x, y, z) = internal.destination;
-                    entry.attrs.teleport = Some((x, y, (-z) as u8));
-                }
-            }
-            if at == marker.position {
-                let entry = tile
-                    .items
-                    .iter_mut()
-                    .find(|item| {
-                        item.depth == 0
-                            && manifest
-                                .palette
-                                .get(item.palette as usize)
-                                .and_then(|p| palette_appearance(&p.key))
-                                == Some(marker.appearance)
-                    })
-                    .ok_or_else(|| refusal("missing return portal appearance"))?;
-                let (x, y, z) = variant.return_destination;
-                entry.attrs.teleport = Some((x, y, (-z) as u8));
-                if daily.fury_gates.is_some() && marker.appearance == 776 {
-                    entry.attrs.action = Some(9715);
-                }
-                if marker.appearance == 10840 {
-                    entry.attrs.unique = Some(35020);
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
 fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>, Error> {
+    let Some(town) = daily.trader else {
+        return Ok(BTreeMap::new());
+    };
+    let layer = source_layer(town)?;
     let mut out = BTreeMap::<u32, Sector>::new();
-    for name in selected_layers(daily)? {
-        let layer = source_layer(&name)?;
-        for tile in layer.tiles {
-            let (x, y, z) = tile.position;
-            if x < manifest.world.min_x
-                || x >= manifest.world.max_x
-                || y < manifest.world.min_y
-                || y >= manifest.world.max_y
-                || !manifest.world.floors.contains(&-z)
-            {
-                return Err(refusal("trader layer outside world"));
-            }
-            let sector = Sector {
-                floor: -z,
-                sx: x / 32,
-                sy: y / 32,
-                tiles: Vec::new(),
-            };
-            let items = tile
-                .entries
-                .into_iter()
-                .map(|(appearance, action, unique)| {
-                    Ok(Item {
-                        palette: index(manifest, appearance)?,
-                        depth: 0,
-                        attrs: Attrs {
-                            action,
-                            unique,
-                            ..Attrs::default()
-                        },
-                    })
-                })
-                .collect::<Result<_, Error>>()?;
-            out.entry(key(&sector)).or_insert(sector).tiles.push(Tile {
-                x,
-                y,
-                flags: tile.flags.unwrap_or(0),
-                house: 0,
-                zones: Vec::new(),
-                items,
-            });
+    for tile in layer.tiles {
+        let (x, y, z) = tile.position;
+        if x < manifest.world.min_x
+            || x >= manifest.world.max_x
+            || y < manifest.world.min_y
+            || y >= manifest.world.max_y
+            || !manifest.world.floors.contains(&-z)
+        {
+            return Err(refusal("trader layer outside world"));
         }
+        let sector = Sector {
+            floor: -z,
+            sx: x / 32,
+            sy: y / 32,
+            tiles: Vec::new(),
+        };
+        let items = tile
+            .entries
+            .into_iter()
+            .map(|(appearance, action, unique)| {
+                Ok(Item {
+                    palette: index(manifest, appearance)?,
+                    depth: 0,
+                    attrs: Attrs {
+                        action,
+                        unique,
+                        ..Attrs::default()
+                    },
+                })
+            })
+            .collect::<Result<_, Error>>()?;
+        out.entry(key(&sector)).or_insert(sector).tiles.push(Tile {
+            x,
+            y,
+            flags: tile.flags.unwrap_or(0),
+            house: 0,
+            zones: Vec::new(),
+            items,
+        });
     }
     Ok(out)
 }
@@ -377,8 +243,7 @@ pub(super) fn visit(
             .first_key_value()
             .is_some_and(|(k, _)| *k < key(&sector))
         {
-            if let Some((_, mut extra)) = pending.pop_first() {
-                bind_portals(manifest, &mut extra, daily)?;
+            if let Some((_, extra)) = pending.pop_first() {
                 visitor(manifest, extra)?;
             }
         }
@@ -420,14 +285,12 @@ pub(super) fn visit(
             }
             sector.tiles = tiles.into_values().collect();
         }
-        bind_portals(manifest, &mut sector, daily)?;
         fungus(manifest, &mut sector, daily)?;
         visitor(manifest, sector)
     })?;
     visited.manifest = projection.manifest.clone();
     if let Some(pending) = pending {
-        for mut sector in pending.into_values() {
-            bind_portals(&visited.manifest, &mut sector, daily)?;
+        for sector in pending.into_values() {
             visitor(&visited.manifest, sector)?;
         }
     }

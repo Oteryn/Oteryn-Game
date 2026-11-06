@@ -53,10 +53,8 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             assert!(is_active(&all, key), "{key}");
         } else if entry["status"] == "QUALIFIED" {
             qualified += 1;
-            assert!(matches!(key, "stampede" | "fury_gates" | "nightmare_isles"));
-            if key == "stampede" {
-                assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
-            }
+            assert_eq!(key, "stampede");
+            assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
             assert!(is_active(&all, key));
         } else {
             assert_eq!(entry["status"], "HELD");
@@ -64,7 +62,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         }
     }
     assert_eq!(ready, 4);
-    assert_eq!(qualified, 3);
+    assert_eq!(qualified, 1);
     for key in [
         "river_runs_deep",
         "spider_nest",
@@ -135,8 +133,6 @@ fn worldchg_authored_candidate_probabilities_control_selection() {
                 thawing_percent: percent,
                 voice_percent: percent,
                 trader_percent: percent,
-                fury_permille: 343,
-                nightmare_permille: 1000,
                 stampede_permille: u16::from(percent) * 10,
             },
             |_| u64::MAX,
@@ -165,8 +161,6 @@ fn worldchg_stampede_uses_accepted_daily_gate_and_preserves_legacy_snapshots()
                 thawing_percent: 0,
                 voice_percent: 0,
                 trader_percent: 0,
-                fury_permille: 343,
-                nightmare_permille: 1000,
                 stampede_permille: 125,
             },
             |purpose| {
@@ -192,7 +186,7 @@ fn worldchg_stampede_uses_accepted_daily_gate_and_preserves_legacy_snapshots()
 }
 
 #[test]
-fn worldchg_portal_candidates_preserve_sourced_pairs_for_native_admission()
+fn worldchg_portal_candidates_preserve_sourced_pairs_without_claiming_native_admission()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let candidate: serde_json::Value = serde_json::from_slice(&std::fs::read(
@@ -201,11 +195,11 @@ fn worldchg_portal_candidates_preserve_sourced_pairs_for_native_admission()
     let layers: serde_json::Value = serde_json::from_slice(&std::fs::read(
         root.join("content/encounters/world-changes/layers.json"),
     )?)?;
-    assert_eq!(candidate["native_admission"], true);
+    assert_eq!(candidate["native_admission"], false);
     let records = candidate["records"].as_array().ok_or("records")?;
     assert_eq!(records.len(), 2);
     for record in records {
-        assert_eq!(record["native_admission"], true);
+        assert_eq!(record["native_admission"], false);
         let variants = record["variants"].as_array().ok_or("variants")?;
         let fury = record["key"] == "fury_gates";
         assert_eq!(variants.len(), if fury { 10 } else { 3 });
@@ -243,8 +237,8 @@ fn worldchg_portal_candidates_preserve_sourced_pairs_for_native_admission()
                 }
             );
         }
-        // Closed native daily-map consumers are covered by the game-server projection tests.
-        assert!(oteryn_gameplay_world_change::owner::is_active(
+        // Source facts do not bypass the still-unimplemented W1/native gate consumers.
+        assert!(!oteryn_gameplay_world_change::owner::is_active(
             &oteryn_gameplay_world_change::daily::DailyWorldChanges::roll(7, 6, 13, |_| 0),
             record["key"].as_str().ok_or("key")?,
         ));
@@ -252,30 +246,5 @@ fn worldchg_portal_candidates_preserve_sourced_pairs_for_native_admission()
     assert_eq!(records[0]["requirements"]["min_level"], 60);
     assert_eq!(records[0]["return_marker"]["action_id"], 9715);
     assert_eq!(records[1]["return_marker"]["unique_id"], 35020);
-    Ok(())
-}
-
-#[test]
-fn worldchg_portal_draws_are_purpose_separated_bounded_and_legacy_safe()
--> Result<(), Box<dyn std::error::Error>> {
-    use oteryn_gameplay_world_change::daily::DailyWorldChanges;
-    let boundary = (((1_u128 << 64) * 343).div_ceil(1000)) as u64;
-    let day = |activation, variant| {
-        DailyWorldChanges::roll(27, 1, 1, |purpose| match purpose {
-            "fury-gates" => activation,
-            "fury-gates-variant" | "nightmare-isles-variant" => variant,
-            _ => u64::MAX,
-        })
-    };
-    assert_eq!(day(boundary - 1, 0).fury_gates, Some(0));
-    assert_eq!(day(boundary, 0).fury_gates, None);
-    assert_eq!(day(0, u64::MAX).fury_gates, Some(9));
-    assert_eq!(day(u64::MAX, u64::MAX).nightmare_isles, Some(2));
-    let mut snapshot = serde_json::to_value(day(0, 0))?;
-    let object = snapshot.as_object_mut().ok_or("snapshot")?;
-    object.remove("fury_gates");
-    object.remove("nightmare_isles");
-    let old: DailyWorldChanges = serde_json::from_value(snapshot)?;
-    assert!(old.fury_gates.is_none() && old.nightmare_isles.is_none());
     Ok(())
 }
