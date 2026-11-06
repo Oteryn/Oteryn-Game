@@ -570,18 +570,6 @@ pub trait FreshAdmissionAuthority {
         async { false }
     }
 
-    /// SRVGAP-C4: receipt replay is classified before resolving a retired source handle.
-    fn use_usable_action(
-        &self,
-        _actor: ExactActorRef,
-        _command: UseCommand,
-        _intent: oteryn_protocol_oteryn::world_object::UseIntent,
-        _source: Option<crate::gameplay_transport::item_view::ItemKey>,
-        _visible_target: bool,
-    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
-        async { Ok(None) }
-    }
-
     fn use_event_item(
         &self,
         _actor: ExactActorRef,

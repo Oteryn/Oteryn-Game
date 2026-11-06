@@ -13,7 +13,7 @@ pub(in crate::play) fn enqueue(
 ) {
     if let Some(words) = request(&mut mailbox.chat_public, spell)
         && commands
-            .send(PlayCommand::ChatPublic(ChatIntent::Say {
+            .send(PlayCommand::MovementSpeech(ChatIntent::Say {
                 mode: ChatSpeechMode::Say,
                 text: words.into(),
             }))

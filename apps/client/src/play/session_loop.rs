@@ -50,6 +50,7 @@ pub async fn run_session<T: Stepper>(
     outbox.rest_status_initialize(session.feature_selected(277));
     outbox.battle_instinct_status_initialize(session.feature_selected(278));
     outbox.skill_progress_initialize(session.feature_selected(279));
+    outbox.skill_display_initialize(session.feature_selected(370));
     outbox.party_effects_initialize(session.feature_selected(280));
     outbox.quest_initialize(session.quest_state());
     outbox.task_board_initialize(session.task_board_selected());
@@ -133,7 +134,7 @@ pub async fn run_session<T: Stepper>(
                         276 => outbox.condition_status_result(&result),
                         277 => outbox.rest_status_result(&result),
                         278 => outbox.battle_instinct_status_result(&result),
-                        279 => outbox.skill_progress_result(&result),
+                        279 | 370 => outbox.skill_progress_result(&result),
                         280 => outbox.party_effects_result(&result),
                         _ => {}
                     }
@@ -391,6 +392,14 @@ pub async fn run_session<T: Stepper>(
                     Err(error) => error,
                 }
             }
+            Ok(PlayCommand::MovementSpeech(intent)) => match session.chat_public(&intent).await {
+                Ok(outcome) => {
+                    outbox.chat_public_result(&outcome);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::ChatPublic(intent)) => match session.chat_public(&intent).await {
                 Ok(outcome) => {
                     outbox.chat_result(&intent, &outcome);

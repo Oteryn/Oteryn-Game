@@ -199,6 +199,7 @@ pub use oteryn_session::condition_status;
 pub use oteryn_session::loyalty_skills;
 pub use oteryn_session::party_effects;
 pub use oteryn_session::rest_status;
+pub use oteryn_session::skill_display;
 pub use oteryn_session::skill_progress;
 
 #[path = "features/0117-boss-encounter/protocol.rs"]

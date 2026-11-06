@@ -135,3 +135,61 @@ fn native_bar_cast_uses_binding_and_obeys_death_gate() -> Result<(), Box<dyn std
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn nx7_battle_instinct_reply_reaches_hud_beside_harmony() -> Result<(), Box<dyn std::error::Error>>
+{
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = view()?;
+    outbox.battle_instinct_status_initialize(true);
+    let status = oteryn_client_ui::battle_instinct_status::BattleInstinctStatus {
+        active: true,
+        melee: 4,
+        shielding: 24,
+    };
+    outbox.battle_instinct_status_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: status.encode().ok_or("encode")?,
+    });
+    outbox.vitals(Some(ActorVitals {
+        harmony: 5,
+        serene: true,
+        ..Default::default()
+    }));
+    view.tick(&link).map_err(|_| "tick")?;
+    assert!(view.hud_status().contains("Harmony: 5/5"));
+    assert!(
+        view.hud_status()
+            .contains("Battle Instinct: active (+4 melee, +24 shielding)"),
+        "{}",
+        view.hud_status()
+    );
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Feature(command) if (command.capability, command.kind) == (278, 494))
+    );
+    view.tick(&link).map_err(|_| "tick")?;
+    assert!(
+        commands.try_recv().is_err(),
+        "HUD refresh is bounded to two seconds"
+    );
+    outbox.battle_instinct_status_result(&oteryn_session::GatedCommandResult {
+        command_id: 2,
+        server_sequence: 2,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: oteryn_client_ui::battle_instinct_status::BattleInstinctStatus {
+            active: true,
+            melee: 0,
+            shielding: 0,
+        }
+        .encode()
+        .ok_or("encode")?,
+    });
+    view.tick(&link).map_err(|_| "tick")?;
+    assert!(view.hud_status().contains("Battle Instinct: eligible"));
+    let (fresh, _, _) = play_channel();
+    view.tick(&fresh).map_err(|_| "tick")?;
+    assert!(!view.hud_status().contains("Battle Instinct"));
+    Ok(())
+}

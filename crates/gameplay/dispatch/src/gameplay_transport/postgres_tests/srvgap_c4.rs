@@ -1,19 +1,37 @@
-//! SRVGAP-C4: USE reaches the durable item owner, including replay and refusals.
+//! C4 reconciliation: all 42 source items already belong to the event/cosmetic owners.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::item_view::ItemKey;
-use oteryn_protocol_oteryn::world_object::UseDisposition;
+use oteryn_gameplay_items::{item_cosmetics, novelty_items};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 
 #[test]
 fn reaudit_usable_item_actions() -> TestResult {
+    // Enumerate the retired C4 set independently of the main owners' selection code.
+    // A new missing mapping must not silently revive a second receipt owner.
+    let cosmetics = [
+        6579, 12786, 12787, 16252, 16253, 16254, 16255, 16256, 16257, 23538, 23684, 23685, 27655,
+        27656, 27657, 31737, 31738, 32629, 32630, 32631, 34075, 34076, 35595, 35695, 37604, 37605,
+        37746, 39544, 39545, 43899, 43900, 50060, 50061, 50064, 50067, 51656, 51657,
+    ];
+    for item in cosmetics {
+        assert!(
+            item_cosmetics::rule(&format!("oteryn:item.tibia.i{item}")).is_some(),
+            "main owns {item}"
+        );
+    }
+    for item in [906, 3002, 6572, 6576, 6578] {
+        assert!(
+            novelty_items::rule_for_key(&format!("oteryn:item.tibia.i{item}")).is_some(),
+            "main owns {item}"
+        );
+    }
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
-        eprintln!("SRVGAP_C4_PG_SKIPPED: PostgreSQL unavailable");
         return Ok(());
     }
     std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
         run(async |admin| {
-            let started = std::time::Instant::now();
             let harness = Harness::create_with_admission_seed(admin, "srvgap_c4", true, false).await?;
             super::reset();
             prepare_current_session(&harness).await?;
@@ -22,6 +40,7 @@ fn reaudit_usable_item_actions() -> TestResult {
             let deps = Dependencies::new()?;
             let (controller, pin) = crate::content::native_gameplay::test_support::activated_with_loot_tables(deps.admitted.world_id, None);
             let active = controller.active().ok_or("active")?;
+            assert!(active.native_gameplay().ok_or("native")?.cosmetics().is_none());
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(active);
             deps.initialize(&owner).await;
@@ -30,103 +49,33 @@ fn reaudit_usable_item_actions() -> TestResult {
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
             sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-            super::item_look::seed_main_backpack(&harness, &[("oteryn:item.tibia.i906", 1), ("oteryn:item.tibia.i16253", 1), ("oteryn:item.tibia.i16252", 2), ("oteryn:item.tibia.i6572", 1), ("oteryn:item.tibia.i6576", 1), ("oteryn:item.tibia.i6579", 1), ("oteryn:item.tibia.i37746", 1), ("oteryn:item.tibia.i23538", 2), ("oteryn:item.tibia.i3002", 1), ("oteryn:item.tibia.i906", 2)]).await?;
-            let command = |n| UseCommand { game_session_id: deps.admitted.game_session_id, command_id: n, item_fence: Some(fence) };
-            let item = ItemKey::Instance(id(71));
-            let first = owner.use_item_completion(deps.actor, command(1), item).await.ok_or("terminal result")?;
-            assert_eq!(first.disposition, UseDisposition::Committed, "explosive present USE must consume and emit its sourced effect");
-            let replay = owner.use_item_completion(deps.actor, command(1), item).await.ok_or("replay")?;
-            assert_eq!(replay.disposition, UseDisposition::Committed);
-            let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
-            assert_eq!(quantity, 0);
-            let conflict = owner.use_item_completion(deps.actor, command(1), ItemKey::Instance(id(72))).await.ok_or("conflict")?;
-            assert_eq!(conflict.disposition, UseDisposition::Rejected);
-            let refused = owner.use_item_completion(deps.actor, command(2), ItemKey::Instance(id(72))).await.ok_or("refusal")?;
-            assert_ne!(refused.disposition, UseDisposition::Committed, "addon requires Premium and the base outfit");
-            let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
-            assert_eq!(quantity, 1);
-            use crate::durability::item_use::novelty_appearance::{ActionPremium, ActionRequest};
-            use crate::foundation::{CommandId, CommandRef};
-            struct Premium;
-            impl ActionPremium for Premium { fn current(&self, _account: [u8;16]) -> bool { true } }
-            let permit = owner.spell_lane_permit().await.ok_or("permit")?;
-            let native = active.native_gameplay().ok_or("native")?;
-            let content = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
-            for (number, seed, expected) in [(3,73,UseDisposition::Committed), (4,73,UseDisposition::NothingToUse), (5,72,UseDisposition::Committed), (6,74,UseDisposition::Committed), (7,76,UseDisposition::Committed), (8,77,UseDisposition::Committed), (9,78,UseDisposition::Committed), (10,78,UseDisposition::NothingToUse)] {
-                let request = ActionRequest { command: CommandRef::new(command(1).game_session_id, CommandId::new(number).map_err(debug)?), source: id(seed), intent: [b"srvgap-c4-pg:".as_slice(), &number.to_be_bytes()].concat(), player_target: false };
-                let result = harness.root.use_novelty_appearance(&permit, &authority, &harness.node, fence, request.clone(), native, &content, &Premium, false).await?.ok_or("action result")?;
-                assert_eq!(result.disposition, expected, "command {number}");
-                if expected == UseDisposition::Committed {
-                    let replay = harness.root.use_novelty_appearance(&permit, &authority, &harness.node, fence, request, native, &content, &Premium, true).await?.ok_or("receipt")?;
-                    assert!(replay.replay);
-                    assert_eq!(replay.action, result.action);
-                }
+            let keys = ["oteryn:item.tibia.i16252", "oteryn:item.tibia.i16253", "oteryn:item.tibia.i23538", "oteryn:item.tibia.i6579", "oteryn:item.tibia.i37746"];
+            super::item_look::seed_main_backpack(&harness, &keys.map(|key| (key, 1))).await?;
+            for (offset, key) in keys.iter().enumerate() {
+                let source = id(71 + u8::try_from(offset)?);
+                let intent = UseIntent {
+                    target: UseTarget::Item(std::num::NonZeroU64::new(2 + u64::try_from(offset)?).ok_or("handle")?),
+                    use_with: None, use_with_map_item: None, use_with_position: None,
+                };
+                let result = owner.use_event_item(deps.actor, UseCommand {
+                    game_session_id: deps.admitted.game_session_id,
+                    command_id: 1 + u64::try_from(offset)?, item_fence: Some(fence),
+                }, intent, Some(ItemKey::Instance(source)), false).await.map_err(|_| "main cosmetic owner")?.ok_or("cosmetic result")?;
+                assert_eq!(result.disposition, UseDisposition::NotPossible, "{key}: main requires admitted cosmetic mappings");
+                let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(quantity, 1, "{key}: refusal preserves its source");
             }
-            let grants: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE source_kind='item_action'").fetch_one(&harness.pool).await?;
-            assert_eq!(grants, 6, "base, addon, doll base+addon, random mount, direct mount");
-            let timers: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_temporal_schedules WHERE definition_production_key='oteryn:item.tibia.i6573' AND target_production_key='oteryn:item.tibia.i6572' AND duration_millis=4000").fetch_one(&harness.pool).await?;
-            assert_eq!(timers, 1);
-            drop(permit);
-            owner.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
-            let before = { let runtime = owner.runtime.lock().await; owner.states.spell_states.lock().await.get(&runtime, deps.actor, command(1).game_session_id).ok_or("actor")?.health };
-            let firework = owner.use_item_completion(deps.actor, command(11), ItemKey::Instance(id(75))).await.ok_or("firework")?;
-            assert_eq!(firework.disposition, UseDisposition::Committed);
-            let after = { let runtime = owner.runtime.lock().await; owner.states.spell_states.lock().await.get(&runtime, deps.actor, command(1).game_session_id).ok_or("actor")?.health };
-            assert_eq!(after, before.saturating_sub(10));
-            assert_eq!(owner.use_item_completion(deps.actor, command(11), ItemKey::Instance(id(75))).await.ok_or("firework replay")?.disposition, UseDisposition::Committed);
-            let replay_health = { let runtime = owner.runtime.lock().await; owner.states.spell_states.lock().await.get(&runtime, deps.actor, command(1).game_session_id).ok_or("actor")?.health };
-            assert_eq!(replay_health, after);
-            let target = {
-                let mut runtime = owner.runtime.lock().await;
-                let from = runtime.read_actor_position(deps.actor).map_err(debug)?.position();
-                let session = crate::foundation::GameSessionId::decode(&id(51)).map_err(debug)?;
-                let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
-                let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-                runtime.initialize_pinned_test_position(actor, crate::foundation::MovementLocalPosition { x: from.x + 4, y: from.y, floor: from.floor }).map_err(debug)?;
-                actor
-            };
-            let intent = oteryn_protocol_oteryn::world_object::UseIntent {
-                target: oteryn_protocol_oteryn::world_object::UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?),
-                use_with: Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef { identity: target.placement_identity(), generation: target.actor_local_generation() }),
-                use_with_map_item: None, use_with_position: None,
-            };
-            let far = owner.use_usable_action(deps.actor, command(12), &intent, Some(ItemKey::Instance(id(79))), true, false).await.map_err(|_| "voodoo owner")?.ok_or("voodoo result")?;
-            assert_eq!(far.disposition, UseDisposition::TooFar, "a visible player outside Action's one-tile range must not activate the doll");
-            let permit = owner.spell_lane_permit().await.ok_or("timer permit")?;
-            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(8);
-            loop {
-                harness.root.drain_spell_item_deadlines(&permit, &authority, &harness.node, fence.runtime_scope, fence.scope_ownership_generation.get()).await.map_err(debug)?;
-                let returned: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules p JOIN game_item_instances i USING(item_instance_id) WHERE p.definition_production_key='oteryn:item.tibia.i6573' AND i.definition_production_key='oteryn:item.tibia.i6572')").fetch_one(&harness.pool).await?;
-                if returned { break; }
-                if tokio::time::Instant::now() >= deadline { return Err("trumpet did not decay through the existing Item timer".into()); }
-                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-            }
-            // A receipt committed by main's event-item owner stays with that owner,
-            // even when another source unit is still present after the acknowledgement is lost.
-            let legacy_intent = oteryn_protocol_oteryn::world_object::UseIntent {
-                target: oteryn_protocol_oteryn::world_object::UseTarget::Item(std::num::NonZeroU64::new(2).ok_or("legacy handle")?),
-                use_with: None, use_with_map_item: None, use_with_position: None,
-            };
-            let legacy_request = crate::durability::consume_transform::ConsumeTransformRequest {
-                command: CommandRef::new(command(1).game_session_id, CommandId::new(13).map_err(debug)?),
-                source: id(80), target: None,
-                intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&legacy_intent).map_err(debug)?,
-            };
-            let legacy = harness.root.consume_transform_detailed(&permit, &authority, &harness.node, fence, legacy_request, native, &content, false).await?.ok_or("main event receipt")?;
-            assert_eq!(legacy.disposition, UseDisposition::Committed);
-            drop(permit);
-            let deferred = owner.use_usable_action(deps.actor, command(13), &legacy_intent, Some(ItemKey::Instance(id(80))), false, false).await.map_err(|_| "legacy probe")?;
-            assert!(deferred.is_none(), "C4 must defer replay to main's existing receipt owner");
-            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(80).as_slice()).fetch_one(&harness.pool).await?, 1);
-            let replay = owner.use_event_item(deps.actor, command(13), legacy_intent, Some(ItemKey::Instance(id(80))), false).await.map_err(|_| "main replay")?.ok_or("main replay result")?;
-            assert_eq!(replay.disposition, UseDisposition::Committed);
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_consume_transform_records").fetch_one(&harness.pool).await?;
+            assert_eq!(receipts, 0, "unavailable mappings never produce a receipt");
+            let retired: bool = sqlx::query_scalar("SELECT to_regclass('game_usable_action_receipts') IS NULL").fetch_one(&harness.pool).await?;
+            assert!(retired, "unmerged C4 migrations must not install another receipt owner");
             drop(owner);
             drop(authority);
             drop(seal);
             harness.cleanup().await?;
-            eprintln!("SRVGAP_C4_PG_COMPLETE duration={:?}", started.elapsed());
+            eprintln!("SRVGAP_C4_PG_COMPLETE: 42 mappings checked; five cosmetic sources refused without spending");
             Ok(())
         }).map_err(|e| e.to_string())
-    })?.join().map_err(|_| "C4 scenario panicked")??;
+    })?.join().map_err(|_| "C4 reconciliation scenario panicked")??;
     Ok(())
 }

@@ -163,6 +163,7 @@ pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide
 pub use oteryn_protocol_oteryn::npc_shop;
 pub use oteryn_protocol_oteryn::party_effects;
 pub use oteryn_protocol_oteryn::rest_status;
+pub use oteryn_protocol_oteryn::skill_display;
 pub use oteryn_protocol_oteryn::skill_progress;
 /// Prey slot wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::vip_presence::{

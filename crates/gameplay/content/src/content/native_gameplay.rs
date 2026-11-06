@@ -28,7 +28,6 @@ use std::{
 pub mod cosmetics_loader;
 
 mod cosmetics_view;
-mod item_action_grants;
 pub use cosmetics_view::NativeCosmeticsView;
 
 mod market_catalogue;

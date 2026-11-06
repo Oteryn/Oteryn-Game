@@ -11,8 +11,16 @@ impl PlayLink {
             && self
                 .commands
                 .send(PlayCommand::Feature(FeatureCommand {
-                    capability: 279,
-                    kind: 495,
+                    capability: if mailbox.skill_progress.complete_selected {
+                        370
+                    } else {
+                        279
+                    },
+                    kind: if mailbox.skill_progress.complete_selected {
+                        640
+                    } else {
+                        495
+                    },
                     payload,
                 }))
                 .is_err()
@@ -27,9 +35,11 @@ impl PlayLink {
         }
         self.skill_progress_request();
         #[cfg(windows)]
-        crate::play::status_window::open_window(self, "Skill progress — Ctrl+Alt+Shift+K", |mailbox| {
-            &mut mailbox.skill_progress
-        });
+        crate::play::status_window::open_window(
+            self,
+            "Skill progress — Ctrl+Alt+Shift+K",
+            |mailbox| &mut mailbox.skill_progress,
+        );
         #[cfg(not(windows))]
         {
             lock(&self.mailbox).skill_progress.open = true;
@@ -43,6 +53,11 @@ impl PlayLink {
 impl Outbox {
     pub(in crate::play) fn skill_progress_initialize(&self, selected: bool) {
         lock(&self.0).skill_progress.selected = selected;
+    }
+    pub(in crate::play) fn skill_display_initialize(&self, selected: bool) {
+        let mut mailbox = lock(&self.0);
+        mailbox.skill_progress.complete_selected = selected;
+        mailbox.skill_progress.selected |= selected;
     }
     pub(in crate::play) fn skill_progress_result(
         &self,

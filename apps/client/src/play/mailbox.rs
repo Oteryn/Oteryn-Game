@@ -358,6 +358,7 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
         mailbox.analyser = Default::default();
@@ -395,6 +396,7 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.arena.end();
         mailbox.properties.end();
         mailbox.analyser = Default::default();
         mailbox.spell_catalog = Default::default();

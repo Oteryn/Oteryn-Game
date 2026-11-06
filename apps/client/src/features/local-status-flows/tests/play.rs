@@ -273,3 +273,71 @@ flow!(
         ..Default::default()
     }
 );
+
+#[test]
+fn nx7_complete_skills_native_play_queue_decode_and_display() -> Result<(), Error> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), Error> {
+            oteryn_client_runtime::ClientRuntime::new()?.block_on(async {
+                let full = oteryn_session::skill_display::SkillDisplay {
+                    trained: oteryn_session::skill_progress::SkillProgressSnapshot {
+                        skills: [oteryn_session::skill_progress::SkillProgress {
+                            level: 30,
+                            progress: 50,
+                            required: 100,
+                            percent: 5000,
+                        }; 8],
+                    },
+                    level: 8,
+                    experience: 5300,
+                    level_percent: 5000,
+                    loyalty_bonus_percent: 50,
+                    loyalty_levels: [31; 8],
+                    current_levels: Some([35; 8]),
+                };
+                let release = Arc::new(Notify::new());
+                let peer = Peer {
+                    selected: true,
+                    capability: 370,
+                    kind: 640,
+                    replies: [
+                        (CommandStatus::Accepted, full.encode().ok_or("encode")?),
+                        (CommandStatus::Accepted, vec![255]),
+                    ]
+                    .into(),
+                    calls: Arc::default(),
+                    release: Arc::clone(&release),
+                    served: Arc::default(),
+                };
+                let (link, incoming, outbox) = play_channel();
+                let task = tokio::spawn(run_session(peer, incoming, outbox));
+                ready(|| link.skill_progress_panel().complete_selected).await?;
+                link.skill_progress_request();
+                release.notify_one();
+                ready(|| link.skill_progress_panel().complete.is_some()).await?;
+                let panel = link.skill_progress_panel();
+                assert_eq!(panel.complete, Some(full));
+                let text = oteryn_client_ui::skill_progress::panel_text(&panel);
+                for expected in [
+                    "Level: 8",
+                    "Experience: 5300",
+                    "50.00% to next level",
+                    "Loyalty skill-point bonus: 50%",
+                    "Magic: 30 / 31 / 35",
+                    "Fishing: 30 / 31 / 35",
+                ] {
+                    assert!(text.contains(expected), "{text}");
+                }
+                link.skill_progress_request();
+                ready(|| link.skill_progress_panel().error.is_some()).await?;
+                assert_eq!(link.skill_progress_panel().complete, Some(full));
+                link.request_logout();
+                task.await?;
+                assert_eq!(link.skill_progress_panel(), Default::default());
+                Ok::<(), Error>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "NX-7 play thread panicked")?
+}

@@ -34,13 +34,13 @@ pub enum VoiceError {
     Draw,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VoiceLine {
     pub text: String,
     pub mode: ProjectV2SpeechMode,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VoiceProfile {
     pub name: String,
     pub interval_ms: u64,

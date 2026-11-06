@@ -268,5 +268,7 @@ pub mod condition_status;
 pub mod party_effects;
 #[path = "features/0277-rest-status/mod.rs"]
 pub mod rest_status;
+#[path = "features/0370-skill-display/mod.rs"]
+pub mod skill_display;
 #[path = "features/0279-skill-progress/mod.rs"]
 pub mod skill_progress;

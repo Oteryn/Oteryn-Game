@@ -120,6 +120,8 @@ impl NpcTalkEntry {
 /// Catalogue display names and the qualified native talk entries, by NPC key.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcTalkBook {
+    /// Source-qualified automatic speech, installed only by the catalogue/bundle boot binding.
+    source_voices: std::collections::BTreeMap<String, crate::npc_voice::VoiceProfile>,
     /// S-ENTNAME: all admitted catalogue names, including NPCs without native dialogue.
     display_names: HashMap<String, String>,
     npcs: HashMap<String, NpcTalkEntry>,
@@ -129,6 +131,25 @@ pub struct NpcTalkBook {
 }
 
 impl NpcTalkBook {
+    pub fn bind_source_voices(
+        &mut self,
+        catalogue: &crate::content::NpcDataCatalogue,
+        model: &NpcServiceModel,
+        qualify: impl Fn(&str) -> Option<String>,
+    ) -> Result<(), crate::npc_voice::VoiceError> {
+        if self.catalogue_revision != Self::from_model(model).catalogue_revision {
+            return Err(crate::npc_voice::VoiceError::ContentSourceMismatch);
+        }
+        self.source_voices = crate::npc_voice::profiles_from_catalogue(catalogue, model, qualify)?;
+        Ok(())
+    }
+
+    pub fn source_voices(
+        &self,
+    ) -> &std::collections::BTreeMap<String, crate::npc_voice::VoiceProfile> {
+        &self.source_voices
+    }
+
     /// Entries for every NPC with generated replies. An NPC with an admitted Dialogue is left out
     /// until a dialogue packet reads it.
     pub fn from_model(model: &NpcServiceModel) -> Self {

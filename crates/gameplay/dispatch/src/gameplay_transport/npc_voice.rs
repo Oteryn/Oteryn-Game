@@ -1,32 +1,161 @@
 //! NPC-BEHAVIOUR0 §6: source-bound voice preparation in the current Channel owner.
 //!
-//! This consumes the existing typed catalogue; it does not admit new content or publish chat.
-//! NPC-CONTENT-2 supplies the exact typed presence fields on NPC definitions. The CP integration
-//! must run this only on the budgeted NPC think, select CHAT_V1 listeners in the same Channel and enqueue
-//! through the chat owner. The native chat value carries the NPC's original text for both
+//! NPC-CONTENT-2 supplies the exact typed presence fields on NPC definitions. The listener's
+//! Channel cadence consumes the catalogue/bundle-bound talk book, selects current CHAT_V1
+//! listeners and enqueues through the chat owner. The native chat value carries original text for both
 //! say and yell, exempt from the player's yell transformation and ingress spam control.
-//! There is no native source-catalogue-to-active-runtime-pin binding port here: matching the
-//! catalogue and model does not establish that their voices belong to the running bundle.
-
-#![allow(
-    dead_code,
-    reason = "NPC voice consumer awaits content admission and CP owner wiring"
-)]
+//! The cycle retains the boot runtime's exact movement context; a replacement pin or owner
+//! cannot reuse it. Late timer ticks coalesce rather than accumulating missed speeches.
 
 use crate::ai_think::profile_schedule::decision_occurrence;
 use crate::ai_think::targeting::sees;
 use crate::ai_think::{CREATURE_THINK_INTERVAL_MILLIS, ThinkOccurrence};
+#[cfg(test)]
 use crate::chat::ChatText;
+#[cfg(test)]
 use crate::content::{NpcDataCatalogue, NpcServiceModel};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementPositionContext};
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 use std::collections::BTreeMap;
+
+/// One cycle belongs to one listener's Channel, independently of its connection count.
+pub(super) struct NpcVoiceCycle {
+    book: NpcVoiceBook,
+    context: MovementPositionContext,
+    states: BTreeMap<[u8; 16], ScheduledVoice>,
+    window: Option<u64>,
+    started: usize,
+}
+
+struct ScheduledVoice {
+    state: NpcVoiceState,
+    due_us: Option<u64>,
+}
+
+impl NpcVoiceCycle {
+    pub(super) fn new(runtime: &ChannelRuntimeV1, talk: &super::npc_talk::NpcTalkBook) -> Self {
+        Self {
+            book: NpcVoiceBook {
+                profiles: talk.source_voices().clone(),
+            },
+            context: runtime.pinned_movement_context(),
+            states: BTreeMap::new(),
+            window: None,
+            started: 0,
+        }
+    }
+
+    pub(super) fn next_due_us(&self) -> Option<u64> {
+        self.states.values().filter_map(|state| state.due_us).min()
+    }
+}
+
+impl super::ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn emit_npc_voices(&self, cycle: &mut NpcVoiceCycle, now_us: u64) {
+        {
+            let runtime = self.runtime.lock().await;
+            if runtime.owner_fence().is_err() || runtime.pinned_movement_context() != cycle.context
+            {
+                return;
+            }
+            let visible = runtime.visible_entities();
+            let live = visible
+                .npcs
+                .iter()
+                .map(|npc| npc.actor.placement_identity())
+                .collect::<std::collections::BTreeSet<_>>();
+            cycle.states.retain(|identity, _| live.contains(identity));
+            for npc in &visible.npcs {
+                if let std::collections::btree_map::Entry::Vacant(entry) =
+                    cycle.states.entry(npc.actor.placement_identity())
+                    && let Ok(Some(state)) = NpcVoiceState::new(&runtime, npc.actor, &cycle.book)
+                {
+                    entry.insert(ScheduledVoice {
+                        state,
+                        due_us: None,
+                    });
+                }
+                if let Some(state) = cycle.states.get_mut(&npc.actor.placement_identity()) {
+                    if visible
+                        .players
+                        .iter()
+                        .any(|player| sees(player.position, npc.position))
+                    {
+                        state.due_us.get_or_insert(now_us);
+                    } else {
+                        state.due_us = None;
+                    }
+                }
+            }
+        }
+        let window = now_us / crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS;
+        if cycle.window != Some(window) {
+            cycle.window = Some(window);
+            cycle.started = 0;
+        }
+        // NPCBEH0-RL-02: 256 NPC thinks per creature-think window, oldest deadline first.
+        // Actors share one scope/context; its local id and generation define ExactActorRef order.
+        let mut due = cycle
+            .states
+            .iter()
+            .filter_map(|(identity, state)| {
+                let due = state.due_us?;
+                (due <= now_us).then_some((
+                    due,
+                    state.state.actor.actor_local_id(),
+                    state.state.actor.actor_local_generation(),
+                    *identity,
+                ))
+            })
+            .collect::<Vec<_>>();
+        due.sort_unstable();
+        due.truncate(256_usize.saturating_sub(cycle.started));
+        cycle.started += due.len();
+        // Bound each owner critical section; movement may run between chunks.
+        for chunk in due.chunks(64) {
+            {
+                let runtime = self.runtime.lock().await;
+                if runtime.owner_fence().is_err()
+                    || runtime.pinned_movement_context() != cycle.context
+                {
+                    return;
+                }
+                let root = GameplayDecisionRoot::from_bytes(
+                    runtime.content_pin().server_artifact_digest(),
+                );
+                for &(_, _, _, identity) in chunk {
+                    if let Some(state) = cycle.states.get_mut(&identity) {
+                        let actor = state.state.actor;
+                        let Some(sequence) = state
+                            .state
+                            .last_sequence
+                            .map_or(Some(0), |last| last.checked_add(1))
+                        else {
+                            continue;
+                        };
+                        let result =
+                            state
+                                .state
+                                .think(&runtime, ThinkOccurrence { actor, sequence }, &root);
+                        // Late passes coalesce: never accumulate a burst of missed speeches.
+                        state.due_us = now_us.checked_add(CREATURE_THINK_INTERVAL_MILLIS * 1_000);
+                        if let Ok(VoiceThink::Speak(proposal)) = result {
+                            self.states.chat.publish_npc_voice(&runtime, &proposal);
+                        }
+                    }
+                }
+            }
+            tokio::task::yield_now().await;
+        }
+    }
+}
 
 #[allow(unused_imports, reason = "preserve the former NPC module path")]
 pub use oteryn_gameplay_npc::npc_voice::{
     NpcVoiceProposal, VoiceError, VoiceLine, VoiceProfile, VoiceThink,
 };
 
+#[cfg(test)]
 fn qualify_text(text: &str) -> Option<String> {
     ChatText::parse(text)
         .ok()
@@ -40,6 +169,7 @@ pub struct NpcVoiceBook {
 }
 
 impl NpcVoiceBook {
+    #[cfg(test)]
     pub fn from_catalogue(
         catalogue: &NpcDataCatalogue,
         model: &NpcServiceModel,

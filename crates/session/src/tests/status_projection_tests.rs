@@ -57,4 +57,5 @@ status_exchange!(condition_status_shipped_session_routes, 276, 492, 1);
 status_exchange!(rest_status_shipped_session_routes, 277, 493, 11);
 status_exchange!(battle_instinct_shipped_session_routes, 278, 494, 9);
 status_exchange!(skill_progress_shipped_session_routes, 279, 495, 160);
+status_exchange!(nx7_skill_display_shipped_session_routes, 370, 640, 224);
 status_exchange!(party_effects_shipped_session_routes, 280, 496, 41);

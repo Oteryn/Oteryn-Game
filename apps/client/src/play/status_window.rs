@@ -56,7 +56,31 @@ macro_rules! panel {
 panel!(condition_status, ConditionStatusPanel, 276, 492);
 panel!(rest_status, RestStatusPanel, 277, 493);
 panel!(battle_instinct_status, BattleInstinctStatusPanel, 278, 494);
-panel!(skill_progress, SkillProgressPanel, 279, 495);
+impl StatusPanel for oteryn_client_ui::skill_progress::SkillProgressPanel {
+    fn open(&self) -> bool {
+        self.open
+    }
+    fn set_open(&mut self, value: bool) {
+        self.open = value;
+    }
+    fn ready(&self) -> bool {
+        self.selected && !self.pending
+    }
+    fn text(&self) -> String {
+        oteryn_client_ui::skill_progress::panel_text(self)
+    }
+    fn request(&mut self) -> Option<FeatureCommand> {
+        oteryn_client_ui::skill_progress::request(self).map(|payload| FeatureCommand {
+            capability: if self.complete_selected { 370 } else { 279 },
+            kind: if self.complete_selected { 640 } else { 495 },
+            payload,
+        })
+    }
+    fn ended(&mut self) {
+        self.pending = false;
+        self.error = Some("Session ended");
+    }
+}
 panel!(party_effects, PartyEffectsPanel, 280, 496);
 
 unsafe extern "system" fn window_proc(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) -> LRESULT {

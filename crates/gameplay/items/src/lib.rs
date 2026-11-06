@@ -27,7 +27,6 @@ pub mod reward_bag;
 pub mod rust_lottery;
 pub mod stacking;
 pub mod starter_grant;
-pub mod usable_actions;
 
 pub mod corpse_open;
 pub mod item_ref_admission;

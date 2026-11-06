@@ -79,7 +79,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 /// Crystal player.cpp:3799-3809 rounds to the nearest hundredth of a percent.
 /// The integer numerator also handles every bounded durable progress value without overflow.
-fn project_skill(
+pub(super) fn project_skill(
     formula: &impl oteryn_gameplay_domain::domain::character_build::BuildFormula,
     vocation: &str,
     family: usize,
@@ -90,20 +90,24 @@ fn project_skill(
         .checked_add(1)
         .and_then(|next| formula.required(vocation, family, next))
         .unwrap_or(0);
+    SkillProgress {
+        level,
+        progress,
+        required,
+        percent: percent(progress, required),
+    }
+}
+
+pub(super) fn percent(progress: u64, required: u64) -> u16 {
     let rounded = if required == 0 {
         0
     } else {
         (u128::from(progress) * 10_000 + u128::from(required) / 2) / u128::from(required)
     };
-    SkillProgress {
-        level,
-        progress,
-        required,
-        percent: u16::try_from(rounded)
-            .ok()
-            .filter(|value| *value <= 10_000)
-            .unwrap_or(0),
-    }
+    u16::try_from(rounded)
+        .ok()
+        .filter(|value| *value <= 10_000)
+        .unwrap_or(0)
 }
 
 macro_rules! composed_methods {

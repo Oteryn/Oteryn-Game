@@ -103,6 +103,7 @@ pub mod refusal_detail;
 mod registered_capabilities;
 pub mod rest_status;
 pub mod server_save_countdown;
+pub mod skill_display;
 pub mod skill_progress;
 pub mod spectate;
 pub mod spell_presentation_candidate;

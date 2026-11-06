@@ -31,7 +31,6 @@ impl std::ops::Deref for NativeCosmeticsView {
 impl AppearanceContent<String> for NativeCosmeticsView {
     fn earned_grant_keys(&self) -> Vec<String> {
         let mut keys = self.content.earned_grant_keys();
-        keys.extend(super::item_action_grants::keys());
         for selector in [17, 18] {
             if let Some(key) = self.drome_grant(selector) {
                 keys.push(key.into());
@@ -64,12 +63,7 @@ impl AppearanceContent<String> for NativeCosmeticsView {
                 UnlockFact::Incompatible
             };
         }
-        match self.content.earned_unlock(grant_key, provenance, target) {
-            UnlockFact::Absent => {
-                super::item_action_grants::resolve(self, grant_key, provenance, target)
-            }
-            result => result,
-        }
+        self.content.earned_unlock(grant_key, provenance, target)
     }
     fn palette_size(&self) -> u16 {
         self.content.palette_size()
