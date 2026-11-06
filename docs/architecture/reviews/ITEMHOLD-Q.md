@@ -56,7 +56,7 @@ by `/admissions/*/item_id`; raw Wiki saves are in
 | 39546 Primal Bag | **RESOLVED** | `imports/canary/items-xml/items.xml:73191`: weight 16000, no capacity/charges/timer. Wiki witness `98740:0`: 160.00 oz, stackable no. Client container=false: this is an opening reward token, not a container with guessed capacity. Preserve the existing reward-bag owner (`tools/content-migration/reward_bag_profiles.py:1`, retained `tools/content-schema/native-gameplay/reward-bag-profiles.json:1`). NonStackable, no container/charges/timer. |
 | 44179 Bottled Dragon Breath | **HELD** | Canonical record `content/items/definitions/items-25500-25999.json:1` has UNKNOWN weight; pinned client object 44179 proves name/portability and a light flag, not physical weight or source defaults. No effective 44179 row exists in the retained Canary XML, no exact 44179 production binding exists in `imports/crystalserver/bindings/items.json:1`, and no complete own-ID witness for this item exists in the cited Wiki witness set/reward snapshots. Do not infer a bottle's capacity, weight, fluid subtype or light attributes from its name. Requires a complete qualified donor record and exact binding. |
 | 3083 Garlic Necklace | **RESOLVED (Item); Ornamented Shield remains HELD** | `imports/canary/items-xml/items.xml:7272`: **150** charges, weight 380, life-drain protection 20%, necklace slot. Wiki page 2452/revision 1194208 agrees on 150 charges and 3.80 oz. No timer/container. The Ornamented Shield reward's existing `SOURCE_CHARGE_MISMATCH` is preserved by `reward_claim_authoring.py:249`; admitting the Item does not authorize changing the conflicting source reward. |
-| 3056 Bronze Amulet | **RESOLVED** | `imports/canary/items-xml/items.xml:6966`: 200 charges, weight 500, mana-drain protection 20%, necklace slot; no timer/capacity. Wiki page 2466/revision 1194240 agrees. Preserve exact equipment/protection facts; NonStackable, full charges 200, no timer/container. Power Ring's independent source lowering checks remain governed by the reward authoring tool. |
+| 3056 Bronze Amulet | **RESOLVED (Item)** | `imports/canary/items-xml/items.xml:6966`: 200 charges, weight 500, mana-drain protection 20%, necklace slot; no timer/capacity. Wiki page 2466/revision 1194240 agrees. Preserve exact equipment/protection facts; NonStackable, full charges 200, no timer/container. Power Ring's independent `NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED` source-claim qualification remains held (`waiting_item_semantics`); this catalogue repair does not extend the closed source-claim lowering proof. |
 | 2881 Cup | **RESOLVED** | `imports/canary/items-xml/items.xml:6150`: pickupable, weight 200. Wiki page 3723/revision 1043630 and client liquidcontainer flag agree. `tools/content-migration/fluid_container_profiles.py:1` already qualifies this ID through Crystal 201189f8 `data/scripts/actions/items/fluids.lua` and durable subtype migration 0560: fluid is KNOWN with fluid_type NOT_APPLICABLE (instance-owned), not an Item child-container capacity. NonStackable, no definition charges/timer/container. Present's fluid instance semantics retain that owner. |
 | 2882 Jug | **RESOLVED** | `imports/canary/items-xml/items.xml:6155`: pickupable, weight 750. Wiki page 3726/revision 1042330 and client liquidcontainer flag agree. Same explicit I10a fluid owner as Cup; no guessed fixed liquid, capacity, charge or timer. NonStackable; fluid content remains instance state. |
 
@@ -108,4 +108,46 @@ existing native profiles. `build_full_spell_artifact.py --refresh-loot-tables`
 updated the five existing loot facts that refer to this cohort (admission flags
 only; charge counts are preserved).
 
-Final regeneration and content checks are pending below.
+`regenerate_content.py --resolve --skip-checks` completed successfully, including
+all authoring tools and the world compiler's pin refresh. World pin digests were
+unchanged. Checks are run separately below rather than omitted.
+
+The dependent Prey simulation rebuilt its receipt (15 cases, 776 creatures).
+Semantic comparison confirms that its results, slot values and reports change
+only the model-input digest; all numerical results are identical. Taxonomy
+changes are source-input digests only (119 receipt leaves), with no category
+changes. Generated reward deltas remove the Item hold from Ornamented Shield
+while preserving its source charge conflict; Present moves to
+`waiting_implementation` with no Item holds; Triangle Tower gains its already
+qualified complete native recipe. These are dependency resolutions, not a claim
+that every affected quest is runtime-ready.
+
+Final validation covers implementation commit
+`0a19c5cba0010ed6c84fa3865459db3218cfcaf9`; the follow-up commit changes only this
+report.
+
+| Final command | Result |
+| --- | --- |
+| `python3 tools/content-migration/regenerate_content.py --resolve --skip-checks` | PASS, exit 0; authoring and pin refresh completed. |
+| `python3 tools/content-migration/validate_world_project_v2_to_tree.py` | PASS, exact qualified-tree round trip; 34,111 Items and 336 reward claims. |
+| `python3 tools/content-schema/validate_materialized_game_tree.py` | PASS, materialized 97/97, 10 world markers, 1,257 successor files. |
+| `python3 tools/content-migration/quest_reward_item_semantics.py --check` | PASS, 525 admissions, zero changed shards. |
+| `python3 tools/content-migration/prey_difficulty.py --check` | PASS, 4 derived files checked. |
+| `python3 tools/content-migration/test_itemhold_q.py` | PASS, 6 tests after final regeneration. |
+| `cargo clippy --locked -p oteryn-gameplay-content --all-targets --quiet -- -D warnings` | PASS again on the final generated inputs. Only this Rust crate changed. |
+| `cargo test --locked -p oteryn-gameplay-content --quiet -- --test-threads=2` | PASS: 312 unit tests, 1 integration test and 6 doc tests; 1 pre-existing ignored test, zero failures (unit suite 656.86 s). |
+| `cargo test --locked -p oteryn-game-server --test integration_rest content_ --quiet -- --test-threads=2` | PASS, 123 tests, 152 filtered out. |
+| `cargo test --locked -p oteryn-game-server --test content_world_project_repository --quiet -- --test-threads=2` | PASS, 5 tests (113.95 s). |
+| `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-check . /tmp/itemhold-q-pin-check` | PASS, exit 0; Oteryn bundle 31,101,773 bytes, digest `3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd`. |
+| `git diff --check` | PASS. |
+
+The existing ignored test is
+`actual_full_manifest_qualifies_source_world_and_all_owner_profiles`, which
+requires `OTERYN_FULL_SPELL_TEST_MANIFEST` from the separate explicit source
+producer. Its ignore attribute and all existing tests/guards are unchanged.
+No full nextest or full PostgreSQL suite was run, as requested.
+
+Self-review covered all handwritten changes, exact canonical/native record
+differences, source pin proofs and generated receipt deltas. No unresolved code
+finding remains; the three documented Item holds and independent quest source
+qualifications remain intentional limits of this repair. No PR was opened.
