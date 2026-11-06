@@ -908,10 +908,20 @@ async fn wardrobe(
             "a fresh wardrobe grant requires the admitted cosmetics participant"
         );
     }
-    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_account_appearance_unlock_receipts")
-        .fetch_one(&h.pool).await?, before, "refused fresh admission has no value effect");
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_account_appearance_unlock_receipts"
+        )
+        .fetch_one(&h.pool)
+        .await?,
+        before,
+        "refused fresh admission has no value effect"
+    );
     for state in &callback.storage {
-        assert_eq!(super::classic_quests::progress(owner, admitted, owner.character, &state.track).await?, state.minimum);
+        assert_eq!(
+            super::classic_quests::progress(owner, admitted, owner.character, &state.track).await?,
+            state.minimum
+        );
     }
     let command = admitted.continuity.next_command_id;
     assert_eq!(
