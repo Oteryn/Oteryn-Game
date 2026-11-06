@@ -1,5 +1,8 @@
 # SRV9 / S10 nonquest NPC audit
 
+Current disposition: see [SRV9B current disposition](#srv9b-current-disposition).
+The base audit and original validation below are retained as historical evidence.
+
 Base/fetched main: `b2cfa798e3def61002d39a6da8b9de5df5aa2fd8`.
 Donors: Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`, Crystal
 `201189f871d23597b82caf88fd611454a2ddefb8`. All 2,225 NPC files fetched successfully,
@@ -513,3 +516,28 @@ Only migrations1084/1085 are allocated;1086 remains unused. The final number
 check found no1084/1085 collision on fetched main or open PRs
 (`/tmp/srv9b-numbers-final.log`). No capability bit or command ID is allocated.
 No quest mission/dialogue or protected repository-policy/workflow/tool file changes.
+
+
+## SRV9B current disposition
+
+Task base: `e70054802f4097d45e2860c73aaa7bc5e2b0335b`, branch
+`claude/happy-davinci-ijz3wy-srv9`.
+
+| Originally held row | Current status | Evidence / remaining decision |
+| --- | --- | --- |
+| NPC fluid/subtype trades | **DONE** | Native Item-owned subtype/full-charge contract;116 fluid and57 exercise-wrap source tuples qualified; production boundary file:line index and pinned donor evidence above; real runtime-role PG BUY/SELL/SELL_ALL/LOOK, mixed-subtype isolation, fences, audit and terminal replay proven in final verification. |
+| Marriage NPC service | **HELD — OWNER QUESTION** | Exact question and both pinned Lynda file:line/hash proofs above: executable celebration mints one engraved ring, speech promises two to the speaker for spouse hand-off; confirm the adopted state machine and permanent engagement outfit/divorce lifetime rules. No marriage durable effect is activated or represented as complete. |
+
+S10 remains **PARTIAL** for that explicit marriage owner decision. The fluid row
+no longer waits for a native owner contract. No quest mission/dialogue is added.
+
+Independent exact-head review of `32bf83ae595c1bd78a702688b786489d77c6ff65`
+identified the mixed-inventory SELL_ALL issue. Its semantic RED and final GREEN
+are recorded above. After all final local checks passed, the repair source was
+frozen and reviewed as `5d7e31023b53c1e0df9aba6c6152a199b048e47e`:
+**no significant findings**. This final disposition/review update changes only
+this audit; the reviewed source and tested generated inputs remain identical.
+
+Early fast-forward push: `0e20827d9860a454f201f7ddebf8d70bb0e0191c`.
+All SRV9B commits use blakinio `<75369544+blakinio@users.noreply.github.com>`.
+Delivery is a fast-forward branch push, with no force push and no PR.
