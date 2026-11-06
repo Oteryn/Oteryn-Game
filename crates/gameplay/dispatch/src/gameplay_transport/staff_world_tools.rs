@@ -136,19 +136,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let mut runtime = self.runtime.lock().await;
                         if !runtime
                             .player_control_facts(actor, admitted.game_session_id)
+                            .or_else(|_| runtime.house_player_control_facts(actor, admitted.game_session_id))
                             .is_ok_and(|f| f.control_loss.is_none())
                         {
                             return false;
                         }
-                        if runtime
-                            .set_staff_visibility(
-                                actor,
-                                admitted.game_session_id,
-                                status.ghost && status.group >= 4,
-                                status.invisible && status.group >= 4,
-                            )
-                            .is_err()
-                        {
+                        let ghost = status.ghost && status.group >= 4;
+                        let invisible = status.invisible && status.group >= 4;
+                        // A House resident retains its native carrier slot but generic
+                        // Channel writes are closed. Unchanged flags need no writer.
+                        let unchanged = runtime.actor_staff_visibility(actor)
+                            .or_else(|_| runtime.house_staff_visibility(actor, admitted.game_session_id))
+                            .is_ok_and(|(old_ghost, old_invisible, _)| old_ghost == ghost && old_invisible == invisible);
+                        if !unchanged && runtime.set_staff_visibility(
+                            actor, admitted.game_session_id, ghost, invisible,
+                        ).is_err() {
                             return false;
                         }
                     }

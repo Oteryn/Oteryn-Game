@@ -757,6 +757,18 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
+    /// I14: probe flask/dispenser actions before Channel-only fluid handlers in a named House.
+    fn use_dispenser_action(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     /// CRAFT-1: use-with a map cooking station. Replay resolves before current handles.
     fn use_craft(
         &self,

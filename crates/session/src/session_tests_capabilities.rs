@@ -191,7 +191,7 @@ fn derived_gated_routes_match_previous_table() {
         (279, &[495], &[]),
         (280, &[496], &[]),
         // NX-5: item-only visuals use a separate transient stream.
-        (350, &[], &[102]),
+        (350, &[], &[oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS]),
         (370, &[640], &[]),
         (381, &[662], &[]),
         (382, &[664], &[]),

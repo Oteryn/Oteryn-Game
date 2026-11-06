@@ -43,6 +43,31 @@ impl HouseActionContext {
             i32::from_be_bytes(bytes[8..12].try_into().ok()?),
         ])
     }
+    pub(super) fn dispenser_proof(&self, node: &NodeIncarnationProof) -> Value {
+        json!({"house":self.house.house_key(), "node":uuid_text(*node.fact().node_id().as_bytes()),
+            "node_revision":node.fact().registration_revision(), "actor_position":self.position})
+    }
+    pub(super) async fn dispenser_current(
+        &self, tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>, node: &NodeIncarnationProof,
+    ) -> Result<bool,DurabilityError> {
+        if !prove_current_incarnation(tx,node).await?
+            || !fenced(CURRENT,node,self).fetch_one(&mut ***tx).await?.try_get::<bool,_>(0)? {return Ok(false);}
+        Ok(sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND lifecycle=1 FOR UPDATE")
+            .bind(self.fence.character_id.as_bytes().as_slice()).bind(self.house.world_id().as_bytes().as_slice())
+            .fetch_optional(&mut ***tx).await?.is_some())
+    }
+    pub(super) async fn dispenser_row(
+        &self, tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>, node: &NodeIncarnationProof, item:[u8;16],
+    ) -> Result<Option<sqlx::postgres::PgRow>,DurabilityError> {
+        let row=fenced("SELECT s.before_item,s.before_item->>'definition_family' AS definition_family,s.before_item->>'definition_production_key' AS definition_production_key,s.before_item->>'definition_revision_ref' AS definition_revision_ref,decode(repeat('00',16),'hex') AS parent,s.stack_ordinal AS ordinal,5::integer AS source_kind,jsonb_build_object('house',s.location->'house','provenance',s.provenance) AS ground_location,s.spatial_position FROM game_item_action_house_source(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,$9,encode($10,'hex')::uuid) s WHERE s.location->>'custody_kind'='house'",node,self)
+            .bind(item.to_vec()).fetch_optional(&mut ***tx).await?;
+        let Some(row)=row else{return Ok(None)};
+        let at=Self::decode_spatial_position(&row.try_get::<Vec<u8>,_>("spatial_position")?)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if at[2]!=self.position[2] || i64::from(at[0]).abs_diff(i64::from(self.position[0]))>1
+            || i64::from(at[1]).abs_diff(i64::from(self.position[1]))>1 {return Ok(None);}
+        Ok(Some(row))
+    }
     pub fn position(&self) -> [i32; 3] { self.position }
     pub fn house(&self) -> &HouseId { &self.house }
 }
@@ -67,6 +92,17 @@ const CURRENT: &str = "SELECT game_item_action_house_current(encode($1,'hex')::u
 const SOURCE: &str = "SELECT * FROM game_item_action_house_source(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,$9,encode($10,'hex')::uuid)";
 
 impl DurabilityRoot {
+    #[allow(clippy::too_many_arguments)]
+    pub async fn consume_dispenser_in_house<C: ItemLoopContent>(
+        &self, permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>, node: &NodeIncarnationProof,
+        context: &HouseActionContext, request: ConsumeTransformRequest,
+        native: &NativeGameplayState, content: &C, probe: bool,
+    ) -> Result<Option<ConsumeTransformResult>,DurabilityError> {
+        self.consume_transform_inner(permit,recovery,node,context.fence,request,native,content,probe,None,
+            ActionContext::DispenserHouseTarget(context)).await
+    }
+
     /// A current named-House read fence for the existing carried-container observer.
     /// This proves no future mutation and does not read or project House contents.
     pub async fn house_action_current(

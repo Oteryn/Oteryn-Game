@@ -54,6 +54,14 @@ impl PlayLink {
         if !oteryn_client_ui::mail::open_key(events) {
             return false;
         }
+        {
+            let mut mailbox = lock(&self.mailbox);
+            if !mailbox.properties.mail.pending
+                && let Some(handle) = mailbox.inventory.selected_item().map(|item| item.handle)
+            {
+                mailbox.properties.mail.fields[0] = handle.get().to_string();
+            }
+        }
         self.mail_open();
         true
     }

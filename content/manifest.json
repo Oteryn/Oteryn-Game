@@ -610,6 +610,9 @@
       "path": "content/items/definitions/spell-native-profiles.json"
     },
     {
+      "path": "content/items/definitions/srx1-item-updates.json"
+    },
+    {
       "path": "content/items/definitions/starting-loadout-profiles.json"
     },
     {

@@ -36,6 +36,12 @@ fn w19e_lottery_lose_wire_receipts() -> TestResult {
     run_scenario("oteryn:item.tibia.i5957", false, false)
 }
 
+#[test]
+fn srx1_demonic_blood_wire_transform_and_replay_postgres() -> TestResult {
+    run_scenario("oteryn:item.tibia.i6558",false,true)?;
+    run_scenario("oteryn:item.tibia.i6558",false,false)
+}
+
 fn run_scenario(key: &'static str, rust: bool, success: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -208,7 +214,12 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
                 source[12..].copy_from_slice(&nonce.to_be_bytes());
                 source
             })
-            .find(|source| plan(*source).is_some_and(|p| p.outputs.is_empty() != success))
+            .find(|source| plan(*source).is_some_and(|p| {
+                if key=="oteryn:item.tibia.i6558" {
+                    p.outputs.first().is_some_and(|(definition,_)| definition.production_key==
+                        if success {"oteryn:item.tibia.i236"} else {"oteryn:item.tibia.i237"})
+                } else {p.outputs.is_empty()!=success}
+            }))
             .ok_or("seeded outcome")?;
         let expected = plan(source).ok_or("plan")?;
         let mut tx = harness.pool.begin().await?;
@@ -270,7 +281,7 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         assert_eq!(recipe, expected.recipe);
         assert_eq!(
             outputs.as_array().ok_or("outputs")?.len(),
-            usize::from(success)
+            usize::from(success || key=="oteryn:item.tibia.i6558")
         );
         assert!(hash_matches);
         let polished = rust && success;
@@ -354,6 +365,11 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
             )
             .await?
         );
+        if key=="oteryn:item.tibia.i6558" {
+            super::achievement_granters::assert_progress(&harness,"oteryn:achievement/demonic_barkeeper",1,false,
+                "oteryn:consume-transform").await?;
+            eprintln!("SRX1_PG demonic blood wire/transform/replay/achievement elapsed={:?}",started.elapsed());
+        }
         eprintln!("POSTGRES_CASE_COMPLETED P11 Polisher rust={rust} success={success} replay");
         let elapsed = started.elapsed();
         assert!(elapsed > std::time::Duration::ZERO);

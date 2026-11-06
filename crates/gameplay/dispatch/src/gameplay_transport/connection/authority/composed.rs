@@ -1033,6 +1033,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn use_dispenser_action(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_dispenser(actor, command, &intent, source, target)
+            .await
+    }
+
     async fn use_craft(
         &self,
         actor: ExactActorRef,

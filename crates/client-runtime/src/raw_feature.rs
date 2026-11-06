@@ -1,5 +1,6 @@
 //! Bounded typed envelope used by native panels whose wire codecs live in `protocol-oteryn`.
 
+pub use oteryn_session::property_services::house_wrap;
 pub use oteryn_session::property_services::{staff, staff_tools};
 pub use oteryn_session::{CommandStatus, GatedCommandResult};
 use oteryn_session::{Session, SessionError, SessionStream};

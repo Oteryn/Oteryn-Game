@@ -7,6 +7,7 @@ use std::{future::Future, pin::Pin};
 
 mod inspect;
 mod live;
+mod live_fence;
 mod world;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -63,10 +64,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if assert_item_only_fence(&mut tx, &fence, &node)
-                        .await?
-                        .is_err()
-                    {
+                    if !live_fence::current(&mut tx, &fence, &node).await? {
                         return Err(DurabilityError::Unavailable);
                     }
                     let result = query(&mut tx, fence, environment, activation).await?;

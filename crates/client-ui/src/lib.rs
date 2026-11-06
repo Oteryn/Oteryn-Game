@@ -20,6 +20,8 @@ pub mod guild_war;
 pub mod guildhall;
 #[path = "features/0049-house/mod.rs"]
 pub mod house;
+#[path = "features/0207-house-furniture-wrap/mod.rs"]
+pub mod house_furniture_wrap;
 #[path = "features/0059-house-move-out/mod.rs"]
 pub mod house_move_out;
 #[path = "features/0150-house-podium/mod.rs"]

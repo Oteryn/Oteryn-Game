@@ -430,6 +430,11 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
     generated[item_path] = spell_import.canonical_bytes(items)
+    # SRX-1 keeps the historical single-line provider byte-identical. The loader
+    # composes only the changed records from a separately pinned small supplement.
+    import srx1_profile_updates
+    srx1_profile_updates.generate(root, generated, item_path, NATIVE_MANIFEST,
+                                 provider_order, spell_import.canonical_bytes)
     native_manifest = json.loads(generated[NATIVE_MANIFEST])
     native_manifest["item_profiles"]["sha256"] = hashlib.sha256(generated[item_path]).hexdigest()
     # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:
