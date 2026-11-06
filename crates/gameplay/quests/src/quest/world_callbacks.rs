@@ -42,6 +42,10 @@ pub struct Passage {
     pub appearance: u16,
     #[serde(default)]
     pub replacement: Option<u16>,
+    /// Toggle only when this removable passage is present for opening, or absent
+    /// for closing. Discordant source states leave the whole callback unchanged.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub require_state: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -247,7 +251,14 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .lever
                 .is_some_and(|p| p[0] == p[1] || callback.trigger != Trigger::Use)
-            || callback.passages.iter().any(|p| !valid_pos(p.position))
+            || callback.passages.iter().any(|p| {
+                !valid_pos(p.position)
+                    || (p.require_state
+                        && (callback.trigger != Trigger::Use
+                            || callback.lever.is_none()
+                            || !callback.reversible
+                            || p.replacement.is_some()))
+            })
             || callback.offerings.iter().any(|o| {
                 !valid_pos(o.position)
                     || o.count == 0
@@ -337,6 +348,40 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn passage_state_guard_requires_a_reversible_removal_lever() -> Result<(), String> {
+        let callback = parse(EMBEDDED)?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/giant-smithhammer")
+            .ok_or("giant callback")?;
+        assert!(callback.passages[0].require_state);
+        let row = serde_json::to_value(&callback).map_err(|e| e.to_string())?;
+        for case in 0..5 {
+            let mut bad = row.clone();
+            match case {
+                0 => bad["passages"][0]["require_state"] = 1.into(),
+                1 => bad["passages"][0]["replacement"] = 390.into(),
+                2 => bad["reversible"] = false.into(),
+                3 => bad["lever"] = serde_json::Value::Null,
+                _ => {
+                    bad["trigger"] = "step_in".into();
+                    bad["lever"] = serde_json::Value::Null;
+                }
+            }
+            assert!(
+                parse(&serde_json::json!({"schema": 1, "callbacks": [bad]}).to_string()).is_err()
+            );
+        }
+        let mut legacy = row;
+        legacy["passages"][0]
+            .as_object_mut()
+            .ok_or("passage")?
+            .remove("require_state");
+        let parsed = parse(&serde_json::json!({"schema": 1, "callbacks": [legacy]}).to_string())?;
+        assert!(!parsed[0].passages[0].require_state);
+        Ok(())
+    }
 
     #[test]
     fn read_only_world_callback_has_no_quest_write_transition() -> Result<(), String> {

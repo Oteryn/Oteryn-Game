@@ -3863,7 +3863,8 @@
             "y": 32231,
             "floor": -8
           },
-          "appearance": 389
+          "appearance": 389,
+          "require_state": true
         }
       ],
       "teleport": null,

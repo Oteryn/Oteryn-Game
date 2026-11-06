@@ -740,6 +740,111 @@ fn scenario_case(
                         }));
                     }
                 }
+                if name == "giant-smithhammer" {
+                    use crate::map::view::MapFacts;
+                    let passage = &callback.passages[0];
+                    let p = crate::map::overlay::TilePos {
+                        x: passage.position.x,
+                        y: passage.position.y,
+                        floor: passage.position.floor,
+                    };
+                    let rock = crate::map::view::placement_key(p, 1).ok_or("rock key")?;
+                    let rock_facts = world
+                        .facts()
+                        .quest_callback_replacement(rock, 389)
+                        .ok_or("rock")?;
+                    let lever_facts = |appearance| -> TestResult<_> {
+                        let mut facts = world
+                            .facts()
+                            .quest_callback_replacement(key, 2772)
+                            .ok_or("lever")?;
+                        facts.appearance_id = appearance;
+                        Ok(facts)
+                    };
+                    // Source lever.lua:7-12: the two discordant states do nothing.
+                    // Alter only the remote rock through the existing map owner.
+                    assert!(world.facts().apply_quest_callback(
+                        rock,
+                        0,
+                        rock_facts,
+                        &[rock],
+                        &[],
+                        false
+                    ));
+                    assert!(world.facts().base_hidden(rock));
+                    for (command, revision, appearance) in [(3, 2, 2772), (4, 3, 2773)] {
+                        if command == 4 {
+                            assert!(world.facts().apply_quest_callback(
+                                rock,
+                                1,
+                                rock_facts,
+                                &[rock],
+                                &[],
+                                true
+                            ));
+                            assert!(world.facts().apply_quest_callback(
+                                key,
+                                2,
+                                lever_facts(2773)?,
+                                &[],
+                                &[],
+                                false
+                            ));
+                        }
+                        owner.clock_origin = owner
+                            .clock_origin
+                            .checked_sub(std::time::Duration::from_secs(2))
+                            .ok_or("clock")?;
+                        let result = wire(
+                            &owner,
+                            &mut admitted,
+                            command,
+                            2,
+                            oteryn_protocol_oteryn::world_object::encode_use_intent(&target(
+                                revision,
+                            ))
+                            .map_err(debug)?,
+                        )
+                        .await?;
+                        assert_eq!(
+                            oteryn_protocol_oteryn::world_object::decode_use_result(&result)
+                                .map_err(debug)?,
+                            UseDisposition::NothingToUse,
+                            "discordant lever {appearance} must not toggle"
+                        );
+                        assert_eq!(world.facts().object_revision(key), revision);
+                        assert_eq!(world.facts().base_hidden(rock), appearance == 2772);
+                    }
+                    assert!(world.facts().apply_quest_callback(
+                        rock,
+                        2,
+                        rock_facts,
+                        &[rock],
+                        &[],
+                        false
+                    ));
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_secs(2))
+                        .ok_or("clock")?;
+                    let result = wire(
+                        &owner,
+                        &mut admitted,
+                        5,
+                        2,
+                        oteryn_protocol_oteryn::world_object::encode_use_intent(&target(3))
+                            .map_err(debug)?,
+                    )
+                    .await?;
+                    assert_eq!(
+                        oteryn_protocol_oteryn::world_object::decode_use_result(&result)
+                            .map_err(debug)?,
+                        UseDisposition::Committed
+                    );
+                    assert_eq!(world.facts().object_revision(key), 4);
+                    assert!(!world.facts().base_hidden(rock));
+                    assert!(!world.enterable(p));
+                }
             }
         }
         drop(owner);

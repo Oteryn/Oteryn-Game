@@ -270,11 +270,16 @@ def validate_callback(callback, directory):
                 key + ': invalid read-only callback')
     seen = set()
     for passage in callback['passages']:
-        fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement'}, key + ': passage')
+        fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement', 'require_state'}, key + ': passage')
         location = position(passage['position'], key + ': passage')
         require(location not in seen and integer(passage['appearance'], 0, 65535), key + ': invalid or duplicate passage')
         seen.add(location)
         nullable_id(passage.get('replacement'), key + ': passage replacement')
+        require(type(passage.get('require_state', False)) is bool, key + ': invalid passage state guard')
+        if passage.get('require_state', False):
+            require(callback['trigger'] == 'use' and callback.get('lever') is not None
+                    and callback['reversible'] and passage.get('replacement') is None,
+                    key + ': passage state guard requires a reversible removal lever')
     seen = set()
     for offering in callback['offerings']:
         fields(offering, {'position', 'item', 'count'}, {'position', 'item', 'count'}, key + ': offering')

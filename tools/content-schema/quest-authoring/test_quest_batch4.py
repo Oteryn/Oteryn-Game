@@ -44,6 +44,30 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_passage_state_guard_requires_a_reversible_removal_lever(self):
+        row = callback('cults_of_tibia', 'guarded-passage')
+        row.update(trigger='use', lever=[2772, 2773], reversible=True)
+        row['passages'] = [{
+            'position': {'x': 101, 'y': 200, 'floor': -7},
+            'appearance': 389, 'require_state': True,
+        }]
+        tool.validate_callback(row, 'cults_of_tibia')
+        for invalid in ('non_boolean', 'replacement', 'one_way', 'no_lever', 'step'):
+            bad = copy.deepcopy(row)
+            if invalid == 'non_boolean':
+                bad['passages'][0]['require_state'] = 1
+            elif invalid == 'replacement':
+                bad['passages'][0]['replacement'] = 390
+            elif invalid == 'one_way':
+                bad['reversible'] = False
+            elif invalid == 'no_lever':
+                bad['lever'] = None
+            else:
+                bad['trigger'] = 'step_in'
+                bad['lever'] = None
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                tool.validate_callback(bad, 'cults_of_tibia')
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)

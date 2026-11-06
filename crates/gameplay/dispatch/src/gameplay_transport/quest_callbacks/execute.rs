@@ -118,6 +118,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let [passage] = candidates.as_slice() else {
                 return UseDisposition::Rejected;
             };
+            // Source asymmetric levers refuse to toggle if a remote passage is
+            // already in the requested state. Check before any map/quest write.
+            if passage_definition.require_state && map.facts.base_hidden(*passage) != close {
+                return UseDisposition::NothingToUse;
+            }
             if let Some(appearance) = passage_definition.replacement {
                 let Some(facts) = map.facts.quest_callback_replacement(
                     *passage,
