@@ -1,0 +1,55 @@
+{
+  "schema": "OTERYN_HYDRA_EGG_NATIVE_REWARD_SOURCE/v1",
+  "quest": "oteryn:quest.hydra_egg_quest",
+  "claim": "oteryn:reward-claim.quest.hydra_egg.nest",
+  "selector": {
+    "position": {
+      "x": 32954,
+      "y": 32695,
+      "floor": -8
+    },
+    "appearance": 5676,
+    "unique": null,
+    "action": null
+  },
+  "reward": {
+    "item": "oteryn:item.tibia.i4839",
+    "count": 1
+  },
+  "repeat": "once, as the existing accepted Oteryn quest recipe",
+  "hydra_kill_required": false,
+  "sources": [
+    {
+      "url": "https://tibia.fandom.com/index.php?curid=4964&oldid=692493",
+      "sha256": "92691a32e31c7a97d8b55c36f6322a15bf548b6da526caebf65cc6759099e366",
+      "fact": "Hydra Egg reward; no level requirement"
+    },
+    {
+      "url": "https://tibia.fandom.com/index.php?curid=4967&oldid=748786",
+      "sha256": "6a09b65807b60fe1f99e82326807211c4698b446bee9567a23f2364c55b5d56b",
+      "fact": "Hydra may be killed or ignored; use the northeastern nest"
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Hydra%27s_Nest_(Quest)",
+      "capture_date": "2026-11-06",
+      "sha256": "9291d905559727b2c584677be8bf193737540f677a4e614ecf6502b7ac51d2eb",
+      "fact": "Mapper128.186,127.183,z8 gives32954,32695,z8"
+    }
+  ],
+  "native_map": {
+    "path": "content/world/placements/region-z08-x128-y127.b3",
+    "sha256": "939cc2201297cf13fa4aee45cbb3bfeb53f79a052f78161f630438bed3eaefb9",
+    "tile": [
+      32954,
+      32695
+    ],
+    "top_level_source_items": [
+      354,
+      5676
+    ],
+    "nest_top_level_ordinal": 1,
+    "nest_attributes": null
+  },
+  "native_item_profile": "existing admitted4839: stack100, weight2000; unchanged",
+  "boundary": "Exact current native nest placement and fixed once reward; no fabricated UID, command/capability or mandatory kill."
+}

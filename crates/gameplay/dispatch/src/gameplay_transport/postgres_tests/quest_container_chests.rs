@@ -259,10 +259,17 @@ fn scenario_case(
             };
             source_world(chest, unique, appearance, 0)?
         };
-        let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
+        let mut report = crate::content::world_reward_claims::bind_embedded_reward_claims(
             world.base().as_ref(),
             &|_| true,
         )?;
+        if let Some(claim) = crate::content::world_reward_claims::bind_hydra_egg(
+            world.base().as_ref(), |key, appearance| {
+                world.facts().quest_callback_matches(key, None, None, Some(appearance))
+            },
+        ) {
+            report.served.push(claim);
+        }
         assert_eq!(
             report.served.iter().any(|row| row.key.as_str() == claim),
             catalogue.is_none_or(|chest| chest.servable),

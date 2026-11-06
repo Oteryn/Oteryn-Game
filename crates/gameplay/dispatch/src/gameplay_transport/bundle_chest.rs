@@ -5,7 +5,7 @@ use super::ComposedFreshAdmission;
 use super::connection::{EarnedNotice, UseCommand, UseOutcome};
 use super::item_ref_admission::{NativeItemWeights, generation_item_facts, pinned_index};
 use super::world_map::{MapViewSource, resolve_map_target};
-use crate::content::world_reward_claims::bind_embedded_reward_claims;
+use crate::content::world_reward_claims::{bind_embedded_reward_claims, bind_hydra_egg};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::reward_claim_mint::{
     RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
@@ -51,7 +51,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         // This is a bounded, immutable Content pass over the embedded claim catalogue.
         // Unsupported shapes and unadmitted rewards remain closed in the existing binder.
-        let report = bind_embedded_reward_claims(map.overlay.base().as_ref(), &|item| {
+        let mut report = bind_embedded_reward_claims(map.overlay.base().as_ref(), &|item| {
             generation_item_facts(native, &item_ref(item)).is_ok_and(|facts| {
                 facts.container_capacity.is_none_or(|capacity| capacity > 0)
                     && !matches!(
@@ -61,6 +61,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
         })
         .ok()?;
+        if let Some(claim) = bind_hydra_egg(map.overlay.base().as_ref(), |key, appearance| {
+            map.facts.quest_callback_matches(key, None, None, Some(appearance))
+        }) {
+            report.served.push(claim);
+        }
         let source = MapViewSource {
             overlay: &map.overlay,
             facts: &map.facts,

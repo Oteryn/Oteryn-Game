@@ -122,6 +122,21 @@ class QuestCallbackProfiles(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'MARLIN_CANONICAL_FACTS'):
             marlin.definitions(self.root, definitions, sources)
 
+    def test_hydra_egg_has_pinned_native_stack_and_weight(self):
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        row = rows['oteryn:item.tibia.i4839']
+        self.assertEqual(row['admission'], {'materializable': True,
+                         'stack_class': 'StackCapable',
+                         'legal_destinations': ['CharacterInventory', 'Ground']})
+        self.assertEqual(row['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 2000})
+        self.assertEqual(row['semantics']['stack']['value'], {
+            'stackable': {'state': 'KNOWN', 'value': True},
+            'stack_max': {'state': 'KNOWN', 'value': 100}})
+        self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+
     def test_quest_chest_rewards_preserve_canonical_item_admission(self):
         self.admit()
         rows = {r['production_definition']['production_key']: r

@@ -993,6 +993,35 @@ fn quest_catalogue_chests_medusa_exact_crystal_reward_use_and_replay() -> TestRe
 }
 
 #[test]
+fn hydra_egg_native_nest_once_replay_and_refusal() -> TestResult {
+    let started = std::time::Instant::now();
+    execute(vec![CatalogueChest {
+        claim: "oteryn:reward-claim.quest.hydra_egg.nest".into(),
+        position: (32954, 32695, -8),
+        // This source is bound by its exact native position and appearance.
+        // Zero is a fixture sentinel and is never emitted as a source UID.
+        unique: 0,
+        servable: true,
+        appearance: 5676,
+        root: "oteryn:item.tibia.i4839".into(),
+        quantity: 1,
+        contents: Vec::new(),
+        texts: Vec::new(),
+        key_number: None,
+        achievement: false,
+        charges: Vec::new(),
+        fluids: Vec::new(),
+    }])?;
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some() {
+        println!(
+            "POSTGRES_CASE_COMPLETED hydra_egg_native_nest_once_replay_and_refusal duration={:?}",
+            started.elapsed()
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal() -> TestResult {
     let claims: BTreeSet<_> = [
         "desert2",
@@ -1198,7 +1227,9 @@ pub(super) fn catalogue_source_world(
                     u16::try_from(position["x"].as_u64().ok_or("source x")?)?,
                     u16::try_from(position["y"].as_u64().ok_or("source y")?)?,
                     -i8::try_from(position["z"].as_u64().ok_or("source z")?)?,
-                    u16::try_from(unique["unique_id"].as_u64().ok_or("source uid")?)?,
+                    Some(u16::try_from(
+                        unique["unique_id"].as_u64().ok_or("source uid")?,
+                    )?),
                     u16::try_from(
                         source["appearance_tibia_id"]
                             .as_u64()
@@ -1207,6 +1238,12 @@ pub(super) fn catalogue_source_world(
                 ));
             }
         }
+    }
+    if chest.claim == "oteryn:reward-claim.quest.hydra_egg.nest" {
+        assert_eq!(chest.position, (32954, 32695, -8));
+        assert_eq!(chest.unique, 0);
+        assert_eq!(chest.appearance, 5676);
+        placements.push((32954, 32695, -8, None, 5676));
     }
     assert!(
         !placements.is_empty(),
@@ -1259,7 +1296,7 @@ pub(super) fn catalogue_source_world(
                 palette,
                 depth: 0,
                 attrs: sector::Attrs {
-                    unique: Some(unique),
+                    unique,
                     ..Default::default()
                 },
             });

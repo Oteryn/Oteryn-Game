@@ -6,7 +6,10 @@
 //! placement's canonical [`PlacementKey`], bound cell and bundle `placement_key`, plus the
 //! placements that did not bind and the records left out, so the caller can gate boot on it.
 
+mod hydra_egg;
 mod native_state;
+
+pub use hydra_egg::bind_hydra_egg;
 
 use crate::content::{
     ContentError, DefinitionFamily, DefinitionRevisionRef, PlacementKey, ProductionKey,
