@@ -1,0 +1,36 @@
+{
+  "task": "questpc6",
+  "clippy": {
+    "exit_code": 0,
+    "packages": [
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability"
+    ],
+    "all_targets": true,
+    "all_features": true,
+    "deny_warnings": true,
+    "reported_duration": "2m 42s",
+    "log": ".questpc6/clippy-final.log",
+    "sha256": "1c79df329948d421e6f1200b9c8a573edfaaa5a7274dbb48719caf1d6692f1f5"
+  },
+  "fmt": {
+    "exit_code": 0,
+    "packages": [
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability"
+    ],
+    "log": ".questpc6/fmt-final.log"
+  },
+  "whole_diff_review": {
+    "checklists": [
+      "/home/mole/oteryn-cache/CODEX-CHECKLIST.md",
+      "docs/agents/review/CODEX-CHECKLIST.md"
+    ],
+    "unresolved_findings": [],
+    "new_enum_variants": [],
+    "new_struct_fields": [],
+    "new_trait_methods": [],
+    "new_production_functions": [],
+    "helper_sites": ".questpc6/phase-a-callers.txt"
+  }
+}

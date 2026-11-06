@@ -1,0 +1,52 @@
+{
+  "docs/repository/QUEST_CALLBACK_COVERAGE.json": {},
+  "tools/content-schema/quest-authoring/samples/donor-source/coverage.json": {},
+  "tools/content-schema/quest-authoring/samples/completion-matrix/all373.json": {
+    "canonical_definitions": 352,
+    "canonical_definitions_not_in_wiki_title_inventory": 2,
+    "canonical_readiness": {
+      "definition_ready": 42,
+      "waiting_data": 242,
+      "waiting_native_bindings": 68
+    },
+    "donor_mode": {
+      "DONOR_IMPLEMENTATION_AVAILABLE": 332,
+      "DONOR_PARTIAL_PLUS_REFERENCE": 12,
+      "REFERENCE_AUTHORED_REQUIRED": 29
+    },
+    "implementation_state": {
+      "NATIVE_BINDINGS_PENDING": 331,
+      "REWARD_CLAIM_USE_PENDING": 42
+    },
+    "mapping_state": {
+      "SINGLE": 373
+    },
+    "playable_assessment": "NOT_PERFORMED_BY_THIS_MATRIX",
+    "playable_verified": 0,
+    "reward_claim_owner_state": {
+      "REWARD_CLAIM_DATA_PENDING": 5,
+      "REWARD_CLAIM_IMPLEMENTATION_PENDING": 44,
+      "REWARD_CLAIM_USE_PENDING": 56
+    },
+    "reward_claim_placements": 136,
+    "reward_claim_ready_refs": 132,
+    "source_fidelity_state": {
+      "SOURCE_HOLDS_CLEAR": 152,
+      "SOURCE_HOLDS_PRESENT": 221
+    },
+    "typed_progress_state": {
+      "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 146,
+      "CHOSEN_TYPED_PROGRESS_ONLY": 68,
+      "LOWERED": 7,
+      "NO_CANDIDATE": 42,
+      "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 110
+    },
+    "unique_canonical_definitions_representing_wiki_titles": 350,
+    "wiki_titles": 373,
+    "wiki_titles_mapped": 373,
+    "work_state": {
+      "NATIVE_BINDINGS_PENDING": 331,
+      "REWARD_CLAIM_USE_PENDING": 42
+    }
+  }
+}

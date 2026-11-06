@@ -246,6 +246,9 @@ fn world_ordinal(
             .entry((position.floor, position.x, position.y))
             .or_default();
     }
+    if callback.key.contains("devil-helmet-sewer-use") && !callback.key.ends_with("blocked") {
+        cells.entry((-15, 32482, 32170)).or_default();
+    }
     data.manifest.palette.push(bundle::PaletteEntry {
         key: format!("oteryn:terrain.tibia.i{appearance}"),
         family: bundle::Family::Terrain,
