@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-game-server",
+    "--test",
+    "integration_rest",
+    "content_",
+    "--",
+    "--test-threads=1"
+  ],
+  "exit_code": 0,
+  "duration_seconds": 130.67706330300007
+}

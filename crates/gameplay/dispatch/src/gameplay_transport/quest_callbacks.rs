@@ -310,6 +310,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return false;
             };
+            if callback.is_read_only()
+                && matches!(pending.cause, QuestCause::Step(_))
+                && pending.context.is_none()
+            {
+                let Some(origin) = pending.origin else {
+                    return false;
+                };
+                if self.runtime.lock().await.read_actor_position(pending.actor)
+                    != Ok(pending.expected)
+                {
+                    return false;
+                }
+                {
+                    let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                        return false;
+                    };
+                    if !records.get(&session).is_some_and(|current| {
+                        current.actor == pending.actor
+                            && current.expected == pending.expected
+                            && current.callback == pending.callback
+                            && current.cause == pending.cause
+                            && current.key == pending.key
+                            && current.revision == pending.revision
+                            && current.context.is_none()
+                    }) {
+                        return false;
+                    }
+                    // A cancelled read reserved no mutation. The volatile record
+                    // is not an access proof: repeat the fenced read on re-entry.
+                    records.remove(&session);
+                }
+                self.movement_quest_callback(
+                    &permit,
+                    pending.actor,
+                    session,
+                    origin,
+                    pending.expected,
+                    Trigger::StepIn,
+                )
+                .await;
+                if self.has_pending_quest_callback(session) {
+                    return false;
+                }
+                continue;
+            }
             let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
                 return false;
             };
@@ -321,6 +366,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
                 return false;
+            }
+            if callback.trigger == Trigger::StepOut
+                && matches!(pending.cause, QuestCause::Step(_))
+                && pending.context.is_none()
+            {
+                let revision = map.facts.object_revision(pending.key);
+                if revision == u64::MAX {
+                    return false;
+                }
+                if revision > pending.revision {
+                    let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                        return false;
+                    };
+                    if !records.get(&session).is_some_and(|current| {
+                        current.actor == pending.actor
+                            && current.expected == pending.expected
+                            && current.callback == pending.callback
+                            && current.cause == pending.cause
+                            && current.key == pending.key
+                            && current.revision == pending.revision
+                            && current.context.is_none()
+                    }) {
+                        return false;
+                    }
+                    // A later pressure event already owns this projection.
+                    // An older stateless departure must not overwrite it.
+                    records.remove(&session);
+                    continue;
+                }
             }
             let result = self
                 .execute_quest_callback(
@@ -545,10 +619,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     // Both events observe the same committed movement. Departure selects the
     // original tile and settles before entry can operate on the destination.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "movement event keeps the actor, session and both snapshots distinct"
-    )]
     async fn movement_quest_callback(
         &self,
         permit: &SpellLanePermit,

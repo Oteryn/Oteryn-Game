@@ -1,0 +1,2544 @@
+{
+  "log": ".questpc/r8-dispatch-central-pg-repaired.log",
+  "log_sha256": "09692e52ec7cfebab3cf0e5fc8b12aa82cfac2e12bdebcb72e25ca144d3accde",
+  "source_snapshots_sha256": {
+    ".questpc/r8-catalogue-claims.json": "323c3f3532a38d0abaca2cc15fd41d34b4e491bc762ae267c12f21823b0d5f59",
+    ".questpc/r8-catalogue-key3620-claims.json": "b6cd13858301867a819a95b60213c4e2c7696224894a4e401bd26e53c5fdf6e9"
+  },
+  "expected_claims": 133,
+  "expected_placements": 141,
+  "completed_markers": 111,
+  "qualified_claims": 1,
+  "individual_test_results": {
+    "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal": "FAILED",
+    "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal": "ok"
+  },
+  "aggregate_test_result_lines": [
+    "test result: FAILED. 6 passed; 10 failed; 0 ignored; 0 measured; 2491 filtered out; finished in 1077.92s"
+  ],
+  "claims": {
+    "oteryn:reward-claim.kv.adoreduh": {
+      "quest": "canary:quest/adorned_uh_rune_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33136,
+            "y": 31601,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "6.508531783s",
+          "duration_seconds": 6.508531783,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.adoreduh (33136, 31601, -15) native_source=true duration=6.508531783s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.alawars_vault1": {
+      "quest": "canary:quest/alawar_s_vault_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32105,
+            "y": 31567,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "5.355905062s",
+          "duration_seconds": 5.355905062,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.alawars_vault1 (32105, 31567, -9) native_source=true duration=5.355905062s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.alawars_vault2": {
+      "quest": "canary:quest/alawar_s_vault_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32109,
+            "y": 31567,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "5.289425826s",
+          "duration_seconds": 5.289425826,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.alawars_vault2 (32109, 31567, -9) native_source=true duration=5.289425826s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id4502": {
+      "quest": "canary:quest/alawar_s_vault_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach": {
+      "quest": "canary:quest/an_interest_in_botany_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 3,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32235,
+            "y": 31064,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.409744961s",
+          "duration_seconds": 5.409744961,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons (32235, 31064, -7) native_source=true duration=5.409744961s"
+        },
+        {
+          "position": {
+            "x": 32235,
+            "y": 31066,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.051255937s",
+          "duration_seconds": 5.051255937,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons (32235, 31066, -7) native_source=true duration=5.051255937s"
+        },
+        {
+          "position": {
+            "x": 32235,
+            "y": 31068,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "4.650685923s",
+          "duration_seconds": 4.650685923,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons (32235, 31068, -7) native_source=true duration=4.650685923s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 3,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32235,
+            "y": 31057,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "4.721179634s",
+          "duration_seconds": 4.721179634,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons (32235, 31057, -7) native_source=true duration=4.721179634s"
+        },
+        {
+          "position": {
+            "x": 32235,
+            "y": 31059,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.820940934s",
+          "duration_seconds": 5.820940934,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons (32235, 31059, -7) native_source=true duration=5.820940934s"
+        },
+        {
+          "position": {
+            "x": 32235,
+            "y": 31061,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.061226827s",
+          "duration_seconds": 5.061226827,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons (32235, 31061, -7) native_source=true duration=5.061226827s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 3,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32235,
+            "y": 31050,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.822073476s",
+          "duration_seconds": 5.822073476,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons (32235, 31050, -7) native_source=true duration=5.822073476s"
+        },
+        {
+          "position": {
+            "x": 32235,
+            "y": 31052,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "4.967325842s",
+          "duration_seconds": 4.967325842,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons (32235, 31052, -7) native_source=true duration=4.967325842s"
+        },
+        {
+          "position": {
+            "x": 32235,
+            "y": 31054,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.284292055s",
+          "duration_seconds": 5.284292055,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons (32235, 31054, -7) native_source=true duration=5.284292055s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.barbarianaxe1": {
+      "quest": "canary:quest/barbarian_axe_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 2,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33184,
+            "y": 31945,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "6.499157275s",
+          "duration_seconds": 6.499157275,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.barbarianaxe1 (33184, 31945, -11) native_source=true duration=6.499157275s"
+        },
+        {
+          "position": {
+            "x": 33185,
+            "y": 31945,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "6.410203464s",
+          "duration_seconds": 6.410203464,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.barbarianaxe1 (33185, 31945, -11) native_source=true duration=6.410203464s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.battleaxe": {
+      "quest": "canary:quest/battle_axe_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32305,
+            "y": 32254,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "7.146565973s",
+          "duration_seconds": 7.146565973,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.battleaxe (32305, 32254, -9) native_source=true duration=7.146565973s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.bear_chest2": {
+      "quest": "canary:quest/bear_room_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32144,
+            "y": 32096,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "7.576068725s",
+          "duration_seconds": 7.576068725,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.bear_chest2 (32144, 32096, -11) native_source=true duration=7.576068725s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.bear_chest3": {
+      "quest": "canary:quest/bear_room_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32141,
+            "y": 32097,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "6.814865056s",
+          "duration_seconds": 6.814865056,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.bear_chest3 (32141, 32097, -11) native_source=true duration=6.814865056s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id4601": {
+      "quest": "canary:quest/bear_room_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff": {
+      "quest": "canary:quest/beggar_outfits_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33167,
+            "y": 31600,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "5.952546175s",
+          "duration_seconds": 5.952546175,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.simon_the_beggars_favorite_staff (33167, 31600, -15) native_source=true duration=5.952546175s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.behemothquest1": {
+      "quest": "canary:quest/behemoth_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33294,
+            "y": 31658,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "5.43033207s",
+          "duration_seconds": 5.43033207,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.behemothquest1 (33294, 31658, -13) native_source=true duration=5.43033207s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.behemothquest2": {
+      "quest": "canary:quest/behemoth_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33295,
+            "y": 31658,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "8.050143298s",
+          "duration_seconds": 8.050143298,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.behemothquest2 (33295, 31658, -13) native_source=true duration=8.050143298s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.behemothquest3": {
+      "quest": "canary:quest/behemoth_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33297,
+            "y": 31658,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "7.720195197s",
+          "duration_seconds": 7.720195197,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.behemothquest3 (33297, 31658, -13) native_source=true duration=7.720195197s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.behemothquest4": {
+      "quest": "canary:quest/behemoth_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33298,
+            "y": 31658,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "7.376159826s",
+          "duration_seconds": 7.376159826,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.behemothquest4 (33298, 31658, -13) native_source=true duration=7.376159826s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls": {
+      "quest": "canary:quest/berserker_treasure_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.blackknight1": {
+      "quest": "canary:quest/black_knight_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32868,
+            "y": 31955,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "6.839890417s",
+          "duration_seconds": 6.839890417,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.blackknight1 (32868, 31955, -11) native_source=true duration=6.839890417s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.blackknight2": {
+      "quest": "canary:quest/black_knight_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32880,
+            "y": 31955,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "7.797850462s",
+          "duration_seconds": 7.797850462,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.blackknight2 (32880, 31955, -11) native_source=true duration=7.797850462s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id5010": {
+      "quest": "canary:quest/black_knight_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 2,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.bloodherb": {
+      "quest": "canary:quest/blood_herb_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32769,
+            "y": 31968,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "7.234730513s",
+          "duration_seconds": 7.234730513,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.bloodherb (32769, 31968, -7) native_source=true duration=7.234730513s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.captain_iglues": {
+      "quest": "canary:quest/captain_iglues_treasure_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32039,
+            "y": 32121,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "8.50961212s",
+          "duration_seconds": 8.50961212,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.captain_iglues (32039, 32121, -13) native_source=true duration=8.50961212s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge1": {
+      "quest": "canary:quest/children_of_the_revolution_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33247,
+            "y": 31161,
+            "z": 6
+          },
+          "native_source": true,
+          "duration": "5.293247271s",
+          "duration_seconds": 5.293247271,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge1 (33247, 31161, -6) native_source=true duration=5.293247271s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge2": {
+      "quest": "canary:quest/children_of_the_revolution_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33264,
+            "y": 31130,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "4.790781405s",
+          "duration_seconds": 4.790781405,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge2 (33264, 31130, -7) native_source=true duration=4.790781405s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.flask_of_extra_greasy_oil": {
+      "quest": "canary:quest/children_of_the_revolution_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33327,
+            "y": 31410,
+            "z": 8
+          },
+          "native_source": true,
+          "duration": "5.428754919s",
+          "duration_seconds": 5.428754919,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_54.children_of_the_revolution.flask_of_extra_greasy_oil (33327, 31410, -8) native_source=true duration=5.428754919s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.circleroom1": {
+      "quest": "canary:quest/circle_room_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32495,
+            "y": 31992,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "7.005164356s",
+          "duration_seconds": 7.005164356,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.circleroom1 (32495, 31992, -14) native_source=true duration=7.005164356s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.circleroom2": {
+      "quest": "canary:quest/circle_room_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32497,
+            "y": 31992,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "6.442765964s",
+          "duration_seconds": 6.442765964,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.circleroom2 (32497, 31992, -14) native_source=true duration=6.442765964s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.combatknife": {
+      "quest": "canary:quest/combat_knife_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32102,
+            "y": 32235,
+            "z": 8
+          },
+          "native_source": true,
+          "duration": "6.789001761s",
+          "duration_seconds": 6.789001761,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.combatknife (32102, 32235, -8) native_source=true duration=6.789001761s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.crusaderhelmet": {
+      "quest": "canary:quest/crusader_helmet_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32427,
+            "y": 31943,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "6.033218157s",
+          "duration_seconds": 6.033218157,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.crusaderhelmet (32427, 31943, -14) native_source=true duration=6.033218157s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.crystalwand1": {
+      "quest": "canary:quest/crystal_wand_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32479,
+            "y": 31611,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "6.182699753s",
+          "duration_seconds": 6.182699753,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.crystalwand1 (32479, 31611, -15) native_source=true duration=6.182699753s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.crystalwand2": {
+      "quest": "canary:quest/crystal_wand_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32481,
+            "y": 31611,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "7.204122608s",
+          "duration_seconds": 7.204122608,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.crystalwand2 (32481, 31611, -15) native_source=true duration=7.204122608s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.petrified_scream_quest": {
+      "quest": "canary:quest/cults_of_tibia_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32739,
+            "y": 31426,
+            "z": 8
+          },
+          "native_source": true,
+          "duration": "6.03169451s",
+          "duration_seconds": 6.03169451,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.petrified_scream_quest (32739, 31426, -8) native_source=true duration=6.03169451s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_5.darashia_dragon": {
+      "quest": "canary:quest/darashia_dragon_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33233,
+            "y": 32280,
+            "z": 12
+          },
+          "native_source": true,
+          "duration": "5.266175884s",
+          "duration_seconds": 5.266175884,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_5.darashia_dragon (33233, 32280, -12) native_source=true duration=5.266175884s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.darkarmor": {
+      "quest": "canary:quest/dark_armor_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33178,
+            "y": 31870,
+            "z": 12
+          },
+          "native_source": true,
+          "duration": "5.439877806s",
+          "duration_seconds": 5.439877806,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.darkarmor (33178, 31870, -12) native_source=true duration=5.439877806s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u10_50.dark_trails.reward05_gloth_and_belongings": {
+      "quest": "canary:quest/dark_trails_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings": {
+      "quest": "canary:quest/dark_trails_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u10_50.dark_trails.reward_small_notebook": {
+      "quest": "canary:quest/dark_trails_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33457,
+            "y": 32073,
+            "z": 8
+          },
+          "native_source": true,
+          "duration": "5.53613686s",
+          "duration_seconds": 5.53613686,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_50.dark_trails.reward_small_notebook (33457, 32073, -8) native_source=true duration=5.53613686s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.deadarcher": {
+      "quest": "canary:quest/dead_archer_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32514,
+            "y": 32303,
+            "z": 10
+          },
+          "native_source": true,
+          "duration": "5.101124169s",
+          "duration_seconds": 5.101124169,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deadarcher (32514, 32303, -10) native_source=true duration=5.101124169s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.deeperfibula1": {
+      "quest": "canary:quest/deeper_fibula_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32239,
+            "y": 32471,
+            "z": 10
+          },
+          "native_source": true,
+          "duration": "5.322163778s",
+          "duration_seconds": 5.322163778,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula1 (32239, 32471, -10) native_source=true duration=5.322163778s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.deeperfibula2": {
+      "quest": "canary:quest/deeper_fibula_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32239,
+            "y": 32478,
+            "z": 10
+          },
+          "native_source": true,
+          "duration": "5.590257511s",
+          "duration_seconds": 5.590257511,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula2 (32239, 32478, -10) native_source=true duration=5.590257511s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.deeperfibula3": {
+      "quest": "canary:quest/deeper_fibula_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32233,
+            "y": 32491,
+            "z": 10
+          },
+          "native_source": true,
+          "duration": "4.567026627s",
+          "duration_seconds": 4.567026627,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula3 (32233, 32491, -10) native_source=true duration=4.567026627s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.deeperfibula5": {
+      "quest": "canary:quest/deeper_fibula_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32256,
+            "y": 32500,
+            "z": 10
+          },
+          "native_source": true,
+          "duration": "4.597545542s",
+          "duration_seconds": 4.597545542,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula5 (32256, 32500, -10) native_source=true duration=4.597545542s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id3980": {
+      "quest": "canary:quest/deeper_fibula_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.demonaring1": {
+      "quest": "canary:quest/demona_ring_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32504,
+            "y": 31596,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "5.976354228s",
+          "duration_seconds": 5.976354228,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.demonaring1 (32504, 31596, -14) native_source=true duration=5.976354228s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.demonaring2": {
+      "quest": "canary:quest/demona_ring_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32515,
+            "y": 31596,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "5.25982817s",
+          "duration_seconds": 5.25982817,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.demonaring2 (32515, 31596, -14) native_source=true duration=5.25982817s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.desert1": {
+      "quest": "canary:quest/desert_dungeon_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32668,
+            "y": 32069,
+            "z": 8
+          },
+          "native_source": true,
+          "duration": "4.612522752s",
+          "duration_seconds": 4.612522752,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.desert1 (32668, 32069, -8) native_source=true duration=4.612522752s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.devilhemet1": {
+      "quest": "canary:quest/devil_helmet_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32459,
+            "y": 32144,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "4.713851821s",
+          "duration_seconds": 4.713851821,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.devilhemet1 (32459, 32144, -15) native_source=true duration=4.713851821s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.devilhemet2": {
+      "quest": "canary:quest/devil_helmet_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32465,
+            "y": 32148,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "4.709524208s",
+          "duration_seconds": 4.709524208,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.devilhemet2 (32465, 32148, -15) native_source=true duration=4.709524208s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.devilhemet3": {
+      "quest": "canary:quest/devil_helmet_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32466,
+            "y": 32148,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "4.790751495s",
+          "duration_seconds": 4.790751495,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.devilhemet3 (32466, 32148, -15) native_source=true duration=4.790751495s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id3610": {
+      "quest": "canary:quest/devil_helmet_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id3667": {
+      "quest": "canary:quest/devil_helmet_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.doublehero1": {
+      "quest": "canary:quest/double_hero_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33109,
+            "y": 31679,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "4.630508415s",
+          "duration_seconds": 4.630508415,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.doublehero1 (33109, 31679, -13) native_source=true duration=4.630508415s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.doublehero2": {
+      "quest": "canary:quest/double_hero_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33110,
+            "y": 31679,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "4.772609579s",
+          "duration_seconds": 4.772609579,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.doublehero2 (33110, 31679, -13) native_source=true duration=4.772609579s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.doublet": {
+      "quest": "canary:quest/doublet_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32084,
+            "y": 32181,
+            "z": 8
+          },
+          "native_source": true,
+          "duration": "4.822389567s",
+          "duration_seconds": 4.822389567,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.doublet (32084, 32181, -8) native_source=true duration=4.822389567s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.draconia2": {
+      "quest": "canary:quest/draconia_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32804,
+            "y": 31582,
+            "z": 2
+          },
+          "native_source": true,
+          "duration": "5.655389456s",
+          "duration_seconds": 5.655389456,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.draconia2 (32804, 31582, -2) native_source=true duration=5.655389456s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id3008": {
+      "quest": "canary:quest/draconia_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32800,
+            "y": 31582,
+            "z": 2
+          },
+          "native_source": true,
+          "duration": "5.269507617s",
+          "duration_seconds": 5.269507617,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3008 (32800, 31582, -2) native_source=true duration=5.269507617s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.dragoncorpse": {
+      "quest": "canary:quest/dragon_corpse_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32179,
+            "y": 32224,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "5.889936014s",
+          "duration_seconds": 5.889936014,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.dragoncorpse (32179, 32224, -9) native_source=true duration=5.889936014s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1": {
+      "quest": "canary:quest/dragon_tower_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2": {
+      "quest": "canary:quest/dragon_tower_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book": {
+      "quest": "canary:quest/dreamer_s_challenge_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond": {
+      "quest": "canary:quest/dreamer_s_challenge_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32835,
+            "y": 32223,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "6.828833958s",
+          "duration_seconds": 6.828833958,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond (32835, 32223, -14) native_source=true duration=6.828833958s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u7_8.druid_outfits.wolf_tooth_chain": {
+      "quest": "canary:quest/druid_outfits_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32939,
+            "y": 31776,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "5.171063702s",
+          "duration_seconds": 5.171063702,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_8.druid_outfits.wolf_tooth_chain (32939, 31776, -9) native_source=true duration=5.171063702s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.edrongoblin2": {
+      "quest": "canary:quest/edron_goblin_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33095,
+            "y": 31801,
+            "z": 10
+          },
+          "native_source": true,
+          "duration": "4.824229912s",
+          "duration_seconds": 4.824229912,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.edrongoblin2 (33095, 31801, -10) native_source=true duration=4.824229912s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u7_5.elephant_tusk": {
+      "quest": "canary:quest/elephant_tusk_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32922,
+            "y": 32755,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.377513306s",
+          "duration_seconds": 5.377513306,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_5.elephant_tusk (32922, 32755, -7) native_source=true duration=5.377513306s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id3800": {
+      "quest": "canary:quest/emperor_s_cookies_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id3802": {
+      "quest": "canary:quest/emperor_s_cookies_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.explorerbrooch": {
+      "quest": "canary:quest/explorer_brooch_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32636,
+            "y": 31873,
+            "z": 10
+          },
+          "native_source": true,
+          "duration": "4.937159324s",
+          "duration_seconds": 4.937159324,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.explorerbrooch (32636, 31873, -10) native_source=true duration=4.937159324s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.fanfare": {
+      "quest": "canary:quest/fanfare_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32390,
+            "y": 31769,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "4.815192555s",
+          "duration_seconds": 4.815192555,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.fanfare (32390, 31769, -9) native_source=true duration=4.815192555s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id3520": {
+      "quest": "canary:quest/fanfare_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones": {
+      "quest": "canary:quest/ferumbras_ascension_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33393,
+            "y": 32373,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "5.745352408s",
+          "duration_seconds": 5.745352408,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones (33393, 32373, -11) native_source=true duration=5.745352408s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night": {
+      "quest": "canary:quest/ferumbras_ascension_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33384,
+            "y": 32323,
+            "z": 12
+          },
+          "native_source": true,
+          "duration": "5.738769082s",
+          "duration_seconds": 5.738769082,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night (33384, 32323, -12) native_source=true duration=5.738769082s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth": {
+      "quest": "canary:quest/ferumbras_ascension_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33408,
+            "y": 32396,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "5.792930805s",
+          "duration_seconds": 5.792930805,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth (33408, 32396, -11) native_source=true duration=5.792930805s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.fireaxe2": {
+      "quest": "canary:quest/fire_axe_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33084,
+            "y": 31650,
+            "z": 12
+          },
+          "native_source": true,
+          "duration": "5.080806888s",
+          "duration_seconds": 5.080806888,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.fireaxe2 (33084, 31650, -12) native_source=true duration=5.080806888s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.fishing_box": {
+      "quest": "canary:quest/fishing_box_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.halls_of_hope.reward1": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32349,
+            "y": 32194,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "6.105372664s",
+          "duration_seconds": 6.105372664,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward1 (32349, 32194, -9) native_source=true duration=6.105372664s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.halls_of_hope.reward2": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32382,
+            "y": 32368,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "5.903566027s",
+          "duration_seconds": 5.903566027,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward2 (32382, 32368, -9) native_source=true duration=5.903566027s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.halls_of_hope.reward3": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32287,
+            "y": 32119,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.442146319s",
+          "duration_seconds": 5.442146319,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward3 (32287, 32119, -7) native_source=true duration=5.442146319s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.halls_of_hope.reward4": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32389,
+            "y": 32001,
+            "z": 6
+          },
+          "native_source": true,
+          "duration": "5.481566273s",
+          "duration_seconds": 5.481566273,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward4 (32389, 32001, -6) native_source=true duration=5.481566273s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.halls_of_hope.reward5": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32449,
+            "y": 32109,
+            "z": 8
+          },
+          "native_source": true,
+          "duration": "5.036984643s",
+          "duration_seconds": 5.036984643,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward5 (32449, 32109, -8) native_source=true duration=5.036984643s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.ghostsilver_lantern_quest": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32825,
+            "y": 31664,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "5.015860247s",
+          "duration_seconds": 5.015860247,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ghostsilver_lantern_quest (32825, 31664, -9) native_source=true duration=5.015860247s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.imbuing_crystal_quest": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33026,
+            "y": 31662,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "6.247552614s",
+          "duration_seconds": 6.247552614,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.imbuing_crystal_quest (33026, 31662, -14) native_source=true duration=6.247552614s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.painting_of_agirl_quest": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32883,
+            "y": 31686,
+            "z": 10
+          },
+          "native_source": true,
+          "duration": "6.056995541s",
+          "duration_seconds": 6.056995541,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.painting_of_agirl_quest (32883, 31686, -10) native_source=true duration=6.056995541s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.geomancer": {
+      "quest": "canary:quest/geomancer_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32456,
+            "y": 32008,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "6.872341531s",
+          "duration_seconds": 6.872341531,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.geomancer (32456, 32008, -13) native_source=true duration=6.872341531s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.ghoulroom2": {
+      "quest": "canary:quest/ghoul_room_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32500,
+            "y": 32177,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "4.953870188s",
+          "duration_seconds": 4.953870188,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ghoulroom2 (32500, 32177, -14) native_source=true duration=4.953870188s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id3600": {
+      "quest": "canary:quest/ghoul_room_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.goblintemple": {
+      "quest": "canary:quest/goblin_temple_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 31973,
+            "y": 32209,
+            "z": 12
+          },
+          "native_source": true,
+          "duration": "5.849430061s",
+          "duration_seconds": 5.849430061,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.goblintemple (31973, 32209, -12) native_source=true duration=5.849430061s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.griffinshield1": {
+      "quest": "canary:quest/griffin_shield_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32498,
+            "y": 31721,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "4.773432659s",
+          "duration_seconds": 4.773432659,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.griffinshield1 (32498, 31721, -15) native_source=true duration=4.773432659s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.griffinshield2": {
+      "quest": "canary:quest/griffin_shield_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32500,
+            "y": 31721,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "6.200919183s",
+          "duration_seconds": 6.200919183,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.griffinshield2 (32500, 31721, -15) native_source=true duration=6.200919183s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.griffinshield3": {
+      "quest": "canary:quest/griffin_shield_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32503,
+            "y": 31724,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "6.407387938s",
+          "duration_seconds": 6.407387938,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.griffinshield3 (32503, 31724, -15) native_source=true duration=6.407387938s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.heavenblossom": {
+      "quest": "canary:quest/heaven_blossom_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33104,
+            "y": 32154,
+            "z": 8
+          },
+          "native_source": true,
+          "duration": "6.620442788s",
+          "duration_seconds": 6.620442788,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.heavenblossom (33104, 32154, -8) native_source=true duration=6.620442788s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01": {
+      "quest": "canary:quest/hidden_threats_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33080,
+            "y": 32014,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "5.630580565s",
+          "duration_seconds": 5.630580565,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01 (33080, 32014, -13) native_source=true duration=5.630580565s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02": {
+      "quest": "canary:quest/hidden_threats_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33031,
+            "y": 32050,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "4.523026936s",
+          "duration_seconds": 4.523026936,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02 (33031, 32050, -13) native_source=true duration=4.523026936s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file": {
+      "quest": "canary:quest/hidden_threats_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33078,
+            "y": 31980,
+            "z": 13
+          },
+          "native_source": true,
+          "duration": "4.615752085s",
+          "duration_seconds": 4.615752085,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file (33078, 31980, -13) native_source=true duration=4.615752085s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow": {
+      "quest": "canary:quest/hunter_outfits_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32369,
+            "y": 32795,
+            "z": 10
+          },
+          "native_source": true,
+          "duration": "4.863893118s",
+          "duration_seconds": 4.863893118,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow (32369, 32795, -10) native_source=true duration=4.863893118s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya": {
+      "quest": "canary:quest/inukaya_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.ironhamer": {
+      "quest": "canary:quest/iron_hammer_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32434,
+            "y": 31938,
+            "z": 8
+          },
+          "native_source": true,
+          "duration": "6.607268071s",
+          "duration_seconds": 6.607268071,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ironhamer (32434, 31938, -8) native_source=true duration=6.607268071s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.ironhelmet": {
+      "quest": "canary:quest/iron_helmet_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32769,
+            "y": 32225,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.765972544s",
+          "duration_seconds": 5.765972544,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ironhelmet (32769, 32225, -7) native_source=true duration=5.765972544s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.ironore": {
+      "quest": "canary:quest/iron_ore_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32532,
+            "y": 31873,
+            "z": 8
+          },
+          "native_source": true,
+          "duration": "6.842858453s",
+          "duration_seconds": 6.842858453,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ironore (32532, 31873, -8) native_source=true duration=6.842858453s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.isleofthemists": {
+      "quest": "canary:quest/isle_of_the_mists_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32852,
+            "y": 32332,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "7.890596977s",
+          "duration_seconds": 7.890596977,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.isleofthemists (32852, 32332, -7) native_source=true duration=7.890596977s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.katanacorpse1": {
+      "quest": "canary:quest/katana_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32175,
+            "y": 32145,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "7.532820526s",
+          "duration_seconds": 7.532820526,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.katanacorpse1 (32175, 32145, -11) native_source=true duration=7.532820526s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.katanacorpse2": {
+      "quest": "canary:quest/katana_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32174,
+            "y": 32149,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "6.961650035s",
+          "duration_seconds": 6.961650035,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.katanacorpse2 (32174, 32149, -11) native_source=true duration=6.961650035s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id4603": {
+      "quest": "canary:quest/katana_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest": {
+      "quest": "canary:quest/knight_outfits_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32860,
+            "y": 32516,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "6.237205316s",
+          "duration_seconds": 6.237205316,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest (32860, 32516, -11) native_source=true duration=6.237205316s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33194,
+            "y": 32458,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.010291075s",
+          "duration_seconds": 5.010291075,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1 (33194, 32458, -7) native_source=true duration=5.010291075s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33305,
+            "y": 32277,
+            "z": 10
+          },
+          "native_source": true,
+          "duration": "5.14576202s",
+          "duration_seconds": 5.14576202,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2 (33305, 32277, -10) native_source=true duration=5.14576202s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33212,
+            "y": 32593,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "4.918487525s",
+          "duration_seconds": 4.918487525,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3 (33212, 32593, -7) native_source=true duration=4.918487525s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33053,
+            "y": 32468,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "4.774605704s",
+          "duration_seconds": 4.774605704,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4 (33053, 32468, -11) native_source=true duration=4.774605704s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33273,
+            "y": 32470,
+            "z": 11
+          },
+          "native_source": true,
+          "duration": "4.793383979s",
+          "duration_seconds": 4.793383979,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold (33273, 32470, -11) native_source=true duration=4.793383979s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33261,
+            "y": 32444,
+            "z": 12
+          },
+          "native_source": true,
+          "duration": "4.843808936s",
+          "duration_seconds": 4.843808936,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs (33261, 32444, -12) native_source=true duration=4.843808936s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 33261,
+            "y": 32448,
+            "z": 12
+          },
+          "native_source": true,
+          "duration": "4.906143871s",
+          "duration_seconds": 4.906143871,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum (33261, 32448, -12) native_source=true duration=4.906143871s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines": {
+      "quest": "canary:quest/lion_trophy_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_5.lone_medusa": {
+      "quest": "canary:quest/lone_medusa_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32406,
+            "y": 32764,
+            "z": 1
+          },
+          "native_source": true,
+          "duration": "5.607616626s",
+          "duration_seconds": 5.607616626,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_5.lone_medusa (32406, 32764, -1) native_source=true duration=5.607616626s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.longsword1": {
+      "quest": "canary:quest/longsword_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32649,
+            "y": 31969,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "7.339260645s",
+          "duration_seconds": 7.339260645,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.longsword1 (32649, 31969, -9) native_source=true duration=7.339260645s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.longsword2": {
+      "quest": "canary:quest/longsword_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32650,
+            "y": 31969,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "7.020586481s",
+          "duration_seconds": 7.020586481,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.longsword2 (32650, 31969, -9) native_source=true duration=7.020586481s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.longsword3": {
+      "quest": "canary:quest/longsword_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32651,
+            "y": 31969,
+            "z": 9
+          },
+          "native_source": true,
+          "duration": "5.711779567s",
+          "duration_seconds": 5.711779567,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.longsword3 (32651, 31969, -9) native_source=true duration=5.711779567s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.madmageroom1": {
+      "quest": "canary:quest/mad_mage_room_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32578,
+            "y": 32195,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "7.062298628s",
+          "duration_seconds": 7.062298628,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.madmageroom1 (32578, 32195, -14) native_source=true duration=7.062298628s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.madmageroom2": {
+      "quest": "canary:quest/mad_mage_room_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32575,
+            "y": 32195,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "6.765657613s",
+          "duration_seconds": 6.765657613,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.madmageroom2 (32575, 32195, -14) native_source=true duration=6.765657613s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.minohell1": {
+      "quest": "canary:quest/minotaur_hell_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32130,
+            "y": 32066,
+            "z": 12
+          },
+          "native_source": true,
+          "duration": "7.446895106s",
+          "duration_seconds": 7.446895106,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.minohell1 (32130, 32066, -12) native_source=true duration=7.446895106s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.minohell2": {
+      "quest": "canary:quest/minotaur_hell_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32127,
+            "y": 32065,
+            "z": 12
+          },
+          "native_source": true,
+          "duration": "5.329282511s",
+          "duration_seconds": 5.329282511,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.minohell2 (32127, 32065, -12) native_source=true duration=5.329282511s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.minohell3": {
+      "quest": "canary:quest/minotaur_hell_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32124,
+            "y": 32064,
+            "z": 12
+          },
+          "native_source": true,
+          "duration": "6.556705484s",
+          "duration_seconds": 6.556705484,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.minohell3 (32124, 32064, -12) native_source=true duration=6.556705484s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.minotaurleatherquest": {
+      "quest": "canary:quest/minotaur_leather_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32302,
+            "y": 32415,
+            "z": 7
+          },
+          "native_source": true,
+          "duration": "5.947018166s",
+          "duration_seconds": 5.947018166,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.minotaurleatherquest (32302, 32415, -7) native_source=true duration=5.947018166s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.kv.mintwallincyclops": {
+      "quest": "canary:quest/mintwallin_cyclops_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32591,
+            "y": 32097,
+            "z": 14
+          },
+          "native_source": true,
+          "duration": "6.219361696s",
+          "duration_seconds": 6.219361696,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.mintwallincyclops (32591, 32097, -14) native_source=true duration=6.219361696s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim": {
+      "quest": "crystalserver:quest/berserk_potion_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir": {
+      "quest": "crystalserver:quest/frost_dragon_quest",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false,
+      "individual_test_result": "FAILED",
+      "qualified": false
+    },
+    "oteryn:reward-claim.quest.key.id3620": {
+      "quest": "unlinked",
+      "fully_qualified_name": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal",
+      "expected_placements": 1,
+      "completed_placements": [
+        {
+          "position": {
+            "x": 32411,
+            "y": 32155,
+            "z": 15
+          },
+          "native_source": true,
+          "duration": "6.438445793s",
+          "duration_seconds": 6.438445793,
+          "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3620 (32411, 32155, -15) native_source=true duration=6.438445793s"
+        }
+      ],
+      "all_placements_completed": true,
+      "individual_test_result": "ok",
+      "qualified": true
+    }
+  },
+  "complete": false
+}

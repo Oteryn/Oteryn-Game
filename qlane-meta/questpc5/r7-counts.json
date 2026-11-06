@@ -1,0 +1,18 @@
+{
+  "basis": "HEAD1fa04bbb vs run7 uncommitted tree; source reward support and focused dispatch PG, never full quests",
+  "reward_claims": {
+    "before": {
+      "dispatch_pg_qualified": 11,
+      "not_playable": 28,
+      "supported_unqualified": 297
+    },
+    "after": {
+      "dispatch_pg_qualified": 39,
+      "not_playable": 2,
+      "supported_unqualified": 295
+    }
+  },
+  "native_reward_projections": 81,
+  "world_callbacks_static": 265,
+  "new_whole_quests_certified": 0
+}

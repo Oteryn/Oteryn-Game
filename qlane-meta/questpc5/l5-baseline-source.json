@@ -1,0 +1,22 @@
+{
+  "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs": {
+    "head_exists": true,
+    "head_sha256": "48314b28c9fb38094a33a63e6fc6aac04bcc2a41238b6f68a84678cea5a48b20"
+  },
+  "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_l5.rs": {
+    "head_exists": false,
+    "head_sha256": null
+  },
+  "crates/gameplay/quests/src/quest/world_callbacks.rs": {
+    "head_exists": true,
+    "head_sha256": "ab16bd030e7dae9eaf4c94ae41fcdaf4ff8dfb1933c6a318672634bdf420751d"
+  },
+  "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs": {
+    "head_exists": true,
+    "head_sha256": "9a3a11efd67dbe0a942b655cab197f4751ebaeb368ceab5a63e69bd541ddfb0c"
+  },
+  "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs": {
+    "head_exists": true,
+    "head_sha256": "06dbd16397619228afd34202c8f08cd3ebf1a617dc9ea010426d0460141983a3"
+  }
+}

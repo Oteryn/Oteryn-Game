@@ -1,0 +1,23 @@
+tools/content-migration/register_spell_families.py:405:    import questpc5_father_item_profiles
+tools/content-migration/register_spell_families.py:406:    questpc5_father_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:366:pub(super) fn phase_a_cohort(quests: &[&str]) -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:425:pub(super) fn exact_claim_cohort(claims: &[&str]) -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:505:    phase_a_cohort(quests)?;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:586:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:597:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:608:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:619:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:630:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:641:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:652:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:663:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:674:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:685:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:696:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:706:    phase_a_cohort(&["emperor_s_cookies_quest", "life_ring_quest"])
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:714:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:726:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:738:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_reward_paths.rs:30:    super::quest_catalogue_chests::exact_claim_cohort(&[CLAIM])?;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_reward_paths.rs:52:    super::quest_catalogue_chests::phase_a_cohort(&["behemoth_quest"])?;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_reward_paths.rs:108:    super::quest_catalogue_chests::phase_a_cohort(&["alawar_s_vault_quest"])?;

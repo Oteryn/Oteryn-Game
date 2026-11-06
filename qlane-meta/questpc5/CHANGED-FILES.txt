@@ -1,0 +1,17 @@
+apps/game-server/migrations/1004_fathers_burden_items.sql
+content/content.lock.json
+content/items/definitions/spell-native-profiles.json
+content/items/index.json
+content/manifest.json
+content/spells.manifest.json
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_reward_paths.rs
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs
+crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs
+tools/content-migration/questpc5_father_item_profiles.py
+tools/content-migration/register_spell_families.py
+tools/content-migration/test_questpc5_father_item_profiles.py
+
+Lane records and logs are under .questpc5/; see VALIDATION.md.

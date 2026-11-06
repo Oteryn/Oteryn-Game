@@ -1,0 +1,1304 @@
+[
+  {
+    "title": "A Father's Burden Quest",
+    "canonical": "oteryn:quest.a_father_s_burden_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/5/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "The pinned complete reward includes8000gold in addition to Old Cape and28000XP. The current Tereban completion plan gives only one cape plus8000terminalXP; reward_claim_mint::fathers_burden::claim encodes one noncontainer root with no children. The shared atomic NPC multi-output inventory/reward composition is QENGINE2-owned; a second independent gold write would not share the completion receipt/rollback boundary, and a second durable owner is prohibited.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/reward_claim_mint/fathers_burden.rs:30",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs:81",
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json:1",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/5/definition"
+      ],
+      "attempts": [
+        "Reproduced DefinitionNotFound and admitted exactly the eight source material Items plus Old Cape with pinned source/client and canonical-binding checks.",
+        "Reproduced2704yes rejection; deferred-constraint diagnostic identified ambiguous amount local in1004. Renamed only that local, preserving every source/XP/atomicity guard.",
+        "Actual real-dispatch eight-hand-in/cape/28000XP/replay test now passes with POSTGRES_CASE_COMPLETED duration69.439690489s (father-guard-green.log). This is a bounded hand-in proof, not proof of8000gold or all eight dungeon acquisition routes.",
+        "Read the complete chosen reward intents and current exact cape claim. Did not invent a separate gold mint or duplicate the explicitly allocated qengine2 atomic NPC exchange owner."
+      ],
+      "owner_dependency": "qengine2: atomic NPC multi-output hand-in/reward composition"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Recover Strong Sinew and Exquisite Wood for the magic bow.",
+      "targets": [
+        "Strong Sinew",
+        "Exquisite Wood"
+      ]
+    },
+    "partial_qualification": {
+      "test": "fathers_burden_eight_handins_cape_experience_and_replay",
+      "marker": "POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay duration=69.439690489s",
+      "duration_seconds": 69.439690489,
+      "log": ".questpc5/father-guard-green.log",
+      "scope": "Missing-item refusal, eight exact item burns, eight2500XP awards, cape+8000terminalXP, progress and replay;8000gold and dungeon acquisition are not certified."
+    }
+  },
+  {
+    "title": "A Piece of Cake",
+    "canonical": "oteryn:quest.a_piece_of_cake",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/68/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Biff the Baker: 20 Sweet and Sugary Substance and Cake Backpack. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/68/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Biff the Baker value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Defeat Cake Golems and gather their sugary substance.",
+      "targets": [
+        "Cake Golem"
+      ]
+    }
+  },
+  {
+    "title": "A Pirate's Death to Me",
+    "canonical": "oteryn:quest.authored.a_pirate_s_death_to_me",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/85/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Smaralda: Scum Bag custody and Pirate Bag/Platinum Coin/Pirates Surprise rewards. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/85/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Smaralda value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Capture five spectral pirates with the assigned bag",
+      "targets": [
+        "Scum Bag"
+      ]
+    }
+  },
+  {
+    "title": "A Pirate's Tail Quest",
+    "canonical": "oteryn:quest.a_pirates_tail",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/6/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant: Rascoohan Outfits. Production evaluate_source passes an empty outfit snapshot and uses plan_storage, whose effect whitelist rejects Outfit/OutfitAddon. This shared owner is explicitly allocated elsewhere; implementing a second durable grant path in this lane is forbidden.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/6/definition"
+      ],
+      "attempts": [
+        "Read all chosen stages/rewards and source obligations for this title.",
+        "Traced production catalogue::prepare -> npc_program::preview -> evaluate_source -> plan_storage.",
+        "Confirmed the pure planner only changes its staged outfit map; the durable writer has no generic outfit commit. Retained all existing source callbacks/rewards and did not duplicate qengine2."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Repel a fixed Pirat coastal raid instead of waiting for random raids.",
+      "targets": [
+        "Pirat"
+      ]
+    }
+  },
+  {
+    "title": "Adventures of Galthen Quest",
+    "canonical": "oteryn:quest.adventures_of_galthen_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/8/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant: Royal Bounacean Advisor Outfits. Production evaluate_source passes an empty outfit snapshot and uses plan_storage, whose effect whitelist rejects Outfit/OutfitAddon. This shared owner is explicitly allocated elsewhere; implementing a second durable grant path in this lane is forbidden.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/8/definition"
+      ],
+      "attempts": [
+        "Read all chosen stages/rewards and source obligations for this title.",
+        "Traced production catalogue::prepare -> npc_program::preview -> evaluate_source -> plan_storage.",
+        "Confirmed the pure planner only changes its staged outfit map; the durable writer has no generic outfit commit. Retained all existing source callbacks/rewards and did not duplicate qengine2."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "explore",
+      "objective": "Recover the lost satchel and read Galthen's ritual notes in Bounac.",
+      "targets": [
+        "Galthen's Satchel",
+        "Bounac ritual notes"
+      ]
+    }
+  },
+  {
+    "title": "Afflicted Outfits Quest",
+    "canonical": "oteryn:quest.afflicted_outfits_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/69/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant and atomic hand-in composition. The production source writer supplies an empty outfit snapshot and rejects Outfit/OutfitAddon effects; a lane-local duplicate would violate the explicit shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:205",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/69/definition"
+      ],
+      "attempts": [
+        "Read the selected recipe and its outfit/addon and item obligations.",
+        "Traced production NPC dispatch through catalogue::prepare to npc_program::evaluate_source and plan_storage; only the existing fixed Tereban item branch has an inventory owner.",
+        "Confirmed Outfit/OutfitAddon mutates the pure planner snapshot only; production storage-only evaluation refuses those effects. Shared outfit/addon engine is explicitly allocated to qengine2, so no second durable owner was introduced."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "collect",
+      "objective": "Gather all six named cloth pieces from Venore's fever theme.",
+      "targets": [
+        "Luminous Piece of Cloth",
+        "Obvious Piece of Cloth",
+        "Dubious Piece of Cloth",
+        "Voluminous Piece of Cloth",
+        "Ominous Piece of Cloth",
+        "Ludicrous Piece of Cloth"
+      ]
+    }
+  },
+  {
+    "title": "Against the Spider Cult Quest",
+    "canonical": "oteryn:quest.tibia_tales",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s3",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Tibia Tales contacts: the accepted anthology material hand-ins and value-bearing completion. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Tibia Tales contacts value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s3",
+      "kind": "use",
+      "objective": "Destroy Daniel Steelsoul's four spider-cult eggs.",
+      "targets": [
+        "Spider Egg",
+        "Edron Orc Cave"
+      ]
+    }
+  },
+  {
+    "title": "Alawar's Vault Quest",
+    "canonical": "oteryn:quest.alawar_s_vault_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/1/definition",
+    "status": "QUALIFIED",
+    "scope": "Original source lever/portal/reward contract; authored approximation stage graph and deployed World are not certified.",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.kv.alawars_vault1",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_phase_a_01_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.alawars_vault2",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_phase_a_01_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.key.id4502",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_phase_a_01_use_replay_and_refusal"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Travel to Folda and find the approach to Alawar's Vault.",
+      "targets": [
+        "Folda",
+        "Alawar's Vault"
+      ]
+    },
+    "qualification": {
+      "test": "questpc5_alawars_vault_lever_both_portals_and_all_claims",
+      "marker": "POSTGRES_CASE_COMPLETED questpc5_alawars_vault_lever_both_portals_and_all_claims duration=123.598361507s",
+      "duration_seconds": 123.598361507,
+      "log": ".questpc5/reward-paths-green.log"
+    }
+  },
+  {
+    "title": "An Interest In Botany Quest",
+    "canonical": "oteryn:quest.an_interest_in_botany_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/2/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Rabaz: Giant Dreadcoil/Giant Verminous samples and Sedge Hat/1000 gold reward. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00000-00099.json:1#/records/2/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Rabaz value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Take a Giant Dreadcoil sample with an Obsidian Knife.",
+      "targets": [
+        "Giant Dreadcoil",
+        "Obsidian Knife"
+      ]
+    }
+  },
+  {
+    "title": "An Uneasy Alliance Quest",
+    "canonical": "oteryn:quest.an_uneasy_alliance_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/9/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Curos: milk/steak/flute obligations and the two Tome of Knowledge reward. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/9/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Curos value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Break into the rebel camp and defeat the Renegade Orc.",
+      "targets": [
+        "Renegade Orc"
+      ]
+    }
+  },
+  {
+    "title": "Ancient Aucar Outfits Quest",
+    "canonical": "oteryn:quest.ancient_aucar_outfits_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/70/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant and atomic hand-in composition. The production source writer supplies an empty outfit snapshot and rejects Outfit/OutfitAddon effects; a lane-local duplicate would violate the explicit shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:205",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/70/definition"
+      ],
+      "attempts": [
+        "Read the selected recipe and its outfit/addon and item obligations.",
+        "Traced production NPC dispatch through catalogue::prepare to npc_program::evaluate_source and plan_storage; only the existing fixed Tereban item branch has an inventory owner.",
+        "Confirmed Outfit/OutfitAddon mutates the pure planner snapshot only; production storage-only evaluation refuses those effects. Shared outfit/addon engine is explicitly allocated to qengine2, so no second durable owner was introduced."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "kill",
+      "objective": "Defeat Ahau and recover The Living Idol of Tukh.",
+      "targets": [
+        "Ahau",
+        "The Living Idol of Tukh"
+      ]
+    }
+  },
+  {
+    "title": "Annual Autumn Vintage",
+    "canonical": "oteryn:quest.authored.annual_autumn_vintage",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/86/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Emilie/Gruffy: winterberry/wine custody and the six potion outputs. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/86/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Emilie/Gruffy value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather ten winterberry bunches",
+      "targets": [
+        "Bunch of Winterberries"
+      ]
+    }
+  },
+  {
+    "title": "Arito's Task Quest",
+    "canonical": "oteryn:quest.tibia_tales",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Arito/Muhad: nomad parchment/treaty hand-in and access progress. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/52/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Arito/Muhad value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "talk",
+      "objective": "Broker Arito's agreement with Muhad and report the peace.",
+      "targets": [
+        "Arito",
+        "Muhad"
+      ]
+    }
+  },
+  {
+    "title": "Assassin Outfits Quest",
+    "canonical": "oteryn:quest.assassin_outfit",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/10/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant and atomic hand-in composition. The production source writer supplies an empty outfit snapshot and rejects Outfit/OutfitAddon effects; a lane-local duplicate would violate the explicit shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:205",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/10/definition"
+      ],
+      "attempts": [
+        "Read the selected recipe and its outfit/addon and item obligations.",
+        "Traced production NPC dispatch through catalogue::prepare to npc_program::evaluate_source and plan_storage; only the existing fixed Tereban item branch has an inventory owner.",
+        "Confirmed Outfit/OutfitAddon mutates the pure planner snapshot only; production storage-only evaluation refuses those effects. Shared outfit/addon engine is explicitly allocated to qengine2, so no second durable owner was introduced."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather eyes, scales, fins and dust for the potion.",
+      "targets": [
+        "Bonelord Eye",
+        "Red Dragon Scale",
+        "Lizard Scale",
+        "Fish Fin",
+        "Vampire Dust",
+        "Demon Dust"
+      ]
+    }
+  },
+  {
+    "title": "Asura Palace Quest",
+    "canonical": "oteryn:quest.authored.asura_palace_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/87/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Personal encounter admission and kill-to-door completion for the Destroyer/Greater Elemental groups and Flaming Orchid. Callback supports USE/STEP, map effects and character storage, but carries no participant-bound encounter token or eligible-kill completion callback. This requires the shared encounter/reset owner allocated to QENGINE (NOTE-coordination.md:16), including shared callback/capture integration; it cannot be supplied by an isolated quest module or by test-only progress injection without duplicating that owner.",
+      "evidence": [
+        ".questpc5/NOTE-coordination.md:16",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+        "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+        "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/87/definition"
+      ],
+      "attempts": [
+        "Checked current wiki source (wiki-current/Asura Palace Quest_Spoiler.wiki), the chosen sequential kill gates, Callback schema and the kill settlement participants. The existing Soul War/Rotten Blood/Grizzly adapters are closed owners and cannot authorize Asura gates.",
+        "Checked the allowed lane-local callback/NPC hooks: they consume current quest state but do not own encounter participant capture, reset, occupancy or eligible-death settlement. Did not inject SQL progress, invent a source selector or duplicate the explicitly allocated shared lifecycle."
+      ],
+      "owner_dependency": "qengine: encounter/party access and reset/pickup lifecycle"
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter and inspect the Asura Palace chambers",
+      "targets": [
+        "Asura Palace"
+      ]
+    }
+  },
+  {
+    "title": "Awash World Change",
+    "canonical": "oteryn:quest.awash_world_change",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/11/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Reset/pickup and encounter access for three water pumps and the personal Sunken Mines steamship route. The callback owner has no pump encounter/reset lifecycle or character-qualified travel-route publication operation; a generic teleport is not proof that the mine/scout/pump obligation unlocked the route. This requires the shared encounter/reset owner allocated to QENGINE (NOTE-coordination.md:16), including shared callback/capture integration; it cannot be supplied by an isolated quest module or by test-only progress injection without duplicating that owner.",
+      "evidence": [
+        ".questpc5/NOTE-coordination.md:16",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+        "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+        "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/11/definition"
+      ],
+      "attempts": [
+        "Read the chosen personal-unlock adaptation (no global flood state is claimed), all stages and reward access intent. Checked USE/STEP callback effects, world context/reset fencing and existing item offering semantics. These do not own publication of the steamship route after pump/scout completion.",
+        "Checked the allowed lane-local callback/NPC hooks: they consume current quest state but do not own encounter participant capture, reset, occupancy or eligible-death settlement. Did not inject SQL progress, invent a source selector or duplicate the explicitly allocated shared lifecycle."
+      ],
+      "owner_dependency": "qengine: encounter/party access and reset/pickup lifecycle"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather fuel for the three mine water pumps.",
+      "targets": [
+        "Coal"
+      ]
+    }
+  },
+  {
+    "title": "Bank Robbery Mini World Change",
+    "canonical": "oteryn:quest.authored.bank_robbery_mini_world_change",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/88/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Thais banker: Bag With Stolen Gold debit and ten platinum coins/Honest Finder completion. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/88/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Thais banker value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Defeat Jesse the Wicked in the recovery route",
+      "targets": [
+        "Jesse the Wicked"
+      ]
+    }
+  },
+  {
+    "title": "Barbarian Arena Quest",
+    "canonical": "oteryn:quest.barbarian_arena_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/12/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Participant-bound arena encounter admission and per-room kill completion across Greenhorn/Scrapper/Warlord. Existing source reward claims grant the nine reward choices, but neither Callback nor the generic NPC storage writer owns arena occupancy, combatant identity or exit/completion eligibility. This requires the shared encounter/reset owner allocated to QENGINE (NOTE-coordination.md:16), including shared callback/capture integration; it cannot be supplied by an isolated quest module or by test-only progress injection without duplicating that owner.",
+      "evidence": [
+        ".questpc5/NOTE-coordination.md:16",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+        "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+        "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/12/definition"
+      ],
+      "attempts": [
+        "Read all three ten-fight stages and retained nine chest receipts. Traced generic world callbacks and the production death/party settlement consumers; none is an arena encounter owner. Existing PvP arena_match does not authorize the source PvE arena rooms.",
+        "Checked the allowed lane-local callback/NPC hooks: they consume current quest state but do not own encounter participant capture, reset, occupancy or eligible-death settlement. Did not inject SQL progress, invent a source selector or duplicate the explicitly allocated shared lifecycle."
+      ],
+      "owner_dependency": "qengine: encounter/party access and reset/pickup lifecycle"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Defeat the ten Greenhorn arena combatants.",
+      "targets": [
+        "Greenhorn arena combatants"
+      ]
+    }
+  },
+  {
+    "title": "Barbarian Outfits Quest",
+    "canonical": "oteryn:quest.outfit_and_addon_quests",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/82/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s6",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant and atomic hand-in composition. The production source writer supplies an empty outfit snapshot and rejects Outfit/OutfitAddon effects; a lane-local duplicate would violate the explicit shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:205",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/82/definition"
+      ],
+      "attempts": [
+        "Read the selected recipe and its outfit/addon and item obligations.",
+        "Traced production NPC dispatch through catalogue::prepare to npc_program::evaluate_source and plan_storage; only the existing fixed Tereban item branch has an inventory owner.",
+        "Confirmed Outfit/OutfitAddon mutates the pure planner snapshot only; production storage-only evaluation refuses those effects. Shared outfit/addon engine is explicitly allocated to qengine2, so no second durable owner was introduced."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    },
+    "first_unqualified_stage": {
+      "key": "s6",
+      "kind": "collect",
+      "objective": "Przygotuj Fighting Spirit, Warrior's Sweat, 50 Red Cloth, 50 Green Cloth i 10 Spider Silk Yarn.",
+      "targets": [
+        "Fighting Spirit",
+        "Warrior's Sweat",
+        "Red Piece of Cloth",
+        "Green Piece of Cloth",
+        "Spider Silk Yarn"
+      ]
+    }
+  },
+  {
+    "title": "Barbarian Test Quest",
+    "canonical": "oteryn:quest.barbarian_test",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/13/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Sven: Mead Horn reward and source item-bearing test progress. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/13/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Sven value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Offer a Honeycomb and complete the chosen ten-sip mead test.",
+      "targets": [
+        "Honeycomb",
+        "Mead bucket"
+      ]
+    }
+  },
+  {
+    "title": "Battle Mage Outfits Quest",
+    "canonical": "oteryn:quest.battle_mage_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/14/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant and atomic hand-in composition. The production source writer supplies an empty outfit snapshot and rejects Outfit/OutfitAddon effects; a lane-local duplicate would violate the explicit shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:205",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/14/definition"
+      ],
+      "attempts": [
+        "Read the selected recipe and its outfit/addon and item obligations.",
+        "Traced production NPC dispatch through catalogue::prepare to npc_program::evaluate_source and plan_storage; only the existing fixed Tereban item branch has an inventory owner.",
+        "Confirmed Outfit/OutfitAddon mutates the pure planner snapshot only; production storage-only evaluation refuses those effects. Shared outfit/addon engine is explicitly allocated to qengine2, so no second durable owner was introduced."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather five Sturdy Books for the first addon.",
+      "targets": [
+        "Sturdy Book"
+      ]
+    }
+  },
+  {
+    "title": "Beggar Outfits Quest",
+    "canonical": "oteryn:quest.beggar_outfits_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/6/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal"
+      }
+    ],
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant and atomic hand-in composition. The production source writer supplies an empty outfit snapshot and rejects Outfit/OutfitAddon effects; a lane-local duplicate would violate the explicit shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:205",
+        "content/quests/definitions/quests-00000-00099.json:1#/records/6/definition"
+      ],
+      "attempts": [
+        "Read the selected recipe and its outfit/addon and item obligations.",
+        "Traced production NPC dispatch through catalogue::prepare to npc_program::evaluate_source and plan_storage; only the existing fixed Tereban item branch has an inventory owner.",
+        "Confirmed Outfit/OutfitAddon mutates the pure planner snapshot only; production storage-only evaluation refuses those effects. Shared outfit/addon engine is explicitly allocated to qengine2, so no second durable owner was introduced."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    }
+  },
+  {
+    "title": "Behemoth Quest",
+    "canonical": "oteryn:quest.behemoth_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/7/definition",
+    "status": "QUALIFIED",
+    "scope": "Original source lever/portal/reward contract; authored approximation stage graph and deployed World are not certified.",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.kv.behemothquest1",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_phase_a_02_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.behemothquest2",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_phase_a_02_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.behemothquest3",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_phase_a_02_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.behemothquest4",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "quest_catalogue_chests_phase_a_02_use_replay_and_refusal"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Descend through Cyclopolis to the Behemoth floor.",
+      "targets": [
+        "Cyclopolis",
+        "Behemoth floor"
+      ]
+    },
+    "qualification": {
+      "test": "questpc5_behemoth_lever_and_all_four_rewards",
+      "marker": "POSTGRES_CASE_COMPLETED questpc5_behemoth_lever_and_all_four_rewards duration=72.085102686s",
+      "duration_seconds": 72.085102686,
+      "log": ".questpc5/reward-paths-green.log"
+    }
+  },
+  {
+    "title": "Between the Lines Quest",
+    "canonical": "oteryn:quest.between_the_lines_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/71/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant: Illuminator Outfits. Production evaluate_source passes an empty outfit snapshot and uses plan_storage, whose effect whitelist rejects Outfit/OutfitAddon. This shared owner is explicitly allocated elsewhere; implementing a second durable grant path in this lane is forbidden.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/71/definition"
+      ],
+      "attempts": [
+        "Read all chosen stages/rewards and source obligations for this title.",
+        "Traced production catalogue::prepare -> npc_program::preview -> evaluate_source -> plan_storage.",
+        "Confirmed the pure planner only changes its staged outfit map; the durable writer has no generic outfit commit. Retained all existing source callbacks/rewards and did not duplicate qengine2."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Follow ink traces and defeat Inkwing.",
+      "targets": [
+        "ink traces",
+        "Inkwing"
+      ]
+    }
+  },
+  {
+    "title": "Bewitched",
+    "canonical": "oteryn:quest.authored.bewitched",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/89/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "Cauldron encounter admission/reset and Bane Bringer kill-to-completion eligibility for the fixed daily contribution. Callback has no encounter lifecycle, and reusing a plain XP-bearing USE would grant1000XP before the required boss kill. This requires the shared encounter/reset owner allocated to QENGINE (NOTE-coordination.md:16), including shared callback/capture integration; it cannot be supplied by an isolated quest module or by test-only progress injection without duplicating that owner.",
+      "evidence": [
+        ".questpc5/NOTE-coordination.md:16",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+        "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+        "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/89/definition"
+      ],
+      "attempts": [
+        "Read the selected fixed ingredients/daily adaptation and1000XP intent, checked current Callback effect/trigger schema and the production kill settlement adapters. No existing adapter binds a Bane Bringer death to this cauldron contribution and daily reset.",
+        "Checked the allowed lane-local callback/NPC hooks: they consume current quest state but do not own encounter participant capture, reset, occupancy or eligible-death settlement. Did not inject SQL progress, invent a source selector or duplicate the explicitly allocated shared lifecycle."
+      ],
+      "owner_dependency": "qengine: encounter/party access and reset/pickup lifecycle"
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the witch cauldron beneath Green Claw Swamp",
+      "targets": [
+        "Green Claw Swamp cauldron"
+      ]
+    }
+  },
+  {
+    "title": "Bigfoot's Burden Quest",
+    "canonical": "oteryn:quest.bigfoot_s_burden_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/15/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Gnome NPCs: item-bearing recruitment/repair/task hand-ins and supply package. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/15/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Gnome NPCs value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Pass Gnomology, medical and ear examinations.",
+      "targets": [
+        "Gnomology test",
+        "medical examination",
+        "ear examination"
+      ]
+    }
+  },
+  {
+    "title": "Blood Brothers Quest",
+    "canonical": "oteryn:quest.blood_brothers_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/16/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Julius: garlic-bread/task items and Blood Goblet completion. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/16/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Julius value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Prepare garlic bread and investigate the Bad Eggs suspects.",
+      "targets": [
+        "Garlic Bread",
+        "Bad Eggs suspects"
+      ]
+    }
+  },
+  {
+    "title": "Bloody Tusks Quest",
+    "canonical": "oteryn:quest.bloody_tusks_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/72/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s3",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Anaztassja Moroia: 17 Norcferatu Talisman hand-in and terminal Gloom Maw/Bat Person grants. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/72/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Anaztassja Moroia value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s3",
+      "kind": "use",
+      "objective": "Perform the ancestral Dance of Death ritual.",
+      "targets": [
+        "Orchish Ancestor Spirit",
+        "Ritual Dance"
+      ]
+    }
+  },
+  {
+    "title": "Bored Mini World Change",
+    "canonical": "oteryn:quest.bored_mini_world_change",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/17/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Wyda: Blood Herb debit and Torn Teddy/Someone's Bored grants. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/17/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Wyda value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Bring a Blood Herb to Wyda.",
+      "targets": [
+        "Blood Herb"
+      ]
+    }
+  },
+  {
+    "title": "Braindeath Quest",
+    "canonical": "oteryn:quest.authored.braindeath_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/90/definition",
+    "status": "QUALIFIED",
+    "scope": "Original standalone Braindeath coffin source contract (Beregar BPTheUndeathStare alias), including all exact nested rewards. The separate authored approximation kill counter and deployed World are not certified.",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the lava passage below Beregar",
+      "targets": [
+        "Beregar lava passage"
+      ]
+    },
+    "qualification": {
+      "test": "questpc5_braindeath_coffin_exact_backpack_contents_replay_and_refusal",
+      "marker": "POSTGRES_CASE_COMPLETED questpc5_braindeath_coffin_exact_backpack_contents_replay_and_refusal duration=30.111469623s",
+      "duration_seconds": 30.111469623,
+      "log": ".questpc5/braindeath-initial.log",
+      "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare",
+      "source_evidence": [
+        ".questpc5/wiki-current/Braindeath Quest.wiki",
+        ".questpc5/wiki-current/Braindeath Quest_Spoiler.wiki",
+        "content/interactions/reward_claims/reward-claim-variants-00100-00104.json:1"
+      ]
+    }
+  },
+  {
+    "title": "Brotherhood Outfits Quest",
+    "canonical": "oteryn:quest.brotherhood_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/18/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant and atomic hand-in composition. The production source writer supplies an empty outfit snapshot and rejects Outfit/OutfitAddon effects; a lane-local duplicate would violate the explicit shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:205",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/18/definition"
+      ],
+      "attempts": [
+        "Read the selected recipe and its outfit/addon and item obligations.",
+        "Traced production NPC dispatch through catalogue::prepare to npc_program::evaluate_source and plan_storage; only the existing fixed Tereban item branch has an inventory owner.",
+        "Confirmed Outfit/OutfitAddon mutates the pure planner snapshot only; production storage-only evaluation refuses those effects. Shared outfit/addon engine is explicitly allocated to qengine2, so no second durable owner was introduced."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Obtain the Follower, Officer and Leader documents.",
+      "targets": [
+        "Document of the Follower",
+        "Document of the Officer",
+        "Document of the Leader"
+      ]
+    }
+  },
+  {
+    "title": "Cartography 101 Quest",
+    "canonical": "oteryn:quest.authored.cartography_101_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/91/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned atomic NPC inventory/quest-progress composition for Rotem Valos: survey-map custody and terminal Cartography 101 grant. The only inventory-backed source NPC branch in this snapshot is the fixed Tereban path; other NPC plans run with empty inventory and plan_storage rejects TakeItem/GiveItem/GiveMoney/Experience/Achievement. A second transaction after a storage commit would lose atomicity and a lane-local duplicate violates the shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:140",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules.rs:473",
+        "content/quests/definitions/quests-00200-00299.json:1#/records/91/definition"
+      ],
+      "attempts": [
+        "Read the complete pinned stages/rewards and traced the Rotem Valos value-bearing obligation.",
+        "Checked existing carried-item callbacks, once-only chest claims and the Tereban special case; none authorizes generic NPC hand-ins in the same quest transaction.",
+        "Checked the eight-track storage planner and durable response receipt owner; a test or storage-only routing hook cannot supply the absent inventory owner. Shared qengine2 composition is explicitly allocated outside this lane."
+      ],
+      "owner_dependency": "qengine2: atomic NPC hand-in with quest progress"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Mark the Asura Palace on the survey map",
+      "targets": [
+        "Adventurer's Map at Asura Palace"
+      ]
+    }
+  },
+  {
+    "title": "Cave Explorer Outfits Quest",
+    "canonical": "oteryn:quest.cave_explorer_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/19/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "blocker": {
+      "missing_piece": "QENGINE2-owned durable NPC outfit/addon grant and atomic hand-in composition. The production source writer supplies an empty outfit snapshot and rejects Outfit/OutfitAddon effects; a lane-local duplicate would violate the explicit shared-engine allocation.",
+      "evidence": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:350",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:205",
+        "content/quests/definitions/quests-00100-00199.json:1#/records/19/definition"
+      ],
+      "attempts": [
+        "Read the selected recipe and its outfit/addon and item obligations.",
+        "Traced production NPC dispatch through catalogue::prepare to npc_program::evaluate_source and plan_storage; only the existing fixed Tereban item branch has an inventory owner.",
+        "Confirmed Outfit/OutfitAddon mutates the pure planner snapshot only; production storage-only evaluation refuses those effects. Shared outfit/addon engine is explicitly allocated to qengine2, so no second durable owner was introduced."
+      ],
+      "owner_dependency": "qengine2: outfit/addon grant and atomic NPC hand-in"
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Complete a fixed Spike hunting assignment for explorer standing.",
+      "targets": [
+        "Spike task creatures"
+      ]
+    }
+  }
+]

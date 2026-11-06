@@ -117,16 +117,17 @@ pub(super) async fn exercise_plate(
             expected_plate,
             "plate after command {command}"
         );
-        assert_eq!(map.facts.object_revision(plate), command);
+        assert_eq!(map.facts.object_revision(stairs), command);
         if command == 3 {
-            pressed = Some(
+            pressed = Some((
                 owner
                     .runtime
                     .lock()
                     .await
                     .read_actor_position(actor)
                     .map_err(debug)?,
-            );
+                map.facts.object_revision(plate),
+            ));
         }
     }
     let departure = oteryn_gameplay_quests::quest::world_callbacks::load()?
@@ -141,13 +142,15 @@ pub(super) async fn exercise_plate(
         .map_err(debug)?;
     // A newer map projection supersedes an older cancelled departure. Replaying
     // the old event must neither pin the session nor overwrite that newer state.
+    let (pressed, revision) = pressed.ok_or("pressed snapshot")?;
+    let stairs_revision = map.facts.object_revision(stairs);
     assert!(owner.queue_non_mutating_step_for_test(
         actor,
         admitted.game_session_id,
-        pressed.ok_or("pressed snapshot")?,
+        pressed,
         entered,
         &departure,
-        (plate, 3)
+        (plate, revision)
     ));
     let response = super::quest_world_callbacks::wire(
         owner,
@@ -163,7 +166,7 @@ pub(super) async fn exercise_plate(
     );
     assert_eq!(appearance(stairs)?, 7767);
     assert_eq!(appearance(plate)?, 430);
-    assert_eq!(map.facts.object_revision(plate), 5);
+    assert_eq!(map.facts.object_revision(stairs), stairs_revision + 1);
     assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
     let after = owner
         .root

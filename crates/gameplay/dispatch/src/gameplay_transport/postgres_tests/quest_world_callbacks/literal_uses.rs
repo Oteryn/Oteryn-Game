@@ -146,7 +146,8 @@ fn questpc5_l5_hoist_cancelled_read_reconciles_before_next_command() -> TestResu
             y: 31125,
             floor: -9,
         });
-        exercise_with_missing(callback, 100, 1, Some(1), None, true)
+        exercise_with_missing(callback.clone(), 100, 1, Some(1), None, true)?;
+        exercise_with_missing(callback, 100, 1, Some(1), Some(0), true)
     })
 }
 
@@ -433,13 +434,20 @@ fn exercise_with_missing(
                 let (origin, entered) = {
                     let mut runtime = owner.runtime.lock().await;
                     let origin = runtime.read_actor_position(deps.actor).map_err(debug)?;
-                    runtime
-                        .initialize_pinned_test_position(deps.actor, local(trigger))
-                        .map_err(debug)?;
-                    (
+                    let map = owner.bundle_map().ok_or("map")?;
+                    let closed = crate::map::floor::BundleDoors(map.facts.doors());
+                    let proof = crate::map::floor::prepare_quest_callback_teleport(
+                        &runtime,
+                        owner.movement_cells,
+                        deps.actor,
+                        admitted.game_session_id,
                         origin,
-                        runtime.read_actor_position(deps.actor).map_err(debug)?,
+                        local(trigger),
+                        false,
+                        &closed,
                     )
+                    .map_err(debug)?;
+                    (origin, runtime.commit_source_step(proof).map_err(debug)?)
                 };
                 assert!(owner.queue_non_mutating_step_for_test(
                     deps.actor,
@@ -468,7 +476,7 @@ fn exercise_with_missing(
             .await?;
             assert_eq!(
                 decode_step_result(&reply).map_err(debug)?,
-                if recovery {
+                if recovery && allowed {
                     StepDisposition::Blocked
                 } else {
                     StepDisposition::Moved
@@ -503,6 +511,11 @@ fn exercise_with_missing(
                 .position(),
             if allowed {
                 local(callback.teleport.ok_or("destination")?)
+            } else if recovery {
+                MovementLocalPosition {
+                    x: origin.x - 1,
+                    ..origin
+                }
             } else {
                 origin
             }

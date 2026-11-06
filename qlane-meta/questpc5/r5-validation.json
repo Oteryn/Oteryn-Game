@@ -1,0 +1,71 @@
+[
+  {
+    "name": "r5-clippy-final",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-content -p oteryn-gameplay-durability -p oteryn-gameplay-quests -p oteryn-gameplay-social -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets --all-features --quiet -- -D warnings",
+    "exit": 0,
+    "duration_seconds": 38.75
+  },
+  {
+    "name": "r5-fmt-final",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check",
+    "exit": 0,
+    "duration_seconds": 8.343
+  },
+  {
+    "name": "r5-boot-confirm",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --lib quest_catalogue_boot_tests --quiet",
+    "exit": 0,
+    "duration_seconds": 21.23
+  },
+  {
+    "name": "r5-fluid-unit-confirm",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-durability --lib reward_claim_mint::tests --quiet",
+    "exit": 0,
+    "duration_seconds": 10.665
+  },
+  {
+    "name": "r5-authoring-checks",
+    "command": "python3 tools/content-schema/quest-authoring/run_checks.py --part checks",
+    "exit": 0,
+    "duration_seconds": 188.299
+  },
+  {
+    "name": "r5-donor-check",
+    "command": "/home/mole/oteryn-cache/venv-ci312/bin/python tools/content-schema/quest-authoring/quest_donor_source_authoring.py --check",
+    "exit": 0,
+    "duration_seconds": 411.754
+  },
+  {
+    "name": "r5-authoring-units",
+    "command": "python3 tools/content-schema/quest-authoring/run_checks.py --part unit-tests --jobs 2",
+    "exit": 1,
+    "duration_seconds": 333.296
+  },
+  {
+    "name": "fluid-postgres",
+    "command": "QPC_SLOT=3 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --test character_authority_postgres filled_fluid_claims_commit_root_and_children_and_replay_without_refilling -- --nocapture",
+    "exit": 101,
+    "passed": 0,
+    "failed": 1,
+    "test_duration_seconds": 0.0,
+    "postgres_case_completed": false,
+    "failure": "Connection refused (os error 111)",
+    "log_lifetime_seconds": 217.841,
+    "log_lifetime_basis": "log creation to final output write",
+    "cargo_reported_build_duration": "3m 54s",
+    "wall_duration_seconds": null,
+    "wall_duration_note": "The invocation did not capture a monotonic wall timer; log lifetime is retained separately."
+  },
+  {
+    "name": "chest-medusa",
+    "command": "QPC_SLOT=2 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_medusa_exact_crystal_reward_use_and_replay -- --nocapture",
+    "exit": 101,
+    "duration_seconds": 366.744,
+    "passed": 0,
+    "failed": 1,
+    "test_duration_seconds": 25.4,
+    "postgres_case_completed": false,
+    "failure": "Connection refused (os error111)",
+    "evidence": ".questpc/chest-qualification.txt"
+  }
+]

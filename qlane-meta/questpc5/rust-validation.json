@@ -1,0 +1,18 @@
+[
+  {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo check --locked --offline -p oteryn-gameplay-content -p oteryn-gameplay-durability -p oteryn-gameplay-quests -p oteryn-gameplay-social -p oteryn-gameplay-dispatch -p oteryn-game-server",
+    "exit": 1,
+    "duration_seconds": 0.033,
+    "blocked": true,
+    "postgres_completed": false,
+    "log": ".questpc/rust-validation-0.log"
+  },
+  {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --lib quest_catalogue_chests_medusa_exact_crystal_reward_use_and_replay -- --nocapture",
+    "exit": 1,
+    "duration_seconds": 0.022,
+    "blocked": true,
+    "postgres_completed": false,
+    "log": ".questpc/rust-validation-1.log"
+  }
+]

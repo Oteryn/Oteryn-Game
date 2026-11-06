@@ -1,0 +1,15 @@
+QUESTPC chest qualification: BLOCKED
+Tree: detached HEAD 1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7 plus preserved existing uncommitted changes.
+No source changes by this worker.
+Command: QPC_SLOT=2 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_medusa_exact_crystal_reward_use_and_replay -- --nocapture
+Result: exit 101; 0 passed; 1 failed; 2484 filtered out.
+Duration: 366.744s wall; test reported 25.40s; build reported 5m40s.
+Failure: Medusa (33049, 32399, -10): error communicating with database: Connection refused (os error 111).
+POSTGRES_CASE_COMPLETED markers: 0.
+Log: .questpc/chest-medusa.log
+Further PostgreSQL commands stopped on the shared-service refusal, per lead instruction.
+Not run: quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal (13 claims and all source placements).
+Not run: quest_container_chests_ (9 tests).
+Not run: quest_demon_helmet_chests_ (3 tests).
+Remaining: restore PostgreSQL through the authorized environment owner, then rerun the focused Medusa/full-charge/container/demon-helmet commands and require completion markers.
+No qualification ledger or whole-quest completion claim is justified by this run.
