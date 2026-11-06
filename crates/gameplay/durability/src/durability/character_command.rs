@@ -342,6 +342,9 @@ impl DurabilityRoot {
         operation_id: &str,
         input: Input<'_>,
     ) -> Decision {
+        if command == super::bazaar::TRANSFER_COMMAND {
+            return super::bazaar::transfer_input(self, authority, proof, source_authority, operation_id, input).await;
+        }
         let Some(operation) = uuid_v7(operation_id)
             .then(|| uuid_bytes(operation_id))
             .flatten()
@@ -454,6 +457,7 @@ async fn decide(
         .bind(request.operation.as_slice()).fetch_optional(&mut **tx).await?.is_some() {
         return Ok(Some(None));
     }
+    if sqlx::query("SELECT 1 FROM game_bazaar_decisions WHERE issuer='OTERYN_PLATFORM_CHARACTER_AUTHORITY' AND operation_id=encode($1,'hex')::uuid").bind(request.operation.as_slice()).fetch_optional(&mut **tx).await?.is_some(){return Ok(Some(None));}
     // The account portfolio lock only once no stored receipt answers, so a
     // conflict writes nothing (§5.2).
     if let Classified::Create(intent) = &classified {

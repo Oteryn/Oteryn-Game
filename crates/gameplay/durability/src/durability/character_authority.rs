@@ -144,7 +144,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
+            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, o.account_id::text AS creation_account_id FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
             let Some(row) = row else { return Ok(Err(CharacterAuthorityError::Rejected)); };
             let record = decode_current_row(&row)?;
             commit_semantic_transaction(tx, deadline).await?;
@@ -360,6 +360,11 @@ impl DurabilityRoot {
         let record = recovery.record().clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            // Serialize successor admission against all command fence checks. Acquire
+            // this gate in a separate statement so the following READ COMMITTED
+            // snapshot includes any predecessor transaction that just completed.
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-recovery-admission', 0))")
+                .execute(&mut *tx).await?;
             let current: Option<String> = sqlx::query_scalar("SELECT recovery_generation::text FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR UPDATE")
                 .fetch_optional(&mut *tx).await?;
             let current = current.ok_or(DurabilityError::Unavailable)?.parse::<u64>().map_err(|_| DurabilityError::Unavailable)?;
@@ -489,6 +494,12 @@ pub(super) async fn assert_recovery_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
+    // A row lock alone cannot fence an append-only successor: a SELECT queued
+    // behind reconciliation can retain a snapshot containing only its predecessor.
+    // The shared transaction gate precedes the SELECT and stays held through commit.
+    sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:character-recovery-admission', 0))")
+        .execute(&mut **tx)
+        .await?;
     let sql = "SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE";
     let row = sqlx::query(sql)
         .fetch_optional(&mut **tx)
@@ -551,7 +562,7 @@ pub(super) async fn load_current_character(
     character_id: [u8; 16],
 ) -> std::result::Result<Option<CharacterAuthorityRecord>, DurabilityError> {
     assert_recovery_fence(tx, recovery).await?;
-    let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 FOR SHARE OF r")
+    let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, o.account_id::text AS creation_account_id FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 FOR SHARE OF r")
         .bind(character_id.as_slice())
         .fetch_optional(&mut **tx)
         .await?;
@@ -576,7 +587,7 @@ fn decode_current_row(
         revision: CharacterRevision::new(revision).map_err(|_| DurabilityError::Unavailable)?,
         event_id: uuid_text(row.try_get("event_id")?)?,
         transaction_id: uuid_text(row.try_get("transaction_id")?)?,
-        payload: encode_bootstrap(&account, &character, &world),
+        payload: encode_bootstrap(&uuid_text(row.try_get("creation_account_id")?)?, &character, &world),
     })
 }
 fn read_record_row(
@@ -739,6 +750,7 @@ pub(super) async fn account_security(
 // UNION ALL arm order is irrelevant: the query checks only for the existence of an
 // invalid row; chain continuity and latest state are joined by Character revision.
 const RECEIPT_CHAIN_TABLES: &[&str] = &[
+    "game_bazaar_character_revision_chain",
     "game_character_bestiary_kill_receipts",
     "game_character_build_receipts",
     "game_character_charm_receipts",
@@ -840,6 +852,7 @@ async fn verify_character_integrity(
     super::offline_training_state::verify(tx).await?;
     super::npc_purchase::verify_purchase_integrity(tx).await?;
     creation_integrity::verify(tx).await?;
+    super::bazaar::recovery::verify(tx).await?;
     // P03 progression is optional at revision one because initialization is a
     // separate owner.  Once a Character advances, typed state and a complete,
     // gap-free immutable receipt chain must explain the global revision and the
@@ -871,8 +884,8 @@ async fn verify_character_integrity(
     let mut after = String::from("00000000-0000-0000-0000-000000000000");
     loop {
         let rows = sqlx::query(
-            "SELECT a.event_id::text, a.payload, r.account_id::text, r.character_id::text, r.world_id::text \
-               FROM game_character_audit_outbox a JOIN game_character_roots r USING (character_id) \
+            "SELECT a.event_id::text, a.payload, c.account_id::text, r.character_id::text, r.world_id::text \
+               FROM game_character_audit_outbox a JOIN game_character_roots r USING (character_id) JOIN game_character_creation_receipts c ON c.event_id=a.event_id \
               WHERE a.event_id > $1::uuid ORDER BY a.event_id LIMIT 256",
         )
         .bind(&after)

@@ -133,6 +133,10 @@ const fn request_envelope_max(operation: Operation) -> usize {
         Operation::PublishWorldOnlineV1 => {
             super::public_projections::ONLINE_BYTES + REQUEST_HEAD_BYTES
         }
+        Operation::PublishBazaarTransferabilityV1
+        | Operation::PublishBazaarCharacterCommandReceiptV2 => {
+            operation.request_bytes_max() + REQUEST_HEAD_BYTES
+        }
         _ => REQUEST_ENVELOPE_BYTES,
     }
 }
@@ -185,6 +189,20 @@ async fn exchange_status(
             return Err(SourceError::CapacityExceeded);
         }
         tls.write_all(request.as_bytes()).await?;
+        if let Some(max) = super::bazaar::transport::response_bytes(operation) {
+            let mut retry_after = None;
+            let (status, raw) = read_response_inner(
+                &mut tls,
+                false,
+                max,
+                true,
+                &[],
+                operation == Operation::ReadBazaarCommandIntentV1,
+                Some(&mut retry_after),
+            )
+            .await?;
+            return Ok((status, raw, retry_after));
+        }
         if let Some(max) = super::store::response_bytes_max(operation) {
             let mut retry_after = None;
             let (status, raw) = read_response_inner(
@@ -257,7 +275,18 @@ async fn exchange_status(
         }?;
         Ok((status, raw, None))
     };
-    tokio::time::timeout(Duration::from_millis(EXCHANGE_DEADLINE_MS), future)
+    let exchange_millis = if matches!(
+        operation,
+        Operation::PublishBazaarTransferabilityV1
+            | Operation::PublishBazaarListingStatusV1
+            | Operation::PublishBazaarWatermarkV1
+            | Operation::PublishBazaarCharacterCommandReceiptV2
+    ) {
+        5000
+    } else {
+        EXCHANGE_DEADLINE_MS
+    };
+    tokio::time::timeout(Duration::from_millis(exchange_millis), future)
         .await
         .map_err(|_| SourceError::Unavailable)?
 }
@@ -804,5 +833,29 @@ mod store_response_tests {
             Ok::<(), SourceError>(())
         })?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod bazaar_tests {
+    use super::*;
+    #[test]
+    fn bazaar_http_response_requires_no_store_and_bounded_retry_after()
+    -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+            let body=br#"{"contract_version":2,"result":"accepted"}"#;
+            let response=format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: {}\r\n\r\n{}",body.len(),std::str::from_utf8(body)?);
+            let mut retry=None;
+            let accepted=read_response_inner(&mut response.as_bytes(),false,256,true,&[],false,Some(&mut retry)).await?;
+            assert_eq!(accepted,(200,body.to_vec()));
+            assert!(read_response_inner(&mut response.replace("Cache-Control: no-store\r\n","").as_bytes(),false,256,true,&[],false,Some(&mut retry)).await.is_err());
+            let throttled=b"HTTP/1.1 429 Too Many Requests\r\nCache-Control: no-store\r\nRetry-After: 25\r\nContent-Length: 0\r\n\r\n";
+            let response=read_response_inner(&mut throttled.as_slice(),false,256,true,&[],false,Some(&mut retry)).await?;
+            assert_eq!(response,(429,Vec::new()));
+            assert_eq!(retry,Some(Duration::from_secs(25)));
+            assert_eq!(super::super::bazaar::transport::retry_delay(Duration::from_secs(1), retry),Duration::from_secs(10));
+            assert!(request_envelope_max(Operation::PublishBazaarCharacterCommandReceiptV2)>=super::super::bazaar::transport::RECEIPT_BYTES+REQUEST_HEAD_BYTES);
+            Ok(())
+        })
     }
 }

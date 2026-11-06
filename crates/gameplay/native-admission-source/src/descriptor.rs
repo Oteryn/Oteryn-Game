@@ -57,6 +57,15 @@ pub enum Operation {
     /// Public projection liveness watermark (same contract, §5.1).
     PublishPublicProjectionWatermarkV1,
     PublishGameRestoreNoticeV1,
+    ListPendingBazaarCommandsV1,
+    ReadBazaarCommandIntentV1,
+    ListBazaarCommandStatesV1,
+    PublishBazaarTransferabilityV1,
+    PublishBazaarListingStatusV1,
+    PublishBazaarWatermarkV1,
+    /// Internal transport bound for the accepted CC v2 extension. Same path,
+    /// authenticated Character receipt identity and wire operation as CC v1.
+    PublishBazaarCharacterCommandReceiptV2,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
@@ -94,6 +103,13 @@ impl Operation {
             Self::PublishWorldTotalsV1 => super::public_projections::world_totals::PATH,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_PATH,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::PATH,
+            Self::ListPendingBazaarCommandsV1 => "/internal/v1/bazaar/commands/pending",
+            Self::ReadBazaarCommandIntentV1 => "/internal/v1/bazaar/commands/read",
+            Self::ListBazaarCommandStatesV1 => "/internal/v1/bazaar/commands/reconcile",
+            Self::PublishBazaarTransferabilityV1 => "/internal/v1/bazaar/transferability",
+            Self::PublishBazaarListingStatusV1 => "/internal/v1/bazaar/status",
+            Self::PublishBazaarWatermarkV1 => "/internal/v1/bazaar/watermark",
+            Self::PublishBazaarCharacterCommandReceiptV2 => super::character_commands::RECEIPT_PATH,
         }
     }
     /// Request body cap: `NSRC-HTTP-REQUEST-BODY-BYTES`, or `NRS-REPORT-BYTES`
@@ -105,6 +121,13 @@ impl Operation {
     pub const fn request_bytes_max(self) -> usize {
         match self {
             Self::ReadPremiumSnapshotV1 => 256,
+            Self::ListPendingBazaarCommandsV1
+            | Self::ReadBazaarCommandIntentV1
+            | Self::ListBazaarCommandStatesV1
+            | Self::PublishBazaarWatermarkV1 => 512,
+            Self::PublishBazaarTransferabilityV1 => super::bazaar::transport::TRANSFERABILITY_BYTES,
+            Self::PublishBazaarListingStatusV1 => super::bazaar::transport::STATUS_BYTES,
+            Self::PublishBazaarCharacterCommandReceiptV2 => super::bazaar::transport::RECEIPT_BYTES,
             Self::ReportRuntimeStatusV1 => super::runtime_status::REPORT_BYTES,
             Self::PublishAccountCharactersV1 => super::account_characters::SNAPSHOT_BYTES,
             Self::PublishProjectionWatermarkV1 => super::account_characters::WATERMARK_BYTES,

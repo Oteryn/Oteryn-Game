@@ -151,7 +151,21 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                 .and_then(|mut commands| commands.take()),
             &loops_stop
         ),
-        timed_npc_loop(runtime, timed_npcs, &loops_stop),
+        both(
+            bazaar_loop(
+                root,
+                authority,
+                proof,
+                evidence,
+                material
+                    .bazaar
+                    .lock()
+                    .ok()
+                    .and_then(|mut bazaar| bazaar.take()),
+                &loops_stop
+            ),
+            timed_npc_loop(runtime, timed_npcs, &loops_stop),
+        ),
     ));
     let mut commands_done = false;
     let mut signal = pin!(signalled.cancelled());

@@ -349,6 +349,10 @@ pub fn classify(status: u16, raw: &[u8]) -> Failure {
 pub struct CommandDescriptor(ProducerDescriptor);
 
 impl CommandDescriptor {
+    pub fn producer(&self) -> &ProducerDescriptor {
+        &self.0
+    }
+
     /// `other_purposes` are the certificate chains of every other Platform
     /// identity this host holds; none may share the command public key.
     pub fn new(
@@ -745,7 +749,7 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
         let operation_id = entry.key.operation_id.as_str();
         let started = self.clock.elapsed();
         let intent;
-        let input = if command == CREATE_COMMAND {
+        let input = if matches!(command, CREATE_COMMAND | "TransferCharacterOwnership") {
             let Ok(body) = encode_read(&self.source_authority, command, operation_id) else {
                 return Step::Settled(Settle::Done);
             };

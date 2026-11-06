@@ -53,6 +53,7 @@ use crate::gameplay_transport::{EvidenceUnavailable, FreshEvidenceSource};
 use crate::native_admission_source::account_characters::{
     self, EpochFence, EpochFenceFile, MtlsSink, ProjectionDescriptor, Publisher,
 };
+use crate::native_admission_source::bazaar::transport as bazaar_transport;
 use crate::native_admission_source::character_commands::{
     CommandDescriptor, Consumer, Decider, Decision, Input, MtlsSource,
 };
@@ -412,6 +413,14 @@ fn invalid(key: &'static str) -> BootError {
     BootError::Startup(StartupError::Invalid { key })
 }
 
+type BazaarTransportMaterial = (
+    bazaar_transport::BazaarDescriptor,
+    ProducerDescriptor,
+    String,
+    String,
+    bool,
+);
+
 /// Everything read before any socket is bound (D1).
 struct Material {
     config: NodeConfig,
@@ -429,6 +438,7 @@ struct Material {
     /// Character-command consumer identity and source authority; `None`
     /// (the default) disables it. Taken once by the serving loop.
     character_commands: std::sync::Mutex<Option<(CommandDescriptor, String)>>,
+    bazaar: std::sync::Mutex<Option<BazaarTransportMaterial>>,
     /// Public-projection publisher: its identity, source authority and epoch
     /// fence `F_pub`; `None` (absent or not enabled) disables it. Taken once
     /// by the serving loop.
@@ -643,6 +653,72 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
             Some((descriptor, commands.source_authority.clone()))
         }
     };
+    let bazaar = match &platform.bazaar {
+        None => None,
+        Some(bazaar) => {
+            let chain = |key: &'static str, path: &Path| {
+                certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
+            };
+            let own = chain(
+                "platform.bazaar.client_certificate_file",
+                &bazaar.client_certificate_file,
+            )?;
+            let key = private_key(
+                "platform.bazaar.client_key_file",
+                &secret(
+                    "platform.bazaar.client_key_file",
+                    &bazaar.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            let Some((receipt, receipt_source)) = &character_commands else {
+                return Err(invalid("platform.bazaar.character_receipt_identity"));
+            };
+            let mut others = vec![client.clone()];
+            if let Some(status) = &platform.runtime_status {
+                others.push(chain(
+                    "platform.runtime_status.client_certificate_file",
+                    &status.client_certificate_file,
+                )?);
+            }
+            if let Some(projection) = &platform.account_characters {
+                others.push(chain(
+                    "platform.account_characters.client_certificate_file",
+                    &projection.client_certificate_file,
+                )?);
+            }
+            if let Some(commands) = &platform.character_commands {
+                others.push(chain(
+                    "platform.character_commands.client_certificate_file",
+                    &commands.client_certificate_file,
+                )?);
+            }
+            if let Some(public) = &platform.public_projections {
+                others.push(chain(
+                    "platform.public_projections.client_certificate_file",
+                    &public.client_certificate_file,
+                )?);
+            }
+            let others: Vec<&[CertificateDer<'static>]> =
+                others.iter().map(Vec::as_slice).collect();
+            let descriptor = bazaar_transport::BazaarDescriptor::new(
+                endpoint.clone(),
+                platform.peer_name.clone(),
+                roots.clone(),
+                own,
+                key,
+                &others,
+            )
+            .map_err(|_| invalid("platform.bazaar"))?;
+            Some((
+                descriptor,
+                receipt.producer().clone(),
+                bazaar.source_authority.clone(),
+                receipt_source.clone(),
+                bazaar.enabled,
+            ))
+        }
+    };
     let public_projections = match &platform.public_projections {
         Some(public) if public.enabled => {
             let chain = |key: &'static str, path: &Path| {
@@ -755,6 +831,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         runtime_status,
         account_characters: std::sync::Mutex::new(account_characters),
         character_commands: std::sync::Mutex::new(character_commands),
+        bazaar: std::sync::Mutex::new(bazaar),
         public_projections: std::sync::Mutex::new(public_projections),
         descriptor,
         launch,
@@ -1146,13 +1223,18 @@ struct CommandDecider<'a, 'r, 'c> {
 impl Decider for CommandDecider<'_, '_, '_> {
     async fn decide(&mut self, command: &str, operation_id: &str, input: Input<'_>) -> Decision {
         let mut held = None;
-        if let Input::Intent(raw) = input
-            && let Classified::Create(intent) = classify_intent(raw, command, operation_id)
-        {
+        let refresh_account = match input {
+            Input::Intent(raw) => match classify_intent(raw, command, operation_id) {
+                Classified::Create(intent) => Some(uuid_text(&intent.account_id)),
+                _ => crate::durability::bazaar::decode_transfer(raw, operation_id)
+                    .map(|intent| intent.to_account_id.as_str().to_owned()),
+            },
+            _ => None,
+        };
+        if let Some(account) = refresh_account {
             // A failed refresh leaves the evidence stale; the decision then
             // reads it as unknown and stays transient until the intent expires.
             // The reason is logged as fixed tokens only (no account or bytes).
-            let account = uuid_text(&intent.account_id);
             let started = std::time::Instant::now();
             match self
                 .evidence
@@ -1221,6 +1303,167 @@ async fn character_commands_loop(
         event,
     );
     first(consumer.run(), stop.cancelled()).await;
+}
+
+/// Production dispatch boundary after fresh-evidence refresh. Keeping it
+/// explicit also lets qualification drive the actual durable caller.
+pub(crate) async fn dispatch_bazaar_intent(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    receipt_source: &str,
+    command: &str,
+    operation: &str,
+    raw: &[u8],
+) -> Decision {
+    root.decide_bazaar_command(authority, proof, receipt_source, command, operation, raw)
+        .await
+}
+
+/// The production snapshot boundary uses the authority's own batch bound.
+pub(crate) async fn snapshot_bazaar_transport(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    source: &str,
+    enabled: bool,
+) -> Result<bazaar_transport::TransportBatch, crate::native_admission_source::SourceError> {
+    let mut batch = root
+        .bazaar_transport_snapshot(
+            authority,
+            proof,
+            source,
+            crate::durability::bazaar::TRANSPORT_BATCH_LIMIT,
+        )
+        .await
+        .map_err(|_| crate::native_admission_source::SourceError::Unavailable)?;
+    batch.enabled &= enabled;
+    Ok(batch)
+}
+
+struct BazaarAuthority<'a, 'r, 's> {
+    root: &'a DurabilityRoot,
+    authority: &'a ReconciledCharacterAuthority<'r, 's>,
+    proof: &'a NodeIncarnationProof,
+    evidence: &'a FreshEvidenceSource,
+    source: String,
+    receipt_source: String,
+    enabled: bool,
+}
+impl bazaar_transport::Authority for BazaarAuthority<'_, '_, '_> {
+    async fn decide(&mut self, command: &str, operation: &str, raw: &[u8]) -> Decision {
+        if !self.enabled {
+            return Decision::Transient;
+        }
+        let value = serde_json::from_slice::<serde_json::Value>(raw).ok();
+        let mut held = Vec::new();
+        let mut accounts = std::collections::BTreeSet::new();
+        for key in ["seller_account_id", "buyer_account_id"] {
+            if let Some(account) = value
+                .as_ref()
+                .and_then(|value| value.get(key))
+                .and_then(serde_json::Value::as_str)
+                && crate::native_admission_source::character_commands::uuid_v7(account)
+            {
+                accounts.insert(account);
+            }
+        }
+        for account in accounts {
+            if let Ok(evidence) = self
+                .evidence
+                .refresh_account_held(self.root, self.proof, account)
+                .await
+            {
+                held.push(evidence);
+            }
+        }
+        let result = dispatch_bazaar_intent(
+            self.root,
+            self.authority,
+            self.proof,
+            &self.receipt_source,
+            command,
+            operation,
+            raw,
+        )
+        .await;
+        for evidence in held {
+            let _ = evidence.release().await;
+        }
+        result
+    }
+    async fn read_failure(&mut self, command: &str, operation: &str, input: Input<'_>) -> Decision {
+        if !self.enabled {
+            return Decision::Transient;
+        }
+        self.root
+            .decide_bazaar_input(
+                self.authority,
+                self.proof,
+                &self.receipt_source,
+                command,
+                operation,
+                input,
+            )
+            .await
+    }
+    async fn snapshot(
+        &mut self,
+    ) -> Result<bazaar_transport::TransportBatch, crate::native_admission_source::SourceError> {
+        snapshot_bazaar_transport(
+            self.root,
+            self.authority,
+            self.proof,
+            &self.source,
+            self.enabled,
+        )
+        .await
+    }
+    async fn acknowledge(
+        &mut self,
+        key: bazaar_transport::DeliveryKey,
+        digest: [u8; 32],
+        status: u16,
+    ) -> Result<(), crate::native_admission_source::SourceError> {
+        self.root
+            .bazaar_transport_ack(self.authority, self.proof, key, digest, status)
+            .await
+            .map_err(|_| crate::native_admission_source::SourceError::Unavailable)
+    }
+    async fn reconcile(
+        &mut self,
+        state: &bazaar_transport::RemoteState,
+    ) -> Result<(), crate::native_admission_source::SourceError> {
+        self.root
+            .bazaar_reconcile_receipt(self.authority, self.proof, state)
+            .await
+            .map_err(|_| crate::native_admission_source::SourceError::Unavailable)
+    }
+}
+
+async fn bazaar_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    evidence: &FreshEvidenceSource,
+    material: Option<BazaarTransportMaterial>,
+    stop: &CancellationToken,
+) {
+    let Some((descriptor, receipt, source, receipt_source, enabled)) = material else {
+        return;
+    };
+    let store = BazaarAuthority {
+        root,
+        authority,
+        proof,
+        evidence,
+        source: source.clone(),
+        receipt_source,
+        enabled,
+    };
+    let transport = bazaar_transport::MtlsTransport::new(descriptor, receipt);
+    let consumer = bazaar_transport::Consumer::new(store, transport, source);
+    first(consumer.run(event), stop.cancelled()).await;
 }
 
 async fn backoff(attempt: &mut u32) {
@@ -2112,10 +2355,18 @@ async fn audit_expiry_loop(
         let mut deleted = 0_u64;
         let mut failed = false;
         for _ in 0..AUDIT_RUN_CAP {
+            let bazaar_deleted = match root.expire_bazaar_audit(authority, AUDIT_BATCH).await {
+                Ok(count) => count,
+                Err(_) => {
+                    failed = true;
+                    0
+                }
+            };
+            deleted = deleted.saturating_add(bazaar_deleted);
             match root.expire_character_audit(authority, AUDIT_BATCH).await {
                 Ok(count) => {
                     deleted = deleted.saturating_add(count);
-                    if count < u64::from(AUDIT_BATCH) {
+                    if count < u64::from(AUDIT_BATCH) && bazaar_deleted < u64::from(AUDIT_BATCH) {
                         break;
                     }
                 }

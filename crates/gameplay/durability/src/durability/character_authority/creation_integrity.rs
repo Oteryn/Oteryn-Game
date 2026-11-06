@@ -9,11 +9,12 @@ pub(super) async fn verify(
            LEFT JOIN game_character_creation_receipts c USING (character_id) \
            LEFT JOIN game_character_operation_receipts o USING (character_id) \
            LEFT JOIN game_character_audit_outbox a ON a.event_id = c.event_id \
-          WHERE c.character_id IS NULL OR c.account_id <> r.account_id OR c.world_id <> r.world_id \
+          WHERE c.character_id IS NULL OR c.account_id <> coalesce((SELECT t.old_account FROM game_bazaar_character_transitions t WHERE t.character_id=r.character_id ORDER BY t.new_revision LIMIT 1),r.account_id) OR c.world_id <> r.world_id \
+             OR r.account_id <> coalesce((SELECT t.new_account FROM game_bazaar_character_transitions t WHERE t.character_id=r.character_id ORDER BY t.new_revision DESC LIMIT 1),c.account_id) \
              OR o.character_revision <> 1 \
              OR o.command_binding <> (CASE WHEN r.sex IS NULL THEN decode('02','hex') ELSE decode('03','hex') END) || uuid_send(o.issuer_decision_id) \
                 || int8send(o.intent_source_revision) || uuid_send(o.operation_id) \
-                || uuid_send(r.account_id) || uuid_send(r.world_id) \
+                || uuid_send(o.account_id) || uuid_send(r.world_id) \
                 || int8send(o.issued_at_source) || int8send(o.expires_at_source) \
                 || int2send(octet_length(r.profile_revision)::int2) || convert_to(r.profile_revision, 'UTF8') \
                 || int2send(octet_length(r.ruleset_revision)::int2) || convert_to(r.ruleset_revision, 'UTF8') \

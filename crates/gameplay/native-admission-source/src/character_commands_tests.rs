@@ -456,20 +456,53 @@ fn drive(script: Vec<Result<Vec<u8>, Failure>>, decisions: Vec<Decision>) -> Dri
 const ACCEPTED: &[u8] = br#"{"contract_version":1,"result":"accepted"}"#;
 
 #[test]
-fn consumer_reads_decides_and_publishes_the_stored_receipt() {
-    let o2 = op(2);
+fn consumer_reads_decides_and_publishes_the_stored_receipt()
+-> Result<(), Box<dyn std::error::Error>> {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../docs/contracts/fixtures/bazaar/decisions.json"
+    ))?;
+    let vectors = fixture["vectors"]
+        .as_array()
+        .ok_or("missing Bazaar vectors")?;
+    let wire = |name: &str| {
+        vectors
+            .iter()
+            .find(|vector| vector["name"].as_str() == Some(name))
+            .and_then(|vector| vector["wire"].as_str())
+            .ok_or("missing settlement fixture")
+    };
+    let transfer_intent = wire("character_settlement_intent")?;
+    let transfer_receipt = wire("character_settlement_receipt")?;
+    let transfer: serde_json::Value = serde_json::from_str(transfer_intent)?;
+    let transfer_operation = transfer["operation_id"]
+        .as_str()
+        .ok_or("missing transfer operation")?;
+    let transfer_revision = transfer["source_revision"]
+        .as_str()
+        .ok_or("missing transfer revision")?;
     let list = page(&[
         (CREATE_COMMAND, OP1, "17"),
-        ("TransferCharacterOwnership", &o2, "18"),
+        (
+            "TransferCharacterOwnership",
+            transfer_operation,
+            transfer_revision,
+        ),
     ]);
     let (sent, seen, log) = drive(
         vec![
             Ok(list),
             Ok(b"intent".to_vec()),
             Ok(ACCEPTED.to_vec()),
+            Ok(transfer_intent.as_bytes().to_vec()),
             Ok(ACCEPTED.to_vec()),
         ],
-        vec![publish("CHAR_CMD_OK"), publish("CHAR_CMD_UNSUPPORTED")],
+        vec![
+            publish("CHAR_CMD_OK"),
+            Decision::Publish {
+                receipt: transfer_receipt.as_bytes().to_vec(),
+                result_code: "CHAR_CMD_OK".to_owned(),
+            },
+        ],
     );
     let operations: Vec<_> = sent.iter().map(|(o, _)| *o).collect();
     assert_eq!(
@@ -478,31 +511,40 @@ fn consumer_reads_decides_and_publishes_the_stored_receipt() {
             Operation::ListPendingCharacterCommandsV1,
             Operation::ReadCharacterCommandIntentV1,
             Operation::PublishCharacterCommandReceiptV1,
-            // The unsupported command is never read.
+            Operation::ReadCharacterCommandIntentV1,
             Operation::PublishCharacterCommandReceiptV1,
             Operation::ListPendingCharacterCommandsV1,
         ]
     );
     assert_eq!(sent[2].1, "receipt-CHAR_CMD_OK");
     assert_eq!(
+        sent[3].1,
+        encode_read(AUTHORITY, "TransferCharacterOwnership", transfer_operation)?
+    );
+    assert_eq!(
+        sent[4].1, transfer_receipt,
+        "publish the stored v1 receipt byte-for-byte"
+    );
+    assert_eq!(
         seen,
         [
             (CREATE_COMMAND.to_owned(), "intent".to_owned()),
             (
                 "TransferCharacterOwnership".to_owned(),
-                "unsupported".to_owned()
+                transfer_intent.to_owned()
             ),
         ]
     );
-    // §8: logs name the operation, command and code, never the identifiers.
+    // §8: logs name the operation, command and code, never the identifiers or bytes.
     assert!(
         log.iter()
-            .any(|l| l.contains("result=CHAR_CMD_OK receipt=accepted"))
+            .any(|line| line.contains("result=CHAR_CMD_OK receipt=accepted"))
     );
-    assert!(
-        log.iter()
-            .all(|l| !l.contains(OP1) && !l.contains("intent"))
-    );
+    assert!(log.iter().all(|line| !line.contains(OP1)
+        && !line.contains("intent")
+        && !line.contains(transfer_operation)
+        && !line.contains(transfer_intent)));
+    Ok(())
 }
 
 #[test]

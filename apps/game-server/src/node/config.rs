@@ -135,6 +135,10 @@ pub struct PlatformConfig {
     /// character command consumer does not run. Endpoint, peer name and trust roots are
     /// those above.
     pub character_commands: Option<CharacterCommandsConfig>,
+    /// Dedicated Bazaar transport credentials. An omitted table is an
+    /// unconfigured deployment dependency, not a feature-off decision.
+    /// A configured producer defaults enabled; explicit false pauses new work.
+    pub bazaar: Option<BazaarConfig>,
     /// `OTERYN_GAME_PUBLIC_PROJECTIONS_V1` §3. Absent, or `enabled = false`
     /// (the default): the public-projection publisher does not run. Endpoint,
     /// peer name and trust roots are those above.
@@ -172,6 +176,22 @@ pub struct CharacterCommandsConfig {
     pub client_certificate_file: PathBuf,
     pub client_key_file: PathBuf,
     pub source_authority: String,
+}
+
+/// Dedicated Bazaar mTLS identity. Character receipts retain their separately
+/// configured Character command identity and source namespace.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BazaarConfig {
+    #[serde(default = "bazaar_enabled")]
+    pub enabled: bool,
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+    pub source_authority: String,
+}
+
+const fn bazaar_enabled() -> bool {
+    true
 }
 
 /// The Game host's own public-projection identity (never the evidence,
@@ -643,6 +663,43 @@ impl NodeConfig {
                 || authority == crate::native_admission_source::account_characters::PURPOSE
             {
                 return reject("platform.character_commands.source_authority");
+            }
+        }
+        if let Some(bazaar) = &platform.bazaar {
+            if platform.character_commands.is_none() {
+                return reject("platform.bazaar.character_receipt_identity");
+            }
+            let mut taken = vec![&platform.client_certificate_file, &platform.client_key_file];
+            if let Some(status) = &platform.runtime_status {
+                taken.extend([&status.client_certificate_file, &status.client_key_file]);
+            }
+            if let Some(projection) = &platform.account_characters {
+                taken.extend([
+                    &projection.client_certificate_file,
+                    &projection.client_key_file,
+                ]);
+            }
+            if let Some(commands) = &platform.character_commands {
+                taken.extend([&commands.client_certificate_file, &commands.client_key_file]);
+            }
+            if let Some(public) = &platform.public_projections {
+                taken.extend([&public.client_certificate_file, &public.client_key_file]);
+            }
+            if !absolute(&bazaar.client_certificate_file)
+                || !absolute(&bazaar.client_key_file)
+                || bazaar.client_certificate_file == bazaar.client_key_file
+                || taken.contains(&&bazaar.client_certificate_file)
+                || taken.contains(&&bazaar.client_key_file)
+            {
+                return reject("platform.bazaar.client_certificate_file");
+            }
+            if !token(&bazaar.source_authority, 128, b"/")
+                || bazaar.source_authority == platform.source_authority
+                || bazaar.source_authority == readiness.source_authority
+                || bazaar.source_authority
+                    == crate::native_admission_source::bazaar::transport::PURPOSE
+            {
+                return reject("platform.bazaar.source_authority");
             }
         }
         if let Some(public) = &platform.public_projections {
@@ -1297,6 +1354,53 @@ client_key_file = "/etc/oteryn/node/commands.key"
 source_authority = "oteryn:character-authority:primary"
 
 [launch]"#;
+
+    #[test]
+    fn bazaar_section_defaults_on_and_requires_separate_receipt_identity() {
+        assert!(
+            NodeConfig::parse(NODE.as_bytes())
+                .expect("base")
+                .platform
+                .bazaar
+                .is_none()
+        );
+        let section = r#"
+[platform.bazaar]
+client_certificate_file = "/etc/oteryn/node/bazaar.crt"
+client_key_file = "/etc/oteryn/node/bazaar.key"
+source_authority = "oteryn:game:primary"
+
+[launch]"#;
+        let all = NODE
+            .replace("\n[launch]", COMMANDS)
+            .replace("\n[launch]", section);
+        assert!(
+            NodeConfig::parse(all.as_bytes())
+                .expect("configured")
+                .platform
+                .bazaar
+                .expect("Bazaar section")
+                .enabled
+        );
+        assert!(NodeConfig::parse(NODE.replace("\n[launch]", section).as_bytes()).is_err());
+        let paused = all.replace("[platform.bazaar]", "[platform.bazaar]\nenabled = false");
+        assert!(
+            !NodeConfig::parse(paused.as_bytes())
+                .expect("explicit pause")
+                .platform
+                .bazaar
+                .expect("Bazaar section")
+                .enabled
+        );
+        for invalid in [
+            all.replace("bazaar.crt", "commands.crt"),
+            all.replace("bazaar.key", "commands.key"),
+            all.replace("bazaar.key", "bazaar.crt"),
+            all.replace("oteryn:game:primary", "bad authority"),
+        ] {
+            assert!(NodeConfig::parse(invalid.as_bytes()).is_err());
+        }
+    }
 
     #[test]
     fn character_commands_section_is_optional_off_by_default_and_separate() {
