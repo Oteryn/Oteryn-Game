@@ -137,29 +137,88 @@ pub(super) async fn dev_client<'a>(
         )
         .into());
     }
-    // CHAT-PM-CHANNELS-1 sends the initial channel list as a pushed domain-12 delta,
-    // not in the join snapshot (chat-private-channel-world-v1.md). Assert it before
-    // the door scenario so its arrival cannot race that scenario's exact event lists.
+    // Negotiated owners push their initial state after the snapshot. Retain
+    // exact event, value, ordering and revision expectations across read batches.
+    let mut expected = Vec::new();
+    if dev_client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
+    {
+        // This entry room has no city ambience: the initial replacement stops sound.
+        expected.push(oteryn_dev_client::SessionEvent::Presentation(
+            oteryn_dev_client::AppliedDelta {
+                server_sequence: 1,
+                base_revision: 0,
+                new_revision: 1,
+                value: vec![oteryn_protocol_oteryn::presentation::PresentationEvent {
+                    decision_ordinal: 1,
+                    emission_ordinal: 1,
+                    kind:
+                        oteryn_protocol_oteryn::presentation::PresentationEventKind::AmbientSound {
+                            cue_id: 0,
+                        },
+                }],
+            },
+        ));
+    }
     if dev_client.selected_capabilities().contains(
         &oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
     ) {
-        let events = dev_client_door_events(&mut dev_client)
-            .await
-            .map_err(|error| format!("dev client initial channel list: {error}"))?;
-        dev_client_expect(
-            "initial channel list",
-            &events,
-            &vec![oteryn_dev_client::SessionEvent::ChatChannelList(
-                oteryn_dev_client::AppliedDelta {
-                    server_sequence: 1,
-                    base_revision: 1,
-                    new_revision: 2,
-                    value: oteryn_protocol_oteryn::chat::private_channel::ChatChannelList::default(
-                    ),
-                },
-            )],
-        )?;
+        expected.push(oteryn_dev_client::SessionEvent::ChatChannelList(
+            oteryn_dev_client::AppliedDelta {
+                server_sequence: expected.len() as u64 + 1,
+                base_revision: 1,
+                new_revision: 2,
+                value: oteryn_protocol_oteryn::chat::private_channel::ChatChannelList::default(),
+            },
+        ));
     }
+    if dev_client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::party_skull::CAPABILITY_PARTY_SKULL_V1)
+    {
+        let entities = dev_client
+            .session_mut()
+            .world_entities()
+            .ok_or("initial entities")?;
+        let players = entities
+            .iter()
+            .filter(|entity| entity.kind == oteryn_dev_client::EntityKind::Player)
+            .collect::<Vec<_>>();
+        dev_client_expect("initial visible players", &players.len(), &1)?;
+        let own = players[0].entity;
+        dev_client_expect(
+            "initial icon identity",
+            &own.identity,
+            entities.own_identity(),
+        )?;
+        expected.push(oteryn_dev_client::SessionEvent::PartyIcons(
+            oteryn_dev_client::AppliedDelta {
+                server_sequence: expected.len() as u64 + 1,
+                base_revision: dev_client_snapshot.world_spatial_revision,
+                new_revision: dev_client_snapshot.world_spatial_revision + 1,
+                value: vec![oteryn_protocol_oteryn::party_skull::PartyIcon {
+                    entity: own,
+                    shield: 0,
+                    skull: 0,
+                }],
+            },
+        ));
+    }
+    let events = tokio::time::timeout(Duration::from_secs(20), async {
+        let mut events = Vec::new();
+        while events.len() < expected.len() {
+            events.extend(dev_client_door_events(&mut dev_client).await?);
+        }
+        TestResult::Ok(events)
+    })
+    .await
+    .map_err(|_| "initial client pushes timed out")??;
+    dev_client_expect(
+        "initial ambient sound, channel list and party icons",
+        &events,
+        &expected,
+    )?;
     dev_client_door_scenario(
         &mut dev_client,
         &dev_client_snapshot,
@@ -240,10 +299,22 @@ async fn dev_client_door_scenario(
     {
         use oteryn_dev_client::{AppliedDelta, CommandOutcome, SessionEvent};
         use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
-        let spatial_baseline = dev_client_snapshot.world_spatial_revision;
-        let sequence_base = u64::from(dev_client.selected_capabilities().contains(
-            &oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
-        ));
+        let icon_push = u64::from(
+            dev_client
+                .selected_capabilities()
+                .contains(&oteryn_protocol_oteryn::party_skull::CAPABILITY_PARTY_SKULL_V1),
+        );
+        let spatial_baseline = dev_client_snapshot.world_spatial_revision + icon_push;
+        let ambient_push = u64::from(
+            dev_client
+                .selected_capabilities()
+                .contains(&oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1),
+        );
+        let sequence_base = ambient_push
+            + icon_push
+            + u64::from(dev_client.selected_capabilities().contains(
+                &oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
+            ));
         dev_client_expect(
             "door scenario numbering",
             &(

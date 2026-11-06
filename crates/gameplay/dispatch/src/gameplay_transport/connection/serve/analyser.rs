@@ -14,11 +14,13 @@ pub(super) async fn snapshot<A: FreshAdmissionAuthority>(
     {
         return Ok(());
     }
-    if authority
+    let discarded = authority
         .analyser_snapshot(*admitted)
         .await
-        .ok_or(ServeEnd::Disconnected)?
-    {
+        .ok_or(ServeEnd::Disconnected)?;
+    // Revision zero is an uninitialized stream, not a valid client snapshot.
+    // Recovery retains the cursor and advances only when queued facts were discarded.
+    if discarded || admitted.continuity.analyser_revision == 0 {
         admitted.continuity.analyser_revision = admitted
             .continuity
             .analyser_revision

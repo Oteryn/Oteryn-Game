@@ -27,8 +27,7 @@ fn controls_encode_exact_request_and_reply_and_refusal_are_visible() {
     assert!(p.feedback.is_some());
 }
 
-#[path = "../native.rs"]
-mod native_controls;
+use crate::play::feature_0195_weapon_proficiency::view::native as native_controls;
 #[test]
 fn native_proficiency_actions_and_input_gates() {
     let mut p = WeaponProficiencyPanel {

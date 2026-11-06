@@ -25,6 +25,60 @@ struct RestoreCheck<'a, 'r, 'c, 's> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn note_house_input(
+        &self,
+        admitted: AdmittedSession,
+    ) -> bool {
+        let classify = |error| match error {
+            crate::durability::DurabilityError::RootUnavailable => AdmissionRefusal::Unavailable,
+            _ => AdmissionRefusal::Rejected,
+        };
+        if let (Some(actor), Some(fence), Some(controller)) = (
+            admitted.runtime_actor,
+            admitted.item_fence,
+            admitted.controller,
+        ) && matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
+            && actor.runtime_scope() == fence.runtime_scope
+        {
+            let Ok((current, _)) =
+                crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
+                    .retry_unavailable(async || {
+                        FreshAdmissionStore::from_root(self.root.clone())
+                            .current_session_at(admitted.game_session_id)
+                            .await
+                            .map_err(classify)
+                    })
+                    .await
+            else {
+                return false;
+            };
+            return crate::gameplay_transport::item_fence_of(current) == Some(fence)
+                && current.session_state() == GameSessionState::Active
+                && current.current_transport() == Some(controller.transport);
+        }
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1)
+        {
+            return true;
+        }
+        let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
+            return false;
+        };
+        // Background projections share this holder with mandatory pre-dispatch input.
+        // Re-prove the same fences/transport on each idempotent attempt; all non-busy
+        // failures and budget exhaustion still refuse before any command effect.
+        crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.root
+                    .note_house_transfer_input(self.holder, fence, controller.transport)
+                    .await
+                    .map_err(classify)
+            })
+            .await
+            .is_ok()
+    }
     /// Called after genuine fresh COMMIT and before its Channel first-entry
     /// participants can publish or overwrite a recorded House position.
     pub(in crate::gameplay_transport) async fn restore_fresh_house(

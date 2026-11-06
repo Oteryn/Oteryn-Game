@@ -2,7 +2,7 @@
 use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::weapon_proficiency::{Intent, WeaponProficiencyPanel, request};
 
-pub(super) fn display(p: &WeaponProficiencyPanel) -> String {
+pub(in crate::play) fn display(p: &WeaponProficiencyPanel) -> String {
     format!(
         "{}\r\n{}\r\n{}",
         if p.pending {
@@ -17,7 +17,7 @@ pub(super) fn display(p: &WeaponProficiencyPanel) -> String {
     )
 }
 
-pub(super) fn submit(
+pub(in crate::play) fn submit(
     p: &mut WeaponProficiencyPanel,
     id: usize,
     values: [&str; 6],

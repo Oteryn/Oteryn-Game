@@ -2,7 +2,7 @@
 use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, Intent, request};
 
-pub(super) fn display(p: &CyclopediaCharacterPanel) -> String {
+pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
     format!(
         "{}\r\n{}\r\n{}",
         if p.pending {
@@ -17,7 +17,7 @@ pub(super) fn display(p: &CyclopediaCharacterPanel) -> String {
     )
 }
 
-pub(super) fn submit(
+pub(in crate::play) fn submit(
     p: &mut CyclopediaCharacterPanel,
     id: usize,
     values: [&str; 3],

@@ -10,8 +10,7 @@ fn store_panel_opens_and_sends() {
     ));
 }
 
-#[path = "../native.rs"]
-mod native;
+use crate::play::feature_0154_store::view::native;
 
 #[test]
 fn native_store_confirmation_and_server_quote() -> Result<(), Box<dyn std::error::Error>> {

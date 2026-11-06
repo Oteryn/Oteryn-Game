@@ -39,8 +39,7 @@ fn forge_native_flow_decodes_result_and_history() {
     );
 }
 
-#[path = "../native.rs"]
-mod native;
+use crate::play::feature_0152_item_forge::view::native;
 #[test]
 #[allow(clippy::expect_used, clippy::panic)]
 fn native_controls_submit_and_restore() {

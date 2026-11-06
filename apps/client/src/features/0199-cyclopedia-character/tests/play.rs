@@ -175,8 +175,7 @@ fn statistics_reject_malformed_results_and_keep_unknown_distinct_from_zero()
     Ok(())
 }
 
-#[path = "../native.rs"]
-mod native_controls;
+use crate::play::feature_0199_cyclopedia_character::view::native as native_controls;
 #[test]
 fn native_character_navigation_and_input_gates() {
     let mut p = CyclopediaCharacterPanel {

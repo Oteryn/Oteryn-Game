@@ -10,8 +10,7 @@ fn depot_search_panel_opens_and_sends() {
     ));
 }
 
-#[path = "../native.rs"]
-mod native;
+use crate::play::feature_0153_depot_search::view::native;
 #[test]
 #[allow(clippy::expect_used, clippy::panic)]
 fn native_controls_submit_and_restore() {

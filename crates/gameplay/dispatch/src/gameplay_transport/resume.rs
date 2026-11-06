@@ -505,6 +505,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &recovery.world_policy_revision,
             )
             .map_err(|_| Rejected)?;
+        if capabilities
+            .selected()
+            .as_slice()
+            .iter()
+            .any(|id| !lost.continuity.selected_capabilities.contains(*id))
+        {
+            // Current mandatory requirements cannot widen a retained negotiation.
+            return Err(AdmissionRefusal::RecoveryCapabilityRequired);
+        }
         // CAP-NEG-1: the resumed session keeps its original selection and never widens it; a
         // client that no longer supports a selected capability falls back to fresh admission.
         // D449: only a resume that passed every other check (the verified recovery credential,
@@ -531,7 +540,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         // The resumed session as the candidate connection would serve it.
         let mut resumed = lost;
-        resumed.continuity.selected_capabilities = capabilities.selected();
+        // The authenticated boot profile checks requirements, but does not contain
+        // dynamically offered mechanics. Retain the original negotiated set exactly.
         resumed.controller = Some(ControllerBinding {
             transport: attempt.transport,
             account_id: controller.account_id,
