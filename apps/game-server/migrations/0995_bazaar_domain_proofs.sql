@@ -521,7 +521,9 @@ DECLARE envelope BYTEA;BEGIN
  RETURN NULL;END $$;
 CREATE TRIGGER game_bazaar_audit_decision AFTER INSERT ON game_bazaar_decisions FOR EACH ROW EXECUTE FUNCTION game_bazaar_audit_decision();
 CREATE FUNCTION game_bazaar_audit_guard() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
- IF TG_OP='UPDATE' AND (to_jsonb(NEW)-'acknowledged')=(to_jsonb(OLD)-'acknowledged') AND NEW.acknowledged THEN RETURN NEW;END IF;
+ -- Stored generated values are not populated in NEW until after BEFORE triggers.
+ -- Immutable envelope bytes still constrain the digest that PostgreSQL recomputes.
+ IF TG_OP='UPDATE' AND (to_jsonb(NEW)-ARRAY['acknowledged','envelope_digest'])=(to_jsonb(OLD)-ARRAY['acknowledged','envelope_digest']) AND NEW.acknowledged THEN RETURN NEW;END IF;
  IF TG_OP='DELETE' AND OLD.expires_at<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint AND NOT EXISTS(SELECT 1 FROM game_bazaar_audit_legal_holds WHERE event_id=OLD.event_id) THEN RETURN OLD;END IF;
  RAISE EXCEPTION 'Bazaar audit is immutable until unheld original expiry' USING ERRCODE='23514';END $$;
 CREATE TRIGGER game_bazaar_audit_guard BEFORE UPDATE OR DELETE ON game_bazaar_audit_outbox FOR EACH ROW EXECUTE FUNCTION game_bazaar_audit_guard();

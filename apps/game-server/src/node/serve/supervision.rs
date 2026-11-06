@@ -80,6 +80,17 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     let mut expiry = pin!(audit_expiry_loop(root, authority, &loops_stop));
     // Never gates serving; its end is not a shutdown reason. The public
     // projections run beside it, disabled unless configured and enabled.
+    let collector = audit_collector::Collector {
+        root,
+        authority,
+        proof,
+        config: &config.audit_collector,
+        t94_key_id: material
+            .world_event_outcomes
+            .lock()
+            .ok()
+            .and_then(|value| value.as_ref().and_then(|value| value.audit_key_id.clone())),
+    };
     let mut projection = pin!(both(
         both(
             both(
@@ -126,16 +137,19 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             ),
         ),
         both(
-            t94::run(
-                root,
-                authority,
-                material
-                    .world_event_outcomes
-                    .lock()
-                    .ok()
-                    .and_then(|mut value| value.take()),
-                material.world,
-                &loops_stop
+            both(
+                collector.run(&loops_stop),
+                t94::run(
+                    root,
+                    authority,
+                    material
+                        .world_event_outcomes
+                        .lock()
+                        .ok()
+                        .and_then(|mut value| value.take()),
+                    material.world,
+                    &loops_stop
+                )
             ),
             public_projections_loop(
                 root,

@@ -7,6 +7,7 @@ use crate::native_admission_source::world_event_outcomes::publisher::{
 };
 use std::sync::{Arc, Mutex};
 pub(super) struct Material {
+    pub(super) audit_key_id: Option<String>,
     descriptor: Option<LeagueDescriptor>,
     authority: String,
     fence: std::path::PathBuf,
@@ -79,6 +80,7 @@ pub(super) fn material(
         event("event=t94 family=all operation=connect result=PLATFORM_UNAVAILABLE timing_ms=0");
     }
     Ok(Some(Material {
+        audit_key_id: descriptor.as_ref().map(audit_key_id),
         descriptor,
         authority: c.source_authority.clone(),
         fence: c.epoch_fence_file.clone(),
@@ -86,6 +88,11 @@ pub(super) fn material(
         request: c.resync_request_id.clone(),
     }))
 }
+// The fingerprint is provenance for locally captured T94 envelopes, not a delivery receipt.
+pub(super) fn audit_key_id(descriptor: &LeagueDescriptor) -> String {
+    descriptor.public_key_id().to_owned()
+}
+
 pub(super) async fn run(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,

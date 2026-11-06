@@ -311,10 +311,37 @@ pub struct PremiumActivationConfig {
     pub switch_over_us: i64,
 }
 
+/// Node-local durable ANL journal custody. Rotation bounds disk usage per source.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct AuditCollectorConfig {
+    pub enabled: bool,
+    pub directory: PathBuf,
+    pub batch_size: u16,
+    pub interval_ms: u64,
+    pub rotation_bytes: u64,
+    /// Total files per source, including the active journal.
+    pub rotation_count: u16,
+}
+impl Default for AuditCollectorConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            directory: "/var/lib/oteryn/audit".into(),
+            batch_size: 32,
+            interval_ms: 1_000,
+            rotation_bytes: 16 * 1024 * 1024,
+            rotation_count: 4,
+        }
+    }
+}
+
 /// `oteryn-game-server serve --config <path>`.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    #[serde(default)]
+    pub audit_collector: AuditCollectorConfig,
     /// Explicit disposable node-boot fixture opt-in; never enabled by default.
     #[serde(default)]
     pub qualification_fixture: bool,
@@ -490,6 +517,26 @@ impl NodeConfig {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
+        let audit = &self.audit_collector;
+        if audit.directory == std::path::Path::new("/")
+            || !outside(&audit.directory, &self.character)
+        {
+            return reject("audit_collector.directory");
+        }
+        if !(1..=64).contains(&audit.batch_size) {
+            return reject("audit_collector.batch_size");
+        }
+        if !(10..=60_000).contains(&audit.interval_ms) {
+            return reject("audit_collector.interval_ms");
+        }
+        // The largest inherited binary envelope is 256 KiB, before base64 and metadata.
+        if !(512 * 1024..=1024 * 1024 * 1024).contains(&audit.rotation_bytes) {
+            return reject("audit_collector.rotation_bytes");
+        }
+        if !(1..=32).contains(&audit.rotation_count) {
+            return reject("audit_collector.rotation_count");
+        }
+
         if let Some(activation) = &self.premium_activation {
             if activation.activation_id.trim().is_empty() {
                 return reject("premium_activation.activation_id");
@@ -1007,6 +1054,52 @@ installed_at = 1790000000
 authorization_file = "/var/lib/oteryn-ops/launch-node-a.json"
 s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
 "#;
+
+    #[test]
+    fn audit_collector_defaults_and_rejects_bad_values() {
+        let defaults = NodeConfig::parse(NODE.as_bytes()).expect("default audit collector");
+        assert!(defaults.audit_collector.enabled);
+        assert_eq!(defaults.audit_collector, AuditCollectorConfig::default());
+        let parse = |section: &str| {
+            NodeConfig::parse(format!("{NODE}\n[audit_collector]\n{section}\n").as_bytes())
+        };
+        assert!(parse("enabled = true").is_ok());
+        assert!(
+            !parse("enabled = false")
+                .expect("explicit disable")
+                .audit_collector
+                .enabled
+        );
+        for section in [
+            "directory = 'relative'",
+            "directory = '/'",
+            "directory = '/tmp/../audit'",
+            "batch_size = 0",
+            "batch_size = 65",
+            "batch_size = -1",
+            "interval_ms = 0",
+            "interval_ms = 60001",
+            "rotation_bytes = 524287",
+            "rotation_bytes = 1073741825",
+            "rotation_count = 0",
+            "rotation_count = 33",
+            "unknown = true",
+        ] {
+            assert!(parse(section).is_err(), "accepted {section}");
+        }
+        for section in [
+            "batch_size = 1",
+            "batch_size = 64",
+            "interval_ms = 10",
+            "interval_ms = 60000",
+            "rotation_bytes = 524288",
+            "rotation_bytes = 1073741824",
+            "rotation_count = 1",
+            "rotation_count = 32",
+        ] {
+            assert!(parse(section).is_ok(), "rejected {section}");
+        }
+    }
 
     #[test]
     fn store_purchase_mode_defaults_accepts_both_values_and_fails_closed() {

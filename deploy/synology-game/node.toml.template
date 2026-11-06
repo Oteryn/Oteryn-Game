@@ -1,5 +1,13 @@
 # Mode 0600, owned by the runner user. Replace every <PLACEHOLDER>; no secrets inline.
 # The deploy workflow rewrites authorization_file on every deploy.
+# Local ANL custody, independent of Platform availability. The service user owns this directory.
+[audit_collector]
+enabled = true
+directory = "<BASE>/node/audit"
+batch_size = 32
+interval_ms = 1000
+rotation_bytes = 16777216
+rotation_count = 4
 [listener]
 address = "<LISTEN_ADDRESS>:<GAME_PORT>"
 entry_deadline_ms = 20000

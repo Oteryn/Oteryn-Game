@@ -8,6 +8,7 @@
 //! signal or the end of any loop. Events are single stderr lines without
 //! secrets (D6).
 
+mod audit_collector;
 mod channel_boot;
 mod qualification_fixture;
 mod supervision;
