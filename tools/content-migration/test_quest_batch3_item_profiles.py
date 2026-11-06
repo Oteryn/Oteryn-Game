@@ -1,5 +1,6 @@
 """Bounds and source custody checks for the batch-three physical Item cohort."""
 import json
+import copy
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -10,6 +11,31 @@ import quest_batch3_item_profiles as profiles
 
 
 class QuestBatchThreeItemProfiles(unittest.TestCase):
+    def test_recipe_admission_is_bounded_and_retains_state_holds(self):
+        generated = {'profiles': json.dumps({'records': []}).encode(),
+                     'manifest': json.dumps({'item_profiles': {}}).encode()}
+        profiles.admit_recipes(profiles.ROOT, generated, 'profiles', 'manifest',
+                               lambda row: row['production_definition']['production_key'],
+                               profiles.grizzly.encode)
+        admitted = {row['production_definition']['production_key']
+                    for row in json.loads(generated['profiles'])['records']}
+        self.assertIn('oteryn:item.tibia.i3595', admitted)
+        self.assertNotIn('oteryn:item.tibia.i4363', admitted)
+        self.assertNotIn('oteryn:item.tibia.i2874', admitted)
+        self.assertNotIn('oteryn:item.tibia.i11701', admitted)
+
+    def test_recipe_admission_does_not_replace_conflicting_native_facts(self):
+        packet = json.loads((profiles.ROOT / profiles.PATH).read_bytes())
+        existing = copy.deepcopy(next(row for row in packet['records']
+                             if row['production_definition']['production_key'] == 'oteryn:item.tibia.i3595'))
+        existing['semantics']['stack']['value']['stackable']['value'] = False
+        generated = {'profiles': json.dumps({'records': [existing]}).encode(),
+                     'manifest': json.dumps({'item_profiles': {}}).encode()}
+        with self.assertRaisesRegex(ValueError, 'NPC_RECIPE_EXISTING_PROFILE_CONFLICT'):
+            profiles.admit_recipes(profiles.ROOT, generated, 'profiles', 'manifest',
+                                   lambda row: row['production_definition']['production_key'],
+                                   profiles.grizzly.encode)
+
     def fixture(self):
         return (6093, ET.fromstring('<item id="6093" name="fixture"><attribute key="weight" value="50"/></item>'),
                 {'flags': {'flags.take': True}}, {'movable': True, 'pickupable': True}, {}, {})

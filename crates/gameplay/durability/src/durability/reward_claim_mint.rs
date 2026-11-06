@@ -123,6 +123,7 @@ pub(in crate::durability) mod fathers_burden;
 mod fluid;
 mod grizzly;
 mod monk;
+pub(in crate::durability) mod npc_exchange;
 mod soul_war;
 mod viola_book;
 

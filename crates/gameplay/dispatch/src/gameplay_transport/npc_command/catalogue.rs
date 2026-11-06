@@ -297,9 +297,7 @@ pub(super) async fn apply(
             fallback_lines: fallback_lines.clone(),
         });
     }
-    let moves_items = request.npc == "oteryn:npc.tereban"
-        && (request.transition_key.ends_with("-deliver")
-            || request.transition_key.ends_with("/mission-complete"));
+    let moves_items = npc_program::moves_items(&request);
     let outcome = slot
         .commit_npc_program(
             admission.root,
@@ -398,9 +396,7 @@ pub(in crate::gameplay_transport) async fn resume(
     {
         return None;
     }
-    let moves_items = request.npc == "oteryn:npc.tereban"
-        && (request.transition_key.ends_with("-deliver")
-            || request.transition_key.ends_with("/mission-complete"));
+    let moves_items = npc_program::moves_items(&request);
     Some(
         match admission
             .root

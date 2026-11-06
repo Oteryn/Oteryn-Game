@@ -35,6 +35,7 @@ fn scenario_case(
             | "classic-rottin-disrepair"
             | "threatened-dreams-npc"
             | "conditional-quest-greetings"
+            | "npc-item-exchanges"
     );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
@@ -197,7 +198,10 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name.starts_with("formogar-hoist-") {
+        if name == "npc-item-exchanges" {
+            super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if name.starts_with("formogar-hoist-") {
             super::super::questpc7_hoist::exercise(
                 &mut owner,
                 &mut admitted,

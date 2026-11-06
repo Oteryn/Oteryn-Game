@@ -197,7 +197,7 @@
     },
     {
       "path": "tools/content-migration/quest_batch3_item_profiles.py",
-      "sha256": "7e77fa9a344e98e078be35bb2407c31fc5a6d00c12cd44d9d9a0789f21598eb5"
+      "sha256": "a39681f845e4ec72d759682962b99a4266bfeca9f577f2fb7720387ef07426d4"
     }
   ],
   "canonical_inputs": [
@@ -243,7 +243,7 @@
     },
     {
       "path": "content/items/definitions/items-16500-16999.json",
-      "sha256": "51ef1e1da1d46f71dff970a095748a6d04c9062b6bcb63b1b8b9631c454ccfac"
+      "sha256": "9dd2e7427766b3ae717a52c64b66a452c4fdff6b93b39370925e4b53f0f2a356"
     },
     {
       "path": "content/items/definitions/items-17000-17499.json",
@@ -251,11 +251,11 @@
     },
     {
       "path": "content/items/definitions/items-17500-17999.json",
-      "sha256": "33ba93d9207b89351f736f3ec15a84ab88ce6354e3d4109037657256d6b1693a"
+      "sha256": "a8dca48833965f757a10c628b36403f3a5752a6504481b838257c6de46e5ea5f"
     },
     {
       "path": "content/items/definitions/items-18000-18499.json",
-      "sha256": "2dd573f4c0857a86c2034f8ec4f497325b8fc2cb68a09038673e37f23f7c5cf2"
+      "sha256": "29ba3bcb7bed93a812c397d0b5fd4cc78ec6bd8d0d6fe4cefb0e4b9801572f29"
     },
     {
       "path": "content/items/definitions/items-18500-18999.json",
@@ -345,7 +345,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "976bc7a100b4a87063b9d98289aa8bf95f9874cfafda8efe4481d6264734fea0"
+      "sha256": "b98f75fcd95e0344ea3af076cffa461d07f2a635a86eeeded21153f1980b2068"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
@@ -22997,9 +22997,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -23107,7 +23107,7 @@
           ]
         }
       ],
-      "canonical_materializable": false,
+      "canonical_materializable": true,
       "existing_native_profile": true,
       "holds": [
         "INSTANCE_FLUID_SUBTYPE_LOWERING_MISSING"
@@ -23235,7 +23235,7 @@
           ]
         }
       ],
-      "canonical_materializable": false,
+      "canonical_materializable": true,
       "existing_native_profile": true,
       "holds": [
         "INSTANCE_CHARGE_ATTRIBUTE_LOWERING_MISSING"
@@ -23255,7 +23255,7 @@
           ]
         }
       ],
-      "canonical_materializable": false,
+      "canonical_materializable": true,
       "existing_native_profile": true,
       "holds": [
         "INSTANCE_CHARGE_ATTRIBUTE_LOWERING_MISSING"
@@ -23477,9 +23477,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -23497,9 +23497,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -23535,9 +23535,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -23564,9 +23564,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -23584,9 +23584,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -23689,9 +23689,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -23823,9 +23823,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -23852,9 +23852,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -24001,9 +24001,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -24163,9 +24163,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -24858,9 +24858,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -24887,9 +24887,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -24907,9 +24907,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -24936,9 +24936,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -24965,9 +24965,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25003,9 +25003,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25050,9 +25050,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25070,9 +25070,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25131,9 +25131,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25169,9 +25169,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25651,9 +25651,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25671,9 +25671,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25691,9 +25691,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25711,9 +25711,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25731,9 +25731,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25751,9 +25751,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25771,9 +25771,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25791,9 +25791,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25811,9 +25811,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25831,9 +25831,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25930,9 +25930,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25950,9 +25950,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26015,9 +26015,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26042,9 +26042,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26069,9 +26069,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26096,9 +26096,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26123,9 +26123,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26150,9 +26150,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26177,9 +26177,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26204,7 +26204,7 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
       "classification": "HELD",
       "reason": "UNSUPPORTED_SOURCE_ATTRIBUTES:type"
@@ -26224,9 +26224,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26244,9 +26244,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26264,9 +26264,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26304,9 +26304,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26322,7 +26322,7 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
       "classification": "HELD",
       "reason": "UNSUPPORTED_SOURCE_ATTRIBUTES:armor"
@@ -28952,9 +28952,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -29024,7 +29024,7 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
       "classification": "HELD",
       "reason": "UNSUPPORTED_SOURCE_ATTRIBUTES:mantra,showattributes,skillfist"
@@ -29070,9 +29070,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {

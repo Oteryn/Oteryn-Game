@@ -22,17 +22,17 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Implement the existing fenced quest writer’s atomic consume/output/progress transaction for every exact selected recipe; use one receipt, preserve rollback/replay/capacity refusal, and wire each missing NPC into real dispatch.",
+      "missing_piece": "Compose the exact Friends and Traders NPC programs with the implemented fenced carried-input/output/progress owner; author missing source NPC bindings and qualify the complete route with PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/47/definition",
         "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
         "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230"
       ],
       "attempts": [
-        "Traced plan_storage and the Father-only plan_father_items exception; neither can commit Bast Skirts, Honeycombs or the Blessed Wooden Stake exchange."
+        "Traced plan_storage and the Father-only plan_father_items exception; neither can commit Bast Skirts, Honeycombs or the Blessed Wooden Stake exchange.",
+        "Implemented the reusable ordered carried exchange owner with exact split-stack debits, output minting, response replay and rollback. Hot Cuisine recipe mechanism PG proof exists; Friends and Traders source programs and whole-route proof remain this lane's work."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.atomic_npc_exchange",
       "source_recipe_requirement": "The Sweaty Cyclops/Marina/Quentin exchanges require consumption of the exact carried inputs, output minting and quest progress under one receipt and Character fence."
     }
   },
@@ -107,8 +107,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -225,8 +224,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -261,8 +259,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -297,8 +294,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -370,8 +366,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -527,8 +522,7 @@
       "attempts": [
         "Inspected the selected boss stages, current callback operation shape and frozen kill entry; selected all eight exact reward claims for independent real-USE qualification."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine.encounter_party_access"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -563,8 +557,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -601,8 +594,7 @@
         "Read both exact donor movements_hoist.lua bodies from the pinned corpus and fresh Wiki instructions; checked the closed callback parser rather than promoting a fixed-destination approximation. Tested the two existing instruction-book claims separately.",
         "Cloud continuation: all three hoist STEP cases executed against local PostgreSQL 18.6 (122.57s total). Confirmed UID20003 floor-plan writer from pinned Crystal source. GlacierChest/GlacierSkeleton rewards are distinct source storages and do not prove either hoist instruction flag."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine.paired_portal_and_remote_lever_predicate"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     },
     "mechanism_proof": {
       "test": "questpc7_formorgar_hoist_read_only_step",
@@ -691,8 +683,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -809,8 +800,7 @@
       "attempts": [
         "Extracted both donor lever.lua bodies; compared all four lever/rock states to the current executor. Found the three reward claims under Explorer Society and added their exact source-position/item/quantity PG cohort; retained the accepted PR2770 Q5/A Item12510 substitute rather than overriding that decision."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine.asymmetric_lever"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     },
     "mechanism_progress": {
       "asymmetric_lever": {
@@ -858,8 +848,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -895,8 +884,7 @@
       "attempts": [
         "Read the chosen Guardcatcher/Adventurer and perfume/trunk stages; compared the single-carried-item map callback schema with the required actor capture operation."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine.creature_capture_and_pickup"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -931,8 +919,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -978,8 +965,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -1050,8 +1036,7 @@
       "attempts": [
         "Checked the Liquid Silver Trap, Feroxa, four named bosses and ritual stages against the current fixed teleport and frozen kill-entry interfaces."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine.encounter_party_access"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -1086,8 +1071,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -1123,8 +1107,7 @@
       "attempts": [
         "Read all six exact room-death rules and their scope block; traced the existing kill-settlement interface and checked that no production native-death consumer loads this packet. Kept runtime_enabled=false."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine.encounter_party_access_and_room_death"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -1159,8 +1142,7 @@
       "attempts": [
         "Read the full selected item/combat/dungeon stages and the held world callback packet; distinguished its literal callbacks and retained greeting proof from the shared encounter admission operation."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine.encounter_party_access"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -1242,8 +1224,7 @@
       "attempts": [
         "Compared the key-fragment/metal-file source rewards and full selected mine route with both current transaction interfaces; selected all three source rewards for independent USE/replay/refusal qualification."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.atomic_multi_item_exchange"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -1377,7 +1358,7 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Implement the existing fenced quest writer’s atomic consume/output/progress transaction for every exact selected recipe; use one receipt, preserve rollback/replay/capacity refusal, and wire each missing NPC into real dispatch.",
+      "missing_piece": "Complete all fifteen source recipes including fluid and corpse operands, acquisition and cookbook access through real dispatch; prove the whole source route. The ordered UTC calendar and atomic plain carried exchange mechanism are implemented.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/60/definition",
         "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
@@ -1389,8 +1370,32 @@
         "Read the source recipe/bonus calendar planner and the real generic writer; traced the retained Jean Pierre hi rejection to unsupported CalendarMonth rather than interpreting it as an absent test. Did not duplicate qengine2 or activate the test-only cooking planner."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.atomic_npc_exchange",
       "source_recipe_requirement": "Each Jean Pierre cooking operation must consume all exact ingredient quantities and fluid subtypes, deliver the dish and commit cooking progress under one receipt/fence."
+    },
+    "mechanism_proof": {
+      "scope": "Mechanism only: recipes 6, 8 and 14; not whole-quest qualification",
+      "test": "npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay",
+      "postgres_version": "18.6",
+      "red": {
+        "result": "complete ingredients refused StageMismatch before writer extension",
+        "seconds": 37.98,
+        "log": "/tmp/questpc7-exchange-red-writer.log"
+      },
+      "green": {
+        "seconds": 38.928897695,
+        "log": "/tmp/questpc7-postrepair-exchange-pg.log"
+      },
+      "assertions": [
+        "exact ingredients and outputs",
+        "missing refusal",
+        "durable response replay",
+        "conflicting request binding",
+        "nine-input capacity rollback",
+        "no partial receipt or audit",
+        "stale lease rejection"
+      ],
+      "reused_source": "origin/claude/happy-davinci-ijz3wy-qengine2@5a6de28c142de185594217ce1e5cbc7f4b6e6e4e:tools/content-migration/qengine_reward_item_profiles.py",
+      "validation": "qlane-meta/questpc7/NPC-EXCHANGE-VALIDATION.json"
     }
   },
   {
@@ -1441,8 +1446,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -1468,17 +1472,17 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Implement the existing fenced quest writer’s atomic consume/output/progress transaction for every exact selected recipe; use one receipt, preserve rollback/replay/capacity refusal, and wire each missing NPC into real dispatch.",
+      "missing_piece": "Compose each exact token recipe and source NPC dispatch on the implemented atomic carried exchange owner; add any required money/state operand support to that same transaction and qualify the complete route with PostgreSQL proof.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/61/definition",
         "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
         "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230"
       ],
       "attempts": [
-        "Read the exact twenty-token/one-Abacus recipe and item-resolution hold; traced the generic writer and its Father-only exception before considering a lane NPC hook. No independent consume-then-mint transaction was introduced."
+        "Read the exact twenty-token/one-Abacus recipe and item-resolution hold; traced the generic writer and its Father-only exception before considering a lane NPC hook. No independent consume-then-mint transaction was introduced.",
+        "The ordered plain-item consume/output/progress mechanism is implemented and PG-tested on three Hot Cuisine recipes, including refusal rollback and replay. Token recipes themselves still require source composition and their own full-route proof."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.atomic_npc_exchange",
       "source_recipe_requirement": "Jorge must atomically consume exactly twenty Silver Raid Tokens and deliver one chosen Abacus replica with the quest receipt."
     }
   },
@@ -1515,8 +1519,7 @@
       "attempts": [
         "Read the fresh Wiki route (explicitly permits ignoring the Hydra), searched all reward-claim shards and both pinned donor trees for the nest owner, and checked Item4839 native admission. Did not fabricate a selector or use a test-only mint as the quest reward."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine.reset_pickup"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   },
   {
@@ -1551,8 +1554,7 @@
       "attempts": [
         "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     }
   }
 ]

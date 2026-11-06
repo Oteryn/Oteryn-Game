@@ -82,6 +82,36 @@ struct Facts {
     inventory: NpcInventorySnapshot,
     outfits: BTreeMap<u16, u8>,
 }
+
+#[test]
+fn inventory_planner_refuses_value_only_rules_and_unowned_character_guards()
+-> Result<(), NpcRuleError> {
+    let fixture = include_str!("test-fixtures/hero_greeting.json");
+    for value_only in [true, false] {
+        let mut document: serde_json::Value =
+            serde_json::from_str(fixture).map_err(|error| NpcRuleError::Json(error.to_string()))?;
+        if value_only {
+            document["rules"][0]["effects"] = serde_json::json!([
+                {"kind": "give_item", "item": "oteryn:item.tibia.i3031", "count": 1}
+            ]);
+        } else {
+            document["rules"][0]["guards"] = serde_json::json!([
+                {"kind": "level", "op": "ge", "value": 0}
+            ]);
+        }
+        let encoded = serde_json::to_string(&document)
+            .map_err(|error| NpcRuleError::Json(error.to_string()))?;
+        let catalogue = NpcRuleCatalog::from_json_documents(&[&encoded])?;
+        let facts = Facts::empty();
+        let mut input = facts.input("oteryn:npc.strange_pipe", "hi", 0);
+        input.trigger = NpcRuleTrigger::Greet;
+        assert!(matches!(
+            catalogue.plan_inventory(&input),
+            Err(NpcRuleError::MissingNativeResolution(_))
+        ));
+    }
+    Ok(())
+}
 impl Facts {
     fn empty() -> Self {
         Self {
