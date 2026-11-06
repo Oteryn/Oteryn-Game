@@ -148,7 +148,7 @@ pub(super) fn prepare(
         npc: intent.npc_actor,
         topic: plan.next_topic,
     };
-    if plan.track_changes.is_empty() {
+    if plan.track_changes.is_empty() && request.npc != "oteryn:npc.pemaret" {
         state.catalogue = Some(Pending::Topic(next));
         return if plan.reply.is_empty() {
             None
@@ -297,9 +297,11 @@ pub(super) async fn apply(
             fallback_lines: fallback_lines.clone(),
         });
     }
-    let moves_items = request.npc == "oteryn:npc.tereban"
-        && (request.transition_key.ends_with("-deliver")
-            || request.transition_key.ends_with("/mission-complete"));
+    let moves_items = (request.npc == "oteryn:npc.pemaret"
+        && request.transition_key.ends_with("/deliver"))
+        || request.npc == "oteryn:npc.tereban"
+            && (request.transition_key.ends_with("-deliver")
+                || request.transition_key.ends_with("/mission-complete"));
     let outcome = slot
         .commit_npc_program(
             admission.root,
@@ -319,7 +321,8 @@ pub(super) async fn apply(
                         return rejected();
                     }
                 },
-            ).with_wheel(admission.premium_coordinator),
+            )
+            .with_wheel(admission.premium_coordinator),
         )
         .await;
     drop(slot);
@@ -397,9 +400,11 @@ pub(in crate::gameplay_transport) async fn resume(
     {
         return None;
     }
-    let moves_items = request.npc == "oteryn:npc.tereban"
-        && (request.transition_key.ends_with("-deliver")
-            || request.transition_key.ends_with("/mission-complete"));
+    let moves_items = (request.npc == "oteryn:npc.pemaret"
+        && request.transition_key.ends_with("/deliver"))
+        || request.npc == "oteryn:npc.tereban"
+            && (request.transition_key.ends_with("-deliver")
+                || request.transition_key.ends_with("/mission-complete"));
     Some(
         match admission
             .root

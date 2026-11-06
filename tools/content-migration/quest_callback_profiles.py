@@ -149,6 +149,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     # Crystal201189f chest.lua:508-513: Fanfare's key3520 uses the already
     # admitted bone key2973. Its key-binding hold is separate from Item admission.
     keys.add('oteryn:item.tibia.i2973')
+    import fathers_burden_item_profiles
+    keys.update(fathers_burden_item_profiles.KEYS)
+    import marlin_trophy_item_profiles
+    keys.update(marlin_trophy_item_profiles.KEYS)
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:
@@ -213,6 +217,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
     source_items = ET.fromstring(raw).findall('item')
+    definitions = fathers_burden_item_profiles.definitions(root, definitions, source_items)
+    definitions = marlin_trophy_item_profiles.definitions(root, definitions, source_items)
     import quests_2_emperor_item_profiles
     source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
     for key, definition in sorted(definitions.items()):

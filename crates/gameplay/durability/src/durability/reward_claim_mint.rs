@@ -120,6 +120,7 @@ mod charges;
 mod contents;
 pub mod falcon;
 pub(in crate::durability) mod fathers_burden;
+pub(in crate::durability) mod marlin_trophy;
 mod fluid;
 mod grizzly;
 mod monk;

@@ -4,6 +4,7 @@ use oteryn_gameplay_quests::quest::npc_rules::{
     NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRulePlan, NpcRuleTrigger,
 };
 mod fathers_burden;
+mod marlin_trophy;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NpcProgramRequest {
@@ -69,8 +70,20 @@ pub fn preview(
         .with_native_bounds(catalogue)?;
     match evaluate_source(&source, request, tracks, catalogue, now, None) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
-            &source, request, tracks, catalogue, now,
+            &source,
+            request,
+            tracks,
+            catalogue,
+            now,
             Some(&fathers_burden::optimistic_inventory()),
+        ),
+        Err(_) if marlin_trophy::owns(request) => evaluate_source(
+            &source,
+            request,
+            tracks,
+            catalogue,
+            now,
+            Some(&marlin_trophy::optimistic_inventory()),
         ),
         result => result,
     }
@@ -124,7 +137,9 @@ fn evaluate_source(
         sex: 0,
         outfits: &BTreeMap::new(),
     };
-    if inventory.is_some() {
+    if inventory.is_some() && marlin_trophy::owns(request) {
+        source.plan_marlin_items(&input)
+    } else if inventory.is_some() {
         source.plan_father_items(&input)
     } else {
         source.plan_storage(&input)
@@ -227,8 +242,12 @@ impl DurabilityRoot {
                 }
             }
             let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint").fetch_one(&mut **tx).await?;
-            let item_action = fathers_burden::owns(&request);
-            let inventory = if item_action {
+            let father_items = fathers_burden::owns(&request);
+            let marlin_items = marlin_trophy::owns(&request);
+            let item_action = father_items || marlin_items;
+            let inventory = if marlin_items {
+                Some(fathers_burden::inventory_for(&mut tx, fence, &[marlin_trophy::FISH.into()]).await?)
+            } else if father_items {
                 Some(fathers_burden::inventory(&mut tx, fence).await?)
             } else { None };
             let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,inventory.as_ref());
@@ -272,7 +291,12 @@ impl DurabilityRoot {
                 let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id).fetch_one(&mut **tx).await?;
                 if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
-                match fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await? {
+                let applied = if marlin_items {
+                    marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
+                } else {
+                    fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await?
+                };
+                match applied {
                     true => {},
                     false => return Ok(Ok(refused(QuestRefusal::CapacityExceeded))),
                 }
@@ -297,7 +321,7 @@ impl DurabilityRoot {
             }
             sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6)")
                 .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).execute(&mut **tx).await?;
-            if item_action {
+            if father_items {
                 let amount = fathers_burden::experience(&plan)?;
                 insert_xp_obligation(&mut tx, character, &q, amount, &pin).await?;
             }

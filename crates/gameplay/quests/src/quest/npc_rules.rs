@@ -3,6 +3,7 @@
 
 mod evaluate;
 mod keyword;
+mod marlin_trophy;
 mod validate;
 
 // Directory-scanned source programs retain their exact source custody.
@@ -430,6 +431,7 @@ impl NpcRuleCatalog {
                             | "oteryn:quest.hero_of_rathleton_quest"
                             | "oteryn:quest.hot_cuisine_quest"
                             | "oteryn:quest.in_service_of_yalahar_quest"
+                            | "oteryn:quest.marlin_trophy_quest"
                             | "oteryn:quest.the_order_of_the_stag_quest"
                     )
                 });

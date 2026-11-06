@@ -26,6 +26,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         (self.root / 'content/quests').mkdir(parents=True)
         (self.root / 'content/interactions').symlink_to(ROOT / 'content/interactions', target_is_directory=True)
         (self.root / 'content/items').symlink_to(ROOT / 'content/items', target_is_directory=True)
+        (self.root / 'content/assets').symlink_to(ROOT / 'content/assets', target_is_directory=True)
         (self.root / 'imports').symlink_to(ROOT / 'imports', target_is_directory=True)
         (self.root / 'tools').symlink_to(ROOT / 'tools', target_is_directory=True)
         self.callbacks = json.loads((ROOT / 'content/quests/world-callbacks.json').read_bytes())
@@ -55,6 +56,71 @@ class QuestCallbackProfiles(unittest.TestCase):
                          'legal_destinations': ['CharacterInventory', 'Ground']})
         self.assertEqual(json.loads(self.generated[MANIFEST])['item_profiles']['sha256'],
                          hashlib.sha256(self.generated[PROFILE]).hexdigest())
+
+    def test_fathers_burden_materials_have_exact_native_carrying_facts(self):
+        import fathers_burden_item_profiles as father
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        for item, (name, weight) in father.ITEMS.items():
+            row = rows[f'oteryn:item.tibia.i{item}']
+            self.assertEqual(row['admission'], {'materializable': True,
+                             'stack_class': 'NonStackable',
+                             'legal_destinations': ['CharacterInventory', 'Ground']})
+            self.assertEqual(row['semantics']['physical']['value']['weight'],
+                             {'state': 'KNOWN', 'value': weight})
+            self.assertEqual(row['semantics']['presentation']['value']['name'],
+                             {'state': 'KNOWN', 'value': name})
+            self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+
+    def test_fathers_burden_rejects_known_weight_drift(self):
+        import fathers_burden_item_profiles as father
+        import xml.etree.ElementTree as ET
+        definitions = {row['definition']['identity']['key']: row['definition']
+                       for path in (ROOT / 'content/items/definitions').glob('items-*.json')
+                       for row in json.loads(path.read_bytes())['records']}
+        sources = ET.fromstring((ROOT / profiles.SOURCE).read_bytes()).findall('item')
+        definitions['oteryn:item.tibia.i11548']['semantics']['physical']['value']['weight']['value'] += 1
+        with self.assertRaisesRegex(ValueError, 'FATHERS_BURDEN_CANONICAL_FACTS'):
+            father.definitions(self.root, definitions, sources)
+
+    def test_marlin_exchange_has_exact_portable_native_fish_and_trophy(self):
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        for item, weight, stack in ((901, 1800, 'StackCapable'), (902, 500, 'NonStackable')):
+            row = rows[f'oteryn:item.tibia.i{item}']
+            self.assertEqual(row['admission'], {'materializable': True,
+                             'stack_class': stack,
+                             'legal_destinations': ['CharacterInventory', 'Ground']})
+            self.assertEqual(row['semantics']['physical']['value']['weight'],
+                             {'state': 'KNOWN', 'value': weight})
+            self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+        self.assertEqual(rows['oteryn:item.tibia.i901']['semantics']['stack']['value'],
+                         {'stackable': {'state': 'KNOWN', 'value': True},
+                          'stack_max': {'state': 'KNOWN', 'value': 100}})
+
+    def test_marlin_stack_supersession_rejects_changed_canonical_record(self):
+        import marlin_trophy_item_profiles as marlin
+        import xml.etree.ElementTree as ET
+        definitions = {row['definition']['identity']['key']: row['definition']
+                       for path in (ROOT / 'content/items/definitions').glob('items-*.json')
+                       for row in json.loads(path.read_bytes())['records']}
+        sources = ET.fromstring((ROOT / profiles.SOURCE).read_bytes()).findall('item')
+        definitions['oteryn:item.tibia.i901']['stack_class'] = 'Unknown'
+        with self.assertRaisesRegex(ValueError, 'MARLIN_CANONICAL_STACK_SUPERSESSION'):
+            marlin.definitions(self.root, definitions, sources)
+
+    def test_marlin_trophy_rejects_known_weight_drift(self):
+        import marlin_trophy_item_profiles as marlin
+        import xml.etree.ElementTree as ET
+        definitions = {row['definition']['identity']['key']: row['definition']
+                       for path in (ROOT / 'content/items/definitions').glob('items-*.json')
+                       for row in json.loads(path.read_bytes())['records']}
+        sources = ET.fromstring((ROOT / profiles.SOURCE).read_bytes()).findall('item')
+        definitions['oteryn:item.tibia.i902']['semantics']['physical']['value']['weight']['value'] += 1
+        with self.assertRaisesRegex(ValueError, 'MARLIN_CANONICAL_FACTS'):
+            marlin.definitions(self.root, definitions, sources)
 
     def test_quest_chest_rewards_preserve_canonical_item_admission(self):
         self.admit()

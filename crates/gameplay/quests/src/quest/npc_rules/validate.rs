@@ -10,14 +10,24 @@ fn invalid(detail: impl Into<String>) -> NpcRuleError {
     NpcRuleError::Invalid(detail.into())
 }
 
-fn sources(sources: &[String]) -> bool {
+fn sources(sources: &[String], quest: &str) -> bool {
     !sources.is_empty()
         && sources.iter().all(|source| {
-            source.strip_prefix(SOURCE_PIN).is_some_and(|reference| {
-                reference
-                    .rsplit_once(':')
-                    .is_some_and(|(path, line)| !path.is_empty() && source_lines(line))
-            })
+            source
+                .strip_prefix(SOURCE_PIN)
+                .or_else(|| {
+                    source
+                        .strip_prefix("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:")
+                        .filter(|reference| {
+                            quest == "oteryn:quest.marlin_trophy_quest"
+                                && reference.starts_with("data-global/npc/pemaret.lua:")
+                        })
+                })
+                .is_some_and(|reference| {
+                    reference
+                        .rsplit_once(':')
+                        .is_some_and(|(path, line)| !path.is_empty() && source_lines(line))
+                })
         })
 }
 
@@ -50,12 +60,23 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         {
             return Err(invalid("invalid NPC program schema, identity or size"));
         }
+        if document.quest == "oteryn:quest.marlin_trophy_quest"
+            && (document.source_files.len() != 1
+                || document.source_files.iter().any(|file| {
+                    file.revision != "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+                        || file.path != "data-global/npc/pemaret.lua"
+                        || file.sha256
+                            != "7860edb917cf36e43f2f675b9a2f9b8bbbc0821051ef20e4a9443cf04649489c"
+                }))
+        {
+            return Err(invalid("Pemaret source custody"));
+        }
         let mut tracks = BTreeMap::new();
         for track in &document.tracks {
             if !valid_quest_key(&track.key)
                 || track.quest != document.quest
                 || !(track.min..=track.max).contains(&track.initial)
-                || !sources(&track.sources)
+                || !sources(&track.sources, &document.quest)
                 || tracks.insert(&track.key, track).is_some()
             {
                 return Err(invalid(format!("invalid NPC track: {}", track.key)));
@@ -63,7 +84,12 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         }
         for file in &document.source_files {
             if file.path.is_empty()
-                || file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                || (file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                    && !(document.quest == "oteryn:quest.marlin_trophy_quest"
+                        && file.revision == "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+                        && file.path == "data-global/npc/pemaret.lua"
+                        && file.sha256
+                            == "7860edb917cf36e43f2f675b9a2f9b8bbbc0821051ef20e4a9443cf04649489c"))
                 || file.sha256.len() != 64
                 || !file.sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
             {
@@ -76,7 +102,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                 || rule.quest != document.quest
                 || !valid_quest_key(&rule.npc)
                 || !rule.npc.starts_with("oteryn:npc.")
-                || !sources(&rule.sources)
+                || !sources(&rule.sources, &document.quest)
                 || rule.effects.len() > MAX_NPC_EFFECTS
                 || rule.guards.len() > 128
                 || rule.topics.as_ref().is_some_and(|topics| {

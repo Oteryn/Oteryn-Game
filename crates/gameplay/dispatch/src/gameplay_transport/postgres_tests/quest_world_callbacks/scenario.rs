@@ -13,6 +13,16 @@ pub(crate) fn stateless_scenario(
     trigger: Position,
     expected_destination: Position,
 ) -> TestResult {
+    // Retain the existing STEP contract for old callers. Source USE families
+    // are selected explicitly, never inferred from changed content.
+    assert_eq!(
+        callback(name)?.trigger,
+        if name == "deeper-fibula-well" || name.starts_with("between-the-lines-") {
+            oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use
+        } else {
+            oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn
+        }
+    );
     scenario_case(name, trigger, false, Some(expected_destination))
 }
 
@@ -28,6 +38,7 @@ fn scenario_case(
         "catalogue-npc"
             | "catalogue-npc-father"
             | "fathers-burden-handins"
+            | "marlin-trophy-exchange"
             | "catalogue-npc-hero"
             | "catalogue-npc-legacy"
             | "catalogue-npc-scoped"
@@ -63,7 +74,28 @@ fn scenario_case(
         callback.lever = Some([2772, 2773]);
     }
     if stateless_destination.is_some() {
-        assert_eq!(callback.selector.position, Some(trigger));
+        match callback.trigger {
+            oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn => {
+                assert_eq!(callback.selector.position, Some(trigger));
+            }
+            oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use => {
+                assert!(
+                    callback
+                        .selector
+                        .position
+                        .is_none_or(|source| source == trigger)
+                );
+                if name.starts_with("between-the-lines-") {
+                    assert_eq!(callback.quest, "oteryn:quest.between_the_lines_quest");
+                    assert_eq!(callback.selector.position, Some(trigger));
+                    assert!(callback.selector.appearance.is_some());
+                } else {
+                    assert!(
+                        callback.selector.unique.is_some() || callback.selector.action.is_some()
+                    );
+                }
+            }
+        }
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
@@ -208,6 +240,9 @@ fn scenario_case(
                 expected_destination,
             )
             .await?;
+        } else if name == "marlin-trophy-exchange" {
+            super::super::marlin_trophy::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if matches!(
             name,
             "catalogue-npc-father" | "catalogue-npc-legacy" | "fathers-burden-handins"

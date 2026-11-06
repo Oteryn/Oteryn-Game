@@ -554,6 +554,243 @@ fn standalone_claims_goblin_inukaya_iron_helmet_katana_lion() -> TestResult {
 }
 
 #[test]
+fn standalone_claims_lone_medusa() -> TestResult {
+    standalone_claim_cohort(&["lone_medusa_quest"], "standalone_claims_lone_medusa")
+}
+
+#[test]
+fn deeper_fibula_well_and_all_claims() -> TestResult {
+    use oteryn_gameplay_quests::quest::world_callbacks::{Position, Trigger};
+    assert_source_mechanisms(
+        "oteryn:quest.deeper_fibula_quest",
+        &["reward_claim", "teleport", "trigger_use"],
+        6,
+    )?;
+    let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
+    let source = callbacks
+        .iter()
+        .filter(|callback| callback.quest == "oteryn:quest.deeper_fibula_quest")
+        .collect::<Vec<_>>();
+    assert_eq!(source.len(), 1);
+    assert_eq!(source[0].key, "oteryn:quest-callback/deeper-fibula-well");
+    assert_eq!(source[0].trigger, Trigger::Use);
+    assert_eq!(source[0].selector.action, Some(15005));
+    assert_eq!(source[0].selector.position, None);
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    super::kill_reward_e2e::scenario_thread::run("deeper-fibula-well", || {
+        // Qualify the source AID, without claiming an invented map coordinate.
+        super::quest_world_callbacks::stateless_scenario(
+            "deeper-fibula-well",
+            Position {
+                x: 33294,
+                y: 31676,
+                floor: -15,
+            },
+            Position {
+                x: 32172,
+                y: 32439,
+                floor: -8,
+            },
+        )
+    })?;
+    phase_a_cohort(&["deeper_fibula_quest"])?;
+    println!(
+        "POSTGRES_CASE_COMPLETED deeper_fibula_well_and_all_claims duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+#[test]
+fn alawars_vault_portals_lever_and_all_claims() -> TestResult {
+    use oteryn_gameplay_quests::quest::world_callbacks::Position;
+    assert_source_mechanisms(
+        "oteryn:quest.alawar_s_vault_quest",
+        &[
+            "item_consume",
+            "reward_claim",
+            "trigger_use",
+            "world_object",
+        ],
+        3,
+    )?;
+    let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
+    let source = callbacks
+        .iter()
+        .filter(|callback| callback.quest == "oteryn:quest.alawar_s_vault_quest")
+        .collect::<Vec<_>>();
+    assert_eq!(source.len(), 3);
+    assert!(
+        source
+            .iter()
+            .all(|callback| callback.storage.is_empty() && callback.offerings.is_empty())
+    );
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    super::kill_reward_e2e::scenario_thread::run("alawars-vault-mechanisms", || {
+        super::quest_world_callbacks::stateless_scenario(
+            "alawars-vault-entrance",
+            Position {
+                x: 32187,
+                y: 31622,
+                floor: -8,
+            },
+            Position {
+                x: 32107,
+                y: 31567,
+                floor: -9,
+            },
+        )?;
+        super::quest_world_callbacks::stateless_scenario(
+            "alawars-vault-exit",
+            Position {
+                x: 32107,
+                y: 31566,
+                floor: -9,
+            },
+            Position {
+                x: 32189,
+                y: 31625,
+                floor: -4,
+            },
+        )?;
+        super::quest_world_callbacks::scenario(
+            "alawars-vault-lever",
+            Position {
+                x: 32180,
+                y: 31633,
+                floor: -8,
+            },
+            false,
+        )
+    })?;
+    phase_a_cohort(&["alawar_s_vault_quest"])?;
+    println!(
+        "POSTGRES_CASE_COMPLETED alawars_vault_portals_lever_and_all_claims duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+fn assert_source_mechanisms(quest: &str, features: &[&str], claims: usize) -> TestResult {
+    let mut definitions = Vec::new();
+    for shard in [
+        include_str!("../../../../../../content/quests/definitions/quests-00000-00099.json"),
+        include_str!("../../../../../../content/quests/definitions/quests-00100-00199.json"),
+        include_str!("../../../../../../content/quests/definitions/quests-00200-00299.json"),
+        include_str!("../../../../../../content/quests/definitions/quests-00300-00351.json"),
+    ] {
+        let shard: Value = serde_json::from_str(shard)?;
+        definitions.extend(
+            shard["records"]
+                .as_array()
+                .ok_or("quest records")?
+                .iter()
+                .filter(|row| row["definition"]["identity"]["key"] == quest)
+                .map(|row| row["definition"].clone()),
+        );
+    }
+    assert_eq!(definitions.len(), 1);
+    let definition = &definitions[0];
+    assert_eq!(definition["kind"], "reward_only");
+    assert_eq!(definition["shown_in_quest_log"], false);
+    assert_eq!(definition["source_refs"]["gates"], serde_json::json!([]));
+    assert_eq!(
+        definition["reported_source_readiness"]["features"],
+        serde_json::json!(features)
+    );
+    let expected = definition["claims"]
+        .as_array()
+        .ok_or("claims")?
+        .iter()
+        .map(|claim| string(&claim["key"]))
+        .collect::<TestResult<BTreeSet<_>>>()?;
+    assert_eq!(expected.len(), claims);
+    let coverage: Value = serde_json::from_str(include_str!(
+        "../../../../../../docs/repository/QUEST_CALLBACK_COVERAGE.json"
+    ))?;
+    let actual = coverage["quests"]
+        .as_array()
+        .ok_or("coverage")?
+        .iter()
+        .find(|row| row["quest"] == definition["source_refs"]["quest"]["key"])
+        .ok_or("source quest")?["chests"]
+        .as_array()
+        .ok_or("chests")?
+        .iter()
+        .map(|claim| string(&claim["claim"]))
+        .collect::<TestResult<BTreeSet<_>>>()?;
+    assert_eq!(
+        actual, expected,
+        "the source's complete claim inventory must execute"
+    );
+    Ok(())
+}
+
+/// The source has one global lever and four independent once-only claims.
+/// Qualify every mechanism with the shared native dispatch fixtures; this
+/// does not certify a deployed world/map route.
+#[test]
+fn behemoth_lever_and_all_reward_claims() -> TestResult {
+    let shard: Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/definitions/quests-00000-00099.json"
+    ))?;
+    let definitions = shard["records"]
+        .as_array()
+        .ok_or("quest records")?
+        .iter()
+        .filter(|row| row["definition"]["identity"]["key"] == "oteryn:quest.behemoth_quest")
+        .collect::<Vec<_>>();
+    assert_eq!(definitions.len(), 1);
+    let definition = &definitions[0]["definition"];
+    assert_eq!(definition["kind"], "reward_only");
+    assert_eq!(definition["shown_in_quest_log"], false);
+    assert_eq!(definition["source_refs"]["gates"], serde_json::json!([]));
+    assert_eq!(
+        definition["reported_source_readiness"]["features"],
+        serde_json::json!(["reward_claim", "trigger_use", "world_object"])
+    );
+    assert_eq!(definition["claims"].as_array().ok_or("claims")?.len(), 4);
+    let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
+    let source = callbacks
+        .iter()
+        .filter(|row| row.quest == "oteryn:quest.behemoth_quest")
+        .collect::<Vec<_>>();
+    assert_eq!(source.len(), 1, "every source callback needs qualification");
+    assert_eq!(source[0].key, "oteryn:quest-callback/behemoth");
+    assert!(source[0].storage.is_empty());
+    assert!(source[0].offerings.is_empty());
+    assert_eq!(source[0].passages.len(), 5);
+    assert!(source[0].teleport.is_none());
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    super::kill_reward_e2e::scenario_thread::run("behemoth-lever-rewards", || {
+        super::quest_world_callbacks::scenario(
+            "behemoth",
+            oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: 33294,
+                y: 31676,
+                floor: -15,
+            },
+            false,
+        )
+    })?;
+    phase_a_cohort(&["behemoth_quest"])?;
+    println!(
+        "POSTGRES_CASE_COMPLETED behemoth_lever_and_all_reward_claims duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+#[test]
 fn standalone_claims_longsword_mad_mage_medusa_shield_minotaur() -> TestResult {
     standalone_claim_cohort(
         &[
