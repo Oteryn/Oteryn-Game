@@ -2,6 +2,10 @@
 use super::super::quest_state::npc_program::{NpcProgramCommit, NpcProgramRequest};
 use super::*;
 impl RevisionSlot {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "The sequenced NPC writer keeps its root, authority, node, fence and native content explicit, matching the underlying durable writer."
+    )]
     pub async fn commit_npc_program<C: super::super::item_loop_move::ItemLoopContent>(
         &mut self,
         root: &DurabilityRoot,
