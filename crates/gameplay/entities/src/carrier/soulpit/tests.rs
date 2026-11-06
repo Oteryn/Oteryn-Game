@@ -676,3 +676,54 @@ fn oppressor_commits_real_instance_player_conditions_and_source_holes() -> TestR
     );
     Ok(())
 }
+
+#[test]
+fn retained_wave_selection_preserves_partial_attempt_and_rejects_rebinding() -> TestResult {
+    let (mut carrier, owner, pin, policies) = fixture(32, true)?;
+    let original = request(4, BossAbility::Overpower);
+    assert_eq!(
+        carrier
+            .retained_soulpit_wave_request(&owner, id(7), 4, [1; 32])
+            .map_err(debug)?,
+        None
+    );
+    // Rejected ground positions still have a retained admission receipt, so a
+    // later candidate redraw cannot manufacture previously rejected adds.
+    carrier
+        .spawn_soulpit_wave(&owner, &pin, &policies, original.clone(), |_| false)
+        .map_err(debug)?;
+    assert_eq!(
+        carrier
+            .retained_soulpit_wave_request(&owner, id(7), 4, [1; 32])
+            .map_err(debug)?,
+        Some(original)
+    );
+    assert!(
+        carrier
+            .retained_soulpit_wave_request(&owner, id(8), 4, [1; 32])
+            .is_err()
+    );
+    assert!(
+        carrier
+            .retained_soulpit_wave_request(&owner, id(7), 4, [2; 32])
+            .is_err()
+    );
+    let (_, other) = physical_test_kernel(
+        owner.runtime_scope,
+        ScopeOwnershipGeneration::new(2).map_err(debug)?,
+        32,
+    )
+    .map_err(debug)?;
+    assert!(
+        carrier
+            .retained_soulpit_wave_request(&other, id(7), 4, [1; 32])
+            .is_err()
+    );
+    let (channel, channel_owner, _, _) = fixture(32, false)?;
+    assert!(
+        channel
+            .retained_soulpit_wave_request(&channel_owner, id(7), 4, [1; 32])
+            .is_err()
+    );
+    Ok(())
+}

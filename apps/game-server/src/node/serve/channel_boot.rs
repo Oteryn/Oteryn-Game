@@ -12,6 +12,8 @@ pub(super) struct ChannelBoot<'a> {
 }
 
 pub(super) struct PreparedChannel {
+    pub(super) soulpit_template:
+        Option<crate::content::bosses::soulpit_template::QualifiedSoulpitRoomTemplate>,
     pub(super) activity_templates:
         Vec<crate::content::bosses::activity_template::QualifiedActivityRoomTemplate>,
     pub(super) active_content: ContentActivationController,
@@ -133,6 +135,33 @@ pub(super) async fn prepare_channel(
         Some(world) => bundle_combat_room(&qualified_room, world, material.world, &movement_cells),
         None => Some(qualified_room.clone()),
     };
+    let soulpit_template = active_content.active().and_then(|active| {
+        let room = match crate::map::soulpit_room::qualify_soulpit_room(
+            &qualified_room,
+            active,
+            material.world,
+            material.channel,
+        ) {
+            Ok(room) => room,
+            Err(reason) => {
+                event(&format!(
+                    "event=soulpit_template state=unavailable reason={reason}"
+                ));
+                return None;
+            }
+        };
+        match crate::content::bosses::soulpit_template::QualifiedSoulpitRoomTemplate::qualify(
+            &room, active,
+        ) {
+            Ok(template) => Some(template),
+            Err(reason) => {
+                event(&format!(
+                    "event=soulpit_template state=unavailable reason={reason:?}"
+                ));
+                None
+            }
+        }
+    });
     let spells = match gameplay {
         Some(native) => native.spell_book().clone(),
         None => crate::spell::cast::v1_spell_book()
@@ -305,6 +334,7 @@ pub(super) async fn prepare_channel(
         config.scope.preproduction_actor_capacity
     ));
     Ok(Some(PreparedChannel {
+        soulpit_template,
         activity_templates,
         active_content,
         qualified_room,

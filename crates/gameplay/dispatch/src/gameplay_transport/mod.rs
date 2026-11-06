@@ -353,6 +353,8 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 /// #414 Character authority, and this GameNode's #415 incarnation holding the
 /// served Channel.
 pub struct GameplaySeamOwners<'a, 'f, 's> {
+    pub soulpit_template:
+        Option<&'a crate::content::bosses::soulpit_template::QualifiedSoulpitRoomTemplate>,
     pub cast: Option<cast::CastRuntimeConfig>,
     /// Sealed bounded templates issued by the same existing Content activation owner.
     pub activity_templates:

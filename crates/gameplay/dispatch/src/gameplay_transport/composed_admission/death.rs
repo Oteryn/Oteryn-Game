@@ -102,6 +102,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.states.player_trades.transitioning(session) {
             return (SessionDeath::Retry, None);
         }
+        // Crystal credits a Soulpit boss at its physical lethal turn. Flush
+        // that frozen shared-XP/proficiency event before pricing this death's
+        // loss, while this same source session still owns its current fence.
+        if self.drain_pending_soulpit_rewards(session).await.is_err() {
+            return (SessionDeath::Retry, None);
+        }
         self.states.player_trades.cancel(session);
         self.states.newhaven_travel.death(session);
         let mut lowered = None;

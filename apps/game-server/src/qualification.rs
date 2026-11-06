@@ -1724,6 +1724,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
                 .as_ref()
                 .and_then(|_| content_controller.active()),
             // W02: this qualification fixture authors no activated activity room.
+            soulpit_template: None,
             activity_templates: &[],
             premium_coordinator: None,
             rooms: crate::gameplay_transport::SeamRooms::new(

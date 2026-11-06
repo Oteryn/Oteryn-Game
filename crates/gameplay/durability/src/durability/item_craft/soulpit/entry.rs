@@ -52,6 +52,24 @@ pub(crate) async fn burn_entry_core(
         .ok_or(SoulpitWriteError::Rule(
             crate::domain::soulpit::SoulpitError::InvalidMonster,
         ))?;
+    // A literal donor profile is insufficient to run physical waves. Require the
+    // same admitted actor policy and kill XP consumed by the native wave driver,
+    // before writing a receipt or consuming the entry core.
+    if !native
+        .policies()
+        .policies()
+        .iter()
+        .any(|policy| policy.definition_key == species_key)
+        || native
+            .reward_table()
+            .encounter_facts(&species_key)
+            .and_then(|facts| facts.experience)
+            .is_none()
+    {
+        return Err(SoulpitWriteError::Rule(
+            crate::domain::soulpit::SoulpitError::InvalidMonster,
+        ));
+    }
     let (transaction, event, occurred): (String, String, i64) = sqlx::query_as(
         "SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint",
     ).fetch_one(&mut ***tx).await?;

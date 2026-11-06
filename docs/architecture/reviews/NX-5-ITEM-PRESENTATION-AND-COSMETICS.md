@@ -90,7 +90,7 @@ The coordinator's consolidated base removes the duplicate item owner in favour
 of main #2970. This patch keeps that main owner and has no dependency on the
 removed usable-action files, grants, migrations 0970/0971 or presentation cause.
 
-Numbers: capability 350 `ITEM_EFFECTS_V1`; next-free state domain 102 with empty
+Numbers: capability 350 `ITEM_EFFECTS_V1`; state domain 104 (srvpkg4 collision repair; cast keeps 102) with empty
 snapshot type 1 and item-effect batch delta type 1. No new commands or migrations.
 Capabilities 351–354, commands 600–609 and migration 0993 remain unused. Capability
 23 stays unoffered, and S17 cast behavior is unchanged: visual capture comes only from the main item settlement owner. The new scoped stream rejects every non-MagicEffect payload.

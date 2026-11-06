@@ -24,6 +24,8 @@ use crate::foundation::{
 };
 use std::sync::Arc;
 
+mod retained;
+
 /// Client commands and autonomous lifecycle occurrences occupy separate keys.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) struct ActivityReturnAttemptKey {
@@ -485,6 +487,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 return Err(());
             }
         }
+        source_view
+            .flush_activity_proficiency(admitted.game_session_id)
+            .await?;
         // Shared-XP settlement acquires its lane before recipient revisions.
         // Both scope lanes must precede every participant slot here as well.
         let source_first = ScopeKey::new(source.scope, source.generation)
@@ -659,6 +664,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let pending = {
             let mut attempts = self.activity_runtimes.returns.lock().map_err(|_| ())?;
             attempts.try_reserve(1).map_err(|_| ())?;
+            if !source_view.activity_proficiency_is_clean(&from, &member) {
+                return Err(());
+            }
             let mut kill_marks = seal_activity_kills(attack.kills(), &[member])?;
             let held = if death {
                 spells.prepare_activity_death_states(&mut destination_spells, &[member])

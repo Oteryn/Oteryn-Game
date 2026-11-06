@@ -5,45 +5,19 @@ use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPositi
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::map::view;
-use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_STACK_COUNT_V1;
+use oteryn_protocol_oteryn::item_view::{CAPABILITY_ITEM_STACK_COUNT_V1, ItemMoveOutcome};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
 };
 
-#[derive(Clone, Copy)]
-enum Case {
-    GroundPlant,
-    GroundPreserve,
-    NestedCarriedPlant,
-    CarriedPreserve,
-}
-impl Case {
-    fn preserve(self) -> bool {
-        matches!(self, Self::GroundPreserve | Self::CarriedPreserve)
-    }
-    fn carried(self) -> bool {
-        matches!(self, Self::NestedCarriedPlant | Self::CarriedPreserve)
-    }
-    fn nested(self) -> bool {
-        matches!(self, Self::NestedCarriedPlant)
-    }
-}
-#[test]
-fn ice_seed_use_materialized_ground_pot_wire_receipt_and_absolute_chain() -> TestResult {
-    run_case(Case::GroundPlant)
-}
-#[test]
-fn ice_seed_preserves_materialized_ground_plant_and_grants_once() -> TestResult {
-    run_case(Case::GroundPreserve)
-}
-#[test]
-fn ice_seed_from_open_nested_container_plants_carried_pot() -> TestResult {
-    run_case(Case::NestedCarriedPlant)
-}
-#[test]
-fn ice_seed_preserves_carried_plant_without_mutating_its_identity() -> TestResult {
-    run_case(Case::CarriedPreserve)
-}
+#[path = "item_seed_planting/presentation.rs"]
+mod presentation;
+use presentation::poff_count;
+
+#[path = "item_seed_planting/cases.rs"]
+mod cases;
+use cases::Case;
+
 fn run_case(case: Case) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         eprintln!("W19 POSTGRES_CASE_COMPLETED status=SKIPPED no_admin_url item_seed_planting");
@@ -53,11 +27,16 @@ fn run_case(case: Case) -> TestResult {
         );
         return Ok(());
     }
+    let began = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || scenario(case).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Item planting wire panic")??;
+    eprintln!(
+        "SV8 materialized pot {case:?} PG_EXECUTED in {:?}",
+        began.elapsed()
+    );
     Ok(())
 }
 
@@ -73,10 +52,26 @@ fn scenario(case: Case) -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let seed = 13844;
+        let seed = if matches!(case, Case::OrdinaryGroundDrop) {
+            647
+        } else {
+            13844
+        };
         let before: u16 = if case.preserve() { 14029 } else { 306 };
-        let after: u16 = if case.preserve() { 14029 } else { 14031 };
-        let mature: u16 = if case.preserve() { 14029 } else { 14032 };
+        let after: u16 = if case.preserve() {
+            14029
+        } else if seed == 647 {
+            324
+        } else {
+            14031
+        };
+        let mature: u16 = if case.preserve() {
+            14029
+        } else if seed == 647 {
+            330
+        } else {
+            14032
+        };
         let carried: u8 = 2;
         let seed_key = format!("oteryn:item.tibia.i{seed}");
         let mut deps = Dependencies::new()?;
@@ -192,6 +187,21 @@ fn scenario(case: Case) -> TestResult {
         .await?
         .0;
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("fence")?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                deps.actor,
+                fence.game_session_id,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                        .map_err(debug)?,
+                    fence.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
@@ -206,7 +216,17 @@ fn scenario(case: Case) -> TestResult {
         admitted.item_fence = Some(fence);
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             owner.offered_capabilities(),
-            &[4, 6, 11, 12, 14, 15, 18, CAPABILITY_ITEM_STACK_COUNT_V1],
+            &[
+                4,
+                6,
+                11,
+                12,
+                14,
+                15,
+                18,
+                oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1,
+                CAPABILITY_ITEM_STACK_COUNT_V1,
+            ],
         )
         .ok_or("craft offer selectable")?;
         assert_eq!(admitted.continuity.next_command_id, 1);
@@ -355,16 +375,86 @@ fn scenario(case: Case) -> TestResult {
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
         let command = if case.nested() { 2 } else { 1 };
-        let (end, result, actual) = super::rust_lottery::exchange(
-            &owner,
-            admitted,
-            command,
-            &payload,
-            reference(&seed_key),
-            reference(water),
-        )
-        .await?;
+        let dropping = matches!(
+            case,
+            Case::GroundDrop | Case::GroundDropRemainder | Case::OrdinaryGroundDrop
+        );
+        let drop_count = if matches!(case, Case::GroundDropRemainder) {
+            2
+        } else {
+            1
+        };
+        let (end, result, actual) = if dropping {
+            sqlx::query("CREATE FUNCTION sv8_seed_abort() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'SV8 injected pot failure'; END $$").execute(&harness.pool).await?;
+            sqlx::query("CREATE TRIGGER sv8_seed_abort BEFORE INSERT ON game_item_consume_transform_records FOR EACH ROW EXECUTE FUNCTION sv8_seed_abort()").execute(&harness.pool).await?;
+            let (failed_end, result, _) = super::map_seed_planting::drop_exchange(
+                &owner,
+                admitted,
+                command,
+                None,
+                reference(&seed_key).ok_or("seed")?,
+                drop_count,
+                true,
+            )
+            .await?;
+            assert!(
+                result.is_none(),
+                "failed atomic AddItem must not acknowledge the move: {result:?}"
+            );
+            assert_eq!(failed_end.continuity.next_command_id, command + 1);
+            presentation::assert_rollback_reconciled(&owner, deps.actor, admitted.game_session_id)
+                .await?;
+            assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(i) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(minted.item_instance_id.as_slice()).fetch_one(&harness.pool).await?, before_item);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&harness.pool).await?, i64::from(carried));
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_loop_move_receipts")
+                    .fetch_one(&harness.pool)
+                    .await?,
+                0
+            );
+            sqlx::query("DROP TRIGGER sv8_seed_abort ON game_item_consume_transform_records")
+                .execute(&harness.pool)
+                .await?;
+            // Like the native map-seed rollback fixture, the disconnected stream
+            // retains outstanding ingress. Rebuild its owner from the unchanged
+            // durable/runtime session before retrying the original uncommitted command.
+            drop(owner);
+            owner = deps.owner(&harness, &authority);
+            owner.active_generation = Some(active);
+            owner.movement_cells = &cells;
+            owner.rooms = crate::gameplay_transport::seam_rooms::SeamRooms::new(None, Some(&room));
+            deps.initialize(&owner).await;
+            let (end, result, actual) = super::map_seed_planting::drop_exchange(
+                &owner,
+                admitted,
+                command,
+                None,
+                reference(&seed_key).ok_or("seed")?,
+                drop_count,
+                false,
+            )
+            .await?;
+            assert_eq!(result, Some(ItemMoveOutcome::Moved));
+            (end, UseDisposition::Committed, actual)
+        } else {
+            super::rust_lottery::exchange(
+                &owner,
+                admitted,
+                command,
+                &payload,
+                reference(&seed_key),
+                reference(water),
+            )
+            .await?
+        };
         assert_eq!(result, UseDisposition::Committed);
+        assert_eq!(
+            poff_count(&owner, deps.actor, admitted.game_session_id).await?,
+            usize::from(!case.carried()),
+            "the actual native presentation observer receives one committed Ground POFF"
+        );
         let retired:(i64,i16)=sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(minted.item_instance_id.as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(retired, if case.preserve() { (1, 1) } else { (0, 2) });
@@ -374,7 +464,17 @@ fn scenario(case: Case) -> TestResult {
         }
         assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(id(71).as_slice()).fetch_one(&harness.pool).await?,1);
-        let chain:Vec<(i32,i64,i64,String)>=sqlx::query_as("SELECT s.source_stage,s.duration_millis,s.expires_at_unix_ms-r.occurred_at,s.target_production_key FROM game_spell_field_temporal_schedules s JOIN game_item_consume_transform_records r ON r.transaction_id=s.event_source_transaction_id JOIN game_item_instances i ON i.item_instance_id=s.item_instance_id WHERE i.definition_production_key='oteryn:item.tibia.i14031' ORDER BY s.source_stage")
+        if matches!(case, Case::GroundDropRemainder) {
+            let remaining: (i64, i64) = sqlx::query_as("SELECT i.quantity,g.stack_ordinal FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(
+                remaining.0, 1,
+                "one seed remains under its proven Ground custody"
+            );
+            assert!(remaining.1 > 0);
+        }
+        let chain:Vec<(i32,i64,i64,String)>=sqlx::query_as("SELECT s.source_stage,s.duration_millis,s.expires_at_unix_ms-r.occurred_at,s.target_production_key FROM game_spell_field_temporal_schedules s JOIN game_item_consume_transform_records r ON r.transaction_id=s.event_source_transaction_id JOIN game_item_instances i ON i.item_instance_id=s.item_instance_id WHERE i.definition_production_key=$1 ORDER BY s.source_stage")
+            .bind(format!("oteryn:item.tibia.i{after}"))
             .fetch_all(&harness.pool).await?;
         assert_eq!(
             chain,
@@ -382,14 +482,19 @@ fn scenario(case: Case) -> TestResult {
                 vec![]
             } else {
                 vec![
-                    (1, 72_000_000, 72_000_000, "oteryn:item.tibia.i14032".into()),
+                    (
+                        1,
+                        72_000_000,
+                        72_000_000,
+                        format!("oteryn:item.tibia.i{mature}"),
+                    ),
                     (2, 72_000_000, 144_000_000, "oteryn:item.tibia.i306".into()),
                 ]
             }
         );
         let proof:(i64,bool)=sqlx::query_as("SELECT count(*),bool_and(r.recipe=$1 AND r.source_kind=$2 AND jsonb_array_length(r.extra_inputs)=1 AND (r.extra_inputs->0->>'source_kind')::integer=$3 AND r.envelope_sha256=a.envelope_sha256 AND a.envelope_sha256=sha256(a.envelope)) FROM game_item_consume_transform_records r JOIN game_item_audit_outbox a USING(event_id)")
-            .bind(if case.preserve() { "oteryn:planting.preserve" } else { "oteryn:planting.ice-flower" })
-            .bind(if case.carried() { 1_i32 } else { 3_i32 }).bind(if case.nested() { 4_i32 } else { 1_i32 })
+            .bind(if case.preserve() { "oteryn:planting.preserve" } else if seed == 647 { "oteryn:planting.seed-drop" } else { "oteryn:planting.ice-flower" })
+            .bind(if case.carried() { 1_i32 } else { 3_i32 }).bind(if dropping { 3_i32 } else if case.nested() { 4_i32 } else { 1_i32 })
             .fetch_one(&harness.pool).await?;
         assert_eq!(proof, (1, true));
         if matches!(case, Case::GroundPlant) {
@@ -421,9 +526,28 @@ fn scenario(case: Case) -> TestResult {
             )
             .map_err(debug)?;
         }
-        let (end, replayed, _) =
-            super::rust_lottery::exchange(&owner, end, command, &actual, None, None).await?;
+        let (end, replayed, _) = if dropping {
+            let (end, result, actual) = super::map_seed_planting::drop_exchange(
+                &owner,
+                end,
+                command,
+                Some(actual),
+                reference(&seed_key).ok_or("seed")?,
+                drop_count,
+                false,
+            )
+            .await?;
+            assert_eq!(result, Some(ItemMoveOutcome::Moved));
+            (end, UseDisposition::Committed, actual)
+        } else {
+            super::rust_lottery::exchange(&owner, end, command, &actual, None, None).await?
+        };
         assert_eq!(replayed, UseDisposition::Committed);
+        assert_eq!(
+            poff_count(&owner, deps.actor, admitted.game_session_id).await?,
+            usize::from(!case.carried()),
+            "exact replay must not publish a second POFF"
+        );
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
                 "SELECT count(*) FROM game_item_consume_transform_records"

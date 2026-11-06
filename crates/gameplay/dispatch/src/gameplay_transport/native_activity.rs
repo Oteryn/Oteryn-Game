@@ -22,6 +22,8 @@ use crate::foundation::{
     GameSessionId, GameSessionState, MovementLocalPosition, RuntimeScopeRefV1,
 };
 use std::sync::Arc;
+#[path = "native_activity_proficiency.rs"]
+mod proficiency;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) struct ActivityAttemptKey {
@@ -50,6 +52,7 @@ pub(super) struct NativeActivityAttempt<'a> {
     destination: RegisteredRuntime<'a>,
     request: ActivityEnterRequest,
     boss_room: bool,
+    soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
     sources: Vec<AdmittedSession>,
     physical: ActivityTransferReservation,
     spells: PreparedActivitySpellStates,
@@ -92,6 +95,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 entries.remove(&key);
             }
         }
+        self.activity_runtimes
+            .soulpit_entries
+            .lock()
+            .map_err(|_| ())?
+            .retain(|key, prepared| {
+                !prepared.refused
+                    || !policy.includes(key.session, key.connection_generation, Some(key.command))
+            });
         self.prune_refused_activity_returns(policy).await
     }
 
@@ -100,6 +111,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         scope: RuntimeScopeRefV1,
         generation: u64,
     ) -> Result<(), ()> {
+        if self
+            .activity_runtimes
+            .soulpit_returns
+            .lock()
+            .map_err(|_| ())?
+            .iter()
+            .any(|intent| intent.scope == scope && intent.generation == generation)
+        {
+            return Err(());
+        }
         let entries: Vec<_> = self
             .activity_runtimes
             .attempts
@@ -122,6 +143,19 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .map_err(|_| ())?
                 .remove(&key);
         }
+        self.activity_runtimes
+            .soulpit_entries
+            .lock()
+            .map_err(|_| ())?
+            .retain(|_, entry| {
+                entry.entry.destination_scope != scope
+                    || entry.entry.destination_generation.get() != generation
+            });
+        self.activity_runtimes
+            .soulpit_runs
+            .lock()
+            .map_err(|_| ())?
+            .remove(&ScopeKey::new(scope, generation));
         Ok(())
     }
 
@@ -293,8 +327,18 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     /// under both native owners before the durable writer sees the request.
     pub(super) async fn enter_native_activity(
         &self,
+        request: ActivityEnterRequest,
+        boss_room: bool,
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.enter_native_activity_with_soulpit(request, boss_room, None)
+            .await
+    }
+
+    pub(super) async fn enter_native_activity_with_soulpit(
+        &self,
         mut request: ActivityEnterRequest,
         boss_room: bool,
+        soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
     ) -> Result<NativeActivityOutcome, ()> {
         let refuse = |reason| Ok(NativeActivityOutcome::Refused(reason));
         if request.command_id == 0
@@ -346,6 +390,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let attempt = pending.lock().await;
             if attempt.request.activity_key != request.activity_key
                 || attempt.boss_room != boss_room
+                || attempt
+                    .soulpit
+                    .as_ref()
+                    .map(|core| (&core.intent, core.source))
+                    != soulpit.as_ref().map(|core| (&core.intent, core.source))
             {
                 return refuse(ActivityRefusal::ReplayConflict);
             }
@@ -446,6 +495,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             if source_view.drain_kill_rewards(principal).await == DrainOutcome::Deferred {
                 return Err(());
             }
+        }
+        for participant in &request.participants {
+            source_view
+                .flush_activity_proficiency(participant.source.game_session_id)
+                .await?;
         }
         // Shared-XP settlement acquires its lane before recipient revisions.
         // Both scope lanes must precede every participant slot here as well.
@@ -635,6 +689,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let pending = {
             let mut attempts = self.activity_runtimes.attempts.lock().map_err(|_| ())?;
             attempts.try_reserve(1).map_err(|_| ())?;
+            if members
+                .iter()
+                .any(|member| !source_view.activity_proficiency_is_clean(&from, member))
+            {
+                return Err(());
+            }
             let mut kill_marks = seal_activity_kills(attack.kills(), &members)?;
             let mut held = match spells.prepare_activity_states(&mut destination_spells, &members) {
                 Ok(value) => value,
@@ -675,6 +735,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 destination: destination.clone(),
                 request,
                 boss_room,
+                soulpit,
                 sources,
                 physical,
                 spells: held,
@@ -769,7 +830,27 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 );
             }
             let owner = ActivityHandoffOwner::new(self.root.clone());
-            let result = if attempt.boss_room {
+            let result = if let Some(core) = &attempt.soulpit {
+                let permit = if source_first {
+                    &_first_lane
+                } else {
+                    &_second_lane
+                };
+                let native = self
+                    .active_generation
+                    .and_then(|active| active.native_gameplay())
+                    .ok_or(())?;
+                owner
+                    .enter_soulpit(
+                        self.character,
+                        self.holder,
+                        permit,
+                        attempt.request.clone(),
+                        core,
+                        native,
+                    )
+                    .await
+            } else if attempt.boss_room {
                 owner
                     .enter_boss_room(self.character, self.holder, attempt.request.clone())
                     .await
@@ -929,9 +1010,10 @@ pub(super) fn seal_activity_kills(
     members: &[ActivityTransferMember],
 ) -> Result<Vec<KillReleaseMark>, ()> {
     if members.iter().any(|member| {
-        !queue
-            .proficiency_principals(member.source_session)
-            .is_empty()
+        queue.has_pending_soulpit_reward_for_session(member.source_session)
+            || !queue
+                .proficiency_principals(member.source_session)
+                .is_empty()
     }) {
         return Err(());
     }

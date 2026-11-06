@@ -18,6 +18,8 @@
 //! (immediate line admission, deferred line and receipt proofs) decide the same facts again.
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
+mod materialized_planting;
+mod materialized_planting_presentation;
 mod seed_drop;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
 
@@ -1163,7 +1165,10 @@ async fn apply_loop_move<C: ItemLoopContent>(
             .bind(channel.map(|id| id.to_vec())).bind(scope_kind).bind(instance.map(|id| id.to_vec()))
             .fetch_one(&mut **tx)
             .await?;
-            if dropped + i64::from(source != SourceKind::Ground || !row.try_get::<bool, _>("loop_drop")?) > ITEM_LOOP_CHANNEL_DROPS_MAX {
+            if dropped
+                + i64::from(source != SourceKind::Ground || !row.try_get::<bool, _>("loop_drop")?)
+                > ITEM_LOOP_CHANNEL_DROPS_MAX
+            {
                 return refuse(LoopMoveRefusal::Blocked);
             }
             ground.corpse_ref = [ITEM_LOOP_DROP_REF_PREFIX, transaction_id.as_slice()].concat();

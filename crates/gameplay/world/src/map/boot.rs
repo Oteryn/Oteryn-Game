@@ -8,7 +8,7 @@
 //! map view (an empty overlay and the map facts) and the set of walkable tiles an entry blocks.
 //! Nothing durable names the bundle; a restart rebuilds an equal World from the same pins.
 
-use super::facts::{BundleFacts, FactsRefusal, ItemDefinition};
+use super::facts::{BundleFacts, FactsRefusal, ItemDefinition, TerrainPhysics};
 use super::floor::{FloorTable, Ground, palette_mask};
 use super::overlay::{ChannelOverlay, TilePos, map_revision};
 use super::spell_tiles::{BundleSpellTiles, SpellTilesBuilder};
@@ -193,10 +193,20 @@ impl CheckedBundle {
     /// Item key it does not serve at its palette `id` refuses the boot (§1.6), and so does a
     /// start tile a solid item blocks.
     pub fn boot(
+        self,
+        world_id: WorldId,
+        channel_id: ChannelId,
+        item: impl Fn(&str) -> Option<ItemDefinition>,
+    ) -> Result<BundleWorld, BootRefusal> {
+        self.boot_with_terrain(world_id, channel_id, item, &|_| None)
+    }
+
+    pub(super) fn boot_with_terrain(
         mut self,
         world_id: WorldId,
         channel_id: ChannelId,
         item: impl Fn(&str) -> Option<ItemDefinition>,
+        terrain: &impl Fn(&str) -> Option<TerrainPhysics>,
     ) -> Result<BundleWorld, BootRefusal> {
         let projection = self
             .daily
@@ -214,8 +224,13 @@ impl CheckedBundle {
             self.base = Arc::new(base);
         }
         let mut spell_tiles = SpellTilesBuilder::new(Arc::clone(&self.base));
-        let (facts, blocked, floors) =
-            scan(&self.data, &item, &mut spell_tiles, projection.as_ref())?;
+        let (facts, blocked, floors) = scan(
+            &self.data,
+            &item,
+            terrain,
+            &mut spell_tiles,
+            projection.as_ref(),
+        )?;
         let spell_tiles = Arc::new(spell_tiles.finish(facts.doors())?);
         let blocked = Arc::new(blocked);
         if !enterable(&self.base, &blocked, self.start) || facts.doors().blocks(self.start) {
@@ -268,6 +283,7 @@ impl CheckedBundle {
 fn scan(
     data: &[u8],
     item: &impl Fn(&str) -> Option<ItemDefinition>,
+    terrain: &impl Fn(&str) -> Option<TerrainPhysics>,
     spell_tiles: &mut SpellTilesBuilder,
     daily: Option<&super::daily::Projection>,
 ) -> Result<(BundleFacts, BTreeSet<TilePos>, FloorTable), BootRefusal> {
@@ -278,7 +294,7 @@ fn scan(
     let mut blocked = BTreeSet::new();
     let visited = super::daily::visit(data, super::LOAD_LIMITS, daily, |manifest, sector| {
         if facts.is_none() {
-            match BundleFacts::palette(manifest, item) {
+            match BundleFacts::palette_with_terrain(manifest, item, terrain) {
                 Ok(palette) => {
                     masks = manifest
                         .palette
@@ -331,7 +347,7 @@ fn scan(
             }
         }
         facts.push(manifest, &sector, &mut blocked);
-        spell_tiles.push(manifest, &sector, &blocked, item, &masks);
+        spell_tiles.push_with_terrain(manifest, &sector, &blocked, item, &masks, terrain);
         Ok(())
     });
     if let Some(refusal) = refused {
@@ -340,7 +356,7 @@ fn scan(
     let visited = visited.map_err(LoadError::from)?;
     let mut facts = match facts {
         Some(facts) => facts,
-        None => BundleFacts::palette(&visited.manifest, item)?,
+        None => BundleFacts::palette_with_terrain(&visited.manifest, item, terrain)?,
     };
     facts.finish();
     Ok((facts, blocked, floors))
@@ -655,7 +671,7 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
         reason = "the bundle port is constructed only here from BundleCollisionData"
     )]
     fn map(&self) -> &BundleMap {
-        &(self.0.as_ref() as &dyn std::any::Any)
+        &(self.map_source() as &dyn std::any::Any)
             .downcast_ref::<BundleCollisionData>()
             .expect("bundle map owner")
             .map

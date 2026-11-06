@@ -16,7 +16,7 @@ use sqlx::Row;
 mod provenance;
 
 #[path = "soulpit_lifecycle/completion_atomicity.rs"]
-mod completion_atomicity;
+pub(super) mod completion_atomicity;
 
 #[test]
 fn soulpit_entry_requires_atomic_shared_handoff_postgres() -> TestResult {

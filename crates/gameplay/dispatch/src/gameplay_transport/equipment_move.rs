@@ -178,8 +178,8 @@ pub(super) fn native_for_move<'g>(
 }
 
 /// The equipment of `game_session_id`'s Character under the current item fence, with the
-/// Channel content digest it was read at. `None` when the session is not current, the Channel
-/// pin is another generation or the equipment owner cannot be read.
+/// qualified runtime content digest it was read at. Activities prove their exact
+/// committed shared handoff; `None` when the session, pin or owner is not current.
 pub(super) async fn read_current_equipment(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     game_session_id: GameSessionId,
@@ -212,11 +212,22 @@ pub(super) async fn read_current_equipment(
         }
         digest
     };
-    let read = admission
-        .root
-        .read_movement_equipment(admission.character, admission.holder, &fence, digest)
-        .await
-        .ok()?;
+    let read = if matches!(
+        fence.runtime_scope,
+        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+    ) {
+        admission
+            .root
+            .read_activity_equipment(admission.character, admission.holder, &fence, digest)
+            .await
+            .ok()?
+    } else {
+        admission
+            .root
+            .read_movement_equipment(admission.character, admission.holder, &fence, digest)
+            .await
+            .ok()?
+    };
     if read.fence() != &fence || read.equipment().content_digest != digest {
         return None;
     }

@@ -21,6 +21,7 @@ pub mod facts;
 pub mod floor;
 mod floor_catalogue;
 pub mod overlay;
+pub mod soulpit_room;
 pub mod spell_tiles;
 pub mod view;
 

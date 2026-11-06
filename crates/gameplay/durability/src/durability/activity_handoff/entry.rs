@@ -131,11 +131,12 @@ fn binding(r: &ActivityEnterRequest) -> [u8; 32] {
 }
 
 pub(super) async fn enter_in_transaction(
-    tx: &mut Transaction<'_, Postgres>,
+    tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,
     r: &ActivityEnterRequest,
     boss_room: bool,
+    soulpit: Option<&soulpit::Entry<'_, '_, '_>>,
 ) -> Result<ActivityEnterOutcome> {
     let initiator = r
         .participants
@@ -148,11 +149,11 @@ pub(super) async fn enter_in_transaction(
     // session-then-root order or locking the initiator ahead of other members.
     for p in &r.participants {
         sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
-            .bind(p.source.game_session_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+            .bind(p.source.game_session_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     }
     for p in &r.participants {
         sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
-            .bind(p.source.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+            .bind(p.source.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     }
     let old: Option<(Vec<u8>, Vec<u8>)> = sqlx::query_as(
         "SELECT uuid_send(handoff_id), request_binding FROM game_activity_runtime_entries \
@@ -160,7 +161,7 @@ pub(super) async fn enter_in_transaction(
            AND initiating_connection_generation=$3::text::numeric AND command_id=$4::text::numeric")
         .bind(r.initiating_character_id.as_bytes().as_slice()).bind(initiator.source.game_session_id.as_bytes().as_slice())
         .bind(initiator.source.connection_generation.get().to_string()).bind(r.command_id.to_string())
-        .fetch_optional(&mut **tx).await?;
+        .fetch_optional(&mut ***tx).await?;
     if let Some((handoff, old_binding)) = old {
         if old_binding != request_binding {
             return Ok(ActivityEnterOutcome::Refused(
@@ -204,7 +205,7 @@ pub(super) async fn enter_in_transaction(
            AND NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.runtime_scope_world_id=a.world_id \
              AND s.runtime_scope_instance_id=a.activity_instance_id))")
         .bind(assignment_scope_key(r.destination_scope).as_slice()).bind(r.destination_assignment_source_revision.to_string())
-        .fetch_one(&mut **tx).await?;
+        .fetch_one(&mut ***tx).await?;
     if !exact {
         return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity));
     }
@@ -217,7 +218,7 @@ pub(super) async fn enter_in_transaction(
         };
         if let Some(transport) = p.destination_transport {
             let used: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref=$1)")
-                .bind(transport.to_bytes().as_slice()).fetch_one(&mut **tx).await?;
+                .bind(transport.to_bytes().as_slice()).fetch_one(&mut ***tx).await?;
             if used {
                 return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
             }
@@ -276,7 +277,7 @@ pub(super) async fn enter_in_transaction(
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7::text::numeric,$8,1,$9)")
         .bind(r.handoff_id.as_slice()).bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(&r.activity_key)
         .bind(&r.template_revision).bind(&r.content_revision).bind(r.destination_generation.get().to_string())
-        .bind(i16::try_from(r.participants.len()).map_err(|_| DurabilityError::InvalidStoredState)?).bind(now).execute(&mut **tx).await?;
+        .bind(i16::try_from(r.participants.len()).map_err(|_| DurabilityError::InvalidStoredState)?).bind(now).execute(&mut ***tx).await?;
     let fact = node.fact();
     sqlx::query("INSERT INTO game_activity_runtime_entries(handoff_id,initiating_character_id,initiating_game_session_id,initiating_connection_generation,command_id,request_binding,holder_node_id,holder_registration_revision,assignment_source_revision,destination_coordinate_frame_digest,destination_map_revision_digest,destination_server_artifact_digest,deadline) \
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5::text::numeric,$6,encode($7,'hex')::uuid,$8::text::numeric,$9::text::numeric,$10,$11,$12,$13)")
@@ -284,14 +285,21 @@ pub(super) async fn enter_in_transaction(
         .bind(initiator.source.connection_generation.get().to_string()).bind(r.command_id.to_string()).bind(request_binding.as_slice())
         .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string()).bind(r.destination_assignment_source_revision.to_string())
         .bind(r.destination_content.coordinate_frame_digest.as_slice()).bind(r.destination_content.map_revision_digest.as_slice())
-        .bind(r.destination_content.server_artifact_digest.as_slice()).bind(deadline).execute(&mut **tx).await?;
+        .bind(r.destination_content.server_artifact_digest.as_slice()).bind(deadline).execute(&mut ***tx).await?;
     for p in &r.participants {
         insert_participant(tx, r, p).await?;
+    }
+    if let Some(consequence) = soulpit {
+        if let Err(refusal) = soulpit::write(root, tx, node, r, consequence).await? {
+            return Ok(ActivityEnterOutcome::Refused(refusal));
+        }
+    } else if r.activity_key == super::super::soulpit::SOULPIT_ACTIVITY_KEY {
+        return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
     }
     // 0265 source-ended trigger would abort PREPARED. Decide before terminalizing
     // any source; its deferred proof checks all fresh destinations at COMMIT.
     sqlx::query("UPDATE game_activity_handoff_groups SET state=2,decided_at=$2 WHERE handoff_id=encode($1,'hex')::uuid AND state=1")
-        .bind(r.handoff_id.as_slice()).bind(now).execute(&mut **tx).await?;
+        .bind(r.handoff_id.as_slice()).bind(now).execute(&mut ***tx).await?;
     for p in &r.participants {
         let RuntimeScopeRefV1::Channel { channel_id, .. } = p.source.runtime_scope else {
             return Err(DurabilityError::InvalidStoredState);

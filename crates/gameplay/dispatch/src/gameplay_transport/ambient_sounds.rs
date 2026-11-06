@@ -60,6 +60,7 @@ impl SoundPublisher {
         if self.binding.as_ref() != Some(&binding) {
             self.sounds.clear();
             self.ambient.clear();
+            self.planting.clear();
             self.binding = Some(binding);
         }
         self.ambient.retain(|session, (actor, _, _, _)| {
@@ -87,9 +88,14 @@ impl SoundPublisher {
         {
             return;
         }
-        let Some(revision) = self.revision.checked_add(1) else {
+        if self
+            .revision
+            .checked_add(self.planting.len() as u64 + 1)
+            .is_none()
+        {
             return;
-        };
+        }
+        let revision = self.revision + 1;
         self.revision = revision;
         self.ambient.insert(session, (actor, zone, cue, revision));
     }

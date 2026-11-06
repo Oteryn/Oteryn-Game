@@ -4,6 +4,8 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+#[path = "character_equipment/activity_read.rs"]
+mod activity_read;
 #[path = "character_equipment/hotkey.rs"]
 mod hotkey;
 #[path = "character_equipment/house_read.rs"]
@@ -991,11 +993,9 @@ pub async fn read_raw_cast_facts_in_transaction(
         .command
         .ok_or_else(|| rejected("cast read needs actual command"))?;
     let raw = read_lifecycle_facts_in_transaction(tx, authority).await?;
-    let learned = super::character_known_spells::read_known_spells_in_transaction(
-        tx,
-        raw.fence.character_id,
-    )
-    .await?;
+    let learned =
+        super::character_known_spells::read_known_spells_in_transaction(tx, raw.fence.character_id)
+            .await?;
     Ok(RawCastDurableFacts {
         learned,
         account: raw.account,
@@ -1188,15 +1188,25 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                    let authority = assert_current_equipment_in_transaction(
-                        &mut tx,
-                        &record,
-                        &node,
-                        &fence,
-                        None,
-                        content_digest,
-                    )
-                    .await
+                    let authority = if matches!(
+                        fence.runtime_scope,
+                        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+                    ) {
+                        assert_recovery_fence(&mut tx, &record).await?;
+                        super::db::lock_admission_relations(&mut tx).await?;
+                        activity_read::assert_read_authority(&mut tx, &node, &fence, content_digest)
+                            .await
+                    } else {
+                        assert_current_equipment_in_transaction(
+                            &mut tx,
+                            &record,
+                            &node,
+                            &fence,
+                            None,
+                            content_digest,
+                        )
+                        .await
+                    }
                     .map_err(|_| DurabilityError::Unavailable)?;
                     if authority.character_revision != gameplay.expected_character_revision.get() {
                         return Err(DurabilityError::Unavailable);

@@ -21,6 +21,8 @@ use crate::movement::interest::{
 use oteryn_protocol_oteryn::{spell_presentation_candidate as wire, world_spatial::ActorPosition};
 use sqlx::{Postgres, Transaction};
 use std::collections::VecDeque;
+#[path = "item_craft/planting_presentation.rs"]
+mod planting;
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ScopeContext {
     scope: crate::foundation::RuntimeScopeRefV1,
@@ -563,6 +565,7 @@ pub struct SoundPublisher {
     binding: Option<ScopeContext>,
     sounds: VecDeque<SoundEntry>,
     ambient: std::collections::BTreeMap<GameSessionId, (ExactActorRef, u8, u16, u64)>,
+    planting: Vec<planting::PlantingCueHold>,
 }
 #[derive(Debug)]
 struct SoundEntry {
@@ -590,6 +593,7 @@ impl SoundPublisher {
         if self.binding.as_ref() != Some(&binding) {
             self.sounds.clear();
             self.ambient.clear();
+            self.planting.clear();
             self.binding = Some(binding);
         }
         let (cue, secondary) = if cue == 0 {
@@ -600,9 +604,14 @@ impl SoundPublisher {
         if cue == 0 {
             return;
         }
-        let Some(revision) = self.revision.checked_add(1) else {
+        if self
+            .revision
+            .checked_add(self.planting.len() as u64 + 1)
+            .is_none()
+        {
             return;
-        };
+        }
+        let revision = self.revision + 1;
         self.revision = revision;
         if self.sounds.len() == oteryn_protocol_oteryn::presentation::MAX_PRESENTATION_EVENTS {
             self.sounds.pop_front();

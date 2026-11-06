@@ -311,14 +311,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             slots.push(slot);
         }
-        let endgame_kill =
-            oteryn_gameplay_quests::quest::soul_war::SoulWarBoss::from_creature(&entry.creature)
+        let endgame_kill = !entry.is_soulpit()
+            && (oteryn_gameplay_quests::quest::soul_war::SoulWarBoss::from_creature(&entry.creature)
                 .is_some()
                 || oteryn_gameplay_quests::quest::rotten_blood::RottenBloodBoss::from_creature_key(
                     &entry.creature,
                 )
                 .is_some()
-                || entry.creature == "oteryn:creature.the_primal_menace";
+                || entry.creature == "oteryn:creature.the_primal_menace");
         if endgame_kill {
             // The fences above retain the expected revisions. Invalidate the
             // cached cursors before the await so cancellation after an uncertain
@@ -379,12 +379,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .map_err(|_| DurabilityError::InvalidStoredState)?,
                         &entry.creature,
-                        entry
-                            .row
-                            .as_ref()
-                            .ok_or(DurabilityError::InvalidStoredState)?
-                            .xp_amount
-                            .get(),
+                        entry.experience_amount().ok_or(DurabilityError::InvalidStoredState)?,
                         (
                             entry.facts.death_at_ms,
                             entry
@@ -481,12 +476,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             )
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                             creature: entry.creature.clone(),
-                            base_xp: entry
-                                .row
-                                .as_ref()
-                                .ok_or(DurabilityError::InvalidStoredState)?
-                                .xp_amount
-                                .get(),
+                            base_xp: entry.experience_amount().ok_or(DurabilityError::InvalidStoredState)?,
                             death_at_ms: entry.facts.death_at_ms,
                             death_at_us: entry
                                 .activity_observed_at

@@ -150,6 +150,7 @@ impl SpellTilesBuilder {
     /// Records the tiles of one sector of `manifest`. `blocked` holds the tiles the boot blocks
     /// (at least those of this sector), `item` serves the Item definitions and `masks` holds the
     /// catalogue floor-change mask of each palette entry.
+    #[cfg(test)]
     pub fn push(
         &mut self,
         manifest: &Manifest,
@@ -157,6 +158,18 @@ impl SpellTilesBuilder {
         blocked: &BTreeSet<TilePos>,
         item: &impl Fn(&str) -> Option<ItemDefinition>,
         masks: &[u8],
+    ) {
+        self.push_with_terrain(manifest, sector, blocked, item, masks, &|_| None);
+    }
+
+    pub(super) fn push_with_terrain(
+        &mut self,
+        manifest: &Manifest,
+        sector: &Sector,
+        blocked: &BTreeSet<TilePos>,
+        item: &impl Fn(&str) -> Option<ItemDefinition>,
+        masks: &[u8],
+        terrain: &impl Fn(&str) -> Option<super::facts::TerrainPhysics>,
     ) {
         let palette = self.palette.get_or_insert_with(|| {
             manifest
@@ -171,8 +184,13 @@ impl SpellTilesBuilder {
                         wall: entry
                             .terrain
                             .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
-                        blocks_projectile: definition
-                            .is_none_or(|definition| definition.blocks_projectile),
+                        blocks_projectile: (entry.family == Family::Terrain)
+                            .then(|| terrain(&entry.key))
+                            .flatten()
+                            .map_or_else(
+                                || definition.is_none_or(|definition| definition.blocks_projectile),
+                                |physics| physics.blocks_projectile,
+                            ),
                         pickupable: definition.is_some_and(|definition| definition.pickupable),
                     }
                 })

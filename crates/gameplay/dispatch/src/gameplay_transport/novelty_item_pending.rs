@@ -14,6 +14,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        if !self.reconcile_pending_planting_cues(actor, session).await {
+            return false;
+        }
         if !self
             .states
             .spell_states
@@ -118,7 +121,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    async fn pending_item_owner_current(
+    pub(in crate::gameplay_transport) async fn pending_item_owner_current(
         &self,
         actor: ExactActorRef,
         original: CurrentCharacterItemFence,
