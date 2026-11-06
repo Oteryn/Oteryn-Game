@@ -235,7 +235,23 @@ async fn run(
                 }
                 operation => operation,
             };
-            let result = apply(&mut owner, operation, now, privacy.version());
+            let policy = match &operation {
+                Operation::Start(_, settings, account) => {
+                    preferences::authorize(access.as_ref(), *account, *settings)
+                        .await
+                        .map(|_| ())
+                }
+                Operation::Update(facts, _, settings) => match accounts
+                    .get(&facts.authority.current_game_session_id())
+                {
+                    Some(account) => preferences::authorize(access.as_ref(), *account, *settings)
+                        .await
+                        .map(|_| ()),
+                    None => Err(Error::Unavailable),
+                },
+                _ => Ok(()),
+            };
+            let result = policy.and_then(|()| apply(&mut owner, operation, now, privacy.version()));
             let committed = persist_pending(&mut owner, &root, &node).await;
             completed = Some((request.reply, committed.and(result)));
         } else {

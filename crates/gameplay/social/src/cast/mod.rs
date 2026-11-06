@@ -5,6 +5,7 @@ use crate::spectate::TargetFacts;
 use oteryn_gameplay_foundation::foundation::{GameSessionId, GameSessionState};
 use std::collections::HashMap;
 pub mod access;
+pub mod preferences;
 // 300 s at one committed Scene/s plus the 20 lines/s room ceiling and
 // bounded metadata churn. Shared Arc payloads avoid copying media per viewer.
 const VIEWER_QUEUE_ITEMS: usize = 8192;
@@ -352,5 +353,7 @@ fn same_authority(old: TargetFacts, new: TargetFacts) -> bool {
         && old.house == new.house
 }
 
+#[cfg(test)]
+mod settings_tests;
 #[cfg(test)]
 mod tests;
