@@ -54,7 +54,14 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
     let mut probabilities = [None; 3];
     let mut grimvale = false;
     let mut stampede = None;
+    let mut portal_chances = [None; 2];
     for entry in entries.iter().filter(|entry| entry["status"] == "READY" || entry["status"] == "QUALIFIED") {
+        if let Some(index) = match entry["key"].as_str() { Some("fury_gates") => Some(0), Some("nightmare_isles") => Some(1), _ => None } {
+            if portal_chances[index].is_some() || entry["trigger"]["kind"] != "at_reset" { return Err(DurabilityError::InvalidStoredState); }
+            portal_chances[index] = entry["trigger"]["chance_permille"].as_u64().filter(|p| *p <= 1000).and_then(|p| u16::try_from(p).ok());
+            if portal_chances[index].is_none() { return Err(DurabilityError::InvalidStoredState); }
+            continue;
+        }
         let index = match entry["key"].as_str() {
             Some("stampede") if stampede.is_none() && entry["trigger"]["kind"] == "at_reset" => {
                 stampede = entry["trigger"]["chance_permille"].as_u64()
@@ -108,6 +115,8 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
         voice_percent,
         trader_percent,
         stampede_permille: stampede.ok_or(DurabilityError::InvalidStoredState)?,
+        fury_permille: portal_chances[0].ok_or(DurabilityError::InvalidStoredState)?,
+        nightmare_permille: portal_chances[1].ok_or(DurabilityError::InvalidStoredState)?,
     })
 }
 

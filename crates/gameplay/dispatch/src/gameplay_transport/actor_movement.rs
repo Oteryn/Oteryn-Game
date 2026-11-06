@@ -94,6 +94,28 @@ fn spell_state_speed(
     ))
 }
 
+fn fury_destination(
+    cells: &NativeEntryMovementCells,
+    position: MovementLocalPosition,
+) -> Option<MovementLocalPosition> {
+    let at = crate::map::overlay::TilePos {
+        x: position.x.try_into().ok()?,
+        y: position.y.try_into().ok()?,
+        floor: position.floor.checked_neg()?.try_into().ok()?,
+    };
+    let to = crate::map::floor::table_of(cells)?.fury_gate_destination(at)?;
+    Some(MovementLocalPosition {
+        x: i32::from(to.x),
+        y: i32::from(to.y),
+        floor: -i16::from(to.floor),
+    })
+}
+fn fury_eligible(state: &crate::spell::cast::PlayerSpellState, now_us: u64) -> bool {
+    state.character_facts().level >= 60
+        && state.wheel_promoted()
+        && state.hunting_premium_current(now_us)
+}
+
 /// Equipment delta is supplied only by the actual persisted-equipment owner. An actor without
 /// spell state keeps the established baseline Movement path. Every step is paced (SPEED-1
 /// §4.3): its duration onto the destination is computed before the commit, and a step whose
@@ -148,10 +170,20 @@ pub fn step_in_channel_with_source_step(
         .read_actor_position(actor)
         .map_err(MovementError::Actor)?;
     let starts_stairhop = if crate::map::floor::table_of(cells).is_some() {
-        crate::map::floor::prepare_bundle_step(
+        let proof = crate::map::floor::prepare_bundle_step(
             runtime, cells, actor, session, expected, direction, false, blocking,
-        )?
-        .starts_stairhop()
+        )?;
+        if fury_destination(cells, proof.destination()).is_some() {
+            if !states
+                .get(runtime, actor, session)
+                .is_some_and(|state| fury_eligible(state, now_us))
+            {
+                return Err(MovementError::Blocked);
+            }
+            true
+        } else {
+            proof.starts_stairhop()
+        }
     } else if let Some(proof) = prepared_source_step.as_ref() {
         proof.destination().floor != expected.position().floor
     } else if crate::movement::source_floor_change::is_source_profile(cells) {
@@ -273,7 +305,15 @@ fn step_in_channel_inner(
             false,
         );
         return bundle_step(
-            runtime, cells, actor, session, direction, blocking, speed, expected,
+            runtime,
+            cells,
+            actor,
+            session,
+            direction,
+            blocking,
+            speed,
+            expected,
+            fury_eligible(state, now_us),
         );
     }
     let source_step = if let Some(proof) = prepared_source_step {
@@ -362,6 +402,7 @@ fn bundle_step(
     blocking: &dyn crate::map::floor::CellBlocker,
     speed: Option<u16>,
     expected: MovementPositionSnapshot,
+    fury_allowed: bool,
 ) -> StepInChannel {
     // WORLD-INTERACTION-0 §6.6: a teleport landing reads the actor's PZ block (PARTY-PVP-0
     // §8.1). PVP-RT-1 owns that block (conformance case PVP-CC-03); no runtime path sets one
@@ -372,6 +413,28 @@ fn bundle_step(
         runtime, cells, actor, session, expected, direction, pz_blocked, blocking,
     )?;
     let onto = proof.destination();
+    if let Some(destination) = fury_destination(cells, onto) {
+        if !fury_allowed {
+            return Err(MovementError::Blocked);
+        }
+        // The ordinary step proved the entrance, including its dynamic doors. The sealed
+        // callback proof independently rechecks current session, collision and occupancy.
+        let callback = crate::map::floor::prepare_quest_callback_teleport(
+            runtime,
+            cells,
+            actor,
+            session,
+            expected,
+            destination,
+            pz_blocked,
+            blocking,
+        )?;
+        let duration = duration_onto(&EngineeringGroundSpeed, destination, speed)?;
+        return runtime
+            .commit_source_step(callback)
+            .map(|snapshot| (snapshot, duration))
+            .map_err(MovementError::Actor);
+    }
     if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
@@ -405,7 +468,7 @@ fn baseline_step(
     }
     if crate::map::floor::table_of(cells).is_some() {
         return bundle_step(
-            runtime, cells, actor, session, direction, blocking, speed, expected,
+            runtime, cells, actor, session, direction, blocking, speed, expected, false,
         );
     }
     if crate::movement::source_floor_change::is_source_profile(cells) {
@@ -847,6 +910,103 @@ mod tests {
             Err(MovementError::Blocked)
         ));
         assert_eq!(at(&mut runtime, actor), before);
+    }
+
+    #[test]
+    fn worldchg_fury_entry_requires_current_premium_promotion_level_and_session() {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                for (level, promoted, premium, until, now, allowed) in [
+                    (60, true, true, 100, 99, true),
+                    (59, true, true, 100, 99, false),
+                    (60, false, true, 100, 99, false),
+                    (60, true, false, 100, 99, false),
+                    (60, true, true, 100, 100, false),
+                ] {
+                    let (mut runtime, mut states, cells, actor, session) =
+                        bundle_owner_of(crate::map::boot::tests::fury_gate_bundle);
+                    states
+                        .initialize(
+                            &runtime,
+                            actor,
+                            session,
+                            CharacterCastFacts {
+                                vocation: crate::spell::Vocation::Knight,
+                                level,
+                                magic_level: 10,
+                                max_health: 1000,
+                                max_mana: 500,
+                                max_soul: 100,
+                            },
+                            (0, 0),
+                            SemanticTimeMicros::from_micros(0),
+                        )
+                        .unwrap();
+                    states
+                        .get_mut(&runtime, actor, session)
+                        .unwrap()
+                        .apply_owner_promotion_transition(promoted, premium, Some(until))
+                        .unwrap();
+                    let blocked = std::collections::BTreeSet::new();
+                    let stale = GameSessionId::decode(&id(9)).unwrap();
+                    assert!(
+                        step_in_channel(
+                            &mut runtime,
+                            &mut states,
+                            &cells,
+                            actor,
+                            stale,
+                            now,
+                            CardinalStep::South,
+                            &blocked,
+                            Some(0)
+                        )
+                        .is_err()
+                    );
+                    assert_eq!(at(&mut runtime, actor), (0, 0, 8));
+                    let result = step_in_channel(
+                        &mut runtime,
+                        &mut states,
+                        &cells,
+                        actor,
+                        session,
+                        now,
+                        CardinalStep::South,
+                        &blocked,
+                        Some(0),
+                    );
+                    assert_eq!(
+                        result.is_ok(),
+                        allowed,
+                        "level={level} promoted={promoted} premium={premium} now={now}"
+                    );
+                    assert_eq!(
+                        at(&mut runtime, actor),
+                        if allowed { (5, 1, 8) } else { (0, 0, 8) }
+                    );
+                }
+                let (mut runtime, mut states, cells, actor, session) =
+                    bundle_owner_of(crate::map::boot::tests::fury_gate_bundle);
+                assert!(
+                    step_in_channel(
+                        &mut runtime,
+                        &mut states,
+                        &cells,
+                        actor,
+                        session,
+                        0,
+                        CardinalStep::South,
+                        &std::collections::BTreeSet::new(),
+                        None
+                    )
+                    .is_err()
+                );
+                assert_eq!(at(&mut runtime, actor), (0, 0, 8));
+            })
+            .unwrap()
+            .join()
+            .unwrap();
     }
 
     #[test]

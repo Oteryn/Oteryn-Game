@@ -23,6 +23,8 @@ fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily
         fungus: changes.their_masters_voice,
         grimvale_full_moon: changes.grimvale_full_moon,
         trader: changes.oriental_trader.map(|town| town.layer()),
+        fury_gates: changes.fury_gates,
+        nightmare_isles: changes.nightmare_isles,
     }
 }
 
@@ -230,15 +232,8 @@ mod tests {
         ))
         .expect("layers");
         let mut appearances: BTreeSet<u16> = (12059..=12065).chain([432, 486]).collect();
-        let grounds: BTreeSet<u16> = (12059..=12065).chain([408, 432, 464, 486, 494]).collect();
+        let mut grounds: BTreeSet<u16> = (12059..=12065).chain([408, 432, 464, 486, 494]).collect();
         for layer in layers["layers"].as_array().expect("layer array") {
-            if !layer["key"]
-                .as_str()
-                .expect("key")
-                .starts_with("oriental_trader/")
-            {
-                continue;
-            }
             for tile in layer["tiles"].as_array().expect("tiles") {
                 for entry in tile["entries"].as_array().expect("entries") {
                     let id = u16::try_from(entry[0].as_u64().expect("id")).expect("u16");
@@ -246,11 +241,34 @@ mod tests {
                 }
             }
         }
+        for layer in layers["layers"].as_array().expect("layers") {
+            for tile in layer["tiles"].as_array().expect("tiles") {
+                if let Some(id) = tile["entries"][0][0].as_u64() {
+                    grounds.insert(id as u16);
+                }
+            }
+        }
+        let portal_packet: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/encounters/world-changes/portal-bindings-candidate.json"
+        ))
+        .expect("portal packet");
+        let internal = portal_packet["records"][1]["internal_portals"]
+            .as_array()
+            .expect("internal portals");
+        appearances.extend([776, 10840]);
+        appearances.extend(
+            internal
+                .iter()
+                .map(|p| p["appearance"].as_u64().expect("appearance") as u16),
+        );
         // The base bundle omits daily-only variants and decorations. The real boot must
         // resolve their references from the active Item catalogue, not a test-only palette.
         let palette: Vec<_> = appearances
             .into_iter()
-            .filter(|id| grounds.contains(id) && !(12059..=12063).contains(id))
+            .filter(|id| {
+                (grounds.contains(id) || [776, 10840, 10842, 20142, 20143].contains(id))
+                    && !(12059..=12063).contains(id)
+            })
             .map(|id| PaletteEntry {
                 family: Family::Item,
                 id: u32::from(id),
@@ -300,6 +318,64 @@ mod tests {
                 }
             }
         }
+        // Explicit base-dungeon fixture tiles at retained startup return markers. This
+        // fixture does not claim to reproduce the production dungeon's terrain.
+        for (x, y, z, appearance) in [(33290, 31785, 13, 776), (33498, 32613, 8, 10840)] {
+            let sector = sectors
+                .entry((-z, y / 32, x / 32))
+                .or_insert_with(|| Sector {
+                    floor: -z,
+                    sy: y / 32,
+                    sx: x / 32,
+                    tiles: Vec::new(),
+                });
+            let palette_index = palette
+                .iter()
+                .position(|p| p.id == appearance)
+                .expect("return palette") as u32;
+            sector.tiles.push(Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: Vec::new(),
+                items: vec![Item {
+                    palette: palette_index,
+                    depth: 0,
+                    attrs: Attrs::default(),
+                }],
+            });
+        }
+        for portal in internal {
+            let x = portal["position"][0].as_u64().expect("x") as u16;
+            let y = portal["position"][1].as_u64().expect("y") as u16;
+            let z = portal["position"][2].as_i64().expect("z") as i8;
+            let appearance = portal["appearance"].as_u64().expect("appearance") as u32;
+            let sector = sectors
+                .entry((-z, y / 32, x / 32))
+                .or_insert_with(|| Sector {
+                    floor: -z,
+                    sy: y / 32,
+                    sx: x / 32,
+                    tiles: Vec::new(),
+                });
+            let palette = palette
+                .iter()
+                .position(|p| p.id == appearance)
+                .expect("internal palette") as u32;
+            sector.tiles.push(Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: Vec::new(),
+                items: vec![Item {
+                    palette,
+                    depth: 0,
+                    attrs: Attrs::default(),
+                }],
+            });
+        }
         for sector in sectors.values_mut() {
             sector.tiles.sort_by_key(|t| (t.y, t.x));
         }
@@ -321,7 +397,7 @@ mod tests {
                 min_y: 31000,
                 max_x: 34000,
                 max_y: 33000,
-                floors: (-9..=-1).collect(),
+                floors: (-15..=-1).collect(),
             },
             palette,
             draft_areas: Vec::new(),
@@ -363,6 +439,72 @@ mod tests {
             },
         )
         .expect("checked")
+    }
+
+    #[test]
+    fn worldchg_portal_layers_project_selected_entries_and_returns() {
+        use crate::map::overlay::TilePos;
+        let packet: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/encounters/world-changes/portal-bindings-candidate.json"
+        ))
+        .expect("portal evidence");
+        for (kind, count) in [("fury_gates", 10_u8), ("nightmare_isles", 3_u8)] {
+            let record = packet["records"]
+                .as_array()
+                .expect("records")
+                .iter()
+                .find(|r| r["key"] == kind)
+                .expect("record");
+            let position = |v: &serde_json::Value| TilePos {
+                x: v[0].as_u64().expect("x") as u16,
+                y: v[1].as_u64().expect("y") as u16,
+                floor: -(v[2].as_i64().expect("z") as i8),
+            };
+            for selected in 0..count {
+                let mut day = DailyWorldChanges::roll(51, 1, 1, |_| u64::MAX);
+                day.fury_gates = (kind == "fury_gates").then_some(selected);
+                day.nightmare_isles = (kind == "nightmare_isles").then_some(selected);
+                let map = boot_physical(&day);
+                let variants = record["variants"].as_array().expect("variants");
+                let chosen = &variants[usize::from(selected)];
+                assert_eq!(
+                    map.floors().teleport(position(&chosen["position"])),
+                    Some(position(&chosen["destination"]))
+                );
+                assert_eq!(
+                    map.floors()
+                        .teleport(position(&record["return_marker"]["position"])),
+                    Some(position(&chosen["return_destination"]))
+                );
+                for (index, variant) in variants.iter().enumerate() {
+                    if index != usize::from(selected) {
+                        assert!(
+                            map.floors()
+                                .teleport(position(&variant["position"]))
+                                .is_none()
+                        );
+                    }
+                }
+                if kind == "nightmare_isles" {
+                    let internal = record["internal_portals"]
+                        .as_array()
+                        .expect("internal portals");
+                    assert_eq!(internal.len(), 18);
+                    let actions: std::collections::BTreeSet<_> = internal
+                        .iter()
+                        .map(|p| p["action_id"].as_u64().expect("action"))
+                        .collect();
+                    assert_eq!(actions.len(), 16);
+                    for portal in internal {
+                        assert_eq!(
+                            map.floors().teleport(position(&portal["position"])),
+                            Some(position(&portal["destination"]))
+                        );
+                    }
+                }
+                assert_eq!(map, boot_physical(&day));
+            }
+        }
     }
 
     fn boot_physical(changes: &DailyWorldChanges) -> crate::map::boot::BundleWorld {

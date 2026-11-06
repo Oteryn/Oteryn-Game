@@ -93,11 +93,7 @@ pub(super) async fn prepare_channel(
         .map_err(|_| BootError::ContentActivation("durable world changes"))?
     {
         Some(day) => day,
-        None if reset_epoch == 0 => {
-            oteryn_gameplay_world_change::daily::DailyWorldChanges::roll(reset_epoch, 0, 0, |_| {
-                u64::MAX
-            })
-        }
+        None if reset_epoch == 0 => bootstrap_world_changes(),
         None => return Err(BootError::Readiness("current world-change epoch")),
     };
     let bundle = bundle
@@ -332,4 +328,40 @@ pub(super) async fn prepare_channel(
         timed_npcs,
         required_capabilities,
     }))
+}
+
+// The legacy epoch-zero bootstrap must never manufacture an activation decision.
+fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldChanges {
+    oteryn_gameplay_world_change::daily::DailyWorldChanges {
+        reset_epoch: 0,
+        thawing: false,
+        their_masters_voice: false,
+        oriental_trader: None,
+        grimvale_full_moon: false,
+        flower_month: false,
+        stampede: false,
+        fury_gates: None,
+        nightmare_isles: None,
+    }
+}
+#[cfg(test)]
+mod worldchg_bootstrap_tests {
+    #[test]
+    fn worldchg_portal_layers_uninitialized_epoch_has_no_activation() {
+        let day = super::bootstrap_world_changes();
+        for key in [
+            "thawing",
+            "their_masters_voice",
+            "oriental_trader",
+            "grimvale",
+            "stampede",
+            "fury_gates",
+            "nightmare_isles",
+        ] {
+            assert!(
+                !oteryn_gameplay_world_change::owner::is_active(&day, key),
+                "uninitialized World activated {key}"
+            );
+        }
+    }
 }
