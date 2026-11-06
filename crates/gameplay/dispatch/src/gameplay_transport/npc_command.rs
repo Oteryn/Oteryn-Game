@@ -419,13 +419,11 @@ impl NpcConversations {
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
         }
-        if !entry.offers().contains(source)
-            || source.currency.is_some()
-            || source.sub_type.is_some()
-        {
+        if !entry.offers().contains(source) || source.currency.is_some() {
             return Err(Box::new(rejected()));
         }
         Ok(NpcTradeOffer {
+            sub_type: source.sub_type,
             npc_key: npc_key.to_owned(),
             catalogue_revision: intent.catalogue_revision,
             offer_index: intent.offer_index,

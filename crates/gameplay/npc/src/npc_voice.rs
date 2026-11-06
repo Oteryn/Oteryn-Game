@@ -280,6 +280,42 @@ mod tests {
     use super::*;
 
     #[test]
+    fn srv9b_fluid_source_variants_reach_production() {
+        let catalogue = NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("repository catalogue");
+        let model = catalogue
+            .service_model_for_project()
+            .expect("service model");
+        let offers: Vec<_> = model
+            .services()
+            .values()
+            .flat_map(|service| &service.offers)
+            .filter(|offer| {
+                offer.item.key == "oteryn:item.tibia.i2874" && offer.sub_type == Some(3)
+            })
+            .collect();
+        assert!(
+            !offers.is_empty(),
+            "source beer offers must reach production"
+        );
+        assert!(
+            offers.iter().all(|offer| offer.count == Some(1)),
+            "fluid is never quantity"
+        );
+        let wraps: Vec<_> = model.services().values().flat_map(|service| &service.offers)
+            .filter(|offer| matches!(offer.item.key.as_str(), "oteryn:item.tibia.i50293" | "oteryn:item.tibia.i50294" | "oteryn:item.tibia.i50295")).collect();
+        assert_eq!(wraps.len(),57,"all 19 pinned Crystal merchants carry all three wraps");
+        for offer in wraps {
+            assert_eq!(offer.count,Some(1));
+            assert!(matches!((offer.sub_type,offer.unit_price),(Some(500),347222)|(Some(1800),1250000)|(Some(14400),10000000)));
+        }
+    }
+
+    #[test]
     fn s10_repository_ambient_profiles_reach_the_production_catalogue() {
         let catalogue = NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),

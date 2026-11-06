@@ -91,9 +91,9 @@ TibiaWiki API requests returned HTTP 402: **wiki-pending**. No bypass attempted.
 - Banker gold/platinum/crystal exchange:
   `npc_command/coin_exchange.rs`; population now reaches that same caller.
 
-## STOPPED: new native rules not established by the accepted contracts
+## Base holds (historical; SRV9B disposition below)
 
-These are not marked complete or silently activated:
+The supplied base held these two rows. The SRV9B section below supersedes their current disposition:
 
 1. **Fluid/subtype trades.** `npc_catalogue/service.rs:120-122` explicitly holds
    `ChargedOrFluidPending` for NPC-TRADE-3. `trade_variant_repair.py:1-6` states
@@ -242,7 +242,7 @@ promotion fixture once per source NPC. Eremo's original full scenario remains
 unchanged; new scenarios verify the NPC/service binding, permanent effect,
 20,000-gold fee and replay, with per-NPC completion markers and durations.
 
-## Final validation and delivery status
+## S10 original delivery validation (before SRV9B)
 
 **S10 remains PARTIAL / STOPPED for the two native-contract holds above.** The
 nonquest voice, wandering, Rashid schedule/trade and admitted service-population
@@ -299,3 +299,87 @@ content and S10 PG test bytes stayed identical after the eleven-case PG pass;
 only these separately tested integration inventory assertions changed afterward.
 The final source snapshot confirmed that boundary. No ignored or skipped test
 was added, and no protocol golden was changed.
+
+
+## SRV9B native contracts (2026-11-06)
+
+User allocation: branch `claude/happy-davinci-ijz3wy-srv9`, base
+`e70054802f4097d45e2860c73aaa7bc5e2b0335b`. No quest missions, callbacks or dialogue
+are added. No new capability, command, wire message or golden. Only migrations
+**1084–1085** are used; 1086 remains unused.
+
+### Source qualification
+
+The original exact pins remain authoritative. Source paths here are accurate
+for each donor (Canary uses `data-otservbr-global`, Crystal `data-global`).
+
+- Fluid enums are identical: Canary `src/utils/utils_definitions.hpp:412-433`,
+  Crystal `src/utils/utils_definitions.hpp:439-460`: none0,water1,wine2,beer3,mud4,
+  blood5,slime6,oil7,urine8,milk9,mana10,life11,lemonade12,rum13,fruitjuice14,
+  coconutmilk15,mead16,tea17,ink18,candy19,chocolate20. This is the existing I10a
+  Item namespace, not a new NPC enum or a reinterpretation of native quantity.
+- Source shop parsing: Canary `data/scripts/lib/register_npc_type.lua:156-174`,
+  Crystal `data/scripts/lib/register_npc_type.lua:147-165`. The selected amount
+  and subtype remain separate through the sales callback: Canary
+  `data-otservbr-global/npc/maria.lua:64-73`, Crystal
+  `data-global/npc/maria.lua:62-71`. Mug2880: beer subtype3/2gp,
+  lemonade12/2gp, water1/1gp, wine2/3gp.
+- Instance state: Canary `src/items/item.cpp:881-884,913-916`, Crystal
+  `src/items/item.cpp:504-507,536-539`. Native owner already exists at
+  `apps/game-server/migrations/0560_item_fluid_states.sql:14` and
+  `crates/gameplay/durability/src/durability/item_use/fluid.rs:1`.
+- All 57 same-tuple holds are **19 merchants times three exercise wraps**, not
+  unresolved competing variants. Crystal exact tuples:50293/subtype500/347222gp,
+  50294/1800/1250000gp,50295/14400/10000000gp. Canary lacks these new wrap rows;
+  its omission does not contradict Crystal. All 19 Crystal scripts were fetched
+  at the same pin and inspected. In `data-global/npc/<name>.lua`, line triples
+  below are durable/normal/lasting (Esrik is normal/durable/lasting):
+  Baltim83/90/104, Brengus93/102/121, Cedrik190/199/214, Esrik125/131/137,
+  Flint85/93/114, Gamel127/133/145, Habdel130/136/147, Hardek94/101/114,
+  Memech91/98/111, Morpel89/96/109, Robert92/101/116, Romella80/87/98,
+  Rowenna81/87/98, Sam188/195/208, Shanar91/97/108, Turvy92/99/112,
+  Ulrik80/87/100, Uzgod174/180/191, Willard132/141/156.
+  Native matching charge facts: `tools/content-schema/native-gameplay/hireling-item-profiles.json:226914`
+  (500), `:227063` (1800), `:227212` (14400). The existing native default
+  representation is a missing timed row, already used by Hireling purchases.
+- Wiki checked through approved MediaWiki APIs on2026-11-06: Fandom Marriage,
+  Lynda, Wedding_Ring and Fluids returned HTTP402; BR Casamento/Lynda returned
+  HTTP403. No bypass. Retained Marriage metadata is
+  `docs/reference/content-prep/outfits-content-1/sources.json:2227-2237`,
+  page7110/revision1114179 (2025-07-26; captured2026-10-18), SHA256
+  `51a13434ddb784995163fdd4c2d83a278434a4dff39d19ca2963a240236b7995`.
+  Raw text is absent even from the original packet commit; metadata is **not**
+  evidence of inspected marriage transaction semantics. Retained BR Lynda
+  crosscheck (`tools/content-schema/npc-authoring/samples/tibiawiki-br-crosscheck-v1.json`,
+  NPC657, page11100/revision407179) has no marriage dialogue.
+
+### OWNER QUESTION — marriage remains HELD
+
+**Exact question:** Should native Lynda adopt the pinned donors' proposal /
+reciprocal-acceptance / celebration / proposal-removal / free-divorce state
+machine? At celebration should Item mint **one engraved ring to the speaker**
+(as both executable scripts do), or **two rings, one per spouse** (as both
+speeches promise)? Should outfits328/329 be granted permanently at engagement
+and retained after divorce, as the scripts implement, or have different grant,
+expiry and divorce-removal rules? Please specify the target ring outputs and
+outfit lifetime together with the adopted state machine.
+
+This is a durable-value/product conflict, not a missing SQL-schema excuse:
+Canary `data-otservbr-global/npc/lynda.lua:161-208`, Crystal
+`data-global/npc/lynda.lua:158-205` consume ring+9586 per participant and grant
+both outfits at reciprocal acceptance. Celebration code at Canary216-238 /
+Crystal213-235 creates **one** ring, despite promising **two** in the preceding
+speech. Proposal removal refunds ring+9586 (Canary246-262 / Crystal243-259).
+Divorce clears both spouses for no fee (Canary270-288 / Crystal267-285), without
+outfit expiry/removal. Donor file SHA256: Canary
+`edda7bc3c496b98624fabe8e9318860133798e73a017d71b8667e16e0e9ded5e`, Crystal
+`c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9`.
+
+Choosing the ring count or outfit permanence would invent the durable Item /
+appearance effect the user explicitly reserves for an owner decision when
+source semantics cannot settle it. Marriage is therefore not activated or
+marked DONE. A subsequent implementation must lock both Character roots in
+stable identity order, require independent participant consent under their
+session generations, use immutable stage receipts/revision recovery, and
+compose all ring/garment burns, refunds and engraved mints through Item's
+existing ledger in the same transaction. Legacy spouse globals are not authority.

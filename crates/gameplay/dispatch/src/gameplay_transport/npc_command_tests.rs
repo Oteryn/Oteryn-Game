@@ -658,6 +658,7 @@ fn a_trade_intent_names_the_projected_offer_of_the_server_catalogue() {
     assert_eq!(
         offer,
         NpcTradeOffer {
+            sub_type: None,
             npc_key: "oteryn:npc.alice".to_owned(),
             catalogue_revision: revision,
             offer_index: 1,

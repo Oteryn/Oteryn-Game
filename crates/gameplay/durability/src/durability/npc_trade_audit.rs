@@ -120,6 +120,11 @@ pub struct OneItemNpcTradeLineV1 {
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemNpcTradeV1 {
+    /// NPC-TRADE-3: Item fluid state, including an explicitly empty container.
+    #[prost(uint32, optional, tag = "19")]
+    pub fluid_subtype: Option<u32>,
+    #[prost(uint32, optional, tag = "20")]
+    pub full_charges: Option<u32>,
     #[prost(message, optional, tag = "1")]
     pub cause: Option<OneItemNpcTradeCauseV1>,
     /// The command 8 the occurrence is bound to.
@@ -324,6 +329,12 @@ fn line_item(line: &OneItemNpcTradeLineV1) -> Option<&[u8]> {
 
 /// Complete closed trade shape, conservation and every registered bound.
 pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
+    if value.fluid_subtype.is_some_and(|subtype| subtype > 20)
+        || value.full_charges.is_some_and(|charges| !(1..=65535).contains(&charges))
+        || (value.fluid_subtype.is_some() && value.full_charges.is_some())
+    {
+        return Err(AuditError::InvalidInput);
+    }
     let cause = value.cause.as_ref().ok_or(AuditError::InvalidInput)?;
     check_content_key(&cause.npc_key)?;
     check_uuid_v7(&cause.occurrence)?;

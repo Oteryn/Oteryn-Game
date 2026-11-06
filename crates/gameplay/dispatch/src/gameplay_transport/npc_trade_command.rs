@@ -298,6 +298,31 @@ pub(super) async fn trade(
             }
         }
     }
+    let fluid_container =
+        crate::content::npc_catalogue::subtype_trades::fluid_container(&offer.item_key);
+    let full_charges = if !fluid_container {
+        offer.sub_type
+    } else {
+        None
+    };
+    if let Some(charges) = full_charges {
+        use crate::content::ReferenceItemField::Known;
+        let native_charges = native
+            .item_policy(
+                &item.definition.production_key,
+                &item.definition.revision_ref,
+            )
+            .and_then(|policy| match &policy.record().semantics.charges {
+                Known(facts) => match facts.count {
+                    Known(count) => Some(count),
+                    _ => None,
+                },
+                _ => None,
+            });
+        if native_charges != Some(u32::from(charges)) {
+            return Err(Box::new(NpcTradeStep::rejected()));
+        }
+    }
     let backpack = match admission
         .root
         .read_character_backpack(admission.character, fence.character_id)
@@ -313,6 +338,14 @@ pub(super) async fn trade(
     };
     let id = |tag: &[u8]| derived(tag, session, command.command_id);
     let request = NpcTradeRequest {
+        fluid_subtype: if fluid_container {
+            offer
+                .sub_type
+                .and_then(|subtype| u8::try_from(subtype).ok())
+        } else {
+            None
+        },
+        full_charges,
         cause: NpcTradeCause {
             npc_key: offer.npc_key,
             catalogue_revision: offer.catalogue_revision,

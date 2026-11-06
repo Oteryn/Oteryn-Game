@@ -20,6 +20,7 @@ pub mod premium_services;
 pub mod replies;
 mod s10_nonquest;
 pub mod service;
+pub mod subtype_trades;
 pub mod travel;
 pub mod walk_terrain;
 #[allow(

@@ -51,6 +51,8 @@ fn trade(
     unit_price: u64,
 ) -> TestResult<NpcTradeRequest> {
     Ok(NpcTradeRequest {
+        fluid_subtype: None,
+        full_charges: None,
         cause: NpcTradeCause {
             npc_key: "fixture:npc.trader".into(),
             catalogue_revision: 1,
