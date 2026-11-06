@@ -3203,7 +3203,7 @@
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
   "shared_engine_integration": {
-    "status": "QUALIFIED_MECHANISM",
+    "status": "LOCALLY_GREEN",
     "branch": "claude/happy-davinci-ijz3wy-qengine2",
     "source_head": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
     "reuse": "Atomic NPC exchanges, retained possession, outfits/addons, paired portal lifecycle, encounter and item-cycle callbacks.",
@@ -3253,7 +3253,15 @@
       }
     ],
     "selector_fix": "Retain the established source-equivalent Triangle callback; generated alias fixture is test-only. Reject exact selector aliases across all production registries. Keep shared item-cycle assertions and the existing full source-cycle/exit assertions. Route Waterfall legacy content through the strict STEP/facing/splash test adapter.",
-    "review_gate": "Freeze this locally green candidate, run required independent exact-head review, disposition findings before pushing. No PR. Review log /tmp/questpc4-engine-review-run.log and findings /tmp/questpc4-engine-review.txt.",
-    "next": "Continue20 active whole L6 entries after this shared-engine integration is pushed; no engine/fact handoff. Verify native MapBase pickup/reset path first, then add missing shared floor container/assembly and conditional NPC mechanisms."
+    "review_gate": "Independent exact-head review remains required before landing/readiness. Work-branch batch pushes are explicitly owner-authorized; no PR/main/landing is performed.",
+    "next": "Continue20 active whole L6 entries after this shared-engine integration is pushed; no engine/fact handoff. Verify native MapBase pickup/reset path first, then add missing shared floor container/assembly and conditional NPC mechanisms.",
+    "review_attempt": {
+      "head": "19a4cc36affe4ed6a3cb2bbf98165d958a3f2544",
+      "status": "NOT_REVIEWED_AUTHENTICATION_REQUIRED",
+      "error": "Your access token could not be refreshed because you have since logged out or signed in to another account. Please sign in again.",
+      "transport_error": "HTTP 401 Unauthorized",
+      "log": "/tmp/questpc4-engine-review-run4.log",
+      "scope": "No model review completed; not counted as a clean review. Continue authorized implementation and work-branch pushes; do not claim final readiness."
+    }
   }
 }
