@@ -201,7 +201,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(permit);
         self.refresh_quest_session(admitted.game_session_id, false)
             .await;
-        self.refresh_session_titles(admitted.game_session_id).await;
         // Encode the immutable receipt view, not a new read that could change the replay response.
         let encoded = if legacy {
             projection::legacy(&result).and_then(|reply| wire::encode_task_board_reply(&reply).ok())
@@ -247,6 +246,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         drop(slot);
+        // Only a changed title source needs enrichment. Keep its database work on the
+        // existing actor cadence, away from board queries, refusals and receipt replays.
+        if let Ok(commit) = &result
+            && !commit.replayed
+            && commit.transition.as_ref().is_some_and(|transition| {
+                transition.changes.iter().any(|change| {
+                    change.track == oteryn_gameplay_quests::quest::task_board::POINTS
+                        && change.before != change.after
+                })
+            })
+        {
+            self.states.title_refresh.mark([fence.character_id]);
+        }
         if let Err(error) = &result {
             operator_event(&format!("task_board_write_failed reason={error:?}"));
         }

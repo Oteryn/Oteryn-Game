@@ -129,7 +129,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// The actor-cadence leg of [`Self::refresh_session_titles`] for a Character marked by a
-    /// kill settlement (level, tracked creature or boss).
+    /// kill settlement (level, tracked creature or boss) or Task Board point change.
     pub(super) async fn refresh_marked_titles(
         &self,
         actor: crate::foundation::ExactActorRef,
