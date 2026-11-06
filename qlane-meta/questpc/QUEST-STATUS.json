@@ -8360,7 +8360,14 @@
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Merged incoming Elvenbane qualification; single-writer clarification pending; read-only research and initial PG validation continue.",
-    "concurrent_remote_head": "4e12ac30e"
+    "active": "Elvenbane independent PG validation passed; new implementation paused pending single-writer clarification.",
+    "concurrent_remote_head": "4e12ac30e",
+    "validation": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
+      "result": "1 passed; 0 failed; 2540 filtered out",
+      "marker": "POSTGRES_CASE_COMPLETED elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal duration=63.295355405s",
+      "log": "qlane-meta/questpc/cloud-replacement-elvenbane.log",
+      "sha256": "05aa791fc57d0126485958d19c6f2d4d4fdc648a8cc9e7d91743c5de9ef3e0c5"
+    }
   }
 }

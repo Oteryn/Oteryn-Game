@@ -788,3 +788,12 @@ merged the same earlier snapshot and qualified Elvenbane. Retain its pin refresh
 source proof, status promotion and complete evidence. No duplicate qualification.
 Single-writer clarification requested because the incoming head advanced during
 this continuation. No new implementation until ownership is confirmed.
+
+Independent replacement-run PG validation: Elvenbane cohort PASS, 1/1,
+`POSTGRES_CASE_COMPLETED` duration63.295355405s; all four exact source-placement
+markers emitted. See `cloud-replacement-elvenbane.log` and QUEST-STATUS continuation
+for command/hash. Build used the unchanged Rust implementation from9bf74b42d;
+no new Rust/SQL/test changes. Incoming final pin regeneration and corresponding
+65.031774375s proof retained. Current source tree clean; 57/102/19 counts unchanged.
+Question pending: whether another session remains an active writer on this branch.
+Do not duplicate that writer's implementation while ownership is unresolved.
