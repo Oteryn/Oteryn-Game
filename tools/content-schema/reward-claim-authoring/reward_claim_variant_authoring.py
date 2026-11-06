@@ -6,7 +6,11 @@ Historical variant dispositions remain intact. Only a complete, pinned
 import copy
 import hashlib
 import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'quest-authoring'))
+import quest_claim_progress
 
 import container_native
 import charge_native
@@ -31,6 +35,8 @@ def canonical_schema(root):
             'items': {'type': 'object', 'additionalProperties': False,
                 'required': ['appearance_tibia_id', 'source_binding', 'reward'], 'properties': {
                     'appearance_tibia_id': {'type': 'integer', 'minimum': 1},
+                    'quest_transition': {'type': 'string', 'maxLength': 128,
+                                         'pattern': '^oteryn:[A-Za-z0-9._:/-]+$'},
                     'source_binding': {'type': 'object', 'additionalProperties': False,
                         'required': ['project_position', 'legacy_unique_ids'], 'properties': {
                             'project_position': {'$ref': '#/$defs/position'},
@@ -242,6 +248,7 @@ def derive(root, items, stack_problem):
     packet = migration.derive_packet(root, evidence)
     migration.validate(packet, root)
     records = derive_definitions(packet, items, stack_problem)
+    quest_claim_progress.apply_claims(root, records)
     check = validator(root)
     for record in records:
         check.validate(record['definition'])

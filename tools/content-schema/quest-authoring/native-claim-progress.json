@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest",
+      "claim_revision": "reward-claim-r1",
+      "unique_id": 6214,
+      "item": "oteryn:item.tibia.i2820",
+      "source_completion": "Storage.Quest.U8_0.TheIceIslands.FormorgarGlacierChest",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+      "transition": "oteryn:quest-transition/native-claim/formogar-hoist-construction-plans",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "value": 1,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/startup/tables/chest.lua",
+        "line": 2259,
+        "blob_sha1": "7b9f823542f9b8d5f99fb6960abe070324c89b8e",
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2259"
+      },
+      "assumption": "The construction plans teach the hoist chest instruction. This repairs the missing FormorgarMinesHoistChest writer: all three retained movement scripts read that flag, but UID6214 writes FormorgarGlacierChest. Keep the separate skeleton instruction mandatory. The owner explicitly authorized conservative rules for missing source mechanisms."
+    }
+  ]
+}

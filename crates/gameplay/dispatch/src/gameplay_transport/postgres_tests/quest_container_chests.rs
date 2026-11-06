@@ -104,21 +104,34 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn scenario(case: Case) -> TestResult {
-    scenario_case(case, None, None)
+    scenario_case(case, None, None, None)
 }
 
 pub(super) fn catalogue_scenario(
     chest: &super::quest_catalogue_chests::CatalogueChest,
     activation: &super::quest_catalogue_chests::CatalogueActivation,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation))
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), None)
+}
+
+pub(super) fn catalogue_scenario_with_progress(
+    chest: &super::quest_catalogue_chests::CatalogueChest,
+    activation: &super::quest_catalogue_chests::CatalogueActivation,
+    progress: Option<&str>,
+) -> TestResult {
+    match progress {
+        Some(track) => scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(track)),
+        None => catalogue_scenario(chest, activation),
+    }
 }
 
 fn scenario_case(
     case: Case,
     catalogue: Option<&super::quest_catalogue_chests::CatalogueChest>,
     activation: Option<&super::quest_catalogue_chests::CatalogueActivation>,
+    progress: Option<&str>,
 ) -> TestResult {
+    let started = std::time::Instant::now();
     let (claim, chest, unique, root_key, expected) = match case {
         Case::Catalogue => {
             let chest = catalogue.ok_or("catalogue chest")?;
@@ -566,8 +579,17 @@ fn scenario_case(
                 let mut owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(generation);
                 owner.movement_cells = &cells;
+                if progress.is_some() {
+                    owner.quest_catalogue = Some(std::sync::Arc::new(
+                        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                            .map_err(debug)?.catalogue().clone(),
+                    ));
+                }
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
+                if progress.is_some() {
+                    owner.admit_quest_session(&admitted).await;
+                }
                 if cold_replay {
                     assert_eq!(
                         wire_use_targets(&owner, admitted, &[(1, &target)]).await?,
@@ -587,6 +609,13 @@ fn scenario_case(
                             (CommandStatus::Accepted, UseDisposition::NothingToUse),
                         ]
                     );
+                }
+                if let Some(track) = progress {
+                    let state = owner.root.read_character_quest_state(&authority, fence.character_id)
+                        .await.map_err(debug)?;
+                    eprintln!("POSTGRES_CASE_OBSERVED instruction_claim={claim} cold_replay={cold_replay} access={:?} duration={:?}", state.tracks().get(track), started.elapsed());
+                    assert_eq!(state.tracks().get(track), Some(&1),
+                               "the actual instruction claim must write its access flag, including cold replay");
                 }
                 let bag = harness
                     .root

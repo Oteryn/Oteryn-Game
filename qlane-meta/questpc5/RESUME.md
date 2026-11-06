@@ -10,6 +10,14 @@ Whole-quest statuses were not promoted by a generic-engine proof. Next: compose 
 
 Cross-lane read: questpc2's current committed status had no matching L5 qualification. The requested qlane-meta status paths on questpc3/4/8 returned404; none was assumed qualified. Skip world changes owned by the world lanes, as the owner instructed. No agents spawned, credentials read, protected tooling edited, or reference dumps/binaries added.
 
+## Native claim progress batch — green, 2026-11-06
+
+The existing UID6214 construction-plan claim now emits its named quest obligation. The shared authoring binding validates the exact admitted source projection and produces one bounded maximum-flag transition in the existing QuestState format. Its source-defect repair is explicit in `native-claim-progress.json` and QUEST-STATUS assumptions. The claim receipt owns eligibility; an already learned flag remains valid, and declared maximum/value equality prevents regression. No new persistence mechanism or migration was needed. Both instruction requirements remain mandatory.
+
+PG RED: actual book USE left access absent (observed after 6.522168683s; complete run 45.61s). Final PG GREEN after regeneration/pins: fresh and cold replay both observe access=1, exact book/text custody retained; markers 8.433965618s and 48.101837679s. Proof: `cloud-claim-progress-proof.json`. Check 18.18s; all-target/all-feature strict Clippy 44.33s; nine Rust loader tests; four binding, twelve lowering and thirteen variant Python tests; 123 content tests; five repository-world tests; fmt; deterministic authoring and pin-check passed. Full repository regeneration ran with no staging and no full PG suite. Generated taxonomy changes are provenance digests only.
+
+Latest owner rule is active: shared mechanisms are this lane's responsibility. Fetched qengine2 head `5a6de28c142de185594217ce1e5cbc7f4b6e6e4e`, read its resume and delivery documentation, and checked current questpc2/4/6/8 statuses (no matching qualification). Reuse the qengine-only delta from `dc1cd724b` rather than the whole divergent branch, which contains unrelated protected workflow/main changes. The delivery has generic NPC rewards/outfits, portals, item-cycle and encounter effects. Preserve local read-only gates/remote teleport/progress bindings when integrating; reconcile the duplicate Thais plate registrations explicitly. Do not record shared-engine dependencies as blockers. No whole L5 quest is promoted by these two prerequisite batches.
+
 Historical checkpoints follow; their unfinished scopes and old environment/publication restrictions are not current instructions.
 
 # QUESTPC resume, 2026-11-06

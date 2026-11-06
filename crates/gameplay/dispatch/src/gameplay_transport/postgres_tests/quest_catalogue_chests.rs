@@ -1115,7 +1115,17 @@ pub(super) fn catalogue_source_world(
     .map_err(super::fixture::debug)
 }
 
+pub(super) fn claim_progress_cohort(claim: &str, track: &str) -> TestResult {
+    let selected: Vec<_> = cases()?.into_iter().filter(|case| case.claim == claim).collect();
+    assert_eq!(selected.len(), 1, "one exact instruction source placement");
+    execute_with_progress(selected, Some(track.to_owned()))
+}
+
 fn execute(cases: Vec<CatalogueChest>) -> TestResult {
+    execute_with_progress(cases, None)
+}
+
+fn execute_with_progress(cases: Vec<CatalogueChest>, progress: Option<String>) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -1146,7 +1156,7 @@ fn execute(cases: Vec<CatalogueChest>) -> TestResult {
                     }
                 }
                 let started = std::time::Instant::now();
-                super::quest_container_chests::catalogue_scenario(&case, &activation)
+                super::quest_container_chests::catalogue_scenario_with_progress(&case, &activation, progress.as_deref())
                     .map_err(|error| format!("{} {:?}: {error}", case.claim, case.position))?;
                 println!(
                     "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED {} {:?} native_source={} duration={:?}",
