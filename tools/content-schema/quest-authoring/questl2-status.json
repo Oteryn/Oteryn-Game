@@ -1,0 +1,333 @@
+{
+  "schema": 1,
+  "lane": "L2",
+  "branch": "claude/happy-davinci-ijz3wy-questl2",
+  "start_head": "2927da8aa2b4c72c271e7d2d5594fea833a2aa8d",
+  "qualification_rule": "Server mechanics and a complete real PostgreSQL player journey; stage-only tests do not qualify an entry.",
+  "generic_mechanisms": [
+    {
+      "name": "atomic multi-track transitions",
+      "status": "QUALIFIED",
+      "postgres_test": "questl2_eleven_tracks_commit_atomically",
+      "maximum_tracks": 16,
+      "migration": 1140,
+      "postgres_version": "18.6",
+      "red": {
+        "result": "TooManyEffects",
+        "duration_seconds": 61.12
+      },
+      "green": {
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-atomic-eleven",
+        "duration_seconds": 65.640613576,
+        "passed": 1,
+        "failed": 0
+      },
+      "proves": [
+        "Eleventh-track predicate mismatch leaves receipts and tracks unchanged",
+        "One receipt contains all eleven effects and advances one Character revision",
+        "All eleven stored values advance",
+        "Exact command replay returns the original receipt"
+      ],
+      "source": {
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "file": "data-global/npc/tereban_functions.lua",
+        "lines": "175-180",
+        "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d"
+      }
+    }
+  ],
+  "entries": [
+    {
+      "title": "A Father's Burden",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "A Piece of Cake",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "A Pirate's Death to Me",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "An Interest In Botany",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "An Uneasy Alliance",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Annual Autumn Vintage",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Barbarian Test",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Bigfoot's Burden",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Blood Brothers",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Bloody Tusks",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Cartography 101",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Demon's Lullaby",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Draconia",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Exchange Quests",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Hidden Threats",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Hot Cuisine",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Hunting for Tokens",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Into The Bone Pit",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Kilmaresh",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Kissing a Pig",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Koshei the Deathless",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Krailos",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Research and Development",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Rottin Wood and the Married Men",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Sam's Old Backpack",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Sea of Light",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Secret Service",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Shadows of Yalahar",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Shards of a Broken Moon",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Spike Tasks",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Steal From Thieves",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "The Ape City",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Djinn War Efreet",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Djinn War Marid",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Gravedigger of Drefia",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Great Dragon Hunt",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Hunt for the Sea Serpent",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Isle of Evil",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "New Frontier",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Postman Missions",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "The Repenters",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Shattered Isles",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Thieves Guild",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "White Raven Monastery",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "To Blind the Enemy",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "To Outfox a Fox",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Tomes of Knowledge",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Top of the City",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Troll Sabotage",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Unnatural Selection",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "title": "Vampire Hunter",
+      "status": "PENDING",
+      "evidence": []
+    }
+  ],
+  "validation": {
+    "quest_unit_tests": {
+      "passed": 254,
+      "failed": 0
+    },
+    "reward_authoring_tests": {
+      "passed": 7,
+      "failed": 0
+    },
+    "l2_authoring_baseline": {
+      "passed": 4,
+      "failed": 0
+    },
+    "clippy": {
+      "packages": [
+        "oteryn-gameplay-quests",
+        "oteryn-gameplay-dispatch",
+        "oteryn-game-server"
+      ],
+      "all_targets": true,
+      "deny_warnings": true,
+      "exit_code": 0
+    },
+    "migration_allocation": {
+      "number": 1140,
+      "main": "91afbe0ba172181e6d5b2e8f2f0bbdf8775f3726",
+      "branch_snapshots_checked": 78,
+      "open_pr_check": "next-free-numbers.py: no 1140-1149 claims"
+    },
+    "world_pins": {
+      "regenerated": true,
+      "checked": true,
+      "digest": "d4071ed1808cc027b4d52501d886887b5615966f5d8e58e0a38ae2032d49ea78",
+      "unchanged": true
+    },
+    "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed"
+  }
+}

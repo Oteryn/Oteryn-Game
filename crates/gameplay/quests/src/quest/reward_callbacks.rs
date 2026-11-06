@@ -88,7 +88,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
             || c.storage.is_empty()
-            || c.storage.len() > 8
+            || c.storage.len() > super::QUESTSTATE0_RL_02
             || tracks.len() != c.storage.len()
             || c.storage
                 .iter()
@@ -181,6 +181,34 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
+        let mut callback = load()?.into_iter().next().ok_or("callback")?;
+        callback.storage = (0..16)
+            .map(|i| Storage {
+                track: format!("oteryn:quest-progress/atomic/{i}"),
+                minimum: 0,
+                maximum: 0,
+                set: 1,
+                preserve: false,
+            })
+            .collect();
+        let document = |callback: &RewardCallback| {
+            serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string()
+        };
+        assert!(parse(&document(&callback)).is_ok());
+        callback.storage.push(Storage {
+            track: "oteryn:quest-progress/atomic/16".into(),
+            minimum: 0,
+            maximum: 0,
+            set: 1,
+            preserve: false,
+        });
+        assert!(parse(&document(&callback)).is_err());
+        Ok(())
+    }
+
     #[test]
     fn qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants() -> Result<(), String>
     {

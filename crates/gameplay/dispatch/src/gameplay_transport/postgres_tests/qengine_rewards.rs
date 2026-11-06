@@ -20,7 +20,8 @@ fn scenario(name: &'static str) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run(name, move || {
+    eprintln!("POSTGRES_CASE_STARTED {name}");
+    let outcome = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
             Position {
@@ -30,7 +31,14 @@ fn scenario(name: &'static str) -> TestResult {
             },
             false,
         )
-    })?;
+    });
+    if outcome.is_err() {
+        eprintln!(
+            "POSTGRES_CASE_FAILED {name} duration={:?}",
+            started.elapsed()
+        );
+    }
+    outcome?;
     eprintln!(
         "POSTGRES_CASE_COMPLETED {name} duration={:?}",
         started.elapsed()
@@ -75,6 +83,14 @@ fn questl2_thieves_vase_exchange() -> TestResult {
 fn questl2_sam_kroox_access() -> TestResult {
     scenario("qengine-rewards-l2-sam-kroox")
 }
+
+#[test]
+fn questl2_eleven_tracks_commit_atomically() -> TestResult {
+    scenario("qengine-rewards-atomic-eleven")
+}
+
+#[path = "qengine_rewards/atomic_tracks.rs"]
+mod atomic_tracks;
 
 macro_rules! questl2_exchange_cases {
     ($($test:ident => $key:literal),+ $(,)?) => {
@@ -576,6 +592,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-atomic-eleven" {
+        return atomic_tracks::exercise(owner, admitted, h).await;
+    }
     let key = match name {
         "qengine-rewards-pirate" => "pirate-sabre",
         "qengine-rewards-knight" => "knight-sword",
