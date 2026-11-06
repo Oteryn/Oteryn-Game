@@ -438,6 +438,7 @@ fn scenario_in_world(
                         maximum: 0,
                         set: 1,
                         preserve: false,
+                        increment: false,
                     }]
                 } else {
                     vec![]

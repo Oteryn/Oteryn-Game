@@ -65,6 +65,9 @@ pub struct Storage {
     /// A read-only gate: validate the locked value without resetting later progress.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
+    /// Add `set` to the locked value instead of replacing it.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub increment: bool,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -75,7 +78,7 @@ mod native;
 use native::valid_native_callback;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
-/// recipe language: the source is consumed or changed exactly once by the receipt owner.
+/// recipe language: the receipt owner locks the source and consumes, changes or retains it.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemOnTarget {
@@ -83,6 +86,8 @@ pub struct ItemOnTarget {
     pub count: u16,
     pub replacement: Option<String>,
     pub target_replacement: Option<u16>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub reusable: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -150,6 +155,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/l6-tools.json"
     ))?);
     if callbacks.len() >= MAX_CALLBACKS {
         return Err("callback bounds including Rotten Blood altar".into());
@@ -251,6 +259,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.trigger != Trigger::Use
                     || item.count == 0
                     || item.count > 100
+                    || (item.reusable && (item.count != 1 || item.replacement.is_some()))
                     || !super::valid_quest_key(&item.item)
                     || item
                         .replacement
@@ -278,10 +287,15 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || o.count > 100
                     || !super::valid_quest_key(&o.item)
             })
-            || callback
-                .storage
-                .iter()
-                .any(|s| !super::valid_quest_key(&s.track) || s.minimum > s.maximum)
+            || callback.storage.iter().any(|s| {
+                !super::valid_quest_key(&s.track)
+                    || s.minimum > s.maximum
+                    || (s.increment
+                        && (s.preserve
+                            || callback.native_rule.is_some()
+                            || s.set <= 0
+                            || s.maximum.checked_add(s.set).is_none()))
+            })
         {
             return Err(format!("invalid callback {}", callback.key));
         }
@@ -302,9 +316,17 @@ fn extend_callbacks(
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
         for storage in &callback.storage {
+            let maximum = if storage.increment {
+                storage
+                    .maximum
+                    .checked_add(storage.set)
+                    .ok_or("callback increment overflow")?
+            } else {
+                storage.set.max(storage.maximum)
+            };
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
                 if callback.native_rule.is_none() && !storage.preserve {
-                    track.max = track.max.max(storage.set).max(storage.maximum);
+                    track.max = track.max.max(maximum);
                 }
             } else {
                 if callback.native_rule.is_some() {
@@ -321,7 +343,7 @@ fn extend_callbacks(
                     max: if storage.preserve {
                         storage.maximum
                     } else {
-                        storage.set.max(storage.maximum)
+                        maximum
                     },
                 });
             }
@@ -338,6 +360,7 @@ fn extend_callbacks(
                     effect: match callback.native_rule {
                         Some(rule) => QuestEffectKind::Native(rule),
                         None if s.preserve => QuestEffectKind::Add(0),
+                        None if s.increment => QuestEffectKind::Add(s.set),
                         None => QuestEffectKind::Set(s.set),
                     },
                 })
@@ -356,6 +379,33 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reusable_tools_require_one_unchanged_item_and_bounded_increments() -> Result<(), String> {
+        let source: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/world-callbacks/l6-tools.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        assert!(parse(&source.to_string()).is_ok());
+        for count in [0, 2] {
+            let mut bad = source.clone();
+            bad["callbacks"][0]["item_on_target"]["count"] = count.into();
+            assert!(parse(&bad.to_string()).is_err());
+        }
+        let mut bad = source.clone();
+        bad["callbacks"][0]["item_on_target"]["replacement"] = "oteryn:item.tibia.i3304".into();
+        assert!(parse(&bad.to_string()).is_err());
+        for (field, value) in [
+            ("preserve", serde_json::json!(true)),
+            ("maximum", serde_json::json!(i64::MAX)),
+            ("set", serde_json::json!(0)),
+        ] {
+            let mut bad = source.clone();
+            bad["callbacks"][0]["storage"][1][field] = value;
+            assert!(parse(&bad.to_string()).is_err(), "{field}");
+        }
+        Ok(())
+    }
 
     #[test]
     fn dryad_garden_uses_source_unique_ids_in_both_directions() -> Result<(), String> {

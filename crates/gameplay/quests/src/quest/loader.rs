@@ -227,6 +227,12 @@ pub fn load_embedded_quest_state(
         super::rotten_blood::ACCESS_DOOR_TRACK.into(),
         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
     );
+    // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
+    // This tool-owned auxiliary flag is outside the captured NPC track inventory.
+    lowered.source_tracks.insert(
+        "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/sewer_pipe03".into(),
+        "storage:Quest.U8_4.InServiceOfYalahar.SewerPipe03".into(),
+    );
     Ok(lowered)
 }
 

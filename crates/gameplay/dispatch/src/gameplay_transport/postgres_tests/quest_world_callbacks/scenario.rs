@@ -23,6 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let ancient_instruments = name == "l6-ancient-instruments";
+    let reusable_tool = name == "l6-reusable-tool";
     let monk = name.starts_with("monk-guidance");
     let classic_npc = matches!(name, "nx6-wayfarer" | "classic-quests-npc" | "classic-rottin-disrepair" | "threatened-dreams-npc" | "conditional-quest-greetings");
     let rotten_purchase = name == "rotten-blood-access-purchase";
@@ -35,11 +36,14 @@ fn scenario_case(
         "rotten-blood/sacrifice"
     } else if monk {
         "monk-guidance"
-    } else if target_swap {
+    } else if target_swap || reusable_tool {
         "fish-napping-key"
     } else {
         name
     })?;
+    if reusable_tool {
+        callback = super::super::l6_reusable_tools::fixture(callback);
+    }
     if ancient_instruments {
         // The fixture supplies source-verified native positions and appearances;
         // all matching and durable effects still come from the production registry.
@@ -241,6 +245,10 @@ fn scenario_case(
                 rotten_purchase,
             )
             .await?;
+        } else if reusable_tool {
+            super::super::l6_reusable_tools::exercise(
+                &mut owner, &mut admitted, &h, &authority, fence,
+            ).await?;
         } else if callback.item_on_target.is_some()
             || name == "outlaw-camp-door"
             || name == "travelling-trader-delivery"
