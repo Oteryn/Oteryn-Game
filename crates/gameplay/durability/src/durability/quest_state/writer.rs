@@ -1,5 +1,5 @@
-use super::*;
 use super::super::db::begin_type2_transaction;
+use super::*;
 
 impl DurabilityRoot {
     /// Commit one quest transition (§4-§5). Exact replay of the receipt key returns the receipt
@@ -74,11 +74,22 @@ impl DurabilityRoot {
         payment: super::rotten_blood_access::RottenBloodAccessPayment,
         catalogue: Arc<QuestStateCatalogue>,
     ) -> Result<QuestTransitionOutcome> {
-        let request=payment.request();
+        let request = payment.request();
         self.commit_quest_inner::<_, 0>(
-            authority, node, fence, request, catalogue, None, None, None, None,
-            &grizzly::NoGrizzlyPremium, None, Some(payment),
-        ).await
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            None,
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            Some(payment),
+        )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -130,7 +141,8 @@ impl DurabilityRoot {
         // A paid-access state change must be composed with the existing fee
         // owner; the public generic Quest entry point cannot grant it for free.
         if (request.transition_key == oteryn_gameplay_quests::quest::rotten_blood::PURCHASE_ACCESS)
-            != payment.is_some() {
+            != payment.is_some()
+        {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let callback = if context.is_some() {
@@ -144,6 +156,8 @@ impl DurabilityRoot {
         } else {
             None
         };
+        let lionheart = super::hero_of_bounac::prepare(&request)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
@@ -152,26 +166,32 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         // Native rules require a world occurrence even if a caller renames the
         // transition. Inspect the effects, not only the authored callback key.
-        let native_world_rule = catalogue.transition(&request.transition_key).is_some_and(|transition| {
-            transition.effects.iter().any(|effect| matches!(
-                effect.effect,
-                oteryn_gameplay_quests::quest::QuestEffectKind::Native(_)
-            ))
-        });
+        let native_world_rule =
+            catalogue
+                .transition(&request.transition_key)
+                .is_some_and(|transition| {
+                    transition.effects.iter().any(|effect| {
+                        matches!(
+                            effect.effect,
+                            oteryn_gameplay_quests::quest::QuestEffectKind::Native(_)
+                        )
+                    })
+                });
         // Value-bearing or context-dependent callbacks cannot use a weaker generic caller.
         if context.is_none()
-            && (native_world_rule || oteryn_gameplay_quests::quest::world_callbacks::load()
-                .map_err(|_| CharacterProgressionError::InvalidInput)?
-                .iter()
-                .any(|c| {
-                    c.key == request.transition_key
-                        && (!c.offerings.is_empty()
-                            || c.item_on_target.is_some()
-                            || c.minimum_level.is_some()
-                            || c.experience.is_some()
-                            || c.monk_reward.is_some()
-                            || c.native_rule.is_some())
-                }))
+            && (native_world_rule
+                || oteryn_gameplay_quests::quest::world_callbacks::load()
+                    .map_err(|_| CharacterProgressionError::InvalidInput)?
+                    .iter()
+                    .any(|c| {
+                        c.key == request.transition_key
+                            && (!c.offerings.is_empty()
+                                || c.item_on_target.is_some()
+                                || c.minimum_level.is_some()
+                                || c.experience.is_some()
+                                || c.monk_reward.is_some()
+                                || c.native_rule.is_some())
+                    }))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -191,8 +211,9 @@ impl DurabilityRoot {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
         let mut binding = payment.as_ref().map_or_else(
-            ||request_binding(fence.character_id,&request),
-            |payment|payment.binding(fence.character_id));
+            || request_binding(fence.character_id, &request),
+            |payment| payment.binding(fence.character_id),
+        );
         if let Some(action) = &grizzly_action {
             grizzly::bind_action(&mut binding, action);
         }
@@ -722,6 +743,8 @@ impl DurabilityRoot {
                         super::super::quest_unnatural_selection::earn(&mut tx, fence, &request, callback,
                             &changes, dance_achievement.as_ref()).await?;
                     }
+                    super::hero_of_bounac::earn(&mut tx, fence, &request, &changes, lionheart.as_ref()).await?;
+                    super::planegazer_finale::earn(&mut tx, fence, &request, &changes).await?;
                     super::wrath_sleeping_dragon::earn(&mut tx, fence, &request, &changes, wayfarer.as_ref()).await?;
                     if let Some(plan) = &grizzly_plan {
                         grizzly::earn(&mut tx, character, &request, plan, &content_revision).await?;

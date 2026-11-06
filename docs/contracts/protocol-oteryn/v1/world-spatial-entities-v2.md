@@ -22,5 +22,16 @@ Names travel with enter/update entries and every snapshot/resync; a stationary
 name change is an update. Capability negotiation, entity identity/generation,
 visibility, ordering and leave entries retain their existing meanings.
 
+SRV6 owner decision: a player with active invisibility is omitted from other
+players' entity and appearance observations, with or without capability 286 or
+empty-outfit support. Existing visibility deltas emit a leave for a previously
+visible player; expiry permits a new enter with the same current identity and
+generation. The invisible player's own observation remains available. A retained
+entity reference, position or player name cannot bypass direct-target visibility;
+held attack targets are cleared before observation, chase or damage. Untargeted
+area effects retain their source rules. This deliberately differs from Crystal
+`201189f8 src/creatures/players/player.cpp:1383-1396`, which keeps invisible players
+observable to other players, and is the explicit C17b requirement of SRV6.
+
 The native client's world-view rendering is owned by C04. The client registration
 for this capability declares that rendering unsupported until C04 implements it.

@@ -191,9 +191,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let result = match self.commit_task_board(fence, request, Some(&permit)).await {
             Ok(result) => result,
-            Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
-                crate::durability::DurabilityError::RootUnavailable,
-            )) => return TaskBoardReply::Rejected,
+            Err(
+                crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable,
+                ),
+            ) => return TaskBoardReply::Rejected,
             Err(_) => return TaskBoardReply::Unavailable,
         };
         drop(permit);
@@ -213,7 +215,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterGameplayFence,
         request: TaskBoardCommand,
         permit: Option<&SpellLanePermit>,
-    ) -> Result<TaskBoardCommit, crate::durability::character_progression::CharacterProgressionError> {
+    ) -> Result<TaskBoardCommit, crate::durability::character_progression::CharacterProgressionError>
+    {
         let catalogue = Arc::new(match self.task_board_catalogue() {
             Some(catalogue) => catalogue,
             None if matches!(request.action, TaskBoardAction::CreditKill { .. }) => {
@@ -226,7 +229,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     progression: None,
                 }
             }
-            None => return Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput),
+            None => return Err(
+                crate::durability::character_progression::CharacterProgressionError::InvalidInput,
+            ),
         });
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let result = slot
@@ -241,6 +246,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         drop(slot);
+        // Only a changed title source needs enrichment. Keep its database work on the
+        // existing actor cadence, away from board queries, refusals and receipt replays.
+        if let Ok(commit) = &result
+            && !commit.replayed
+            && commit.transition.as_ref().is_some_and(|transition| {
+                transition.changes.iter().any(|change| {
+                    change.track == oteryn_gameplay_quests::quest::task_board::POINTS
+                        && change.before != change.after
+                })
+            })
+        {
+            self.states.title_refresh.mark([fence.character_id]);
+        }
         if let Err(error) = &result {
             operator_event(&format!("task_board_write_failed reason={error:?}"));
         }
