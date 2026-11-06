@@ -442,3 +442,74 @@ is the derived service-model projection above, not a rewrite of their historical
 still closed. Source-derived Item state remains in `game_item_fluid_states`; no
 parallel NPC subtype store exists. Item-only trades retain their existing
 Character item fence rather than inventing CharacterRevision advances.
+
+### Independent-review repair: subtype-relative SELL_ALL
+
+Review of frozen source `32bf83ae595c1bd78a702688b786489d77c6ff65`
+found that the retained `0211_npc_shop_sell_all.sql:232-245` completeness guard
+counted filled containers when checking an empty-container sale. The Item owner
+already selected the exact subtype, but commit then refused the valid sale.
+Migration `1084_npc_trade_fluid_subtypes.sql:65` extends that existing guard's
+remaining-item predicate with the selected subtype; its ledger, placement,
+timed-state and subsequent Hireling proof arms stay intact.
+
+The production PG regression at
+`crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv9b_fluids.rs:382`
+buys an empty vial and a beer vial, sells all empty vials, asserts that the beer
+vial remains, then sells the beer. Before the guard extension the exact test
+failed at the empty-vial SELL_ALL assertion (then `:387`): 0passed/1failed,
+184.46s, `/tmp/srv9b-mixed-red.log`. This is an additional regression assertion;
+the original BUY/SELL/SELL_ALL, subtype refusal, fencing and replay assertions
+remain. The two pre-contract unit expectations are replaced by exact admitted
+full-charge normalization and subtype handoff assertions; mismatched charge
+counts and foreign-currency refusal remain tested.
+
+The existing drinking unit also retained classic enum expectations (oil7 as
+mana and mana10 as health). Running that exact test from the compiled test
+binary reproduced the obsolete assertion: 0passed/1failed,0.01s,
+`/tmp/srv9b-drink-direct-red.log`. Its assertions now cover every modern subtype
+0..20: only mana10 restores50–150MP and life11 restores60HP; the exhaustion
+checks remain intact. Final verification includes the complete Item USE unit
+module, not only the new namespace regression. No production behavior was
+changed in this assertion repair.
+
+### SRV9B final local verification
+
+The final source tree used PostgreSQL18.6 with the admin test environment present;
+its private connection value was never logged. The two new tests assert a runtime
+over one second and execute production owners with the runtime database role:
+
+```text
+POSTGRES_CASE_COMPLETED SRV9B fluids duration=165.375547913s
+POSTGRES_CASE_COMPLETED SRV9B charges duration=165.669641633s
+```
+
+Final commands/results (all `cargo` commands use `--locked`; build jobs1):
+
+| Check | Command / selection | Result / evidence |
+| --- | --- | --- |
+| Native subtype production path | `cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib srv9b_ -- --nocapture` | 3passed,0failed,0ignored,165.67s: two real PG cases plus namespace unit; `/tmp/srv9b-repaired-pg.log` |
+| NPC units | same package/options, `npc_ -- --skip postgres` | 118passed,0failed,148.20s; `/tmp/srv9b-repaired-dispatch.log` |
+| Item USE units | same package/options, `gameplay_transport::item_use:: -- --skip postgres` | 25passed,0failed,132.50s, including the repaired exhaustive drinking assertion; `/tmp/srv9b-item-use-units.log` |
+| Existing shop wire/LOOK/SELL_ALL/replay PG | same package/options, `npc_shop_postgres_real_wire_look_sell_all_replay_and_nothing_left -- --nocapture` | 1passed,132.45s; corresponding `/tmp/srv9b-regression-*.log` |
+| Existing filled-container loot PG | same package/options, `w22a_fluid_loot_with_a_subtype_mints_the_filled_container -- --nocapture` | 1passed,125.49s; corresponding regression log |
+| Existing milk crafting PG | same package/options, `item_craft_carried_flour_on_milk_vessel_makes_cake_dough_postgres -- --nocapture` | 1passed,63.24s; corresponding regression log |
+| Format | `cargo fmt --all --check` | PASS; `/tmp/srv9b-fmt-final3.log` |
+| Gameplay Clippy | `cargo clippy --locked -p oteryn-gameplay-content -p oteryn-gameplay-durability -p oteryn-gameplay-npc -p oteryn-gameplay-dispatch --all-targets --all-features -- -D warnings` | PASS,4m10s; `/tmp/srv9b-clippy-final.log` |
+| Server Clippy | `cargo clippy --locked -p oteryn-game-server --all-targets --all-features -- -D warnings` | PASS,3m29s; `/tmp/srv9b-server-clippy-final.log` |
+| Content | `python3 tools/content-migration/validate_world_project_v2_to_tree.py` | PASS, including imbuement and item-conversion checks; `/tmp/srv9b-content-validation-final.log` |
+| Pins | built `oteryn-world-bundle-compiler pin-check . /tmp/srv9b-final-pin` | PASS; inputs `bb1a62fb97c5cffedb2c18f2ad6b23747b210a4c00e8176612532f92ede87c06`, bundle31101773bytes, SHA256 `feadb394d036441fdbdc52761b3fbd712a95f4dd2a4b538222ad4e1486c1be3d`; `/tmp/srv9b-pin-final.log` |
+
+Additional checks on the unchanged core Rust implementations at source head
+`32bf83ae595c1bd78a702688b786489d77c6ff65`: durability trade/audit units22/22
+(0.52s), focused production NPC subtype catalogue1/1(57.02s), content catalogue
+7/7, server content integrations4/4 and5/5. The full Python content regressions
+passed, including244 managed files and the bank's positive plus12 closed-negative
+cases (`/tmp/srv9b-content-tests.log`). Architecture workspace boundaries passed
+(`/tmp/srv9b-architecture.log`). The final review repair changes only the SQL
+completeness predicate and adjacent test expectations, not those core Rust owners.
+
+Only migrations1084/1085 are allocated;1086 remains unused. The final number
+check found no1084/1085 collision on fetched main or open PRs
+(`/tmp/srv9b-numbers-final.log`). No capability bit or command ID is allocated.
+No quest mission/dialogue or protected repository-policy/workflow/tool file changes.

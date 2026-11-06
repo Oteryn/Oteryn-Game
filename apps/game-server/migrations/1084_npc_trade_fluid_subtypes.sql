@@ -48,3 +48,22 @@ CREATE CONSTRAINT TRIGGER game_npc_trade_fluid_guard AFTER INSERT ON game_npc_tr
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_npc_trade_fluid_guard();
 REVOKE ALL ON FUNCTION game_npc_trade_fluid_guard() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_npc_trade_fluid_guard() TO oteryn_game_runtime;
+
+-- SELL_ALL completeness is relative to the selected Item subtype. Preserve every
+-- existing ledger, placement, timed-state and Hireling proof in the native guard.
+DO $$
+DECLARE body TEXT; anchor TEXT := $anchor$       -- A sell-all leaves no live default stack of the item in this backpack.
+       OR (NEW.sell_all AND EXISTS (
+        SELECT 1 FROM game_item_container_entries e
+          JOIN game_item_instances i ON i.item_instance_id = e.item_instance_id
+         WHERE e.parent_item_instance_id = NEW.backpack_item_instance_id
+           AND i.lifecycle = 1$anchor$;
+BEGIN
+ SELECT pg_get_functiondef('game_npc_trade_consistency_guard()'::regprocedure) INTO STRICT body;
+ IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing NPC sell-all subtype proof anchor'; END IF;
+ body:=replace(body,anchor,anchor || $extension$
+           AND COALESCE((SELECT f.fluid_subtype FROM game_item_fluid_states f
+                         WHERE f.item_instance_id=i.item_instance_id),0)
+               = COALESCE(NEW.fluid_subtype,0)$extension$);
+ EXECUTE body;
+END $$;

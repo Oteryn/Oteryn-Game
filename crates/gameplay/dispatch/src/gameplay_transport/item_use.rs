@@ -1271,12 +1271,14 @@ mod tests {
     #[test]
     fn drinking_restores_only_mana_and_life_fluid() {
         let restore = |fluid| drink_restore(fluid).map(|r| (r.resource, r.min, r.max));
-        assert_eq!(restore(7), Some((ReferenceRestoreResource::Mana, 50, 150)));
-        assert_eq!(
-            restore(10),
-            Some((ReferenceRestoreResource::Health, 60, 60))
-        );
-        assert_eq!(restore(1), None);
+        for fluid in 0..=20 {
+            let expected = match fluid {
+                10 => Some((ReferenceRestoreResource::Mana, 50, 150)),
+                11 => Some((ReferenceRestoreResource::Health, 60, 60)),
+                _ => None,
+            };
+            assert_eq!(restore(fluid), expected, "modern fluid subtype {fluid}");
+        }
         let mut gate = ItemUseGate::default();
         assert_eq!(gate.start_drink(10), Ok(()));
         assert_eq!(gate.start_drink(11), Err(UseDisposition::Exhausted));

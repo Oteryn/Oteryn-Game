@@ -160,11 +160,14 @@ fn scenario(charged: bool) -> TestResult {
         water.sub_type = Some(1);
         let mut empty = sell.clone();
         empty.sub_type = Some(0);
+        let mut buy_empty = empty.clone();
+        buy_empty.direction = ProjectV2ServiceOfferDirection::SellToPlayer;
+        buy_empty.unit_price = 2;
         if !charged {
             book = book.with(
                 "oteryn:npc.maria",
                 crate::gameplay_transport::npc_talk::NpcTalkEntry::new("Maria", Some("Drinks"))
-                    .with_offers(vec![beer, sell, water, empty, lemonade]),
+                    .with_offers(vec![beer, sell, water, empty, lemonade, buy_empty]),
             );
         }
         let revision = book.catalogue_revision();
@@ -376,6 +379,35 @@ fn scenario(charged: bool) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
         assert_eq!(count, 5);
+        // SELL_ALL is complete within the selected subtype, even when another subtype remains.
+        for (id, offer) in [(14, intent(5, NpcTradeSide::Buy, 2)), (15, buy)] {
+            assert!(matches!(
+                owner.npc_trade(deps.actor, command(id), offer).await,
+                NpcTradeStep::Traded
+            ));
+        }
+        let empty_all = oteryn_protocol_oteryn::npc_shop::NpcShopIntent {
+            offer_index: 3,
+            ..sell_all
+        };
+        assert!(matches!(
+            owner.npc_shop(deps.actor, command(16), empty_all).await,
+            crate::gameplay_transport::npc_shop::NpcShopStep::Sold { units: 1, gold: 1 }
+        ));
+        let remaining: (i64, i16) = sqlx::query_as("SELECT count(*)::bigint, min(f.fluid_subtype) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_fluid_states f USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i2880'").fetch_one(&h.pool).await?;
+        assert_eq!(
+            remaining,
+            (1, 3),
+            "filled vial survives empty-vial SELL_ALL"
+        );
+        assert!(matches!(
+            owner.npc_shop(deps.actor, command(17), sell_all).await,
+            crate::gameplay_transport::npc_shop::NpcShopStep::Sold { units: 1, gold: 1 }
+        ));
+        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_npc_trades")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(count, 9);
         // Replay precedes window and fence liveness, preserves both outcomes after sale.
         let _ = owner
             .npc_talk(
