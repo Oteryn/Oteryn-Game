@@ -43,6 +43,9 @@ pub struct RewardCallback {
     pub next_topic: u16,
     pub storage: Vec<Storage>,
     pub take: Vec<ItemAmount>,
+    /// Carried evidence checked under the same locks, without consuming it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub present: Vec<ItemAmount>,
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
     pub achievement: Option<String>,
@@ -90,6 +93,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
     for c in &document.callbacks {
         let tracks: BTreeSet<_> = c.storage.iter().map(|s| &s.track).collect();
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
+        let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
         if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
@@ -109,6 +113,11 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     || c.give.is_none()
                     || c.outfit.is_some()
                     || c.achievement.is_some()))
+            || c.present.len() > 8
+            || evidence.len() != c.present.len()
+            || c.present
+                .iter()
+                .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
             || c.take.len() > 8
             || inputs.len() != c.take.len()
             || c.take
@@ -295,6 +304,15 @@ mod tests {
             parse(&value.to_string()).is_ok(),
             "inputs may span many stacks"
         );
+        for present in [
+            serde_json::json!([{"item":"oteryn:item.tibia.i9041","count":0}]),
+            serde_json::json!([{"item":"oteryn:item.tibia.i9041","count":1},{"item":"oteryn:item.tibia.i9041","count":1}]),
+        ] {
+            let mut invalid: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            invalid["callbacks"][0]["present"] = present;
+            assert!(parse(&invalid.to_string()).is_err());
+        }
         super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
         Ok(())

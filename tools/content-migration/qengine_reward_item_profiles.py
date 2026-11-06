@@ -1,4 +1,4 @@
-"""Qualify missing physical Items required by shared quest exchanges.
+"""Qualify the physical Items required by shared quest exchanges.
 
 Uses the existing native source importer and exact canonical identity bindings.
 Known canonical facts win. No use effect, subtype, timer or custom script is
@@ -16,7 +16,7 @@ import grizzly_shop_profiles as accepted
 sys.path.insert(0, str(ROOT / 'tools/content-schema/quest-authoring'))
 import questl2_rewards
 
-IDS = {133, 139, 875, 3244} | questl2_rewards.ITEMS
+IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701} | questl2_rewards.ITEMS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'

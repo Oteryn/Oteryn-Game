@@ -72,6 +72,49 @@ fn qengine_rewards_backpack_exchange() -> TestResult {
 }
 
 #[test]
+fn qengine_l1_warmaster_crest() -> TestResult {
+    scenario("qengine-rewards-l1-warmaster")
+}
+#[test]
+fn qengine_l1_wayfarer_cape() -> TestResult {
+    scenario("qengine-rewards-l1-wayfarer")
+}
+#[test]
+fn qengine_l1_yalaharian_addon_sage() -> TestResult {
+    scenario("qengine-rewards-l1-yalaharian")
+}
+
+#[test]
+fn qengine_l1_warmaster_tribal() -> TestResult {
+    scenario("qengine-rewards-l1-warmaster-tribal")
+}
+#[test]
+fn qengine_l1_wayfarer_hat() -> TestResult {
+    scenario("qengine-rewards-l1-wayfarer-hat")
+}
+#[test]
+fn qengine_l1_yalaharian_base_palimuth() -> TestResult {
+    scenario("qengine-rewards-l1-yalaharian-base-palimuth")
+}
+#[test]
+fn qengine_l1_yalaharian_base_palimuth_accepts_villain() -> TestResult {
+    scenario("qengine-rewards-l1-yalaharian-base-palimuth-villain")
+}
+#[test]
+fn qengine_l1_yalaharian_base_yalahari() -> TestResult {
+    scenario("qengine-rewards-l1-yalaharian-base-yalahari")
+}
+#[test]
+fn qengine_l1_yalaharian_addon_villain() -> TestResult {
+    scenario("qengine-rewards-l1-yalaharian-villain")
+}
+
+#[test]
+fn qengine_l1_legacy_decaying_entitlement_remains_selectable() -> TestResult {
+    scenario("qengine-rewards-l1-legacy-decaying")
+}
+
+#[test]
 fn questl2_ape_city_syrup_exchange() -> TestResult {
     scenario("qengine-rewards-l2-ape-syrup")
 }
@@ -158,6 +201,11 @@ async fn talk(
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
         "knight-sword" => &["forge"],
+        "l1-warmaster-crest" => &["crest"],
+        "l1-wayfarer-cape" => &["cape"],
+        "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],
+        "l1-warmaster-tribal" => &["tribal crest"],
+        "l1-wayfarer-hat" => &["hat"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
         "token-abacus" => &["souvenir"],
@@ -377,7 +425,7 @@ async fn wire_grant(
     peer.await?.map_err(Into::into)
 }
 
-async fn seed(
+pub(super) async fn seed(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     callback: &RewardCallback,
@@ -600,10 +648,22 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-l1-legacy-decaying" {
+        return legacy_decaying(owner, admitted, h).await;
+    }
     if name == "qengine-rewards-atomic-eleven" {
         return atomic_tracks::exercise(owner, admitted, h).await;
     }
     let key = match name {
+        "qengine-rewards-l1-warmaster-tribal" => "l1-warmaster-tribal",
+        "qengine-rewards-l1-wayfarer-hat" => "l1-wayfarer-hat",
+        "qengine-rewards-l1-yalaharian-base-palimuth"
+        | "qengine-rewards-l1-yalaharian-base-palimuth-villain" => "l1-yalaharian-base-palimuth",
+        "qengine-rewards-l1-yalaharian-base-yalahari" => "l1-yalaharian-base-yalahari",
+        "qengine-rewards-l1-yalaharian-villain" => "l1-yalaharian-villain",
+        "qengine-rewards-l1-warmaster" => "l1-warmaster-crest",
+        "qengine-rewards-l1-wayfarer" => "l1-wayfarer-cape",
+        "qengine-rewards-l1-yalaharian" => "l1-yalaharian-sage",
         "qengine-rewards-pirate" => "pirate-sabre",
         "qengine-rewards-knight" => "knight-sword",
         "qengine-rewards-deepling" => "deepling-helmet",
@@ -618,7 +678,30 @@ pub(super) async fn exercise(
         .into_iter()
         .find(|c| c.key.ends_with(key))
         .ok_or("callback")?;
-    seed(owner, admitted, &callback, 9000).await?;
+    let mut setup = callback.clone();
+    if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
+        // Palimuth's source completion at questline 52 does not test the side.
+        // Keep the actual callback unchanged while arranging the opposite side.
+        setup
+            .storage
+            .retain(|state| !state.track.ends_with("/side_decision"));
+        for state in &mut setup.storage {
+            if state.track.ends_with("/door_to_reward") || state.track.ends_with("/mission10") {
+                state.minimum = -1;
+            }
+        }
+        setup
+            .storage
+            .push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+                track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision"
+                    .into(),
+                minimum: 2,
+                maximum: 2,
+                set: 2,
+                preserve: true,
+            });
+    }
+    seed(owner, admitted, &setup, 9000).await?;
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;
     let mut selected = admitted
         .continuity
@@ -654,7 +737,7 @@ pub(super) async fn exercise(
     }
     let before = counts(h).await?;
     // Missing inputs must refuse without even a consumption receipt or progress change.
-    if !callback.take.is_empty() {
+    if !callback.take.is_empty() || !callback.present.is_empty() {
         assert_eq!(
             talk(owner, admitted, npc, command, &callback.keywords[0]).await?,
             NpcIntentDisposition::Rejected
@@ -673,7 +756,7 @@ pub(super) async fn exercise(
         y: 31677,
         floor: -15,
     };
-    for (i, input) in callback.take.iter().enumerate() {
+    for (i, input) in callback.take.iter().chain(&callback.present).enumerate() {
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
@@ -699,7 +782,7 @@ pub(super) async fn exercise(
             )
             .await?;
         }
-        if i + 1 < callback.take.len() {
+        if i + 1 < callback.take.len() + callback.present.len() {
             assert_eq!(
                 talk(owner, admitted, npc, command, &callback.keywords[0]).await?,
                 NpcIntentDisposition::Rejected
@@ -753,6 +836,32 @@ pub(super) async fn exercise(
             .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
         into_bag(owner, admitted, *coin.as_bytes(), *main.as_bytes(), 8101).await?;
     }
+    let mut held_evidence = Vec::new();
+    for evidence in &callback.present {
+        let item: sqlx::types::Uuid = sqlx::query_scalar("SELECT item_instance_id FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1 ORDER BY item_instance_id LIMIT 1")
+            .bind(&evidence.item).fetch_one(&h.pool).await?;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        super::quest_world_callbacks::input_item(
+            owner,
+            fence.item_fence(),
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: at,
+                item: "oteryn:item.tibia.i2854".into(),
+                count: 1,
+            },
+            300,
+            true,
+        )
+        .await?;
+        let bag: sqlx::types::Uuid = sqlx::query_scalar("SELECT i.item_instance_id FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i2854' ORDER BY i.item_instance_id LIMIT 1")
+            .fetch_one(&h.pool).await?;
+        into_bag(owner, admitted, *item.as_bytes(), *bag.as_bytes(), 8200).await?;
+        held_evidence.push(item);
+    }
     let original = counts(h).await?;
     let (disposition, catalogues, committed_command) =
         wire_grant(owner, admitted, npc, &callback).await?;
@@ -789,6 +898,33 @@ pub(super) async fn exercise(
             assert_eq!(remaining, 7, "only the required stack count is removed");
         }
     }
+    for item in held_evidence {
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=$1"
+            )
+            .bind(item)
+            .fetch_one(&h.pool)
+            .await?,
+            1,
+            "the exact original crest stays in its closed nested custody"
+        );
+    }
+    for evidence in &callback.present {
+        let remaining: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
+            .bind(&evidence.item).fetch_one(&h.pool).await?;
+        assert_eq!(remaining, i64::from(evidence.count));
+        let consumed: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key=$1",
+        )
+        .bind(&callback.key)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            consumed, 0,
+            "possession keeps the original crest and custody receipt"
+        );
+    }
     if let Some(reward) = &callback.give {
         let minted:(String,i64)=sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_quest_reward_sources s JOIN game_reward_claim_mint_receipts m ON m.transaction_id=s.mint_transaction_id JOIN game_item_instances i USING(item_instance_id) WHERE s.transition_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
         assert_eq!(minted, (reward.item.clone(), i64::from(reward.count)));
@@ -824,6 +960,19 @@ pub(super) async fn exercise(
         NpcIntentDisposition::Ok
     );
     assert_eq!(counts(h).await?, after);
+    if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
+        assert_eq!(
+            super::classic_quests::progress(
+                owner,
+                admitted,
+                authority,
+                "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+            )
+            .await?,
+            2,
+            "Palimuth's base reward must preserve the chosen side"
+        );
+    }
     if let Some(outfit) = &callback.outfit {
         let observation = owner
             .appearance_observation(
@@ -840,6 +989,12 @@ pub(super) async fn exercise(
             .find(|o| o.key == outfit.outfit)
             .ok_or("earned outfit absent from client catalogue")?;
         assert_eq!(option.permitted_addons & outfit.addons, outfit.addons);
+        if key.starts_with("l1-yalaharian-") {
+            assert_eq!(
+                option.permitted_addons, outfit.addons,
+                "Palimuth and Azerus sides must never grant each other's addon"
+            );
+        }
         let bytes = observation.catalogue.encode().map_err(debug)?;
         assert_eq!(
             oteryn_protocol_oteryn::appearance::Catalogue::decode(&bytes).map_err(debug)?,
@@ -848,6 +1003,12 @@ pub(super) async fn exercise(
         let expected_look = match key {
             "pirate-sabre" => 151,
             "knight-sword" => 139,
+            "l1-warmaster-crest" | "l1-warmaster-tribal" => 336,
+            "l1-wayfarer-cape" | "l1-wayfarer-hat" => 366,
+            "l1-yalaharian-sage"
+            | "l1-yalaharian-villain"
+            | "l1-yalaharian-base-palimuth"
+            | "l1-yalaharian-base-yalahari" => 324,
             _ => 464,
         };
         assert_eq!(
@@ -929,5 +1090,115 @@ pub(super) async fn exercise(
     if key == "token-abacus" {
         repeatable::exercise(owner, admitted, h, npc, &callback).await?;
     }
+    Ok(())
+}
+
+// Arrange an entitlement written by the accepted pre-callback owner, then use
+// the real client appearance command. No new reward grant is used in this case.
+async fn legacy_decaying(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use oteryn_protocol_oteryn::appearance::{Change, ChangeResult, Selection};
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "fence")?
+        .ok_or("fence")?;
+    let account: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    let mut receipt_id = [0x91; 16];
+    receipt_id[6] = 0x81;
+    let receipt_id = sqlx::types::Uuid::from_bytes(receipt_id);
+    let key = "oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base";
+    sqlx::query("INSERT INTO game_account_appearance_unlock_receipts(grant_occurrence_id,account_id,unlock_key,content_revision,granting_character_id,source_kind,source_event_id) VALUES($1,$2,$3,'owner-pr2784-decaying-defender-base-v1',encode($4,'hex')::uuid,'quest',$5)")
+        .bind(receipt_id).bind(account).bind(key).bind(fence.character_id.as_bytes().as_slice())
+        .bind(b"qengine-l1-existing-entitlement".as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) VALUES($1,$2,$3)")
+        .bind(account).bind(key).bind(receipt_id).execute(&h.pool).await?;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("appearance capability")?;
+    let observed = owner
+        .appearance_observation(actor, admitted.game_session_id, vec![])
+        .await
+        .ok_or("legacy catalogue")?;
+    let outfit = "oteryn:outfit.decaying_defender";
+    let option = observed
+        .catalogue
+        .outfits
+        .iter()
+        .find(|entry| entry.key == outfit)
+        .ok_or("legacy Decaying Defender entitlement is missing from the native catalogue")?;
+    assert_eq!((option.look_type, option.permitted_addons), (1663, 0));
+    let change = Change {
+        context: observed.catalogue.context,
+        expected_root_revision: observed.catalogue.root_revision,
+        prior: observed.catalogue.selected,
+        selection: Selection {
+            outfit_key: outfit.into(),
+            colours: [0; 4],
+            addons: 0,
+            mount_key: None,
+        },
+        content_revision: owner
+            .appearance_context()
+            .ok_or("cosmetics")?
+            .1
+            .content_revision()
+            .into(),
+    };
+    let next = admitted.continuity.next_command_id;
+    let result = super::quest_world_callbacks::wire(
+        owner,
+        admitted,
+        next,
+        25,
+        change.encode().map_err(debug)?,
+    )
+    .await?;
+    assert!(matches!(
+        ChangeResult::decode(&result).map_err(debug)?,
+        ChangeResult::Committed(_)
+    ));
+    let retained: sqlx::types::Uuid = sqlx::query_scalar("SELECT grant_occurrence_id FROM game_account_appearance_unlocks WHERE account_id=$1 AND unlock_key=$2")
+        .bind(account).bind(key).fetch_one(&h.pool).await?;
+    assert_eq!(
+        retained, receipt_id,
+        "selection preserves the original immutable grant receipt"
+    );
     Ok(())
 }

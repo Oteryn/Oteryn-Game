@@ -2,6 +2,58 @@
   "schema": 1,
   "offers": [
     {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "crest"
+      ],
+      "topic": 0,
+      "next_topic": 60,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Can I have that serpent crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tribal crest"
+      ],
+      "topic": 0,
+      "next_topic": 61,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Can I have that tribal crest?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.costello",
       "keywords": [
         "holy water"
@@ -19,6 +71,46 @@
           "set": 1,
           "preserve": true
         }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "cape",
+        "first addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you have the old cape with you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "hat",
+        "second addon"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you have the sedge hat with you?"
       ]
     },
     {
@@ -520,6 +612,60 @@
           "maximum": 0,
           "set": 4
         }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "job",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring me the vampiric crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "job",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring me the vampiric crest?"
       ]
     },
     {

@@ -326,11 +326,11 @@
   ],
   "validation": {
     "quest_unit_tests": {
-      "passed": 255,
+      "passed": 256,
       "failed": 0
     },
     "reward_authoring_tests": {
-      "passed": 29,
+      "passed": 33,
       "failed": 0,
       "pattern": "test_*rewards.py"
     },
@@ -362,8 +362,11 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "d4071ed1808cc027b4d52501d886887b5615966f5d8e58e0a38ae2032d49ea78",
-      "unchanged": true
+      "digest": "d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5",
+      "unchanged": false,
+      "reason": "Merged QENGINE2 reviewed NPC placements and world outfit callbacks",
+      "tool": "regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
+      "bytes": 31101950
     },
     "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed",
     "content_tests": {
@@ -378,12 +381,51 @@
       ],
       "changed": 0,
       "removed": 0
+    },
+    "merged_engine_clippy": {
+      "packages": [
+        "oteryn-gameplay-quests",
+        "oteryn-gameplay-dispatch",
+        "oteryn-gameplay-durability"
+      ],
+      "all_targets": true,
+      "deny_warnings": true,
+      "exit_code": 0
     }
   },
   "cross_lane_inspection": {
     "qengine2": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
     "questpc5": "f78cf159d8a2eef2703091197ea661d26537137a",
     "questpc6": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
-    "next": "Reuse QENGINE2 shared predicates and world rewards; reuse NPC program and item bridges from PC lanes while preserving Dawnport and world-change exclusions."
+    "next": "Reuse PC6 exact conditional resets and authored failure destinations for Draconia; implement remaining shared mechanics in L2.",
+    "qengine2_reuse": {
+      "commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "features": [
+        "Carried evidence without consumption under reward transaction locks",
+        "World callback outfit rewards via the existing wardrobe owner",
+        "Source-backed native NPC placement and item admission tooling"
+      ],
+      "postgresql_18_6": [
+        {
+          "test": "qengine_l1_world_warmaster_base_wardrobe",
+          "seconds": 92.443194833
+        },
+        {
+          "test": "qengine_l1_yalaharian_addon_sage",
+          "seconds": 157.907860049
+        },
+        {
+          "test": "questl2_eleven_tracks_commit_atomically",
+          "seconds": 78.645381535
+        },
+        {
+          "test": "questl2_repeatable_token_exchange",
+          "seconds": 118.9159973
+        }
+      ],
+      "passed": 4,
+      "failed": 0,
+      "qualification_scope": "Shared mechanisms only; no L2 entry becomes qualified from these primitive tests."
+    }
   }
 }
