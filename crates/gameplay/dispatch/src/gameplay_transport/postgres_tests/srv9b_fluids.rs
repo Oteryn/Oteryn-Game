@@ -97,6 +97,11 @@ fn scenario(charged: bool) -> TestResult {
         .map_err(debug)?;
         let model = catalogue.service_model_for_project().map_err(debug)?;
         let mut book = NpcTalkBook::from_model(&model);
+        let npc_key = if charged {
+            "oteryn:npc.baltim"
+        } else {
+            "oteryn:npc.maria"
+        };
         if charged {
             let baltim = model
                 .npcs()
@@ -118,7 +123,7 @@ fn scenario(charged: bool) -> TestResult {
                 (Some(1), Some(500), 347222)
             );
             book = book.with(
-                "oteryn:npc.maria",
+                npc_key,
                 crate::gameplay_transport::npc_talk::NpcTalkEntry::new(
                     "Maria",
                     Some("Charge fixture"),
@@ -146,6 +151,8 @@ fn scenario(charged: bool) -> TestResult {
             .ok_or("production Maria beer offer")?
             .clone();
         assert_eq!((beer.count, beer.unit_price), (Some(1), 2));
+        let mut lemonade = beer.clone();
+        lemonade.sub_type = Some(12);
         let mut sell = beer.clone();
         sell.direction = ProjectV2ServiceOfferDirection::BuyFromPlayer;
         sell.unit_price = 1;
@@ -157,7 +164,7 @@ fn scenario(charged: bool) -> TestResult {
             book = book.with(
                 "oteryn:npc.maria",
                 crate::gameplay_transport::npc_talk::NpcTalkEntry::new("Maria", Some("Drinks"))
-                    .with_offers(vec![beer, sell, water, empty]),
+                    .with_offers(vec![beer, sell, water, empty, lemonade]),
             );
         }
         let revision = book.catalogue_revision();
@@ -181,7 +188,7 @@ fn scenario(charged: bool) -> TestResult {
                 .place_npcs(
                     &NpcPlacementTable {
                         npcs: vec![NpcPlacements {
-                            key: "oteryn:npc.maria".into(),
+                            key: npc_key.into(),
                             placements: vec![NpcPlacement {
                                 x: (at.x + 1) as u16,
                                 y: at.y as u16,
@@ -270,6 +277,23 @@ fn scenario(charged: bool) -> TestResult {
             return Ok(());
         }
         let buy = intent(0, NpcTradeSide::Buy, 2);
+        let looked = owner
+            .npc_shop(
+                deps.actor,
+                command(12),
+                oteryn_protocol_oteryn::npc_shop::NpcShopIntent {
+                    npc_actor: npc,
+                    catalogue_revision: revision,
+                    offer_index: 0,
+                    side: NpcTradeSide::Buy,
+                    action: oteryn_protocol_oteryn::npc_shop::NpcShopAction::Look,
+                    expected_unit_price: 2,
+                },
+            )
+            .await;
+        assert!(
+            matches!(looked,crate::gameplay_transport::npc_shop::NpcShopStep::Looked(text) if text.contains("It contains beer."))
+        );
         assert!(matches!(
             owner.npc_trade(deps.actor, command(3), buy).await,
             NpcTradeStep::Traded
@@ -364,7 +388,16 @@ fn scenario(charged: bool) -> TestResult {
             )
             .await;
         assert!(matches!(
-            owner.npc_trade(deps.actor, command(3), buy).await,
+            owner
+                .npc_trade(
+                    deps.actor,
+                    UseCommand {
+                        item_fence: Some(stale),
+                        ..command(3)
+                    },
+                    buy
+                )
+                .await,
             NpcTradeStep::Traded
         ));
         assert!(matches!(
@@ -379,7 +412,7 @@ fn scenario(charged: bool) -> TestResult {
         ));
         assert!(matches!(
             owner
-                .npc_trade(deps.actor, command(3), intent(2, NpcTradeSide::Sell, 1))
+                .npc_trade(deps.actor, command(3), intent(4, NpcTradeSide::Buy, 2))
                 .await,
             NpcTradeStep::Refused(_)
         ));

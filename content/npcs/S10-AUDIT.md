@@ -324,10 +324,26 @@ for each donor (Canary uses `data-otservbr-global`, Crystal `data-global`).
   `data-otservbr-global/npc/maria.lua:64-73`, Crystal
   `data-global/npc/maria.lua:62-71`. Mug2880: beer subtype3/2gp,
   lemonade12/2gp, water1/1gp, wine2/3gp.
+- The nine formerly unquoted explicit subtype tuples are now checked at the
+  exact Crystal pin in `data-global/npc/`: `brasith.lua:80` (2874/subtype9/15gp),
+  `dankwart.lua:62` (2874/16/5gp), `karl.lua:127` (2874/3/20gp),
+  `satsu.lua:66-69` (2874/subtypes3,2,9,16/52gp each),
+  `snake_eye.lua:85-86` (2874/3/5gp and2874/2/6gp). Each declares count1
+  separately. Their buy callbacks forward amount and subtype independently at
+  Brasith84, Dankwart66, Karl131, Satsu74, Snake Eye90.
 - Instance state: Canary `src/items/item.cpp:881-884,913-916`, Crystal
   `src/items/item.cpp:504-507,536-539`. Native owner already exists at
   `apps/game-server/migrations/0560_item_fluid_states.sql:14` and
   `crates/gameplay/durability/src/durability/item_use/fluid.rs:1`.
+- Absent shop subtype is **empty0**: Canary
+  `src/creatures/creatures_definitions.hpp:1804-1817`, Crystal`:1811-1824`,
+  default-initialized by Canary `src/creatures/npcs/npcs.hpp:17-25` /
+  Crystal`:43-51`. Scripts explicitly pass that0 (Ahmet Canary63-64 /
+  Crystal62-63; Bertha Canary140-141 / Crystal138-139). Canary
+  `src/game/game.cpp:2950-2967`, `src/items/item.cpp:699-705` preserve0.
+  Crystal `src/items/item.cpp:322-328` instead clamps0 to1: a donor divergence.
+  Native I10a already represents empty as no row/0; that owner rule and Canary
+  agree. An absent subtype therefore never silently mints water.
 - All 57 same-tuple holds are **19 merchants times three exercise wraps**, not
   unresolved competing variants. Crystal exact tuples:50293/subtype500/347222gp,
   50294/1800/1250000gp,50295/14400/10000000gp. Canary lacks these new wrap rows;
@@ -348,6 +364,10 @@ for each donor (Canary uses `data-otservbr-global`, Crystal `data-global`).
   `docs/reference/content-prep/outfits-content-1/sources.json:2227-2237`,
   page7110/revision1114179 (2025-07-26; captured2026-10-18), SHA256
   `51a13434ddb784995163fdd4c2d83a278434a4dff39d19ca2963a240236b7995`.
+  The approved NPC capture workflow's existing successful run38572911356
+  (head `c1a0c4742fd645c7d803c40b3b5899648aea1bc2`) retains artifact11899120046,
+  but its authenticated download returned HTTP403 here too. No workflow was
+  modified or dispatched, and that inaccessible artifact is not semantic proof.
   Raw text is absent even from the original packet commit; metadata is **not**
   evidence of inspected marriage transaction semantics. Retained BR Lynda
   crosscheck (`tools/content-schema/npc-authoring/samples/tibiawiki-br-crosscheck-v1.json`,
@@ -358,7 +378,7 @@ for each donor (Canary uses `data-otservbr-global`, Crystal `data-global`).
 **Exact question:** Should native Lynda adopt the pinned donors' proposal /
 reciprocal-acceptance / celebration / proposal-removal / free-divorce state
 machine? At celebration should Item mint **one engraved ring to the speaker**
-(as both executable scripts do), or **two rings, one per spouse** (as both
+(as both executable scripts do), or **two rings to the speaker for hand-off to the spouse** (as both
 speeches promise)? Should outfits328/329 be granted permanently at engagement
 and retained after divorce, as the scripts implement, or have different grant,
 expiry and divorce-removal rules? Please specify the target ring outputs and
@@ -383,3 +403,42 @@ stable identity order, require independent participant consent under their
 session generations, use immutable stage receipts/revision recovery, and
 compose all ring/garment burns, refunds and engraved mints through Item's
 existing ledger in the same transaction. Legacy spouse globals are not authority.
+
+
+### Fluid consumer compatibility finding
+
+The Item state and crafting owner already use modern subtypes (milk9), but the
+I10 drink/source consumer had classic numeric constants: oil7 restored mana,
+mana10 restored HP, and map fills misencoded slime, lemonade, wine, mud and rum.
+This is reachable through the newly qualified shop offers (for example Ahmet's
+oil7), so establishing the native subtype contract also requires correcting that
+consumer; there is no new fluid store or reinterpretation of stored Item bytes.
+
+Pinned Crystal `data-global/scripts/actions/other/fluids.lua:130-135` uses mana10
+for50–150MP and life11 for60HP; `:151-153` copies the map source's subtype.
+`src/lua/functions/core/game/lua_enums.cpp:971-974` registers the modern enum.
+XML source/name proof in `data/items/items.xml`:2098–2101 slime at4227-4230;
+wine2521 and lemonade2522 at5304-5310; wine2527–2534 at5328-5331;
+mud391 at771-773; rum4848 at14230-14232; rum5512–5513 at15124-15135.
+`src/items/functions/item/item_parse.hpp:209-229` and `item_parse.cpp:246-251`
+map those names into the same modern enum. Canary and Crystal fluid scripts at
+these pins are byte-identical. Existing pending drunkenness/poison effects are
+outside this trade slice and remain unchanged.
+
+### SRV9B production evidence index
+
+| Native boundary | Repository file:line | Verification |
+| --- | --- | --- |
+| Qualify retained source tuples and keep subtype separate from quantity | `crates/gameplay/content/src/content/npc_catalogue/subtype_trades.rs:51`; caller `crates/gameplay/content/src/content/npc_catalogue/service.rs:355` | `srv9b_fluid_source_variants_reach_production`: exact57 wraps, beer quantity1, implicit amulet full default |
+| Resolve the selected native subtype/full charges | `crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:301` | production Maria/Baltim PG fixtures; full charges checked against the generation's Item policy |
+| Immutable request binding, Item state and matching sales | `crates/gameplay/durability/src/durability/npc_trade.rs:410,873,1163`; `apps/game-server/migrations/1084_npc_trade_fluid_subtypes.sql:1`; `1085_npc_trade_full_charges.sql:1` | `srv9b_subtype_binding_and_native_single_item_shapes`; PG BUY/SELL/SELL_ALL, wrong subtype, stale fence and terminal replay |
+| Existing shop LOOK shows the variant | `crates/gameplay/dispatch/src/gameplay_transport/npc_shop.rs:154` | PG beer LOOK; same-price lemonade index cannot replay a beer purchase |
+| Consistent Item USE namespace | `crates/gameplay/dispatch/src/gameplay_transport/item_use.rs:1073,1105` | `srv9b_native_fluid_namespace_matches_shop_craft_and_drinking`, semantic RED: `oil cannot restore mana`,1failure/0.01s before the numeric correction |
+| Real PostgreSQL callers | `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv9b_fluids.rs:21,40` | runtime-role durable writes, actual source offers, exact quantities/prices/state, receipt/audit metadata and replay assertions |
+
+The original data-only held fields remain immutable provenance. Native qualification
+is the derived service-model projection above, not a rewrite of their historical
+`runtime_qualified=false` assertions. Quest access and price-dispute holds are
+still closed. Source-derived Item state remains in `game_item_fluid_states`; no
+parallel NPC subtype store exists. Item-only trades retain their existing
+Character item fence rather than inventing CharacterRevision advances.

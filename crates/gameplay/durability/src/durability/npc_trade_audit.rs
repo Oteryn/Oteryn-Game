@@ -197,7 +197,9 @@ pub fn npc_trade_usage(value: &OneItemNpcTradeV1) -> TransactionResourceUsage {
             + 2 * (burns - whole)
             + 2 * minted
             + 2 * u64::from(value.bank_debit.is_some()) + 2 * children
-            + u64::from(value.house_furniture_kit.is_some()),
+            + u64::from(value.house_furniture_kit.is_some())
+            + u64::from(value.fluid_subtype.is_some_and(|subtype| subtype != 0)
+                && value.cause.as_ref().is_some_and(|cause| cause.side == SIDE_BUY)),
         events: 1,
     }
 }

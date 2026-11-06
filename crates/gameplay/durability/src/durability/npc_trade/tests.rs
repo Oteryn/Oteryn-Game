@@ -426,7 +426,11 @@ fn srv9b_subtype_binding_and_native_single_item_shapes() {
     value.quantity=2;assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
     value.quantity=1;value.offer_count=3;assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
     value.offer_count=1;value.fluid_subtype=Some(21);assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
-    value.fluid_subtype=None;value.full_charges=Some(500);let charged=request_binding(&fence,world,&value,false);
+    value.fluid_subtype=None;
+    value.item.definition=definition("Item","oteryn:item.tibia.i50293");
+    let plain_wrap=request_binding(&fence,world,&value,false);
+    value.full_charges=Some(500);let charged=request_binding(&fence,world,&value,false);
+    assert_ne!(plain_wrap,charged);
     assert_ne!(ordinary,charged);assert!(validate(&value,false).is_ok());
     value.full_charges=Some(0);assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
 }

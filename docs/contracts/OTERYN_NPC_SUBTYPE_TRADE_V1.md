@@ -9,7 +9,8 @@ outbox and replay use the existing single physical NPC trade transaction under
 the complete current Character item fence. A refusal rolls the transaction back.
 Replay precedes live conversation and session checks and cannot mint again.
 
-`count` is always native transaction units. Source fluid `count`/`subType` is
+The admitted offer's `count` is always native transaction units; retained source
+facts keep their original fields. Source fluid `count`/`subType` is
 projected to `sub_type`; quantity is one nonstackable container per purchase.
 The admitted fluid container identities are 2874,2875,2877,2880,2901,5552,9232.
 The source enum 0..20 is the existing I10a Item subtype namespace: empty, water,
@@ -25,9 +26,13 @@ and its existing state. Sales and SELL_ALL select only matching fluid state;
 ordinary default sales cannot burn filled containers. Retired fluid instances
 retain their state as history, never transfer it to proceeds or another item.
 The deferred database guard verifies every bought/sold Item line's subtype.
+A filled-fluid mint counts one additional effect work unit within the existing
+trade ceiling; exceeding that ceiling refuses the entire plan, without relaxing
+any existing resource or audit-byte limit.
 
-Charge subtypes are admitted only when exactly equal to the pinned Item
-definition's native full charges. The native missing-timed-row representation
+Stackable rune counts remain piece quantities. Charge subtypes are admitted
+only for nonstackable items and when exactly equal to the pinned Item
+definition's native full charges (including an implicit source default). The native missing-timed-row representation
 already means this full default (as in Hireling purchases). No alternative
 charge store or charge-as-quantity encoding is introduced. Existing nondefault
 timed-state sale prohibitions remain. Unknown/partial-charge variants stay held.

@@ -96,7 +96,11 @@ impl ReferenceNpcItemFacts {
 
 impl NpcItemFacts for ReferenceNpcItemFacts {
     fn default_charges(&self, key: &str) -> Option<u32> {
-        self.items.get(key).and_then(|row| row.default_charges)
+        self.items
+            .get(key)
+            .filter(|row| !row.stackable)
+            .and_then(|row| row.default_charges)
+            .filter(|charges| (1..=NPC_CHARGES_MAX).contains(charges))
     }
     fn known(&self, key: &str) -> bool {
         self.items.contains_key(key)
@@ -105,7 +109,9 @@ impl NpcItemFacts for ReferenceNpcItemFacts {
         self.items.get(key).is_some_and(|row| row.stackable)
     }
     fn charged(&self, key: &str) -> bool {
-        self.items.get(key).is_some_and(|row| row.charged)
+        self.items
+            .get(key)
+            .is_some_and(|row| row.charged && !row.stackable)
     }
     fn fluid(&self, key: &str) -> bool {
         self.items.get(key).is_some_and(|row| row.fluid)

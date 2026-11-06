@@ -300,6 +300,9 @@ pub(super) async fn trade(
     }
     let fluid_container =
         crate::content::npc_catalogue::subtype_trades::fluid_container(&offer.item_key);
+    if fluid_container && offer.sub_type.is_some_and(|subtype| subtype > 20) {
+        return Err(Box::new(NpcTradeStep::rejected()));
+    }
     let full_charges = if !fluid_container {
         offer.sub_type
     } else {

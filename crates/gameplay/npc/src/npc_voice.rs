@@ -306,13 +306,41 @@ mod tests {
             offers.iter().all(|offer| offer.count == Some(1)),
             "fluid is never quantity"
         );
-        let wraps: Vec<_> = model.services().values().flat_map(|service| &service.offers)
-            .filter(|offer| matches!(offer.item.key.as_str(), "oteryn:item.tibia.i50293" | "oteryn:item.tibia.i50294" | "oteryn:item.tibia.i50295")).collect();
-        assert_eq!(wraps.len(),57,"all 19 pinned Crystal merchants carry all three wraps");
+        let wraps: Vec<_> = model
+            .services()
+            .values()
+            .flat_map(|service| &service.offers)
+            .filter(|offer| {
+                matches!(
+                    offer.item.key.as_str(),
+                    "oteryn:item.tibia.i50293"
+                        | "oteryn:item.tibia.i50294"
+                        | "oteryn:item.tibia.i50295"
+                )
+            })
+            .collect();
+        assert_eq!(
+            wraps.len(),
+            57,
+            "all 19 pinned Crystal merchants carry all three wraps"
+        );
         for offer in wraps {
-            assert_eq!(offer.count,Some(1));
-            assert!(matches!((offer.sub_type,offer.unit_price),(Some(500),347222)|(Some(1800),1250000)|(Some(14400),10000000)));
+            assert_eq!(offer.count, Some(1));
+            assert!(matches!(
+                (offer.sub_type, offer.unit_price),
+                (Some(500), 347222) | (Some(1800), 1250000) | (Some(14400), 10000000)
+            ));
         }
+        assert!(
+            model
+                .services()
+                .values()
+                .flat_map(|service| &service.offers)
+                .any(|offer| offer.item.key == "oteryn:item.tibia.i3057"
+                    && offer.count == Some(1)
+                    && offer.sub_type == Some(1)),
+            "an implicit source default must preserve the native amulet's full charge"
+        );
     }
 
     #[test]
