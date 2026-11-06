@@ -241,6 +241,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                        for field in ('movable', 'pickupable'))):
             raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
         if key in present:
+            raid_tokens_item_profiles.promote_existing(present[key], definition, matches[0])
             complete_native_stack(root, present[key], definition, matches[0])
             continue
         item_id = int(matches[0]['external_id'])

@@ -12,6 +12,25 @@ KEYS = {f'oteryn:item.tibia.i{item}' for item, _ in source.ITEMS} | {'oteryn:ite
 ACCEPTED_WEIGHT_DIFFERENCES = {23677: (200, 2700), 34210: (6659, 6660)}
 
 
+def promote_existing(record, definition, binding):
+    """Refine only the two unqualified replica records already in the provider."""
+    if (definition['identity']['key'] not in {'oteryn:item.tibia.i31266', 'oteryn:item.tibia.i31268'}
+            or record['admission']['materializable']):
+        return
+    if (record['authoring']['item'] != definition['identity']
+            or record['production_binding'] != binding
+            or record['admission'] != {'legal_destinations': ['Ground'], 'materializable': False,
+                                       'stack_class': 'NonStackable'}
+            or record['semantics']['physical'] != definition['semantics']['physical']
+            or record['semantics']['stack'] != {'state': 'UNKNOWN'}
+            or record['semantics']['container'] != {'state': 'UNKNOWN'}):
+        raise ValueError('RAID_TOKENS_EXISTING_PROFILE_CONFLICT')
+    record['admission'] = {'legal_destinations': ['CharacterInventory', 'Ground'],
+                           'materializable': True, 'stack_class': 'NonStackable'}
+    record['semantics']['stack'] = copy.deepcopy(definition['semantics']['stack'])
+    record['semantics']['container'] = {'state': 'NOT_APPLICABLE'}
+
+
 def definitions(root, definitions, source_items):
     source.document(root)
     raw = (root / CLIENT).read_bytes()

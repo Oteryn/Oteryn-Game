@@ -38,6 +38,7 @@ fn scenario_case(
         "catalogue-npc"
             | "catalogue-npc-father"
             | "fathers-burden-handins"
+            | "hunting-for-tokens"
             | "marlin-trophy-exchange"
             | "catalogue-npc-hero"
             | "catalogue-npc-legacy"
@@ -240,6 +241,8 @@ fn scenario_case(
                 expected_destination,
             )
             .await?;
+        } else if name == "hunting-for-tokens" {
+            super::super::raid_tokens::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "marlin-trophy-exchange" {
             super::super::marlin_trophy::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
