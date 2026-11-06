@@ -34,6 +34,8 @@ const BOSS: &str = "oteryn:boss.native_activity";
 const CREATURE: &str = "fixture:activity_boss";
 const TEMPLATE: &str = "oteryn:room.native_activity_fixture";
 
+#[path = "boss_activity/endgame.rs"]
+mod endgame;
 #[path = "boss_activity/nonreward.rs"]
 mod nonreward;
 #[path = "boss_activity/offline_death.rs"]
@@ -63,6 +65,9 @@ enum Case {
     SoulWarEntry,
     SoulWarFinalEntry,
     RottenBloodEntry,
+    SoulWarDefeat,
+    SoulWarFinalDefeat,
+    RottenBloodDefeat,
 }
 
 #[test]
@@ -136,6 +141,21 @@ fn l3_endgame_quest_entry_rotten_blood_requires_level() -> TestResult {
     run_scenario(Case::RottenBloodEntry)
 }
 
+#[test]
+fn l3_instance_endgame_soul_war_native_death_progresses_once() -> TestResult {
+    run_scenario(Case::SoulWarDefeat)
+}
+
+#[test]
+fn l3_instance_endgame_soul_war_final_native_death_progresses_once() -> TestResult {
+    run_scenario(Case::SoulWarFinalDefeat)
+}
+
+#[test]
+fn l3_instance_endgame_rotten_blood_native_death_progresses_once() -> TestResult {
+    run_scenario(Case::RottenBloodDefeat)
+}
+
 fn run_scenario(case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         eprintln!("BOSS_ACTIVITY POSTGRES_CASE_SKIPPED: no admin URL");
@@ -156,6 +176,7 @@ fn scenario(case: Case) -> TestResult {
             case,
             Case::Rewards | Case::LateRewards | Case::AwardContinuity
         );
+        let endgame_death = matches!(case, Case::SoulWarDefeat | Case::SoulWarFinalDefeat | Case::RottenBloodDefeat);
         let late = case == Case::LateRewards;
         let with_death = matches!(
             case,
@@ -164,7 +185,7 @@ fn scenario(case: Case) -> TestResult {
         reset();
         // Real progression cases let the current Character admission owner
         // initialize its pinned policy instead of seeding the harness XP table.
-        let initialized = !with_death && case != Case::AwardContinuity;
+        let initialized = !with_death && case != Case::AwardContinuity && !endgame_death;
         let h =
             Harness::create_with_admission_seed(admin, "native_activity_wire", initialized, false)
                 .await?;
@@ -177,7 +198,7 @@ fn scenario(case: Case) -> TestResult {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 world, None,
             )
-        } else if with_death {
+        } else if with_death || endgame_death {
             // Like the existing composed-death fixture, bind unchanged native
             // training bytes to the fixture Character's content-1 interpretation
             // before activation. Production pairs both under s3b-content-1.
@@ -204,9 +225,10 @@ fn scenario(case: Case) -> TestResult {
         owner.active_generation = controller.active();
         owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
         let endgame_creature = match case {
-            Case::SoulWarEntry => Some("oteryn:creature.goshnar_s_spite"),
+            Case::SoulWarEntry | Case::SoulWarDefeat => Some("oteryn:creature.goshnar_s_spite"),
             Case::SoulWarFinalEntry => Some("oteryn:creature.goshnar_s_megalomania_purple"),
-            Case::RottenBloodEntry => Some("oteryn:creature.bakragore"),
+            Case::SoulWarFinalDefeat => Some("oteryn:creature.goshnar_s_megalomania_green"),
+            Case::RottenBloodEntry | Case::RottenBloodDefeat => Some("oteryn:creature.bakragore"),
             _ => None,
         };
         let (mut boss_key, policy) = if let Some(key) = endgame_creature {
@@ -245,7 +267,7 @@ fn scenario(case: Case) -> TestResult {
             SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &requested)
                 .ok_or("boss capability missing")?;
         let fence = admitted.item_fence.ok_or("source fence")?;
-        if with_rewards {
+        if with_rewards || endgame_death {
             super::item_look::seed_main_backpack(&h, &[]).await?;
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING")
                 .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
@@ -271,7 +293,11 @@ fn scenario(case: Case) -> TestResult {
         if with_death {
             offline_death::prepare_source(&h, &mut owner, &mut admitted).await?;
         }
-        if case == Case::AwardContinuity {
+        if endgame_death {
+            owner.admit_progression_session(&mut admitted).await;
+            assert!(owner.progression_binding(admitted.game_session_id).is_some());
+            deps.initialize(&owner).await;
+        } else if case == Case::AwardContinuity {
             state_effects::prepare_source(&h, &mut owner, &mut admitted).await?;
         } else {
             deps.initialize(&owner).await;
@@ -324,7 +350,7 @@ fn scenario(case: Case) -> TestResult {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 world, None,
             )
-        } else if with_death {
+        } else if with_death || endgame_death {
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?
         } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)
@@ -501,7 +527,7 @@ fn scenario(case: Case) -> TestResult {
 
             let mut seed = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
-            if case == Case::RottenBloodEntry {
+            if matches!(case, Case::RottenBloodEntry | Case::RottenBloodDefeat) {
                 sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,'oteryn:quest/rotten-blood',4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
                     .bind(fence.character_id.as_bytes().as_slice())
                     .bind(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_TRACK)
@@ -511,13 +537,13 @@ fn scenario(case: Case) -> TestResult {
                     .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
             }
             seed.commit().await?;
-            if case != Case::SoulWarEntry {
+            if !matches!(case, Case::SoulWarEntry | Case::SoulWarDefeat) {
                 let (_, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, false).await?;
                 assert_eq!(reply, BossActivityReply::Refused(BossActivityRefusal::AuthorityRejected));
                 assert!(barrier.is_none());
                 let mut seed = h.pool.begin().await?;
                 sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
-                if case == Case::RottenBloodEntry {
+                if matches!(case, Case::RottenBloodEntry | Case::RottenBloodDefeat) {
                     sqlx::query("INSERT INTO game_character_rotten_blood(character_id,child_flags) VALUES(encode($1,'hex')::uuid,15)")
                         .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
                 } else {
@@ -525,7 +551,7 @@ fn scenario(case: Case) -> TestResult {
                         .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *seed).await?;
                 }
                 seed.commit().await?;
-                if case == Case::SoulWarFinalEntry {
+                if matches!(case, Case::SoulWarFinalEntry | Case::SoulWarFinalDefeat) {
                     let (_, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, false).await?;
                     assert_eq!(reply, BossActivityReply::Refused(BossActivityRefusal::AuthorityRejected));
                     assert!(barrier.is_none(), "expired taints cannot admit the final boss");
@@ -742,6 +768,9 @@ fn scenario(case: Case) -> TestResult {
                 .await?
             }
             _ => {}
+        }
+        if endgame_death {
+            endgame::settle(&h, &destination, admitted, &policy, case).await?;
         }
         if let Some(key) = endgame_creature {
             eprintln!("L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED {key} elapsed_ms={}", started.elapsed().as_millis());
