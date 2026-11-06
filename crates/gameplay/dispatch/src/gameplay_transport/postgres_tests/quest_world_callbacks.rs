@@ -211,7 +211,12 @@ pub(super) fn world(
     callback: &Callback,
     trigger: Position,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    world_ordinal(callback, trigger, callback.selector.appearance.unwrap_or(100), 1)
+    world_ordinal(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+    )
 }
 
 fn world_ordinal(
@@ -268,9 +273,14 @@ fn world_ordinal(
         });
     }
     for _ in 1..ordinal {
-        cells.entry((trigger.floor, trigger.x, trigger.y)).or_default().push(sector::Item {
-            palette: 0, depth: 0, attrs: Default::default(),
-        });
+        cells
+            .entry((trigger.floor, trigger.x, trigger.y))
+            .or_default()
+            .push(sector::Item {
+                palette: 0,
+                depth: 0,
+                attrs: Default::default(),
+            });
     }
     cells
         .entry((trigger.floor, trigger.x, trigger.y))
@@ -355,7 +365,9 @@ fn world_ordinal(
         }
         // The source creates this sewer on StepIn; initially only its served
         // definition and destination tile exist, with no physical sewer item.
-        if callback.key.starts_with("fixture:devil-helmet-sewer") && !callback.key.ends_with("existing") {
+        if callback.key.starts_with("fixture:devil-helmet-sewer")
+            && !callback.key.ends_with("existing")
+        {
             continue;
         }
         cells

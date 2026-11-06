@@ -53,7 +53,11 @@ fn scenario_case(
     if sewer {
         callback.key = format!("fixture:{name}");
         callback.selector.position = Some(trigger);
-        callback.selector.unique = Some(if name.ends_with("unrelated") { 25031 } else { 25030 });
+        callback.selector.unique = Some(if name.ends_with("unrelated") {
+            25031
+        } else {
+            25030
+        });
         callback.selector.action = None;
         callback.selector.appearance = Some(100);
         callback.lever = None;
@@ -61,7 +65,11 @@ fn scenario_case(
         callback.teleport = None;
         callback.offerings.clear();
         callback.passages = vec![oteryn_gameplay_quests::quest::world_callbacks::Passage {
-            position: Position { x: 32482, y: 32170, floor: -14 },
+            position: Position {
+                x: 32482,
+                y: 32170,
+                floor: -14,
+            },
             appearance: 435,
             replacement: None,
         }];
@@ -216,8 +224,15 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if sewer {
             super::super::pressure_plate_sewer::exercise(
-                &mut owner, &mut admitted, &h, deps.actor, fence, trigger, name,
-            ).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                trigger,
+                name,
+            )
+            .await?;
         } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,

@@ -122,19 +122,18 @@ fn quest_sewer_step(
         })
     };
     let sewer = || {
-        compose_tile(&map.overlay, &map.facts, position)
-            .ok()
-            .flatten()
-            .and_then(|tile| {
+        compose_tile(&map.overlay, &map.facts, position).map(|tile| {
+            tile.and_then(|tile| {
                 tile.entries
                     .into_iter()
                     .find(|entry| entry.facts.appearance_id == 435)
             })
+        })
     };
     let mut changed = false;
     // Source StepOut precedes StepIn, including travel between registered tiles.
     if origin.is_some_and(|tile| is_plate(&tile.entries))
-        && let Some(entry) = sewer()
+        && let Ok(Some(entry)) = sewer()
     {
         changed |= match entry.source {
             EntrySource::Base { placement_key, .. } => map.facts.apply_quest_callback(
@@ -150,7 +149,7 @@ fn quest_sewer_step(
         };
     }
     if is_plate(destination)
-        && sewer().is_none()
+        && matches!(sewer(), Ok(None))
         && map
             .overlay
             .base()

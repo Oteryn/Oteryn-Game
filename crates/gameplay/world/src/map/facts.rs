@@ -1137,7 +1137,11 @@ mod tests {
             }
         };
         let facts = BundleFacts::palette(&bundle.manifest, items).expect("palette");
-        let pos = TilePos { x: 32482, y: 32170, floor: -14 };
+        let pos = TilePos {
+            x: 32482,
+            y: 32170,
+            floor: -14,
+        };
         assert!(facts.create_world_change_item(pos, 435));
         assert!(facts.create_world_change_item(pos, 435));
         assert!(facts.create_world_change_item(pos, 13842));
