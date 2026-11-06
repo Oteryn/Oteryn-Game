@@ -132,14 +132,17 @@ impl DurabilityRoot {
             crate::durability::raid_runner::reconcile_deadlines(&mut tx, request.world, request.now_ms).await?;
             let last_end: i64 = sqlx::query_scalar("SELECT last_end_at_ms FROM game_world_raid_scheduler_clocks WHERE world_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-            let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
+            let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND f.raid_key<>'raid:porthope.stampede' AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             let mut fired = Vec::new();
             let mut retry_activity = false;
             for candidate in request.candidates {
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
                     else if candidate.calendar_window.is_some() { 3 } else { 1 };
-                if (source_kind == 1 && legacy_running)
+                // W10 day activation is independent of the legacy first-winner
+                // raid gate. Its persisted source identity remains unchanged.
+                let stampede = candidate.key.as_str() == "raid:porthope.stampede";
+                if (source_kind == 1 && !stampede && legacy_running)
                     || (source_kind != 1 && !candidate.eligible)
                 { continue; }
                 super::lock(&mut tx, &recovery, request.world, &candidate.key).await
@@ -216,7 +219,7 @@ impl DurabilityRoot {
                         .bind(candidate.firing_id.as_slice()).bind(request.world.as_bytes().as_slice())
                         .execute(&mut *tx).await?;
                     if targets.rows_affected() == 0 { return Err(DurabilityError::InvalidStoredState); }
-                    if source_kind == 1 { legacy_running = true; }
+                    if source_kind == 1 && !stampede { legacy_running = true; }
                     fired.push((candidate.firing_id, candidate.key));
                 }
             }
