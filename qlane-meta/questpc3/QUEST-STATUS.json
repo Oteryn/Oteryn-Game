@@ -1,0 +1,1084 @@
+{
+  "task_id": "questpc3-L4",
+  "branch": "claude/happy-davinci-ijz3wy-questpc3",
+  "phase": "AUTHORING",
+  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane\u2019s implementation responsibility.",
+  "counts": {
+    "scope_total": 22,
+    "in_progress": 5,
+    "skipped_other_owner": 16,
+    "blocked": 0,
+    "qualified": 1
+  },
+  "quests": [
+    {
+      "canonical": "oteryn:quest.the_beginning_quest",
+      "title": "The Beginning Quest",
+      "mechanism": "occurrence_kill_counters",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "IN_PROGRESS",
+      "implementation_owner": "questpc3",
+      "next_actions": "Implement Santiago/Carlos/Zirella progression, native source occurrence conditions, physical leg/wood hand-ins and coupled rewards. Author all required bindings here. Deaths alone cannot substitute for physical hand-in."
+    },
+    {
+      "canonical": "oteryn:quest.the_first_dragon_quest",
+      "title": "The First Dragon Quest",
+      "mechanism": "occurrence_kill_counters",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "IN_PROGRESS",
+      "implementation_owner": "questpc3",
+      "next_actions": "Compose source season/initialization, native 200-dragon counter, treasure gates, full encounter admission and rewards. Reuse the delivered shared engine and implement additional mechanisms here."
+    },
+    {
+      "canonical": "oteryn:quest.the_tainted_soul",
+      "title": "The Tainted Souls Quest",
+      "mechanism": "occurrence_kill_counters",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "IN_PROGRESS",
+      "implementation_owner": "questpc3",
+      "next_actions": "Implement talisman assembly and live-target cleansing, 100-soul gate, Ekatrix encounter and 20-hour personal reset; author required Item/creature/NPC bindings and shared mechanisms here."
+    },
+    {
+      "canonical": "oteryn:quest.threatened_dreams_quest",
+      "title": "Threatened Dreams Quest",
+      "mechanism": "occurrence_kill_counters",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "IN_PROGRESS",
+      "implementation_owner": "questpc3",
+      "next_actions": "Complete native NPC Item/progress exchanges, summed nightmare counters and Kroazur report, light/barrier USE bindings and atomic final bag reward. Reuse delivered engine code and extend it here."
+    },
+    {
+      "canonical": "unresolved:questpc2:pilgrimage_of_ashes_quest",
+      "title": "Pilgrimage of Ashes Quest",
+      "mechanism": "regular_blessing_service_grant",
+      "from_lanes": [
+        "questpc2"
+      ],
+      "status": "IN_PROGRESS",
+      "implementation_owner": "questpc3",
+      "next_actions": "Admit the regular blessing Services and implement the ordered journey, exact quotes/debits, held blessings/progress and guide rewards through reusable fenced Service/Quest composition."
+    },
+    {
+      "canonical": "oteryn:quest.authored.rathleton_quest",
+      "title": "Rathleton Quest",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc3"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.authored.river_runs_deep_mini_world_change",
+      "title": "River Runs Deep Mini World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc3"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.roshamuul_quest",
+      "title": "Roshamuul Quest",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc3"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.authored.spider_nest_mini_world_change",
+      "title": "Spider Nest Mini World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc3"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.authored.spirit_grounds_mini_world_change",
+      "title": "Spirit Grounds Mini World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc3"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.authored.spring_into_life",
+      "title": "Spring into Life",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc3"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.stampede_mini_world_change",
+      "title": "Stampede Mini World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc3"
+      ],
+      "evidence": [
+        {
+          "test": "quest_l4_stampede_raid_sixteen_native_elephants_and_spawn_replay",
+          "marker": "POSTGRES_CASE_COMPLETED",
+          "duration_ms": 34988,
+          "log": "l4-stampede-independent-green.log"
+        },
+        {
+          "test": "quest_l4_stampede_native_five_kills_achievement_and_occurrence_replay",
+          "marker": "POSTGRES_CASE_COMPLETED",
+          "duration_ms": 36202,
+          "log": "l4-stampede-independent-green.log"
+        }
+      ],
+      "qualification": "native daily activation, occurrence counter and atomic achievement",
+      "validated_behaviour": [
+        "125-permille World/reset draw, stable across check times and Channels",
+        "native sixteen-elephant raid with source announcement, coordinates and replay",
+        "busy legacy raid does not suppress the event; no legacy margin write",
+        "once per reset; personal kills persist across resets",
+        "most-damage captured principal; stale lease and USE refusal",
+        "counter capped at five; fifth increment and achievement atomic",
+        "duplicate capture, drain and retained durable occurrence replay"
+      ],
+      "ordinary_reward_scope": "Existing corpse/ordinary-loot admission remains unchanged; the quest-only fallback does not manufacture ordinary XP or loot.",
+      "status": "QUALIFIED",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.authored.the_fire_feathered_serpent_world_change",
+      "title": "The Fire-Feathered Serpent World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.authored.the_great_expedition",
+      "title": "The Great Expedition",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.authored.the_lightbearer",
+      "title": "The Lightbearer",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.the_mages_tower_world_change",
+      "title": "The Mage's Tower World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.the_mummys_curse_world_change",
+      "title": "The Mummy's Curse World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.their_masters_voice",
+      "title": "Their Master's Voice World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.thornfire_world_change",
+      "title": "Thornfire World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.authored.twisted_waters_world_change",
+      "title": "Twisted Waters World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.authored.war_against_the_hive_quest",
+      "title": "War Against the Hive Quest",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    },
+    {
+      "canonical": "oteryn:quest.authored.warpath_mini_world_change",
+      "title": "Warpath Mini World Change",
+      "mechanism": "world_stage_contributions_activation",
+      "from_lanes": [
+        "questpc4"
+      ],
+      "status": "SKIP_OTHER_OWNER",
+      "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
+    }
+  ],
+  "historical_inventory": {
+    "snapshot": "c5cdcd6ae:qlane-meta/questpc3/QUEST-STATUS.json",
+    "scope": "R\u2013S; migrations1040\u20131059; no new commands/capabilities",
+    "counts": {
+      "inventory": 56,
+      "qualified": 19,
+      "in_progress": 36,
+      "blocked_scope_exclusion": 1,
+      "external_owner_confirmation_pending": 10
+    },
+    "already_qualified": [
+      {
+        "quest": "Rapier Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_rapier_claim_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.rapier",
+                "duration_ms": 36604,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Ring Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_ring_time_ring_claim_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.ringquest1",
+                "duration_ms": 32015,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "questpc3_ring_sword_ring_claim_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.ringquest2",
+                "duration_ms": 29373,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Scale Armor Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_scale_armor_bag_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.scalearmor",
+                "duration_ms": 32335,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Shaman Treasure Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_shaman_treasure_bag_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.shamantreasure",
+                "duration_ms": 30473,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Short Sword Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_short_sword_notebook_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.shortswordbook",
+                "duration_ms": 29980,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "rookgaard_short_sword_amber_exchange_atomic_repeatable_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "npc_exchange",
+                "key": "oteryn:npc.amber",
+                "duration_ms": 64317,
+                "log": "rookgaard-final-pg.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Silver Amulet Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_charged_amulet_cohort_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.silveramulet",
+                "duration_ms": 36632,
+                "log": "current-restart-chests.log"
+              },
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.stealhring1",
+                "duration_ms": 29341,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Silver Brooch Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_silver_brooch_full_bag_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.silverbrooch",
+                "duration_ms": 31103,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Sinatuki Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "sinatuki_mixed_fish_then_final_fish_atomic_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "cumulative_fish",
+                "duration_ms": 47473,
+                "log": "sinatuki-final-pg.log"
+              }
+            ]
+          },
+          {
+            "test": "sinatuki_whole_hundred_stack_still_needs_final_fish",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "cumulative_fish",
+                "duration_ms": 57999,
+                "log": "sinatuki-final-pg.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Six Rubies Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_six_rubies_claim_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.sixrubies",
+                "duration_ms": 31950,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Skull of Ratha Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_skull_of_ratha_skull_and_pearl_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
+                "duration_ms": 35038,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "questpc3_skull_of_ratha_chain_and_ring_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
+                "duration_ms": 35418,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "questpc3_skull_of_ratha_witch_house_full_bag_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.witch_house_quest",
+                "duration_ms": 31344,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Small Health Potion Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "rookgaard_small_health_potion_billy_exchange_atomic_repeatable_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "npc_exchange",
+                "key": "oteryn:npc.billy",
+                "duration_ms": 54470,
+                "log": "rookgaard-final-pg.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Small Sapphire Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_small_sapphire_full_recipe_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.smallsapphire",
+                "duration_ms": 31054,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Spike Sword Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_spike_sword_claim_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.spikesword",
+                "duration_ms": 31577,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Stampede Mini World Change",
+        "status": "QUALIFIED",
+        "missing_piece": null,
+        "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+        "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+        "scope_exclusion": false,
+        "canonical_packets": [
+          {
+            "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+            "pointer": "/records/9/definition/native_lowering",
+            "quest_key": "oteryn:quest.stampede_mini_world_change",
+            "lowering": {
+              "canonical_interaction_refs": [],
+              "canonical_progress_refs": [],
+              "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+              "state": "WAITING_IMPLEMENTATION"
+            }
+          }
+        ],
+        "mechanism_group": "world_change_contributions_and_lifecycle",
+        "owner": "UNCONFIRMED",
+        "candidate_owner": "WORLDCHG",
+        "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation.",
+        "canonical": "oteryn:quest.stampede_mini_world_change",
+        "qualification_round": "L4",
+        "round_L4_evidence": [
+          {
+            "test": "quest_l4_stampede_raid_sixteen_native_elephants_and_spawn_replay",
+            "marker": "POSTGRES_CASE_COMPLETED",
+            "duration_ms": 34988,
+            "log": "l4-stampede-independent-green.log"
+          },
+          {
+            "test": "quest_l4_stampede_native_five_kills_achievement_and_occurrence_replay",
+            "marker": "POSTGRES_CASE_COMPLETED",
+            "duration_ms": 36202,
+            "log": "l4-stampede-independent-green.log"
+          }
+        ]
+      },
+      {
+        "quest": "Stealth Ring Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_charged_amulet_cohort_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.silveramulet",
+                "duration_ms": 36632,
+                "log": "current-restart-chests.log"
+              },
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.stealhring1",
+                "duration_ms": 29341,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "questpc3_stealth_ring_ring_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.stealhring2",
+                "duration_ms": 31208,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Steel Helmet Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_steel_helmet_first_coins_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.steelhelmet1",
+                "duration_ms": 29146,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "questpc3_steel_helmet_second_coins_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.steelhelmet2",
+                "duration_ms": 40861,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "questpc3_steel_helmet_helmet_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.steelhelmet3",
+                "duration_ms": 29301,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "questpc3_steel_helmet_letter_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.steelhelmet4",
+                "duration_ms": 40745,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Strong Potions Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_strong_potions_full_bag_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.quest.u8_1.strong_potions.reward",
+                "duration_ms": 33913,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Studded Legs Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_studded_legs_honey_flower_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.honeyflower",
+                "duration_ms": 33823,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "rookgaard_studded_legs_lee_delle_exchange_atomic_repeatable_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "npc_exchange",
+                "key": "oteryn:npc.lee_delle",
+                "duration_ms": 66220,
+                "log": "rookgaard-final-pg.log"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "quest": "Studded Shield Quest",
+        "status": "QUALIFIED",
+        "tests": [
+          {
+            "test": "questpc3_studded_shield_free_banana_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.bananafree",
+                "duration_ms": 36568,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "questpc3_studded_shield_premium_banana_once_and_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "claim",
+                "key": "oteryn:reward-claim.kv.bananapremium",
+                "duration_ms": 35934,
+                "log": "current-restart-chests.log"
+              }
+            ]
+          },
+          {
+            "test": "rookgaard_studded_shield_willie_exchange_atomic_repeatable_replay",
+            "completed": [
+              {
+                "marker": "POSTGRES_CASE_COMPLETED",
+                "kind": "npc_exchange",
+                "key": "oteryn:npc.willie",
+                "duration_ms": 68322,
+                "log": "rookgaard-final-pg.log"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "note": "Other original R\u2013S mechanisms belong to other split lanes. Do not reopen finished entries."
+  },
+  "cloud_continuation": {
+    "phase": "AUTHORING",
+    "base": "968f6812010e719d91316f92eedb5732841283fd",
+    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R\u2013S entries assigned to other split lanes are scope evidence only",
+    "metadata_recovery": "Latest head removed qlane-meta; recovered the five handoff records from c5cdcd6ae without reference dumps.",
+    "assumptions": [],
+    "sources": [
+      {
+        "url": "https://github.com/opentibiabr/canary/blob/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/npc/santiago.lua",
+        "lines": "88-96,162-170",
+        "sha256": "e5bbac272aa745058efab4ee003b37bc7d3e0c75accc495f5ad42be5154daee9"
+      },
+      {
+        "url": "https://github.com/opentibiabr/canary/blob/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/npc/zirella.lua",
+        "lines": "87-110",
+        "sha256": "e0360a0512ebb7a6f0033511b34a76d60d26f51002b570506fdd27b7a7187654"
+      },
+      {
+        "url": "https://github.com/opentibiabr/canary/blob/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/npc/tamoril.lua",
+        "lines": "101-109",
+        "sha256": "19a000604a507857fb08c9319486f41e2af4b5d508d3ff1225016577331a0ab0"
+      },
+      {
+        "url": "https://github.com/opentibiabr/canary/blob/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/npc/maelyrra.lua",
+        "lines": "86-105",
+        "sha256": "eb780046fe1ce6dc57c57a006019405502a5a27d7a21d2fbbf7445560fdf87e1"
+      },
+      {
+        "url": "https://github.com/opentibiabr/canary/blob/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_kill_dragon.lua",
+        "lines": "1-14",
+        "sha256": "f649863c803773340528053c073aefcaa7e2adef3e39cce5063ca358b7e45a94"
+      },
+      {
+        "url": "https://github.com/opentibiabr/canary/blob/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/threatened_dreams/nightmare_monsters_kills.lua",
+        "lines": "1-33",
+        "sha256": "c172ebab19214e792f141fc1c38ef9f78b4cf3c508949bdb67d7a5a827533e2b"
+      }
+    ],
+    "current_batch": {
+      "entries": [
+        "The Beginning Quest",
+        "The First Dragon Quest",
+        "Threatened Dreams Quest"
+      ],
+      "mechanism": "Native death-only quest counters with source mission gates and durable occurrence replay",
+      "status": "GREEN; committing and pushing",
+      "qualification": "No new whole quest qualification yet.",
+      "kind": "shared native-counter foundation; no whole-entry qualifications yet",
+      "entries_supported": [
+        "oteryn:quest.the_first_dragon_quest",
+        "oteryn:quest.threatened_dreams_quest"
+      ],
+      "id": "native-counters-01",
+      "whole_entry_qualifications": 0
+    },
+    "effective_entries": [
+      "oteryn:quest.the_beginning_quest",
+      "oteryn:quest.the_first_dragon_quest",
+      "oteryn:quest.the_tainted_soul",
+      "oteryn:quest.threatened_dreams_quest",
+      "unresolved:questpc2:pilgrimage_of_ashes_quest"
+    ],
+    "excluded_world_owner_entries": [
+      {
+        "canonical": "oteryn:quest.authored.rathleton_quest",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.river_runs_deep_mini_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.roshamuul_quest",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.spider_nest_mini_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.spirit_grounds_mini_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.spring_into_life",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.stampede_mini_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.the_fire_feathered_serpent_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.the_great_expedition",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.the_lightbearer",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.the_mages_tower_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.the_mummys_curse_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.their_masters_voice",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.thornfire_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.twisted_waters_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.war_against_the_hive_quest",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      },
+      {
+        "canonical": "oteryn:quest.authored.warpath_mini_world_change",
+        "disposition": "SKIP_OTHER_OWNER",
+        "authority": "Current owner execution rules: world changes belong to -worldchg/-wvar/-wcontrib/-wevents."
+      }
+    ],
+    "counts": {
+      "in_scope": 5,
+      "qualified": 0,
+      "skipped_world_owner": 17
+    },
+    "checks": {
+      "cargo_check": {
+        "exit_code": 0,
+        "log": "/tmp/questpc3-counters-check.log",
+        "duration": "2m58s"
+      },
+      "pure_counter_tests": {
+        "passed": 2,
+        "log": "/tmp/questpc3-counters-units.log",
+        "postgres_evidence": false
+      },
+      "red": {
+        "test": "quest_l4_first_dragon_native_counter_requires_death_and_deduplicates",
+        "log": "/tmp/questpc3-first-dragon-red.log",
+        "marker": "POSTGRES_ASSERTION_REACHED",
+        "duration_ms": 49898,
+        "result": "FAILED before native queue admission"
+      },
+      "final": {
+        "check": {
+          "exit_code": 0,
+          "command_log": "/tmp/questpc3-green-check.log",
+          "sha256": "81f1d975bec44559a50d476365954af981753f17e78561baabed26cd02935896",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.14s"
+          ]
+        },
+        "clippy": {
+          "exit_code": 0,
+          "command_log": "/tmp/questpc3-green-clippy.log",
+          "sha256": "dbd1f5d2964ba2349cfbe73e04c3ef9e30bec1374b80c08299975fde6af5381a",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 52s"
+          ]
+        },
+        "postgres": {
+          "exit_code": 0,
+          "command_log": "/tmp/questpc3-green-pg.log",
+          "sha256": "85b92097eaab29efe1e230feace7dd4592462c8dc575d3494b9abe1165d72db3",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 37s",
+            "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=Normal duration_ms=56338",
+            "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.dragon mode=Normal duration_ms=51786",
+            "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.dragon mode=WithoutQuestCatalogue duration_ms=49306",
+            "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.enfeebled_silencer mode=Normal duration_ms=72681",
+            "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.dragon mode=Burst duration_ms=48460",
+            "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 2545 filtered out; finished in 278.59s"
+          ]
+        },
+        "stampede": {
+          "exit_code": 0,
+          "command_log": "/tmp/questpc3-green-stampede.log",
+          "sha256": "886aebcbf73d9d40595a57d31a5d55b5e63425c5355bd770a9cd5d7c041335eb",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.58s",
+            "QUEST_L4_STAMPEDE POSTGRES_CASE_COMPLETED duration_ms=56152",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2549 filtered out; finished in 56.16s"
+          ]
+        },
+        "counter_units": {
+          "exit_code": 0,
+          "command_log": "/tmp/questpc3-final-units.log",
+          "sha256": "be4067a2bac0cc0d3b8ebaca882bf4af8ebe3f6f0661c380763c292d8ec2f63a",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s",
+            "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 252 filtered out; finished in 0.99s"
+          ]
+        },
+        "writer_registration": {
+          "exit_code": 0,
+          "command_log": "/tmp/questpc3-writer-registration.log",
+          "sha256": "7a4c58398dd061bb64e425d6c580b604411c763fb3057c161772770fcee4a785",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 37s",
+            "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 685 filtered out; finished in 2.43s"
+          ]
+        },
+        "capture_regression": {
+          "exit_code": 0,
+          "command_log": "/tmp/questpc3-capture-regression.log",
+          "sha256": "193a9a774ff1c2b96c13d6e786fcfd8e2906bfe3bb66b7bfbd2a51616b63b45f",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 21s",
+            "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 2539 filtered out; finished in 0.01s"
+          ]
+        },
+        "rust_inputs": {
+          "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills.rs": "b74f939637e7fccabbfe606ea24c0bd62ea48c99a604723d724ee8bbcf1f88d1",
+          "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/tests.rs": "bb91321ef22514d94a6d134e63c37c8a497e7e97bd412f43b5d8b14b10670526",
+          "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs": "ff4ad14fbbd9c1e00e89e4fec39da2884f6a9b548310639198738a548807ee41",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_counters.rs": "b8d992779ee8bb00e9ec5b0da61a6e840ffadfec2d4cc7b3ece5837192873ff4",
+          "crates/gameplay/dispatch/src/gameplay_transport/quest_kills.rs": "e286de9e335db9e8d292afbbfbdb830d589424c4801c79490ade5032de77dbb8",
+          "crates/gameplay/durability/src/durability/character_revision_sequencer.rs": "5502274b7f574d82ae1f660071a51a8cc361a0c078fb67d4cd5290a85d3429a0",
+          "crates/gameplay/durability/src/durability/character_revision_sequencer/native_kills.rs": "0115c0aae695c103a984e40236254be758b347b2d4eaf34a273941be8824d745",
+          "crates/gameplay/durability/src/durability/character_revision_sequencer/writer_registration_tests.rs": "fcd5dd72b47f122425c9b56147ff9f0e8272ed589eeb9b630f2bdadba03b87fb",
+          "crates/gameplay/durability/src/durability/quest_state.rs": "e8a25c73f13bc119934d84f83cd2e953fad7da32064760f08f18ab796679e7a9",
+          "crates/gameplay/durability/src/durability/quest_state/grizzly.rs": "c53305119874b9820c4277248cea6b86c53e7dba1da1ce7c8a59e4de67177d31",
+          "crates/gameplay/durability/src/durability/quest_state/grizzly_boss.rs": "b289e57717ca2614df1d380f30e54fc7c8b7740d54fd788177c4052ff4c8cbb8",
+          "crates/gameplay/durability/src/durability/quest_state/native_kills.rs": "cc58bfa57b2794afbd41907f9449ec55dede126d2420a07d987e2383a1aad498",
+          "crates/gameplay/durability/src/durability/quest_state/writer.rs": "b17cae8738a826959463173ae53c591331bbb18985b9e99b1b55023dc3355996",
+          "crates/gameplay/quests/src/quest/loader.rs": "a68ddb9d497b5ced9a2debb5b878cae86c2bbe6f003a2a93a9f2d816b95fe9e9",
+          "crates/gameplay/quests/src/quest/mod.rs": "5b8711c33edcdbf4f692c6b33c7a546c85703badde2a3a664b5d2e2fc35e36cd",
+          "crates/gameplay/quests/src/quest/native_kills.rs": "54bb240b948842121971503b0828d976d2d62230a94a2466d37cca83df23bf01",
+          "crates/gameplay/quests/src/quest/threatened_dreams.rs": "d54e857440f0081f3d0cc7dc0c61252230300a198339afa7866106dc85bee3ae"
+        },
+        "review": "Reviewed complete owned diff against CODEX-CHECKLIST: bounded capture/reads; same World party owner and source snapshot; exact receipt binding; locked mission epoch; stale lease/USE refusal; unchanged ordinary XP/loot and legacy Stampede; no schema/protocol/capability additions; no diagnostics or forbidden paths."
+      }
+    },
+    "source_corrections": [
+      "Santiago source consumes three physical legs. Deaths alone cannot complete that hand-in. Inspect pinned Crystal global/source hooks and implement the source occurrence quota together with the tutorial; absence of a hook in the monster definition alone is not a whole-repository absence proof. The initial new test draft was corrected to test the hand-in invariant; no pre-existing test was weakened."
+    ],
+    "diagnosis": {
+      "log": "/tmp/questpc3-counter-diagnosis.log",
+      "duration_seconds": 52.56,
+      "error": "Unavailable(CommitRejected)",
+      "cause": "Unchanged guard listed in receipt but skipped in track writes contradicts existing deferred receipt proof in 0056_character_quest_state.sql:167-178",
+      "fix": "Native receipts contain actual counter changes after locked guard evaluation; preserve SQL invariants and the original mission epoch."
+    },
+    "refreshed_dependency_heads": {
+      "qengine2": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "questl2": "e5a4d6e7e46e7bf3a6754b563fd8647900de7680",
+      "questpc2": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "questpc4": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
+      "questpc5": "f78cf159d8a2eef2703091197ea661d26537137a",
+      "questpc6": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+      "questpc7": "96b478e86678c7607a9a2154f72fe6c91d354188"
+    },
+    "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
+    "updated_at": "2026-11-06T23:05:20.726158+00:00"
+  }
+}

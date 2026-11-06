@@ -30,7 +30,34 @@ fn snapshot(seed: u8, active: &[u8], revision: u64) -> TaskSnapshot {
         lease_generation: 2,
         observed_revision: revision,
         active_tasks: active.to_vec(),
+        native_counters: Vec::new(),
     }
+}
+
+#[test]
+fn native_counter_capture_freezes_started_party_recipients() {
+    let mut first = snapshot(1, &[], 12);
+    let mut second = snapshot(2, &[], 15);
+    let transition = "oteryn:quest-transition/native-kills/first-dragon";
+    first.native_counters.push(transition);
+    second.native_counters.push(transition);
+    let frozen = freeze(
+        Some(party(1, &[1, 2, 3], true)),
+        id(1),
+        true,
+        "oteryn:creature.dragon",
+        &[first, second, snapshot(3, &[], 16)],
+    );
+    assert_eq!(
+        frozen.native.len(),
+        2,
+        "an unstarted member receives no credit"
+    );
+    assert_eq!(frozen.native[0].character, id(1));
+    assert_eq!(frozen.native[0].death.observed_revision, 12);
+    assert_eq!(frozen.native[1].character, id(2));
+    assert_eq!(frozen.native[1].death.observed_revision, 15);
+    assert_eq!(frozen.native[0].death.source, frozen.native[1].death.source);
 }
 
 fn party(principal: u8, members: &[u8], shared: bool) -> PartySnapshot {

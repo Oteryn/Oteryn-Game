@@ -1,5 +1,5 @@
-use super::*;
 use super::super::db::begin_type2_transaction;
+use super::*;
 
 impl DurabilityRoot {
     /// Commit one quest transition (§4-§5). Exact replay of the receipt key returns the receipt
@@ -31,6 +31,7 @@ impl DurabilityRoot {
             &grizzly::NoGrizzlyPremium,
             None,
             None,
+            None,
         )
         .await
     }
@@ -60,6 +61,7 @@ impl DurabilityRoot {
             &grizzly::NoGrizzlyPremium,
             None,
             None,
+            None,
         )
         .await
     }
@@ -74,11 +76,23 @@ impl DurabilityRoot {
         payment: super::rotten_blood_access::RottenBloodAccessPayment,
         catalogue: Arc<QuestStateCatalogue>,
     ) -> Result<QuestTransitionOutcome> {
-        let request=payment.request();
+        let request = payment.request();
         self.commit_quest_inner::<_, 0>(
-            authority, node, fence, request, catalogue, None, None, None, None,
-            &grizzly::NoGrizzlyPremium, None, Some(payment),
-        ).await
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            None,
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            Some(payment),
+            None,
+        )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -102,7 +116,16 @@ impl DurabilityRoot {
         grizzly_gate: &G,
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
+        native: Option<super::native_kills::NativeQuestDeath>,
     ) -> Result<QuestTransitionOutcome> {
+        let native_key = request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX);
+        if native_key != native.is_some()
+            || native.as_ref().is_some_and(|death| !death.valid(&request))
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         // The specialised owner evaluates these computed rules under the locked snapshot.
         // A generic NPC transition cannot bypass the action/cause validation.
         let grizzly_key = request
@@ -130,7 +153,8 @@ impl DurabilityRoot {
         // A paid-access state change must be composed with the existing fee
         // owner; the public generic Quest entry point cannot grant it for free.
         if (request.transition_key == oteryn_gameplay_quests::quest::rotten_blood::PURCHASE_ACCESS)
-            != payment.is_some() {
+            != payment.is_some()
+        {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let callback = if context.is_some() {
@@ -154,26 +178,32 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         // Native rules require a world occurrence even if a caller renames the
         // transition. Inspect the effects, not only the authored callback key.
-        let native_world_rule = catalogue.transition(&request.transition_key).is_some_and(|transition| {
-            transition.effects.iter().any(|effect| matches!(
-                effect.effect,
-                oteryn_gameplay_quests::quest::QuestEffectKind::Native(_)
-            ))
-        });
+        let native_world_rule =
+            catalogue
+                .transition(&request.transition_key)
+                .is_some_and(|transition| {
+                    transition.effects.iter().any(|effect| {
+                        matches!(
+                            effect.effect,
+                            oteryn_gameplay_quests::quest::QuestEffectKind::Native(_)
+                        )
+                    })
+                });
         // Value-bearing or context-dependent callbacks cannot use a weaker generic caller.
         if context.is_none()
-            && (native_world_rule || oteryn_gameplay_quests::quest::world_callbacks::load()
-                .map_err(|_| CharacterProgressionError::InvalidInput)?
-                .iter()
-                .any(|c| {
-                    c.key == request.transition_key
-                        && (!c.offerings.is_empty()
-                            || c.item_on_target.is_some()
-                            || c.minimum_level.is_some()
-                            || c.experience.is_some()
-                            || c.monk_reward.is_some()
-                            || c.native_rule.is_some())
-                }))
+            && (native_world_rule
+                || oteryn_gameplay_quests::quest::world_callbacks::load()
+                    .map_err(|_| CharacterProgressionError::InvalidInput)?
+                    .iter()
+                    .any(|c| {
+                        c.key == request.transition_key
+                            && (!c.offerings.is_empty()
+                                || c.item_on_target.is_some()
+                                || c.minimum_level.is_some()
+                                || c.experience.is_some()
+                                || c.monk_reward.is_some()
+                                || c.native_rule.is_some())
+                    }))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -193,8 +223,9 @@ impl DurabilityRoot {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
         let mut binding = payment.as_ref().map_or_else(
-            ||request_binding(fence.character_id,&request),
-            |payment|payment.binding(fence.character_id));
+            || request_binding(fence.character_id, &request),
+            |payment| payment.binding(fence.character_id),
+        );
         if let Some(action) = &grizzly_action {
             grizzly::bind_action(&mut binding, action);
         }
@@ -209,6 +240,9 @@ impl DurabilityRoot {
             {
                 return Err(CharacterProgressionError::InvalidInput);
             }
+        }
+        if let Some(death) = &native {
+            death.bind(&mut binding)?;
         }
         if let Some(source) = &grizzly_party {
             grizzly::bind_party(&mut binding, source)?;
@@ -427,6 +461,11 @@ impl DurabilityRoot {
                         (!final_flags.is_empty() && oteryn_gameplay_quests::quest::monk_shrines::completed_count(&stored) != 10)
                             .then_some(QuestRefusal::StageMismatch)
                     });
+                    let refusal = if refusal.is_none() {
+                        if let Some(death) = &native {
+                            (!death.admit(&mut tx, character).await?).then_some(QuestRefusal::StageMismatch)
+                        } else { None }
+                    } else { refusal };
                     let mut grizzly_plan = None;
                     let refusal = if let (None, Some(action)) = (refusal, &grizzly_action) {
                         match grizzly::evaluate(&mut tx, character, &stored, &state, action,
@@ -436,7 +475,7 @@ impl DurabilityRoot {
                         }
                     } else { refusal };
                     let refusal = if refusal.is_none() {
-                        if let Some(source) = &grizzly_party {
+                        if let Some(source) = grizzly_party.as_ref().or_else(|| native.as_ref().map(|death| death.source.as_ref())) {
                             match super::super::world_party::frozen_kill_membership(&mut tx, &fence, source).await {
                                 Ok(true) => None,
                                 Ok(false) => Some(QuestRefusal::StageMismatch),
@@ -495,7 +534,7 @@ impl DurabilityRoot {
                         sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
                             .fetch_one(&mut *tx)
                             .await?;
-                    let changes = match refusal
+                    let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || catalogue.evaluate(transition, &stored, now),
                             |plan| Ok(plan.changes.clone())), Err)
@@ -547,6 +586,11 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
                         }
                     };
+
+                    // Native death gates are locked read predicates, not new mission
+                    // epochs. Receipt only the changed counter; its deferred SQL proof
+                    // must name exactly the rows this transition writes.
+                    if native.is_some() { changes.retain(|change| change.before != change.after); }
 
                     if !super::rotten_blood_access::validate_access_changes(
                         &request.transition_key,&changes,state.try_get("level")?,

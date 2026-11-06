@@ -25,7 +25,7 @@ const BASE: &str = "oteryn:quest-progress/quest/u11_40/threatened_dreams/";
 const COUPLE: &str = "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission03_1";
 const COUPLE_PROGRESS: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission03/unlikely_couple";
-const NIGHTMARE: &str = "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders";
+pub const NIGHTMARE: &str = "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders";
 const FAIRIES: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairies_counter";
 const MOON_MIRROR: &str =
