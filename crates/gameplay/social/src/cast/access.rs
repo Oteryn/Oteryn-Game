@@ -54,7 +54,7 @@ impl CastAccessClient {
             inflight: tokio::sync::Semaphore::new(32),
         })
     }
-    async fn exchange(&self, body: serde_json::Value) -> Result<Vec<u8>, Error> {
+    pub(super) async fn exchange(&self, body: serde_json::Value) -> Result<Vec<u8>, Error> {
         let _permit = self.inflight.try_acquire().map_err(|_| Error::Full)?;
         let mut response = self
             .http
@@ -217,10 +217,10 @@ fn parse_hex(s: &str) -> Result<[u8; 16], Error> {
     }
     Ok(out)
 }
-fn hex(bytes: [u8; 16]) -> String {
+pub(super) fn hex(bytes: [u8; 16]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
-fn uuid(bytes: [u8; 16]) -> String {
+pub(super) fn uuid(bytes: [u8; 16]) -> String {
     let s = hex(bytes);
     format!(
         "{}-{}-{}-{}-{}",
