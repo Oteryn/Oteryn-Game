@@ -53,9 +53,10 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises(ValueError):
                 q.validate_callbacks(bad)
 
-    def test_three_outfit_and_seventeen_exchange_source_compositions_exist(self):
+    def test_three_outfit_and_three_exchange_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),3)
+        # Keep the original regression and include the fourteen L2 compositions.
         self.assertEqual(sum(c['outfit'] is None for c in callbacks),17)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
