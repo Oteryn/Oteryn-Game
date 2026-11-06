@@ -753,6 +753,14 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
         assert_eq!(
             readers,
             [
+                // Account closure: SELECT/lock custody owners and hash their rows
+                // for quarantine/restoration. Neither function changes Inbox rows.
+                "game_account_closure_custody_guard",
+                "game_account_closure_custody_hash",
+                // Bazaar: read-only recovery and same-transaction final-custody
+                // proofs. Delivery still uses game_character_inbox_deliver.
+                "game_bazaar_escrows_invalid",
+                "game_bazaar_item_complete",
                 "game_character_inbox_deliver",
                 "game_character_inbox_placement_proven",
                 "game_character_inbox_reward_claim_mint_proven",

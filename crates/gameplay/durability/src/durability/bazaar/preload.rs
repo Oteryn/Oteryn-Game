@@ -12,14 +12,14 @@ static ARTIFACT_READ: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new
 pub(super) struct PreparedContent {
     path: String,
     digest: String,
-    bytes: Arc<Vec<u8>>,
+    artifact: Arc<items::PreparedArtifact>,
 }
 impl PreparedContent {
     pub(super) fn bind(&self, policy: &mut Policy) {
         if policy.content_artifact_file.as_deref() == Some(&self.path)
             && policy.content_artifact_sha256.as_deref() == Some(&self.digest)
         {
-            policy.preloaded_artifact = Some(self.bytes.clone());
+            policy.preloaded_artifact = Some(self.artifact.clone());
         }
     }
 }
@@ -49,13 +49,13 @@ impl DurabilityRoot {
             .await
             .ok()?
         };
-        let bytes = tokio::time::timeout(Duration::from_secs(10), read)
+        let artifact = tokio::time::timeout(Duration::from_secs(10), read)
             .await
             .ok()??;
         Some(PreparedContent {
             path,
             digest,
-            bytes,
+            artifact,
         })
     }
 }

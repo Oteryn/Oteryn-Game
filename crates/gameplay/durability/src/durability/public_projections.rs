@@ -112,7 +112,7 @@ SELECT o.world_id::text AS world_id, o.category, e.projection_epoch, h.projectio
 // the same transaction. One row more than all six lists' bound is read, so an
 // oversized snapshot refuses instead of being truncated.
 const HIGHSCORES_ROWS: &str = "\
-SELECT s.computed_at_ms, r.filter::int AS filter, rank() OVER (PARTITION BY r.filter ORDER BY r.rank)::text AS rank, \
+SELECT s.computed_at_ms, r.filter::int AS filter, r.rank::text AS rank, \
        r.character_id::text AS character_id, r.name, r.vocation::text AS vocation, \
        r.level::text AS level, r.value_primary::text AS value \
   FROM game_world_highscore_heads h \

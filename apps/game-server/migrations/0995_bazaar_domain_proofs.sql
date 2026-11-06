@@ -452,6 +452,7 @@ CREATE FUNCTION game_bazaar_projection_dirty() RETURNS trigger LANGUAGE plpgsql 
  UPDATE game_bazaar_projection_state SET version=version+1,enumeration_cursor='',enumeration_done=false WHERE singleton;
  RETURN NULL;
 END $$;
+REVOKE ALL ON FUNCTION game_bazaar_projection_dirty() FROM PUBLIC;
 CREATE TRIGGER game_bazaar_new_world AFTER INSERT OR UPDATE ON game_runtime_scope_assignments FOR EACH STATEMENT EXECUTE FUNCTION game_bazaar_projection_dirty();
 CREATE TRIGGER game_bazaar_new_root AFTER INSERT ON game_character_roots FOR EACH STATEMENT EXECUTE FUNCTION game_bazaar_projection_dirty();
 DO $$ BEGIN EXECUTE format('ALTER FUNCTION game_bazaar_projection_dirty() SET search_path=pg_catalog,%I,pg_temp',current_schema());END $$;
@@ -459,7 +460,9 @@ CREATE TRIGGER game_bazaar_content_changed AFTER INSERT OR UPDATE OR DELETE ON g
 
 -- Every Character-owned writer joins the root lock, including offline Inbox,
 -- mail and account-bank causes. This is additive to each existing guard chain.
-CREATE FUNCTION game_bazaar_frozen_character_writer() RETURNS trigger LANGUAGE plpgsql AS $$
+-- Existing domain owners need no direct root privileges to enforce this fence.
+-- The search_path is pinned below before any domain writer can run the trigger.
+CREATE FUNCTION game_bazaar_frozen_character_writer() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE c UUID; col TEXT; record JSONB; lifecycle SMALLINT;
 BEGIN
  record:=CASE WHEN TG_OP='DELETE' THEN to_jsonb(OLD) ELSE to_jsonb(NEW) END;
@@ -474,6 +477,7 @@ BEGIN
  END LOOP;
  IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
 END $$;
+REVOKE ALL ON FUNCTION game_bazaar_frozen_character_writer() FROM PUBLIC;
 DO $$ DECLARE t RECORD; args TEXT;BEGIN
  FOR t IN SELECT c.conrelid AS relation,array_agg(DISTINCT a.attname) AS cols FROM pg_constraint c
  JOIN LATERAL unnest(c.conkey,c.confkey) AS keys(local_column,root_column) ON true

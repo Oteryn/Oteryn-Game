@@ -46,7 +46,7 @@ pub struct Policy {
     pub content_artifact_file: Option<String>,
     pub content_artifact_sha256: Option<String>,
     #[serde(skip)]
-    pub(super) preloaded_artifact: Option<std::sync::Arc<Vec<u8>>>,
+    preloaded_artifact: Option<std::sync::Arc<items::PreparedArtifact>>,
     pub gold_fee_bps: Option<u16>,
     pub reserve_incoming_headroom: bool,
     pub common_restore_scope: bool,

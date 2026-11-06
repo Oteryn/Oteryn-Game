@@ -3,7 +3,7 @@ use super::*;
 use crate::content::{
     DefinitionFamily, DefinitionRevisionRef, ProductionKey, ReferenceArtifactProjection,
     ReferenceItemField, ReferenceItemPhysicalClass, ReferenceItemStackClass,
-    ReferencePlayableArtifactView, TypedDefinitionRef,
+    ReferencePlayableArtifactView, ReferenceServerItem, TypedDefinitionRef,
 };
 use serde_json::Value;
 use std::io::Read;
@@ -13,10 +13,19 @@ const STALE: &str = "CHAR_CMD_BAZAAR_STALE_REVISION";
 const DESTINATION: &str = "CHAR_CMD_BAZAAR_DESTINATION_UNAVAILABLE";
 const ARTIFACT_BYTES: u64 = 32 * 1024 * 1024;
 
+/// Immutable facts decoded from the bounded, integrity-checked artifact. Keeping
+/// them with its identity avoids hashing/decoding megabytes during a DB pass.
+#[derive(Debug)]
+pub(super) struct PreparedArtifact {
+    world_id: [u8; 16],
+    digest: [u8; 32],
+    items: Vec<(TypedDefinitionRef, ReferenceServerItem)>,
+}
+
 /// File acquisition and artifact validation run outside the semantic transaction.
 /// The deciding transaction independently rechecks the exact configuration and
 /// the current World activation before granting authority from these bytes.
-pub(super) fn preload_artifact(policy: &Policy) -> Option<std::sync::Arc<Vec<u8>>> {
+pub(super) fn preload_artifact(policy: &Policy) -> Option<std::sync::Arc<PreparedArtifact>> {
     let (Some(path), Some(expected)) = (
         &policy.content_artifact_file,
         &policy.content_artifact_sha256,
@@ -41,9 +50,26 @@ pub(super) fn preload_artifact(policy: &Policy) -> Option<std::sync::Arc<Vec<u8>
     {
         return None;
     }
-    ReferencePlayableArtifactView::load(&bytes, ReferenceArtifactProjection::ServerAuthoritative)
-        .ok()?;
-    Some(std::sync::Arc::new(bytes))
+    let artifact = ReferencePlayableArtifactView::load(
+        &bytes,
+        ReferenceArtifactProjection::ServerAuthoritative,
+    )
+    .ok()?;
+    // The artifact profile and byte limit bound this complete typed index.
+    let mut items = Vec::new();
+    for identity in artifact.indexed_identities() {
+        if identity.family() == DefinitionFamily::Item {
+            items.push((
+                identity.clone(),
+                artifact.lookup_server_item(identity).ok()??,
+            ));
+        }
+    }
+    Some(std::sync::Arc::new(PreparedArtifact {
+        world_id: *artifact.world_id().as_bytes(),
+        digest: artifact.artifact_digest(),
+        items,
+    }))
 }
 
 /// Observe the already-loaded Content only after the owner has matched its
@@ -53,20 +79,14 @@ pub(super) async fn admitted_artifact(
     tx: &mut Tx<'_>,
     policy: &Policy,
     world: &str,
-) -> Result<Option<std::sync::Arc<Vec<u8>>>, DurabilityError> {
-    let Some(bytes) = policy.preloaded_artifact.as_ref().cloned() else {
+) -> Result<Option<std::sync::Arc<PreparedArtifact>>, DurabilityError> {
+    let Some(artifact) = policy.preloaded_artifact.as_ref().cloned() else {
         return Ok(None);
     };
-    let Ok(artifact) = ReferencePlayableArtifactView::load(
-        &bytes,
-        ReferenceArtifactProjection::ServerAuthoritative,
-    ) else {
-        return Ok(None);
-    };
-    if artifact.world_id().as_bytes() != &super::super::character_authority::uuid_text(world)? {
+    if artifact.world_id != super::super::character_authority::uuid_text(world)? {
         return Ok(None);
     }
-    let digest = artifact.artifact_digest();
+    let digest = artifact.digest;
     // Issuance inserts cannot race this snapshot, including a previously unseen Channel.
     sqlx::query("LOCK TABLE game_content_activations IN SHARE MODE")
         .execute(&mut **tx)
@@ -82,7 +102,7 @@ pub(super) async fn admitted_artifact(
     {
         return Ok(None);
     }
-    Ok(Some(bytes))
+    Ok(Some(artifact))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -214,14 +234,9 @@ async fn escrow(
     if unknown {
         return Ok(Effect::Rejected(ITEM_REFUSAL));
     }
-    let Some(bytes) = admitted_artifact(tx, p, world).await? else {
+    let Some(artifact) = admitted_artifact(tx, p, world).await? else {
         return Ok(Effect::Pending);
     };
-    let artifact = ReferencePlayableArtifactView::load(
-        &bytes,
-        ReferenceArtifactProjection::ServerAuthoritative,
-    )
-    .map_err(|_| DurabilityError::InvalidStoredState)?;
     let production_key = before["definition_production_key"]
         .as_str()
         .ok_or(DurabilityError::InvalidStoredState)?;
@@ -241,9 +256,10 @@ async fn escrow(
         return Ok(Effect::Rejected(ITEM_REFUSAL));
     };
     let identity = TypedDefinitionRef::new(DefinitionFamily::Item, key, def_revision);
-    let Some(facts) = artifact
-        .lookup_server_item(&identity)
-        .map_err(|_| DurabilityError::Unavailable)?
+    let Some((_, facts)) = artifact
+        .items
+        .iter()
+        .find(|(candidate, _)| candidate == &identity)
     else {
         return Ok(Effect::Rejected(ITEM_REFUSAL));
     };
@@ -560,28 +576,17 @@ pub(super) async fn transferability(
     policy: &Policy,
     world: &str,
 ) -> Result<Option<String>, DurabilityError> {
-    let Some(bytes) = admitted_artifact(tx, policy, world).await? else {
+    let Some(artifact) = admitted_artifact(tx, policy, world).await? else {
         return Ok(None);
     };
-    let artifact = ReferencePlayableArtifactView::load(
-        &bytes,
-        ReferenceArtifactProjection::ServerAuthoritative,
-    )
-    .map_err(|_| DurabilityError::InvalidStoredState)?;
     let mut definitions = Vec::new();
-    for identity in artifact.indexed_identities() {
+    for (identity, facts) in &artifact.items {
         if identity.family() != DefinitionFamily::Item
             || !wire_key(identity.key().as_str())
             || !wire_key(identity.revision().as_str())
         {
             continue;
         }
-        let Some(facts) = artifact
-            .lookup_server_item(identity)
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-        else {
-            continue;
-        };
         if !facts.materializable || facts.physical_class != ReferenceItemPhysicalClass::Physical {
             continue;
         }
