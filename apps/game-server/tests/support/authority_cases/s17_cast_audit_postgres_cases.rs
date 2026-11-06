@@ -11,6 +11,7 @@ fn s17_cast_audit_postgres_installs_outbox() -> TestResult {
             runtime()
                 .map_err(|e| e.to_string())?
                 .block_on(async {
+                    let started = std::time::Instant::now();
                     let h = Harness::create(admin, "s17_audit_schema", true).await?;
                     let result = async {
                         let count: i64 =
@@ -27,6 +28,7 @@ fn s17_cast_audit_postgres_installs_outbox() -> TestResult {
                     }
                     .await;
                     h.cleanup().await?;
+                    eprintln!("S17 real PostgreSQL audit schema: {:.3}s", started.elapsed().as_secs_f64());
                     result
                 })
                 .map_err(|e| e.to_string())

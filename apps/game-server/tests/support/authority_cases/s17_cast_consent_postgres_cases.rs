@@ -12,6 +12,7 @@ fn s17_cast_consent_postgres_schema_defaults_and_grants() -> TestResult {
             runtime()
                 .map_err(|error| error.to_string())?
                 .block_on(async {
+                    let started = std::time::Instant::now();
                     let h = Harness::create(admin, "s17_consent_schema", true).await?;
                     let result = async {
                         let (allowed, revision): (bool, i64) = sqlx::query_as(
@@ -44,6 +45,7 @@ fn s17_cast_consent_postgres_schema_defaults_and_grants() -> TestResult {
                     }
                     .await;
                     h.cleanup().await?;
+                    eprintln!("S17 real PostgreSQL consent schema: {:.3}s", started.elapsed().as_secs_f64());
                     result
                 })
                 .map_err(|error| error.to_string())
@@ -72,6 +74,7 @@ fn s17_cast_consent_postgres_owner_cas_reload_and_session_fences() -> TestResult
 }
 
 async fn consent_owner_case(admin: String) -> TestResult {
+    let started = std::time::Instant::now();
     use crate::bestiary_postgres_harness::{debug, fence, id};
     use crate::durability::cast_consent::{CastConsent, CastConsentOutcome as Outcome};
 
@@ -182,5 +185,6 @@ async fn consent_owner_case(admin: String) -> TestResult {
         Ok(())
     }.await;
     h.cleanup().await?;
+    eprintln!("S17 real PostgreSQL consent owner: {:.3}s", started.elapsed().as_secs_f64());
     result
 }

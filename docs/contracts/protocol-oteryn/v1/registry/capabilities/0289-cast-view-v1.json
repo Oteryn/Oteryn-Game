@@ -5,7 +5,7 @@
   "owner": "Game off-tick cast owner",
   "command_types": [],
   "state_domains": [
-    102
+    104
   ],
   "offered": false,
   "offer_gate": "Disabled pending Platform observer profile, production worker composition, durable audit and measured qualification."
