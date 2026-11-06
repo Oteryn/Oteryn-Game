@@ -85,11 +85,12 @@ impl OrientalTraderTown {
 }
 
 /// The draws a day takes, in this order, each its own purpose.
-pub const DRAW_PURPOSES: [&str; 4] = [
+pub const DRAW_PURPOSES: [&str; 5] = [
     "thawing",
     "their-masters-voice",
     "oriental-trader",
     "oriental-trader-town",
+    "stampede",
 ];
 
 /// Authored daily candidate probabilities. Native effect identities and variant
@@ -99,6 +100,7 @@ pub struct DailyCandidates {
     pub thawing_percent: u8,
     pub voice_percent: u8,
     pub trader_percent: u8,
+    pub stampede_permille: u16,
 }
 
 /// The world changes of one day.
@@ -112,6 +114,10 @@ pub struct DailyWorldChanges {
     /// Wereboars and werebadgers instead of bandits, badgers and butterflies.
     pub grimvale_full_moon: bool,
     pub flower_month: bool,
+    /// W15: 62/498 observed days, accepted as 125 per thousand per reset.
+    /// Old immutable decisions stay inactive until their next server save.
+    #[serde(default)]
+    pub stampede: bool,
 }
 
 impl DailyWorldChanges {
@@ -126,6 +132,7 @@ impl DailyWorldChanges {
                 thawing_percent: THAWING_PERCENT,
                 voice_percent: THEIR_MASTERS_VOICE_PERCENT,
                 trader_percent: ORIENTAL_TRADER_PERCENT,
+                stampede_permille: 125,
             },
             draw,
         )
@@ -138,7 +145,7 @@ impl DailyWorldChanges {
         candidates: DailyCandidates,
         mut draw: impl FnMut(&str) -> u64,
     ) -> Self {
-        let [thawing, voice, trader, town] = DRAW_PURPOSES;
+        let [thawing, voice, trader, town, stampede] = DRAW_PURPOSES;
         let thawing = percent_roll(draw(thawing), u64::from(candidates.thawing_percent));
         let their_masters_voice = percent_roll(draw(voice), u64::from(candidates.voice_percent));
         let oriental_trader = percent_roll(draw(trader), u64::from(candidates.trader_percent))
@@ -148,6 +155,8 @@ impl DailyWorldChanges {
                 _ => OrientalTraderTown::LibertyBay,
             });
         Self {
+            stampede: (u128::from(draw(stampede)) * 1000) >> 64
+                < u128::from(candidates.stampede_permille),
             reset_epoch,
             thawing,
             their_masters_voice,
@@ -196,13 +205,13 @@ mod tests {
 
     #[test]
     fn w05b_the_day_takes_each_roll_from_its_own_draw() {
-        let roll = |draws: [u64; 4], month, day| {
+        let roll = |draws: [u64; 5], month, day| {
             DailyWorldChanges::roll(9, month, day, |purpose| {
                 let index = DRAW_PURPOSES.iter().position(|p| *p == purpose);
                 draws[index.unwrap_or(0)]
             })
         };
-        let all = roll([0, 0, 0, at(2, 3)], 6, 13);
+        let all = roll([0, 0, 0, at(2, 3), 0], 6, 13);
         assert_eq!(
             all,
             DailyWorldChanges {
@@ -212,9 +221,10 @@ mod tests {
                 oriental_trader: Some(OrientalTraderTown::LibertyBay),
                 grimvale_full_moon: true,
                 flower_month: true,
+                stampede: true,
             }
         );
-        let none = roll([u64::MAX; 4], 5, 12);
+        let none = roll([u64::MAX; 5], 5, 12);
         assert_eq!(
             (
                 none.thawing,
@@ -226,7 +236,7 @@ mod tests {
             (false, false, None, false, false)
         );
         // The same epoch and draws roll the same day again.
-        assert_eq!(roll([0, 0, 0, at(2, 3)], 6, 13), all);
+        assert_eq!(roll([0, 0, 0, at(2, 3), 0], 6, 13), all);
     }
 
     #[test]

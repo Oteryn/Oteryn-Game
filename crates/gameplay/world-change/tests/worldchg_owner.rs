@@ -42,6 +42,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
     let mut keys = std::collections::BTreeSet::new();
     let all = DailyWorldChanges::roll(7, 6, 13, |_| 0);
     let mut ready = 0;
+    let mut qualified = 0;
     for entry in entries {
         let key = entry["key"].as_str().ok_or("key")?;
         assert!(keys.insert(key));
@@ -50,12 +51,18 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
         if entry["status"] == "READY" {
             ready += 1;
             assert!(is_active(&all, key), "{key}");
+        } else if entry["status"] == "QUALIFIED" {
+            qualified += 1;
+            assert_eq!(key, "stampede");
+            assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
+            assert!(is_active(&all, key));
         } else {
             assert_eq!(entry["status"], "HELD");
             assert!(!is_active(&all, key), "{key}");
         }
     }
     assert_eq!(ready, 4);
+    assert_eq!(qualified, 1);
     for key in [
         "river_runs_deep",
         "spider_nest",
@@ -126,6 +133,7 @@ fn worldchg_authored_candidate_probabilities_control_selection() {
                 thawing_percent: percent,
                 voice_percent: percent,
                 trader_percent: percent,
+                stampede_permille: u16::from(percent) * 10,
             },
             |_| u64::MAX,
         )
@@ -135,4 +143,108 @@ fn worldchg_authored_candidate_probabilities_control_selection() {
     let all = select(100);
     assert!(all.thawing && all.their_masters_voice && all.oriental_trader.is_some());
     assert_eq!(none.reset_epoch, 8);
+}
+
+#[test]
+fn worldchg_stampede_uses_accepted_daily_gate_and_preserves_legacy_snapshots()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_gameplay_world_change::{
+        daily::{DailyCandidates, DailyWorldChanges},
+        owner::is_active,
+    };
+    let select = |draw| {
+        DailyWorldChanges::select(
+            9,
+            5,
+            1,
+            DailyCandidates {
+                thawing_percent: 0,
+                voice_percent: 0,
+                trader_percent: 0,
+                stampede_permille: 125,
+            },
+            |purpose| {
+                if purpose == "stampede" {
+                    draw
+                } else {
+                    u64::MAX
+                }
+            },
+        )
+    };
+    let boundary = 1_u64 << 61; // exactly 125/1000 of the 64-bit draw range
+    assert!(is_active(&select(boundary - 1), "stampede"));
+    assert!(!is_active(&select(boundary), "stampede"));
+    let mut legacy = serde_json::to_value(select(0))?;
+    legacy.as_object_mut().ok_or("day")?.remove("stampede");
+    let retained: DailyWorldChanges = serde_json::from_value(legacy)?;
+    assert!(
+        !is_active(&retained, "stampede"),
+        "old immutable days must not gain a new event"
+    );
+    Ok(())
+}
+
+#[test]
+fn worldchg_portal_candidates_preserve_sourced_pairs_without_claiming_native_admission()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let candidate: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/encounters/world-changes/portal-bindings-candidate.json"),
+    )?)?;
+    let layers: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/encounters/world-changes/layers.json"),
+    )?)?;
+    assert_eq!(candidate["native_admission"], false);
+    let records = candidate["records"].as_array().ok_or("records")?;
+    assert_eq!(records.len(), 2);
+    for record in records {
+        assert_eq!(record["native_admission"], false);
+        let variants = record["variants"].as_array().ok_or("variants")?;
+        let fury = record["key"] == "fury_gates";
+        assert_eq!(variants.len(), if fury { 10 } else { 3 });
+        for variant in variants {
+            let layer = layers["layers"]
+                .as_array()
+                .ok_or("layers")?
+                .iter()
+                .find(|layer| layer["key"] == variant["layer"])
+                .ok_or("native source layer")?;
+            let tile = layer["tiles"]
+                .as_array()
+                .ok_or("tiles")?
+                .iter()
+                .find(|tile| tile["position"] == variant["position"])
+                .ok_or("portal tile")?;
+            assert!(
+                tile["entries"]
+                    .as_array()
+                    .ok_or("entries")?
+                    .iter()
+                    .any(|entry| entry[0] == variant["appearance"]
+                        && if fury {
+                            entry[1] == variant["selector"]["action_id"]
+                        } else {
+                            entry[2] == variant["selector"]["unique_id"]
+                        })
+            );
+            assert_eq!(
+                variant["destination"],
+                if fury {
+                    serde_json::json!([33290, 31786, 13])
+                } else {
+                    serde_json::json!([33497, 32616, 8])
+                }
+            );
+        }
+        // Source facts do not bypass the still-unimplemented W1/native gate consumers.
+        assert!(!oteryn_gameplay_world_change::owner::is_active(
+            &oteryn_gameplay_world_change::daily::DailyWorldChanges::roll(7, 6, 13, |_| 0),
+            record["key"].as_str().ok_or("key")?,
+        ));
+    }
+    assert_eq!(records[0]["requirements"]["min_level"], 60);
+    assert_eq!(records[0]["return_marker"]["action_id"], 9715);
+    assert_eq!(records[1]["return_marker"]["unique_id"], 35020);
+    Ok(())
 }

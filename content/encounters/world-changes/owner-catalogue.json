@@ -1,7 +1,7 @@
 {
   "schema": "OTERYN_WORLD_CHANGE_OWNER_CATALOGUE/v1",
   "owner": "world_event::changes; existing WorldReset finalization",
-  "selection": "Use existing daily.rs donor rules only. HELD entries never enter the selection pool. No equal-weight probability is invented.",
+  "selection": "Existing daily owner selects four READY candidates and the QUALIFIED Stampede binding. HELD entries remain excluded even when their accepted chances/thresholds are known.",
   "entries": [
     {
       "key": "awash",
@@ -16,6 +16,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Awash World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -36,7 +40,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=54770&oldid=1149364"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Pump/lever event membership, flooded/dry layer transition and shared reset rule are not bound.",
+      "missing_facts": [
+        "Pump/lever event membership, flooded/dry layer transition and shared reset rule are not bound."
+      ]
     },
     {
       "key": "bank_robbery",
@@ -51,6 +58,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Bank Robbery Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -71,7 +82,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=76139&oldid=1082154"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Hourly robbery trigger/probability, banker-disable state and bag recovery/reset binding are absent; W 15 explicitly leaves the mid-epoch trigger outside v 1.",
+      "missing_facts": [
+        "Hourly robbery trigger/probability, banker-disable state and bag recovery/reset binding are absent; W 15 explicitly leaves the mid-epoch trigger outside v 1."
+      ]
     },
     {
       "key": "bored",
@@ -86,6 +100,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Bored Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -106,7 +128,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76211&oldid=1135336"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "W 15 fixes 82 permille. Wyda and fake-spider components do not identify the active illusion-spider spawn variant or daily availability binding.",
+      "missing_facts": [
+        "W 15 fixes 82 permille. Wyda and fake-spider components do not identify the active illusion-spider spawn variant or daily availability binding."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 82,
+        "duration": "until_next_reset"
+      }
     },
     {
       "key": "chakoya_iceberg",
@@ -121,6 +151,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Chakoya Iceberg Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -141,7 +175,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=76213&oldid=887139"
         }
       ],
-      "reason": "Storage metadata exists; native iceberg variants, spawn membership and selection trigger are unqualified."
+      "reason": "Selected iceberg geometry, creature-to-variant membership and activation rule are absent; base Chakoya spawns/storage names do not identify the active iceberg.",
+      "missing_facts": [
+        "Selected iceberg geometry, creature-to-variant membership and activation rule are absent; base Chakoya spawns/storage names do not identify the active iceberg."
+      ]
     },
     {
       "key": "chyllfroest",
@@ -156,6 +193,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Chyllfroest Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -176,7 +217,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=76215&oldid=887140"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Exact seasonal opening interval and native bridge/closed/open projection with spawn membership are not established.",
+      "missing_facts": [
+        "Exact seasonal opening interval and native bridge/closed/open projection with spawn membership are not established."
+      ]
     },
     {
       "key": "deeplings",
@@ -191,6 +235,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Deeplings World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -211,7 +259,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=56900&oldid=501316"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Individual boss gates exist, but shared stage accumulation, stage-save transition and map/spawn stage membership are not established.",
+      "missing_facts": [
+        "Individual boss gates exist, but shared stage accumulation, stage-save transition and map/spawn stage membership are not established."
+      ]
     },
     {
       "key": "demon_wars",
@@ -226,6 +277,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Demon Wars World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -246,7 +301,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=54700&oldid=880733"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "World kill differences 100/400 are known; native credited faction counters and five-state spawn/map transitions at server save are not bound.",
+      "missing_facts": [
+        "World kill differences 100/400 are known; native credited faction counters and five-state spawn/map transitions at server save are not bound."
+      ]
     },
     {
       "key": "devovorga_s_essence",
@@ -261,6 +319,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Devovorga's Essence Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -281,7 +347,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76217&oldid=944253"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "W 15 fixes 16 permille. Native Vengoth gate/destination, incarnation selection/cost debit and encounter admission are absent.",
+      "missing_facts": [
+        "W 15 fixes 16 permille. Native Vengoth gate/destination, incarnation selection/cost debit and encounter admission are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 16,
+        "duration": "until_next_reset"
+      }
     },
     {
       "key": "down_the_drain",
@@ -296,6 +370,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Down the Drain Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -316,7 +398,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76219&oldid=887142"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "W 15 fixes 307 permille. Native flooded/dry river topology, active spawn membership and world-state projection are absent.",
+      "missing_facts": [
+        "W 15 fixes 307 permille. Native flooded/dry river topology, active spawn membership and world-state projection are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 307,
+        "duration": "until_next_reset"
+      }
     },
     {
       "key": "fire_from_the_earth",
@@ -331,6 +421,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Fire from the Earth Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -351,7 +449,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76221&oldid=887143"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "W 15 fixes 199 permille. Eruption layer/spawn membership and fifty-credited-kill attribution are absent.",
+      "missing_facts": [
+        "W 15 fixes 199 permille. Eruption layer/spawn membership and fifty-credited-kill attribution are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 199,
+        "duration": "until_next_reset"
+      }
     },
     {
       "key": "flower_month",
@@ -361,10 +467,21 @@
         {
           "path": "crates/gameplay/world-change/src/daily.rs",
           "locator": "flower_month.lua:28-55,63-64"
+        },
+        {
+          "path": "content/encounters/raids/catalogue.json",
+          "locator": "oteryn:raid.raid.dryad_invasion:inactive_reasons and donor_cycle"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [],
-      "reason": "June window and Rosemarie NPC exist, but dryad raid waves remain explicitly unapplied. The NPC alone cannot qualify the world change."
+      "reason": "June, four native donor rectangles, 25 dryads per wave, 15-minute rotation and 250 attempts are known. Raid catalogue explicitly holds wiki five waves/hour versus donor indefinite four-area cycle; accepted firing/end policy remains unresolved.",
+      "missing_facts": [
+        "June, four native donor rectangles, 25 dryads per wave, 15-minute rotation and 250 attempts are known. Raid catalogue explicitly holds wiki five waves/hour versus donor indefinite four-area cycle; accepted firing/end policy remains unresolved."
+      ]
     },
     {
       "key": "fury_gates",
@@ -379,6 +496,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Fury Gates Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/portal-bindings-candidate.json",
+          "locator": "fury_gates:source pairings and native startup-marker omission; native_admission=false"
         }
       ],
       "source_refs": [
@@ -399,7 +524,11 @@
           "url": "https://tibia.fandom.com/index.php?curid=76236&oldid=887144"
         }
       ],
-      "reason": "Selection-source explicitly retains unresolved W1 bindings; extracted map layers alone do not admit portal realization."
+      "reason": "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. Native W1 variant/layer-set composition, missing return AID restoration, eligible callback and Furyosa precondition remain unimplemented.",
+      "missing_facts": [
+        "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. Native W1 variant/layer-set composition, missing return AID restoration, eligible callback and Furyosa precondition remain unimplemented."
+      ],
+      "hold_kind": "NATIVE_IMPLEMENTATION_GAP; no missing donor fact identified for basic gates"
     },
     {
       "key": "grimvale",
@@ -457,6 +586,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Hive Born World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -477,7 +610,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "200 daily task actions, 3/5-day resets and 7-day permit are known. Native shared accumulator, stage transition, timed access and map/spawn stage bindings are absent.",
+      "missing_facts": [
+        "200 daily task actions, 3/5-day resets and 7-day permit are known. Native shared accumulator, stage transition, timed access and map/spawn stage bindings are absent."
+      ]
     },
     {
       "key": "hive_outpost",
@@ -492,6 +628,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Hive Outpost Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -512,7 +652,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=76241&oldid=887146"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Native invasion variant membership, activation rule and optional-boss selection are absent.",
+      "missing_facts": [
+        "Native invasion variant membership, activation rule and optional-boss selection are absent."
+      ]
     },
     {
       "key": "horse_station",
@@ -527,6 +670,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Horse Station World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -547,7 +694,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=54702&oldid=502074"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Startup horse anchors/counts and stable handler are known. Escape, three-hour/zero-horse raid activation/expiry and native stable transition are not composed; donor stable script references an unassigned waveEvent.",
+      "missing_facts": [
+        "Startup horse anchors/counts and stable handler are known. Escape, three-hour/zero-horse raid activation/expiry and native stable transition are not composed; donor stable script references an unassigned waveEvent."
+      ]
     },
     {
       "key": "insectoid_invasion",
@@ -562,6 +712,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Insectoid Invasion World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -582,7 +736,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=55050&oldid=1160735"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Greenshore invasion/restoration state, credited restoration threshold and active spawn membership are not bound.",
+      "missing_facts": [
+        "Greenshore invasion/restoration state, credited restoration threshold and active spawn membership are not bound."
+      ]
     },
     {
       "key": "jungle_camp",
@@ -597,6 +754,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Jungle Camp Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -617,7 +778,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=76243&oldid=887148"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Camp-to-variant membership, daily variant trigger and rare-boss selection rules are not bound.",
+      "missing_facts": [
+        "Camp-to-variant membership, daily variant trigger and rare-boss selection rules are not bound."
+      ]
     },
     {
       "key": "kingsday",
@@ -632,6 +796,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Kingsday Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -652,7 +824,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76245&oldid=994341"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "W 15 fixes 24 permille. Celebration state, hourly arena raid binding and achievement eligibility are absent.",
+      "missing_facts": [
+        "W 15 fixes 24 permille. Celebration state, hourly arena raid binding and achievement eligibility are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 24,
+        "duration": "until_next_reset"
+      }
     },
     {
       "key": "lumberjack",
@@ -667,6 +847,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Lumberjack Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -687,7 +875,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76247&oldid=893906"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "W 15 fixes 90 permille. Native felled-tree variant, Chip activation and report/reset mutation are absent.",
+      "missing_facts": [
+        "W 15 fixes 90 permille. Native felled-tree variant, Chip activation and report/reset mutation are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 90,
+        "duration": "until_next_reset"
+      }
     },
     {
       "key": "nightmare_isles",
@@ -702,6 +898,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Nightmare Isles Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/portal-bindings-candidate.json",
+          "locator": "nightmare_isles:source pairings and native startup-marker omission; native_admission=false"
         }
       ],
       "source_refs": [
@@ -722,7 +926,11 @@
           "url": "https://tibia.fandom.com/index.php?curid=76249&oldid=887167"
         }
       ],
-      "reason": "Selection-source retains unresolved W1 bindings; no qualified gate/spawn realization."
+      "reason": "1000 permille and three equal entrances; exact shared-dungeon entry/return positions and base creatures are sourced. Native W1 variant/layer-set composition, missing return UID restoration and current-fenced entry/return callbacks remain unimplemented.",
+      "missing_facts": [
+        "1000 permille and three equal entrances; exact shared-dungeon entry/return positions and base creatures are sourced. Native W1 variant/layer-set composition, missing return UID restoration and current-fenced entry/return callbacks remain unimplemented."
+      ],
+      "hold_kind": "NATIVE_IMPLEMENTATION_GAP; no missing donor fact identified for basic gates"
     },
     {
       "key": "nomads",
@@ -737,6 +945,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Nomads Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -757,7 +973,21 @@
           "url": "https://tibia.fandom.com/index.php?curid=76252&oldid=1128611"
         }
       ],
-      "reason": "Wiki identifies four mutually exclusive camps (three chests); selection probability, native camp layers and spawns are unqualified."
+      "reason": "W 15/D 1055 fixes 799 permille, four camps and equal weights 1. Native camp/spawn/chest membership and selection-to-map binding are absent; base Nomad spawns do not establish camp variants.",
+      "missing_facts": [
+        "W 15/D 1055 fixes 799 permille, four camps and equal weights 1. Native camp/spawn/chest membership and selection-to-map binding are absent; base Nomad spawns do not establish camp variants."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 799,
+        "duration": "until_next_reset"
+      },
+      "variant_weights": [
+        1,
+        1,
+        1,
+        1
+      ]
     },
     {
       "key": "noodles_is_gone",
@@ -772,6 +1002,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Noodles is Gone Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -792,7 +1030,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76254&oldid=1122443"
         }
       ],
-      "reason": "Noodles NPC handles Postman Mission06; dog collar escort and Dog Sitter completion are not implemented by that evidence."
+      "reason": "W 15 fixes 92 permille. Retained Noodles mutations are PostmanMission 06; Dog Collar escort, disappearance/return and next-save Dog Lady transition are absent.",
+      "missing_facts": [
+        "W 15 fixes 92 permille. Retained Noodles mutations are PostmanMission 06; Dog Collar escort, disappearance/return and next-save Dog Lady transition are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 92,
+        "duration": "until_next_reset"
+      }
     },
     {
       "key": "oriental_trader",
@@ -855,6 +1101,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Overhunting World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -875,7 +1125,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=54864&oldid=1084984"
         }
       ],
-      "reason": "Trap callback is evidence of one component; world kill thresholds, reset policy and affected spawns are unqualified."
+      "reason": "Trap component exists; credited population actions, native population thresholds and save/spawn transitions are not established.",
+      "missing_facts": [
+        "Trap component exists; credited population actions, native population thresholds and save/spawn transitions are not established."
+      ]
     },
     {
       "key": "poacher_caves",
@@ -890,6 +1143,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Poacher Caves Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -910,7 +1167,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=76258&oldid=1175805"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Native three-state population transition, credited kills and active Game/poacher map/spawn membership are absent.",
+      "missing_facts": [
+        "Native three-state population transition, credited kills and active Game/poacher map/spawn membership are absent."
+      ]
     },
     {
       "key": "rathleton",
@@ -925,6 +1185,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Rathleton Quest"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -953,7 +1217,10 @@
           "url": "https://www.tibiawiki.com.br/index.php?curid=33732&oldid=386889"
         }
       ],
-      "reason": "Wiki thresholds 50/150/300/500 count cumulative spent votes; Marvin archives point is not a general vote/rank owner. Ballot choices, period and debit binding are unqualified."
+      "reason": "50/150/300/500 spent-vote rank thresholds are known. Ballot identity, election period, eligibility/point debit, winner transition and native rank admission are absent.",
+      "missing_facts": [
+        "50/150/300/500 spent-vote rank thresholds are known. Ballot identity, election period, eligibility/point debit, winner transition and native rank admission are absent."
+      ]
     },
     {
       "key": "rise_of_devovorga",
@@ -968,6 +1235,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Rise of Devovorga"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -988,7 +1259,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791"
         }
       ],
-      "reason": "Boss spell and metadata do not establish world phases, victory/failure, last-minute participation or reward bindings."
+      "reason": "Boss spell/storage metadata exists; exact seasonal interval, synchronized phases, victory/failure and participation/reward admission are absent.",
+      "missing_facts": [
+        "Boss spell/storage metadata exists; exact seasonal interval, synchronized phases, victory/failure and participation/reward admission are absent."
+      ]
     },
     {
       "key": "river_runs_deep",
@@ -1003,6 +1277,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "River Runs Deep Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1023,7 +1305,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76260&oldid=887153"
         }
       ],
-      "reason": "Fishing callback exists; daily flooded/dry layer, probability and spawn bindings are not established."
+      "reason": "W 15 fixes 269 permille and fishing callback exists. Flooded/dry river layer and fishing-object/spawn membership are not bound.",
+      "missing_facts": [
+        "W 15 fixes 269 permille and fishing callback exists. Flooded/dry river layer and fishing-object/spawn membership are not bound."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 269,
+        "duration": "until_next_reset"
+      }
     },
     {
       "key": "spider_nest",
@@ -1038,6 +1328,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Spider Nest Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1058,7 +1352,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=76262&oldid=887154"
         }
       ],
-      "reason": "Mamma Longlegs spell exists; kill progression, entry barrier and daily spawn activation are unqualified."
+      "reason": "Mamma Longlegs spell/base creature exists; active nest spawn membership, entry barrier, daily activation rule and kill progression are not bound.",
+      "missing_facts": [
+        "Mamma Longlegs spell/base creature exists; active nest spawn membership, entry barrier, daily activation rule and kill progression are not bound."
+      ]
     },
     {
       "key": "spirit_grounds",
@@ -1073,6 +1370,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Spirit Grounds Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1093,7 +1394,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=76264&oldid=887160"
         }
       ],
-      "reason": "Storage metadata exists; portal rotation, destinations and spawn variants are not qualified."
+      "reason": "Named gate regions/storage metadata exist; rotation rule, source/destination pairing and spawn-variant membership are absent.",
+      "missing_facts": [
+        "Named gate regions/storage metadata exist; rotation rule, source/destination pairing and spawn-variant membership are absent."
+      ]
     },
     {
       "key": "spring_into_life",
@@ -1108,6 +1412,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Spring into Life"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1128,13 +1436,16 @@
           "url": "https://tibia.fandom.com/index.php?curid=59009&oldid=1099118"
         }
       ],
-      "reason": "Wiki describes eggs/nests/hatchlings; exact seasonal interval, nest positions, hatch timing, reward weights and shop bindings are unqualified."
+      "reason": "Egg/nest/hatchling identities are described; exact seasonal dates, native nest membership, hatch timing, reward weights and merchant admission are absent.",
+      "missing_facts": [
+        "Egg/nest/hatchling identities are described; exact seasonal dates, native nest membership, hatch timing, reward weights and merchant admission are absent."
+      ]
     },
     {
       "key": "stampede",
       "title": "Stampede Mini World Change",
       "quest": "oteryn:quest.stampede_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1143,6 +1454,18 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Stampede Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W6/W15:125permille;62/498observed days;until_next_reset"
+        },
+        {
+          "path": "content/encounters/raids/catalogue.json",
+          "locator": "raid:porthope.stampede;16;32825,32667,7-32888,32675,7;2000ms;86400s;21600000ms"
+        },
+        {
+          "path": "crates/gameplay/progression/src/bestiary_achievement.rs",
+          "locator": "KILLS:5terrified_elephant=>trail_of_the_ape_god"
         }
       ],
       "source_refs": [
@@ -1163,7 +1486,21 @@
           "url": "https://tibia.fandom.com/index.php?curid=76266&oldid=887155"
         }
       ],
-      "reason": "Wiki identifies Banuta stampede grounds; activation chance, elephant wave anchors and reset bindings are missing."
+      "reason": "Accepted W 15 daily 125-permille gate composed with the existing Stampede raid schedule, 16 Terrified Elephants and bound Tiquanda area; existing fifth-credited-kill achievement path. The raid keeps its own native interval/margin and until-reset creature lifetime.",
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 125,
+        "duration": "until_next_reset",
+        "observed_active_days": 62,
+        "observed_days": 498
+      },
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:porthope.stampede",
+        "multiplicity": "CHANNEL_LOCAL_REPEATABLE",
+        "achievement": "oteryn:achievement/trail_of_the_ape_god",
+        "credited_kills": 5
+      }
     },
     {
       "key": "steamship",
@@ -1178,6 +1515,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Steamship World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1198,7 +1539,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=54769&oldid=772277"
         }
       ],
-      "reason": "Wiki records 200 shared Coal, whereas the personal 20-Coal recipe is an explicit approximation. Shared transport unlock and coal debit are unbound."
+      "reason": "200 sharedCoal and Junkar destinations/prices are known. Coal custody/debit, shared unlock transition and transport gate are absent; savecoal dialogue is not a debit.",
+      "missing_facts": [
+        "200 sharedCoal and Junkar destinations/prices are known. Coal custody/debit, shared unlock transition and transport gate are absent; savecoal dialogue is not a debit."
+      ]
     },
     {
       "key": "swamp_fever",
@@ -1213,6 +1557,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Swamp Fever World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1233,7 +1581,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=55045&oldid=749214"
         }
       ],
-      "reason": "Wiki/recipe does not establish epidemic threshold, medicine custody/drop rules or shared activation bindings."
+      "reason": "Ottokar exchanges medicine 12517 for belongings 12413 as an individual task. Epidemic threshold, medicine drop/custody and shared disease transition are absent.",
+      "missing_facts": [
+        "Ottokar exchanges medicine 12517 for belongings 12413 as an individual task. Epidemic threshold, medicine drop/custody and shared disease transition are absent."
+      ]
     },
     {
       "key": "thawing",
@@ -1291,6 +1642,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "The Fire-Feathered Serpent World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1311,7 +1666,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=85785&oldid=1078002"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "1000/2000 serpents and 2000 renegadequaras are known. Native credited kills, phased spawns and mission/world transitions are absent.",
+      "missing_facts": [
+        "1000/2000 serpents and 2000 renegadequaras are known. Native credited kills, phased spawns and mission/world transitions are absent."
+      ]
     },
     {
       "key": "the_mage_s_tower",
@@ -1326,6 +1684,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "The Mage's Tower World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1346,7 +1708,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=55046&oldid=1095409"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "250 personal/2000 worldYielothax are known. Credited kills, portal timing, phase transition and collapse projection are not bound.",
+      "missing_facts": [
+        "250 personal/2000 worldYielothax are known. Credited kills, portal timing, phase transition and collapse projection are not bound."
+      ]
     },
     {
       "key": "the_mummy_s_curse",
@@ -1361,6 +1726,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "The Mummy's Curse World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1381,7 +1750,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=55049&oldid=1084983"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Jar actionids 50006-50010, chances and boss/wall coordinates exist. Native shared jar/world composition is absent; duplicate boss spawn and conflicting wall timing in retained donor are unresolved.",
+      "missing_facts": [
+        "Jar actionids 50006-50010, chances and boss/wall coordinates exist. Native shared jar/world composition is absent; duplicate boss spawn and conflicting wall timing in retained donor are unresolved."
+      ]
     },
     {
       "key": "their_masters_voice",
@@ -1439,6 +1811,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Thornfire World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1459,7 +1835,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=54126&oldid=1020842"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "Native global fire/spawn membership, water/action credit, release condition and reset transition are absent.",
+      "missing_facts": [
+        "Native global fire/spawn membership, water/action credit, release condition and reset transition are absent."
+      ]
     },
     {
       "key": "twisted_waters",
@@ -1474,6 +1853,10 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Twisted Waters World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1494,7 +1877,10 @@
           "url": "https://tibia.fandom.com/index.php?curid=55048&oldid=935150"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "1000 worldcorpse deposits, save transitions and 20-hour personal restriction are known. Deposit debit, lake-state projection and catch eligibility are absent.",
+      "missing_facts": [
+        "1000 worldcorpse deposits, save transitions and 20-hour personal restriction are known. Deposit debit, lake-state projection and catch eligibility are absent."
+      ]
     },
     {
       "key": "warpath",
@@ -1509,6 +1895,14 @@
         {
           "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
           "locator": "Warpath Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
         }
       ],
       "source_refs": [
@@ -1529,7 +1923,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76270&oldid=944151"
         }
       ],
-      "reason": "Existing source or authored recipe does not qualify shared activation timing, native layer/spawn/portal bindings and reset semantics. Personal quest recipes are not world-state authority."
+      "reason": "W 15 fixes 373 permille. Native camp/guard/Bibby kill-to-spawn progression, entrance and cooldown binding are absent.",
+      "missing_facts": [
+        "W 15 fixes 373 permille. Native camp/guard/Bibby kill-to-spawn progression, entrance and cooldown binding are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 373,
+        "duration": "until_next_reset"
+      }
     }
   ]
 }

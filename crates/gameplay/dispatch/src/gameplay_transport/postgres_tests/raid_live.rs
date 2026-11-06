@@ -19,6 +19,11 @@ fn raids_global_postgres_badger_map_runtime_e2e() -> TestResult {
 }
 
 #[test]
+fn worldchg_postgres_stampede_map_runtime_e2e() -> TestResult {
+    run_case("worldchg_stampede_map", "raid:porthope.stampede", 16, false)
+}
+
+#[test]
 fn raids_global_postgres_sugar_mommy_map_runtime_boss_death_e2e() -> TestResult {
     run_case("raids_global_boss_e2e", "raid:candia.sugarmommy", 1, true)
 }
@@ -100,7 +105,14 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         area.to.y = area.to.y.max(source_area.to.y);
     }
     assert_eq!(area.from.floor, area.to.floor);
-    assert!(selected.definition.announcements.is_empty());
+    if key.as_str() == "raid:porthope.stampede" {
+        assert_eq!(selected.definition.announcements.len(), 1);
+        assert_eq!(selected.definition.announcements[0].delay_ms, 1_000);
+        assert_eq!(selected.definition.announcements[0].text,
+            "Stampede! The Ape God has stirred up Tiquanda's elephants again!");
+    } else {
+        assert!(selected.definition.announcements.is_empty());
+    }
     let from = (u16::try_from(area.from.x)?, u16::try_from(area.from.y)?);
     let to = (u16::try_from(area.to.x)?, u16::try_from(area.to.y)?);
     let native_floor = i8::try_from(area.from.floor.checked_neg().ok_or("native floor")?)?;
@@ -140,6 +152,13 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
     seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
     let now = i64::from(selected.definition.waves.first().ok_or("wave")?.delay_ms);
+    if key.as_str() == "raid:porthope.stampede" {
+        let announcement = harness.root.advance_raid_run(
+            &harness.node, firing, owner.channel_id, generation, selected.definition.clone(), 1_000,
+        ).await?.ok_or("Stampede announcement")?;
+        assert!(matches!(announcement.action, CommittedRaidAction::Announcement { .. }));
+        harness.root.acknowledge_raid_effect(&harness.node, announcement.identity, vec![], 1_000).await?;
+    }
     let wave = harness.root.advance_raid_run(
         &harness.node, firing, owner.channel_id, generation, selected.definition.clone(), now,
     ).await?.ok_or("committed wave")?;
