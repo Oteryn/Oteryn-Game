@@ -1,0 +1,29 @@
+{
+  "task_id": "questpc4",
+  "classification": "NATIVE_MAP_OBSERVATION_ONLY_NOT_REWARD_BINDING",
+  "Voodoo Doll Quest": [
+    {
+      "native_file": "content/world/placements/region-z09-x127-y124.b3",
+      "position": [
+        32757,
+        31953,
+        9
+      ],
+      "item": 2473,
+      "house": 0,
+      "attrs": null
+    },
+    {
+      "native_file": "content/world/placements/region-z09-x127-y124.b3",
+      "position": [
+        32757,
+        31957,
+        9
+      ],
+      "item": 2473,
+      "house": 0,
+      "attrs": null
+    }
+  ],
+  "Torch Quest": []
+}

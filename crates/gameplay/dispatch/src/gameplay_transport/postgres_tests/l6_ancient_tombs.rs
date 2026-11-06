@@ -103,13 +103,11 @@ pub(super) async fn exercise(
                 .ok_or("instrument placement")?;
         let mut placement = digest.clone();
         placement.extend_from_slice(&key.to_be_bytes());
-        Ok(
-            oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
-                placement,
-                expected_revision: revision,
-            })
-            .map_err(debug)?,
-        )
+        oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
+            placement,
+            expected_revision: revision,
+        })
+        .map_err(debug)
     };
     approach(owner, admitted, INSTRUMENTS[1].1, &mut command).await?;
     owner.clock_origin -= std::time::Duration::from_secs(2);

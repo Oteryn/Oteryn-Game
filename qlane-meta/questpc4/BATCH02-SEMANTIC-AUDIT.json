@@ -1,0 +1,150 @@
+{
+  "task_id": "questpc4",
+  "base": "c1e4ee612",
+  "native_source_selector_changes": [
+    {
+      "position": [
+        32966,
+        32626,
+        5
+      ],
+      "item": 4634,
+      "attribute": "action",
+      "value": 50022
+    },
+    {
+      "position": [
+        32573,
+        32121,
+        7
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30034
+    },
+    {
+      "position": [
+        32968,
+        32629,
+        7
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "value": 50022
+    },
+    {
+      "position": [
+        32968,
+        32630,
+        7
+      ],
+      "item": 1720,
+      "attribute": "action",
+      "value": 50022
+    },
+    {
+      "position": [
+        32967,
+        32630,
+        8
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "value": 50022
+    },
+    {
+      "position": [
+        33190,
+        31684,
+        14
+      ],
+      "item": 5102,
+      "attribute": "action",
+      "value": 1070
+    },
+    {
+      "position": [
+        33195,
+        31684,
+        14
+      ],
+      "item": 5102,
+      "attribute": "action",
+      "value": 1070
+    }
+  ],
+  "callbacks_added": [
+    "oteryn:quest-callback/triangle-tower-wall",
+    "oteryn:quest-callback/waterfall-splash"
+  ],
+  "callback_changed_fields": {
+    "oteryn:quest-callback/waterfall-cave-entry": [
+      "facing"
+    ],
+    "oteryn:quest-callback/waterfall-cliff": [
+      "effects"
+    ],
+    "oteryn:quest-callback/waterfall-cave-exit": [
+      "facing"
+    ]
+  },
+  "native_profiles_added": [
+    "oteryn:item.tibia.i5102",
+    "oteryn:item.tibia.i5103"
+  ],
+  "existing_native_profiles_changed": 0,
+  "quest_definition_provenance": [
+    {
+      "path": "content/quests/definitions/index.json",
+      "changed_json_pointers": [
+        "/authoring_sources/14/sha256",
+        "/authoring_sources/140/sha256",
+        "/authoring_sources/141/sha256"
+      ]
+    },
+    {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "changed_json_pointers": [
+        "/records/21/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/23/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/89/definition/oteryn_recipe/source_change_provenance/sha256"
+      ]
+    },
+    {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "changed_json_pointers": [
+        "/records/6/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/9/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/15/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/18/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/26/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/27/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/35/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/45/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/53/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/57/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/65/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/72/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/92/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/93/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/94/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/99/definition/oteryn_recipe/source_change_provenance/sha256"
+      ]
+    },
+    {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "changed_json_pointers": [
+        "/records/0/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/1/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/7/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/10/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/24/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/25/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/44/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/47/definition/oteryn_recipe/source_change_provenance/sha256",
+        "/records/79/definition/oteryn_recipe/source_change_provenance/sha256"
+      ]
+    }
+  ],
+  "quest_definition_gameplay_changed": false
+}

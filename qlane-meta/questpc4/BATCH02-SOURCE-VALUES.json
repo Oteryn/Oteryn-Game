@@ -1,0 +1,70 @@
+{
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "path": "src/utils/utils_definitions.hpp",
+  "sha256": "03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d",
+  "values": [
+    {
+      "line": 109,
+      "text": "CONST_ME_WATERSPLASH = 54,"
+    }
+  ],
+  "door_xml_values": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/items/items.xml",
+      "line": 14508,
+      "text": "<item id=\"5102\" article=\"a\" name=\"gate of expertise\">"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/items/items.xml",
+      "line": 14513,
+      "text": "<item id=\"5103\" article=\"a\" name=\"gate of expertise\">"
+    }
+  ],
+  "quest_selectors": [
+    {
+      "path": "data-global/startup/tables/door_level.lua",
+      "line": 152,
+      "action": 1070,
+      "required_level": 70,
+      "positions": [
+        [
+          33190,
+          31684,
+          14
+        ],
+        [
+          33195,
+          31684,
+          14
+        ]
+      ]
+    },
+    {
+      "path": "data-global/startup/tables/lever.lua",
+      "line": 1022,
+      "unique": 30034,
+      "appearance": 2772,
+      "position": [
+        32573,
+        32121,
+        7
+      ]
+    },
+    {
+      "path": "data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua",
+      "line": 4,
+      "remove": 1270,
+      "create": 1025,
+      "position": [
+        32566,
+        32119,
+        7
+      ]
+    }
+  ]
+}

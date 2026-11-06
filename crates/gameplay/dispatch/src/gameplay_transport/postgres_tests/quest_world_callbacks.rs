@@ -291,11 +291,14 @@ pub(super) fn world(
                     ground_speed: None,
                 }),
             });
-            cells.entry((position.floor, position.x, position.y)).or_default().push(sector::Item {
-                palette,
-                depth: 0,
-                attrs: Default::default(),
-            });
+            cells
+                .entry((position.floor, position.x, position.y))
+                .or_default()
+                .push(sector::Item {
+                    palette,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
         }
     }
     if callback.key == "oteryn:quest-callback/monk-guidance" {

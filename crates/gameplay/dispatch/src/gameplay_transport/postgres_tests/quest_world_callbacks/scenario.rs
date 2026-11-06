@@ -41,7 +41,7 @@ fn scenario_case(
         name
     })?;
     if ancient_instruments {
-        // The fixture supplies literal instrument appearances and action IDs;
+        // The fixture supplies source-verified native positions and appearances;
         // all matching and durable effects still come from the production registry.
         callback.key = "oteryn:quest-callback/l6-instrument-fixture".into();
         callback.selector.unique = None;
@@ -189,7 +189,10 @@ fn scenario_case(
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
         if ancient_instruments {
-            super::super::l6_ancient_tombs::exercise(&mut owner, &mut admitted, &h, &authority, fence, trigger).await?;
+            super::super::l6_ancient_tombs::exercise(
+                &mut owner, &mut admitted, &h, &authority, fence, trigger,
+            )
+            .await?;
         } else if name == "triangle-tower-wall" {
             super::super::triangle_tower::exercise(&mut owner, &mut admitted, &world, &callback, trigger).await?;
         } else if let Some(expected_destination) = stateless_destination {

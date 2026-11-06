@@ -1,0 +1,95 @@
+{
+  "task_id": "questpc4",
+  "phase": "AUTHORING",
+  "base_sha": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "branch": "detached task worktree",
+  "frozen_sha": null,
+  "pr": null,
+  "qualified_additional_cohorts": [
+    "The Ape City Quest",
+    "The Hidden City of Beregar Quest",
+    "The Ice Islands Quest",
+    "The Inquisition Quest",
+    "The New Frontier Quest",
+    "The Outlaw Camp Quest",
+    "The Paradox Tower Quest",
+    "The Shattered Isles Quest",
+    "The White Raven Monastery Quest",
+    "Threatened Dreams Quest",
+    "What a Foolish Quest"
+  ],
+  "additional_placements": 32,
+  "total_fixture_cohorts": 23,
+  "total_fixture_placements": 58,
+  "unchanged_pinned_quest_tree_inputs": 146,
+  "validation": {
+    "dispatch_check": {
+      "log": "logs/recovery-dispatch-check.log",
+      "exit": 0,
+      "passed_tests": null
+    },
+    "clippy_all_targets_all_features": {
+      "log": "logs/recovery-final-clippy.log",
+      "exit": 0,
+      "passed_tests": null
+    },
+    "fmt": {
+      "log": "logs/recovery-final-fmt.log",
+      "exit": 0,
+      "passed_tests": null
+    },
+    "native_provider_check": {
+      "log": "logs/recovery-final-native-check.log",
+      "exit": 0,
+      "passed_tests": null
+    },
+    "pin_check": {
+      "log": "logs/recovery-pin-check.log",
+      "exit": 0,
+      "passed_tests": null
+    },
+    "integration_content_binder": {
+      "log": "logs/recovery-integration-content.log",
+      "exit": 0,
+      "passed_tests": 135
+    },
+    "world_repository": {
+      "log": "logs/recovery-world-repository.log",
+      "exit": 0,
+      "passed_tests": 5
+    },
+    "content_unit": {
+      "log": "logs/recovery-content-unit.log",
+      "exit": 0,
+      "passed_tests": 6
+    },
+    "quest_unit": {
+      "log": "logs/recovery-quest-unit.log",
+      "exit": 0,
+      "passed_tests": 11
+    },
+    "reward_python_unit": {
+      "log": "logs/recovery-renamed-reward-unit.log",
+      "exit": 0,
+      "passed_tests": 63
+    },
+    "source_python_unit": {
+      "log": "logs/recovery-renamed-source-unit.log",
+      "exit": 0,
+      "passed_tests": 15
+    },
+    "native_python_unit": {
+      "log": "logs/recovery-final-native-unit.log",
+      "exit": 0,
+      "passed_tests": 13
+    }
+  },
+  "unfinished": [
+    "Explorer Society UID6078: source Item3208 vs canonical Item12510",
+    "recorded access/native-binding and Waterfall presentation gaps",
+    "NPC exchanges, storylines, outfits",
+    "book READ/TextWindow presentation"
+  ],
+  "pending_owner_questions": [],
+  "next_step": "Coordinator review of reward batch; resolve the named source/engine gaps before whole-quest qualification."
+}

@@ -1,0 +1,828 @@
+{
+  "task_id": "questpc4",
+  "base": "c1e4ee612",
+  "rule": "Game work is actionable in this lane; only owner-excluded content and in-flight WORLDCHG/ITEMHOLD ownership may remain BLOCKED. Grouping never qualifies a quest.",
+  "groups": {
+    "atomic_hand_in_and_delivery": 26,
+    "occurrence_counters": 5,
+    "party_lever_and_encounter_composition": 13,
+    "portal_lifecycle": 1,
+    "item_assembly_and_tool_transformations": 10,
+    "native_item_admission_and_lifetime": 3,
+    "calendar_and_repeatable_receipts": 8,
+    "conditional_storyline_and_access": 6,
+    "appearance_grants": 6,
+    "source_placement_admission": 4,
+    "map_callback_effects": 2,
+    "world_change_state": 10
+  },
+  "quests": [
+    {
+      "title": "The Ape City Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Cough Syrup/Hydra Egg hand-ins and subsequent ape missions have no atomic source-qualified carried-item transition; the whisper-moss/parchment claims do not cover them.",
+      "source": ".questpc4/evidence/wiki/The Ape City Quest_Spoiler.wiki:6"
+    },
+    {
+      "title": "The Blessed Stake Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The 5,000-gold purchase, prayer chain and actual Blessed Wooden Stake delivery have no composed current transaction binding in the shared Friends and Traders recipe.",
+      "source": ".questpc4/evidence/wiki/The Blessed Stake Quest_Spoiler.wiki:9"
+    },
+    {
+      "title": "The Djinn War - Efreet Faction",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The Sleeping Lamp exchange and final Efreet shop access have no source-qualified native item hand-in/delivery binding.",
+      "source": ".questpc4/evidence/wiki/The Djinn War - Efreet Faction_Spoiler.wiki:195"
+    },
+    {
+      "title": "The Djinn War - Marid Faction",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The cookbook/spy-report hand-ins and final Marid shop access have no source-qualified native item exchange/delivery binding.",
+      "source": ".questpc4/evidence/wiki/The Djinn War - Marid Faction_Spoiler.wiki:10"
+    },
+    {
+      "title": "The Gravedigger of Drefia Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Omrabas' ordered ingredient hand-ins, brain machine and Dragonsoul altar are not composed into a complete native mission transaction; existing twelve callbacks cover only fragments.",
+      "source": ".questpc4/evidence/wiki/The Gravedigger of Drefia Quest_Spoiler.wiki:18"
+    },
+    {
+      "title": "The Hunt for the Sea Serpent Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Captain Haba's fish/bait hand-in and sea-serpent route choice lack atomic item/travel bindings; only lookout up/down callbacks are admitted.",
+      "source": ".questpc4/evidence/wiki/The Hunt for the Sea Serpent Quest_Spoiler.wiki:9"
+    },
+    {
+      "title": "The Ice Islands Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Ice Islands' ordered hand-ins and ship-mast sabotage lack a complete native mission/delivery route; the source bag and written book are reward-only evidence.",
+      "source": ".questpc4/evidence/wiki/The Ice Islands Quest_Spoiler.wiki:39"
+    },
+    {
+      "title": "The Isle of Evil Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Rapanaio's fuel/ingredient hand-ins and final delivery are held inventory-bearing dialogue branches; state-only Isle dialogue and upper teleport are insufficient.",
+      "source": ".questpc4/evidence/wiki/The Isle of Evil Quest_Spoiler.wiki:22"
+    },
+    {
+      "title": "The Lost Brother Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Tarun's Red Gem plus3,000XP and conditional Lost Palace Raider grant need one earned delivery binding after the remains callback; the callback alone does not grant them.",
+      "source": ".questpc4/evidence/wiki/The Lost Brother Quest_Spoiler.wiki:6"
+    },
+    {
+      "title": "The Mermaid Marina Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Marina's50-Honeycomb unlock and10-Spider-Silk-to-yarn exchange lack a native atomic carried-input/reward mapping; the shared recipe has no executable item branch.",
+      "source": ".questpc4/evidence/wiki/The Mermaid Marina Quest_Spoiler.wiki:7"
+    },
+    {
+      "title": "The New Frontier Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The Beaver Bait/tree hand-in and mission/final travel access are not bound as a complete native route; the source chests and six scalar world callbacks are partial evidence.",
+      "source": ".questpc4/evidence/wiki/The New Frontier Quest_Spoiler.wiki:19"
+    },
+    {
+      "title": "The Postman Missions Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Waldo's Posthorn and the ordered postal hand-ins need native item deliveries and service unlock; the letterbag ground offering alone does not qualify all ten missions.",
+      "source": ".questpc4/evidence/wiki/The Postman Missions Quest_Spoiler.wiki:152"
+    },
+    {
+      "title": "The Repenters Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Ashari's elemental/mushroom inputs, repeatable soul/reward outcomes and final transaction have no selected native delivery/encounter binding.",
+      "source": ".questpc4/evidence/wiki/The Repenters Quest_Spoiler.wiki:11"
+    },
+    {
+      "title": "The Shattered Isles Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The Love Poem/Eleonore hand-in and pirate travel/storyline deliverables lack native atomic item/travel bindings; Dragha's source book is only one qualified reward.",
+      "source": ".questpc4/evidence/wiki/The Shattered Isles Quest_Spoiler.wiki:8"
+    },
+    {
+      "title": "The Sweaty Cyclops Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The three-Bast-Skirt unlock and steel/soul-orb trades need atomic consumed-input, unlocked-state and minted-output mappings; the current shared recipe lacks those executable bindings.",
+      "source": ".questpc4/evidence/wiki/The Sweaty Cyclops Quest_Spoiler.wiki:7"
+    },
+    {
+      "title": "The Thieves Guild Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Sarina's Vase, invitation and fish hand-ins lack native atomic delivery branches; all seven source reward placements passed independently.",
+      "source": ".questpc4/evidence/wiki/The Thieves Guild Quest_Spoiler.wiki:18"
+    },
+    {
+      "title": "The Ultimate Booze Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Boozer's issued bottle, source brown-ale cask fill and returned-bottle reward have no exact native fluid hand-in/delivery binding in the Tibia Tales aggregate.",
+      "source": ".questpc4/evidence/wiki/The Ultimate Booze Quest_Spoiler.wiki:10"
+    },
+    {
+      "title": "The White Raven Monastery Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Dalbrect's Family Brooch hand-in, island travel access and monastery fee/service composition remain unbound; the brooch chest alone passed.",
+      "source": ".questpc4/evidence/wiki/The White Raven Monastery Quest_Spoiler.wiki:25"
+    },
+    {
+      "title": "To Appease the Mighty Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Kazzan's mission needs an earned atomic20-Platinum-Coin NPC reward after the Umar/Ubaid branches and their Djinn-faction exclusions. The current Quest writer commits scalar tracks, while NPC trade requires an offer/payment and cannot mint this mission reward. The Tibia Tales aggregate does not supply that native reward owner.",
+      "source": ".questpc4/evidence/wiki/To Appease the Mighty Quest_Spoiler.wiki:3"
+    },
+    {
+      "title": "To Blind the Enemy Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Eroth's mirror issue/return and Elvenbane mission award have no native atomic item-to-quest delivery binding; four source claims are reward-only evidence.",
+      "source": ".questpc4/evidence/wiki/To Blind the Enemy Quest_Spoiler.wiki:6"
+    },
+    {
+      "title": "To Outfox a Fox Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Budrik's returned Mining Helmet exchange and sealed-door entitlement lack a native atomic hand-in/mission-completion binding; the helmet chest itself passed.",
+      "source": ".questpc4/evidence/wiki/To Outfox a Fox Quest_Spoiler.wiki:9"
+    },
+    {
+      "title": "Tomes of Knowledge Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The additional Curos/Zalamon NPC tomes and Cael's incremental hand-in/access unlocks remain unbound; the five source chest placements are not every tome's path.",
+      "source": ".questpc4/evidence/wiki/Tomes of Knowledge Quest_Spoiler.wiki:45"
+    },
+    {
+      "title": "Top of the City Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Iriana's rooftop food-crate hand-in and exact chest placement have no admitted native dialogue/item/reward binding in the selected authored recipe.",
+      "source": ".questpc4/evidence/wiki/Top of the City Quest_Spoiler.wiki:11"
+    },
+    {
+      "title": "Troll Sabotage Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Jerom's Helmet of the Deep/Boots of Haste exchanges and mountain-vortex return need real atomic inventory/travel effects; classic_talk explicitly holds those branches.",
+      "source": ".questpc4/evidence/wiki/Troll Sabotage Quest_Spoiler.wiki:4"
+    },
+    {
+      "title": "Unnatural Selection Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Lazaran's Holy Skull and final beer hand-ins lack atomic item/delivery branches; the dance/achievement and ray-of-light callbacks do not implement these hand-ins.",
+      "source": ".questpc4/evidence/wiki/Unnatural Selection Quest_Spoiler.wiki:81"
+    },
+    {
+      "title": "Vampire Hunter Quest",
+      "mechanism": "atomic_hand_in_and_delivery",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Storkus' six token tiers(1/4/5/10/30/50) need atomic burns, XP/rank and final doll/achievement/access grants; the Blood Skull claim is only reward-path evidence.",
+      "source": ".questpc4/evidence/wiki/Vampire Hunter Quest_Spoiler.wiki:23"
+    },
+    {
+      "title": "The Beginning Quest",
+      "mechanism": "occurrence_counters",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Santiago's three-cockroach occurrence counter and Zirella's wood hand-in lack native completion/delivery bindings; no scalar dialogue completion may substitute.",
+      "source": ".questpc4/evidence/wiki/The Beginning Quest_Spoiler.wiki:17"
+    },
+    {
+      "title": "The Exterminator Quest",
+      "mechanism": "occurrence_counters",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Padreia's extermination mission needs real creature occurrence counts and the final paid reward; shared Tibia Tales identities and Lions Rock callbacks do not bind that mission.",
+      "source": ".questpc4/evidence/wiki/The Exterminator Quest_Spoiler.wiki:5"
+    },
+    {
+      "title": "The First Dragon Quest",
+      "mechanism": "occurrence_counters",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Tamoril's dragon-kill/treasure conditions and final boss admission/rewards remain unbound; the four admitted exit portals are only the return route.",
+      "source": ".questpc4/evidence/wiki/The First Dragon Quest_Spoiler.wiki:7"
+    },
+    {
+      "title": "The Tainted Souls Quest",
+      "mechanism": "occurrence_counters",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The talisman-on-live-Tainted-Soul operation,100-soul gate and20-hour Ekatrix reset lack native source-qualified creature transformation/cooldown bindings.",
+      "source": ".questpc4/evidence/wiki/The Tainted Souls Quest_Spoiler.wiki:19"
+    },
+    {
+      "title": "Threatened Dreams Quest",
+      "mechanism": "occurrence_counters",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Maelyrra's summed counters and item/final bag reward branches are explicitly held in threatened_dreams.rs; scalar branches and source book/mirror chests do not cover them.",
+      "source": ".questpc4/evidence/wiki/Threatened Dreams Quest_Spoiler.wiki:16"
+    },
+    {
+      "title": "25 Years of Tibia Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The time-machine memory route and Lord Retro encounter lack selected native occurrence and reward-delivery bindings; the retained recipe is a chosen-source approximation.",
+      "source": ".questpc4/evidence/wiki/25 Years of Tibia Quest_Spoiler.wiki:15"
+    },
+    {
+      "title": "The Annihilator Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The four-player lever needs party admission, encounter occupancy, demons and timed escape; the four reward choices have separate PG evidence only.",
+      "source": ".questpc4/evidence/wiki/The Annihilator Quest_Spoiler.wiki:4"
+    },
+    {
+      "title": "The Demon Oak Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Hallowed Axe use on all four Oak parts must compose progress, defender waves and final reward entitlement; the existing square/grave callbacks do not supply this sequence.",
+      "source": ".questpc4/evidence/wiki/The Demon Oak Quest_Spoiler.wiki:16"
+    },
+    {
+      "title": "The Desert Dungeon Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The multi-vocation offering stations and central lever need one atomic party/item/access occurrence; the chosen targets remain unbound.",
+      "source": ".questpc4/evidence/wiki/The Desert Dungeon Quest_Spoiler.wiki:6"
+    },
+    {
+      "title": "The Dream Courts Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Ice/Sun Ward Stones, dream access and Nightmare Beast completion lack a composed source-qualified native storyline; return portals alone are insufficient.",
+      "source": ".questpc4/evidence/wiki/The Dream Courts Quest_Spoiler.wiki:47"
+    },
+    {
+      "title": "The Inquisition Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The interrogation/holy-water chain and Shadow Nexus boss completion need their exact native event-to-quest composition; the reward books and return portals are only partial paths.",
+      "source": ".questpc4/evidence/wiki/The Inquisition Quest_Spoiler.wiki:146"
+    },
+    {
+      "title": "The Order of the Lion Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Fugue encounter/reward composition and the unqualified Bounac stair collision route remain outside the seven admitted callbacks; the batch-four exclusions retain the stair pair.",
+      "source": ".questpc4/evidence/wiki/The Order of the Lion Quest_Spoiler.wiki:79"
+    },
+    {
+      "title": "The Pits of Inferno Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The vocation flame/lever route, seven throne conditions and final reward-room admission are not composed into the already-qualified chest choices.",
+      "source": ".questpc4/evidence/wiki/The Pits of Inferno Quest_Spoiler.wiki:15"
+    },
+    {
+      "title": "The Roost of the Graveborn Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The dragon-head ritual, S'Zallar M'Andar progression and multi-boss finale lack native actor/item/access bindings in the selected recipe.",
+      "source": ".questpc4/evidence/wiki/The Roost of the Graveborn Quest_Spoiler.wiki:5"
+    },
+    {
+      "title": "Tower Defence Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Bunny Bonecrusher's parcel delivery, Fire Bug bed burn and wave-completion rewards lack native source-qualified item/encounter composition.",
+      "source": ".questpc4/evidence/wiki/Tower Defence Quest_Spoiler.wiki:9"
+    },
+    {
+      "title": "Twenty Miles Beneath the Sea Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The seaman-skull, Nacre Altar and cursed-gold finale lack source-qualified item/encounter/reward bindings; the recipe's named targets are not native USE selectors.",
+      "source": ".questpc4/evidence/wiki/Twenty Miles Beneath the Sea Quest_Spoiler.wiki:35"
+    },
+    {
+      "title": "Within the Tides Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Tarun's Refiner of Magic and Giant Beaver/trapped-water missions lack exact native item/boss/access composition; the prerequisites and chosen stage names do not bind them.",
+      "source": ".questpc4/evidence/wiki/Within the Tides Quest_Spoiler.wiki:54"
+    },
+    {
+      "title": "Wrath of the Emperor Quest",
+      "mechanism": "party_lever_and_encounter_composition",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "UID14092 is Canary-only without a pinned Crystal counterpart in the shared source fixture; the Magistratus/dragon-dream storyline also needs its own qualified completion route.",
+      "source": ".questpc4/evidence/wiki/Wrath of the Emperor Quest_Spoiler.wiki:102"
+    },
+    {
+      "title": "Thais Lighthouse Quest",
+      "mechanism": "portal_lifecycle",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Pressure-plate departure and paired portal lifecycle are missing; the ladder and both reward claims alone do not implement the two-player route.",
+      "source": ".questpc4/evidence/wiki/Thais Lighthouse Quest_Spoiler.wiki:5"
+    },
+    {
+      "title": "20 Years a Cook Quest",
+      "mechanism": "item_assembly_and_tool_transformations",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The Draccoon trashcan entry and Ratha soul-container chain have no admitted native actor/USE binding in the selected authored recipe.",
+      "source": ".questpc4/evidence/wiki/20 Years a Cook Quest_Spoiler.wiki:9"
+    },
+    {
+      "title": "The Ancient Tombs Quest",
+      "mechanism": "item_assembly_and_tool_transformations",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The seven-pharaoh item assembly and Ashmunrah access/reward composition remain unbound; the existing seventeen callbacks cover only part of the tomb mechanisms.",
+      "source": ".questpc4/evidence/wiki/The Ancient Tombs Quest_Spoiler.wiki:8"
+    },
+    {
+      "title": "The Cradle of Monsters Quest",
+      "mechanism": "item_assembly_and_tool_transformations",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Dangerous Apparatus, collection-container outputs and the Ingol laboratory mission chain remain unresolved native USE/receipt bindings.",
+      "source": ".questpc4/evidence/wiki/The Cradle of Monsters Quest_Spoiler.wiki:28"
+    },
+    {
+      "title": "The Cursed Crystal Quest",
+      "mechanism": "item_assembly_and_tool_transformations",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The Wooden Grinder, medusa-blood mixture and crystal portal need source-specific item transformation targets; the held recipe supplies identity candidates only.",
+      "source": ".questpc4/evidence/wiki/The Cursed Crystal Quest_Spoiler.wiki:16"
+    },
+    {
+      "title": "The Outlaw Camp Quest",
+      "mechanism": "item_assembly_and_tool_transformations",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The Power Ring/oil/barrel mechanism and numbered-key route are not fully bound; the entry callback and source reward chests are not a whole access-puzzle test.",
+      "source": ".questpc4/evidence/wiki/The Outlaw Camp Quest_Spoiler.wiki:6"
+    },
+    {
+      "title": "The Rookie Guard Quest",
+      "mechanism": "item_assembly_and_tool_transformations",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The rookgaard catapult/web/herb missions and sequential reward deliveries have unresolved native targets; no full Vascalir route is admitted.",
+      "source": ".questpc4/evidence/wiki/The Rookie Guard Quest_Spoiler.wiki:17"
+    },
+    {
+      "title": "The Scatterbrained Sorcerer Quest",
+      "mechanism": "item_assembly_and_tool_transformations",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Eclesius' sweep/feed/blending-device tasks need concrete native tool, timer and item effects; the current identity associations do not select an executable task branch.",
+      "source": ".questpc4/evidence/wiki/The Scatterbrained Sorcerer Quest_Spoiler.wiki:7"
+    },
+    {
+      "title": "Too Hot to Handle Quest",
+      "mechanism": "item_assembly_and_tool_transformations",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The crypt tool transformations,500-point hazard progression and final Gnomevisor access/reward need exact native instance/occurrence bindings; chosen recipe stages are not executable.",
+      "source": ".questpc4/evidence/wiki/Too Hot to Handle Quest_Spoiler.wiki:38"
+    },
+    {
+      "title": "Treasure Hunt Quest",
+      "mechanism": "item_assembly_and_tool_transformations",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Klaus' four map pieces, dice levers and treasure progression have unresolved native selector/receipt bindings; no map-piece identity implies an executable puzzle.",
+      "source": ".questpc4/evidence/wiki/Treasure Hunt Quest_Spoiler.wiki:41"
+    },
+    {
+      "title": "Waterskin of Mead Quest",
+      "mechanism": "item_assembly_and_tool_transformations",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The mission9-gated Furry Bag/fluid-container reward and barrel's exact native selector are not bound; the authored recipe alone cannot mint source mead.",
+      "source": ".questpc4/evidence/wiki/Waterskin of Mead Quest_Spoiler.wiki:4"
+    },
+    {
+      "title": "Targuna Quest",
+      "mechanism": "native_item_admission_and_lifetime",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "UID14093 Silver Amulet has source argument1 versus native/default200 charges, so the full-charge admission cannot qualify it. Exact partial-charge mint/receipt binding is missing; Sterling treasure/Emiliana storyline native targets also remain unbound.",
+      "source": ".questpc4/evidence/wiki/Targuna Quest_Spoiler.wiki:3"
+    },
+    {
+      "title": "The Explorer Society Quest",
+      "mechanism": "native_item_admission_and_lifetime",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The timed icicle delivery and rune/music Item semantics remain unqualified; the batch-four runtime exclusions explicitly retain those native Item gaps.",
+      "source": ".questpc4/evidence/wiki/The Explorer Society Quest_Spoiler.wiki:25"
+    },
+    {
+      "title": "The Queen of the Banshees Quest",
+      "mechanism": "native_item_admission_and_lifetime",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "UID6056 retains SOURCE_CHARGE_MISMATCH: source Stone Skin Amulet argument1 differs from canonical/default5; seals/final encounter also lack full-route qualification.",
+      "source": ".questpc4/evidence/crystal-201189f/data-global/startup/tables/chest.lua:1000"
+    },
+    {
+      "title": "The Colours of Magic",
+      "mechanism": "calendar_and_repeatable_receipts",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The powder-to-participant interaction needs event-calendar and team-color authority plus source-qualified reward inputs; the authored recipe has no such native binding.",
+      "source": ".questpc4/evidence/wiki/The Colours of Magic_Spoiler.wiki:4"
+    },
+    {
+      "title": "The Secret Library Quest",
+      "mechanism": "calendar_and_repeatable_receipts",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Six Falcon chests require random output plus24-hour cooldown, and key0909 remains held; the once-only source fixture cannot represent that reward contract.",
+      "source": ".questpc4/evidence/wiki/The Secret Library Quest_Spoiler.wiki:7"
+    },
+    {
+      "title": "The Travelling Trader Quest",
+      "mechanism": "calendar_and_repeatable_receipts",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Rashid's weekday-specific tests, item hand-ins and final merchant service entitlement lack a native calendar/transaction binding; one delivery callback is insufficient.",
+      "source": ".questpc4/evidence/wiki/The Travelling Trader Quest_Spoiler.wiki:19"
+    },
+    {
+      "title": "Tibia Anniversary",
+      "mechanism": "calendar_and_repeatable_receipts",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The recurring anniversary pinata/sewing interactions lack exact native event and reward-instance bindings in the selected authored recipe.",
+      "source": ".questpc4/evidence/wiki/Tibia Anniversary_Spoiler.wiki:4"
+    },
+    {
+      "title": "Tinder Box Quest",
+      "mechanism": "calendar_and_repeatable_receipts",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "UID3263's source Apr1-May1/20-hour reward differs from the chosen permanent once-only recipe; native calendar/claim binding for that selected recipe is absent.",
+      "source": ".questpc4/evidence/wiki/Tinder Box Quest_Spoiler.wiki:1"
+    },
+    {
+      "title": "Treasure Island Quest",
+      "mechanism": "calendar_and_repeatable_receipts",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Pirate Treasure Map selection/consumption and the corresponding random buried reward lack a source-qualified native harvest/receipt binding.",
+      "source": ".questpc4/evidence/wiki/Treasure Island Quest_Spoiler.wiki:7"
+    },
+    {
+      "title": "Venore Daily Tasks Quest",
+      "mechanism": "calendar_and_repeatable_receipts",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Norman/Scott/Frank tasks require real treadmill/crane/grindstone/pathfinder effects and repeatable task receipts; the selected authored recipe lacks native bindings.",
+      "source": ".questpc4/evidence/wiki/Venore Daily Tasks Quest_Spoiler.wiki:8"
+    },
+    {
+      "title": "Winterlight Solstice",
+      "mechanism": "calendar_and_repeatable_receipts",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The seasonal Percht disguise/torch/fire sequence and final reward epoch lack a native calendar, appearance and world-encounter binding.",
+      "source": ".questpc4/evidence/wiki/Winterlight Solstice_Spoiler.wiki:2"
+    },
+    {
+      "title": "The Hidden City of Beregar Quest",
+      "mechanism": "conditional_storyline_and_access",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Royal Rescue's minecart/rail route and NPC hand-ins remain unbound; all seven source reward placements passed separately.",
+      "source": ".questpc4/evidence/wiki/The Hidden City of Beregar Quest_Spoiler.wiki:14"
+    },
+    {
+      "title": "The Order of the Stag Quest",
+      "mechanism": "conditional_storyline_and_access",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The Etzel Writ/mandatory source quest progression and Eldoran finale have no selected native dialogue/USE/delivery binding; a death-binding packet alone does not implement the story.",
+      "source": ".questpc4/evidence/wiki/The Order of the Stag Quest_Spoiler.wiki:18"
+    },
+    {
+      "title": "The Paradox Tower Quest",
+      "mechanism": "conditional_storyline_and_access",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The Riddler answer branches and source reward/loss selection remain without a native conditional dialogue/reward binding; skull entry and chest recipes are partial only.",
+      "source": ".questpc4/evidence/wiki/The Paradox Tower Quest_Spoiler.wiki:24"
+    },
+    {
+      "title": "The Spirit Will Get You Quest",
+      "mechanism": "conditional_storyline_and_access",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Cranky Lizard Crone's spirit interaction and final award lack an exact native conditional/delivery binding; its chosen-source targets remain evidence only.",
+      "source": ".questpc4/evidence/wiki/The Spirit Will Get You Quest_Spoiler.wiki:8"
+    },
+    {
+      "title": "Tibia Tales",
+      "mechanism": "conditional_storyline_and_access",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The catalogue umbrella shares one canonical recipe across distinct tales; its selected bindings do not compose every component's actual item/event reward path.",
+      "source": ".questpc4/evidence/wiki/Tibia Tales.wiki:2"
+    },
+    {
+      "title": "Tutorial",
+      "mechanism": "conditional_storyline_and_access",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The wounded Cave Draptor treatment, tutorial hole and crystal exit have unresolved native action/actor bindings; this is the pinned Tutorial title, not excluded Dawnport.",
+      "source": ".questpc4/evidence/wiki/Tutorial.wiki:11"
+    },
+    {
+      "title": "Warmaster Outfits Quest",
+      "mechanism": "appearance_grants",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Serpent Crest/Snake Sceptre hand-ins have no source-qualified native appearance-grant mapping; selected canonical recipe is held, and base outfit identity is not an addon grant.",
+      "source": ".questpc4/evidence/wiki/Warmaster Outfits Quest_Spoiler.wiki:13"
+    },
+    {
+      "title": "Warrior Outfits Quest",
+      "mechanism": "appearance_grants",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Trisha/Cornelia's timed spike and Morgan's sword hand-ins lack exact native appearance addon, item-burn and timer bindings; appearance identity presence grants no entitlement.",
+      "source": ".questpc4/evidence/wiki/Warrior Outfits Quest_Spoiler.wiki:11"
+    },
+    {
+      "title": "Wayfarer Outfits Quest",
+      "mechanism": "appearance_grants",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Cranky Lizard Crone's Brimstone/Fallen Brimstone item hand-ins and paired addon grants lack source-qualified native appearance/delivery mappings.",
+      "source": ".questpc4/evidence/wiki/Wayfarer Outfits Quest_Spoiler.wiki:20"
+    },
+    {
+      "title": "What a Foolish Quest",
+      "mechanism": "appearance_grants",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Bozo's vial/pie/wine/watch hand-ins and Jester outfit/addons remain unbound as inventory-bearing native branches; two source chests passed independently.",
+      "source": ".questpc4/evidence/wiki/What a Foolish Quest_Spoiler.wiki:69"
+    },
+    {
+      "title": "Wizard Outfits Quest",
+      "mechanism": "appearance_grants",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The wizard mask/tiara material hand-ins lack exact native addon-grant mappings and atomic burns; the shared outfit recipe does not certify this specific branch.",
+      "source": ".questpc4/evidence/wiki/Wizard Outfits Quest_Spoiler.wiki:10"
+    },
+    {
+      "title": "Yalaharian Outfits Quest",
+      "mechanism": "appearance_grants",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "Palimuth/Yalahari outfit/addon claims have no selected native provenance-compatible appearance-grant mapping; the outfit identity is not an earned entitlement.",
+      "source": ".questpc4/evidence/wiki/Yalaharian Outfits Quest_Spoiler.wiki:21"
+    },
+    {
+      "title": "The Great Dragon Hunt Quest",
+      "mechanism": "source_placement_admission",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The Dragon Hunt dead-explorer/hoard claim has no exact selected native target/reward binding; its canonical Adventurers Guild aggregate also contains the separate Lost Brother task.",
+      "source": ".questpc4/evidence/wiki/The Great Dragon Hunt Quest_Spoiler.wiki:5"
+    },
+    {
+      "title": "Torch Quest",
+      "mechanism": "source_placement_admission",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The chosen recipe restores an obsolete quest, but its Academy lever/reward target has no canonical modern placement/UID binding; no target is invented from prose.",
+      "source": ".questpc4/evidence/wiki/Torch Quest_Spoiler.wiki:1"
+    },
+    {
+      "title": "Vampire Shield Quest",
+      "mechanism": "source_placement_admission",
+      "owner": "questpc4",
+      "state": "QUALIFIED",
+      "missing_piece": "Native doors5102 at(33190,31684,-14)/(33195,31684,-14) have attrs=None, so neither carries the required1070 level70 action. Generic expertise-door support already exists; exact source placement/action admission is missing. The retained corpus contains no startup/tables/door_level.lua to resolve that binding without inventing it.",
+      "source": ".questpc4/evidence/wiki/Vampire Shield Quest_Spoiler.wiki:9",
+      "qualification": {
+        "test": "m06q_quest_doors::vampire_shield_placed_level_doors_require_seventy_over_wire",
+        "log": ".questpc4/logs/batch02-vampire-current-pg.log",
+        "duration": "60.632619611s",
+        "marker": "POSTGRES_CASE_COMPLETED vampire_shield_level_doors duration=60.632619611s",
+        "scope": "Both actual native5102/action1070 source placements; real production progression/build/live-fact refresh; real USE refusal69/admission70; same-command replay and new-command stale refusal. Exact source-derived5102/5103 native door profiles admitted. Three source reward chests remain separately proved.",
+        "parity_record": ".questpc4/BATCH02-REVIEW.md",
+        "source_values": ".questpc4/BATCH02-SOURCE-VALUES.json",
+        "semantic_audit": ".questpc4/BATCH02-SEMANTIC-AUDIT.json"
+      }
+    },
+    {
+      "title": "Voodoo Doll Quest",
+      "mechanism": "source_placement_admission",
+      "owner": "questpc4",
+      "state": "ACTIONABLE",
+      "missing_piece": "The source shows swamp reward boxes but the chosen authored recipe supplies no canonical chest UIDs/native selectors; no arbitrary placement is substituted.",
+      "source": ".questpc4/evidence/wiki/Voodoo Doll Quest_Spoiler.wiki:9"
+    },
+    {
+      "title": "Triangle Tower Quest",
+      "mechanism": "map_callback_effects",
+      "owner": "questpc4",
+      "state": "QUALIFIED",
+      "missing_piece": "UID30034 needs asymmetric wall remove1270/close1025; the reversible generic wall rule does not implement this source selector. Full source reward bag passed.",
+      "source": ".questpc4/evidence/wiki/Triangle Tower Quest_Spoiler.wiki:3",
+      "qualification": {
+        "test": "triangle_tower::triangle_tower_source_wall_cycle_over_use_wire",
+        "log": ".questpc4/logs/batch02-triangle-qualified-pg.log",
+        "duration": "34.271905343s",
+        "marker": "POSTGRES_CASE_COMPLETED triangle_tower_wall duration=34.271905343s",
+        "scope": "Real USE on UID30034 removes1270 and opens collision; replay does not toggle twice; closing creates1025; later source uses create distinct1025 walls without reopening. Actual native basement portal returns through real STEP. Existing complete reward bag remains separately proved. No donor bug correction is invented.",
+        "parity_record": ".questpc4/BATCH02-REVIEW.md",
+        "source_values": ".questpc4/BATCH02-SOURCE-VALUES.json",
+        "semantic_audit": ".questpc4/BATCH02-SEMANTIC-AUDIT.json"
+      }
+    },
+    {
+      "title": "Waterfall Quest",
+      "mechanism": "map_callback_effects",
+      "owner": "questpc4",
+      "state": "QUALIFIED",
+      "missing_piece": "All three teleports and the bag passed, but the source-facing changes and splash effect are absent from the admitted callback representation.",
+      "source": ".questpc4/evidence/wiki/Waterfall Quest_Spoiler.wiki:1",
+      "qualification": {
+        "test": "waterfall_access::waterfall_access_steps_preserve_quest_state",
+        "log": ".questpc4/logs/resume-waterfall-pg.log",
+        "duration": "116.573114609s",
+        "marker": "POSTGRES_CASE_COMPLETED waterfall_access Waterfall access duration=116.573114609s",
+        "scope": "All four source STEP interactions: cliff and tile splash54, cave entry facing South, exit facing East, exact destinations and same-command replay without repeated movement/effects; unchanged durable control state and receipts. Existing source reward bag remains separately proved. All four native selectors are restored from the pinned startup tables.",
+        "parity_record": ".questpc4/BATCH02-REVIEW.md",
+        "source_values": ".questpc4/BATCH02-SOURCE-VALUES.json",
+        "semantic_audit": ".questpc4/BATCH02-SEMANTIC-AUDIT.json"
+      }
+    },
+    {
+      "title": "The Fire-Feathered Serpent World Change",
+      "mechanism": "world_change_state",
+      "owner": "WORLDCHG",
+      "state": "EXTERNAL_DEPENDENCY",
+      "missing_piece": "Renegade Quara kills must change world-owned sea state/travel responses; the retained authored event has no selected native global-state occurrence binding.",
+      "source": ".questpc4/evidence/wiki/The Fire-Feathered Serpent World Change_Spoiler.wiki:24"
+    },
+    {
+      "title": "The Great Expedition",
+      "mechanism": "world_change_state",
+      "owner": "WORLDCHG",
+      "state": "EXTERNAL_DEPENDENCY",
+      "missing_piece": "The expedition requires world donation totals, daily event epochs and shared cargo/generator progress; the selected authored recipe has no exact native global event binding.",
+      "source": ".questpc4/evidence/wiki/The Great Expedition_Spoiler.wiki:7"
+    },
+    {
+      "title": "The Lightbearer",
+      "mechanism": "world_change_state",
+      "owner": "WORLDCHG",
+      "state": "EXTERNAL_DEPENDENCY",
+      "missing_piece": "The world-wide light timers, loss condition and event reward epoch lack a selected native world-event binding; ordinary once-only character claims cannot represent them.",
+      "source": ".questpc4/evidence/wiki/The Lightbearer_Spoiler.wiki:1"
+    },
+    {
+      "title": "The Mage's Tower World Change",
+      "mechanism": "world_change_state",
+      "owner": "WORLDCHG",
+      "state": "EXTERNAL_DEPENDENCY",
+      "missing_piece": "The250-Yielothax personal condition and500-kill global mage-state transition lack composed native counters/encounter ownership.",
+      "source": ".questpc4/evidence/wiki/The Mage's Tower World Change_Spoiler.wiki:19"
+    },
+    {
+      "title": "The Mummy's Curse World Change",
+      "mechanism": "world_change_state",
+      "owner": "WORLDCHG",
+      "state": "EXTERNAL_DEPENDENCY",
+      "missing_piece": "Breaking the Ornate Canopic Jars must atomically advance the world Horestis release cycle; the selected recipe has no exact native jar/reset occurrence binding.",
+      "source": ".questpc4/evidence/wiki/The Mummy's Curse World Change_Spoiler.wiki:7"
+    },
+    {
+      "title": "Their Master's Voice World Change",
+      "mechanism": "world_change_state",
+      "owner": "WORLDCHG",
+      "state": "EXTERNAL_DEPENDENCY",
+      "missing_piece": "Slime Gobbler fungal cleanup and per-event servant raid totals lack a native world reset/occurrence binding; the selected recipe has no admitted delivery path.",
+      "source": ".questpc4/evidence/wiki/Their Master's Voice World Change_Spoiler.wiki:18"
+    },
+    {
+      "title": "Thornfire World Change",
+      "mechanism": "world_change_state",
+      "owner": "WORLDCHG",
+      "state": "EXTERNAL_DEPENDENCY",
+      "missing_piece": "Prepared Bucket use, world fire extinction state and Crystal Wolf transformation lack source-qualified native item/world-event bindings.",
+      "source": ".questpc4/evidence/wiki/Thornfire World Change_Spoiler.wiki:4"
+    },
+    {
+      "title": "Twisted Waters World Change",
+      "mechanism": "world_change_state",
+      "owner": "WORLDCHG",
+      "state": "EXTERNAL_DEPENDENCY",
+      "missing_piece": "Lake Equivocolao's corpse-fed world state and20-hour Shimmer Swimmer harvest need event-owned state, exact native harvest selectors and character receipts.",
+      "source": ".questpc4/evidence/wiki/Twisted Waters World Change_Spoiler.wiki:45"
+    },
+    {
+      "title": "War Against the Hive Quest",
+      "mechanism": "world_change_state",
+      "owner": "WORLDCHG",
+      "state": "EXTERNAL_DEPENDENCY",
+      "missing_piece": "Orockle's powder/corpse hand-ins and shared Hive stage transitions lack native item/world-event bindings; the authored access reward is not an executable gate.",
+      "source": ".questpc4/evidence/wiki/War Against the Hive Quest_Spoiler.wiki:7"
+    },
+    {
+      "title": "Warpath Mini World Change",
+      "mechanism": "world_change_state",
+      "owner": "WORLDCHG",
+      "state": "EXTERNAL_DEPENDENCY",
+      "missing_piece": "The Jakundaf orc encampment state and combat-driven event reset have no selected native world occurrence/delivery binding.",
+      "source": ".questpc4/evidence/wiki/Warpath Mini World Change_Spoiler.wiki:11"
+    }
+  ],
+  "batch_02": [
+    "Waterfall Quest",
+    "Triangle Tower Quest",
+    "Vampire Shield Quest",
+    "Voodoo Doll Quest",
+    "Torch Quest"
+  ],
+  "remaining_groups": {
+    "atomic_hand_in_and_delivery": 26,
+    "occurrence_counters": 5,
+    "party_lever_and_encounter_composition": 13,
+    "portal_lifecycle": 1,
+    "item_assembly_and_tool_transformations": 10,
+    "native_item_admission_and_lifetime": 3,
+    "calendar_and_repeatable_receipts": 8,
+    "conditional_storyline_and_access": 6,
+    "appearance_grants": 6,
+    "source_placement_admission": 3
+  },
+  "continuation_summary": {
+    "ACTIONABLE": 81,
+    "QUALIFIED": 3,
+    "EXTERNAL_DEPENDENCY": 10
+  },
+  "batch_02_state": "IN_PROGRESS: three qualified; Torch and Voodoo remain actionable source-placement work, not BLOCKED."
+}

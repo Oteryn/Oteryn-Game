@@ -1,0 +1,10 @@
+{
+  "base": "c1e4ee612",
+  "current_head": "dcf46eba9ff432ad67b93ec9c43fa495f6c73437",
+  "rustfmt_canonical_outputs_identical": [
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs"
+  ],
+  "scope": "Only our formatting churn removed; all compatibility fields and the new scenario branch retained."
+}
