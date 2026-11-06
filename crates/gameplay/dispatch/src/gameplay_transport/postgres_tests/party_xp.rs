@@ -198,10 +198,21 @@ pub(super) fn run(case: Case) -> TestResult {
                     // One tag per case: the tag names the database and the retained
                     // recovery directory, which concurrent cases must not share.
                     let tag = format!("party_xp_{}", case as u8);
+                    let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+                    let (controller, pin) = if matches!(case, Case::Eqmod2) {
+                        super::equipment_mods::activate(world)?
+                    } else {
+                        crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                            world,
+                            Some(include_bytes!(
+                                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                            )),
+                        )
+                    };
                     let h = Harness::create(admin, &tag, false).await?;
                     eprintln!("PARTY-XP-1 POSTGRES_DATABASE_STARTED case={tag}");
                     let started = std::time::Instant::now();
-                    let result = scenario(&h, case).await;
+                    let result = scenario(&h, case, &controller, &pin).await;
                     h.cleanup().await?;
                     eprintln!(
                         "PARTY-XP-1 POSTGRES_CASE_COMPLETED case={tag} elapsed_seconds={:.2}",
@@ -215,7 +226,12 @@ pub(super) fn run(case: Case) -> TestResult {
         .map_err(|_| "party XP PG thread panicked")?
         .map_err(Into::into)
 }
-async fn scenario(h: &Harness, case: Case) -> TestResult {
+async fn scenario(
+    h: &Harness,
+    case: Case,
+    controller: &crate::content::ContentActivationController,
+    pin: &crate::content::NativeEntryContentPin,
+) -> TestResult {
     let task_board_case = case;
     let t94_case = matches!(case, Case::T94);
     let case = match case {
@@ -263,16 +279,6 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
-    let (controller, pin) = if matches!(case, Case::Eqmod2) {
-        super::equipment_mods::activate(world)?
-    } else {
-        crate::content::native_gameplay::test_support::activated_with_loot_tables(
-            world,
-            Some(include_bytes!(
-                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-            )),
-        )
-    };
     let active = controller.active().expect("active");
     let native = active.native_gameplay().expect("native");
     let room = pin.qualified_room().clone();

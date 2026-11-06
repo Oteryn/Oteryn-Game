@@ -294,16 +294,6 @@ fn scenario_with_creature_observed(
     let holy_target =
         matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
     run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
-        prepare_current_session(&harness).await?;
-        let seal = harness.recovery.seal_current().map_err(debug)?;
-        let authority = harness
-            .root
-            .open_character_authority(&seal)
-            .await
-            .map_err(debug)?;
-
         // The production generation, activated for the fixture's World on the Thalom source
         // world (its tiles carry the protection-zone flags the swing reads).
         let world = WorldId::decode(&id(42)).map_err(debug)?;
@@ -318,6 +308,16 @@ fn scenario_with_creature_observed(
                 )),
                 w22a_tables.as_deref(),
             );
+        let harness =
+            Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
         let room = pin.qualified_room().clone();

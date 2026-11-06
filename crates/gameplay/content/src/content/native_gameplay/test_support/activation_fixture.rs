@@ -17,7 +17,28 @@ fn activate(
     ContentActivationController,
     crate::content::NativeEntryContentPin,
 ) {
-    let room = crate::content::qualify_selected_native_gameplay_room(world, supplied).unwrap();
+    try_activate_input(world, supplied).unwrap()
+}
+
+/// Qualify a fixture once, then use the same sealed activation checks as the node entry path.
+/// Fixture issuance is derived from that qualified room; production issuances remain independent.
+pub fn try_activate_input(
+    world: oteryn_protocol_oteryn::WorldId,
+    supplied: &NativeGameplayInput,
+) -> Result<
+    (
+        ContentActivationController,
+        crate::content::NativeEntryContentPin,
+    ),
+    crate::content::NativeEntryActivationError,
+> {
+    use crate::content::NativeEntryActivationError;
+    supplied
+        .validate_cosmetics_pin()
+        .map_err(crate::content::ProjectError::from)
+        .map_err(NativeEntryActivationError::Qualification)?;
+    let room = crate::content::qualify_selected_native_gameplay_room(world, supplied)
+        .map_err(NativeEntryActivationError::Qualification)?;
     let issuance = NativeEntryActivationIssuance {
         world_id: world,
         activation_sequence: 1,
@@ -26,15 +47,13 @@ fn activate(
         frame_binding_digest: room.frame_binding().digest(),
     };
     let mut controller = ContentActivationController::new();
-    let pin = activate_native_entry_room_with_gameplay(
+    let pin = crate::content::activation::activate_qualified_native_entry_room(
         &mut controller,
         &NodeBootQuiescence::before_channel_runtime(),
-        world,
         &issuance,
-        supplied,
-    )
-    .unwrap();
-    (controller, pin)
+        room,
+    )?;
+    Ok((controller, pin))
 }
 
 pub fn activated_with_loot_tables(

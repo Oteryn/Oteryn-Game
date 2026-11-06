@@ -99,6 +99,11 @@ async fn privacy_case(admin: String) -> TestResult {
                 .is_err(),
             "a live worker cannot reset/fast-forward its cursor"
         );
+        // Exercise a withdrawal paused while its first DB pass still owns the holder.
+        let mut blocker = h.pool.begin().await?;
+        sqlx::query("LOCK TABLE game_character_cast_consent IN ACCESS EXCLUSIVE MODE")
+            .execute(&mut *blocker)
+            .await?;
         let mut withdrawal = std::pin::pin!(h.root.character_cast_consent(
             &authority,
             &h.node,
@@ -110,6 +115,8 @@ async fn privacy_case(admin: String) -> TestResult {
                 .await
                 .is_err()
         );
+        blocker.commit().await?;
+        finish_pending_pass(&h.root, withdrawal.as_mut()).await?;
         // New captures already deny the old preference; a fresh empty worker can
         // start at this prefix without replaying history or resurrecting old media.
         assert_eq!(
@@ -143,6 +150,7 @@ async fn privacy_case(admin: String) -> TestResult {
                         .is_err(),
                     "one worker's ACK must not commit another worker's buffered permission"
                 );
+                finish_pending_pass(&h.root, withdrawal.as_mut()).await?;
                 let allowed: bool =
                     sqlx::query_scalar("SELECT allowed FROM game_character_cast_consent")
                         .fetch_one(&h.pool)
@@ -210,4 +218,48 @@ async fn privacy_case(admin: String) -> TestResult {
         started.elapsed().as_secs_f64()
     );
     result
+}
+
+// A timed poll may stop inside a DB pass, not only at the worker-ACK barrier.
+// Continue polling that same withdrawal until it returns its holder before another
+// owner uses the max-one root. Completing before all ACKs remains a test failure.
+async fn finish_pending_pass<F: std::future::Future>(
+    root: &crate::durability::DurabilityRoot,
+    mut pending: std::pin::Pin<&mut F>,
+) -> TestResult
+where
+    F::Output: std::fmt::Debug,
+{
+    use std::{future::Future as _, task::Poll};
+    let now = tokio::time::Instant::now();
+    let until = now + crate::durability::DB_PASS_DEADLINE;
+    loop {
+        let mut returned = std::pin::pin!(root.wait_holder_retry(now, until));
+        let idle = tokio::time::timeout_at(
+            until,
+            std::future::poll_fn(|cx| -> Poll<TestResult<bool>> {
+                if let Poll::Ready(outcome) = pending.as_mut().poll(cx) {
+                    return Poll::Ready(Err(format!(
+                        "withdrawal completed before every ACK: {outcome:?}"
+                    )
+                    .into()));
+                }
+                if root.is_ready() {
+                    return Poll::Ready(Ok(true));
+                }
+                match returned.as_mut().poll(cx) {
+                    Poll::Ready(()) => Poll::Ready(Ok(root.is_ready())),
+                    Poll::Pending => Poll::Pending,
+                }
+            }),
+        )
+        .await??;
+        if idle {
+            return Ok(());
+        }
+        // Preparing the floor can immediately acquire the next commit-check pass.
+        if tokio::time::Instant::now() >= until {
+            return Err("pending withdrawal did not return its holder".into());
+        }
+    }
 }

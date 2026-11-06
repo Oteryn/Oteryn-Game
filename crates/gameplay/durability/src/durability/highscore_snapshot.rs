@@ -17,7 +17,6 @@ use super::db::commit_semantic_transaction;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{CharacterId, WorldId};
 use ranking::{RankingRow, ranked_lists};
-use serde::Serialize;
 use sqlx::{Connection, Postgres, Row, Transaction, pool::PoolConnection, postgres::PgRow};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -624,7 +623,6 @@ async fn read_boss_points(
     Ok(bosses)
 }
 
-#[derive(Serialize)]
 struct StoredRow {
     filter: i16,
     position: i32,
@@ -756,9 +754,21 @@ async fn publish_cut(
             .bind(world.as_bytes().as_slice()).bind(i32::from(category)).bind(computed_at_ms)
             .bind(&source_cut).bind(count).fetch_one(&mut **tx).await?;
         // At most 6000 rows/category, one bounded bulk statement instead of per-row calls.
-        let json = serde_json::to_string(&rows).map_err(|_| corrupt())?;
-        let inserted = sqlx::query("INSERT INTO game_world_highscore_rows(snapshot_id,filter,position,rank,character_id,name,vocation,level,value_primary,value_progress) SELECT $1,x.filter,x.position,x.rank,x.character_id::uuid,x.name,x.vocation,x.level,x.value_primary,x.value_progress FROM jsonb_to_recordset($2::jsonb) AS x(filter SMALLINT,position INTEGER,rank BIGINT,character_id TEXT,name TEXT,vocation TEXT,level BIGINT,value_primary BIGINT,value_progress BIGINT)")
-            .bind(id).bind(&json).execute(&mut **tx).await?.rows_affected();
+        // Typed arrays avoid serializing and reparsing every field as JSON while the
+        // atomic publication transaction is holding its bounded Root pass.
+        let filters: Vec<_> = rows.iter().map(|r| r.filter).collect();
+        let positions: Vec<_> = rows.iter().map(|r| r.position).collect();
+        let ranks: Vec<_> = rows.iter().map(|r| r.rank).collect();
+        let characters: Vec<_> = rows.iter().map(|r| r.character_id.as_str()).collect();
+        let names: Vec<_> = rows.iter().map(|r| r.name.as_str()).collect();
+        let vocations: Vec<_> = rows.iter().map(|r| r.vocation.as_str()).collect();
+        let levels: Vec<_> = rows.iter().map(|r| r.level).collect();
+        let primary: Vec<_> = rows.iter().map(|r| r.value_primary).collect();
+        let progress: Vec<_> = rows.iter().map(|r| r.value_progress).collect();
+        let inserted = sqlx::query("INSERT INTO game_world_highscore_rows(snapshot_id,filter,position,rank,character_id,name,vocation,level,value_primary,value_progress) SELECT $1,x.filter,x.position,x.rank,x.character_id::uuid,x.name,x.vocation,x.level,x.value_primary,x.value_progress FROM unnest($2::smallint[],$3::integer[],$4::bigint[],$5::text[],$6::text[],$7::text[],$8::bigint[],$9::bigint[],$10::bigint[]) AS x(filter,position,rank,character_id,name,vocation,level,value_primary,value_progress)")
+            .bind(id).bind(&filters).bind(&positions).bind(&ranks).bind(&characters)
+            .bind(&names).bind(&vocations).bind(&levels).bind(&primary).bind(&progress)
+            .execute(&mut **tx).await?.rows_affected();
         if inserted != u64::try_from(count).map_err(|_| corrupt())? {
             return Err(corrupt());
         }

@@ -1864,6 +1864,7 @@ pub mod test_support {
         activated_boss_slot_loot_fixture, activated_loop_monster,
         activated_loop_monster_missing_child, activated_reward_boss_fixture,
         activated_with_custom_loot_tables, activated_with_loot_tables, loop_monster_inner_digest,
+        try_activate_input,
     };
 }
 
