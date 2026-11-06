@@ -923,6 +923,8 @@ pub struct ChannelActorCarrier {
     /// ascending source order, so a source is found by binary search (`spawn_index`) and
     /// the iteration order is the canonical (source, point ordinal) order.
     spawns: Vec<SpawnRealization>,
+    /// Dormant sources and exact distinct kill dependencies, owned by spawn realization.
+    spawn_kill_gates: Vec<spawn_realization::SpawnKillGate>,
     native_summons: NativeSummonLinks,
     native_summon_deaths: [Option<NativeSummonDeath>; 64],
     native_summon_death_cursor: usize,
@@ -1402,6 +1404,7 @@ impl ChannelRuntimeV1 {
                 // the free list itself, so other owner work between windows is never undone.
                 // One pass over the occupied index for all of them (Codex 4242270322).
                 let spawns = std::mem::take(&mut self.carrier.spawns);
+                self.carrier.spawn_kill_gates.clear();
                 self.carrier.remove_all(
                     &self.continuity,
                     spawns
@@ -1668,6 +1671,7 @@ impl ChannelActorCarrier {
             corpse_projections: Vec::new(),
             death_reward_occurrences: Vec::new(),
             spawns: Vec::new(),
+            spawn_kill_gates: Vec::new(),
             native_summons: NativeSummonLinks::default(),
             native_summon_deaths: [None; 64],
             native_summon_death_cursor: 0,

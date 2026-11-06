@@ -1006,6 +1006,7 @@ impl ChannelActorCarrier {
         // outlives, and is never evicted independently of, its projection, so a retained
         // projection can never re-mint a second occurrence for the same death.
         self.retain_corpse_projection(projected);
+        self.record_spawn_dependency_death(actor);
         if let (Some(hooks), Some(key)) = (self.encounter_hooks.as_mut(), captured_sealed_key) {
             hooks.projected_death(actor, key);
         }
