@@ -331,6 +331,26 @@
       ]
     },
     {
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "souvenir"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/exchange/hunting_for_tokens/souvenirs",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "All listed souvenirs are at 20 silver raid tokens each. Which one of them do you want?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.morgan",
       "keywords": [
         "forge"

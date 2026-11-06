@@ -89,8 +89,15 @@ fn questl2_eleven_tracks_commit_atomically() -> TestResult {
     scenario("qengine-rewards-atomic-eleven")
 }
 
+#[test]
+fn questl2_repeatable_token_exchange() -> TestResult {
+    scenario("qengine-rewards-l2-token-abacus")
+}
+
 #[path = "qengine_rewards/atomic_tracks.rs"]
 mod atomic_tracks;
+#[path = "qengine_rewards/repeatable.rs"]
+mod repeatable;
 
 macro_rules! questl2_exchange_cases {
     ($($test:ident => $key:literal),+ $(,)?) => {
@@ -153,6 +160,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "knight-sword" => &["forge"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
+        "token-abacus" => &["souvenir"],
         key if key.starts_with("ape-") || key.starts_with("thieves-") => &["mission"],
         "deepling-helmet" => &[
             "flou", "explain", "yes", "no", "yes", "yes", "yes", "helmet",
@@ -782,7 +790,7 @@ pub(super) async fn exercise(
         }
     }
     if let Some(reward) = &callback.give {
-        let minted:(String,i64)=sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.claim_production_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
+        let minted:(String,i64)=sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_quest_reward_sources s JOIN game_reward_claim_mint_receipts m ON m.transaction_id=s.mint_transaction_id JOIN game_item_instances i USING(item_instance_id) WHERE s.transition_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
         assert_eq!(minted, (reward.item.clone(), i64::from(reward.count)));
     }
     if let Some(achievement) = &callback.achievement {
@@ -917,6 +925,9 @@ pub(super) async fn exercise(
                 s.set
             );
         }
+    }
+    if key == "token-abacus" {
+        repeatable::exercise(owner, admitted, h, npc, &callback).await?;
     }
     Ok(())
 }

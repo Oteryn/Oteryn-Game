@@ -3,11 +3,11 @@
 `content/quests/shared-reward-callbacks.json` is loaded by the Quest catalogue and
 the real NPC talk dispatcher. Author records against
 `shared-reward-callbacks.schema.json`; `qengine_rewards.validate_callbacks` checks
-the cross-field constraints. `qengine_rewards.py --check` reproduces the twenty
+the cross-field constraints. `qengine_rewards.py --check` reproduces the twenty-one
 source compositions and the promoted native outfit catalogue from the committed
 Crystal corpus, without network access.
 
-The existing native source importer admits the fifteen additional physical Item
+The existing native source importer admits the seventeen additional physical Item
 profiles used by those exchanges. Its pinned Canary XML/client appearance
 inputs, canonical-fact checks and exact identity bindings are recorded in
 `tools/content-schema/native-gameplay/qengine-reward-item-profiles.json`.
@@ -25,7 +25,8 @@ Each record has these fields:
 | `npc` | Canonical `oteryn:npc.<name>`, resolved through the current conversation. |
 | `keywords` | One to eight exact, trimmed, lowercase ASCII player messages. |
 | `topic`, `next_topic` | Current/committed conversation topic, unsigned 16-bit integers. |
-| `storage` | One to sixteen `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as `-1`. `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
+| `storage` | One to sixteen `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as `-1`. `preserve: true` keeps that predicate's value. A non-repeatable callback must change a value outside its accepted range. |
+| `repeatable` | Optional boolean, default false. Only explicit costed item exchanges may repeat: nonempty `take`, non-null `give`, no outfit or achievement. Each paid command has its own MINT claim identity; replay retains its original receipt. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `give` | Optional/null `{item, count, contents?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
 | `outfit` | Optional/null `{outfit, addons}`. `outfit` is the canonical `oteryn:outfit.<name>`; `addons` is a bitmask `0..3`: base only `0`, first addon `1`, second addon `2`, both `3`. Base is always included. |
@@ -66,3 +67,12 @@ each confirmation to its source topic and storage predicates. These are stage
 definitions, not a whole-quest qualification claim. The witches' cap retains
 its source 24-hour temporal facts; the existing reward owner refuses instances
 with persisted timed state, so its timed hand-in is not qualified by ordinary-item tests.
+
+Jorge's `token-abacus` composition exercises a costed repeat through the same
+owner. The source token shop has no mission storage gate, so a preserved internal
+receipt track stays at `-1` for each purchase. The carried-token cost admits each
+purchase. A repeat's claim key binds the recipe, session and command ordinal;
+the database proves that identity against its same-transaction consumption and
+quest receipt. Ordinary once-only callbacks retain their recipe claim identity.
+This composition proves the repeat mechanism; qualification of Hunting for
+Tokens also requires the remaining souvenir menu.

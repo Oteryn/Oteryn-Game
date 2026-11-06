@@ -31,7 +31,7 @@
   },
   "item_profiles": {
     "path": "items/definitions/spell-native-profiles.json",
-    "sha256": "d2ce3d35c7e17b7ead2ea5499f2225f3260d71e5d63563e6630abfc7c01600cc"
+    "sha256": "7d030bebe47aff95d2c603237f82ea6bc5e66ea9e585170e14b83cde0e70f43f"
   },
   "loot_tables": {
     "path": "../tools/content-schema/native-gameplay/loot-tables.json",

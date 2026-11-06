@@ -46,8 +46,15 @@ pub struct RewardCallback {
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
     pub achievement: Option<String>,
+    /// A costed item exchange may repeat under a fresh command occurrence.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub repeatable: bool,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Deserialize)]
@@ -93,9 +100,15 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.storage
                 .iter()
                 .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
-            || c.storage
-                .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || (!c.repeatable
+                && c.storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
+            || (c.repeatable
+                && (c.take.is_empty()
+                    || c.give.is_none()
+                    || c.outfit.is_some()
+                    || c.achievement.is_some()))
             || c.take.len() > 8
             || inputs.len() != c.take.len()
             || c.take
@@ -181,6 +194,30 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn repeatable_item_exchange_requires_an_explicit_cost() -> Result<(), String> {
+        let callback = load()?.into_iter().next().ok_or("callback")?;
+        let mut value = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+        value["repeatable"] = true.into();
+        value["take"] = serde_json::json!([{"item": "oteryn:item.tibia.i3031", "count": 20}]);
+        value["give"] = serde_json::json!({"item": "oteryn:item.tibia.i875", "count": 1});
+        value["outfit"] = serde_json::Value::Null;
+        value["achievement"] = serde_json::Value::Null;
+        for state in value["storage"].as_array_mut().ok_or("storage")? {
+            state["preserve"] = true.into();
+        }
+        let document = |callback: &serde_json::Value| {
+            serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string()
+        };
+        assert!(parse(&document(&value)).is_ok());
+        value["take"] = serde_json::json!([]);
+        assert!(
+            parse(&document(&value)).is_err(),
+            "a repeat must consume value"
+        );
+        Ok(())
+    }
 
     #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {

@@ -65,6 +65,18 @@ class LaneL2Rewards(unittest.TestCase):
         self.assertEqual(temporal['duration']['value'], 86400000)
         self.assertFalse(temporal['stop_duration']['value'])
 
+    def test_jorge_repeat_is_twenty_tokens_for_one_source_abacus(self):
+        callback = self.callbacks['token-abacus']
+        self.assertTrue(callback['repeatable'])
+        self.assertEqual(callback['take'], [{'item': 'oteryn:item.tibia.i19083', 'count': 20}])
+        self.assertEqual(callback['give'], {'item': 'oteryn:item.tibia.i19151', 'count': 1, 'contents': []})
+        self.assertTrue(callback['storage'][0]['preserve'])
+        self.assertIn('data-global/npc/jorge.lua:128:sha256:', callback['sources'][0])
+        free = json.loads(json.dumps(callback))
+        free['take'] = []
+        with self.assertRaises(ValueError):
+            q.validate_callbacks({'schema': 1, 'callbacks': [free]})
+
 
 if __name__ == '__main__':
     unittest.main()

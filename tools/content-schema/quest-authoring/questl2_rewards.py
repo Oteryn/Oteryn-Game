@@ -2,8 +2,8 @@
 import hashlib
 
 
-NPCS = ('dorian', 'hairycles', 'kroox')
-ITEMS = {227, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933, 7935, 7936}
+NPCS = ('dorian', 'hairycles', 'jorge', 'kroox')
+ITEMS = {227, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933, 7935, 7936, 19083, 19151}
 
 
 def append(callbacks, offers, inputs, pin):
@@ -12,7 +12,8 @@ def append(callbacks, offers, inputs, pin):
                 'minimum': before, 'maximum': before if maximum is None else maximum,
                 'set': after, **({'preserve': True} if preserve else {})}
 
-    def add(name, quest, npc, keywords, storage, reply, take=(), topic=0, offer=None):
+    def add(name, quest, npc, keywords, storage, reply, take=(), topic=0, offer=None,
+            give=None, repeatable=False, source_text=None):
         path = f'data-global/npc/{npc}.lua'
         callback = {
             'key': 'oteryn:quest-reward/' + name,
@@ -21,14 +22,24 @@ def append(callbacks, offers, inputs, pin):
             'storage': storage,
             'take': [{'item': f'oteryn:item.tibia.i{item}', 'count': count}
                      for item, count in take],
-            'give': None, 'outfit': None, 'achievement': None,
+            'give': None if give is None else {
+                'item': f'oteryn:item.tibia.i{give[0]}', 'count': give[1], 'contents': []},
+            'outfit': None, 'achievement': None,
             'reply': [reply],
             'sources': [f'crystal:{pin}:{path}:sha256:{hashlib.sha256(inputs[path]).hexdigest()}'],
         }
         # Keep literal success text tied to the pinned source, rather than
         # silently inventing a reward branch when the source corpus changes.
-        if reply not in inputs[path].decode():
+        proof = source_text or reply
+        if proof not in inputs[path].decode():
             raise ValueError('L2 reward reply is absent from donor: ' + name)
+        if repeatable:
+            callback['repeatable'] = True
+        if source_text:
+            line = next(i for i, text in enumerate(inputs[path].decode().splitlines(), 1)
+                        if source_text in text)
+            callback['sources'] = [
+                f'crystal:{pin}:{path}:{line}:sha256:{hashlib.sha256(inputs[path]).hexdigest()}']
         callbacks.append(callback)
         if offer is not None:
             words, text = offer
@@ -36,6 +47,20 @@ def append(callbacks, offers, inputs, pin):
                 raise ValueError('L2 offer is absent from donor: ' + name)
             offers.append({'npc': callback['npc'], 'keywords': words, 'topic': 0,
                            'next_topic': topic, 'storage': storage, 'reply': [text]})
+
+    jorge = inputs['data-global/npc/jorge.lua'].decode()
+    for required in ('{ name = "Abacus", id = 19151 }',
+                     'getPlayerItemCount(creature, 19083) >= 20',
+                     'doPlayerRemoveItem(creature, 19083, 20)',
+                     'doPlayerAddItem(creature, items[i].id, 1)'):
+        if required not in jorge:
+            raise ValueError('Jorge token recipe drift: ' + required)
+    add('token-abacus', 'hunting_for_tokens', 'jorge', ['abacus'],
+        [state('exchange/hunting_for_tokens/souvenirs', -1, -1, preserve=True)],
+        'You just swapped 20 silver raid tokens for 1 Abacus.',
+        take=[(19083, 20)], give=(19151, 1), topic=1, repeatable=True,
+        source_text='"You just swapped 20 silver raid tokens for 1 " .. items[i].name .. "."',
+        offer=(['souvenir'], 'All listed souvenirs are at 20 silver raid tokens each. Which one of them do you want?'))
 
     sam = 'u7_5/sams_old_backpack/'
     add('sam-kroox', 'sam_s_old_backpack_quest', 'kroox',

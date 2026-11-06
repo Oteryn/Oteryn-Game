@@ -243,6 +243,10 @@
               "pattern": "^oteryn:achievement/[a-z0-9_/-]+$"
             }
           ]
+        },
+        "repeatable": {
+          "type": "boolean",
+          "default": false
         }
       }
     },

@@ -731,6 +731,45 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dorian.lua:sha256:4e1e15ffa41c731a152bf83401697e98c31a58587cd21ea1874df727d6bea59d"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/token-abacus",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "abacus"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/exchange/hunting_for_tokens/souvenirs",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19151",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 Abacus."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jorge.lua:128:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "repeatable": true
     }
   ]
 }

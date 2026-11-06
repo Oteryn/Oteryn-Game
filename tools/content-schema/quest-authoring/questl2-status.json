@@ -34,6 +34,37 @@
         "lines": "175-180",
         "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d"
       }
+    },
+    {
+      "name": "costed repeatable item exchanges",
+      "status": "QUALIFIED",
+      "migration": 1141,
+      "postgres_test": "questl2_repeatable_token_exchange",
+      "red": {
+        "marker": "POSTGRES_CASE_FAILED qengine-rewards-l2-token-abacus",
+        "duration_seconds": 108.028369138,
+        "failure": "second paid purchase rejected by the original once-only claim identity"
+      },
+      "green": {
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-token-abacus",
+        "duration_seconds": 125.795160692,
+        "passed": 1,
+        "failed": 0
+      },
+      "once_only_regression": {
+        "postgres_test": "qengine_rewards_hallowed_ground_exchange",
+        "duration_seconds": 116.875137472,
+        "passed": 1,
+        "failed": 0
+      },
+      "source": "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jorge.lua:128:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+      "assumption": "The source token shop has no mission gate. A preserved internal track at -1 provides QuestState receipt bookkeeping; each repeat requires the complete carried-item cost.",
+      "proves": [
+        "Two independent 20-token purchases mint two Abaci",
+        "Exact command replay cannot consume or mint again",
+        "Seven remaining tokens cannot pay twenty",
+        "The original once-only exchange path still commits"
+      ]
     }
   ],
   "entries": [
@@ -295,12 +326,13 @@
   ],
   "validation": {
     "quest_unit_tests": {
-      "passed": 254,
+      "passed": 255,
       "failed": 0
     },
     "reward_authoring_tests": {
-      "passed": 7,
-      "failed": 0
+      "passed": 29,
+      "failed": 0,
+      "pattern": "test_*rewards.py"
     },
     "l2_authoring_baseline": {
       "passed": 4,
@@ -310,6 +342,7 @@
       "packages": [
         "oteryn-gameplay-quests",
         "oteryn-gameplay-dispatch",
+        "oteryn-gameplay-durability",
         "oteryn-game-server"
       ],
       "all_targets": true,
@@ -320,7 +353,11 @@
       "number": 1140,
       "main": "91afbe0ba172181e6d5b2e8f2f0bbdf8775f3726",
       "branch_snapshots_checked": 78,
-      "open_pr_check": "next-free-numbers.py: no 1140-1149 claims"
+      "open_pr_check": "next-free-numbers.py: no 1140-1149 claims",
+      "numbers": [
+        1140,
+        1141
+      ]
     },
     "world_pins": {
       "regenerated": true,
@@ -328,6 +365,25 @@
       "digest": "d4071ed1808cc027b4d52501d886887b5615966f5d8e58e0a38ae2032d49ea78",
       "unchanged": true
     },
-    "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed"
+    "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed",
+    "content_tests": {
+      "integration_rest_content": 123,
+      "content_world_project_repository": 5,
+      "failed": 0
+    },
+    "native_profiles": {
+      "added": [
+        19083,
+        19151
+      ],
+      "changed": 0,
+      "removed": 0
+    }
+  },
+  "cross_lane_inspection": {
+    "qengine2": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+    "questpc5": "f78cf159d8a2eef2703091197ea661d26537137a",
+    "questpc6": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+    "next": "Reuse QENGINE2 shared predicates and world rewards; reuse NPC program and item bridges from PC lanes while preserving Dawnport and world-change exclusions."
   }
 }
