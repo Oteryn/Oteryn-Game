@@ -38,7 +38,7 @@ def compile_callbacks(existing, previous, shards):
             # https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355
             declined = {'success_say'} & row.keys()
             storage_extensions = any(
-                set(state) - {'track', 'minimum', 'maximum', 'set', 'read_only'}
+                set(state) - {'track', 'minimum', 'maximum', 'set', 'read_only', 'set_if'}
                 for state in row.get('storage', [])
             )
             failure = row.get('failure_teleport')
@@ -50,7 +50,18 @@ def compile_callbacks(existing, previous, shards):
                 or type(failure['floor']) is not int or not -15 <= failure['floor'] <= 0
             ):
                 raise ValueError(f'held callback contract extension: {row["key"]}')
-            if declined or storage_extensions:
+            conditional_extensions = any(
+                state.get('set_if') is not None and (
+                    type(state['set_if']) is not int
+                    or not -(2 ** 63) <= state['set_if'] <= 2 ** 63 - 1
+                    or type(state.get('minimum')) is not int
+                    or type(state.get('maximum')) is not int
+                    or not state['minimum'] <= state['set_if'] <= state['maximum']
+                    or state.get('preserve', False) or state.get('read_only', False)
+                    or row.get('native_rule') is not None
+                ) for state in row.get('storage', [])
+            )
+            if declined or storage_extensions or conditional_extensions:
                 raise ValueError(f'held callback contract extension: {row["key"]}')
             if row['key'] in keys:
                 raise ValueError(f'duplicate callback key: {row["key"]}')

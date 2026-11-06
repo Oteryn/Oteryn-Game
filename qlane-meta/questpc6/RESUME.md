@@ -1,3 +1,22 @@
+## Cloud shared mechanism: exact conditional reset
+
+SET_IF is implemented on the existing quest evaluator/writer. Optional storage.set_if
+compiles it, with bounds, mutually exclusive guard modes and stable hash tag6.
+Actual PG RED3/3 (3.85s) then GREEN3/3 (5.88s): exact1 becomes0, absent-1 and
+later2 stay unchanged, and each replays its one durable receipt. All three have
+PostgreSQL18.6 STARTED/COMPLETED markers. Fixture-only E0505 and invalid database
+tag setup failures were repaired before the actual RED; neither counts as PG proof.
+Core units6/6, callback units10/10, authoring units23/23; both-crate check38.37s,
+all-target/all-feature Clippy-Dwarnings51.38s, package/mounted fmt PASS. Own diff
+and caller/constructor scan reviewed. No whole quest newly qualified.
+Exact evidence: cloud-conditional-reset-verification.json, including donor citation,
+source hashes and terminal results. No new dependency/migration/protocol/cause number.
+
+NEXT: compose the actual source offering/exit and source NPC exchange; continue
+recovering the L6 allocation without touching proven foreign L3/L5 entries or World
+change lanes. Current scope question remains pending; no missing mechanism is a
+terminal blocker and no publication permission is needed.
+
 ## Cloud shared mechanism: authored recovery landing
 
 Implemented optional failure_teleport for returning STEP callbacks. Actual PG

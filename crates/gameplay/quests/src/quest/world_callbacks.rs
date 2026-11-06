@@ -59,6 +59,9 @@ pub struct Storage {
     pub minimum: i64,
     pub maximum: i64,
     pub set: i64,
+    /// Replace only this exact locked value; other values are retained.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set_if: Option<i64>,
     /// Preserve the track value within a receipt-bearing quest transition.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
@@ -260,10 +263,16 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || o.count > 100
                     || !super::valid_quest_key(&o.item)
             })
-            || callback
-                .storage
-                .iter()
-                .any(|s| !super::valid_quest_key(&s.track) || s.minimum > s.maximum)
+            || callback.storage.iter().any(|s| {
+                !super::valid_quest_key(&s.track)
+                    || s.minimum > s.maximum
+                    || s.set_if.is_some_and(|value| {
+                        !(s.minimum..=s.maximum).contains(&value)
+                            || s.preserve
+                            || s.read_only
+                            || callback.native_rule.is_some()
+                    })
+            })
         {
             return Err(format!("invalid callback {}", callback.key));
         }
@@ -325,7 +334,12 @@ fn extend_callbacks(
                     effect: match callback.native_rule {
                         Some(rule) => QuestEffectKind::Native(rule),
                         None if s.preserve => QuestEffectKind::Add(0),
-                        None => QuestEffectKind::Set(s.set),
+                        None => s.set_if.map_or(QuestEffectKind::Set(s.set), |equals| {
+                            QuestEffectKind::SetIf {
+                                equals,
+                                value: s.set,
+                            }
+                        }),
                     },
                 })
                 .collect(),
@@ -343,6 +357,48 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn conditional_storage_compiles_exact_value_effect_and_rejects_guard_overloading()
+    -> Result<(), String> {
+        let callback = serde_json::json!({
+            "key":"oteryn:quest-callback/conditional-reset", "quest":"oteryn:quest/conditional-reset",
+            "trigger":"use", "selector":{"position":{"x":1,"y":2,"floor":-7}},
+            "reversible":false, "passages":[], "offerings":[], "return_on_failure":false,
+            "storage":[{"track":"oteryn:quest-progress/conditional-reset/flag", "minimum":-1,"maximum":2,"set":0,"set_if":1}],
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:fixture.lua:1"]
+        });
+        let encoded = |callback: serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()
+        };
+        let callbacks = parse(&encoded(callback.clone()))?;
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("catalogue")?,
+            &callbacks,
+        )?;
+        let effect = catalogue
+            .transition("oteryn:quest-callback/conditional-reset")
+            .ok_or("transition")?
+            .effects[0]
+            .effect;
+        assert_eq!(
+            effect,
+            QuestEffectKind::SetIf {
+                equals: 1,
+                value: 0
+            }
+        );
+        for (field, value) in [
+            ("set_if", serde_json::json!(3)),
+            ("read_only", serde_json::json!(true)),
+            ("preserve", serde_json::json!(true)),
+        ] {
+            let mut invalid = callback.clone();
+            invalid["storage"][0][field] = value;
+            assert!(parse(&encoded(invalid)).is_err());
+        }
+        Ok(())
+    }
 
     #[test]
     fn conditional_failure_destination_requires_returning_step_and_native_floor()

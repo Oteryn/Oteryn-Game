@@ -54,6 +54,17 @@ class QuestBatch4Tests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 tool.validate_callback({**row, field: value}, 'cults_of_tibia')
 
+    def test_conditional_set_is_exact_and_cannot_be_a_read_only_guard(self):
+        row = callback('cults_of_tibia', 'conditional-reset')
+        row['storage'] = [{'track': 'oteryn:quest-progress/conditional-reset/flag',
+                           'minimum': -1, 'maximum': 2, 'set': 0, 'set_if': 1}]
+        tool.validate_callback(row, 'cults_of_tibia')
+        for patch in [{'set_if': 3}, {'set_if': True}, {'preserve': True}, {'read_only': True}]:
+            invalid = copy.deepcopy(row)
+            invalid['storage'][0].update(patch)
+            with self.assertRaises(ValueError):
+                tool.validate_callback(invalid, 'cults_of_tibia')
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)

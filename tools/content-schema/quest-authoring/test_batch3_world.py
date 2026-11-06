@@ -71,3 +71,17 @@ class Batch3WorldTests(unittest.TestCase):
                 tool.compile_callbacks({'schema': 1, 'callbacks': []},
                     {'schema': tool.SCHEMA, 'sources': []},
                     {'source': {'schema': 1, 'callbacks': [invalid]}})
+
+    def test_conditional_set_is_preserved_and_invalid_conditions_are_rejected(self):
+        row = {'key': 'reset', 'sources': [tool.PIN + 'file.lua:1'],
+               'storage': [{'track': 'source', 'minimum': -1, 'maximum': 2, 'set': 0, 'set_if': 1}]}
+        empty = {'schema': tool.SCHEMA, 'sources': []}
+        result, _ = tool.compile_callbacks({'schema': 1, 'callbacks': []}, empty,
+                                          {'source': {'schema': 1, 'callbacks': [row]}})
+        self.assertEqual(result['callbacks'], [row])
+        for patch in [{'set_if': 3}, {'set_if': True}, {'read_only': True}]:
+            invalid = copy.deepcopy(row)
+            invalid['storage'][0].update(patch)
+            with self.assertRaisesRegex(ValueError, 'held callback contract'):
+                tool.compile_callbacks({'schema': 1, 'callbacks': []}, empty,
+                                       {'source': {'schema': 1, 'callbacks': [invalid]}})

@@ -435,6 +435,7 @@ fn scenario_in_world(
                         minimum: 0,
                         maximum: 0,
                         set: 1,
+                        set_if: None,
                         preserve: false,
                         read_only: false,
                     }]

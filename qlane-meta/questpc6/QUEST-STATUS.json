@@ -1222,7 +1222,9 @@
     },
     "shared_mechanism_progress": {
       "failure_landing": "Implemented; two real PostgreSQL regressions now pass after RED 2/2, GREEN 2/2. Callback source composition, conditional storage reset and atomic NPC exchange remain active work.",
-      "evidence": "qlane-meta/questpc6/cloud-failure-landing-verification.json"
+      "evidence": "qlane-meta/questpc6/cloud-failure-landing-verification.json",
+      "conditional_reset": "Implemented and verified: PG RED3/3 (3.85s), GREEN3/3 (5.88s), exact match/absent/later values and receipt replay. Source composition remains active.",
+      "conditional_reset_evidence": "qlane-meta/questpc6/cloud-conditional-reset-verification.json"
     }
   },
   {
