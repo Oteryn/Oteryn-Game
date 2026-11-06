@@ -2181,6 +2181,7 @@ dependencies = [
  "oteryn-input-platform",
  "oteryn-platform-client",
  "oteryn-platform-contracts",
+ "oteryn-protocol-oteryn",
  "oteryn-renderer",
  "oteryn-session",
  "oteryn-session-tcp",
@@ -2727,6 +2728,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-rustls",
+ "unicode-normalization",
 ]
 
 [[package]]

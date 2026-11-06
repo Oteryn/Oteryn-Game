@@ -37,6 +37,7 @@ mod use_effects;
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    cast_chat_revision: u64,
     spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,
     target_walk: Option<target_move::PendingWalk>,
@@ -66,6 +67,7 @@ struct ServeState {
     movement_effect_revision: u64,
     sound_cursor: u64,
     ambient_revision: u64,
+    item_effects_revision: u64,
     weather_sent: Option<WorldWeather>,
     world_clock_pacer: WorldClockDeltaPacer,
     world_clock: WorldClockSource,
@@ -147,6 +149,9 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if !authority.staff_refresh(admitted).await {
+        return ServeEnd::Disconnected.finish(admitted);
+    }
     let mut integrity = integrity::Integrity::default();
     let root_authority = authority;
     // Keep one guard across owner changes. It must also drop the transferred
@@ -227,6 +232,9 @@ where
             }
         }
         loop {
+            if !authority.staff_refresh(session.admitted).await {
+                return ServeEnd::Disconnected.finish(session.admitted);
+            }
             if !authority.remember_activity_connection(session.admitted) {
                 return ServeEnd::Disconnected.finish(session.admitted);
             }
@@ -255,6 +263,9 @@ where
                 }
                 Ok(None) => {}
                 Err(end) => return end.finish(session.admitted),
+            }
+            if !authority.staff_refresh(session.admitted).await {
+                return ServeEnd::Disconnected.finish(session.admitted);
             }
             let input = match inbound::receive(stream, authority, &mut session, next).await {
                 Ok(Some(input)) => input,

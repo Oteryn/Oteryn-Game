@@ -152,6 +152,7 @@ pub(super) struct Mailbox {
     pub(super) highscores_shutdown: bool,
     pub(super) depot_search: oteryn_client_ui::depot_search::DepotSearchPanel,
     pub(super) hotkey_equip: oteryn_client_ui::hotkey_equip::HotkeyEquipPanel,
+    pub(super) potion_durations: oteryn_client_ui::potion_durations::PotionDurationsPanel,
     pub(super) item_forge: oteryn_client_ui::item_forge::ItemForgePanel,
     pub(super) store: oteryn_client_ui::store::StorePanel,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
@@ -282,6 +283,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         super::feature_0060_player_trade::protocol::reduce(&mut mailbox.player_trade, &events);
         super::feature_local_spell_action_bar::protocol::vitals_events(&mut mailbox, &events);
+        mailbox.death_protection_events(&events);
         mailbox.dialogue_events(&events);
         mailbox.npc_shop_events(&events);
         for event in &events {
@@ -393,6 +395,7 @@ impl Outbox {
         mailbox.battle_instinct_status = Default::default();
         mailbox.skill_progress = Default::default();
         mailbox.party_effects = Default::default();
+        mailbox.potion_durations = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::Ended(class));
     }
 
@@ -430,6 +433,7 @@ impl Outbox {
         mailbox.battle_instinct_status = Default::default();
         mailbox.skill_progress = Default::default();
         mailbox.party_effects = Default::default();
+        mailbox.potion_durations = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::LoggedOut);
     }
 }

@@ -265,6 +265,7 @@ fn native_live_appearance_snapshot_reaches_visible_scene()
                             incoming,
                             pending: Vec::new(),
                             appearances: vec![oteryn_session::VisibleAppearance {
+                                forge_stacks: None,
                                 entity,
                                 look: None,
                                 light: None,

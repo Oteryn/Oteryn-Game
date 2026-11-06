@@ -1,0 +1,16 @@
+{
+  "mechanic": "0330-staff-tools",
+  "kind": "handlers",
+  "id": "0330-staff-tools-request",
+  "status": "supported",
+  "commands": [
+    560
+  ],
+  "direction": "client_to_server",
+  "capability": 330,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "state": "The native signed staff panel owns connection-local pending and confirmed state.",
+    "settings": "No local authority settings; signatures, roster, scope and tiers are server-owned."
+  }
+}

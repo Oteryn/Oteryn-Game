@@ -5,7 +5,7 @@ use oteryn_client_ui::item_forge::ItemForgePanel;
 pub(in crate::play) const CONTROLS: &[(&str, &str, &str)] = &[
     (
         "EDIT",
-        "Operation (0 history, 1 fusion, 2 convergence fusion, 3 transfer, 4 convergence transfer, 5 slivers, 6 cores, 7 dust limit)",
+        "Operation (8 current dust; 0 history; 1 fusion; 2 convergence fusion; 3 transfer; 4 convergence transfer; 5 slivers; 6 cores; 7 dust limit)",
         "0",
     ),
     ("EDIT", "First item handle", "0"),
@@ -54,7 +54,12 @@ pub(in crate::play) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) 
     let parsed = (|| {
         let _ = detail;
         use oteryn_client_runtime::cui3::item_forge::Operation;
-        let operation = match inputs.0.first()?.trim().parse::<u8>().ok()? {
+        let chosen = inputs.0.first()?.trim().parse::<u8>().ok()?;
+        panel.query_current_dust = chosen == 8;
+        if panel.query_current_dust {
+            return Some(());
+        }
+        let operation = match chosen {
             0 => Operation::QueryHistory,
             1 => Operation::Fusion,
             2 => Operation::ConvergenceFusion,

@@ -85,3 +85,86 @@ fn native_proficiency_rejects_invalid_fields_and_clears_perks() {
         native_controls::submit(&mut p, 101, ["258", "2", "1", "1", "9", "2"], false).is_none()
     );
 }
+
+#[test]
+fn nx8_proficiency_catalogue_can_be_requested_from_native_panel() {
+    let mut panel = WeaponProficiencyPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let command = native_controls::submit(&mut panel, 109, ["", "", "", "", "", ""], false);
+    assert_eq!(
+        command.map(|command| (command.kind, command.payload)),
+        Some((660, vec![0, 0, 0, 0]))
+    );
+}
+
+#[test]
+fn nx8_proficiency_catalogue_displays_experience_full_perks_and_pages() {
+    use oteryn_client_runtime::weapon_proficiency::{
+        ProficiencyCatalogueEntry, ProficiencyCatalogueLevel, ProficiencyCataloguePage,
+    };
+    let mut panel = WeaponProficiencyPanel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(native_controls::submit(&mut panel, 109, [""; 6], false).is_some());
+    let page = ProficiencyCataloguePage {
+        offset: 0,
+        total: 9,
+        entries: (0..8)
+            .map(|i| ProficiencyCatalogueEntry {
+                definition: i + 1,
+                weapon: format!("oteryn:item.weapon{i}"),
+                name: format!("Weapon {i}"),
+                experience: 2345,
+                thresholds: [500, 1500, 3000, 7000, 15000, 30000, 60000, 120000, 240000],
+                levels: vec![ProficiencyCatalogueLevel {
+                    selected: Some(1),
+                    perks: vec![
+                        "Attack damage +1".into(),
+                        "Defence +2".into(),
+                        "Sword +1".into(),
+                    ],
+                }],
+            })
+            .collect(),
+    };
+    let result = GatedCommandResult {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: page.encode().unwrap_or_default(),
+    };
+    assert!(apply_result(&mut panel, &result));
+    let text = native_controls::display(&panel);
+    for expected in [
+        "2345 XP",
+        "Weapons 1-8 of 9",
+        "Attack damage +1",
+        "Defence +2",
+        "Sword +1",
+        "Weapon 7",
+    ] {
+        assert!(text.contains(expected), "{expected}: {text}");
+    }
+    let next = native_controls::submit(&mut panel, 110, [""; 6], false);
+    assert_eq!(
+        next.map(|command| command.payload),
+        Some(8_u32.to_be_bytes().to_vec())
+    );
+    panel.pending = false;
+    let previous = native_controls::submit(&mut panel, 111, [""; 6], false);
+    assert_eq!(
+        previous.map(|command| command.payload),
+        Some(0_u32.to_be_bytes().to_vec())
+    );
+    assert!(!apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            payload: vec![0; 10],
+            ..result
+        }
+    ));
+    assert!(panel.feedback.is_some());
+}

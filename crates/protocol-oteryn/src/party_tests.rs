@@ -23,12 +23,14 @@ fn party_wire_roundtrips() -> Result<()> {
             name: "Leader".into(),
             leader: true,
             expires_at: 0,
+            party_spell_remaining_ms: None,
         }],
         invitations: vec![PartyEntry {
             handle: 2,
             name: "Inviter".into(),
             leader: false,
             expires_at: 100,
+            party_spell_remaining_ms: None,
         }],
     };
     assert_eq!(decode_party_result(&encode_party_result(&result)?)?, result);
@@ -70,6 +72,7 @@ fn party_wire_bounds_and_malformed_inputs() -> Result<()> {
             name: "a".repeat(64),
             leader: i == 1,
             expires_at: 0,
+            party_spell_remaining_ms: None,
         });
     }
     for i in 51..=70 {
@@ -78,6 +81,7 @@ fn party_wire_bounds_and_malformed_inputs() -> Result<()> {
             name: "a".repeat(64),
             leader: false,
             expires_at: u64::MAX,
+            party_spell_remaining_ms: None,
         });
     }
     let encoded = encode_party_result(&maximum)?;
@@ -88,5 +92,43 @@ fn party_wire_bounds_and_malformed_inputs() -> Result<()> {
     assert!(decode_party_result(&[8, 1, 16, 2]).is_err());
     assert!(decode_party_result(&[8, 10, 16, 0]).is_err());
     assert!(decode_party_result(&[8, 1, 16, 0, 16, 0]).is_err());
+    Ok(())
+}
+
+#[test]
+fn party_member_effect_durations_decode_and_replace_on_refresh() -> Result<()> {
+    // Member field 5 carries all five remaining durations in fixed spell order.
+    let mut member = Vec::new();
+    push_varint_field(&mut member, 1, 1);
+    push_message_field(&mut member, 2, b"Leader");
+    push_varint_field(&mut member, 3, 1);
+    push_varint_field(&mut member, 4, 0);
+    let mut durations = [0_u8; 20];
+    durations[4..8].copy_from_slice(&120_000_u32.to_be_bytes());
+    push_message_field(&mut member, 5, &durations);
+    let mut bytes = vec![8, 1, 16, 0];
+    push_message_field(&mut bytes, 3, &member);
+    let result = decode_party_result(&bytes)?;
+    assert_eq!(
+        result.members[0].party_spell_remaining_ms,
+        Some([0, 120_000, 0, 0, 0])
+    );
+    assert_eq!(encode_party_result(&result)?, bytes);
+    let mut duplicate = member.clone();
+    push_message_field(&mut duplicate, 5, &durations);
+    let mut invalid = vec![8, 1, 16, 0];
+    push_message_field(&mut invalid, 3, &duplicate);
+    assert!(decode_party_result(&invalid).is_err());
+    let mut short = member;
+    short.pop();
+    let mut invalid = vec![8, 1, 16, 0];
+    push_message_field(&mut invalid, 3, &short);
+    assert!(decode_party_result(&invalid).is_err());
+    let mut invitation = result.members[0].clone();
+    invitation.leader = false;
+    invitation.expires_at = 1;
+    let mut invited = PartyResult::refused(PartyDisposition::Ok);
+    invited.invitations.push(invitation);
+    assert!(encode_party_result(&invited).is_err());
     Ok(())
 }

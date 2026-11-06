@@ -1,6 +1,6 @@
-# Oteryn World Bundle format (v6; the file name keeps V1)
+# Oteryn World Bundle format (v7; the file name keeps V1)
 
-- Format ID: `OTERYN_WORLD_BUNDLE/v6` (v1, v2, v3, v4 and v5 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
+- Format ID: `OTERYN_WORLD_BUNDLE/v7` (v1, v2, v3, v4 and v5 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
 - Owner: `Oteryn/Oteryn-Game`, MAP-BUNDLE-1 (ADR-0021 §5)
 - Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
   treats a serializer as a permanent format. This document is accepted together with
@@ -34,7 +34,7 @@ All integers are little endian unless the payload grammar (§5) says varint.
 | Offset | Size | Field | Rule |
 |---|---|---|---|
 | 0 | 4 | magic | `"OTWB"` |
-| 4 | 2 | `format_version` u16 | `6` |
+| 4 | 2 | `format_version` u16 | `7` |
 | 6 | 2 | reserved u16 | `0` |
 | 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
 | 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
@@ -58,9 +58,10 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 
 | Field | Meaning |
 |---|---|
-| `subareas` | Typed client-mask admission (§15), covered by the bundle digest. Written first. |
-| `format` | `"OTERYN_WORLD_BUNDLE/v6"` |
-| `min_reader_version` | lowest reader `format_version` able to read the file; `6` |
+| `layers` | Optional compiled epoch layers (§17), covered by the bundle digest. Omitted when empty. |
+| `subareas` | Typed client-mask admission (§15), covered by the bundle digest. |
+| `format` | `"OTERYN_WORLD_BUNDLE/v7"` |
+| `min_reader_version` | lowest reader `format_version` able to read the file; `7` |
 | `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
 | `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
 | `build_class` | `"production"` or `"non-production"`, §8 |
@@ -129,7 +130,7 @@ already writes canonical varints.
 
 - **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
   it decompresses the frame, so a corrupt frame never reaches the decompressor.
-- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v6" || 0x00 || file[0 .. len − 32])`, stored
+- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v7" || 0x00 || file[0 .. len − 32])`, stored
   as the last 32 bytes. It covers the header, the manifest (including `build_class` and the
   content revision), the tables and every frame, the spawn and NPC frames included. It is the bundle identity used for pinning
   (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.
@@ -662,3 +663,16 @@ pending respawn, and consumes it through the existing fenced placement path;
 the placed temple also becomes the saved last position. Citizen ingress uses
 placement unique ids from Crystal/Canary `citizen.lua`, including Svargrond's
 Barbarian Test storage 41174 threshold 8. No wire protocol change is required.
+
+## 17. Optional epoch layers (format v7)
+
+The manifest's optional `layers` list contains at most 16 named, sorted and unique layers.
+Each layer has its own native palette and at most 64 sectors, 4096 tiles and 65536 entries.
+The normal palette, extent, tile and sector validators apply. The compiler refuses an
+unresolved native reference or an intersection with a base House. The runtime selects
+compiler-admitted names from its fixed World/reset-epoch draw before booting movement,
+map facts and the ordinary admitted spawn family. Selected layers replace entire tiles;
+selecting intersecting layers is refused. Composition retains the original bundle digest
+(which covers every layer), and does not modify Channel overlay state. Existing Ground
+retirement and reset admission rules still apply. No source file is opened by the runtime.
+The field is omitted when empty. A v6 reader cannot accept a layer-bearing v7 bundle.

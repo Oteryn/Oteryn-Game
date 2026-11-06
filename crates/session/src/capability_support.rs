@@ -78,6 +78,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     property_services::character_info::CAPABILITY_CHARACTER_INFO_V1,
     oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1,
     oteryn_protocol_oteryn::house::CAPABILITY_GUILDHALL_V1,
+    oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1,
     property_services::mail::CAPABILITY_MAIL_V1 as u32,
     oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
     oteryn_protocol_oteryn::inspection::CAPABILITY_INSPECTION_V1,
@@ -96,6 +97,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     // CL26s3: native daily reward wall, query, and claim controls.
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     oteryn_protocol_oteryn::daily_reward::CAPABILITY_DAILY_REWARD_V2,
+    oteryn_protocol_oteryn::weapon_proficiency::CAPABILITY_WEAPON_PROFICIENCY_V1,
     oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
     // CL26s4: personal boss reward commands.
     oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
@@ -120,7 +122,12 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
+    oteryn_protocol_oteryn::staff_tools::CAPABILITY_STAFF_TOOLS_V1,
+    oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
+    potion_durations::CAPABILITY_POTION_DURATIONS_V1,
+    death_protection::CAPABILITY_DEATH_PROTECTION_V1,
+    party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -204,7 +211,12 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
+    oteryn_protocol_oteryn::staff_tools::CAPABILITY_STAFF_TOOLS_V1,
+    oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
+    potion_durations::CAPABILITY_POTION_DURATIONS_V1,
+    death_protection::CAPABILITY_DEATH_PROTECTION_V1,
+    party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
@@ -230,5 +242,53 @@ mod target_move_tests {
             assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
         }
         assert!(gated_routes().any(|(id, commands, _)| id == 64 && commands.contains(&81)));
+    }
+}
+
+#[cfg(test)]
+mod native_advertisement_tests {
+    use super::CLIENT_SUPPORTED_CAPABILITIES;
+    use oteryn_protocol_oteryn::{
+        ChannelId, CharacterId, ClientBootstrapValue, FoundationProtocolError, GameSessionId,
+        ServerAcceptedValue, WorldId, decode_wire_envelope, encode_client_bootstrap,
+        encode_server_accepted,
+    };
+
+    #[test]
+    fn native_advertisement_is_bootstrap_encodable_and_dependency_closed()
+    -> Result<(), FoundationProtocolError> {
+        let id = |last: u8| {
+            let mut bytes = [1; 16];
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes[15] = last;
+            bytes
+        };
+        let bootstrap = encode_client_bootstrap(&ClientBootstrapValue {
+            schema_revision: 1,
+            character_id: CharacterId::decode(&id(1))?,
+            admission_material: b"native-advertisement-regression",
+            client_build_id: "native-advertisement-regression",
+            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+        })?;
+        assert_eq!(
+            decode_wire_envelope(&bootstrap)?
+                .client_bootstrap()?
+                .supported_capabilities,
+            CLIENT_SUPPORTED_CAPABILITIES
+        );
+        // The real acceptance encoder additionally checks registration and every
+        // transitive registry prerequisite when the full advertisement is selected.
+        encode_server_accepted(&ServerAcceptedValue {
+            game_session_id: GameSessionId::decode(&id(2))?,
+            world_id: WorldId::decode(&id(3))?,
+            channel_id: ChannelId::decode(&id(4))?,
+            connection_generation: 1,
+            current_server_sequence: 0,
+            next_command_id: 1,
+            schema_revision: 1,
+            selected_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+        })?;
+        Ok(())
     }
 }

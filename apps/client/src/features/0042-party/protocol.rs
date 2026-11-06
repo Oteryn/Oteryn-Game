@@ -9,7 +9,7 @@ impl Outbox {
     }
 
     pub(in crate::play) fn party_result(&self, response: &PartyResponse) {
-        oteryn_client_ui::party::apply_result(&mut lock(&self.0).party, response);
+        oteryn_client_ui::party_member_effects::apply_result(&mut lock(&self.0).party, response);
     }
 }
 

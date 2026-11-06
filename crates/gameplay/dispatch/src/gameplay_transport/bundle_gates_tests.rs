@@ -75,6 +75,11 @@ const INVENTORY: &[Entry] = &[
             ),
             ("gameplay_transport/postgres_tests/equipped_offence.rs", 2),
             ("gameplay_transport/postgres_tests/hunting_stamina.rs", 3),
+            // SRX-2/P01: charm regressions select live targets through the existing attack gate.
+            (
+                "gameplay_transport/postgres_tests/srx2_charm_consumers.rs",
+                2,
+            ),
             // TASKBOARD-P04: real party kill/capture replay fixture uses the existing attack gate.
             (
                 "gameplay_transport/postgres_tests/party_xp/bounty_talisman.rs",

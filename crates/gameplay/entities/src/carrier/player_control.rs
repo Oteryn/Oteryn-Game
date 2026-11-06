@@ -394,6 +394,10 @@ impl ChannelActorCarrier {
         match &mut self.slots[index] {
             Slot::Occupied { lifecycle, .. } => match lifecycle.control_loss {
                 None => {
+                    lifecycle.control_revision = lifecycle
+                        .control_revision
+                        .checked_add(1)
+                        .ok_or(CarrierError::ControlLossConflict)?;
                     lifecycle.control_loss = Some(mark);
                     Ok(())
                 }
@@ -423,7 +427,7 @@ impl ChannelActorCarrier {
         match &mut self.slots[index] {
             Slot::Occupied { lifecycle, .. } => match lifecycle.control_loss {
                 Some(mark) if mark.epoch == epoch => {
-                    lifecycle.control_loss = None;
+                    lifecycle.clear_control_loss()?;
                     // CHARM-DESC-FENCE-LEASE §3 item 3: a resume lifts the fence of its epoch.
                     if let Some(entry) = self
                         .attackers
@@ -626,7 +630,7 @@ impl ChannelActorCarrier {
         } = &mut self.slots[index]
         {
             *game_session_id = Some(successor);
-            lifecycle.control_loss = None;
+            lifecycle.clear_control_loss()?;
         }
         Ok(())
     }
