@@ -1,0 +1,3045 @@
+{
+  "schema": 1,
+  "branch": "claude/happy-davinci-ijz3wy-npcfix",
+  "recovered_from": "95accb923",
+  "note": "Original entry-level lane state is absent from available history. Recovered NPC audit rows preserve unfinished work; no prior authored row has been requalified without fresh evidence.",
+  "entries": [
+    {
+      "npc": "A Sweaty Cyclops",
+      "town": "Ab'Dendriel",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Placement is repaired. The audit leaves exact retail smithing eligibility/effects unresolved; verified quest exchanges must be routed to the excluded quest owner.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/12",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua",
+        "sha256": "bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      }
+    },
+    {
+      "npc": "Alkestios",
+      "town": "Ab'Dendriel",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/21",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Elvith",
+      "town": "Ab'Dendriel",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/95",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Olrik",
+      "town": "Ab'Dendriel",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/248; content/services/trade/trade-00000-00326.json:1#/records/221",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ahmet",
+      "town": "Ankrahmun",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Oil-filled Vial20 is not executable: fluid mint provenance and subtype trade support need the existing fluid owner contract; this package adds placement only.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/14",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/ahmet.lua",
+        "sha256": "7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      }
+    },
+    {
+      "npc": "Alesar",
+      "town": "Ankrahmun",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. 29 retail offers, including a full-state Ice Rapier purchase; existing Efreet mission03=3 gate enforced in window and durable trade.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/19; content/services/trade/trade-00000-00326.json:1#/records/6",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Brutus",
+      "town": "Ankrahmun",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-brutus.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Fitzgerald",
+      "town": "Ankrahmun",
+      "audit_status": "MISSING",
+      "work": "Retail placement authored. Add exact displayed identity.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/116; content/npcs/definitions/npcs-00000-00499.json:1#/records/440",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Hercule",
+      "town": "Ankrahmun",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-hercule.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Malor",
+      "town": "Ankrahmun",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/210",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Enpa Rudra",
+      "town": "Blue Valley",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/104",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "A Helpful Fairy",
+      "town": "Boss Lairs",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-a-helpful-fairy.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Rascalio",
+      "town": "Boss Lairs",
+      "audit_status": "DIFF",
+      "work": "Nimmersatt event-conditioned Banor's Eye transport needs an admitted event selector and return route.",
+      "evidence": ".npcaudit/research/rascalio.md:1",
+      "test": "Source review",
+      "status": "SKIPPED_OTHER_LANE",
+      "ownership": "World/event/map placement changes excluded by owner"
+    },
+    {
+      "npc": "Yselda",
+      "town": "Boss Lairs",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/325",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Captain Jack",
+      "town": "Carlin",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Tibia return depends on Costello permission and monastery fines; no qualified native predicate. Quest-lane repair required.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/49",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/captain_jack.lua",
+        "sha256": "48732866d24fdd4f5d06f13270c3b234aabd27e8d0d64f7dc2e664e0549b2dcd",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
+      }
+    },
+    {
+      "npc": "Cerdras",
+      "town": "Carlin",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/58",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Liane",
+      "town": "Carlin",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Ordinary Letter8/Parcel15; completed Postman5/10, with current durable rank validation.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/192; content/services/trade/trade-00000-00326.json:1#/records/181",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Padreia",
+      "town": "Carlin",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/260",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Altar",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Crimson Offering/Bakragore eligibility and reward transaction require the excluded quest lane.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/23",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/altar.lua",
+        "sha256": "aba428a9619d2d0af8afa0b01b82b784e95f210d430576fe68e3a07f1a300c8c",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      }
+    },
+    {
+      "npc": "Chemar",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/64; content/services/trade/trade-00000-00326.json:1#/records/60",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Elyen Ravenlock",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/96",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Kasmir",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Heal to40 and cure fire/poison/energy through the canonical vitals/condition owner.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/182; crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:760",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Muzir",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Connect existing native bank service and source dialogue.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/226",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nah'Bob",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. 32 retail offers including default-state Ice Rapier buyback; existing Marid mission03=3 gate enforced in window and durable sale.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/229; content/services/trade/trade-00000-00326.json:1#/records/207",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Oblivion",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/244",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Omrabas",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/250",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Petros",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Wiki fares and destinations for eight ordinary routes; carried scarab-cheese guard. Travora source row retained held. Eight ordinary destinations repaired. Travora remains held: daily ticket and Captain Tiberius last-port return owner are absent.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/269; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2179; content/services/travel/travel-00000-00058.json:1#/records/44",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/petros.lua",
+        "sha256": "5418dc87464693a92ddba1378140a507b9e3da84de603fe485196faa1d4ebb2c",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
+      }
+    },
+    {
+      "npc": "Razan",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Paid spell teaching removed in retail15.22 (2026-01-27); preserve existing automatic spell acquisition.",
+      "evidence": "crates/gameplay/dispatch/src/gameplay_transport/automatic_spell_progression.rs:1",
+      "test": "dispatch_planner_gates_level_vocation_and_explicit_exclusions",
+      "status": "SUPERSEDED"
+    },
+    {
+      "npc": "Shalmar",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Paid spell teaching removed in retail15.22 (2026-01-27); preserve existing automatic spell acquisition.",
+      "evidence": "crates/gameplay/dispatch/src/gameplay_transport/automatic_spell_progression.rs:1",
+      "test": "dispatch_planner_gates_level_vocation_and_explicit_exclusions",
+      "status": "SUPERSEDED"
+    },
+    {
+      "npc": "Zarifan",
+      "town": "Darashia",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/327",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "A Dark Priestess",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/2",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "A Majestic Warwolf",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/4",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "A Swan",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/11",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Albert",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/16",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Alexander",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/20",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Amanda",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/25",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "An Ominous Bat",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/29",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Anaztassja Moroia",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/30",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Artemyth",
+      "town": "Edron",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-artemyth.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Beatrice",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/39",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Captain Seahorse",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Enable Venore40 with carried scarab-cheese guard.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/54; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:811",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Chief Grarkharok",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/65",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Chrystal",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/68; content/services/trade/trade-00000-00326.json:1#/records/64",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Eliza",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/92",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Emberwing",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Book World scene shares its exact cell with Grovebeast; no admitted mutually exclusive scene selector.",
+      "evidence": ".npcaudit/research/emberwing.md:1",
+      "test": "Source review",
+      "status": "SKIPPED_OTHER_LANE",
+      "ownership": "World/event/map placement changes excluded by owner"
+    },
+    {
+      "npc": "Eremo",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/105",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Grovebeast Npc",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Book World scene shares its exact cell with Emberwing; no admitted mutually exclusive scene selector.",
+      "evidence": ".npcaudit/research/grovebeast-npc.md:1",
+      "test": "Source review",
+      "status": "SKIPPED_OTHER_LANE",
+      "ownership": "World/event/map placement changes excluded by owner"
+    },
+    {
+      "npc": "Gundralph",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/151",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Gunther",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/152",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Hawkhurst",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/160",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Iwan",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/169",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lai",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/188",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lailene",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/189",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lesser Messenger of Heaven",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/190",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Luna",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/205",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Maeryn",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/208",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Milos",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/223",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Mirabell",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/224",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Myzzi",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/227",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ortelio",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/253",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Owin",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/259",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Pemaret",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/265",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Pino",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/270",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Puffels",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/273",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Rudolph",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/290",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Sane Mage",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/291",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Shadowpunch",
+      "town": "Edron",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-shadowpunch.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Telas Golem",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/302",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Thomas",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/306",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ursula",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/311",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Willard",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/316",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Wyrdin",
+      "town": "Edron",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/319",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "A Fading Memory",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Ghost's Tear reward is a Blood Brothers quest transaction; excluded quest-lane repair required.",
+      "evidence": ".npcaudit/research/a-fading-memory.md:1",
+      "test": "Source review",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_fading_memory.lua",
+        "sha256": "52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
+      }
+    },
+    {
+      "npc": "A Sleeping Dragon",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/7",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "A Strange Chalice",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Forgotten Knowledge quest topic/actions need the excluded quest lane.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/9",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_chalice.lua",
+        "sha256": "7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      }
+    },
+    {
+      "npc": "A Wandering Soul",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Blood Crystal enchantment is a Blood Brothers quest transaction; excluded quest-lane repair required.",
+      "evidence": ".npcaudit/research/a-wandering-soul.md:1",
+      "test": "Source review",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_wandering_soul.lua",
+        "sha256": "64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
+      }
+    },
+    {
+      "npc": "Chartan",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/62",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Chrak",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/67",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Cranky Lizard Crone",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Affirmative cape/hat exchanges require Wayfarer quest transitions; excluded quest-lane repair required.",
+      "evidence": ".npcaudit/research/cranky-lizard-crone.md:1",
+      "test": "Source review",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/cranky_lizard_crone.lua",
+        "sha256": "8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
+      }
+    },
+    {
+      "npc": "Esrik",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/107",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Harlow (Vengoth)",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/158",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lizard Prisoner",
+      "town": "Farmine",
+      "audit_status": "MISSING",
+      "work": "Retail placement authored. Add exact displayed identity.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/198; content/npcs/definitions/npcs-00500-00999.json:1#/records/240; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/487",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lizard Tunnel Guard",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/199",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Murim",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Connect native bank service alongside postal shop; conditional postage. Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/225; content/services/trade/trade-00000-00326.json:1#/records/206",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ongulf",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/252",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Pompan",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Add ten Wiki-confirmed ammunition, weapon and flag offers.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/272; content/services/trade/trade-00000-00326.json:1#/records/232",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Zalamon",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/326",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Zizzle",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/333",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Zlak",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/334",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ztiss",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/337",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Zumtah",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/338",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Zurak",
+      "town": "Farmine",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/339",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Maelyrra",
+      "town": "Feyrist",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/207",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Toffee",
+      "town": "Feyrist",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Add seven candy buyback offers, including Pastry Dragon95000.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/308; content/services/trade/trade-00000-00326.json:1#/records/291",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Alyxo",
+      "town": "Issavi",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Kilmaresh quest dialogue/progression needs the excluded quest lane.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/24",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/alyxo.lua",
+        "sha256": "86f3cf5aa793d5ccffd14bdf35bda841bb00f8c3ce3352826b088f4f25c4b008",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      }
+    },
+    {
+      "npc": "Captain Jack Rat",
+      "town": "Issavi",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/50",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Eshaya",
+      "town": "Issavi",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/106",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Eustacio's Spy Rat",
+      "town": "Issavi",
+      "audit_status": "MISSING",
+      "work": "Retail placement authored. Add exact displayed identity.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/110; content/npcs/definitions/npcs-00000-00499.json:1#/records/410",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Taya",
+      "town": "Issavi",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/301",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Yonan",
+      "town": "Issavi",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/324",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Brom",
+      "town": "Kazordoon",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-brom.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Burt",
+      "town": "Kazordoon",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-burt.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Etzel",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/108",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Gnomission",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Rank4 Warzone access needs Bigfoot quest predicates and action owner; excluded quest-lane repair required.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/137",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gnomission.lua",
+        "sha256": "3114a451c12b4ce3f470f1d3eaa7e7846da6068dfac5718e7423764a9656f341",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
+      }
+    },
+    {
+      "npc": "Gnops Member",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/139",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Hemor, the guard",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/163",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Humnog, the guard",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/166",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lokur",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer. Connect the native postal service (Letter, Parcel and Label).",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/201; content/services/trade/trade-00000-00326.json:1#/records/184",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lukosch",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/204",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Malech",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/209",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Maryza",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/220",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Melfar",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/222",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nezil",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/235",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Pukosch",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/275",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Pydar",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/276",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Riddler",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/285",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Shortsighted Dwarf",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/295",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Sigurd",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/296",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Tezila",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/303",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "The Orc King",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/305",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Tulf",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/310",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Wally",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/313; content/services/trade/trade-00000-00326.json:1#/records/308",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Xelvar",
+      "town": "Kazordoon",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/320",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Captain Max",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Yalahar400 route with started-Yalahar quest gate; correct scene identities; no Postman discount.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/52; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:625; content/services/travel/travel-00000-00058.json:1#/records/12",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Captain Waverider",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/55",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Chantalle",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/59",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Charlotta",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/61",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Chondur",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/66",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Duncan",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/79",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Eleonore",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/91",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "John The Carpenter",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/176",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Marina",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/212",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ocelus",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/245",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "One-Eyed Joe",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/251",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Polly",
+      "town": "Liberty Bay",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/271",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Amra",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/28",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Asphota",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/36",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Candra",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/44",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Captain Corsarah",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/46",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Dhira",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/75",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "G Ezkho",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/123",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Giri",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/129",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Goldro",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/143",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Haani",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/154",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Isika",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/168",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Jata",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/172",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Javala",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/173",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Kaumudi",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/183",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nagging Naga",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/228",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nekaret",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/231",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nihaka",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/237",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nilavarna",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/238",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nipuna",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/239",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Omar",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/249",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Pescadu",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/267",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ziyad",
+      "town": "Marapur",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/332",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Maris (Mistrock)",
+      "town": "Mistrock (Wiki city Yalahar; scene association verified by transcript)",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/214",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Charles",
+      "town": "Port Hope",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/60",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ray",
+      "town": "Port Hope",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Ordinary Letter8/Parcel15; completed Postman5/10, with current durable rank validation.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/284; content/services/trade/trade-00000-00326.json:1#/records/242",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "A Beggar",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/0",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Chavis",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/63",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Eathar",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/81",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Edmund",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/85",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Elbert",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/89",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Elliott",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/93",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Emily",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/101",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Fabiana",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/111",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Fayla",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/112",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Fillias",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/115",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Flint",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Add three exercise-wrap offers and buy Sword25; qualify full default charge purchases.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/117; content/services/trade/trade-00000-00326.json:1#/records/103",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Fyodor",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/122; content/services/trade/trade-00000-00326.json:1#/records/111",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Georgia Rainbird",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/128",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Graham",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/145",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Guardian of the Deep Seas",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/147",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Guide Kunibert",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/149",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Helsi Van Ore",
+      "town": "Rathleton",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-helsi-van-ore.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Hexel",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/165",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Jossel",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/177",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Klesar",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/186",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Kromrek",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/187",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Maro",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/217",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Marvin",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/219",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nicholas",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/236",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Normod",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/242",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Olm",
+      "town": "Rathleton",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-olm.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Peremin",
+      "town": "Rathleton",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/266",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Roughington",
+      "town": "Rathleton",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-roughington.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Al Dee",
+      "town": "Rookgaard",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Pick Quest affirmative exchange requires the excluded quest lane.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/15",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/al_dee.lua",
+        "sha256": "f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      }
+    },
+    {
+      "npc": "Dixi",
+      "town": "Rookgaard",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Buy Chain Helmet from player for17 instead of12.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/76; content/services/trade/trade-00000-00326.json:1#/records/78",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "The Gatekeeper",
+      "town": "Rookgaard",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-the-gatekeeper.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "...",
+      "town": "Roshamuul",
+      "audit_status": "MISSING",
+      "work": "Retail placement authored. Add exact displayed identity.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/94; content/npcs/definitions/npcs-00000-00499.json:1#/records/385",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Captain Marie-Denise Banner",
+      "town": "Roshamuul",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/51",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Dream Butterfly",
+      "town": "Roshamuul",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/78",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Eldoran the Ambitious",
+      "town": "Roshamuul",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/90",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Glimpse of Allusion",
+      "town": "Roshamuul",
+      "audit_status": "MISSING",
+      "work": "Retail placement authored. Add exact displayed identity.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/130; content/npcs/definitions/npcs-00000-00499.json:1#/records/489",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lieutenant Harlan",
+      "town": "Roshamuul",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/193",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "WOX",
+      "town": "Roshamuul",
+      "audit_status": "MISSING",
+      "work": "Retail placement authored. Add exact displayed identity.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/318; content/npcs/definitions/npcs-01000-01289.json:1#/records/241",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Yielothax",
+      "town": "Roshamuul",
+      "audit_status": "MISSING",
+      "work": "Retail placement authored. Add exact displayed identity.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/323; content/npcs/definitions/npcs-01000-01289.json:1#/records/260",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "A Restless Soul",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Spirit-language greeting and story progression require the Ice Islands quest owner; do not grant speech unconditionally.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/5",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_restless_soul.lua",
+        "sha256": "a0a3272d20cda4c5f4cb7f14107bd49fc55f40e9f9a983c9399e193cd8878ac9",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      }
+    },
+    {
+      "npc": "A Starving Dog",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/8",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Baltim",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/38",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Bertha",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/41",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Captain Breezelda",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/45",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Captain Haba",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/48",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Dankwart",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/73",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Eirik",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/87",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Freezhild",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/120",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Fynn",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/121",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Hawkyr",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/161",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Janz",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/171",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Jessica",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/175",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Kjesse",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/185",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lurik",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/206",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nelly",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/233; content/services/trade/trade-00000-00326.json:1#/records/209",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nor",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/240",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Rashid",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. 155 retail offers including seven default-state amulet buybacks; mission07 gate and seven weekday placements matching the existing runtime selector.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/277; content/services/trade/trade-00000-00326.json:1#/records/240",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Robert",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/286",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Romir",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/289",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Sinatuki",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/297",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Sirik",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/298",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Thorwulf",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/307",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Zora",
+      "town": "Svargrond",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/336",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Akananto",
+      "town": "Thais",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-akananto-npc.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Albinius",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Buy Heavy Old Tome30; compose its existing canonical policy into the active provider, preserving the gated blank-scroll purchase.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/17; content/services/trade/trade-00000-00326.json:1#/records/4",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Anna",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Retail Targuna continuation conflicts with the existing owner-selected landing and needs tutorial/quest transition and destination admission; coordinator required.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/35",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/anna.lua",
+        "sha256": "5ad524861ac070192466d751215e9be859f6cea67a3d8fa2612e43a12b4fdd2e",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
+      }
+    },
+    {
+      "npc": "Benjamin",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Ordinary Letter8/Parcel15; completed Postman5/10, with current durable rank validation.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/40; content/services/trade/trade-00000-00326.json:1#/records/33",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Deseus",
+      "town": "Thais",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-deseus.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Dorian",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/77",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Eclesius",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/82",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Eddy",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/83",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Edgar-Ellen",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/84",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Edowir",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/86",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Elane",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/88",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Emiliana",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/98",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Emilie",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/100",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Excited Tibian",
+      "town": "Thais",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-excited-tibian.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Ferryman Kamil",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/113",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ferryman Kamil (Meluna)",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/114",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Festival Assistant",
+      "town": "Thais",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-festival-assistant.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Gaberiel",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/124",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Galuna",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/125",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Gamel",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/126",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ghost Captain",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Conditional Ghost Ship scene has no admitted event selector; unconditional placement would invent availability.",
+      "evidence": ".npcaudit/research/ghost-captain.md:1",
+      "test": "Source review",
+      "status": "SKIPPED_OTHER_LANE",
+      "ownership": "World/event/map placement changes excluded by owner"
+    },
+    {
+      "npc": "Gorn",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/144",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Grof, The Guard",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/146",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Guide Luke",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/150",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Hanna",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/156",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Hans Gender",
+      "town": "Thais",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-hans-gender.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Hardek",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/157",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Harsky",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/159",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Hector The Mentor",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/162",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Henricus",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/164",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Hoaxette",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "April event availability has no admitted selector; unconditional placement would invent availability.",
+      "evidence": ".npcaudit/research/hoaxette.md:1",
+      "test": "Source review",
+      "status": "SKIPPED_OTHER_LANE",
+      "ownership": "World/event/map placement changes excluded by owner"
+    },
+    {
+      "npc": "Junkar (Mines)",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/179",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Junkar (Robsons)",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/180",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Junkar (Thais)",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/181",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lizzie",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/200",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lubo",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Sell Torch for2.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/203; content/services/trade/trade-00000-00326.json:1#/records/185",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Markwin",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/216",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Marvik",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/218",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Mercutios Drum",
+      "town": "Thais",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-mercutios-drum.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Mercutios Harp",
+      "town": "Thais",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-mercutios-harp.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Mercutios Piano",
+      "town": "Thais",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-mercutios-piano.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Partos",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/262",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Paulette",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/263",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Robson",
+      "town": "Thais",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Parcel15 and Label1 service; parcel/label keyword aliases; no Postman discount.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/287; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/148; content/services/trade/trade-00000-00326.json:1#/records/247",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Stone Temple Parrot",
+      "town": "Thais",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-stone-temple-parrot.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Victor",
+      "town": "Thais",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-victor.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Doctor Marrow",
+      "town": "Thalassara",
+      "audit_status": "MISSING",
+      "work": "Add exact displayed identity. Identity added; D17 map-owner conflict remains between Wiki and reviewed map coordinates. Placement is held, not guessed.",
+      "evidence": "content/npcs/definitions/npcs-00000-00499.json:1#/records/330",
+      "test": "npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "SKIPPED_OTHER_LANE",
+      "ownership": "World/event/map placement changes excluded by owner"
+    },
+    {
+      "npc": "Testserver Assistant",
+      "town": "Varies",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-testserver-assistant.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "A Behemoth",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Spike quest-conditioned greetings require the excluded quest lane.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/1",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_behemoth.lua",
+        "sha256": "fe1a118261b147228c708d85c2d0f4f3417fec10cc616372ea92dfa9526cd334",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      }
+    },
+    {
+      "npc": "A Ghostly Guardian",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Retail greeting/name substitution, farewell and eight keyword aliases; preserve all multipart lines through command and ordinary chat.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/3; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/13",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay; npcfix_guardian_chat_preserves_name_and_multipart_source_order",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "A Strange Fellow",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Postman progression dialogue/actions require the excluded quest lane.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/10",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_fellow.lua",
+        "sha256": "a942d86e6ce1066564a14f4976b4af1926b22807b1c7ae7beb338ec2097d8b01",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      }
+    },
+    {
+      "npc": "A Weakened Forest Fury",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Forgotten Knowledge guarded interaction requires the excluded quest lane.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/13",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "PENDING",
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_weakened_forest_fury.lua",
+        "sha256": "0d4e15a43d66332de7ca283d776f6a692d6247c80dacb66517c02f782db266e6",
+        "class": "OTS_HYPOTHESIS_ONLY",
+        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      }
+    },
+    {
+      "npc": "Allen",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/22",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Captain Fearless",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/47",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Demonguard",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/74",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Dustrunner",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/80",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Eustacio",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/109",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Frank The Plank",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/118",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Frans",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/119",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "George The Boyscout",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/127",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Gnome Trooper",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/131",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Gnommander",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/138",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Guide Elena",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/148",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "H.L.",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/153",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Hagor",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/155",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Jack The Worker",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/170",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Jean Claude",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/174",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Julian",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/178",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Leopold",
+      "town": "Venore",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-leopold.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Lightfoot",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/194",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Livielle",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/197",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lorbas",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/202",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Maria",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/211",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Minzy",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Bewitched event NPC; no admitted availability selector.",
+      "evidence": ".npcaudit/research/minzy.md:1",
+      "test": "Source review",
+      "status": "SKIPPED_OTHER_LANE",
+      "ownership": "World/event/map placement changes excluded by owner"
+    },
+    {
+      "npc": "Nathaniel",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/230",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nelliem",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/232",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Nemal",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/234",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Oldrak",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/246",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Romella",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Add three exercise-wrap offers; qualify full default charge purchases.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/288; content/services/trade/trade-00000-00326.json:1#/records/250",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Shiantis",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Add sixteen Wiki-confirmed pillow/pick offers.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/294; content/services/trade/trade-00000-00326.json:1#/records/265",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Solkrin",
+      "town": "Venore",
+      "audit_status": "MISSING",
+      "work": "Historical/test-server-only reference; no current-playable change. Deseus is independently listed in current Deprecated NPCs.",
+      "evidence": ".npcaudit/research/reference-solkrin-npc.md:1",
+      "test": "Source review",
+      "status": "EXCLUDED"
+    },
+    {
+      "npc": "Zebron",
+      "town": "Venore",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/328",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Chuckles",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/69",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Emperor Rehal",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/102",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Lisander",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/196",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Maris",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/213",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Maritima",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/215",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Oliver",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/247",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Ortheus",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/258",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Palimuth",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/261",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Peter",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/268",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Pugwah",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Sell empty Mug4 using the existing default empty state.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/274; content/services/trade/trade-00000-00326.json:1#/records/233",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Tarak (Inner)",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Monument Tower50 route; passage/trip keyword aliases; displayed name Tarak.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/299; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2596; content/services/travel/travel-00000-00058.json:1#/records/50",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Tarak (Sunken)",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Free return passage; displayed name Tarak.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/300; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2609; content/services/travel/travel-00000-00058.json:1#/records/51",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Xorlosh",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/321",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Yalahari",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/322",
+      "test": "test_npcfix_retail_population_has_each_audited_cell",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Zirkon",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Add the recorded sacred-place greeting.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/331; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/330",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    },
+    {
+      "npc": "Znozel",
+      "town": "Yalahar",
+      "audit_status": "DIFF",
+      "work": "Retail placement authored. Connect existing native bank service and source dialogue.",
+      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/335",
+      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "AUTHORED; QUALIFICATION PENDING"
+    }
+  ],
+  "batches": [
+    {
+      "name": "atomic quest/NPC state prerequisite",
+      "state": "QUALIFIED",
+      "red": {
+        "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_eleven_track_postgres_atomic_receipt_replay_and_rollback -- --nocapture",
+        "result": "FAILED TooManyEffects",
+        "postgres_marker": "POSTGRES_STARTED NPCFIX eleven-track acceptance None",
+        "duration_seconds": 4.39
+      },
+      "green": {
+        "command": "same focused PostgreSQL test",
+        "result": "1 passed; atomic receipt, exact replay, stage refusal and arithmetic refusal rollback",
+        "postgres_markers": 3,
+        "duration_seconds": 15.01
+      },
+      "unit_checks": {
+        "npc_planner": "22 passed including 11/16/17 track cases",
+        "quest_rules": "248 passed, 4 unrelated tests filtered"
+      },
+      "next": "Finish cargo check and clippy, review, recheck migration number, commit and push. Then source-backed NPC callers.",
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/tereban_functions.lua#L173",
+        "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d",
+        "repo_evidence": "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json, mission-accept effects"
+      },
+      "checks": {
+        "cargo_fmt": "PASS",
+        "cargo_check": "PASS all targets/features, quests/dispatch/game-server, 5m22s",
+        "clippy": "PASS -D warnings, same packages/targets/features, 4m36s",
+        "diff_check": "PASS",
+        "self_review": "No findings; migration changes only the bound, preserves all shape/deferred guards; no new runtime public API or fence changes."
+      }
+    }
+  ],
+  "owner_constraints": {
+    "excluded": [
+      "Dawnport",
+      "OT-only W14",
+      "P23",
+      "X01-X06"
+    ],
+    "other_lane_world_changes": "skip -worldchg/-wvar/-wcontrib/-wevents",
+    "fathers_burden": "11-track acceptance is one atomic write",
+    "grants": "charge only on an exact match",
+    "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
+  },
+  "next_batch": "Three source-backed NPC state callers: Tereban, Restless Soul, Strange Chalice"
+}

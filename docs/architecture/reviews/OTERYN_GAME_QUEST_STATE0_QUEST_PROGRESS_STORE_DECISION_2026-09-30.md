@@ -3,6 +3,7 @@
 - Decision: `QUEST-STATE0-CHARACTER-TRACK-STORE-V1`
 - Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (persistence
   and security) and protected integration.
+- Amended (2026-11-06, owner NPCFIX direction): RL-02 is 16 effects per atomic transition, shared by the catalogue, NPC planner and receipt shape. Father's Burden acceptance writes all eleven tracks in one transaction and one CharacterRevision; it must never be split. Migration `1096` preserves all other receipt guards.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Amended (2026-10-03): §13, reconciled with `main` (the guard now admits eight receipt kinds; the
   Quest family import; CHAR-REV-SEQ-1's writer list), and §14, the QUEST-STATE-1 packet, for
@@ -87,7 +88,7 @@ Where does a character's quest progress live, and how does it change safely?
 
 ## 4. Transitions (QUEST-STATE-1)
 
-- A transition is a content record: `transition_key`, its quest, and up to `QUESTSTATE0-RL-02` (8)
+- A transition is a content record: `transition_key`, its quest, and up to `QUESTSTATE0-RL-02` (16)
   effects on **tracks owned by that quest**. A trigger that moves two quests requests two
   transitions.
 - Each effect is `{track_key, from, effect}`:
@@ -234,7 +235,7 @@ mismatch reloads the cursor and retries once.
 | Row | Value |
 |---|---|
 | `QUESTSTATE0-RL-01` tracks per character | 4,096 |
-| `QUESTSTATE0-RL-02` effects per transition | 8 |
+| `QUESTSTATE0-RL-02` effects per transition | 16 |
 | `QUESTSTATE0-RL-03` track value | `i64` within the declared bounds |
 | `QUESTSTATE0-RL-04` request binding | 1,024 bytes |
 | `QUESTSTATE0-RL-05` quest states per character | 1,024 |
@@ -277,7 +278,7 @@ mismatch reloads the cursor and retries once.
    and pending obligations re-requested, at admission.
 4. **Typed references:** CharacterId, AccountId, World profile family, keys, occurrences, revisions.
 5. **Wire:** none.
-6. **Split work:** one transition per transaction, at most 8 effects.
+6. **Split work:** one transition per transaction, at most 16 effects.
 
 ## 13. Reconciliation with `main` (2026-10-03)
 
@@ -373,7 +374,7 @@ owned_paths:
    extends the `0012` claim guards for the obligation companion row by new function bodies, never
    by editing an applied migration.
 2. **Catalogue type.** `QuestStateCatalogue`: tracks (Oteryn key, owner quest, initial value,
-   `[min, max]`), transitions (key, quest, at most 8 effects on that quest's tracks, `completes`),
+   `[min, max]`), transitions (key, quest, at most 16 effects on that quest's tracks, `completes`),
    and each quest's `definition_hash` over its tracks and transitions only (§6). Built in code by
    tests; QUEST-LOWER-1 adds the content loader.
 3. **Writer.** `request_transition(fence, character, transition_key, cause)` (§4, §5): the closed
