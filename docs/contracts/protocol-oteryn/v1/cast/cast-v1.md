@@ -6,7 +6,7 @@ Capabilities 289 VIEW, 290 CONTROL, 291 CHAT and 292 CONSENT are **unoffered**.
 SPECTATE1 capability 33, commands 34/35, domain 25 and family 15 are unchanged.
 Player controls use commands 502 CONTROL, 503 CONSENT and 505 MODERATE.
 504 CHAT / kind 10 CasterReply is reserved; caster replies are not implemented.
-Domain 104 carries replacement scenes; domain 103 carries live caster chat. No client UI is implemented here.
+Domain 102 carries replacement scenes; domain 103 carries live caster chat. No client UI is implemented here.
 
 ## Message
 
