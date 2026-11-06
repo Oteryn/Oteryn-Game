@@ -1,5 +1,6 @@
 """Standalone quest aliases still select the exact native source objects."""
 import json
+import hashlib
 from pathlib import Path
 import sys
 import unittest
@@ -10,6 +11,20 @@ from world_region_codec import decode_region
 
 
 class StandaloneChestsSource(unittest.TestCase):
+    def test_smithhammer_chests_retain_the_pinned_movable_container_facts(self):
+        sys.path[:0] = [str(ROOT / 'tools/content-schema/item-authoring'),
+                        str(ROOT / 'tools/content-migration')]
+        from engine_items import load_appearance_objects
+        from fathers_burden_item_profiles import CLIENT
+        raw = (ROOT / CLIENT).read_bytes()
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), CLIENT.rsplit('-', 1)[1][:-4])
+        appearances = load_appearance_objects(raw)
+        flags = appearances[2472]['flags']
+        self.assertTrue(flags['flags.container'])
+        self.assertTrue(flags['flags.take'])
+        self.assertFalse(flags.get('flags.unmove', False))
+        self.assertTrue(appearances[1983]['flags']['flags.unmove'])
+
     def test_beregar_and_smithhammer_roots_have_no_legacy_script_attributes(self):
         palette = json.loads((ROOT / 'content/world/placements/index.json').read_bytes())['palette']
         for x, y, z, appearance in [

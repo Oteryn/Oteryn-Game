@@ -283,14 +283,23 @@ fn scenario_case(
             report.served.push(claim);
         }
         for claim in crate::content::world_reward_claims::bind_standalone_chests(
-            world.base().as_ref(), &|_| true, |key, id, appearance| {
+            world.base().as_ref(),
+            &|_| true,
+            |key, id, appearance| {
                 crate::map::view::placement_of(key).is_some_and(|(position, ordinal)| {
-                    !world.facts().house_tile(position) && world.facts().base_entry(position, ordinal, id)
-                        .is_some_and(|entry| entry.appearance_id == appearance && !entry.bound && !entry.pickupable)
+                    !world.facts().house_tile(position)
+                        && world
+                            .facts()
+                            .base_entry(position, ordinal, id)
+                            .is_some_and(|entry| entry.appearance_id == appearance && !entry.bound)
                 })
             },
         )? {
-            if !report.served.iter().any(|existing| existing.key == claim.key) {
+            if !report
+                .served
+                .iter()
+                .any(|existing| existing.key == claim.key)
+            {
                 report.served.push(claim);
             }
         }

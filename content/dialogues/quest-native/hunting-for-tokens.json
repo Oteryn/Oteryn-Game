@@ -1,0 +1,165 @@
+{
+  "schema": "OTERYN_RAID_TOKEN_EXCHANGES/v1",
+  "quest": "oteryn:quest.hunting_for_tokens_quest",
+  "npc": "oteryn:npc.jorge",
+  "source": {
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "path": "data-global/npc/jorge.lua",
+    "sha256": "127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+  },
+  "input": {
+    "id": 19083,
+    "count": 20
+  },
+  "repeat": "unlimited",
+  "offers": [
+    {
+      "id": 19151,
+      "name": "Abacus"
+    },
+    {
+      "id": 28897,
+      "name": "Assassin Doll"
+    },
+    {
+      "id": 23682,
+      "name": "Bag of Oriental Spices"
+    },
+    {
+      "id": 28895,
+      "name": "Bookworm Doll"
+    },
+    {
+      "id": 43511,
+      "name": "Citizen Doll"
+    },
+    {
+      "id": 25981,
+      "name": "Crimson Doll"
+    },
+    {
+      "id": 23679,
+      "name": "Doll of Durin the Almighty"
+    },
+    {
+      "id": 22027,
+      "name": "Dragon Eye"
+    },
+    {
+      "id": 31265,
+      "name": "Dragon Goblet"
+    },
+    {
+      "id": 25979,
+      "name": "Draken Doll"
+    },
+    {
+      "id": 25980,
+      "name": "Emblem"
+    },
+    {
+      "id": 23678,
+      "name": "Encyclopedia"
+    },
+    {
+      "id": 19153,
+      "name": "Friendship Amulet"
+    },
+    {
+      "id": 19156,
+      "name": "Frozen Heart"
+    },
+    {
+      "id": 28896,
+      "name": "Golden Falcon"
+    },
+    {
+      "id": 23681,
+      "name": "Golden Newspaper"
+    },
+    {
+      "id": 34210,
+      "name": "Goromaphone"
+    },
+    {
+      "id": 23676,
+      "name": "Hand Puppets"
+    },
+    {
+      "id": 23683,
+      "name": "Imortus"
+    },
+    {
+      "id": 31268,
+      "name": "Jade Amulet"
+    },
+    {
+      "id": 19152,
+      "name": "Key of Numerous Locks"
+    },
+    {
+      "id": 37058,
+      "name": "Little Adventurer Doll"
+    },
+    {
+      "id": 31267,
+      "name": "Loremaster Doll"
+    },
+    {
+      "id": 37059,
+      "name": "Lucky Clover Amulet"
+    },
+    {
+      "id": 25982,
+      "name": "Mathmaster Shield"
+    },
+    {
+      "id": 23680,
+      "name": "Medusa Skull"
+    },
+    {
+      "id": 23677,
+      "name": "Music Box"
+    },
+    {
+      "id": 22028,
+      "name": "Noble Sword"
+    },
+    {
+      "id": 19150,
+      "name": "Norseman Doll"
+    },
+    {
+      "id": 28894,
+      "name": "Old Radio"
+    },
+    {
+      "id": 19155,
+      "name": "Orc's Jaw Shredder"
+    },
+    {
+      "id": 22026,
+      "name": "Phoenix Statue"
+    },
+    {
+      "id": 31266,
+      "name": "Pigeon Trophy"
+    },
+    {
+      "id": 43517,
+      "name": "Shield of Destiny"
+    },
+    {
+      "id": 37060,
+      "name": "Shield of Endless Search"
+    },
+    {
+      "id": 19154,
+      "name": "The Mexcalibur"
+    },
+    {
+      "id": 43510,
+      "name": "Tibiora's Box"
+    }
+  ]
+}

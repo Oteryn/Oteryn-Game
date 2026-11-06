@@ -1038,24 +1038,48 @@ fn braindeath_and_giant_smithhammer_all_claims_once_replay_and_refusal() -> Test
         .collect();
     assert_eq!(selected.len(), 4);
     for (unique, position, appearance, root, quantity) in [
-        (6283, (32546, 31522, -11), 1983, "oteryn:item.tibia.i2867", 1),
-        (6079, (32778, 32253, -8), 2472, "oteryn:item.tibia.i3031", 100),
-        (6078, (32776, 32253, -8), 2472, "oteryn:item.tibia.i12510", 1),
+        (
+            6283,
+            (32546, 31522, -11),
+            1983,
+            "oteryn:item.tibia.i2867",
+            1,
+        ),
+        (
+            6079,
+            (32778, 32253, -8),
+            2472,
+            "oteryn:item.tibia.i3031",
+            100,
+        ),
+        (
+            6078,
+            (32776, 32253, -8),
+            2472,
+            "oteryn:item.tibia.i12510",
+            1,
+        ),
         (6077, (32774, 32253, -8), 2472, "oteryn:item.tibia.i3034", 1),
     ] {
-        let chest = selected.iter().find(|case| case.unique == unique).ok_or("source chest")?;
+        let chest = selected
+            .iter()
+            .find(|case| case.unique == unique)
+            .ok_or("source chest")?;
         assert_eq!(chest.position, position);
         assert_eq!(chest.appearance, appearance);
         assert_eq!(chest.root, root);
         assert_eq!(chest.quantity, quantity);
         if unique == 6283 {
-            assert_eq!(chest.contents, vec![
-                ("oteryn:item.tibia.i3035".into(), 13, 0),
-                ("oteryn:item.tibia.i3003".into(), 1, 0),
-                ("oteryn:item.tibia.i3457".into(), 1, 0),
-                ("oteryn:item.tibia.i268".into(), 1, 0),
-                ("oteryn:item.tibia.i239".into(), 2, 0),
-            ]);
+            assert_eq!(
+                chest.contents,
+                vec![
+                    ("oteryn:item.tibia.i3035".into(), 13, 0),
+                    ("oteryn:item.tibia.i3003".into(), 1, 0),
+                    ("oteryn:item.tibia.i3457".into(), 1, 0),
+                    ("oteryn:item.tibia.i268".into(), 1, 0),
+                    ("oteryn:item.tibia.i239".into(), 2, 0),
+                ]
+            );
         } else {
             assert!(chest.contents.is_empty());
         }
@@ -1279,7 +1303,8 @@ pub(super) fn catalogue_source_world(
                     "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
                     "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
                     "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon",
-                ].contains(&chest.claim.as_str());
+                ]
+                .contains(&chest.claim.as_str());
                 placements.push((
                     u16::try_from(position["x"].as_u64().ok_or("source x")?)?,
                     u16::try_from(position["y"].as_u64().ok_or("source y")?)?,
@@ -1311,9 +1336,9 @@ pub(super) fn catalogue_source_world(
     data.manifest.palette.truncate(1);
     let mut appearances = BTreeMap::new();
     let mut tiles = BTreeMap::<(i8, u16, u16), sector::Tile>::new();
-    let movable_native_chest = chest.claim.starts_with(
-        "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.",
-    );
+    let movable_native_chest = chest
+        .claim
+        .starts_with("oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.");
     let mut item_definitions = BTreeMap::new();
     for (x, y, floor, unique, appearance) in placements {
         let palette = if let Some(index) = appearances.get(&appearance) {
@@ -1324,7 +1349,8 @@ pub(super) fn catalogue_source_world(
                 item_definitions.insert(
                     format!("oteryn:item.tibia.i{appearance}"),
                     crate::map::facts::ItemDefinition {
-                        reference: std::num::NonZeroU32::new(index + 1).ok_or("source item reference")?,
+                        reference: std::num::NonZeroU32::new(index + 1)
+                            .ok_or("source item reference")?,
                         solid: Some(false),
                         blocks_projectile: false,
                         pickupable: true,
@@ -1338,7 +1364,11 @@ pub(super) fn catalogue_source_world(
                 } else {
                     format!("oteryn:terrain.tibia.i{appearance}")
                 },
-                family: if movable_native_chest { bundle::Family::Item } else { bundle::Family::Terrain },
+                family: if movable_native_chest {
+                    bundle::Family::Item
+                } else {
+                    bundle::Family::Terrain
+                },
                 id: index,
                 terrain: (!movable_native_chest).then_some(bundle::Terrain {
                     kind: bundle::TerrainKind::Common,

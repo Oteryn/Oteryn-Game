@@ -73,6 +73,52 @@ class QuestCallbackProfiles(unittest.TestCase):
                              {'state': 'KNOWN', 'value': name})
             self.assertEqual(row['production_binding']['disposition'], 'EXACT')
 
+    def test_jorge_all_replica_choices_and_twenty_token_input_are_carryable(self):
+        # Crystal9f5a72c data-global/npc/jorge.lua: source-ordered37offers.
+        outputs = [19151, 28897, 23682, 28895, 43511, 25981, 23679, 22027,
+                   31265, 25979, 25980, 23678, 19153, 19156, 28896, 23681,
+                   34210, 23676, 23683, 31268, 19152, 37058, 31267, 37059,
+                   25982, 23680, 23677, 22028, 19150, 28894, 19155, 22026,
+                   31266, 43517, 37060, 19154, 43510]
+        self.assertEqual(len(set(outputs)), 37)
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        for item in [19083, *outputs]:
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertTrue(key in rows, f'{key}: source input/output needs native custody')
+            row = rows[key]
+            self.assertTrue(row['admission']['materializable'])
+            self.assertIn('CharacterInventory', row['admission']['legal_destinations'])
+            physical = row['semantics']['physical']['value']
+            self.assertEqual(physical['weight']['state'], 'KNOWN')
+            self.assertEqual(physical['movable'], {'state': 'KNOWN', 'value': True})
+            self.assertEqual(physical['pickupable'], {'state': 'KNOWN', 'value': True})
+            self.assertEqual(row['admission']['stack_class'],
+                             'StackCapable' if item == 19083 else 'NonStackable')
+        token = rows['oteryn:item.tibia.i19083']['semantics']['stack']['value']
+        self.assertEqual(token['stack_max'], {'state': 'KNOWN', 'value': 100})
+        for item, weight in [(23677, 2700), (34210, 6660)]:
+            self.assertEqual(rows[f'oteryn:item.tibia.i{item}']['semantics']['physical']['value']['weight'],
+                             {'state': 'KNOWN', 'value': weight})
+
+    def test_jorge_rejects_changes_to_known_canonical_weight_and_stack_class(self):
+        import raid_tokens_item_profiles as native
+        import xml.etree.ElementTree as ET
+        definitions = {row['definition']['identity']['key']: row['definition']
+                       for path in (ROOT / 'content/items/definitions').glob('items-*.json')
+                       for row in json.loads(path.read_bytes())['records']
+                       if row['definition']['identity']['key'] in native.KEYS}
+        sources = ET.fromstring((ROOT / profiles.SOURCE).read_bytes()).findall('item')
+        changed = copy.deepcopy(definitions)
+        changed['oteryn:item.tibia.i23677']['semantics']['physical']['value']['weight']['value'] += 1
+        with self.assertRaisesRegex(ValueError, 'RAID_TOKENS_CANONICAL_FACTS:23677'):
+            native.definitions(self.root, changed, sources)
+        changed = copy.deepcopy(definitions)
+        changed['oteryn:item.tibia.i19151']['stack_class'] = 'StackCapable'
+        with self.assertRaisesRegex(ValueError, 'RAID_TOKENS_STACK_CONFLICT:19151'):
+            native.definitions(self.root, changed, sources)
+
     def test_fathers_burden_rejects_known_weight_drift(self):
         import fathers_burden_item_profiles as father
         import xml.etree.ElementTree as ET

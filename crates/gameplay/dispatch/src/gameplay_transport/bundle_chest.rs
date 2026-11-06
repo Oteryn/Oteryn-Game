@@ -65,21 +65,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut report =
             bind_embedded_reward_claims(map.overlay.base().as_ref(), &admitted).ok()?;
-        let matches = |key, id, appearance| {
+        let matches = |key, id, appearance, immovable: bool| {
             crate::map::view::placement_of(key).is_some_and(|(position, ordinal)| {
                 !map.facts.house_tile(position)
                     && map
                         .facts
                         .base_entry(position, ordinal, id)
                         .is_some_and(|entry| {
-                            entry.appearance_id == appearance && !entry.bound && !entry.pickupable
+                            entry.appearance_id == appearance
+                                && !entry.bound
+                                && (!immovable || !entry.pickupable)
                         })
             })
         };
-        if let Some(claim) = bind_hydra_egg(map.overlay.base().as_ref(), matches) {
+        if let Some(claim) = bind_hydra_egg(map.overlay.base().as_ref(), |key, id, appearance| {
+            matches(key, id, appearance, true)
+        }) {
             report.served.push(claim);
         }
-        for claim in bind_standalone_chests(map.overlay.base().as_ref(), &admitted, matches).ok()? {
+        // A native chest may have movable Item facts. Only its immutable base
+        // placement binds here; a player-added container cannot acquire this key.
+        for claim in bind_standalone_chests(
+            map.overlay.base().as_ref(),
+            &admitted,
+            |key, id, appearance| matches(key, id, appearance, false),
+        )
+        .ok()?
+        {
             if !report
                 .served
                 .iter()
