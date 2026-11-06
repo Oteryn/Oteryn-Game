@@ -590,17 +590,42 @@
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Implement UID3060 destination selection from the remote lever at (32156,31125,10): floor11 when2772 exists, floor9 otherwise; UID3059/3061 lead to (32157,31125,10). Check both instruction flags through a read-only STEP gate on every trip, with return-on-refusal and no quest write per trip.",
+      "missing_piece": "Wire both instruction acquisitions into native USE and the existing fenced quest writer, then compose exploration, both instruction reads and hoist access in one quest-route PG proof. The inherited STEP/remote-lever mechanism now has a fresh executed PostgreSQL baseline.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/46/definition",
         "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:178"
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:178",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/other/others/quest_system2.lua#L285-L295"
       ],
       "attempts": [
-        "Read both exact donor movements_hoist.lua bodies from the pinned corpus and fresh Wiki instructions; checked the closed callback parser rather than promoting a fixed-destination approximation. Tested the two existing instruction-book claims separately."
+        "Read both exact donor movements_hoist.lua bodies from the pinned corpus and fresh Wiki instructions; checked the closed callback parser rather than promoting a fixed-destination approximation. Tested the two existing instruction-book claims separately.",
+        "Cloud continuation: all three hoist STEP cases executed against local PostgreSQL 18.6 (122.57s total). Confirmed UID20003 floor-plan writer from pinned Crystal source. GlacierChest/GlacierSkeleton rewards are distinct source storages and do not prove either hoist instruction flag."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
       "previous_dependency": "qengine.paired_portal_and_remote_lever_predicate"
+    },
+    "mechanism_proof": {
+      "test": "questpc7_formorgar_hoist_read_only_step",
+      "scope": "All three source STEP bindings; exact instruction values, destination selection from visible lever appearance, refusal return, and no quest/Character/map write during travel. Does not qualify instruction acquisition or the complete quest.",
+      "head": "06c1349463051f39823a8f8e5d8b4326c120f868",
+      "postgres_version": "18.6",
+      "result": "1 passed; 0 failed; 122.57s",
+      "cases": [
+        {
+          "binding": "formogar-hoist-3059",
+          "duration_seconds": 41.437194015
+        },
+        {
+          "binding": "formogar-hoist-3060",
+          "duration_seconds": 40.474467163
+        },
+        {
+          "binding": "formogar-hoist-3061",
+          "duration_seconds": 40.659716401
+        }
+      ],
+      "log": "/tmp/questpc7-hoist-online.log",
+      "validation_kind": "fresh baseline of inherited implementation; no new RED/GREEN implementation batch claimed"
     }
   },
   {

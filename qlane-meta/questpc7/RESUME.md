@@ -1,3 +1,58 @@
+# questpc7 Cloud continuation checkpoint — 2026-11-06
+
+Branch: `claude/happy-davinci-ijz3wy-questpc7`; starting HEAD
+`06c1349463051f39823a8f8e5d8b4326c120f868`. AUTHORING; no PR.
+The current owner explicitly authorizes local commits and fast-forward pushes;
+older detached-head, no-publication and `/home/mole` restrictions are superseded.
+Use `source /workspace/oteryn-env/env.sh` for Cargo and local PostgreSQL. Never
+print the injected database URL or read credentials. Environment startup ran
+successfully and confirmed PostgreSQL 18.6 with durability enabled.
+
+## Fresh inherited-hoist validation
+
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib questpc7_formorgar_hoist -- --nocapture`:
+  **1 passed, 0 failed, 122.57s**. Every source binding emitted
+  `QUESTPC7_HOIST POSTGRES_CASE_COMPLETED`: UID3059 41.437194015s,
+  UID3060 40.474467163s, UID3061 40.659716401s.
+- This validates inherited STEP/remote-lever code; it is a fresh baseline,
+  not a new implementation RED/GREEN pair or a whole-quest qualification.
+- `cargo fmt --all -- --check`: exit 0.
+- `cargo check --locked -p oteryn-gameplay-quests -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch`:
+  exit 0, 2m05s.
+- `cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-targets --all-features -- -D warnings`:
+  exit 0, 3m16s.
+- `python3 -m unittest discover -s tools/content-migration -p test_quest_callback_profiles.py`:
+  14 tests passed, 114.186s.
+- Initial offline test resolution failed on an uncached `schemars` dependency.
+  Normal Cargo resolved it and the focused test executed successfully.
+- Logs remain outside Git in `/tmp/questpc7-{hoist-online,fmt-baseline,check,clippy,callback-authoring}.log`.
+
+## Actual next implementation gap
+
+The floor-plan acquisition is pinned Crystal
+`201189f871d23597b82caf88fd611454a2ddefb8`,
+`data-global/scripts/actions/other/others/quest_system2.lua:285-295`:
+UID20003 gives item2822 and writes FormorgarMinesHoistSkeleton.
+URL: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/other/others/quest_system2.lua#L285-L295
+The separate GlacierChest/GlacierSkeleton rewards use different source storages;
+their previous reward proofs do **not** certify hoist instruction acquisition.
+Wire the instruction sources and compose exploration, both reads and transport;
+do not qualify the whole quest from arbitrary test-seeded instruction flags.
+The current owner permits a documented conservative authored rule when a donor
+fact is missing, with native dispatch and executed PostgreSQL proof.
+
+## Scope reconciliation still needed
+
+Only `qlane-meta/questpc7/` exists. There are no `LANE-*.json`, `UNFINISHED*`,
+other-lane status ledgers or detailed `PLAN.json` in this checkout. The supplied
+`QSPLIT-PLAN.md` assigns outfits to L1, exchanges to L2 and other mechanisms to
+L3–L6, whereas the older 33-title status assigns all 25 active titles to questpc7.
+The owner explicitly requires skipping entries owned or qualified elsewhere.
+An asynchronous question requests the current per-entry ownership map. No quest
+status has been changed to QUALIFIED or newly BLOCKED on that uncertainty.
+
+## Previous continuation evidence (historical)
+
 # questpc7 continuation checkpoint — 2026-11-06
 
 Task questpc7; HEAD 3b1e0f68f0bd496102ad82aa3c2e035265176ed1; AUTHORING, no frozen candidate or PR.
