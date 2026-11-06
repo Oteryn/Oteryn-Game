@@ -319,7 +319,8 @@ pub(super) async fn apply(
                         return rejected();
                     }
                 },
-            ).with_wheel(admission.premium_coordinator),
+            )
+            .with_wheel(admission.premium_coordinator),
         )
         .await;
     drop(slot);

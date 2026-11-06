@@ -211,7 +211,12 @@ pub(super) fn world(
     callback: &Callback,
     trigger: Position,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    world_ordinal(callback, trigger, callback.selector.appearance.unwrap_or(100), 1)
+    world_ordinal(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+    )
 }
 
 fn world_ordinal(
@@ -268,9 +273,14 @@ fn world_ordinal(
         });
     }
     for _ in 1..ordinal {
-        cells.entry((trigger.floor, trigger.x, trigger.y)).or_default().push(sector::Item {
-            palette: 0, depth: 0, attrs: Default::default(),
-        });
+        cells
+            .entry((trigger.floor, trigger.x, trigger.y))
+            .or_default()
+            .push(sector::Item {
+                palette: 0,
+                depth: 0,
+                attrs: Default::default(),
+            });
     }
     cells
         .entry((trigger.floor, trigger.x, trigger.y))
@@ -306,6 +316,11 @@ fn world_ordinal(
         }
     }
     for passage in &callback.passages {
+        // A one-shot source action can remove the clicked lever itself. It is
+        // already placed above; a second copy makes the physical selector ambiguous.
+        if passage.position == trigger && passage.appearance == appearance {
+            continue;
+        }
         let appearance_key = format!("oteryn:terrain.tibia.i{}", passage.appearance);
         let index = if let Some(i) = data
             .manifest

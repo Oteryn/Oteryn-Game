@@ -363,7 +363,7 @@ fn quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refus
 // sweep. Keep every placement and every already-qualified sibling so an early
 // checkpoint describes a whole reward set, rather than a partial failed sweep.
 // Access puzzles, NPC exchanges and outfits remain separate qualification work.
-fn phase_a_cohort(quests: &[&str]) -> TestResult {
+pub(super) fn phase_a_cohort(quests: &[&str]) -> TestResult {
     let coverage: Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../docs/repository/QUEST_CALLBACK_COVERAGE.json"
@@ -416,6 +416,24 @@ fn phase_a_cohort(quests: &[&str]) -> TestResult {
             .collect::<BTreeSet<_>>(),
         claims.iter().collect(),
         "every reward must execute"
+    );
+    execute(selected)
+}
+
+// Wiki titles can name a standalone chest within a larger donor quest (for
+// example Braindeath's BPTheUndeathStare). Keep every authored placement.
+pub(super) fn exact_claim_cohort(claims: &[&str]) -> TestResult {
+    let selected: Vec<_> = cases()?
+        .into_iter()
+        .filter(|case| claims.contains(&case.claim.as_str()))
+        .collect();
+    assert_eq!(
+        selected
+            .iter()
+            .map(|case| case.claim.as_str())
+            .collect::<BTreeSet<_>>(),
+        claims.iter().copied().collect(),
+        "every requested claim must execute"
     );
     execute(selected)
 }
