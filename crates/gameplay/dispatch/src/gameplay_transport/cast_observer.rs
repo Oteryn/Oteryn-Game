@@ -131,7 +131,8 @@ async fn serve_joined<S: AsyncRead + AsyncWrite + Unpin + Send + 'static>(
                     Content::Metadata{viewers,delay_seconds}=>Message::State{revision:state.revision,epoch:state.epoch,delay:*delay_seconds,count:*viewers},
                     Content::Clear=>Message::Clear{epoch:state.epoch},
                     Content::Slate=>Message::Slate{epoch:state.epoch,sequence:value},
-                    Content::Chat(line)=>Message::ChatLine{epoch:state.epoch,sequence:value,handle:line.handle,text:line.text.to_string()},
+                    Content::Chat(line)=>Message::ChatLine{epoch:state.epoch,sequence:value,handle:line.handle,text:format!("{}: {}",line.name,line.text)},
+                    Content::Media(media)=>Message::Media{epoch:state.epoch,sequence:value,media:(**media).clone()},
                     Content::Scene(scene)=>Message::Scene{epoch:state.epoch,sequence:value,scene:(**scene).clone()},
                 };
                 let Ok(body)=(Envelope{generation,message}).encode() else {return false};

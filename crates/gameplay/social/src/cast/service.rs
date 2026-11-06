@@ -26,6 +26,16 @@ pub enum Operation {
     Leave(ObserverId),
     Keepalive(ObserverId),
     Chat(ObserverId, String),
+    Reply(TargetFacts, String),
+    Ban(TargetFacts, u64, ObserverId),
+    PublishView(
+        CapturePermit,
+        TargetFacts,
+        Vec<CharacterId>,
+        Scene,
+        Vec<oteryn_protocol_oteryn::cast::PublicMedia>,
+        Vec<(CharacterId, CastConsent)>,
+    ),
     Mute(TargetFacts, u64, ObserverId, bool),
     Kick(TargetFacts, u64, ObserverId),
     Consent(CharacterId, CastConsent),
@@ -48,6 +58,7 @@ pub enum Operation {
     State(GameSessionId),
     Invalidate(CharacterId, i64),
     CasterChat(GameSessionId),
+    CasterPresence(GameSessionId),
     Shutdown,
     /// Synchronous final writes run on the worker, serialized with revocation.
     Flush(ObserverId, CastWriter),
@@ -210,6 +221,7 @@ async fn run(
                 | Operation::Update(f, _, _)
                 | Operation::Refresh(f)
                 | Operation::Publish(_, f, _, _, _)
+                | Operation::PublishView(_, f, _, _, _, _)
                 | Operation::Slate(f) => {
                     freshness.insert(f.authority.current_game_session_id(), now);
                 }
@@ -235,23 +247,17 @@ async fn run(
                 }
                 operation => operation,
             };
-            let policy = match &operation {
-                Operation::Start(_, settings, account) => {
-                    preferences::authorize(access.as_ref(), *account, *settings)
-                        .await
-                        .map(|_| ())
-                }
-                Operation::Update(facts, _, settings) => match accounts
-                    .get(&facts.authority.current_game_session_id())
-                {
-                    Some(account) => preferences::authorize(access.as_ref(), *account, *settings)
-                        .await
-                        .map(|_| ()),
-                    None => Err(Error::Unavailable),
-                },
-                _ => Ok(()),
-            };
-            let result = policy.and_then(|()| apply(&mut owner, operation, now, privacy.version()));
+            let result = apply_durable(
+                &mut owner,
+                &root,
+                &node,
+                access.as_ref(),
+                &accounts,
+                operation,
+                now,
+                privacy.version(),
+            )
+            .await;
             let committed = persist_pending(&mut owner, &root, &node).await;
             completed = Some((request.reply, committed.and(result)));
         } else {
@@ -334,6 +340,19 @@ pub(super) fn apply(
         Operation::Renew(id, a) => owner.renew(id, &a, now).map(|()| Reply::Applied),
         Operation::Leave(id) => owner.leave(id).map(|()| Reply::Applied),
         Operation::Keepalive(id) => owner.keepalive(id, now).map(|()| Reply::Applied),
+        Operation::Ban(..) => Err(Error::Unavailable), // Only apply_durable may authorize it.
+        Operation::Reply(f, text) => owner.reply(f, &text, now).map(|()| Reply::Applied),
+        Operation::PublishView(permit, f, visible, scene, media, consents) => {
+            apply(
+                owner,
+                Operation::Publish(permit, f, visible.clone(), scene, consents),
+                now,
+                privacy_version,
+            )?;
+            owner
+                .publish_media(f, &visible, media, now)
+                .map(|()| Reply::Applied)
+        }
         Operation::Chat(id, text) => owner.chat(id, &text, now).map(|()| Reply::Applied),
         Operation::Mute(f, r, id, v) => owner.mute(f, r, id, v).map(|()| Reply::Applied),
         Operation::Kick(f, r, id) => owner.kick(f, r, id).map(|()| Reply::Applied),
@@ -407,6 +426,7 @@ pub(super) fn apply(
             owner.target_gone(id);
             Ok(Reply::Applied)
         }
+        Operation::CasterPresence(id) => Ok(Reply::Chat(owner.take_caster_presence(id))),
         Operation::CasterChat(id) => Ok(Reply::Chat(owner.take_caster_chat(id))),
         Operation::Flush(id, mut write) => {
             let viewer = owner.viewers.get(&id).ok_or(Error::Unavailable)?;
@@ -427,4 +447,80 @@ async fn persist_pending(
         return Ok(());
     }
     owner.persist_audit(root, node).await
+}
+
+// IO runs exclusively on the cast task, with no world/session lock retained.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one off-tick authority boundary carries the durable owners"
+)]
+pub async fn apply_durable(
+    owner: &mut CastOwner,
+    root: &DurabilityRoot,
+    node: &NodeIncarnationProof,
+    access: &impl preferences::PreferencesStore,
+    accounts: &HashMap<GameSessionId, [u8; 16]>,
+    mut op: Operation,
+    now: u64,
+    privacy_version: i64,
+) -> Result<Reply, Error> {
+    match &mut op {
+        Operation::Start(_, settings, account) => {
+            *settings = preferences::authorize(access, *account, *settings)
+                .await?
+                .settings;
+        }
+        Operation::Update(facts, _, settings) => {
+            let account = accounts
+                .get(&facts.authority.current_game_session_id())
+                .ok_or(Error::Unavailable)?;
+            *settings = preferences::authorize(access, *account, *settings)
+                .await?
+                .settings;
+        }
+        Operation::Join(a) | Operation::Renew(_, a) => {
+            let target = owner
+                .casts
+                .iter()
+                .find(|(_, c)| c.state.cast_id == a.cast_id)
+                .map(|(t, _)| t)
+                .ok_or(Error::Unavailable)?;
+            let account = accounts.get(target).ok_or(Error::Unavailable)?;
+            if root
+                .cast_account_banned(node, *account, a.account)
+                .await
+                .map_err(|_| Error::Unavailable)?
+            {
+                return Err(Error::Unavailable);
+            }
+        }
+        Operation::Ban(facts, revision, id) => {
+            let target = facts.authority.current_game_session_id();
+            let subject = owner.ban_subject(*facts, *revision, *id)?;
+            let account = *accounts.get(&target).ok_or(Error::Unavailable)?;
+            let state = owner.state(target).ok_or(Error::Unavailable)?;
+            let record = oteryn_gameplay_durability::durability::cast_audit::CastAuditRecord {
+                ordinal: 1,
+                kind: 12,
+                target_session: target.as_bytes().to_vec(),
+                cast_id: state.cast_id.to_vec(),
+                revision: state.revision,
+                epoch: state.epoch,
+                subject_account: Some(subject.to_vec()),
+                ..Default::default()
+            };
+            root.ban_cast_account(node, account, subject, record)
+                .await
+                .map_err(|_| Error::Unavailable)?;
+            for held in accounts
+                .iter()
+                .filter_map(|(held, held_account)| (*held_account == account).then_some(*held))
+            {
+                owner.remove_banned(held, subject)?;
+            }
+            return Ok(Reply::Applied);
+        }
+        _ => {}
+    }
+    apply(owner, op, now, privacy_version)
 }

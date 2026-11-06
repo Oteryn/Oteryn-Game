@@ -75,6 +75,7 @@ impl CastOwner {
             .ok_or(Error::Unavailable)?
             .audit_ordinal = self.audit.ordinal;
         self.queue_metadata(target);
+        self.presence(target, id, "joined transmission");
         Ok(id)
     }
     /// Renew only after another successful online Platform lease check. Epoch,
@@ -117,6 +118,7 @@ impl CastOwner {
                 .terminal(4, viewer.target, cast.state, Some(viewer.account));
             cast.audit_ordinal = self.audit.ordinal;
         }
+        self.presence(viewer.target, id, "left transmission");
         self.releases.push(viewer.reservation);
         Ok(())
     }

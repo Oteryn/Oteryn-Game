@@ -1,5 +1,7 @@
 //! S17 native command composition. Account/password checks remain in Platform;
 //! current Character/session facts are read from their existing owners.
+#[path = "cast/viewer.rs"]
+mod viewer;
 use super::*;
 use oteryn_gameplay_social::cast::{
     Settings,
@@ -40,6 +42,20 @@ macro_rules! authority_methods {
         fn cast_refresh(
             &self,
             _admitted: $crate::gameplay_transport::connection::AdmittedSession,
+        ) -> impl std::future::Future<Output = ()> {
+            async {}
+        }
+        fn cast_heard(
+            &self,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            _line: &oteryn_protocol_oteryn::chat::ChatLine,
+        ) -> impl std::future::Future<Output = ()> {
+            async {}
+        }
+        fn cast_effects(
+            &self,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            _events: &[oteryn_protocol_oteryn::presentation::PresentationEvent],
         ) -> impl std::future::Future<Output = ()> {
             async {}
         }
@@ -86,6 +102,20 @@ macro_rules! composed_methods {
         }
         async fn cast_refresh(&self, admitted: connection::AdmittedSession) {
             self.cast_projection(admitted).await;
+        }
+        async fn cast_heard(
+            &self,
+            admitted: connection::AdmittedSession,
+            line: &oteryn_protocol_oteryn::chat::ChatLine,
+        ) {
+            self.cast_public_line(admitted, line).await;
+        }
+        async fn cast_effects(
+            &self,
+            admitted: connection::AdmittedSession,
+            events: &[oteryn_protocol_oteryn::presentation::PresentationEvent],
+        ) {
+            self.cast_public_effects(admitted, events).await;
         }
         async fn cast_live_chat(&self, admitted: connection::AdmittedSession) -> Vec<Vec<u8>> {
             self.cast_chat_lines(admitted).await
@@ -218,6 +248,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     chat_enabled: true,
                 },
             ),
+            (504, Message::Reply(text)) => Operation::Reply(facts, text),
             (502, Message::Stop { revision }) => Operation::Stop(facts, revision),
             (
                 505,
@@ -233,6 +264,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     1 => Operation::Mute(facts, revision, id, true),
                     2 => Operation::Mute(facts, revision, id, false),
                     3 => Operation::Kick(facts, revision, id),
+                    4 => Operation::Ban(facts, revision, id),
                     _ => return None,
                 }
             }
@@ -294,19 +326,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             return Vec::new();
         }
-        let Ok(Reply::Chat(lines)) = node
+        let Ok(Reply::Chat(mut lines)) = node
             .service
             .apply(Operation::CasterChat(admitted.game_session_id))
             .await
         else {
             return Vec::new();
         };
+        if let Ok(Reply::Chat(presence)) = node
+            .service
+            .apply(Operation::CasterPresence(admitted.game_session_id))
+            .await
+        {
+            lines.splice(0..0, presence);
+        }
         lines
             .into_iter()
             .filter_map(|v| {
                 Message::CasterLine {
                     handle: v.handle,
-                    text: v.text.to_string(),
+                    text: format!("{}: {}", v.name, v.text),
                 }
                 .encode()
                 .ok()
@@ -342,7 +381,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Reply::Capture(permit)) = node.service.apply(Operation::Capture(facts)).await else {
             return;
         };
-        let result = self.cast_projection_value(admitted).await;
+        let result = match self.cast_projection_value(admitted).await {
+            Some((visible, scene, consents, origin, _)) => match self.cast_map(admitted).await {
+                Some((map_origin, media)) if origin == map_origin => {
+                    Some((visible, scene, consents, media))
+                }
+                _ => None,
+            },
+            None => None,
+        };
         // Current native transport, lease and scope are checked again after every
         // async preference/visibility read; a stale snapshot cannot revive a cast.
         let Some(current) = self.cast_facts(admitted).await else {
@@ -359,11 +406,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             return;
         }
-        if let Some((visible, scene, consents)) = result {
+        if let Some((visible, scene, consents, media)) = result {
             let _ = node
                 .service
-                .apply(Operation::Publish(
-                    permit, current, visible, scene, consents,
+                .apply(Operation::PublishView(
+                    permit, current, visible, scene, media, consents,
                 ))
                 .await;
         } else {
@@ -381,6 +428,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             domain::CharacterId,
             crate::durability::cast_consent::CastConsent,
         )>,
+        world_spatial::ActorPosition,
+        Vec<world_spatial::EntityRef>,
     )> {
         use world_spatial::{EntityDetail, EntityKind};
         let actor = admitted.runtime_actor?;
@@ -468,10 +517,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let origin = selected.actor_position;
         let mut visible = Vec::new();
         let mut actors = Vec::new();
+        let mut shown = Vec::new();
         for (ordinal, entity) in selected.entities.iter().enumerate() {
-            // Phase 1 deliberately projects only neutral player glyphs. Do not
-            // infer private NPC/creature state or export appearance/inventory data.
             if entity.kind != EntityKind::Player {
+                if let EntityDetail::Actor {
+                    appearance_ref,
+                    health_percent,
+                    ..
+                } = entity.detail
+                {
+                    let x = u16::try_from(entity.position.x - origin.x + 16).ok()?;
+                    let y = u16::try_from(
+                        entity.position.y - origin.y
+                            + 16
+                            + (entity.position.floor + 15) as i32 * 32,
+                    )
+                    .ok()?;
+                    shown.push(entity.entity);
+                    actors.push((
+                        u32::try_from(ordinal + 1).ok()?,
+                        x,
+                        y,
+                        u16::try_from(appearance_ref).ok()?,
+                        health_percent,
+                    ));
+                }
                 continue;
             }
             let (_, character, position, hidden) = players.iter().find(|(actor, _, _, _)| {
@@ -493,15 +563,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if visible.len() > 128 {
                 return None;
             }
-            if entity.position.floor != origin.floor {
-                continue;
-            }
             if let EntityDetail::Actor { health_percent, .. } = entity.detail {
                 let x = u16::try_from(entity.position.x.checked_sub(origin.x)?.checked_add(16)?)
                     .ok()?;
-                let y = u16::try_from(entity.position.y.checked_sub(origin.y)?.checked_add(16)?)
-                    .ok()?;
-                // Cast-local ordinal and neutral public sprite, never placement/Character IDs or names.
+                let y = u16::try_from(
+                    entity
+                        .position
+                        .y
+                        .checked_sub(origin.y)?
+                        .checked_add(16)?
+                        .checked_add(i32::from(entity.position.floor + 15) * 32)?,
+                )
+                .ok()?;
+                // Cast-local ordinal, never placement/Character IDs or names.
+                shown.push(entity.entity);
                 actors.push((u32::try_from(ordinal + 1).ok()?, x, y, 1, health_percent));
             }
         }
@@ -517,6 +592,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actors,
             },
             consent,
+            origin,
+            shown,
         ))
     }
 }

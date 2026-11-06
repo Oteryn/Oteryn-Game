@@ -7,7 +7,7 @@ survive in Platform; Game must never persist a live cast across restart.
 
 ## Account preferences contract
 
-The existing authenticated mTLS `/internal/game/cast` exchange gains operation
+The existing authenticated mTLS `/internal/v1/casts/node` exchange gains operation
 `preferences`, with `owner` (canonical account UUID) and authenticated node
 identity. Success is a bounded JSON object containing `delaySeconds` (0–300),
 `viewerCap` (1–50), `chatEnabled`, `passwordRequired`, `accessRevision` (>0),
@@ -47,3 +47,10 @@ local speech, visible effects and map delivery. Game projects only committed
 caster-visible data, strips actionable handles, and never copies private UI or
 raw player packets. The caster's authority, map owner and chat queue remain
 owned by the player path. Cast fan-out is off-tick, bounded and read-only.
+
+Canary corroboration: `src/server/network/protocol/protocolgame.cpp:8006`
+(local speech), `:8264` (visible magic effects), `:8477` (caster-relative
+map description). Password, description and preferences are the only deferred
+Platform delivery. The S17-A announcement/consume/renew/release contract already
+supplies the directory and account-only viewer route; this package extends its
+Game side and does not replace it.

@@ -217,7 +217,7 @@ fn parse_hex(s: &str) -> Result<[u8; 16], Error> {
     }
     Ok(out)
 }
-fn hex(bytes: [u8; 16]) -> String {
+pub(super) fn hex(bytes: [u8; 16]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 pub(super) fn uuid(bytes: [u8; 16]) -> String {

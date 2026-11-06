@@ -55,7 +55,13 @@ pub async fn authorize(
 ) -> Result<Preferences, Error> {
     let value = store.load(account).await?;
     value.validate()?;
-    if value.settings != requested {
+    // Chat enablement is a stored account preference, absent from the control wire.
+    if value.settings
+        != (Settings {
+            chat_enabled: value.settings.chat_enabled,
+            ..requested
+        })
+    {
         return Err(Error::Conflict);
     }
     Ok(value)
