@@ -139,7 +139,7 @@ class HeavyGateTests(unittest.TestCase):
         runner = re.search(r"^    runs-on: \$\{\{ (.*?) \}\}$", job, re.MULTILINE)[1]
         image = re.search(r"^        image: \$\{\{ (.*?) \}\}$", job, re.MULTILINE)[1]
         script = (
-            "const [vars,github,matrix]=JSON.parse(process.argv[1]);const fromJSON=JSON.parse;"
+            "const [needs,github,matrix]=JSON.parse(process.argv[1]);const fromJSON=JSON.parse;"
             "process.stdout.write(JSON.stringify([" + runner + "," + image + "]));"
         )
         for mode in ("on", "split", "off", ""):
@@ -147,7 +147,7 @@ class HeavyGateTests(unittest.TestCase):
                 for fork, bot in ((False, False), (True, False), (False, True)):
                     github = {"repository": "repo", "actor": "dependabot[bot]" if bot else "owner",
                               "event": {"pull_request": {"head": {"repo": {"full_name": "fork" if fork else "repo"}}}}}
-                    context = [{"OTERYN_SELF_HOSTED_PG": mode}, github, {"partition": partition}]
+                    context = [{"build": {"outputs": {"pg_runner_mode": mode}}}, github, {"partition": partition}]
                     output = subprocess.check_output(["node", "-e", script, json.dumps(context)], text=True)
                     actual_runner, actual_image = json.loads(output)
                     native = not fork and not bot and (mode == "on" or mode == "split" and partition <= 4)

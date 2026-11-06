@@ -403,7 +403,7 @@ def main() -> int:
         if world_digest != EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256:
             errors.append("merge gate World bundle must retain its reviewed fail-closed qualification")
         jobs = yaml_mapping_keys_at_indent(top_level_yaml_mapping_block(text, "jobs") or "", 2)
-        if jobs != ["scope", "lanes", "governance", "dependency_review", "routing_contract", "world_bundle", "rust_policy", "rust_fast", "rust_supply_chain", "validate", "game_gate"]:
+        if jobs != ["scope", "lanes", "governance", "dependency_review", "routing_contract", "world_bundle", "rust_policy", "runner_route", "rust_fast", "rust_supply_chain", "validate", "game_gate"]:
             errors.append("merge gate must contain only the canonical fast PR jobs")
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
