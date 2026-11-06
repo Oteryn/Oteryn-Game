@@ -33,6 +33,48 @@ pub(super) fn display_map(
         })
         .collect()
 }
+// Handles and camera coordinates are derived only at the public projection boundary.
+pub(super) fn project_actor(
+    actors: &mut Vec<(u32, u16, u16, u16, u8)>,
+    entity: &world_spatial::WorldSpatialEntity,
+    origin: world_spatial::ActorPosition,
+    hidden: bool,
+) -> Option<bool> {
+    if hidden {
+        return Some(false);
+    }
+    let world_spatial::EntityDetail::Actor {
+        appearance_ref,
+        health_percent,
+        ..
+    } = entity.detail
+    else {
+        return Some(false);
+    };
+    let x = u16::try_from(entity.position.x.checked_sub(origin.x)?.checked_add(16)?).ok()?;
+    let y = u16::try_from(
+        entity
+            .position
+            .y
+            .checked_sub(origin.y)?
+            .checked_add(16)?
+            .checked_add(i32::from(entity.position.floor + 15) * 32)?,
+    )
+    .ok()?;
+    let appearance = if entity.kind == world_spatial::EntityKind::Player {
+        1
+    } else {
+        u16::try_from(appearance_ref).ok()?
+    };
+    actors.push((
+        u32::try_from(actors.len() + 1).ok()?,
+        x,
+        y,
+        appearance,
+        health_percent,
+    ));
+    Some(true)
+}
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn cast_map(
         &self,
@@ -196,6 +238,50 @@ fn relative_media(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn s17_hidden_actor_does_not_change_public_handles_or_bytes() -> Result<(), String> {
+        let origin = world_spatial::ActorPosition {
+            x: 30000,
+            y: 31000,
+            floor: -7,
+        };
+        let entity = |id: u8| world_spatial::WorldSpatialEntity {
+            display_name: None,
+            kind: world_spatial::EntityKind::Player,
+            entity: world_spatial::EntityRef {
+                identity: [id; 16],
+                generation: 1,
+            },
+            position: origin,
+            detail: world_spatial::EntityDetail::Actor {
+                direction: world_spatial::StepDirection::South,
+                appearance_ref: 0,
+                health_percent: 100,
+            },
+        };
+        let bytes =
+            |input: &[(world_spatial::WorldSpatialEntity, bool)]| -> Result<Vec<u8>, String> {
+                let mut actors = Vec::new();
+                for (entity, hidden) in input {
+                    project_actor(&mut actors, entity, origin, *hidden).ok_or("projection")?;
+                }
+                Message::Scene {
+                    epoch: 1,
+                    sequence: 1,
+                    scene: oteryn_protocol_oteryn::cast::Scene {
+                        tiles: vec![],
+                        actors,
+                    },
+                }
+                .encode()
+                .map_err(|e| format!("{e:?}"))
+            };
+        assert_eq!(
+            bytes(&[(entity(1), false), (entity(3), false)])?,
+            bytes(&[(entity(1), false), (entity(2), true), (entity(3), false)])?
+        );
+        Ok(())
+    }
     #[test]
     fn s17_public_speech_uses_the_same_relative_camera_as_map() {
         let origin = world_spatial::ActorPosition {

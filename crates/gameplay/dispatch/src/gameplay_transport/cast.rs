@@ -431,7 +431,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         world_spatial::ActorPosition,
         Vec<world_spatial::EntityRef>,
     )> {
-        use world_spatial::{EntityDetail, EntityKind};
+        use world_spatial::EntityKind;
         let actor = admitted.runtime_actor?;
         let channel = self.observe_channel_entities(actor).await?;
         let selected = world_spatial::SessionVisibility::default()
@@ -518,29 +518,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut visible = Vec::new();
         let mut actors = Vec::new();
         let mut shown = Vec::new();
-        for (ordinal, entity) in selected.entities.iter().enumerate() {
+        for entity in &selected.entities {
             if entity.kind != EntityKind::Player {
-                if let EntityDetail::Actor {
-                    appearance_ref,
-                    health_percent,
-                    ..
-                } = entity.detail
-                {
-                    let x = u16::try_from(entity.position.x - origin.x + 16).ok()?;
-                    let y = u16::try_from(
-                        entity.position.y - origin.y
-                            + 16
-                            + (entity.position.floor + 15) as i32 * 32,
-                    )
-                    .ok()?;
+                if viewer::project_actor(&mut actors, entity, origin, false)? {
                     shown.push(entity.entity);
-                    actors.push((
-                        u32::try_from(ordinal + 1).ok()?,
-                        x,
-                        y,
-                        u16::try_from(appearance_ref).ok()?,
-                        health_percent,
-                    ));
                 }
                 continue;
             }
@@ -548,9 +529,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actor.placement_identity() == entity.entity.identity
                     && actor.actor_local_generation() == entity.entity.generation
             })?;
-            if *hidden {
+            if !viewer::project_actor(&mut actors, entity, origin, *hidden)? {
                 continue;
             }
+            shown.push(entity.entity);
             // Recheck positions after the async census. An invisibility change
             // cannot turn a stale hidden position into a released public frame.
             if position.x != entity.position.x
@@ -562,22 +544,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             visible.push(domain::CharacterId::from_bytes(*character.as_bytes()).ok()?);
             if visible.len() > 128 {
                 return None;
-            }
-            if let EntityDetail::Actor { health_percent, .. } = entity.detail {
-                let x = u16::try_from(entity.position.x.checked_sub(origin.x)?.checked_add(16)?)
-                    .ok()?;
-                let y = u16::try_from(
-                    entity
-                        .position
-                        .y
-                        .checked_sub(origin.y)?
-                        .checked_add(16)?
-                        .checked_add(i32::from(entity.position.floor + 15) * 32)?,
-                )
-                .ok()?;
-                // Cast-local ordinal, never placement/Character IDs or names.
-                shown.push(entity.entity);
-                actors.push((u32::try_from(ordinal + 1).ok()?, x, y, 1, health_percent));
             }
         }
         let consent = self

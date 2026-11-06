@@ -46,8 +46,8 @@ spectator queries are unrelated.
 | S17b live directory and join | `livestream.cpp:216` lists only broadcasting online casters; `:314` live caster check; `:340` password; `:355` per-IP and `:362` cast limits | S17 design sections 2/6 and this task require authenticated account-only tickets, uniform refusals, 50/cast and two/account. Platform directory consumes renewed Game announcements; Game independently checks epoch/access, cast/node capacity and persistent bans. Donor premium/IP/minimum-level variants are not imported. |
 | S17b view and exit | `livestream.cpp:486` packet fan-out and map refresh; `:541` opcode allowlist; `protocolgame.cpp:12379` viewer login; `livestream.cpp:408` viewer removal and `:660` disconnect | Accepted S17 privacy/read-only design uses typed display projection and consent bindings instead of raw packets, caster-player pointer/client substitution or open containers. All viewer content follows chosen 0–300 s delay; viewer input never creates an actor or changes caster authority. |
 | S17c names and channel | `livestream.cpp:388` Viewer-N; `:396` join; `:431` leave; `:441` isolated chat; `:724` owner/viewer channel fan-out | Stable server-generated opaque Viewer handles with join/leave presence, isolated live caster panel and delayed viewer copies. No donor `/name`, `/show`, `!commands`, private room routing or gameplay execution. |
-| S17c mute/kick/ban | `livestream.cpp:265` mutes; `:674` kick; `:692` ban and disconnect; `:812` muted sender refusal | Accepted S17 design section 2.3 and the SRV11 rerun require account-scoped mute and persistent owner-account bans across epochs/restarts, rather than donor viewer-name/IP session bans. Typed caster actions, durable atomic ban/audit, admission/renewal checks, and reservation release implement that rule. |
-| S17c limits/audit | `livestream.cpp:24` 5-second window, `:25` three messages; `:798` rate check | Keep accepted S17 section 2.3's per-account burst three, refill one/3 s and 20/s room ceiling; bound text, presence, media and caster queues. Existing P30D audit plus new account-ban kind 12 records moderation without chat text, tickets or media. |
+| S17c mute/kick/ban | `livestream.cpp:265` mutes; `:674` kick; `:692` ban and disconnect; `:812` muted sender refusal | Accepted S17 design section 2.4 and the SRV11 rerun require account-scoped mute and persistent owner-account bans across epochs/restarts, rather than donor viewer-name/IP session bans. Typed caster actions, durable atomic ban/audit, admission/renewal checks, and reservation release implement that rule. |
+| S17c limits/audit | `livestream.cpp:24` 5-second window, `:25` three messages; `:798` rate check | Keep accepted S17 section 2.4's per-account burst three, refill one/3 s and 20/s room ceiling; bound text, presence, media and caster queues. Existing P30D audit plus new account-ban kind 12 records moderation without chat text, tickets or media. |
 
 Current Tibia rather than OT-specific commands is the target. The accepted S17
 design supplies consent-by-default-off, optional delay and competitive casting;
@@ -67,3 +67,11 @@ map description). Password, description and preferences are the only deferred
 Platform delivery. The S17-A announcement/consume/renew/release contract already
 supplies the directory and account-only viewer route; this package extends its
 Game side and does not replace it.
+
+The SRV11 rerun explicitly requests public-chat representation, superseding
+section 2.3's earlier conservative omission of ordinary local speech. Only
+local speech actually delivered to the caster from an eligible visible actor
+is represented; private/room/NPC dialogue remains excluded. Public actor handles
+are assigned after hidden-actor filtering: inserting a hidden actor must leave
+the encoded public scene unchanged. `s17_hidden_actor_does_not_change_public_handles_or_bytes`
+exercises that production projection boundary.
