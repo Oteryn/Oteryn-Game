@@ -67,6 +67,12 @@ def coverage(canary, crystal):
             variant = definition.get("source_variant", {})
             pending = variant.get("native_lowering", {}).get("pending_implementation", [])
             native = definition.get("native_contents", {})
+            medusa = (
+                key == "oteryn:reward-claim.quest.u7_3.the_medusa_quest"
+                and native.get("source_difference") == "CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT"
+                and definition.get("data_holds") == [{"category": "source",
+                    "code": "SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED", "placement_index": 0}]
+            )
             supported = definition.get("readiness") == "ready" or (
                 pending == [KEY_LOWERING] and not definition.get("data_holds")
                 and not variant.get("achievement_grants")
@@ -78,7 +84,7 @@ def coverage(canary, crystal):
                 native.get("schema") == "OTERYN_NATIVE_CONTAINER_REWARD/v1"
                 and native.get("source_sha256") == CONTAINER_SOURCE
                 and native.get("revision") == "201189f871d23597b82caf88fd611454a2ddefb8"
-                and not definition.get("data_holds")
+                and (not definition.get("data_holds") or medusa)
                 and len(native.get("placements", [])) == len(definition["placements"])
             )
             status = "supported_unqualified" if supported else "not_playable"
@@ -88,6 +94,9 @@ def coverage(canary, crystal):
             if key in QUALIFIED:
                 status = "dispatch_pg_qualified"
                 reason = QUALIFIED[key]
+            if definition.get('quest', {}).get('key') == 'canary:quest/dawnport_quest':
+                status = 'not_playable'
+                reason = 'OWNER_EXCLUDED_DAWNPORT: Newhaven owns the tutorial and starting equipment'
             placements = []
             for placement in definition["placements"]:
                 witnesses = []

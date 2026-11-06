@@ -133,6 +133,7 @@ struct Document {
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     if callbacks.len() >= MAX_CALLBACKS {
         return Err("callback bounds including Rotten Blood altar".into());
     }

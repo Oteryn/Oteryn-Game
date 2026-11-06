@@ -1,8 +1,8 @@
 {
   "counts": {
     "dispatch_pg_qualified": 11,
-    "not_playable": 28,
-    "supported_unqualified": 297
+    "not_playable": 16,
+    "supported_unqualified": 309
   },
   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
   "quests": [
@@ -1601,8 +1601,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "OWNER_EXCLUDED_DAWNPORT: Newhaven owns the tutorial and starting equipment",
+          "status": "not_playable"
         },
         {
           "claim": "oteryn:reward-claim.quest.u10_55.dawnport.torn_log_book",
@@ -1629,8 +1629,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "OWNER_EXCLUDED_DAWNPORT: Newhaven owns the tutorial and starting equipment",
+          "status": "not_playable"
         }
       ],
       "quest": "canary:quest/dawnport_quest"
@@ -2046,8 +2046,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED, TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/desert_dungeon_quest"
@@ -2318,8 +2318,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED, TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.draconia2",
@@ -2744,8 +2744,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.edrongoblin2",
@@ -3110,8 +3110,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED, TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.fireaxe2",
@@ -3466,8 +3466,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.ghoulroom2",
@@ -4348,8 +4348,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED, TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/life_ring_quest"
@@ -4625,8 +4625,9 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/medusa_shield_quest"
@@ -5439,8 +5440,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/power_ring_quest"
@@ -6300,8 +6301,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/silver_amulet_quest"
@@ -6432,8 +6433,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.stealhring2",
@@ -9413,8 +9414,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/time_ring_quest"
@@ -9741,8 +9742,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED, TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/triangle_tower_quest"
@@ -9795,8 +9796,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/troll_cave_quest"
@@ -9983,8 +9984,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.weddingring2",

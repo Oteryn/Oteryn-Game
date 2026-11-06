@@ -4,6 +4,9 @@
 // through the real B3-1 TRANSFER path; its definition is the same test-only
 // fixture as the B3-1 cases.
 
+#[path = "reward_claim_mint_postgres_cases/filled_fluid.rs"]
+mod filled_fluid;
+
 use crate::durability::item_weight_lookup::TEST_WEIGHTS;
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
@@ -808,6 +811,7 @@ fn chest(
         quantity,
         contents: Vec::new(),
         root_text: None,
+        root_fluid_subtype: None,
         backpack: backpack_facts(),
         content_revision: "content-1".into(),
         ruleset_revision: "ruleset-1".into(),

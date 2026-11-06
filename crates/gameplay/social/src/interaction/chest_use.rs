@@ -316,6 +316,7 @@ pub async fn prepare_chest_use(
         quantity: chest.quantity,
         contents: Vec::new(),
         root_text: None,
+        root_fluid_subtype: None,
         backpack,
         content_revision: request.content_revision,
         ruleset_revision: request.ruleset_revision,

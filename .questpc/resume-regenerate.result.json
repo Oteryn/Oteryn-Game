@@ -1,0 +1,5 @@
+{
+  "command": "python3.12 -c import subprocess; from pathlib import Path; commands=Path(\".questpc/generation-order.txt\").read_text().splitlines(); commands=[c.replace(\"python3 \", \"python3.12 \",1) for c in commands]; [subprocess.run(c.split(),check=True) for c in commands]",
+  "exit": 1,
+  "duration_seconds": 4.031
+}
