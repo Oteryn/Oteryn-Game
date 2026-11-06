@@ -271,6 +271,33 @@ pub(super) fn world(
                 ..Default::default()
             },
         });
+    if callback.key == "oteryn:quest-callback/l6-instrument-fixture" {
+        // A bounded open-room fixture retains the actual B3 instrument positions.
+        // It qualifies the selector and transaction, not the tomb's collision path.
+        for x in 33186..=33193 {
+            for y in 32659..=32670 {
+                cells.entry((-15, x, y)).or_default();
+            }
+        }
+        for (appearance, position) in super::l6_ancient_tombs::INSTRUMENTS.into_iter().skip(1) {
+            let palette = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: bundle::Family::Terrain,
+                id: palette,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+            cells.entry((position.floor, position.x, position.y)).or_default().push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: Default::default(),
+            });
+        }
+    }
     if callback.key == "oteryn:quest-callback/monk-guidance" {
         for shrine in oteryn_gameplay_quests::quest::world_callbacks::load()?
             .into_iter()

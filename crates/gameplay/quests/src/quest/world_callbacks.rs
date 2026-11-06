@@ -148,10 +148,18 @@ struct Document {
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
+    ))?);
     if callbacks.len() >= MAX_CALLBACKS {
         return Err("callback bounds including Rotten Blood altar".into());
     }
     callbacks.push(super::rotten_blood::altar_callback());
+    let mut keys = BTreeSet::new();
+    if callbacks.iter().any(|callback| !keys.insert(&callback.key)) {
+        return Err("duplicate callback key".into());
+    }
+    callbacks.sort_by(|left, right| left.key.cmp(&right.key));
     Ok(callbacks)
 }
 

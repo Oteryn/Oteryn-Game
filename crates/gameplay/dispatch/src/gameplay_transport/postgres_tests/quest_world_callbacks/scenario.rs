@@ -22,11 +22,14 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let ancient_instruments = name == "l6-ancient-instruments";
     let monk = name.starts_with("monk-guidance");
     let classic_npc = matches!(name, "nx6-wayfarer" | "classic-quests-npc" | "classic-rottin-disrepair" | "threatened-dreams-npc" | "conditional-quest-greetings");
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if classic_npc {
+    let mut callback = callback(if ancient_instruments {
+        "ancient-tombs-diprath-sign-1"
+    } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -37,6 +40,15 @@ fn scenario_case(
     } else {
         name
     })?;
+    if ancient_instruments {
+        // The fixture supplies literal instrument appearances and action IDs;
+        // all matching and durable effects still come from the production registry.
+        callback.key = "oteryn:quest-callback/l6-instrument-fixture".into();
+        callback.selector.unique = None;
+        callback.selector.position = Some(trigger);
+        callback.selector.action = None;
+        callback.selector.appearance = Some(3255);
+    }
     if target_swap {
         callback
             .item_on_target
@@ -176,7 +188,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "triangle-tower-wall" {
+        if ancient_instruments {
+            super::super::l6_ancient_tombs::exercise(&mut owner, &mut admitted, &h, &authority, fence, trigger).await?;
+        } else if name == "triangle-tower-wall" {
             super::super::triangle_tower::exercise(&mut owner, &mut admitted, &world, &callback, trigger).await?;
         } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
