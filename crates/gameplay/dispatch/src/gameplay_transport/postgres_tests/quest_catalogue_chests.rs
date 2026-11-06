@@ -423,7 +423,7 @@ fn phase_a_cohort(quests: &[&str]) -> TestResult {
 // Historical SOURCE readiness retains lowering holds even after the native
 // claim owner has been implemented. Qualify those exact standalone contracts
 // against their original claim inventory; never infer a storyline from a chest.
-fn standalone_claim_cohort(quests: &[&str], test: &str) -> TestResult {
+pub(super) fn standalone_claim_cohort(quests: &[&str], test: &str) -> TestResult {
     let mut found = BTreeSet::new();
     for shard in [
         include_str!("../../../../../../content/quests/definitions/quests-00000-00099.json"),

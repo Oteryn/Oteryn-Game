@@ -26,6 +26,8 @@ mod batches;
 mod boss_dialogue;
 #[path = "grizzly_npc/progression.rs"]
 mod progression;
+#[path = "grizzly_npc/questpc8_campaign.rs"]
+mod questpc8_campaign;
 #[path = "grizzly_npc/shop.rs"]
 mod shop;
 #[path = "grizzly_npc/wire.rs"]
@@ -90,7 +92,16 @@ fn scenario(case: u8) -> TestResult {
         let (controller, pin) =
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
         let active = controller.active().ok_or("active content")?;
-        let bundle = wire::world(world)?;
+        let bundle = if case == 5 {
+            super::grizzly_boss::world::source_rooms(
+                [1, 3, 19]
+                    .into_iter()
+                    .map(|id| quest::boss(id).ok_or("campaign boss"))
+                    .collect::<Result<Vec<_>, _>>()?,
+            )?
+        } else {
+            wire::world(world)?
+        };
         let cells = bundle
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -133,14 +144,23 @@ fn scenario(case: u8) -> TestResult {
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            bundle.frame_binding_digest(world),
+            if case == 5 {
+                pin.frame_binding().digest()
+            } else {
+                bundle.frame_binding_digest(world)
+            },
             bundle.map_revision_digest(),
-            (2, 0, 7),
+            if case == 5 {
+                (32607, 32714, 8)
+            } else {
+                (2, 0, 7)
+            },
         );
-        let deps = Dependencies::with_content(
+        let deps = Dependencies::with_content_and_capacity(
             channel_pin,
             crate::content::qualify_native_entry_room(world).map_err(debug)?,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
+            if case == 5 { 5 } else { 2 },
         )?;
         let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
         h.root
@@ -158,6 +178,15 @@ fn scenario(case: u8) -> TestResult {
             Some(h.root.clone()),
         );
         let mut owner = deps.owner(&h, &authority);
+        if case == 5 {
+            super::grizzly_boss::world::activate(
+                &h,
+                active.identity().server_artifact_digest(),
+                active.identity().client_artifact_digest(),
+                pin.frame_binding().digest(),
+            )
+            .await?;
+        }
         owner.active_generation = Some(active);
         owner.movement_cells = &cells;
         let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -276,7 +305,7 @@ fn scenario(case: u8) -> TestResult {
                         npcs: vec![NpcPlacements {
                             key: quest::NPC.into(),
                             placements: vec![NpcPlacement {
-                                x: u16::try_from(at.x + 1)?,
+                                x: u16::try_from(at.x + if case == 5 { -1 } else { 1 })?,
                                 y: u16::try_from(at.y)?,
                                 floor: -i8::try_from(at.floor)?,
                                 direction: MovementFacing::South,
@@ -371,7 +400,10 @@ fn scenario(case: u8) -> TestResult {
         }
         owner.premium_coordinator = Some(&premium);
         owner.admit_premium(id(40), admitted.game_session_id);
-        if case == 4 {
+        if case == 5 {
+            questpc8_campaign::exercise(&mut owner, &mut admitted, npc, &h, &authority, &journal)
+                .await?;
+        } else if case == 4 {
             progression::live_level(&mut owner, &mut admitted, npc, &h, &authority, initial_xp)
                 .await?;
         } else if case == 3 {
