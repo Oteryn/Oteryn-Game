@@ -36,6 +36,8 @@ const TEMPLATE: &str = "oteryn:room.native_activity_fixture";
 
 #[path = "boss_activity/endgame.rs"]
 mod endgame;
+#[path = "boss_activity/instance_corpse.rs"]
+mod instance_corpse;
 #[path = "boss_activity/nonreward.rs"]
 mod nonreward;
 #[path = "boss_activity/offline_death.rs"]

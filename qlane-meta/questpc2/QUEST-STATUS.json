@@ -547,6 +547,11 @@
         "batch": "BATCH-native-death-2026-11-06.json",
         "scope": "Native death -> W02 timed victory -> atomic XP/Quest/Hazard progression, retained replay and late refusal; isolated geometry and imported access prerequisites do not qualify the whole source quest.",
         "test_filter": "l3_instance_endgame"
+      },
+      "generic_instance_corpse_root_slice": {
+        "status": "PG_VERIFIED",
+        "record": "BATCH-instance-corpse-root-2026-11-06.json",
+        "scope": "Generic durable physical Instance corpse root MINT from a retained real native death. Isolated Item definition; source-native room, creature mechanic, Item admission and automatic combat-drain composition are not qualified."
       }
     },
     {
@@ -583,6 +588,11 @@
         "batch": "BATCH-native-death-2026-11-06.json",
         "scope": "Native death -> W02 timed victory -> atomic XP/Quest/Hazard progression, retained replay and late refusal; isolated geometry and imported access prerequisites do not qualify the whole source quest.",
         "test_filter": "l3_instance_endgame"
+      },
+      "generic_instance_corpse_root_slice": {
+        "status": "PG_VERIFIED",
+        "record": "BATCH-instance-corpse-root-2026-11-06.json",
+        "scope": "Generic durable physical Instance corpse root MINT from a retained real native death. Isolated Item definition; source-native room, creature mechanic, Item admission and automatic combat-drain composition are not qualified."
       }
     },
     {
@@ -1616,13 +1626,19 @@
       "checks_passed": 11,
       "postgres_cases_passed": 10,
       "zero_test_results_accepted": false
+    },
+    "instance_corpse_root_2026_11_06": {
+      "record": "BATCH-instance-corpse-root-2026-11-06.json",
+      "postgres_cases_passed": 6,
+      "audit_unit_cases_passed": 30,
+      "whole_quest_qualifications": 0
     }
   },
   "current_batch": {
-    "id": "native-death-2026-11-06",
-    "record": "BATCH-native-death-2026-11-06.json",
+    "id": "instance-corpse-root-2026-11-06",
+    "record": "BATCH-instance-corpse-root-2026-11-06.json",
     "whole_quest_qualifications": 0,
     "entries_with_verified_shared_slice": 3,
-    "next": "Implement generic scope-fenced Instance corpse MINT/custody/audit bridge, then source-native encounter templates and remaining quest mechanisms. Respect cross-lane and world-change ownership; no deferral."
+    "next": "Continue immediately with exact source corpse Item admission and native combat/Content composition, corpse-loot/nested ownership and source-native room/boss mechanics; then the remaining owned L3 quests. No external engine deferral."
   }
 }

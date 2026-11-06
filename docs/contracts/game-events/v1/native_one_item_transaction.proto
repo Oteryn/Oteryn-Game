@@ -239,10 +239,11 @@ message OneItemCommandRefV1 {
 // CREATURE-DEATH-OCCURRENCE-IDENTITY-V1 durable, restart-stable death key.
 message CreatureDeathOccurrenceRefV1 {
   bytes world_id = 1;   // exactly 16-byte non-nil UUIDv7
-  bytes channel_id = 2; // exactly 16-byte non-nil UUIDv7
+  bytes channel_id = 2; // Channel: UUIDv7; Instance: empty
   uint64 scope_ownership_generation = 3;
   uint32 actor_local_id = 4;
   uint64 actor_local_generation = 5;
+  optional bytes instance_id = 6; // Instance deaths: UUIDv7, channel_id empty
 }
 
 // The loot output cause (death key, LootTableDefinitionRef, purpose key,

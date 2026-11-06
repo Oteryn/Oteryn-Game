@@ -166,6 +166,12 @@ pub(super) async fn settle(
         assert!(runtime.retains_corpse_projection(target));
         assert!(attack.kills().has_session(admitted.game_session_id));
     }
+    if matches!(
+        case,
+        Case::SoulWarDefeat | Case::RottenBloodDefeat | Case::PrimalDefeat
+    ) {
+        super::instance_corpse::qualify(h, owner, admitted).await?;
+    }
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
