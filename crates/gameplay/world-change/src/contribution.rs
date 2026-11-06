@@ -155,14 +155,24 @@ impl HorseStationState {
             }
             return;
         }
-        if self.stable_horses == 0
-            || self.escape_started_ms.is_some_and(|started| {
-                now_ms
-                    .checked_sub(started)
-                    .is_some_and(|elapsed| elapsed >= HORSE_RAID_INTERVAL_MS)
-            })
-        {
-            self.raid_until_ms = now_ms.checked_add(HORSE_RAID_INTERVAL_MS);
+        let timer_due = self
+            .escape_started_ms
+            .and_then(|started| started.checked_add(HORSE_RAID_INTERVAL_MS));
+        let started = if self.stable_horses == 0 {
+            timer_due.map_or(now_ms, |due| due.min(now_ms))
+        } else if let Some(due) = timer_due.filter(|due| *due <= now_ms) {
+            due
+        } else {
+            return;
+        };
+        if let Some(until) = started.checked_add(HORSE_RAID_INTERVAL_MS) {
+            if now_ms >= until {
+                self.escape_started_ms = None;
+                self.stable_horses = restored_horses;
+            } else {
+                self.raid_until_ms = Some(until);
+                self.stable_horses = 0;
+            }
         }
     }
 }
@@ -297,6 +307,26 @@ mod tests {
         horses.advance(30_000_001, 2);
         assert!(horses.raid_active(30_000_001));
         assert!(!horses.escape(30_000_002));
+    }
+
+    #[test]
+    fn wcontrib_horse_late_observation_keeps_anchored_raid_expiry() {
+        let mut horses = HorseStationState {
+            stable_horses: 9,
+            ..HorseStationState::default()
+        };
+        assert!(horses.escape(100));
+        horses.advance(10_800_123, 9);
+        assert_eq!(horses.raid_until_ms, Some(21_600_100));
+        let mut unobserved = HorseStationState {
+            stable_horses: 9,
+            ..HorseStationState::default()
+        };
+        assert!(unobserved.escape(100));
+        unobserved.advance(21_600_101, 9);
+        assert_eq!(unobserved.stable_horses, 9);
+        assert_eq!(unobserved.raid_until_ms, None);
+        assert_eq!(unobserved.escape_started_ms, None);
     }
 
     #[test]
