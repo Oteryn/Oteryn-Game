@@ -14,6 +14,8 @@ use oteryn_protocol_oteryn::world_event::{
 };
 use sqlx::{Postgres, Row, Transaction};
 
+pub mod changes;
+
 /// Called exclusively inside reset finalization, including unknown-commit replay.
 pub(super) async fn record_reset(
     tx: &mut Transaction<'_, Postgres>,
@@ -35,6 +37,7 @@ pub(super) async fn record_reset(
     if stored != (!announcement.is_empty(), announcement.to_owned()) {
         return Err(DurabilityError::InvalidStoredState);
     }
+    changes::record(tx, world, epoch).await?;
     Ok(())
 }
 

@@ -87,10 +87,19 @@ pub(super) async fn prepare_channel(
     // carries its map view in the movement cells and has no entry room: no door, chest, spell
     // or field qualification of the fixture room applies to it (§1.2).
     // SP02 projects the committed reset day's physical map before any map owner is built.
-    let unix_ms = crate::world_clock::now_utc_ms()
-        .and_then(|now| i64::try_from(now).ok())
-        .unwrap_or(0);
-    let daily = daily_world_changes::roll(material.world, reset_epoch, unix_ms);
+    let daily = match root
+        .world_changes(material.world, reset_epoch)
+        .await
+        .map_err(|_| BootError::ContentActivation("durable world changes"))?
+    {
+        Some(day) => day,
+        None if reset_epoch == 0 => {
+            oteryn_gameplay_world_change::daily::DailyWorldChanges::roll(reset_epoch, 0, 0, |_| {
+                u64::MAX
+            })
+        }
+        None => return Err(BootError::Readiness("current world-change epoch")),
+    };
     let bundle = bundle
         .map(|checked| {
             let checked = daily_world_changes::prepare_map(checked, material.world, &daily);

@@ -1,0 +1,138 @@
+use oteryn_gameplay_world_change::owner::{ContributionKind, SeasonalWindow, add_contribution};
+
+#[test]
+fn worldchg_contributions_are_checked_and_reset_is_a_new_epoch() {
+    assert_eq!(add_contribution(8, 3), Some(11));
+    assert_eq!(add_contribution(8, 0), None);
+    assert_eq!(add_contribution(u64::MAX, 1), None);
+    assert_eq!(ContributionKind::Coal.key(), "coal");
+    assert_eq!(ContributionKind::Medicine.key(), "medicine");
+    assert_eq!(ContributionKind::Votes.key(), "votes");
+}
+
+#[test]
+fn worldchg_seasonal_windows_include_start_exclude_end_and_wrap_year() {
+    let summer = SeasonalWindow {
+        start: (6, 1),
+        end: (7, 1),
+    };
+    assert!(!summer.contains(5, 31));
+    assert!(summer.contains(6, 1));
+    assert!(summer.contains(6, 30));
+    assert!(!summer.contains(7, 1));
+    let winter = SeasonalWindow {
+        start: (12, 15),
+        end: (1, 5),
+    };
+    assert!(winter.contains(12, 31));
+    assert!(winter.contains(1, 4));
+    assert!(!winter.contains(1, 5));
+    assert!(!winter.contains(13, 1));
+}
+
+#[test]
+fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_gameplay_world_change::{
+        daily::DailyWorldChanges,
+        owner::{CATALOGUE_JSON, is_active},
+    };
+    let catalogue: serde_json::Value = serde_json::from_str(CATALOGUE_JSON)?;
+    let entries = catalogue["entries"].as_array().ok_or("entries")?;
+    let mut keys = std::collections::BTreeSet::new();
+    let all = DailyWorldChanges::roll(7, 6, 13, |_| 0);
+    let mut ready = 0;
+    for entry in entries {
+        let key = entry["key"].as_str().ok_or("key")?;
+        assert!(keys.insert(key));
+        assert!(!entry["reason"].as_str().ok_or("reason")?.is_empty());
+        assert!(!entry["evidence"].as_array().ok_or("evidence")?.is_empty());
+        if entry["status"] == "READY" {
+            ready += 1;
+            assert!(is_active(&all, key), "{key}");
+        } else {
+            assert_eq!(entry["status"], "HELD");
+            assert!(!is_active(&all, key), "{key}");
+        }
+    }
+    assert_eq!(ready, 4);
+    for key in [
+        "river_runs_deep",
+        "spider_nest",
+        "spirit_grounds",
+        "stampede",
+        "swamp_fever",
+        "steamship",
+        "overhunting",
+        "noodles_is_gone",
+        "nomads",
+        "chakoya_iceberg",
+        "rathleton",
+        "rise_of_devovorga",
+        "spring_into_life",
+    ] {
+        assert!(keys.contains(key), "{key}");
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    for name in [
+        "quests-00000-00099.json",
+        "quests-00100-00199.json",
+        "quests-00200-00299.json",
+        "quests-00300-00351.json",
+    ] {
+        let quests: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            root.join("content/quests/definitions").join(name),
+        )?)?;
+        for record in quests["records"].as_array().ok_or("records")? {
+            let title = record["definition"]["display_name"]
+                .as_str()
+                .ok_or("title")?;
+            if title.contains("World Change") {
+                assert!(
+                    entries.iter().any(|e| e["title"] == title),
+                    "missing {title}"
+                );
+            }
+        }
+    }
+    assert!(!is_active(&all, "unrecognized"));
+    Ok(())
+}
+
+#[test]
+fn worldchg_selection_replays_and_snapshot_retains_the_committed_epoch()
+-> Result<(), serde_json::Error> {
+    use oteryn_gameplay_world_change::daily::DailyWorldChanges;
+    let select = |epoch| DailyWorldChanges::roll(epoch, 6, 13, |_| 0);
+    assert_eq!(select(7), select(7));
+    let bytes = serde_json::to_vec(&select(7))?;
+    assert_eq!(
+        serde_json::from_slice::<DailyWorldChanges>(&bytes)?,
+        select(7)
+    );
+    assert_ne!(select(7), select(8));
+    Ok(())
+}
+
+#[test]
+fn worldchg_authored_candidate_probabilities_control_selection() {
+    use oteryn_gameplay_world_change::daily::{DailyCandidates, DailyWorldChanges};
+    let select = |percent| {
+        DailyWorldChanges::select(
+            8,
+            5,
+            12,
+            DailyCandidates {
+                thawing_percent: percent,
+                voice_percent: percent,
+                trader_percent: percent,
+            },
+            |_| u64::MAX,
+        )
+    };
+    let none = select(0);
+    assert!(!none.thawing && !none.their_masters_voice && none.oriental_trader.is_none());
+    let all = select(100);
+    assert!(all.thawing && all.their_masters_voice && all.oriental_trader.is_some());
+    assert_eq!(none.reset_epoch, 8);
+}

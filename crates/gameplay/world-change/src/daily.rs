@@ -4,8 +4,8 @@
 //! are `onStartup` global events that run once per daily server save. Each rule below cites the
 //! donor script; [`DailyWorldChanges::npcs`] lists the effects this repository applies to the
 //! live map. Thawing is applied through the Channel callback item layer. The chance draws come
-//! from the caller, keyed on the committed reset epoch, so a restart within the same day rolls
-//! the same day again without a second state owner.
+//! from the existing reset/event owner, keyed on the committed World/reset epoch. It stores
+//! the selected day atomically with reset and loads it unchanged on restart.
 //!
 //! Not applied (no live-map owner yet; the roll is still taken so the day is fixed):
 //! - Flower Month dryad waves (`raids/world_changes/flower_month.lua:28-55`).
@@ -23,15 +23,18 @@ fn choice(draw: u64, count: u64) -> u64 {
 }
 
 /// `thawing.lua:2`: 10%.
-const THAWING_PERCENT: u64 = 10;
+const THAWING_PERCENT: u8 = 10;
 /// `their_masters_voice.lua:4`: 20%.
-const THEIR_MASTERS_VOICE_PERCENT: u64 = 20;
+const THEIR_MASTERS_VOICE_PERCENT: u8 = 20;
 /// `oriental_trader.lua:3`: 33%.
-const ORIENTAL_TRADER_PERCENT: u64 = 33;
+const ORIENTAL_TRADER_PERCENT: u8 = 33;
 /// `grimvale_respawn_event.lua:3`: the 13th of each month.
 const GRIMVALE_DAY: u8 = 13;
 /// `raids/world_changes/flower_month.lua:63`: June.
-const FLOWER_MONTH: u8 = 6;
+const FLOWER_MONTH: crate::owner::SeasonalWindow = crate::owner::SeasonalWindow {
+    start: (6, 1),
+    end: (7, 1),
+};
 /// `raids/world_changes/flower_month.lua:3,64`.
 const ROSEMARIE: (&str, (u16, u16, i8)) = ("oteryn:npc.rosemarie", (32_534, 32_827, 7));
 /// `thawing.lua:1`: the ice flower Item placed by Thawing.
@@ -55,7 +58,7 @@ pub const THAWING_ICE_FLOWERS: [(u16, u16, i8); 14] = [
 ];
 
 /// Where Yasir would arrive (`oriental_trader.lua:4-24`, picked at :44).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum OrientalTraderTown {
     Ankrahmun,
     Carlin,
@@ -89,8 +92,18 @@ pub const DRAW_PURPOSES: [&str; 4] = [
     "oriental-trader-town",
 ];
 
+/// Authored daily candidate probabilities. Native effect identities and variant
+/// bindings remain closed to the existing admitted daily map implementation.
+#[derive(Debug, Clone, Copy)]
+pub struct DailyCandidates {
+    pub thawing_percent: u8,
+    pub voice_percent: u8,
+    pub trader_percent: u8,
+}
+
 /// The world changes of one day.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DailyWorldChanges {
     pub reset_epoch: u64,
     pub thawing: bool,
@@ -104,24 +117,43 @@ pub struct DailyWorldChanges {
 impl DailyWorldChanges {
     /// Rolls the day after the reset `reset_epoch`, on the UTC calendar `month` and `day`.
     /// `draw(purpose)` returns the uniform 64-bit draw of that purpose for this epoch.
-    pub fn roll(reset_epoch: u64, month: u8, day: u8, mut draw: impl FnMut(&str) -> u64) -> Self {
+    pub fn roll(reset_epoch: u64, month: u8, day: u8, draw: impl FnMut(&str) -> u64) -> Self {
+        Self::select(
+            reset_epoch,
+            month,
+            day,
+            DailyCandidates {
+                thawing_percent: THAWING_PERCENT,
+                voice_percent: THEIR_MASTERS_VOICE_PERCENT,
+                trader_percent: ORIENTAL_TRADER_PERCENT,
+            },
+            draw,
+        )
+    }
+
+    pub fn select(
+        reset_epoch: u64,
+        month: u8,
+        day: u8,
+        candidates: DailyCandidates,
+        mut draw: impl FnMut(&str) -> u64,
+    ) -> Self {
         let [thawing, voice, trader, town] = DRAW_PURPOSES;
-        let thawing = percent_roll(draw(thawing), THAWING_PERCENT);
-        let their_masters_voice = percent_roll(draw(voice), THEIR_MASTERS_VOICE_PERCENT);
-        let oriental_trader = percent_roll(draw(trader), ORIENTAL_TRADER_PERCENT).then(|| {
-            match choice(draw(town), 3) {
+        let thawing = percent_roll(draw(thawing), u64::from(candidates.thawing_percent));
+        let their_masters_voice = percent_roll(draw(voice), u64::from(candidates.voice_percent));
+        let oriental_trader = percent_roll(draw(trader), u64::from(candidates.trader_percent))
+            .then(|| match choice(draw(town), 3) {
                 0 => OrientalTraderTown::Ankrahmun,
                 1 => OrientalTraderTown::Carlin,
                 _ => OrientalTraderTown::LibertyBay,
-            }
-        });
+            });
         Self {
             reset_epoch,
             thawing,
             their_masters_voice,
             oriental_trader,
             grimvale_full_moon: day == GRIMVALE_DAY,
-            flower_month: month == FLOWER_MONTH,
+            flower_month: FLOWER_MONTH.contains(month, day),
         }
     }
 

@@ -1,39 +1,16 @@
-//! W05b: the server save rolls the day's world changes at Channel boot and applies the admitted
-//! ones to the live map (`oteryn_gameplay_world_change::daily`).
+//! W05b/WORLDCHG-Q: apply the reset owner's committed daily decision to the live map.
 //!
-//! The draws hang off the committed reset epoch and the World, so a restart within the day rolls
-//! the same day again; no extra durable state is needed.
+//! World/event durability owns the decision; this module only projects its admitted effects.
 
 use super::bundle_npcs::NpcBoot;
 use super::event;
 use crate::foundation::{ChannelRuntimeV1, MovementFacing, NpcPlacement, WorldId};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_world_change::daily::DailyWorldChanges;
-use oteryn_simulation_determinism::{
-    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
-};
 use sha2::{Digest, Sha256};
 
-/// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
-pub(super) fn roll(world: WorldId, reset_epoch: u64, unix_ms: i64) -> DailyWorldChanges {
-    let mut hash = Sha256::new();
-    hash.update(b"oteryn.world_change.daily.v1\0");
-    hash.update(world.as_bytes());
-    let root = GameplayDecisionRoot::from_bytes(hash.finalize().into());
-    let mut occurrence = [0; 16];
-    occurrence[8..].copy_from_slice(&reset_epoch.to_be_bytes());
-    let (month, day) = utc_month_day(unix_ms);
-    DailyWorldChanges::roll(reset_epoch, month, day, |purpose| {
-        // A purpose is never empty, so the draw cannot fail; a failure would read as "no".
-        deterministic_decision_u64(
-            &root,
-            DecisionOccurrenceId::from_bytes(occurrence),
-            purpose,
-            0,
-        )
-        .unwrap_or(u64::MAX)
-    })
-}
+#[cfg(test)]
+use crate::durability::world_event::changes::utc_month_day;
 
 /// The physical draws bind World and committed epoch, never Channel or process lifetime.
 fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily::DailyMap {
@@ -117,27 +94,6 @@ pub(super) fn apply_items(
     placed
 }
 
-/// The UTC (month, day) of `unix_ms` (days-from-civil inverted).
-fn utc_month_day(unix_ms: i64) -> (u8, u8) {
-    let days = unix_ms.div_euclid(86_400_000) + 719_468;
-    let era = days.div_euclid(146_097);
-    let day_of_era = days - era * 146_097;
-    let year_of_era =
-        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
-    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
-    let shifted_month = (5 * day_of_year + 2) / 153;
-    let day = day_of_year - (153 * shifted_month + 2) / 5 + 1;
-    let month = if shifted_month < 10 {
-        shifted_month + 3
-    } else {
-        shifted_month - 9
-    };
-    (
-        u8::try_from(month).unwrap_or(1),
-        u8::try_from(day).unwrap_or(1),
-    )
-}
-
 #[cfg(test)]
 #[allow(clippy::expect_used, reason = "test fixtures")]
 mod tests {
@@ -145,6 +101,11 @@ mod tests {
     use crate::foundation::{ChannelId, NodeId, NpcPlacementTable};
     use crate::gameplay_transport::NpcTalkBook;
     use std::sync::Arc;
+
+    fn roll(world: WorldId, reset_epoch: u64, unix_ms: i64) -> DailyWorldChanges {
+        crate::durability::world_event::changes::roll(world, reset_epoch, unix_ms)
+            .expect("authored daily candidates")
+    }
 
     fn world() -> WorldId {
         WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).expect("world")
