@@ -53,10 +53,10 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Complete native NPC Item/progress exchanges, summed nightmare counters and Kroazur report, light/barrier USE bindings and atomic final bag reward. Reuse delivered engine code and extend it here."
+      "next_actions": "Kill sum and Kroazur report implemented with PG proof. Complete the remaining NPC Item/progress exchanges, light/barrier USE bindings and atomic final bag reward; reuse delivered engine code and implement remaining mechanisms here."
     },
     {
-      "canonical": "unresolved:questpc2:pilgrimage_of_ashes_quest",
+      "canonical": "oteryn:quest.pilgrimage_of_ashes",
       "title": "Pilgrimage of Ashes Quest",
       "mechanism": "regular_blessing_service_grant",
       "from_lanes": [
@@ -64,7 +64,9 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Admit the regular blessing Services and implement the ordered journey, exact quotes/debits, held blessings/progress and guide rewards through reusable fenced Service/Quest composition."
+      "next_actions": "Admit the regular blessing Services and implement the ordered journey, exact quotes/debits, held blessings/progress and guide rewards through reusable fenced Service/Quest composition.",
+      "original_identity": "unresolved:questpc2:pilgrimage_of_ashes_quest",
+      "identity_evidence": "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/identity @ 5e72a3f0b0e16803bc5cd999298e4ec83f05eed9"
     },
     {
       "canonical": "oteryn:quest.authored.rathleton_quest",
@@ -836,20 +838,12 @@
       }
     ],
     "current_batch": {
+      "id": "sum-guards-01",
+      "status": "PG and cargo check GREEN; publishing immediately under current owner instruction; Clippy still running",
       "entries": [
-        "The Beginning Quest",
-        "The First Dragon Quest",
-        "Threatened Dreams Quest"
-      ],
-      "mechanism": "Native death-only quest counters with source mission gates and durable occurrence replay",
-      "status": "GREEN; committing and pushing",
-      "qualification": "No new whole quest qualification yet.",
-      "kind": "shared native-counter foundation; no whole-entry qualifications yet",
-      "entries_supported": [
-        "oteryn:quest.the_first_dragon_quest",
         "oteryn:quest.threatened_dreams_quest"
       ],
-      "id": "native-counters-01",
+      "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
       "whole_entry_qualifications": 0
     },
     "effective_entries": [
@@ -857,7 +851,7 @@
       "oteryn:quest.the_first_dragon_quest",
       "oteryn:quest.the_tainted_soul",
       "oteryn:quest.threatened_dreams_quest",
-      "unresolved:questpc2:pilgrimage_of_ashes_quest"
+      "oteryn:quest.pilgrimage_of_ashes"
     ],
     "excluded_world_owner_entries": [
       {
@@ -1057,6 +1051,62 @@
           "crates/gameplay/quests/src/quest/threatened_dreams.rs": "d54e857440f0081f3d0cc7dc0c61252230300a198339afa7866106dc85bee3ae"
         },
         "review": "Reviewed complete owned diff against CODEX-CHECKLIST: bounded capture/reads; same World party owner and source snapshot; exact receipt binding; locked mission epoch; stale lease/USE refusal; unchanged ordinary XP/loot and legacy Stampede; no schema/protocol/capability additions; no diagnostics or forbidden paths."
+      },
+      "sum_guards_01": {
+        "red": {
+          "log": "/tmp/questpc3-sum-red-fixture.log",
+          "sha256": "b1a339ad61fd98cc25c69f28cf07d3327acfb7959055bf9aa0a56dec51206549",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 15s",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=69020",
+            "  left: Refused(NotSupported)",
+            " right: Refused(StageMismatch)",
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 69.18s"
+          ]
+        },
+        "postgres_green": {
+          "log": "/tmp/questpc3-sum-green.log",
+          "sha256": "b3ed5119fb7a9ff94dd1bbc050a5fd5676befae4345e3b434e948b46ffa37ad2",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 55s",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=75422",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=75462",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=75607",
+            "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=75874 success=true",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 75.88s"
+          ]
+        },
+        "sum_units": {
+          "log": "/tmp/questpc3-sum-units.log",
+          "sha256": "e1f4d887f0fd6b69ca7c859ece7f581e349e43227d95b0178fc5070a131d17bc",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.73s",
+            "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 0.00s"
+          ]
+        },
+        "selector": {
+          "log": "/tmp/questpc3-sum-selector.log",
+          "sha256": "4f3f801307e2d138b9030eee34f941bace15eb7f1f5c318fa8e230094074ff45",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 255 filtered out; finished in 1.15s"
+          ]
+        },
+        "cargo_check": {
+          "log": "/tmp/questpc3-sum-check.log",
+          "sha256": "0816c5768e5ca62bb30038365b16b02f02c5973b7c2fb8ac59f21d27bd9eaf38",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 19s"
+          ]
+        },
+        "clippy": {
+          "status": "RUNNING",
+          "log": "/tmp/questpc3-sum-clippy.log",
+          "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings"
+        },
+        "fmt": "cargo fmt --all and cargo fmt --all -- --check passed; auto-mounted test formatted explicitly with rustfmt --edition 2024",
+        "invalid_red_attempts": "Connection refused before local PostgreSQL startup, then MissingProgressionState before fixture generation admission; neither counted as RED. Valid RED reached SQL after 69020ms and returned NotSupported rather than StageMismatch.",
+        "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY"
       }
     },
     "source_corrections": [
@@ -1070,8 +1120,8 @@
       "fix": "Native receipts contain actual counter changes after locked guard evaluation; preserve SQL invariants and the original mission epoch."
     },
     "refreshed_dependency_heads": {
-      "qengine2": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "questl2": "e5a4d6e7e46e7bf3a6754b563fd8647900de7680",
+      "qengine2": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "questl2": "7e16b64ee099c8e81cabf3b4e420531269bb4c1a",
       "questpc2": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
       "questpc4": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
       "questpc5": "f78cf159d8a2eef2703091197ea661d26537137a",
@@ -1079,6 +1129,11 @@
       "questpc7": "96b478e86678c7607a9a2154f72fe6c91d354188"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-06T23:05:20.726158+00:00"
+    "updated_at": "2026-11-06T23:56:27.865728+00:00",
+    "previous_publication": {
+      "batch": "native-counters-01",
+      "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
+      "remote_verified": true
+    }
   }
 }

@@ -30,6 +30,12 @@ const FAIRIES: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairies_counter";
 const MOON_MIRROR: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/dark_moon_mirror";
+pub const KILL_REPORT: &str = "oteryn:quest-transition/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders/npc_2";
+const ENFEEBLED: &str =
+    "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/enfeebled_count";
+const FRAZZLEMAWS: &str = "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/frazzlemaws_count";
+const KROAZUR: &str =
+    "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_kill";
 
 // Only new source declarations use -1. Historical qualified initial values are
 // preserved; no stored zero is migrated. Crystal player.cpp:1341-1349.
@@ -320,9 +326,8 @@ pub fn choose(
             }
         }
         "oteryn:npc.maelyrra" => {
-            // Crystal npc/maelyrra.lua:61-170. Deferred sum/item/final reward
-            // predicates require the excluded owners; no success text or flag
-            // substitutes for them (PR2844 ANSWER6589521017, point5).
+            // Crystal npc/maelyrra.lua:61-170. The report's sum and boss gates
+            // are rechecked against the writer's complete locked snapshot.
             let nightmare = value(NIGHTMARE);
             if contains(text, "mission") {
                 return Some(match nightmare {
@@ -360,7 +365,7 @@ pub fn choose(
                         && kroazur >= 1
                         && i128::from(enfeebled) + i128::from(frazzlemaws) >= 200
                     {
-                        return None;
+                        return Some(answer(98, 3, Some(KILL_REPORT)));
                     }
                     return Some(answer(105, 0, None));
                 }
@@ -609,6 +614,41 @@ pub(super) fn extend(
             return Err(format!("Threatened Dreams transition conflict {key}"));
         }
     }
+    // Crystal 201189f, npc/maelyrra.lua:94-100; identical source blob
+    // 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88
+    // retained in donor-source/refinements/dialogue.json.gz, source_records/492.
+    // Replace the inexact scalar lowering with the complete guarded operation.
+    // Guard inputs are effects too: the existing writer locks and receipts all
+    // four together, while preserving the three observed kill values.
+    use super::{QuestComparison as C, QuestEffect, QuestEffectKind as E};
+    let report = transitions
+        .get_mut(KILL_REPORT)
+        .ok_or("missing source kill report")?;
+    report.effects = vec![
+        QuestEffect {
+            track: NIGHTMARE.into(),
+            from: C::Eq(1),
+            effect: E::Set(2),
+        },
+        QuestEffect {
+            track: ENFEEBLED.into(),
+            from: C::Ge(0),
+            effect: E::RequireSumAtLeast {
+                other_effect: 2,
+                minimum: 200,
+            },
+        },
+        QuestEffect {
+            track: FRAZZLEMAWS.into(),
+            from: C::Ge(0),
+            effect: E::Add(0),
+        },
+        QuestEffect {
+            track: KROAZUR.into(),
+            from: C::Ge(1),
+            effect: E::Add(0),
+        },
+    ];
     super::QuestStateCatalogue::new(
         catalogue.content_revision,
         tracks.into_values().collect(),
@@ -969,7 +1009,7 @@ mod tests {
     }
 
     #[test]
-    fn threatened_expansion_does_not_claim_held_inventory_or_sum_kill_completion()
+    fn threatened_expansion_reports_kills_only_through_atomic_guards_and_holds_inventory()
     -> Result<(), String> {
         let npc = "oteryn:npc.maelyrra";
         let tracks=BTreeMap::from([
@@ -978,7 +1018,27 @@ mod tests {
             ("oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/frazzlemaws_count".into(),50),
             ("oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_kill".into(),1),
         ]);
-        for step in [2, 7, 8] {
+        let report =
+            choose(npc, "yes", Some(Topic { npc, step: 2 }), &tracks).ok_or("kill report")?;
+        assert_eq!(report.transition, Some(KILL_REPORT));
+        assert_eq!(report.branches, vec![98]);
+        assert_eq!(report.topic, Some(Topic { npc, step: 3 }));
+        let lowered = super::super::loader::load_embedded_quest_state("sum-report")
+            .map_err(|e| format!("{e:?}"))?;
+        let rule = lowered
+            .catalogue()
+            .transition(KILL_REPORT)
+            .ok_or("report rule")?;
+        assert!(lowered.catalogue().evaluate(rule, &tracks, 0).is_ok());
+        for (track, value) in [(ENFEEBLED, 149), (KROAZUR, 0), (NIGHTMARE, 2)] {
+            let mut stale = tracks.clone();
+            stale.insert(track.into(), value);
+            assert_eq!(
+                lowered.catalogue().evaluate(rule, &stale, 0),
+                Err(super::super::QuestRefusal::StageMismatch)
+            );
+        }
+        for step in [7, 8] {
             assert!(
                 choose(npc, "yes", Some(Topic { npc, step }), &tracks).is_none(),
                 "no atomic source guard or inventory owner for this completion"
