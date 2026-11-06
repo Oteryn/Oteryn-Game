@@ -45,6 +45,7 @@ fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily
         seed: hash.finalize().into(),
         fungus: changes.their_masters_voice,
         grimvale_full_moon: changes.grimvale_full_moon,
+        items: changes.items().collect(),
         trader: changes.oriental_trader.map(|town| town.layer()),
     }
 }
@@ -94,10 +95,10 @@ pub(super) fn apply(
     placed
 }
 
-/// Places the day's Items on the bundle map's callback layer; one that cannot be placed is
-/// logged. A World without a bundle map places nothing.
+/// Counts the reset day's Items projected into the base map before its owners were built.
+/// This does not add a second callback copy, which the physical harvest owner cannot consume.
 pub(super) fn apply_items(
-    map: Option<&crate::map::facts::BundleFacts>,
+    map: Option<&crate::map::boot::BundleWorld>,
     changes: &DailyWorldChanges,
 ) -> usize {
     let Some(map) = map else {
@@ -106,7 +107,16 @@ pub(super) fn apply_items(
     let mut placed = 0;
     for (appearance, (x, y, z)) in changes.items() {
         let pos = TilePos { x, y, floor: -z };
-        if map.create_world_change_item(pos, appearance) {
+        use crate::map::view::MapFacts;
+        let present = map.base().tile(x, y, -z).is_some_and(|tile| {
+            tile.ids().iter().enumerate().any(|(ordinal, id)| {
+                u8::try_from(ordinal)
+                    .ok()
+                    .and_then(|ordinal| map.facts().base_entry(pos, ordinal, *id))
+                    .is_some_and(|facts| facts.appearance_id == appearance)
+            })
+        });
+        if present {
             placed += 1;
         } else {
             event(&format!(
@@ -338,6 +348,31 @@ mod tests {
                         });
                 }
             }
+        }
+        for (x, y, z) in oteryn_gameplay_world_change::daily::THAWING_ICE_FLOWERS {
+            let floor = -z;
+            let index = palette.iter().position(|p| p.id == 432).expect("ground") as u32;
+            sectors
+                .entry((floor, y / 32, x / 32))
+                .or_insert_with(|| Sector {
+                    floor,
+                    sy: y / 32,
+                    sx: x / 32,
+                    tiles: Vec::new(),
+                })
+                .tiles
+                .push(Tile {
+                    x,
+                    y,
+                    flags: 0,
+                    house: 0,
+                    zones: Vec::new(),
+                    items: vec![Item {
+                        palette: index,
+                        depth: 0,
+                        attrs: Attrs::default(),
+                    }],
+                });
         }
         for sector in sectors.values_mut() {
             sector.tiles.sort_by_key(|t| (t.y, t.x));
@@ -709,6 +744,44 @@ mod tests {
     #[test]
     fn sp02_sv07_postgres_epoch_and_restart() -> crate::bestiary_postgres_harness::TestResult {
         pg_physical("sp02_sv07", exercise_grimvale)
+    }
+
+    #[test]
+    fn thawing_boot_installs_harvestable_source_placements() {
+        use crate::map::view::MapFacts;
+        let active = DailyWorldChanges::roll(41, 1, 1, |_| 0);
+        let day = boot_physical(&active);
+        let restarted = boot_physical(&active);
+        let inactive = boot_physical(&DailyWorldChanges::roll(42, 1, 1, |_| u64::MAX));
+        for (appearance, (x, y, z)) in active.items() {
+            let pos = TilePos { x, y, floor: -z };
+            let read = |world: &crate::map::boot::BundleWorld| {
+                let tile = world.base().tile(x, y, -z).expect("source ground");
+                tile.ids()
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(ordinal, id)| {
+                        world
+                            .facts()
+                            .base_entry(pos, u8::try_from(ordinal).ok()?, *id)
+                    })
+                    .map(|facts| facts.appearance_id)
+                    .collect::<Vec<_>>()
+            };
+            assert_eq!(read(&day), vec![432, appearance], "{pos:?}");
+            assert_eq!(read(&day), read(&restarted));
+            assert_eq!(read(&inactive), vec![432]);
+            assert!(day.facts().movement_items(pos).is_empty());
+        }
+        assert_eq!(active.items().count(), 14);
+        assert_eq!(apply_items(Some(&day), &active), 14);
+        for (_, (x, y, z)) in active.items() {
+            assert!(
+                day.facts()
+                    .movement_items(TilePos { x, y, floor: -z })
+                    .is_empty()
+            );
+        }
     }
 
     #[test]

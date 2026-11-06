@@ -72,6 +72,7 @@ fn monk_shrines_real_use_persists_once_and_checks_each_level() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
+    let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("monk-shrines", || {
         super::quest_world_callbacks::scenario(
             "monk-guidance",
@@ -82,7 +83,12 @@ fn monk_shrines_real_use_persists_once_and_checks_each_level() -> TestResult {
             },
             false,
         )
-    })
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED monk_shrines_real_use_persists_once_and_checks_each_level duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 #[test]

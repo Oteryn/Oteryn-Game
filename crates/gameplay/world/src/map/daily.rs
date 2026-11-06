@@ -11,6 +11,8 @@ pub struct DailyMap {
     pub seed: [u8; 32],
     pub fungus: bool,
     pub grimvale_full_moon: bool,
+    /// Reset-selected map Items appended to existing non-House source tiles.
+    pub items: Vec<(u16, (u16, u16, i8))>,
     /// One of the three committed `oriental_trader/<town>` layer keys.
     pub trader: Option<&'static str>,
 }
@@ -55,6 +57,26 @@ impl Projection {
         let mut manifest: Manifest =
             serde_json::from_slice(bytes).map_err(|_| refusal("manifest"))?;
         let mut needed = BTreeMap::new();
+        let positions: std::collections::BTreeSet<_> =
+            daily.items.iter().map(|(_, p)| *p).collect();
+        if daily.items.len() > 14 || positions.len() != daily.items.len() {
+            return Err(refusal("daily item bounds or duplicate placement"));
+        }
+        for (appearance, (x, y, z)) in &daily.items {
+            if *appearance != 13842
+                || !(0..=15).contains(z)
+                || *x < manifest.world.min_x
+                || *x >= manifest.world.max_x
+                || *y < manifest.world.min_y
+                || *y >= manifest.world.max_y
+                || !manifest.world.floors.contains(&-*z)
+            {
+                return Err(refusal("invalid Thawing source placement"));
+            }
+            // Both harvest states must be served, even though neither is in the base bundle.
+            needed.insert(13842, None);
+            needed.insert(13843, None);
+        }
         if daily.fungus
             && let Some(ground) = manifest
                 .palette
@@ -233,6 +255,7 @@ pub(super) fn visit(
     };
     let daily = &projection.daily;
     let mut pending = None;
+    let mut placed = std::collections::BTreeSet::new();
     let mut visited = bundle::visit_budgeted(data, limits.caps, limits.budget, |_, mut sector| {
         let manifest = &projection.manifest;
         let pending = match &mut pending {
@@ -286,8 +309,37 @@ pub(super) fn visit(
             sector.tiles = tiles.into_values().collect();
         }
         fungus(manifest, &mut sector, daily)?;
+        for (appearance, (x, y, z)) in &daily.items {
+            if sector.floor != -*z || sector.sx != x / 32 || sector.sy != y / 32 {
+                continue;
+            }
+            let tile = sector
+                .tiles
+                .iter_mut()
+                .find(|tile| tile.x == *x && tile.y == *y)
+                .ok_or_else(|| refusal("Thawing source ground missing"))?;
+            if tile.house != 0 {
+                return Err(refusal("Thawing source overlaps a house"));
+            }
+            let palette = index(manifest, *appearance)?;
+            if !tile
+                .items
+                .iter()
+                .any(|item| item.depth == 0 && item.palette == palette)
+            {
+                tile.items.push(Item {
+                    palette,
+                    depth: 0,
+                    attrs: Attrs::default(),
+                });
+            }
+            placed.insert((*x, *y, *z));
+        }
         visitor(manifest, sector)
     })?;
+    if placed.len() != daily.items.len() {
+        return Err(refusal("Thawing source sector missing"));
+    }
     visited.manifest = projection.manifest.clone();
     if let Some(pending) = pending {
         for sector in pending.into_values() {

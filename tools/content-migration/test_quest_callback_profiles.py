@@ -60,7 +60,12 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.admit()
         rows = {r['production_definition']['production_key']: r
                 for r in json.loads(self.generated[PROFILE])['records']}
-        for key in ('oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019'):
+        for key in ('oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019',
+                    'oteryn:item.tibia.i2971', 'oteryn:item.tibia.i3249',
+                    'oteryn:item.tibia.i3341', 'oteryn:item.tibia.i5803',
+                    'oteryn:item.tibia.i6527', 'oteryn:item.tibia.i235',
+                    'oteryn:item.tibia.i7870', 'oteryn:item.tibia.i7935',
+                    'oteryn:item.tibia.i8021', 'oteryn:item.tibia.i12510'):
             row = rows[key]
             self.assertEqual(row['admission'], {'materializable': True,
                              'stack_class': 'NonStackable',
@@ -171,7 +176,12 @@ class QuestCallbackProfiles(unittest.TestCase):
                 for placement in record['definition'].get('native_contents', {}).get('placements', []):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
-        self.assertEqual(len(expected), 130)
+        # Full-charge bags add Triangle Tower's Garlic Necklace and Desert's
+        # Protection Amulet, Ring of Healing and Magic Light Wand.
+        self.assertIn('oteryn:item.tibia.i3083', expected)
+        self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
+                         'oteryn:item.tibia.i3077'} <= expected)
+        self.assertEqual(len(expected), 134)
         for key in expected:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)

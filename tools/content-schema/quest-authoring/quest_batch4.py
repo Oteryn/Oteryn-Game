@@ -5,7 +5,7 @@ The committed packets are authored inputs, not an executable Lua interpreter.
 Existing callback keys outside those inputs retain their values. The combined
 registry is sorted by key, matching the batch-three compiler.
 No dialogue manifest, NPC qualification, item, map or quest recipe is changed.
-The default requires all 21 packets. Explicit --quests and --available modes
+The default requires every registered packet. Explicit --quests and --available modes
 support regenerating independently cherry-picked quest inputs.
 """
 import argparse
@@ -27,7 +27,7 @@ QUEST_ORDER = (
     'svargrond_arena', 'thais_lighthouse', 'the_explorer_society',
     'the_first_dragon', 'the_hunt_for_the_sea_serpent', 'the_lost_brother',
     'the_order_of_lion_quest', 'the_spike_tasks', 'tibia_tales',
-    'unnatural_selection',
+    'unnatural_selection', 'waterfall',
 )
 QUEST_OWNERS = {
     'cults_of_tibia': 'oteryn:quest.cults_of_tibia_quest',
@@ -52,6 +52,7 @@ QUEST_OWNERS = {
     'the_spike_tasks': 'oteryn:quest.spike_task',
     'tibia_tales': 'oteryn:quest.tibia_tales',
     'unnatural_selection': 'oteryn:quest.unnatural_selection_quest',
+    'waterfall': 'oteryn:quest.waterfall_quest',
 }
 
 PACKET_FIELDS = {
@@ -311,7 +312,7 @@ def select_quests(root, selected=None, available=False):
     actual = {path.name for path in directory.glob('*.json')}
     expected = {name + '.json' for name in QUEST_ORDER}
     if selected is None and not available:
-        require(actual == expected, 'batch four requires exactly 21 named inputs; missing=' +
+        require(actual == expected, f'batch four requires exactly {len(QUEST_ORDER)} named inputs; missing=' +
                 ','.join(sorted(expected - actual)) + '; foreign=' + ','.join(sorted(actual - expected)))
         return QUEST_ORDER
     require(actual <= expected, 'foreign batch-four input names: ' + ','.join(sorted(actual - expected)))
