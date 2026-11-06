@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-// The merged quest batches contain 224 static callbacks plus the dynamic altar.
+// The static source callbacks leave room for the dynamic altar and bounded additions.
 pub const MAX_CALLBACKS: usize = 512;
 pub const MAX_EFFECTS: usize = 8;
 
@@ -42,6 +42,9 @@ pub struct Passage {
     pub appearance: u16,
     #[serde(default)]
     pub replacement: Option<u16>,
+    /// Source-asymmetric lever: remove `appearance`, then create this different wall.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub create_on_close: Option<u16>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -93,6 +96,13 @@ pub struct MonkReward {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct CallbackEffect {
+    pub position: Position,
+    pub effect: u16,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Callback {
     pub key: String,
     pub quest: String,
@@ -103,6 +113,11 @@ pub struct Callback {
     pub reversible: bool,
     pub passages: Vec<Passage>,
     pub teleport: Option<Position>,
+    /// Source cardinal direction (north/east/south/west = 0/1/2/3) after teleport.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub facing: Option<u8>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub effects: Vec<CallbackEffect>,
     pub storage: Vec<Storage>,
     /// Checked against the progression owner in the same fenced quest transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -160,10 +175,36 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback
+                .facing
+                .is_some_and(|facing| facing > 3 || callback.teleport.is_none())
+            || callback.effects.len() > MAX_EFFECTS
+            || callback
+                .effects
+                .iter()
+                .any(|e| !valid_pos(e.position) || e.effect == 0)
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
             || unique_storage.len() != callback.storage.len()
             || callback.passages.len() > MAX_EFFECTS
+            || callback.passages.iter().any(|p| {
+                p.create_on_close.is_some_and(|id| {
+                    id == 0
+                        || id == p.appearance
+                        || p.replacement.is_some()
+                        || callback.passages.len() != 1
+                        || callback.lever.is_none()
+                        || !callback.reversible
+                        || !callback.storage.is_empty()
+                        || callback.teleport.is_some()
+                        || callback.item_on_target.is_some()
+                        || !callback.offerings.is_empty()
+                        || !callback.effects.is_empty()
+                        || callback.experience.is_some()
+                        || callback.monk_reward.is_some()
+                        || callback.success_message.is_some()
+                })
+            })
             || callback.storage.len() > MAX_EFFECTS
             || callback
                 .minimum_level

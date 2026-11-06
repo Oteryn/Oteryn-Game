@@ -272,6 +272,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             local(boss.player_position),
             false,
             &closed,
+            None,
         );
         if qualified.is_none()
             || occupied
@@ -481,6 +482,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             exit,
             false,
             &closed,
+            None,
         ) else {
             return false;
         };

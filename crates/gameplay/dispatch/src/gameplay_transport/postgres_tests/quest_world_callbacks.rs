@@ -292,6 +292,24 @@ pub(super) fn world(
                 });
         }
     }
+    if let Some(pair) = callback.lever {
+        for appearance in pair {
+            let key = format!("oteryn:terrain.tibia.i{appearance}");
+            if !data.manifest.palette.iter().any(|p| p.key == key) {
+                let id = u32::try_from(data.manifest.palette.len())?;
+                data.manifest.palette.push(bundle::PaletteEntry {
+                    key,
+                    family: bundle::Family::Terrain,
+                    id,
+                    terrain: Some(bundle::Terrain {
+                        kind: bundle::TerrainKind::Common,
+                        walkable: None,
+                        ground_speed: None,
+                    }),
+                });
+            }
+        }
+    }
     for passage in &callback.passages {
         let appearance_key = format!("oteryn:terrain.tibia.i{}", passage.appearance);
         let index = if let Some(i) = data
@@ -315,7 +333,7 @@ pub(super) fn world(
             });
             index
         };
-        if let Some(replacement) = passage.replacement {
+        if let Some(replacement) = passage.replacement.or(passage.create_on_close) {
             let replacement_key = format!("oteryn:terrain.tibia.i{replacement}");
             if !data
                 .manifest
@@ -329,9 +347,21 @@ pub(super) fn world(
                     family: bundle::Family::Terrain,
                     id,
                     terrain: Some(bundle::Terrain {
-                        kind: bundle::TerrainKind::Ground,
-                        walkable: Some(true),
-                        ground_speed: Some(150),
+                        kind: if passage.create_on_close.is_some() {
+                            bundle::TerrainKind::Wall
+                        } else {
+                            bundle::TerrainKind::Ground
+                        },
+                        walkable: if passage.create_on_close.is_some() {
+                            None
+                        } else {
+                            Some(true)
+                        },
+                        ground_speed: if passage.create_on_close.is_some() {
+                            None
+                        } else {
+                            Some(150)
+                        },
                     }),
                 });
             }
@@ -348,6 +378,65 @@ pub(super) fn world(
                 depth: 0,
                 attrs: Default::default(),
             });
+    }
+    if callback.key == "oteryn:quest-callback/triangle-tower-wall" {
+        // Preserve the native basement exit rather than authoring a second callback.
+        let region = oteryn_world_bundle_compiler::b3::decode_region(
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z08-x127-y125.b3"
+            )),
+            bundle::TILE_LIMITS,
+            &mut sector::Budget {
+                tiles: 65536,
+                entries: 1_000_000,
+            },
+        )?;
+        let source = region
+            .sectors
+            .iter()
+            .flat_map(|(_, _, tiles)| tiles)
+            .find(|t| t.x == 32566 && t.y == 32120)
+            .ok_or("basement exit")?;
+        let item = source
+            .items
+            .iter()
+            .find(|i| i.depth == 0 && i.attrs.teleport.is_some())
+            .ok_or("native exit teleport")?;
+        let destination = item.attrs.teleport.ok_or("destination")?;
+        assert_eq!(destination, (32569, 32110, 7));
+        let palette = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: "oteryn:terrain.tibia.i1949".into(),
+            family: bundle::Family::Terrain,
+            id: palette,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+        cells
+            .entry((-8, 32566, 32120))
+            .or_default()
+            .push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: {
+                    let mut attrs = item.attrs.clone();
+                    // B3 stores legacy z; bundles store the native signed floor byte.
+                    attrs.teleport = Some((
+                        destination.0,
+                        destination.1,
+                        (-i8::try_from(destination.2)?) as u8,
+                    ));
+                    attrs
+                },
+            });
+        cells.entry((-8, 32565, 32120)).or_default();
+        cells
+            .entry((-i8::try_from(destination.2)?, destination.0, destination.1))
+            .or_default();
     }
     let floors: std::collections::BTreeSet<_> = cells.keys().map(|(f, _, _)| *f).collect();
     data.manifest.world = bundle::Extent {

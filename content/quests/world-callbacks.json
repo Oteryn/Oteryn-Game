@@ -8621,6 +8621,48 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/triangle-tower-wall",
+      "quest": "oteryn:quest.triangle_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32573,
+          "y": 32121,
+          "floor": -7
+        },
+        "unique": 30034,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32566,
+            "y": 32119,
+            "floor": -7
+          },
+          "appearance": 1270,
+          "replacement": null,
+          "create_on_close": 1025
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:1-19",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1022-1025"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/unnatural-selection-dance-1",
       "quest": "oteryn:quest.unnatural_selection_quest",
       "trigger": "step_in",
@@ -9165,7 +9207,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:23-25",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
-      ]
+      ],
+      "facing": 2
     },
     {
       "key": "oteryn:quest-callback/waterfall-cave-exit",
@@ -9198,7 +9241,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:27-29",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
-      ]
+      ],
+      "facing": 1
     },
     {
       "key": "oteryn:quest-callback/waterfall-cliff",
@@ -9231,6 +9275,55 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:16-18",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
+      ],
+      "effects": [
+        {
+          "position": {
+            "x": 32968,
+            "y": 32626,
+            "floor": -5
+          },
+          "effect": 54
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-splash",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32968,
+          "y": 32630,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 50022,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:20-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
+      ],
+      "effects": [
+        {
+          "position": {
+            "x": 32968,
+            "y": 32630,
+            "floor": -7
+          },
+          "effect": 54
+        }
       ]
     }
   ]

@@ -1169,6 +1169,9 @@ def build(
     import quest_door_bindings
 
     quest_door_bindings.overlay_outputs(out)
+    import quest_startup_bindings
+
+    quest_startup_bindings.overlay_outputs(out)
     return out
 
 

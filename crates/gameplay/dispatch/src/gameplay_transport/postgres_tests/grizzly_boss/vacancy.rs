@@ -212,6 +212,7 @@ async fn teleport(
         destination,
         false,
         &doors,
+        None,
     )
     .map_err(debug)?;
     runtime.commit_source_step(proof).map_err(debug)?;

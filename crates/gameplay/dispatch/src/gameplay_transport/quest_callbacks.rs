@@ -573,6 +573,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             origin.position(),
             blocked,
             &closed,
+            None,
         ) && let Ok(snapshot) = runtime.commit_source_step(proof)
         {
             states.stage_special_movement_step(

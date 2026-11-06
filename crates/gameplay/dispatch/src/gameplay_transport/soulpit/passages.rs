@@ -73,6 +73,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             destination,
             blocked,
             &closed,
+            None,
         ) else {
             return entered;
         };

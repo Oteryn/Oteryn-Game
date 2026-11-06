@@ -221,6 +221,7 @@ pub(super) async fn exercise(
                 local(Position { x: p.x - 1, ..p }),
                 false,
                 &doors,
+                None,
             )
             .map_err(debug)?;
             runtime.commit_source_step(proof).map_err(debug)?;

@@ -20,6 +20,48 @@ fn callbacks(value: serde_json::Value) -> Result<Vec<Callback>, String> {
     parse(&serde_json::json!({"schema":1,"callbacks":[value]}).to_string())
 }
 
+#[test]
+fn world_callbacks_source_presentation_rejects_invalid_or_unrelated_effects() -> Result<(), String>
+{
+    let mut value = base();
+    value["teleport"] = serde_json::json!({"x":32968,"y":32631,"floor":-8});
+    value["facing"] = 2.into();
+    value["effects"] = serde_json::json!([
+        {"position":{"x":32968,"y":32626,"floor":-5},"effect":54}
+    ]);
+    assert!(callbacks(value.clone()).is_ok());
+    for (field, invalid) in [
+        ("facing", serde_json::json!(4)),
+        ("teleport", serde_json::Value::Null),
+        (
+            "effects",
+            serde_json::json!([{"position":{"x":1,"y":2,"floor":1},"effect":54}]),
+        ),
+        (
+            "effects",
+            serde_json::json!([{"position":{"x":1,"y":2,"floor":-1},"effect":0}]),
+        ),
+        (
+            "effects",
+            serde_json::Value::Array(vec![value["effects"][0].clone(); MAX_EFFECTS + 1]),
+        ),
+    ] {
+        let mut invalid_callback = value.clone();
+        invalid_callback[field] = invalid;
+        assert!(
+            callbacks(invalid_callback).is_err(),
+            "accepted invalid {field}"
+        );
+    }
+    let mut native = dance_callback();
+    native["effects"] = value["effects"].clone();
+    assert!(
+        callbacks(native).is_err(),
+        "native rule admitted unrelated presentation"
+    );
+    Ok(())
+}
+
 fn catalogue(callbacks: &[Callback]) -> Result<QuestStateCatalogue, String> {
     let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
         .map_err(|e| format!("{e:?}"))?;
@@ -176,4 +218,53 @@ fn native_callback_rejects_incomplete_or_foreign_authoring() {
         }
         assert!(callbacks(value).is_err(), "case {case}");
     }
+}
+
+#[test]
+fn triangle_tower_wall_preserves_source_remove_and_create_ids() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|c| c.key == "oteryn:quest-callback/triangle-tower-wall")
+        .ok_or("Triangle Tower UID30034 has no admitted source callback")?;
+    assert_eq!(callback.selector.unique, Some(30034));
+    assert_eq!(
+        callback.selector.position,
+        Some(Position {
+            x: 32573,
+            y: 32121,
+            floor: -7
+        })
+    );
+    assert_eq!(callback.lever, Some([2772, 2773]));
+    assert!(callback.reversible);
+    let value = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+    assert_eq!(
+        value["passages"],
+        serde_json::json!([
+            {"position":{"x":32566,"y":32119,"floor":-7},"appearance":1270,"replacement":null,"create_on_close":1025}
+        ])
+    );
+    Ok(())
+}
+
+#[test]
+fn asymmetric_wall_rejects_effects_it_cannot_commit() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|c| c.key == "oteryn:quest-callback/triangle-tower-wall")
+        .ok_or("wall")?;
+    let value = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+    for (field, invalid) in [
+        (
+            "effects",
+            serde_json::json!([{"position":{"x":32566,"y":32119,"floor":-7},"effect":54}]),
+        ),
+        ("success_message", serde_json::json!("unhandled message")),
+        ("experience", serde_json::json!(1)),
+    ] {
+        let mut value = value.clone();
+        value[field] = invalid;
+        assert!(callbacks(value).is_err(), "accepted unsupported {field}");
+    }
+    Ok(())
 }

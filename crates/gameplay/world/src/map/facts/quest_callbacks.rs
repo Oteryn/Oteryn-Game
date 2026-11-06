@@ -405,6 +405,68 @@ impl BundleFacts {
         true
     }
 
+    /// Crystal Triangle Tower removes1270 but creates1025. The first created wall
+    /// reuses the removed base slot; subsequent source creates retain distinct entries.
+    pub fn apply_quest_wall_cycle(
+        &self,
+        key: u64,
+        expected: u64,
+        lever: EntryFacts,
+        wall: u64,
+        created: EntryFacts,
+        remove: bool,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(wall) else {
+            return false;
+        };
+        if self.house_tile(pos) {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        let revision = states.changed.get(&wall).map_or(0, |(r, _)| *r);
+        if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
+            || expected == u64::MAX
+            || revision == u64::MAX
+            || !states.has_capacity(3)
+        {
+            return false;
+        }
+        let added = if !remove && !states.hidden.contains(&wall) {
+            let Some(sequence) = states.movement_sequence.checked_add(1) else {
+                return false;
+            };
+            let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
+                return false;
+            };
+            Some((
+                sequence,
+                view::ComposedEntry {
+                    source: view::EntrySource::Added(id),
+                    facts: created,
+                },
+            ))
+        } else {
+            None
+        };
+        let states = Arc::make_mut(&mut states);
+        if remove {
+            states.hidden.insert(wall);
+        } else {
+            if let Some((sequence, entry)) = added {
+                states.movement_sequence = sequence;
+                states.movement_items.entry(pos).or_default().push(entry);
+            } else {
+                states.hidden.remove(&wall);
+                states.changed.insert(wall, (revision + 1, created));
+            }
+            states.passable.insert(wall, false);
+        }
+        states.changed.insert(key, (expected + 1, lever));
+        true
+    }
+
     /// Removing a wall must alter the collision index as well as its visible stack.
     pub fn quest_callback_blocked(
         &self,

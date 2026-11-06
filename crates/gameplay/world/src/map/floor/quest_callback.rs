@@ -9,6 +9,7 @@ struct CallbackTeleport<'a> {
     destination: MovementLocalPosition,
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
+    facing: MovementFacing,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -21,6 +22,7 @@ pub fn prepare_quest_callback_teleport<'a>(
     destination: MovementLocalPosition,
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
+    facing: Option<MovementFacing>,
 ) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
     let proof = CallbackTeleport {
         cells,
@@ -30,6 +32,7 @@ pub fn prepare_quest_callback_teleport<'a>(
         destination,
         pz_blocked,
         closed,
+        facing: facing.unwrap_or_else(|| expected.facing().unwrap_or(MovementFacing::South)),
     };
     proof.check(runtime)?;
     Ok(proof)
@@ -65,11 +68,6 @@ impl crate::foundation::SourceStepCommitProof for CallbackTeleport<'_> {
         MovementLocalPosition,
         MovementFacing,
     ) {
-        (
-            self.actor,
-            self.expected,
-            self.destination,
-            self.expected.facing().unwrap_or(MovementFacing::South),
-        )
+        (self.actor, self.expected, self.destination, self.facing)
     }
 }

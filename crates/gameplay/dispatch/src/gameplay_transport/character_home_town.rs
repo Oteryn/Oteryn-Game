@@ -400,6 +400,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             target,
             blocked,
             &closed,
+            None,
         ) {
             // Crystal 201189f8 data-global/scripts/movements/teleport/citizen.lua:46-49:
             // successful citizenship is confirmed after the temple teleport.

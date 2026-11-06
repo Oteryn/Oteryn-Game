@@ -109,7 +109,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let k = placement_key(p, ordinal)?;
                     let f = map.facts.base_entry(p, ordinal, *id)?;
                     ((f.appearance_id == passage.appearance
-                        || passage.replacement == Some(f.appearance_id))
+                        || passage.replacement == Some(f.appearance_id)
+                        || passage.create_on_close == Some(f.appearance_id))
                         && !map.facts.house_tile(p))
                     .then_some(k)
                 })
@@ -117,6 +118,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let [passage] = candidates.as_slice() else {
                 return UseDisposition::Rejected;
             };
+            if let Some(appearance) = passage_definition.create_on_close {
+                let Some(created) = map.facts.quest_callback_replacement(*passage, appearance)
+                else {
+                    return UseDisposition::Rejected;
+                };
+                let Some((_, wall_ordinal)) = crate::map::view::placement_of(*passage) else {
+                    return UseDisposition::Rejected;
+                };
+                let remove = !close
+                    && !map.facts.base_hidden(*passage)
+                    && t.ids()
+                        .iter()
+                        .zip(t.depths())
+                        .filter(|(_, d)| **d == 0)
+                        .nth(usize::from(wall_ordinal))
+                        .and_then(|(id, _)| map.facts.base_entry(p, wall_ordinal, *id))
+                        .is_some_and(|f| f.appearance_id == passage_definition.appearance);
+                if !remove && !close {
+                    // Source line9-10 creates1025 without transforming lever2772.
+                    after.appearance_id =
+                        callback.lever.map_or(after.appearance_id, |pair| pair[0]);
+                }
+                return if map.facts.apply_quest_wall_cycle(
+                    key,
+                    expected_revision,
+                    after,
+                    *passage,
+                    created,
+                    remove,
+                ) {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Exhausted
+                };
+            }
             if let Some(appearance) = passage_definition.replacement {
                 let Some(facts) = map.facts.quest_callback_replacement(
                     *passage,
@@ -138,6 +174,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
+        use crate::foundation::MovementFacing;
+        let facing = match callback.facing {
+            None => None,
+            Some(0) => Some(MovementFacing::North),
+            Some(1) => Some(MovementFacing::East),
+            Some(2) => Some(MovementFacing::South),
+            Some(3) => Some(MovementFacing::West),
+            Some(_) => return UseDisposition::Rejected,
+        };
         let teleport = match callback.teleport {
             Some(to) => match crate::map::floor::prepare_quest_callback_teleport(
                 runtime,
@@ -148,6 +193,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(to),
                 blocked,
                 &closed,
+                facing,
             ) {
                 Ok(proof) => Some(proof),
                 Err(_) => return UseDisposition::NotPossible,
@@ -262,8 +308,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        // Dryad watersplash54 is source metadata only until a live Item
-        // presentation consumer exists; the existing teleport owner still commits.
         if !map.facts.apply_quest_callback(
             key,
             expected_revision,
@@ -299,6 +343,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);
+        }
+        for effect in &callback.effects {
+            // Presentation uses the existing bounded movement occurrence stream;
+            // it cannot turn a committed movement into a failed command.
+            map.facts
+                .emit_movement_effect(tile(effect.position), effect.effect);
         }
         if let Some(message) = success_message {
             self.states.chat.push_quest_feedback(session, &message);

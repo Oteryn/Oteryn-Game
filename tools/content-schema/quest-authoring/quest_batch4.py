@@ -27,7 +27,7 @@ QUEST_ORDER = (
     'svargrond_arena', 'thais_lighthouse', 'the_explorer_society',
     'the_first_dragon', 'the_hunt_for_the_sea_serpent', 'the_lost_brother',
     'the_order_of_lion_quest', 'the_spike_tasks', 'tibia_tales',
-    'unnatural_selection', 'waterfall',
+    'triangle_tower_quest', 'unnatural_selection', 'waterfall',
 )
 QUEST_OWNERS = {
     'cults_of_tibia': 'oteryn:quest.cults_of_tibia_quest',
@@ -51,6 +51,7 @@ QUEST_OWNERS = {
     'the_order_of_lion_quest': 'oteryn:quest.the_order_of_the_lion_quest',
     'the_spike_tasks': 'oteryn:quest.spike_task',
     'tibia_tales': 'oteryn:quest.tibia_tales',
+    'triangle_tower_quest': 'oteryn:quest.triangle_tower_quest',
     'unnatural_selection': 'oteryn:quest.unnatural_selection_quest',
     'waterfall': 'oteryn:quest.waterfall_quest',
 }
@@ -63,7 +64,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'sources',
+    'success_message', 'native_rule', 'sources', 'facing', 'effects',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -215,9 +216,9 @@ def validate_native(callback, context):
             context + ': native rule source file differs')
     require(all(callback.get(field) is None for field in (
         'lever', 'teleport', 'minimum_level', 'experience', 'monk_reward',
-        'item_on_target', 'failure_message', 'success_message',
+        'item_on_target', 'failure_message', 'success_message', 'facing',
     )) and not callback['reversible'] and not callback['return_on_failure']
-        and not callback['passages'] and not callback['offerings'],
+        and not callback['passages'] and not callback['offerings'] and not callback.get('effects'),
         context + ': native rule has unrelated effects or feedback')
 
 
@@ -247,6 +248,15 @@ def validate_callback(callback, directory):
                 key + ': invalid lever')
     if callback.get('teleport') is not None:
         position(callback['teleport'], key + ': teleport')
+    if callback.get('facing') is not None:
+        require(integer(callback['facing'], 0, 3) and callback.get('teleport') is not None,
+                key + ': invalid facing')
+    effects = callback.get('effects', [])
+    require(isinstance(effects, list) and len(effects) <= MAX_EFFECTS, key + ': invalid effects')
+    for effect in effects:
+        fields(effect, {'position', 'effect'}, {'position', 'effect'}, key + ': effect')
+        position(effect['position'], key + ': effect')
+        require(integer(effect['effect'], 1, 65535), key + ': invalid effect')
     for field in ('passages', 'storage', 'offerings'):
         require(isinstance(callback[field], list) and len(callback[field]) <= MAX_EFFECTS,
                 key + ': invalid or excessive ' + field)
@@ -261,11 +271,21 @@ def validate_callback(callback, directory):
         require(type(storage.get('preserve', False)) is bool, key + ': invalid preserve')
     seen = set()
     for passage in callback['passages']:
-        fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement'}, key + ': passage')
+        fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement', 'create_on_close'}, key + ': passage')
         location = position(passage['position'], key + ': passage')
         require(location not in seen and integer(passage['appearance'], 0, 65535), key + ': invalid or duplicate passage')
         seen.add(location)
         nullable_id(passage.get('replacement'), key + ': passage replacement')
+        create = passage.get('create_on_close')
+        if create is not None:
+            require(integer(create, 1, 65535) and create != passage['appearance']
+                    and passage.get('replacement') is None and len(callback['passages']) == 1
+                    and callback.get('lever') is not None and callback['reversible']
+                    and not callback['storage'] and callback.get('teleport') is None
+                    and callback.get('item_on_target') is None and not callback['offerings']
+                    and not callback.get('effects') and callback.get('experience') is None
+                    and callback.get('monk_reward') is None and callback.get('success_message') is None,
+                    key + ': invalid asymmetric wall')
     seen = set()
     for offering in callback['offerings']:
         fields(offering, {'position', 'item', 'count'}, {'position', 'item', 'count'}, key + ': offering')
