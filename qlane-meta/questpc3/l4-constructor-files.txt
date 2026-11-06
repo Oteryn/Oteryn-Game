@@ -1,2 +1,0 @@
-apps/game-server/src/node/serve/daily_world_changes.rs
-crates/gameplay/world-change/src/daily.rs
