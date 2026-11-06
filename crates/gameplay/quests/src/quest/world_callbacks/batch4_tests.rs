@@ -20,6 +20,24 @@ fn callbacks(value: serde_json::Value) -> Result<Vec<Callback>, String> {
     parse(&serde_json::json!({"schema":1,"callbacks":[value]}).to_string())
 }
 
+#[test]
+fn paired_plate_departure_rejects_quest_writes_and_teleport() -> Result<(), String> {
+    let mut value = base();
+    value["trigger"] = "step_out".into();
+    value["lever"] = serde_json::json!([431, 430]);
+    value["reversible"] = true.into();
+    assert_eq!(callbacks(value.clone())?.len(), 1);
+    for (field, extra) in [
+        ("teleport", serde_json::json!({"x": 100, "y": 200, "floor": -7})),
+        ("storage", serde_json::json!([{"track": "oteryn:track/fixture", "minimum": -1, "maximum": 1, "set": 1}])),
+    ] {
+        let mut invalid = value.clone();
+        invalid[field] = extra;
+        assert!(callbacks(invalid).is_err(), "departure accepted {field}");
+    }
+    Ok(())
+}
+
 fn catalogue(callbacks: &[Callback]) -> Result<QuestStateCatalogue, String> {
     let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
         .map_err(|e| format!("{e:?}"))?;

@@ -44,6 +44,19 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_paired_plate_departure_is_stateless_and_cannot_teleport(self):
+        row = callback('thais_lighthouse', 'thais-lighthouse-stairs-out')
+        row.update(trigger='step_out', teleport=None, lever=[431, 430], reversible=True)
+        tool.validate_callback(row, 'thais_lighthouse')
+        for field, value in [('teleport', {'x': 100, 'y': 200, 'floor': -7}),
+                             ('storage', [{'track': 'oteryn:track/fixture',
+                                           'minimum': -1, 'maximum': 1, 'set': 1}])]:
+            with self.subTest(field=field):
+                invalid = copy.deepcopy(row)
+                invalid[field] = value
+                with self.assertRaises(ValueError):
+                    tool.validate_callback(invalid, 'thais_lighthouse')
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)

@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let paired_plate = name == "l5-thais-plate";
     let monk = name.starts_with("monk-guidance");
     let classic_npc = matches!(
         name,
@@ -38,7 +39,9 @@ fn scenario_case(
     );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if classic_npc {
+    let mut callback = callback(if paired_plate {
+        "thais-lighthouse-ladder"
+    } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -49,6 +52,15 @@ fn scenario_case(
     } else {
         name
     })?;
+    if paired_plate {
+        callback.key = "oteryn:quest-callback/thais-lighthouse-stairs-in".into();
+        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+        callback.selector.unique = Some(25010);
+        callback.selector.appearance = None;
+        callback.lever = Some([431, 430]);
+        callback.passages[0].position = Position { x: 32225, y: 32282, floor: -9 };
+        callback.passages[0].appearance = 429;
+    }
     if target_swap {
         callback
             .item_on_target
@@ -65,7 +77,11 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = world(&callback, trigger)?;
+    let world = if paired_plate {
+        super::world_ordinal(&callback, trigger, 431, 1)?
+    } else {
+        world(&callback, trigger)?
+    };
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
@@ -141,6 +157,13 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if paired_plate {
+            let mut departure = serde_json::to_value(&callback)?;
+            departure["key"] = "oteryn:quest-callback/thais-lighthouse-stairs-out".into();
+            departure["trigger"] = "step_out".into();
+            let departure = serde_json::from_value(departure)?;
+            assert!(owner.states.quest_callbacks.fixture.set(vec![callback.clone(), departure]).is_ok());
+        }
         if lever_fixture || target_swap {
             assert!(
                 owner
@@ -197,7 +220,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if let Some(expected_destination) = stateless_destination {
+        if paired_plate {
+            super::super::questpc5_l5::exercise_plate(&owner, &mut admitted, &h, deps.actor, &callback, trigger).await?;
+        } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,
                 &mut admitted,
