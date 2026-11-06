@@ -14,6 +14,18 @@ use oteryn_gameplay_entities::carrier::RaidSpawnOutcome;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
+fn quest_l4_stampede_raid_sixteen_native_elephants_and_spawn_replay() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUEST_L4_POSTGRES_CASE_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    run_case("quest_l4_stampede_spawn", "raid:porthope.stampede", 16, false)?;
+    eprintln!("QUEST_L4_STAMPEDE_SPAWN POSTGRES_CASE_COMPLETED duration_ms={}", started.elapsed().as_millis());
+    Ok(())
+}
+
+#[test]
 fn raids_global_postgres_badger_map_runtime_e2e() -> TestResult {
     run_case("raids_global_badger_e2e", "raid:badger", 100, false)
 }
@@ -57,11 +69,35 @@ async fn seed(
     selected: &SelectedRaid,
     firing: [u8; 16],
     digest: [u8; 32],
-) -> TestResult {
+) -> TestResult<i64> {
     sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,'raid-test-map',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01')")
         .bind(owner.world_id.as_bytes().as_slice()).bind(digest.as_slice()).execute(&harness.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
         .bind(owner.world_id.as_bytes().as_slice()).execute(&harness.pool).await?;
+    if key.as_str() == "raid:porthope.stampede" {
+        use crate::durability::raid_schedule::{RaidScheduleCandidate, RaidSchedulerCheck};
+        let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
+        let request = |now_ms, eligible| RaidSchedulerCheck {
+            world: owner.world_id, channel: owner.channel_id, generation,
+            reset_epoch: 1, now_ms, bundle_digest: digest,
+            candidates: vec![RaidScheduleCandidate {
+                key: key.clone(), definition: selected.definition.clone(), eligible, calendar: None,
+                firing_id: firing, global_margin_ms: 0, lua: None, calendar_window: None,
+            }],
+        };
+        assert!(harness.root.check_raid_schedules(owner.character, &harness.node, request(0, false)).await?.firings.is_empty());
+        let initialized: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_raid_schedules WHERE raid_key='raid:porthope.stampede'").fetch_one(&harness.pool).await?;
+        assert_eq!(initialized, 1, "current World/epoch/Channel scheduler admission is proven");
+        // A distinct, already-running legacy raid is a predecessor fixture. It
+        // must neither suppress the admitted day nor inherit the day event's margin.
+        sqlx::query("INSERT INTO game_world_raid_schedules VALUES(encode($1,'hex')::uuid,'raid:badger',2,1,1,2,60000,0,NULL,false)")
+            .bind(owner.world_id.as_bytes().as_slice()).execute(&harness.pool).await?;
+        sqlx::query("INSERT INTO game_world_raid_firings VALUES(encode($1,'hex')::uuid,'raid:badger',1,encode($2,'hex')::uuid,1,0,90000,$3,1)")
+            .bind(owner.world_id.as_bytes().as_slice()).bind(id(90).as_slice()).bind(digest.as_slice()).execute(&harness.pool).await?;
+        let admitted = harness.root.check_raid_schedules(owner.character, &harness.node, request(60_000, true)).await?;
+        assert_eq!(admitted.firings, vec![(firing, key.clone())], "the admitted Stampede must fire independently of the running legacy raid");
+        return Ok(60_000);
+    }
     sqlx::query("INSERT INTO game_world_raid_schedules VALUES(encode($1,'hex')::uuid,$2,2,1,1,2,60000,0,NULL,false)")
         .bind(owner.world_id.as_bytes().as_slice()).bind(key.as_str()).execute(&harness.pool).await?;
     sqlx::query("INSERT INTO game_world_raid_firings VALUES(encode($1,'hex')::uuid,$2,1,encode($3,'hex')::uuid,1,0,$4,$5,1)")
@@ -70,7 +106,7 @@ async fn seed(
             + i64::from(selected.definition.despawn_after_ms.unwrap_or(0))).bind(digest.as_slice()).execute(&harness.pool).await?;
     sqlx::query("INSERT INTO game_world_raid_targets VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1)")
         .bind(firing.as_slice()).bind(owner.channel_id.as_bytes().as_slice()).execute(&harness.pool).await?;
-    Ok(())
+    Ok(0)
 }
 
 async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> TestResult {
@@ -100,7 +136,12 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         area.to.y = area.to.y.max(source_area.to.y);
     }
     assert_eq!(area.from.floor, area.to.floor);
-    assert!(selected.definition.announcements.is_empty());
+    if key.as_str() == "raid:porthope.stampede" {
+        assert_eq!(selected.definition.announcements.len(), 1);
+        assert_eq!(selected.definition.announcements[0].text, "Stampede! The Ape God has stirred up Tiquanda's elephants again!");
+    } else {
+        assert!(selected.definition.announcements.is_empty());
+    }
     let from = (u16::try_from(area.from.x)?, u16::try_from(area.from.y)?);
     let to = (u16::try_from(area.to.x)?, u16::try_from(area.to.y)?);
     let native_floor = i8::try_from(area.from.floor.checked_neg().ok_or("native floor")?)?;
@@ -137,9 +178,17 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
     owner.active_generation = Some(active);
     owner.movement_cells = &cells;
     owner.reset_epoch = 1;
-    seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
+    let fired_at = seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
-    let now = i64::from(selected.definition.waves.first().ok_or("wave")?.delay_ms);
+    let now = fired_at + i64::from(selected.definition.waves.first().ok_or("wave")?.delay_ms);
+    if key.as_str() == "raid:porthope.stampede" {
+        let notice = harness.root.advance_raid_run(
+            &harness.node, firing, owner.channel_id, generation, selected.definition.clone(), now,
+        ).await?.ok_or("Stampede source announcement")?;
+        assert!(matches!(notice.action, CommittedRaidAction::Announcement { .. }));
+        owner.broadcast_raid_notice(&notice).await.map_err(|_| "Stampede broadcast")?;
+        assert_eq!(harness.root.acknowledge_raid_effect(&harness.node, notice.identity, Vec::new(), now).await?, RaidWrite::Applied);
+    }
     let wave = harness.root.advance_raid_run(
         &harness.node, firing, owner.channel_id, generation, selected.definition.clone(), now,
     ).await?.ok_or("committed wave")?;
@@ -177,6 +226,20 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         assert_eq!(runtime.raid_creatures(firing).map_err(debug)?.iter().filter(|status| status.alive).count(), expected);
         drop(runtime);
         harness.root.acknowledge_raid_effect(&harness.node, end.identity, Vec::new(), now).await?;
+        if key.as_str() == "raid:porthope.stampede" {
+            let clock: i64 = sqlx::query_scalar("SELECT last_end_at_ms FROM game_world_raid_scheduler_clocks").fetch_one(&harness.pool).await?;
+            assert_eq!(clock, 0, "a world-change event must not impose a legacy raid margin");
+            let replay = harness.root.check_raid_schedules(owner.character, &harness.node,
+                crate::durability::raid_schedule::RaidSchedulerCheck {
+                    world: owner.world_id, channel: owner.channel_id, generation, reset_epoch: 1,
+                    now_ms: 121_000, bundle_digest,
+                    candidates: vec![crate::durability::raid_schedule::RaidScheduleCandidate {
+                        key: key.clone(), definition: selected.definition.clone(), eligible: true,
+                        calendar: None, firing_id: id(92), global_margin_ms: 0, lua: None, calendar_window: None,
+                    }],
+                }).await?;
+            assert!(replay.firings.is_empty(), "the day's completed event cannot fire twice");
+        }
     } else if phased_boss {
         assert_eq!(harness.root.acknowledge_raid_effect(&harness.node, wave.identity, outcomes, now).await?, RaidWrite::Applied);
     }

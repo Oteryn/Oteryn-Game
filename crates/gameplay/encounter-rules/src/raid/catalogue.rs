@@ -436,7 +436,15 @@ impl CatalogueRaid {
             .collect::<Result<Vec<_>, RaidError>>()?;
         let policy = match self.schedule {
             CatalogueSchedule::LegacyXml { interval_s, .. } => RaidPolicy::Random {
-                mean_interval_s: interval_s,
+                // Stampede's W10 roll belongs to the reset owner. Its admitted day
+                // fires on the first available check; no second minute roll may
+                // discard it. The existing persistent firing guard permits one
+                // execution per epoch. Keep the source XML interval in the catalogue.
+                mean_interval_s: if self.key == "raid:porthope.stampede" {
+                    60
+                } else {
+                    interval_s
+                },
                 min_gap_s: 0,
             },
             CatalogueSchedule::Lua { .. } | CatalogueSchedule::Calendar { .. } => {
@@ -466,6 +474,52 @@ impl CatalogueRaid {
 mod tests {
     use super::*;
     use crate::raid::{RaidRunAction, RaidRunCursor};
+
+    #[test]
+    fn stampede_admitted_day_fires_on_first_check_and_only_once_per_reset()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::raid::{RaidAction, RaidSchedule};
+        let mut id = [9; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        let world = oteryn_protocol_oteryn::WorldId::decode(&id)?;
+        let key = ProductionKey::new("raid:porthope.stampede")?;
+        let catalogue = RaidCatalogue::embedded()?;
+        let selected = catalogue.get(&key).ok_or("Stampede")?.select([7; 32], id)?;
+        let definition = selected.definition;
+        let check = |now_ms, eligible| RaidAction::Check {
+            now_ms,
+            eligible,
+            calendar: None,
+            firing_id: id,
+            bundle_digest: [7; 32],
+        };
+        let initial = RaidSchedule::initial(1, 0)?;
+        let inactive = initial.plan(world, &key, &definition, check(60_000, false))?;
+        assert!(inactive.after().latest_firing.is_none());
+        let fired = initial.plan(world, &key, &definition, check(60_000, true))?;
+        let deadline = fired
+            .after()
+            .latest_firing
+            .as_ref()
+            .ok_or("admitted day did not fire")?
+            .deadline_ms;
+        let done = fired.after().plan(
+            world,
+            &key,
+            &definition,
+            RaidAction::Close { now_ms: deadline },
+        )?;
+        let repeated = done
+            .after()
+            .plan(world, &key, &definition, check(120_000, true))?;
+        assert_eq!(
+            repeated.after().next_firing_ordinal,
+            fired.after().next_firing_ordinal
+        );
+        assert_eq!(repeated.after().latest_firing, done.after().latest_firing);
+        Ok(())
+    }
 
     #[test]
     fn every_active_catalogue_raid_parses_and_inactive_has_reasons()

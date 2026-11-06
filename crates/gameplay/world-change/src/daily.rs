@@ -82,11 +82,12 @@ impl OrientalTraderTown {
 }
 
 /// The draws a day takes, in this order, each its own purpose.
-pub const DRAW_PURPOSES: [&str; 4] = [
+pub const DRAW_PURPOSES: [&str; 5] = [
     "thawing",
     "their-masters-voice",
     "oriental-trader",
     "oriental-trader-town",
+    "stampede",
 ];
 
 /// The world changes of one day.
@@ -99,13 +100,15 @@ pub struct DailyWorldChanges {
     /// Wereboars and werebadgers instead of bandits, badgers and butterflies.
     pub grimvale_full_moon: bool,
     pub flower_month: bool,
+    /// Accepted W10: 125 permille per committed reset, independent of the other changes.
+    pub stampede: bool,
 }
 
 impl DailyWorldChanges {
     /// Rolls the day after the reset `reset_epoch`, on the UTC calendar `month` and `day`.
     /// `draw(purpose)` returns the uniform 64-bit draw of that purpose for this epoch.
     pub fn roll(reset_epoch: u64, month: u8, day: u8, mut draw: impl FnMut(&str) -> u64) -> Self {
-        let [thawing, voice, trader, town] = DRAW_PURPOSES;
+        let [thawing, voice, trader, town, stampede] = DRAW_PURPOSES;
         let thawing = percent_roll(draw(thawing), THAWING_PERCENT);
         let their_masters_voice = percent_roll(draw(voice), THEIR_MASTERS_VOICE_PERCENT);
         let oriental_trader = percent_roll(draw(trader), ORIENTAL_TRADER_PERCENT).then(|| {
@@ -122,6 +125,7 @@ impl DailyWorldChanges {
             oriental_trader,
             grimvale_full_moon: day == GRIMVALE_DAY,
             flower_month: month == FLOWER_MONTH,
+            stampede: (u128::from(draw(stampede)) * 1000) >> 64 < 125,
         }
     }
 
@@ -164,13 +168,13 @@ mod tests {
 
     #[test]
     fn w05b_the_day_takes_each_roll_from_its_own_draw() {
-        let roll = |draws: [u64; 4], month, day| {
+        let roll = |draws: [u64; 5], month, day| {
             DailyWorldChanges::roll(9, month, day, |purpose| {
                 let index = DRAW_PURPOSES.iter().position(|p| *p == purpose);
                 draws[index.unwrap_or(0)]
             })
         };
-        let all = roll([0, 0, 0, at(2, 3)], 6, 13);
+        let all = roll([0, 0, 0, at(2, 3), 0], 6, 13);
         assert_eq!(
             all,
             DailyWorldChanges {
@@ -180,9 +184,10 @@ mod tests {
                 oriental_trader: Some(OrientalTraderTown::LibertyBay),
                 grimvale_full_moon: true,
                 flower_month: true,
+                stampede: true,
             }
         );
-        let none = roll([u64::MAX; 4], 5, 12);
+        let none = roll([u64::MAX; 5], 5, 12);
         assert_eq!(
             (
                 none.thawing,
@@ -194,7 +199,25 @@ mod tests {
             (false, false, None, false, false)
         );
         // The same epoch and draws roll the same day again.
-        assert_eq!(roll([0, 0, 0, at(2, 3)], 6, 13), all);
+        assert_eq!(roll([0, 0, 0, at(2, 3), 0], 6, 13), all);
+    }
+
+    #[test]
+    fn stampede_uses_its_own_reset_draw_at_exactly_125_permille() {
+        let roll = |stampede| {
+            DailyWorldChanges::roll(5, 1, 1, |purpose| {
+                if purpose == "stampede" {
+                    stampede
+                } else {
+                    u64::MAX
+                }
+            })
+        };
+        assert!(roll(at(125, 1000) - 1).stampede);
+        assert!(!roll(at(125, 1000)).stampede);
+        assert!(!roll(u64::MAX).stampede);
+        assert!(roll(0).stampede);
+        assert_eq!(roll(0), roll(0));
     }
 
     #[test]

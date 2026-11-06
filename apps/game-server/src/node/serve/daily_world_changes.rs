@@ -15,7 +15,7 @@ use oteryn_simulation_determinism::{
 use sha2::{Digest, Sha256};
 
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
-pub(super) fn roll(world: WorldId, reset_epoch: u64, unix_ms: i64) -> DailyWorldChanges {
+pub(in crate::node) fn roll(world: WorldId, reset_epoch: u64, unix_ms: i64) -> DailyWorldChanges {
     let mut hash = Sha256::new();
     hash.update(b"oteryn.world_change.daily.v1\0");
     hash.update(world.as_bytes());

@@ -68,6 +68,15 @@ fn source_order(raid: &CatalogueRaid) -> (u8, u16) {
     }
 }
 
+// W10 owns Stampede's day roll. The raid owner retains firing deduplication,
+// the native sixteen-creature area, announcements, replay and reset cleanup.
+fn stampede_day(candidate: &mut RaidScheduleCandidate, world: WorldId, epoch: u64, now_ms: i64) {
+    if candidate.key.as_str() == "raid:porthope.stampede" {
+        candidate.eligible = super::serve::daily_world_changes::roll(world, epoch, now_ms).stampede;
+        candidate.global_margin_ms = 0;
+    }
+}
+
 fn candidates(
     catalogue: &RaidCatalogue,
     scheduler: &RaidScheduler<'_, '_, '_>,
@@ -134,6 +143,12 @@ fn candidates(
                 }
                 CatalogueSchedule::Unknown => return Err(RaidError::InvalidDefinition),
             }
+            stampede_day(
+                &mut candidate,
+                scheduler.world,
+                scheduler.reset_epoch,
+                now_ms,
+            );
             Ok(candidate)
         })
         .collect()
@@ -231,6 +246,47 @@ mod tests {
         assert_ne!(first, firing_identity(world, "raid:other", 7, 1_800_000)?);
         assert_ne!(first, firing_identity(world, "raid:badger", 7, 1_860_000)?);
         assert!(firing_identity(world, "raid:badger", 7, -1).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn stampede_activation_is_stable_for_the_epoch_and_excludes_inactive_days()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = world()?;
+        let catalogue = RaidCatalogue::embedded()?;
+        let raid = catalogue
+            .active()
+            .find(|raid| raid.key == "raid:porthope.stampede")
+            .ok_or("Stampede raid")?;
+        let definition = raid
+            .select([7; 32], firing_identity(world, &raid.key, 1, 0)?)?
+            .definition;
+        let mut candidate = RaidScheduleCandidate {
+            key: raid.production_key()?,
+            definition,
+            eligible: true,
+            calendar: None,
+            firing_id: firing_identity(world, &raid.key, 1, 0)?,
+            global_margin_ms: 21_600_000,
+            lua: None,
+            calendar_window: None,
+        };
+        let mut active = 0;
+        for epoch in 1..=1000 {
+            stampede_day(&mut candidate, world, epoch, 0);
+            let selected = candidate.eligible;
+            stampede_day(&mut candidate, world, epoch, 86_399_000);
+            assert_eq!(
+                candidate.eligible, selected,
+                "wall-clock checks cannot reroll the epoch"
+            );
+            assert_eq!(candidate.global_margin_ms, 0);
+            active += usize::from(selected);
+        }
+        assert!(
+            (80..=170).contains(&active),
+            "125-permille draw across fixed epochs: {active}"
+        );
         Ok(())
     }
 

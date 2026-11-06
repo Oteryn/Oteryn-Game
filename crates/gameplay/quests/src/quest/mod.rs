@@ -39,6 +39,7 @@ pub mod rookgaard_exchanges;
 pub mod rotten_blood;
 pub mod soul_war;
 pub mod soul_war_dialogue;
+pub mod stampede;
 pub mod task_board;
 pub mod threatened_dreams;
 pub mod unnatural_selection;

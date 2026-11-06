@@ -542,6 +542,7 @@ pub mod grizzly_boss;
 pub mod rotten_blood;
 pub mod rotten_blood_access;
 pub mod soul_war;
+mod stampede;
 mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
