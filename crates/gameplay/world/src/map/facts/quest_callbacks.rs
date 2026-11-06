@@ -288,6 +288,30 @@ impl BundleFacts {
         true
     }
 
+    /// Remove one volatile callback item under the Channel runtime owner. Base,
+    /// durable Ground and House items stay with their existing removal owners.
+    pub fn remove_movement_item(&self, pos: TilePos, appearance: u16) -> bool {
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        let Some(index) = states.movement_items.get(&pos).and_then(|entries| {
+            entries
+                .iter()
+                .position(|entry| entry.facts.appearance_id == appearance)
+        }) else {
+            return false;
+        };
+        let states = Arc::make_mut(&mut states);
+        let Some(entries) = states.movement_items.get_mut(&pos) else {
+            return false;
+        };
+        entries.remove(index);
+        if entries.is_empty() {
+            states.movement_items.remove(&pos);
+        }
+        true
+    }
+
     /// Bounded observation; cursors are per observer so nearby sessions see the same effect.
     pub fn movement_effects_since(&self, after: u64) -> Vec<(u64, TilePos, u16)> {
         self.callbacks

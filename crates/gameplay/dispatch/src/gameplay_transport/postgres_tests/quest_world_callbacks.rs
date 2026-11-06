@@ -321,7 +321,11 @@ fn world_ordinal(
                 family: bundle::Family::Terrain,
                 id: index,
                 terrain: Some(bundle::Terrain {
-                    kind: bundle::TerrainKind::Wall,
+                    kind: if callback.key.starts_with("fixture:devil-helmet-sewer") {
+                        bundle::TerrainKind::Common
+                    } else {
+                        bundle::TerrainKind::Wall
+                    },
                     walkable: None,
                     ground_speed: None,
                 }),
@@ -348,6 +352,11 @@ fn world_ordinal(
                     }),
                 });
             }
+        }
+        // The source creates this sewer on StepIn; initially only its served
+        // definition and destination tile exist, with no physical sewer item.
+        if callback.key.starts_with("fixture:devil-helmet-sewer") && !callback.key.ends_with("existing") {
+            continue;
         }
         cells
             .entry((

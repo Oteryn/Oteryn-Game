@@ -38,7 +38,8 @@ fn scenario_case(
     );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if classic_npc {
+    let sewer = name.starts_with("devil-helmet-sewer");
+    let mut callback = callback(if classic_npc || sewer {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -49,6 +50,22 @@ fn scenario_case(
     } else {
         name
     })?;
+    if sewer {
+        callback.key = format!("fixture:{name}");
+        callback.selector.position = Some(trigger);
+        callback.selector.unique = Some(if name.ends_with("unrelated") { 25031 } else { 25030 });
+        callback.selector.action = None;
+        callback.selector.appearance = Some(100);
+        callback.lever = None;
+        callback.storage.clear();
+        callback.teleport = None;
+        callback.offerings.clear();
+        callback.passages = vec![oteryn_gameplay_quests::quest::world_callbacks::Passage {
+            position: Position { x: 32482, y: 32170, floor: -14 },
+            appearance: 435,
+            replacement: None,
+        }];
+    }
     if target_swap {
         callback
             .item_on_target
@@ -197,7 +214,11 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if let Some(expected_destination) = stateless_destination {
+        if sewer {
+            super::super::pressure_plate_sewer::exercise(
+                &mut owner, &mut admitted, &h, deps.actor, fence, trigger, name,
+            ).await?;
+        } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,
                 &mut admitted,

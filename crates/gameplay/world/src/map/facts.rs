@@ -153,8 +153,8 @@ impl BundleFacts {
                 _ => unique.push((id, index)),
             }
         }
-        // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
-        let movement_definitions = [12369, 13842, 26077, 26087, 26100]
+        // 435: Devil Helmet sewer (movements_sewer.lua:15); 13842: thawing.lua:1.
+        let movement_definitions = [435, 12369, 13842, 26077, 26087, 26100]
             .into_iter()
             .chain(6594..=6608)
             .filter_map(|id| {
@@ -1123,6 +1123,38 @@ mod tests {
         assert!(facts.movement_effects_since(0).is_empty());
         assert!(!facts.create_world_change_item(pos, 1));
         assert_eq!(MapFacts::movement_items(&facts, pos).len(), 1);
+    }
+
+    #[test]
+    fn movement_item_removal_keeps_other_items_and_pinned_views() {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("source bundle");
+        let items = |key: &str| {
+            if key == "oteryn:item.tibia.i435" || key == "oteryn:item.tibia.i13842" {
+                fixture::items("item:coin")
+            } else {
+                fixture::items(key)
+            }
+        };
+        let facts = BundleFacts::palette(&bundle.manifest, items).expect("palette");
+        let pos = TilePos { x: 32482, y: 32170, floor: -14 };
+        assert!(facts.create_world_change_item(pos, 435));
+        assert!(facts.create_world_change_item(pos, 435));
+        assert!(facts.create_world_change_item(pos, 13842));
+        let pinned = facts.pinned();
+        let first = MapFacts::movement_items(&facts, pos)[0].source;
+        assert!(!facts.remove_movement_item(pos, 1));
+        assert!(facts.remove_movement_item(pos, 435));
+        let remaining = MapFacts::movement_items(&facts, pos);
+        assert_eq!(remaining.len(), 2);
+        assert_ne!(remaining[0].source, first);
+        assert_eq!(remaining[0].facts.appearance_id, 435);
+        assert_eq!(remaining[1].facts.appearance_id, 13842);
+        assert!(facts.remove_movement_item(pos, 435));
+        assert!(!facts.remove_movement_item(pos, 435));
+        assert_eq!(MapFacts::movement_items(&facts, pos).len(), 1);
+        assert_eq!(MapFacts::movement_items(&pinned, pos).len(), 3);
+        assert!(facts.movement_effects_since(0).is_empty());
     }
 
     #[test]
