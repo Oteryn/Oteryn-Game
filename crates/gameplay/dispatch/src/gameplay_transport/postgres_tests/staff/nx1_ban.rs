@@ -40,6 +40,7 @@ async fn submit_wire(
 }
 struct Chain<'a> {
     signing: &'a Signing,
+    pool: &'a sqlx::PgPool,
     sequence: u64,
     previous: String,
 }
@@ -51,14 +52,23 @@ impl Chain<'_> {
         operation: u8,
         action: rules::Action,
     ) -> TestResult<(wire::SignedEnvelope, Vec<u8>)> {
+        // Ban visibility and expiry are evaluated by this database's clock.
+        // Keep signed request time and the fixture's trusted clock on that source.
+        let now: i64 = sqlx::query_scalar(
+            "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+        )
+        .fetch_one(self.pool)
+        .await?;
+        let now = u64::try_from(now)?;
         let request = self.signing.request(
             self.sequence + 1,
             &self.previous,
             operation,
-            clock().ok_or("clock")?.0,
+            now,
             action,
         );
         let signed = self.signing.sign(&canonical(&request)?, false)?;
+        crate::gameplay_transport::staff::test_clock::set(Some((now, now)));
         let outcome = submit_wire(owner, admitted, &signed, false).await?;
         let result = wire::decode_result(&outcome)?;
         self.sequence += 1;
@@ -169,8 +179,32 @@ fn scenario() -> TestResult {
         let issuer_account = account(&h, 41).await?;
         let target_account = account(&h, 101).await?;
         assert_ne!(issuer_account, target_account);
+        crate::gameplay_transport::staff::test_clock::set(None);
+        let unavailable = signing.request(
+            2,
+            &signing.config.newest_activation_sha256,
+            90,
+            clock().ok_or("clock")?.0,
+            rules::Action::Inspect {
+                character_id: hex(&id(41)),
+            },
+        );
+        let unavailable = signing.sign(&canonical(&unavailable)?, false)?;
+        assert_eq!(
+            exchange_raw(
+                &owner,
+                admitted,
+                protocol::staff_tools::COMMAND_TYPE_STAFF_TOOLS_REQUEST,
+                &wire::encode_envelope(&unavailable)?,
+            )
+            .await?,
+            Some((protocol::CommandStatus::Rejected, Vec::new())),
+            "an unavailable trusted clock fails closed without consuming the signed chain",
+        );
+        assert_eq!(counts(&h).await?, (0, 0, 0));
         let mut chain = Chain {
             signing: &signing,
+            pool: &h.pool,
             sequence: 1,
             previous: signing.config.newest_activation_sha256.clone(),
         };
@@ -223,10 +257,24 @@ fn scenario() -> TestResult {
             .fetch_one(&h.pool)
             .await?;
         assert_eq!(count, 1);
+        let stored_ban: (String, i64, i64, Option<i64>, i64) = sqlx::query_as(
+            "SELECT account_id::text,starts_at_ms,ends_at_ms,lifted_at_ms,\
+             floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_staff_bans LIMIT 1",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(stored_ban.0.replace('-', ""), hex(target_account.as_bytes()));
+        assert!(
+            stored_ban.1 <= stored_ban.4 && stored_ban.4 < stored_ban.2,
+            "committed ban must be current on its owning clock: {stored_ban:?}",
+        );
         assert!(
             h.root
                 .staff_account_banned(&authority, target_account)
-                .await?
+                .await?,
+            "stored ban={stored_ban:?}; host clock={:?}; fixture clock={:?}",
+            clock(),
+            crate::gameplay_transport::staff::test_clock::get(),
         );
         assert!(
             !h.root

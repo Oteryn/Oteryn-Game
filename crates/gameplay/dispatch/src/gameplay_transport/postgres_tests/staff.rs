@@ -1,16 +1,18 @@
 //! GM-1 real admitted session -> command envelope -> atomic signed audit/effect -> wire result.
 #[path = "staff/evidence_cases.rs"]
 mod evidence_cases;
+#[path = "staff/nx1_ban.rs"]
+mod nx1_ban;
+#[path = "staff/nx1_forced_release.rs"]
+mod nx1_forced_release;
 #[path = "staff/nx1_native.rs"]
 mod nx1_native;
 #[path = "staff/nx1_tools_schema.rs"]
 mod nx1_tools_schema;
-#[path = "staff/nx1_ban.rs"]
-mod nx1_ban;
 #[path = "staff/nx1_world.rs"]
 mod nx1_world;
-#[path = "staff/nx1_forced_release.rs"]
-mod nx1_forced_release;
+#[path = "staff/refresh.rs"]
+mod refresh;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::staff::{StaffConfig, StaffTrust, rules};

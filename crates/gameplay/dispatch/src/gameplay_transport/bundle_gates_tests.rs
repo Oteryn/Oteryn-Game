@@ -240,6 +240,8 @@ const INVENTORY: &[Entry] = &[
         state: Gate::AllocatedOpen { task: "TK-W19" },
         calls: &[
             ("gameplay_transport/cosmetic_item_use.rs", 1),
+            // Carried-fluid dispensers retain the native ground owner proof.
+            ("gameplay_transport/item_craft/dispenser.rs", 1),
             ("gameplay_transport/item_craft/planting.rs", 1),
             ("gameplay_transport/novelty_ground_use.rs", 1),
         ],
@@ -799,6 +801,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
     ("gameplay_transport/postgres_tests/item_cosmetics.rs", 1),
+    // The carried-fluid fixture supplies an action room and no qualified room.
+    (
+        "gameplay_transport/postgres_tests/item_craft_carried_fluid.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/item_seed_planting.rs", 1),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
     (

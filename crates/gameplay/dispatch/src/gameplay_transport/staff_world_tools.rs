@@ -106,73 +106,74 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(actor) = admitted.runtime_actor else {
             return true;
         };
-        let deadline = std::time::Instant::now() + crate::durability::DB_PASS_DEADLINE;
-        #[cfg(test)]
-        let mut diagnostic_reported = false;
-        loop {
-            if let Some(fence) = super::super::character_gameplay_fence::current(
-                self,
-                admitted.game_session_id,
-                false,
-            )
-            .await
+        {
+            let runtime = self.runtime.lock().await;
+            if !runtime
+                .player_control_facts(actor, admitted.game_session_id)
+                .or_else(|_| runtime.house_player_control_facts(actor, admitted.game_session_id))
+                .is_ok_and(|f| f.control_loss.is_none())
             {
-                if fence.connection_generation.get() != admitted.continuity.connection_generation {
-                    return false;
-                }
-                let status_result = self
-                    .root
-                    .staff_live_status(self.character, self.holder, fence.item_fence())
-                    .await;
-                #[cfg(test)]
-                if let Err(error) = &status_result
-                    && !diagnostic_reported
-                {
-                    eprintln!("NX1 staff_refresh status failed: {error:?}");
-                    diagnostic_reported = true;
-                }
-                if let Ok(status) = status_result {
-                    {
-                        let mut runtime = self.runtime.lock().await;
-                        if !runtime
-                            .player_control_facts(actor, admitted.game_session_id)
-                            .or_else(|_| runtime.house_player_control_facts(actor, admitted.game_session_id))
-                            .is_ok_and(|f| f.control_loss.is_none())
-                        {
-                            return false;
-                        }
-                        let ghost = status.ghost && status.group >= 4;
-                        let invisible = status.invisible && status.group >= 4;
-                        // A House resident retains its native carrier slot but generic
-                        // Channel writes are closed. Unchanged flags need no writer.
-                        let unchanged = runtime.actor_staff_visibility(actor)
-                            .or_else(|_| runtime.house_staff_visibility(actor, admitted.game_session_id))
-                            .is_ok_and(|(old_ghost, old_invisible, _)| old_ghost == ghost && old_invisible == invisible);
-                        if !unchanged && runtime.set_staff_visibility(
-                            actor, admitted.game_session_id, ghost, invisible,
-                        ).is_err() {
-                            return false;
-                        }
-                    }
-                    if status.banned || status.kicked {
-                        let _ = self.release_staff_session(admitted).await;
-                        return false;
-                    }
-                    return self
-                        .states
-                        .staff_world
-                        .set(actor, admitted.game_session_id, status);
-                }
-            }
-            if std::time::Instant::now() >= deadline {
-                #[cfg(test)]
-                eprintln!(
-                    "NX1 staff_refresh deadline: status_error_reported={diagnostic_reported}"
-                );
                 return false;
             }
-            tokio::task::yield_now().await;
         }
+        // Enrichment gets one attempt within the existing DB budget. Missing
+        // facts or a transient read failure retain visibility until the next refresh.
+        let deadline = tokio::time::Instant::now() + crate::durability::DB_PASS_DEADLINE;
+        let Ok(Some(fence)) = tokio::time::timeout_at(
+            deadline,
+            super::super::character_gameplay_fence::current(self, admitted.game_session_id, false),
+        )
+        .await
+        else {
+            return true;
+        };
+        if fence.connection_generation.get() != admitted.continuity.connection_generation {
+            return false;
+        }
+        let Ok(Ok(status)) = tokio::time::timeout_at(
+            deadline,
+            self.root
+                .staff_live_status(self.character, self.holder, fence.item_fence()),
+        )
+        .await
+        else {
+            return true;
+        };
+        {
+            let mut runtime = self.runtime.lock().await;
+            // Re-prove control after the asynchronous reads before changing flags.
+            if !runtime
+                .player_control_facts(actor, admitted.game_session_id)
+                .or_else(|_| runtime.house_player_control_facts(actor, admitted.game_session_id))
+                .is_ok_and(|f| f.control_loss.is_none())
+            {
+                return false;
+            }
+            let ghost = status.ghost && status.group >= 4;
+            let invisible = status.invisible && status.group >= 4;
+            // A House resident retains its native carrier slot but generic
+            // Channel writes are closed. Unchanged flags need no writer.
+            let unchanged = runtime
+                .actor_staff_visibility(actor)
+                .or_else(|_| runtime.house_staff_visibility(actor, admitted.game_session_id))
+                .is_ok_and(|(old_ghost, old_invisible, _)| {
+                    old_ghost == ghost && old_invisible == invisible
+                });
+            if !unchanged
+                && runtime
+                    .set_staff_visibility(actor, admitted.game_session_id, ghost, invisible)
+                    .is_err()
+            {
+                return false;
+            }
+        }
+        if status.banned || status.kicked {
+            let _ = self.release_staff_session(admitted).await;
+            return false;
+        }
+        self.states
+            .staff_world
+            .set(actor, admitted.game_session_id, status)
     }
 }
 

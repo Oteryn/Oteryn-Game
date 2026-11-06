@@ -152,6 +152,9 @@ where
     if !authority.staff_refresh(admitted).await {
         return ServeEnd::Disconnected.finish(admitted);
     }
+    // Staff visibility shares the view cadence; input/timer ticks must not turn
+    // best-effort reads into continuous contention for the gameplay DB holder.
+    let mut next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
     let mut integrity = integrity::Integrity::default();
     let root_authority = authority;
     // Keep one guard across owner changes. It must also drop the transferred
@@ -232,8 +235,11 @@ where
             }
         }
         loop {
-            if !authority.staff_refresh(session.admitted).await {
-                return ServeEnd::Disconnected.finish(session.admitted);
+            if tokio::time::Instant::now() >= next_staff_refresh {
+                if !authority.staff_refresh(session.admitted).await {
+                    return ServeEnd::Disconnected.finish(session.admitted);
+                }
+                next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
             if !authority.remember_activity_connection(session.admitted) {
                 return ServeEnd::Disconnected.finish(session.admitted);
@@ -264,8 +270,11 @@ where
                 Ok(None) => {}
                 Err(end) => return end.finish(session.admitted),
             }
-            if !authority.staff_refresh(session.admitted).await {
-                return ServeEnd::Disconnected.finish(session.admitted);
+            if tokio::time::Instant::now() >= next_staff_refresh {
+                if !authority.staff_refresh(session.admitted).await {
+                    return ServeEnd::Disconnected.finish(session.admitted);
+                }
+                next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
             let input = match inbound::receive(stream, authority, &mut session, next).await {
                 Ok(Some(input)) => input,

@@ -286,6 +286,24 @@ async fn qualify_fence_changes(
                 .bind(revisions[3])
                 .execute(pool)
                 .await?;
+            if index == 3 {
+                // SRX-2 admits this World's registered historical starter even
+                // after the current starter changes. Prove that real wire path
+                // before simulating lost registration for the refusal below.
+                let (status, payload) = query(&mut client, generation, command_id).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(page(&payload)?.1.len(), 64);
+                command_id += 1;
+                let removed = sqlx::query(
+                    "DELETE FROM game_world_registered_starter_revisions r USING game_character_roots c \
+                     WHERE c.character_id=encode($1,'hex')::uuid AND r.world_id=c.world_id \
+                     AND r.starter_template_revision=c.starter_template_revision",
+                )
+                .bind(fence.character_id.as_bytes().as_slice())
+                .execute(pool)
+                .await?;
+                assert_eq!(removed.rows_affected(), 1);
+            }
             // Model a periodic server observation holding the sole connection,
             // without first provoking a failed checkout to request readiness.
             // The join polls the reader before returning the borrowed holder.
