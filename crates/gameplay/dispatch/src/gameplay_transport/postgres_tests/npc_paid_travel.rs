@@ -116,7 +116,7 @@ fn scenario() -> TestResult {
             base_room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;
-        // One player, the original three NPCs and ten S10T captains.
+        // One player, the original three NPCs and all S10T captains.
         let mut runtime = crate::foundation::ChannelRuntimeV1::from_committed_assignment(
             world,
             dependencies.admitted.channel_id,
@@ -401,8 +401,13 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(untouched, (0, 0));
         super::achievement_granters::assert_progress(
-            &h, achievement_key, 1248, false, "oteryn:npc-travel",
-        ).await?;
+            &h,
+            achievement_key,
+            1248,
+            false,
+            "oteryn:npc-travel",
+        )
+        .await?;
         assert_eq!(
             slot.cursor(&h.root, &authority).await.map_err(debug)?.get(),
             current.expected_character_revision.get() + 1,
@@ -428,8 +433,13 @@ fn scenario() -> TestResult {
         assert_eq!(fees(&h).await?, 1);
         // Paid departure alone is not the donor's completed teleport.
         super::achievement_granters::assert_progress(
-            &h, achievement_key, 1248, false, "oteryn:npc-travel",
-        ).await?;
+            &h,
+            achievement_key,
+            1248,
+            false,
+            "oteryn:npc-travel",
+        )
+        .await?;
         let resumed = owner
             .resume_npc_bank(
                 dependencies.actor,
@@ -461,8 +471,13 @@ fn scenario() -> TestResult {
                 .await?;
         assert_eq!(pending, 0);
         super::achievement_granters::assert_progress(
-            &h, achievement_key, 1249, false, "oteryn:npc-travel",
-        ).await?;
+            &h,
+            achievement_key,
+            1249,
+            false,
+            "oteryn:npc-travel",
+        )
+        .await?;
         assert_eq!(
             owner
                 .revision_sequencer
@@ -500,8 +515,13 @@ fn scenario() -> TestResult {
         assert_eq!(fees(&h).await?, 1);
         // The same production talk owner serves Premium carpets and their route-specific discount.
         super::achievement_granters::assert_progress(
-            &h, achievement_key, 1249, false, "oteryn:npc-travel",
-        ).await?;
+            &h,
+            achievement_key,
+            1249,
+            false,
+            "oteryn:npc-travel",
+        )
+        .await?;
         tokio::time::sleep(std::time::Duration::from_millis(1050)).await;
         sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
         let pilot = {
@@ -567,11 +587,19 @@ fn scenario() -> TestResult {
             .position();
         assert_eq!((position.x, position.y, position.floor), (33270, 32441, 6));
         let first_achievement = super::achievement_granters::assert_progress(
-            &h, achievement_key, 1250, true, "oteryn:npc-travel",
-        ).await?;
+            &h,
+            achievement_key,
+            1250,
+            true,
+            "oteryn:npc-travel",
+        )
+        .await?;
         let occurrence: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(occurrence_id) FROM game_newhaven_travel_receipts WHERE command_id=16 AND arrived_at IS NOT NULL")
             .fetch_one(&h.pool).await?;
-        assert_eq!(first_achievement.as_ref().map(|fact| fact.1.as_slice()), Some(occurrence.as_slice()));
+        assert_eq!(
+            first_achievement.as_ref().map(|fact| fact.1.as_slice()),
+            Some(occurrence.as_slice())
+        );
         // Arrival consumption releases the travel hold back to the ordinary Movement owner.
         // Exercise that production handoff rather than only inspecting the relocated snapshot.
         tokio::time::sleep(std::time::Duration::from_millis(2100)).await;
@@ -774,21 +802,42 @@ fn scenario() -> TestResult {
             if *captain == "petros" && *destination == "issavi" {
                 let before = gold(&h).await?;
                 let mut tx = h.pool.begin().await?;
-                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-                sqlx::raw_sql(sqlx::AssertSqlSafe(crate::durability::item_fee_burn::test_support::item(
-                    240, "oteryn:item.tibia.i169", "definition-r1", 1,
-                ))).execute(&mut *tx).await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::raw_sql(sqlx::AssertSqlSafe(
+                    crate::durability::item_fee_burn::test_support::item(
+                        240,
+                        "oteryn:item.tibia.i169",
+                        "definition-r1",
+                        1,
+                    ),
+                ))
+                .execute(&mut *tx)
+                .await?;
                 sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) \
                     VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid, \
                     (SELECT COALESCE(MAX(placement_ordinal),0)+1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($2,'hex')::uuid),encode($5,'hex')::uuid)")
                     .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(240).as_slice()).bind(id(42).as_slice()).bind(id(242).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
-                assert!(line(&talk(&owner, &dependencies, npc, command_id + 1, destination).await?).contains("don't sail"));
+                assert!(
+                    line(&talk(&owner, &dependencies, npc, command_id + 1, destination).await?)
+                        .contains("don't sail")
+                );
                 let mut tx = h.pool.begin().await?;
-                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-                sqlx::raw_sql(sqlx::AssertSqlSafe(crate::durability::item_fee_burn::test_support::item(
-                    241, "oteryn:item.tibia.i2854", "definition-r1", 1,
-                ))).execute(&mut *tx).await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::raw_sql(sqlx::AssertSqlSafe(
+                    crate::durability::item_fee_burn::test_support::item(
+                        241,
+                        "oteryn:item.tibia.i2854",
+                        "definition-r1",
+                        1,
+                    ),
+                ))
+                .execute(&mut *tx)
+                .await?;
                 sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
                     .bind(id(240).as_slice()).execute(&mut *tx).await?;
                 sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) \
@@ -800,10 +849,16 @@ fn scenario() -> TestResult {
                     .bind(id(241).as_slice()).bind(id(240).as_slice()).bind(id(42).as_slice()).bind(id(242).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
                 owner.clock_origin -= std::time::Duration::from_secs(1);
-                assert!(line(&talk(&owner, &dependencies, npc, command_id + 1, destination).await?).contains("don't sail"), "nested cheese must also block passage");
+                assert!(
+                    line(&talk(&owner, &dependencies, npc, command_id + 1, destination).await?)
+                        .contains("don't sail"),
+                    "nested cheese must also block passage"
+                );
                 assert_eq!(gold(&h).await?, before, "a refused passage takes no fare");
                 let mut tx = h.pool.begin().await?;
-                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
                 sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(240).as_slice()).execute(&mut *tx).await?;
                 sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(241).as_slice()).execute(&mut *tx).await?;
                 sqlx::query("UPDATE game_item_instances SET lifecycle=2 WHERE item_instance_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
@@ -927,10 +982,20 @@ fn scenario() -> TestResult {
                 "POSTGRES_EXECUTED S10T {captain} {destination} fare={fare} arrival={tile:?} replay charged once"
             );
         }
-        assert_eq!(first_achievement, super::achievement_granters::assert_progress(
-            &h, achievement_key, 1250, true, "oteryn:npc-travel",
-        ).await?);
-        eprintln!("POSTGRES_CASE_COMPLETED P11 travel counts actual arrivals, fences and saturates");
+        assert_eq!(
+            first_achievement,
+            super::achievement_granters::assert_progress(
+                &h,
+                achievement_key,
+                1250,
+                true,
+                "oteryn:npc-travel",
+            )
+            .await?
+        );
+        eprintln!(
+            "POSTGRES_CASE_COMPLETED P11 travel counts actual arrivals, fences and saturates"
+        );
         drop(owner);
         drop(authority);
         drop(seal);
@@ -1089,11 +1154,14 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
     }
     let sectors = grouped
         .into_iter()
-        .map(|((floor, sy, sx), tiles)| Sector {
-            floor,
-            sx,
-            sy,
-            tiles,
+        .map(|((floor, sy, sx), mut tiles)| {
+            tiles.sort_by_key(|tile| (tile.y, tile.x));
+            Sector {
+                floor,
+                sx,
+                sy,
+                tiles,
+            }
         })
         .collect::<Vec<_>>();
     let bytes = writer::write(&manifest, &sectors, &Default::default()).map_err(debug)?;
