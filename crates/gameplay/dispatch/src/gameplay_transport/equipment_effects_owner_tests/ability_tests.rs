@@ -141,6 +141,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Monk shrine rewards 50267..=50269 and 50271..=50274 from
     // tools/content-migration/monk_reward_profiles.py. All have speed_bonus=0.
     ("MONKQUEST", 7),
+    // C19b: Newhaven's 34017, 21348, 21400, 21350 and 50166 are source-qualified
+    // by build_newhaven_starter_profiles.py (Canary 04b83b51 items.xml + official 15.30).
+    // Each has known speed_bonus=0; preserve the exact unknown-speed set below.
+    ("NEWHAVEN-C19B", 5),
     // P11: condition potions 7439/7440/7443/49271 from Crystal 201189f potions.lua:1-31
     // (tools/content-migration/condition_potion_profiles.py). All have speed_bonus=0.
     ("P11-CONDITION-POTIONS", 4),
@@ -276,6 +280,15 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         profiles.records.len(),
         ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
     );
+    for id in [34017, 21348, 21400, 21350, 50166] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified Newhaven profile {key}"))?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
     for id in [2859, 3217, 18931, 19084, 19089, 19129] {
         let key = format!("oteryn:item.tibia.i{id}");
         let record = profiles

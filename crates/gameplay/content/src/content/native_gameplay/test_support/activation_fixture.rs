@@ -202,14 +202,15 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
-    // Quests batch 2 admits corpse 39530: one reward boss is now materializable,
-    // leaving 52 without a corpse and 334 with an inadmissible corpse.
+    // Source-qualified corpse admission also covers five bosses sharing demon, vampire,
+    // and dragon bodies. Their independent loot closure remains mandatory.
     // Keep each exact admission reason:
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
     let mut missing = 0;
     let mut inadmissible = 0;
     let mut admitted = Vec::new();
+    let mut shared_body = Vec::new();
     for policy in &bosses {
         let record = source
             .creature_profiles()
@@ -236,6 +237,36 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             })
         });
         let expected = if let Some(corpse) = materializable_corpse {
+            if matches!(
+                policy.definition_key.as_str(),
+                "oteryn:creature.an_observer_eye"
+                    | "oteryn:creature.armenius_creature"
+                    | "oteryn:creature.grand_mother_foulscale"
+                    | "oteryn:creature.orshabaal"
+                    | "oteryn:creature.the_weakened_count"
+            ) {
+                shared_body.push(policy.definition_key.as_str());
+                match policy.definition_key.as_str() {
+                    "oteryn:creature.armenius_creature"
+                    | "oteryn:creature.grand_mother_foulscale" => {
+                        let row = source
+                            .reward_table()
+                            .row(&policy.definition_key)
+                            .map_err(|reason| format!("{}: {reason:?}", policy.definition_key))?;
+                        assert_eq!(
+                            row.corpse_item,
+                            LootDefinitionRef::new("Item", &corpse.key, &corpse.revision)
+                        );
+                        assert!(!row.loot_table.entries.is_empty());
+                    }
+                    _ => assert_eq!(
+                        source.reward_table().row(&policy.definition_key).err(),
+                        Some(NoSettlementReason::LootItemInadmissible),
+                        "corpse admission cannot bypass independent source loot admission"
+                    ),
+                }
+                continue;
+            }
             admitted.push(policy.definition_key.as_str());
             let row = source
                 .reward_table()
@@ -279,8 +310,19 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
-    assert_eq!((missing, inadmissible, admitted.len()), (52, 334, 1));
+    assert_eq!((missing, inadmissible, admitted.len()), (52, 329, 1));
     assert_eq!(admitted, ["oteryn:creature.the_primal_menace"]);
+    shared_body.sort_unstable();
+    assert_eq!(
+        shared_body,
+        [
+            "oteryn:creature.an_observer_eye",
+            "oteryn:creature.armenius_creature",
+            "oteryn:creature.grand_mother_foulscale",
+            "oteryn:creature.orshabaal",
+            "oteryn:creature.the_weakened_count",
+        ]
+    );
     assert_eq!(bosses.len(), 387);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source

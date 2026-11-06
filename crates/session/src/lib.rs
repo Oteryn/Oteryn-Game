@@ -138,6 +138,7 @@ pub use oteryn_protocol_oteryn::chat::{
 pub use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
+    decode_character_inventory_with_equip_drop, encode_character_inventory_with_equip_drop,
 };
 use oteryn_protocol_oteryn::logout;
 mod server_messages;
@@ -186,6 +187,8 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityDetail, EntityKind, EntityRef, WorldSpatialEntitiesDelta, WorldSpatialEntity,
+    decode_world_spatial_entities_delta_with_item_handles,
+    encode_world_spatial_entities_delta_with_item_handles,
 };
 /// N8 admission refusal classes, re-exported so the client maps a refused code to its FND-04A
 /// public class without a direct `protocol-oteryn` edge (ADR-0020 section 1).

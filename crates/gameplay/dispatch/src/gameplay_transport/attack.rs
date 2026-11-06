@@ -248,6 +248,8 @@ enum StepClock {
 #[derive(Debug, Default)]
 pub struct ChannelAttackStates {
     entries: Vec<ActorAttack>,
+    /// At most one source-qualified Bless selection per pending player death.
+    death_charms: Vec<charm_combat::DeathCharmSnapshot>,
     /// The block budget of each live creature a player has hit (ATTACK-0 §5), created at its
     /// first hit.
     blocks: Vec<(ExactActorRef, BlockBudget)>,
@@ -499,6 +501,11 @@ impl ChannelAttackStates {
     /// Drop the entries whose actor is no longer controlled by its session's slot, and the
     /// block budgets of creatures no longer live.
     fn prune(&mut self, runtime: &ChannelRuntimeV1) {
+        self.death_charms.retain(|entry| {
+            runtime
+                .player_control_facts(entry.actor, entry.session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        });
         self.kills.prune_proficiency(runtime);
         self.entries.retain(|entry| {
             runtime

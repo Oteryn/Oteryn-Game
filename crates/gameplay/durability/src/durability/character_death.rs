@@ -42,7 +42,7 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::domain::death::calculate_death_build_family_loss;
 use crate::domain::progression::{
     CurrentProgressionSnapshot, FiniteProgressionPolicy, ProgressionOperation,
-    ProgressionRevisionContext, calculate_progression,
+    ProgressionRevisionContext,
 };
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
@@ -879,7 +879,10 @@ fn decode_death_build(
     let vocation: Option<String> = row.try_get("vocation")?;
     let before = decode_build_state(row, vocation.as_deref(), "_before")?;
     let after = decode_build_state(row, vocation.as_deref(), "_after")?;
-    let binding: Vec<u8> = row.try_get("command_binding")?;
+    let stored_binding: Vec<u8> = row.try_get("command_binding")?;
+    // Bless wraps the complete original death/build/item binding. Decode that
+    // original header after removing the already validated retained selection.
+    let (_, binding) = promotion::split_charm_loss(&stored_binding)?;
     // C20b appends the selection digest to the original versioned death/build
     // binding. Keep decoding the original header and optional formula digest.
     let binding = if row
@@ -892,7 +895,7 @@ fn decode_death_build(
             .ok_or(DurabilityError::InvalidStoredState)?;
         &binding[..end]
     } else {
-        binding.as_slice()
+        binding
     };
     match (before, after) {
         (None, None) if binding.len() == 33 && binding[0] == DEATH_BINDING_VERSION => Ok(None),

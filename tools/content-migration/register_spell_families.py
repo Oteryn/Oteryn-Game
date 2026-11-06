@@ -382,6 +382,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     drome_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import starting_loadout_profiles
     starting_loadout_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import newhaven_starter_profiles
+    newhaven_starter_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import enchanting_item_profiles
     enchanting_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Preserve every earlier owner cohort before adding the missing Task Board policies.
@@ -458,7 +460,7 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     fragment = starting_loadout_profiles.FRAGMENT
     descriptors.setdefault("Item", []).append({
         "path": fragment, "sha256": hashlib.sha256(generated[fragment]).hexdigest(),
-        "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "record_count": 8,
+        "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "record_count": len(json.loads(generated[fragment])["records"]),
         "schema_contract": {"kind": "rust_serde", "path": spell_import.NATIVE_SCHEMA_CONTRACTS["item_profiles"]},
         "representation": "native_profile_overlay", "creates_canonical_identities": False,
         "runtime_activation": False,

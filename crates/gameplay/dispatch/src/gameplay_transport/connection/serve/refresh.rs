@@ -442,6 +442,17 @@ where
         .await
         .ok_or(ServeEnd::Disconnected)?;
     }
+    refresh_newhaven_inventory(
+        stream,
+        authority,
+        session.actor,
+        &mut session.admitted,
+        session.item_view.as_mut(),
+        session.container_views.as_mut(),
+        &mut session.sequence,
+    )
+    .await
+    .ok_or(ServeEnd::Disconnected)?;
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
     // Crystal's tile notifications refresh every observer, including an idle one.

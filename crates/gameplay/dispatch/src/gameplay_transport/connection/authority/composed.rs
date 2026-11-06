@@ -493,6 +493,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await;
     }
 
+    fn take_newhaven_inventory_changed(&self, session: GameSessionId) -> bool {
+        self.states
+            .tutorial_sessions
+            .take_inventory_changed(session)
+    }
+
     fn take_tutorial_notice(
         &self,
         session: GameSessionId,
