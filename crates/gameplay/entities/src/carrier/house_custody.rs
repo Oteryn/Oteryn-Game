@@ -47,6 +47,34 @@ pub struct HouseActorState {
 }
 
 impl ChannelRuntimeV1 {
+    /// Prove absence under the actual hosted Channel or House owner. No durable
+    /// session row can manufacture the local House ownership capability.
+    pub fn prove_player_session_absent_in(
+        &self,
+        session: GameSessionId,
+        scope: RuntimeScopeRefV1,
+    ) -> Result<Option<RuntimeSessionAbsence>, CarrierError> {
+        if scope == self.binding.runtime_scope {
+            return self.prove_player_session_absent(session);
+        }
+        self.owner_fence()?;
+        if self.contains_player_session(session)? {
+            return Ok(None);
+        }
+        let Some(owner) = self
+            .house_owners
+            .values()
+            .find(|owner| owner.scope == scope)
+        else {
+            return Ok(None);
+        };
+        Ok(Some(RuntimeSessionAbsence {
+            session,
+            scope,
+            generation: owner.generation.get(),
+        }))
+    }
+
     /// Resolve the session from this live slot, then recheck its current House owner.
     /// A retained actor reference alone never establishes House custody.
     pub fn house_observer(

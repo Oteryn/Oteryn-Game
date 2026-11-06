@@ -1,0 +1,20 @@
+{
+  "owner_contract": "OTERYN_GAME_WORLD_EVENT_OUTCOMES_AND_GUILD_SEASON_V1.md",
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded T94 authority work; overflow refuses without truncating authority.",
+  "client_visible": false,
+  "boundary_tests": [
+    "world_event_postgres_real_dispatch_reset_restart_and_fences"
+  ],
+  "id": "T94-SOURCE-BATCH",
+  "resource": "T94-SOURCE-BATCH",
+  "unit": "records",
+  "hard_maximum": 32,
+  "consumers": [
+    "crates/gameplay/durability/src/durability/world_event_outcomes/defaults.rs"
+  ]
+}

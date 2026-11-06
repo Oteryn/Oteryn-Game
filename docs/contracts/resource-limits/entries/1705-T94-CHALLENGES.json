@@ -1,0 +1,20 @@
+{
+  "owner_contract": "OTERYN_GAME_WORLD_EVENT_OUTCOMES_AND_GUILD_SEASON_V1.md",
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded T94 authority work; overflow refuses without truncating authority.",
+  "client_visible": false,
+  "boundary_tests": [
+    "t94_guild_and_challenge_cardinality_boundaries"
+  ],
+  "id": "T94-CHALLENGES",
+  "resource": "T94-CHALLENGES",
+  "unit": "challenges",
+  "hard_maximum": 32,
+  "consumers": [
+    "crates/gameplay/durability/src/durability/world_event_outcomes/season.rs"
+  ]
+}

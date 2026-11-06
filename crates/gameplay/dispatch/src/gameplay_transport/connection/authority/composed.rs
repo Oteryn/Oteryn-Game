@@ -1364,6 +1364,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn training_activity(&self, admitted: AdmittedSession, kind: u32) -> bool {
         self.loop_training_activity(admitted, kind).await
     }
+    async fn account_closure_check(&self, admitted: AdmittedSession) -> bool {
+        let Some(controller) = admitted.controller else {
+            return false;
+        };
+        if !self
+            .root
+            .account_closure_requested(self.character, controller.account_id)
+            .await
+            .unwrap_or(false)
+        {
+            return false;
+        }
+        // In-fight/activity refusals close the transport and use normal durable
+        // loss reconciliation. They never count as offline proof for the job.
+        let _ = self.logout_activity_closure(admitted).await;
+        true
+    }
     async fn logout(&self, admitted: AdmittedSession) -> logout::LogoutReply {
         self.logout_session(admitted).await
     }

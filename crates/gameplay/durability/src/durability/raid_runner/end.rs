@@ -92,6 +92,7 @@ impl DurabilityRoot {
             }
             let next = identity.ordinal.checked_add(1).and_then(|value| i32::try_from(value).ok())
                 .ok_or(DurabilityError::InvalidStoredState)?;
+            crate::durability::world_event_outcomes::capture_raid(&mut tx,identity,"cancelled",now_ms).await?;
             let action = CommittedRaidAction::Complete { cleanup: false };
             effects::insert(&mut tx, identity, &owner, &action, now_ms).await?;
             sqlx::query("UPDATE game_world_raid_channel_runs SET committed_steps=$3,updated_at_ms=$4 WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND owner_generation=$5::text::numeric AND state=1")
