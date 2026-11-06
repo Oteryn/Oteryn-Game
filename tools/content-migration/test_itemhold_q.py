@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/reward-claim-authoring'))
 from reward_claim_authoring import stack_problem
 
-RESOLVED = (3572, 3054, 14156, 12369, 39546, 3083, 3056, 2881, 2882)
-HELD = (52732, 33330, 44179)
+RESOLVED = (3572, 3054, 14156, 12369, 39546, 3083, 3056, 2881, 2882, 52732, 33330, 44179)
+HELD = (34017, 54609)
 
 
 class ItemholdQTests(unittest.TestCase):
@@ -35,19 +35,63 @@ class ItemholdQTests(unittest.TestCase):
     def test_remaining_holds_still_reject(self):
         for item in HELD:
             with self.subTest(item=item):
-                self.assertIsNotNone(stack_problem(self.items[f'oteryn:item.tibia.i{item}'], 1))
+                self.assertIsNotNone(stack_problem(self.items.get(f'oteryn:item.tibia.i{item}'), 1))
 
     def test_charged_definitions_keep_exact_donor_counts(self):
         for item, charges in ((3054, 200), (3056, 200), (3083, 150)):
             self.assertEqual(self.items[f'oteryn:item.tibia.i{item}']['semantics']['charges'],
                              {'state': 'KNOWN', 'value': {'count': {'state': 'KNOWN', 'value': charges}}})
 
-    def test_ornamented_shield_charge_conflict_stays_held(self):
+    def test_ornamented_shield_full_charge_projection_keeps_conflicting_witness(self):
         path = ROOT / 'content/interactions/reward_claims/reward-claim-variants-00000-00099.json'
         claim = next(row['definition'] for row in json.loads(path.read_bytes())['records']
                      if row['definition']['identity']['key'].endswith('.kv.ornamentedshield'))
-        self.assertEqual(claim['readiness'], 'waiting_data')
-        self.assertTrue(any(hold['code'] == 'SOURCE_CHARGE_MISMATCH' for hold in claim['data_holds']))
+        self.assertFalse(any(hold['code'] == 'SOURCE_CHARGE_MISMATCH' for hold in claim['data_holds']))
+        self.assertTrue(any(c['reason'] == 'SOURCE_CHARGE_MISMATCH'
+                            for c in claim['source_variant']['charge_dispositions']))
+        self.assertTrue(claim['native_contents']['placements'])
+
+    def test_remaining_sources_apply_precedence_and_reject_corruption(self):
+        import itemhold_q_remaining as remaining
+        self.assertEqual(remaining.source_facts(ROOT), {33330: 7500, 44179: 60, 52732: 90})
+        rows = [copy.deepcopy(self.items[f'oteryn:item.tibia.i{i}']) for i in remaining.IDS]
+        remaining.apply_admissions(rows, ROOT)
+        once = copy.deepcopy(rows)
+        remaining.apply_admissions(rows, ROOT)
+        self.assertEqual(rows, once)
+        bottle = next(r for r in rows if r['identity']['key'].endswith('.i44179'))
+        bottle['semantics']['physical']['value']['weight']['value'] = 0
+        with self.assertRaisesRegex(ValueError, 'CONFLICT'):
+            remaining.apply_admissions(rows, ROOT)
+
+    def test_full_charge_source_projection_is_closed_to_two_exact_cases(self):
+        import itemhold_charge_precedence as precedence
+        for claim, values in precedence.CASES.items():
+            item, raw, _, position, *_ = values
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertTrue(precedence.qualifies(self.items[key], claim, position, key, raw))
+            self.assertFalse(precedence.qualifies(self.items[key], claim, position, key, raw + 1))
+            self.assertFalse(precedence.qualifies(self.items[key], claim, {**position, 'z': 0}, key, raw))
+            self.assertFalse(precedence.qualifies(self.items[key], claim + '-other', position, key, raw))
+
+    def test_remaining_loader_defaults_reject_a_changed_constructor(self):
+        import itemhold_q_remaining as remaining
+        read = Path.read_bytes
+
+        def altered(path):
+            raw = read(path)
+            if path == ROOT / remaining.RETAINED:
+                document = json.loads(raw)
+                record = next(r for r in document['source_files']
+                              if r['repository_path'] == 'src/items/items.hpp'
+                              and r['revision'] == remaining.CRYSTAL_REVISION)
+                record['raw_utf8'] += '\n'
+                return json.dumps(document).encode()
+            return raw
+
+        with patch.object(Path, 'read_bytes', altered):
+            with self.assertRaisesRegex(ValueError, 'CONSTRUCTOR_PIN'):
+                remaining.source_facts(ROOT)
 
     def test_source_overlay_is_idempotent_and_rejects_conflicting_accepted_facts(self):
         import itemhold_q
