@@ -279,6 +279,46 @@ pub fn profiles_from_catalogue(
 mod tests {
     use super::*;
 
+    #[test]
+    fn s10_repository_ambient_profiles_reach_the_production_catalogue() {
+        let catalogue = NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("repository catalogue");
+        let model = catalogue
+            .service_model_for_project()
+            .expect("service model");
+        let profiles = profiles_from_catalogue(&catalogue, &model, qualify_text)
+            .expect("source-bound profiles");
+        // Crystal 201189f8 data-global/npc/<stem>.lua, npcConfig.voices;
+        // Maria is in data-crystal/npc/maria.lua. These are ambient lines only.
+        for (stem, first_line) in [
+            ("valindara", "I'm eager for a bath in the lake."),
+            ("tooth_fairy", "I have to ... No, I don't dare ..."),
+            ("tired_tree", "*yawn*"),
+            (
+                "rosemarie",
+                "Flowers are one of the most beautiful gifts that Crunor blessed us with.",
+            ),
+            ("gunther", "They have to believe me!"),
+            ("grumpy_stone", "That's annoying!"),
+            ("enpa_deia_pema", "Peace is the true path."),
+            (
+                "allen",
+                "Hey, need some furniture for your house? Come to the Plank and Treasurechest Market!",
+            ),
+            ("maria", "Any time's a good time to buy some furniture!"),
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            let profile = profiles.get(&key).expect(&key);
+            assert_eq!(profile.interval_ms, 15_000, "{key}");
+            assert_eq!(profile.chance_ppm, 500_000, "{key}");
+            assert_eq!(profile.lines[0].text, first_line, "{key}");
+        }
+    }
+
     fn qualify_text(text: &str) -> Option<String> {
         Some(text.to_owned())
     }

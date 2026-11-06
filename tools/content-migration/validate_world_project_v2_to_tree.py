@@ -43,7 +43,7 @@ REWARD_CLAIM_COUNT = len(json.loads(
     (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4}
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes"), "Service.Bank": ("content/services/bank/", "bank"), "Service.Promotion": ("content/services/promotion/", "promotion"), "Service.Blessing": ("content/services/blessings/", "blessing")}
 
 class ValidationError(RuntimeError):
@@ -476,7 +476,7 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
 
 
 def validate_native_bank_admission(declarations: Any) -> None:
-    """One closed native admission; profession and arbitrary source callbacks grant no service."""
+    """Closed Paulie admission plus S10 registered-source BANK0 consumers."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json").read_bytes()
     require(hashlib.sha256(raw).hexdigest() == "228797d08e37486f5021e1e97090959681de89c9b6d3a9a464825423efdbe204", "BANK_ADMISSION_PACKET_DIGEST")
     packet = json.loads(raw)
@@ -484,10 +484,27 @@ def validate_native_bank_admission(declarations: Any) -> None:
             and packet["scope"] == ["oteryn:npc.paulie"], "BANK_ADMISSION_PACKET_SCOPE")
     bank = [row for row in declarations["records"] if row.get("kind") == "Service"
             and ("bank" in row or row["identity"]["key"].startswith("oteryn:service.bank."))]
-    require(bank == [packet["service"]], "BANK_SERVICE_CLOSED_ADMISSION")
+    standard = {"kind": "Service", "identity": {"key": "oteryn:service.bank.standard", "revision": "definition-r1"},
+                "bank": True, "fields": []}
+    require(bank == [packet["service"], standard], "BANK_SERVICE_CLOSED_ADMISSION")
+    s10 = load(ROOT / "content/npcs/s10-nonquest.json")
+    keys = {row["key"] for row in s10["bankers"]}
+    expected_keys = {"oteryn:npc." + key for key in (
+        "atur ebenizer eighty elgar eva ferks finarfin gnomillion jefrey jessica kaya kepar lokur murim "
+        "muzir naji raffael rokyn siestaar sissek suzy tesha virgil znozel wentworth").split()}
+    require(keys == expected_keys and len(s10["bankers"]) == len(keys), "S10_BANK_CLOSED_SOURCE_SET")
+    standard_ref = {"family": "Service", **standard["identity"]}
+    consumers = [row for row in declarations["records"] if row.get("kind") == "NPC"
+                 and standard_ref in row.get("services", [])]
+    require({row["identity"]["key"] for row in consumers} == keys and len(consumers) == len(keys)
+            and all(row["services"].count(standard_ref) == 1 for row in consumers),
+            "S10_BANK_CLOSED_CONSUMERS")
     reference = {"family": "Service", **packet["service"]["identity"]}
     expected_npc = json.loads(json.dumps(packet["before_npc"]))
     expected_npc["services"].append(reference)
+    if any(field["field_path"] == "oteryn:source.npc.base_speed" for field in expected_npc["fields"]):
+        expected_npc["fields"].append({"field_path": "oteryn:source.npc.walk_height_sha256", "value": {
+            "type": "Text", "value": hashlib.sha256((ROOT / "content/npcs/s10-walk-heights.json").read_bytes()).hexdigest()}})
     consumers = [row for row in declarations["records"] if row.get("kind") == "NPC"
                  and reference in row.get("services", [])]
     require(consumers == [expected_npc], "BANK_NPC_CLOSED_CONSUMER")

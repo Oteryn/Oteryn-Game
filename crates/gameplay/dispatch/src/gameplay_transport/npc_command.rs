@@ -41,6 +41,7 @@ mod dark_trails;
 mod endgame;
 mod grizzly;
 mod grizzly_shop;
+mod healing;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
 mod isle_of_evil;
@@ -58,6 +59,7 @@ pub(super) use premium_purchase::resume_npc_talk;
 #[derive(Default)]
 struct SessionNpc {
     recent: RecentIntents,
+    healing_command: Option<u64>,
     /// The NPC whose trade window the session was shown (domain 8).
     window: Option<EntityRef>,
     /// The exact bounded offer list shown in this window, including its rank filter.
@@ -704,6 +706,9 @@ pub(super) async fn npc_bank_talk(
             _trade_permit = Some(permit);
         }
         runtime = admission.runtime.lock().await;
+    }
+    if let Some(outcome) = healing::apply(admission, &mut runtime, actor, command, &intent) {
+        return outcome;
     }
     if let Some(step) = coin_exchange::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
