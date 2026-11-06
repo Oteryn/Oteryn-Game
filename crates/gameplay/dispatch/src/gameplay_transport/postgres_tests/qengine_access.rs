@@ -89,9 +89,6 @@ pub(super) async fn exercise(
     trigger: Position,
 ) -> TestResult {
     use super::quest_world_callbacks::local;
-    if callback.effects.outfit_reward.is_some() {
-        return wardrobe(owner, admitted, h, callback, trigger).await;
-    }
     if callback.effects.encounter.is_some() {
         use crate::gameplay_transport::capabilities::SelectedCapabilities;
         let mut supported = admitted
@@ -119,6 +116,9 @@ pub(super) async fn exercise(
             .map_err(debug)?,
         )
         .map_err(debug)?;
+    if callback.effects.outfit_reward.is_some() {
+        return wardrobe(owner, admitted, h, callback, trigger).await;
+    }
     let key = crate::map::view::placement_key(tile(trigger), 1).ok_or("key")?;
     let receipts_before: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
@@ -841,6 +841,78 @@ async fn wardrobe(
         sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlock_receipts")
             .fetch_one(&h.pool)
             .await?;
+    let context = {
+        let runtime = owner.runtime.lock().await;
+        let actor = admitted.runtime_actor.ok_or("actor")?;
+        crate::durability::quest_world_callback::QuestWorldContext {
+            map_revision: crate::map::overlay::map_revision(
+                owner.bundle_map().ok_or("map")?.overlay.base(),
+            ),
+            content_revision: format!(
+                "sha256:{}",
+                runtime
+                    .content_pin()
+                    .server_artifact_digest()
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>()
+            ),
+            placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+            reset_epoch: owner.reset_epoch,
+            actor_placement: actor.placement_identity(),
+            movement_revision: runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .revision(),
+        }
+    };
+    let permit = owner.spell_lane_permit().await.ok_or("permit")?;
+    let session = admitted.game_session_id;
+    let request = |ordinal| -> TestResult<_> {
+        Ok(crate::durability::quest_state::QuestTransitionRequest {
+            transition_key: callback.key.clone(),
+            cause: crate::durability::quest_state::QuestCause::Use(
+                crate::foundation::CommandRef::new(
+                    session,
+                    crate::foundation::CommandId::new(ordinal).map_err(debug)?,
+                ),
+            ),
+        })
+    };
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "fence")?
+        .ok_or("fence")?;
+    {
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let result = slot
+            .commit_world_callback(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                request(9001)?,
+                owner.quest_catalogue.clone().ok_or("catalogue")?,
+                &permit,
+                context.clone(),
+                None,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(
+                result,
+                crate::durability::quest_state::QuestTransitionOutcome::Refused(_)
+            ),
+            "a fresh wardrobe grant requires the admitted cosmetics participant"
+        );
+    }
+    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_account_appearance_unlock_receipts")
+        .fetch_one(&h.pool).await?, before, "refused fresh admission has no value effect");
+    for state in &callback.storage {
+        assert_eq!(super::classic_quests::progress(owner, admitted, owner.character, &state.track).await?, state.minimum);
+    }
     let command = admitted.continuity.next_command_id;
     assert_eq!(
         use_lever(owner, admitted, command, trigger, 0).await?,
@@ -851,6 +923,35 @@ async fn wardrobe(
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(after, before + 1);
+    // A historical replay reads its immutable receipt even without a new grant
+    // participant, as when admission is reconciling after a generation change.
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "fence")?
+        .ok_or("fence")?;
+    {
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let result = slot
+            .commit_world_callback(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                request(command)?,
+                owner.quest_catalogue.clone().ok_or("catalogue")?,
+                &permit,
+                context,
+                None,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            result,
+            crate::durability::quest_state::QuestTransitionOutcome::AlreadyCommitted(_)
+        ));
+    }
+
     for state in &callback.storage {
         assert_eq!(
             super::classic_quests::progress(owner, admitted, owner.character, &state.track).await?,

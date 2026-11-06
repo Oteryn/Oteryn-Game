@@ -4478,6 +4478,16 @@
         "compatible_provenance": [
           "crystal-201189f-soul-war-revenant-v1"
         ]
+      },
+      {
+        "grant_key": "oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.decaying_defender"
+        },
+        "compatible_provenance": [
+          "owner-pr2784-decaying-defender-base-v1"
+        ]
       }
     ],
     "fallbacks": {
@@ -6472,11 +6482,21 @@
           "compatible_provenance": [
             "crystal-201189f-soul-war-revenant-v1"
           ]
+        },
+        {
+          "grant_key": "oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.decaying_defender"
+          },
+          "compatible_provenance": [
+            "owner-pr2784-decaying-defender-base-v1"
+          ]
         }
       ],
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
-      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source_kind": "OWNER_DECISION",
       "source": {
         "reference": "crystal:data/XML/outfits.xml",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",

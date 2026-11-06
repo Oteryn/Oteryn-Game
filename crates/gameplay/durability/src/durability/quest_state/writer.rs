@@ -207,12 +207,6 @@ impl DurabilityRoot {
         } else {
             None
         };
-        if let Some(reward) = callback.as_ref().and_then(|c| c.effects.outfit_reward.as_ref())
-            && context.as_ref().and_then(|(_, _, native)| *native).is_none_or(|native|
-                !super::super::reward_claim_mint::quest::outfit_compatible(native, reward))
-        {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
         let lionheart = super::hero_of_bounac::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
@@ -643,6 +637,15 @@ impl DurabilityRoot {
                     if !super::rotten_blood_access::validate_access_changes(
                         &request.transition_key,&changes,state.try_get("level")?,
                     )? {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
+                    // Historical receipts return above without requiring a new grant
+                    // participant. Fresh effects still require the admitted generation.
+                    if let Some(reward) = callback.as_ref().and_then(|c| c.effects.outfit_reward.as_ref())
+                        && context.as_ref().and_then(|(_, _, native)| *native).is_none_or(|native|
+                            !super::super::reward_claim_mint::quest::outfit_compatible(native, reward))
+                    {
+                        tx.rollback().await?;
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)

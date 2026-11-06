@@ -95,10 +95,23 @@ class QuestRewards(unittest.TestCase):
                      for palette,depth,attrs in items
                      if depth==0 and index['palette'][palette]['source_item_id']==item]
             self.assertEqual(len(matches),1,'exact native wardrobe target')
+            quest_batch4.provenance(world['sources'],world['key'],outfit=True)
             quest_batch4.validate_effects(world,world['key'])
+            with self.assertRaises(ValueError):quest_batch4.provenance(world['sources'],world['key'])
             bad=copy.deepcopy(world)
             for state in bad['storage']:state['set']=state['minimum']
             with self.assertRaises(ValueError):quest_batch4.validate_effects(bad,bad['key'])
+
+    def test_accepted_legacy_base_entitlements_keep_their_exact_mapping_and_provenance(self):
+        mappings={r['grant_key']:r for r in self.author['document']['grant_mappings']}
+        for path,outfit,provenance in [
+            ('soul-war/revenant-base','revenant','crystal-201189f-soul-war-revenant-v1'),
+            ('rotten-blood/decaying-defender-base','decaying_defender','owner-pr2784-decaying-defender-base-v1')]:
+            row=mappings['oteryn:appearance-grant/quest/'+path]
+            self.assertEqual(row['target'],{'kind':'Outfit','outfit_key':'oteryn:outfit.'+outfit})
+            self.assertEqual(row['compatible_provenance'],[provenance])
+        promotion=next(p for p in self.author['promotions'] if p['path']=='/grant_mappings')
+        self.assertEqual(promotion['source_kind'],'OWNER_DECISION')
 
     def test_every_exchange_item_has_native_custody_facts(self):
         rows=json.loads((q.ROOT/'content/items/definitions/spell-native-profiles.json').read_bytes())['records']

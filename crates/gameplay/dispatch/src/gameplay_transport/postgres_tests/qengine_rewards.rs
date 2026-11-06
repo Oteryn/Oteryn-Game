@@ -97,6 +97,11 @@ fn qengine_l1_yalaharian_addon_villain() -> TestResult {
     scenario("qengine-rewards-l1-yalaharian-villain")
 }
 
+#[test]
+fn qengine_l1_legacy_decaying_entitlement_remains_selectable() -> TestResult {
+    scenario("qengine-rewards-l1-legacy-decaying")
+}
+
 async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -579,6 +584,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-l1-legacy-decaying" {
+        return legacy_decaying(owner, admitted, h).await;
+    }
     let key = match name {
         "qengine-rewards-l1-warmaster-tribal" => "l1-warmaster-tribal",
         "qengine-rewards-l1-wayfarer-hat" => "l1-wayfarer-hat",
@@ -973,5 +981,115 @@ pub(super) async fn exercise(
             );
         }
     }
+    Ok(())
+}
+
+// Arrange an entitlement written by the accepted pre-callback owner, then use
+// the real client appearance command. No new reward grant is used in this case.
+async fn legacy_decaying(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use oteryn_protocol_oteryn::appearance::{Change, ChangeResult, Selection};
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "fence")?
+        .ok_or("fence")?;
+    let account: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    let mut receipt_id = [0x91; 16];
+    receipt_id[6] = 0x81;
+    let receipt_id = sqlx::types::Uuid::from_bytes(receipt_id);
+    let key = "oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base";
+    sqlx::query("INSERT INTO game_account_appearance_unlock_receipts(grant_occurrence_id,account_id,unlock_key,content_revision,granting_character_id,source_kind,source_event_id) VALUES($1,$2,$3,'owner-pr2784-decaying-defender-base-v1',encode($4,'hex')::uuid,'quest',$5)")
+        .bind(receipt_id).bind(account).bind(key).bind(fence.character_id.as_bytes().as_slice())
+        .bind(b"qengine-l1-existing-entitlement".as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) VALUES($1,$2,$3)")
+        .bind(account).bind(key).bind(receipt_id).execute(&h.pool).await?;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("appearance capability")?;
+    let observed = owner
+        .appearance_observation(actor, admitted.game_session_id, vec![])
+        .await
+        .ok_or("legacy catalogue")?;
+    let outfit = "oteryn:outfit.decaying_defender";
+    let option = observed
+        .catalogue
+        .outfits
+        .iter()
+        .find(|entry| entry.key == outfit)
+        .ok_or("legacy Decaying Defender entitlement is missing from the native catalogue")?;
+    assert_eq!((option.look_type, option.permitted_addons), (1663, 0));
+    let change = Change {
+        context: observed.catalogue.context,
+        expected_root_revision: observed.catalogue.root_revision,
+        prior: observed.catalogue.selected,
+        selection: Selection {
+            outfit_key: outfit.into(),
+            colours: [0; 4],
+            addons: 0,
+            mount_key: None,
+        },
+        content_revision: owner
+            .appearance_context()
+            .ok_or("cosmetics")?
+            .1
+            .content_revision()
+            .into(),
+    };
+    let next = admitted.continuity.next_command_id;
+    let result = super::quest_world_callbacks::wire(
+        owner,
+        admitted,
+        next,
+        25,
+        change.encode().map_err(debug)?,
+    )
+    .await?;
+    assert!(matches!(
+        ChangeResult::decode(&result).map_err(debug)?,
+        ChangeResult::Committed(_)
+    ));
+    let retained: sqlx::types::Uuid = sqlx::query_scalar("SELECT grant_occurrence_id FROM game_account_appearance_unlocks WHERE account_id=$1 AND unlock_key=$2")
+        .bind(account).bind(key).fetch_one(&h.pool).await?;
+    assert_eq!(
+        retained, receipt_id,
+        "selection preserves the original immutable grant receipt"
+    );
     Ok(())
 }

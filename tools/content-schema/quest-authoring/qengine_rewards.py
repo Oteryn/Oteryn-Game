@@ -105,6 +105,11 @@ def build():
     mappings.append({'grant_key': 'oteryn:appearance-grant/quest/soul-war/revenant-base',
         'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.revenant'},
         'compatible_provenance': ['crystal-201189f-soul-war-revenant-v1']})
+    # Keep the accepted Rotten Blood base receipt usable after catalogue promotion.
+    # This owner deliberately has no admitted addon grant.
+    mappings.append({'grant_key': 'oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base',
+        'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.decaying_defender'},
+        'compatible_provenance': ['owner-pr2784-decaying-defender-base-v1']})
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
     palette_path = 'tools/game-atlas-appearances/export.py'
     palette_source = {'reference': palette_path + '#outfit_color', 'revision': 'rounded-hsi-133-v1',
@@ -129,7 +134,7 @@ def build():
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}
         author['promotions'].append({'path': path, 'value': cosmetics.pointer(doc, path),
             'state': 'PROMOTED', 'decision': DECISION,
-            'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') else 'STRUCTURED_REFERENCE_DATA',
+            'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA',
             'source': citation})
     callbacks = []
     def storage(track, before, after, maximum=None, preserve=False):
