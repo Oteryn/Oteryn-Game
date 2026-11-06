@@ -11,6 +11,7 @@ use tokio::sync::Mutex;
 /// Channel-local session state; keep fields sorted by name.
 #[derive(Default)]
 pub struct ChannelSessionStates {
+    pub casts: std::sync::OnceLock<super::cast::CastNode>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     /// APP-3: the appearance-change command state of each session, forgotten with the session.
     pub appearance_commands: appearance_change::AppearanceCommands,
@@ -125,6 +126,7 @@ impl ChannelSessionStates {
     /// connection recipients, and its existing node shutdown/input gate.
     pub(super) fn for_activity(&self) -> Self {
         Self {
+            casts: self.casts.clone(),
             analyser: std::sync::Arc::clone(&self.analyser),
             gameplay_idle_policy: self.gameplay_idle_policy,
             input_gate: std::sync::Arc::clone(&self.input_gate),

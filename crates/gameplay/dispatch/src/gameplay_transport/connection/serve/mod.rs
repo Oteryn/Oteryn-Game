@@ -37,6 +37,7 @@ mod use_effects;
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    cast_chat_revision: u64,
     spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,
     target_walk: Option<target_move::PendingWalk>,

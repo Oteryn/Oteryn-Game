@@ -30,6 +30,7 @@ mod bundle_chest;
 mod bundle_gates_tests;
 mod bundle_map_position;
 mod capabilities;
+mod cast_observer;
 mod channel_states;
 mod character_gameplay_fence;
 mod character_home_town;
@@ -352,6 +353,7 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 /// #414 Character authority, and this GameNode's #415 incarnation holding the
 /// served Channel.
 pub struct GameplaySeamOwners<'a, 'f, 's> {
+    pub cast: Option<cast::CastRuntimeConfig>,
     /// Sealed bounded templates issued by the same existing Content activation owner.
     pub activity_templates:
         &'a [crate::content::bosses::activity_template::QualifiedActivityRoomTemplate],

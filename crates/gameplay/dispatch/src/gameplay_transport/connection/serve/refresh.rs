@@ -11,6 +11,9 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if session.selected_capabilities.contains(290) {
+        authority.cast_refresh(session.admitted).await;
+    }
     let changed = authority
         .tick_vitals(session.actor, session.admitted.game_session_id)
         .await;
@@ -106,6 +109,34 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if session.cast_chat_revision > 0 {
+        for payload in authority.cast_live_chat(session.admitted).await {
+            let revision = session
+                .cast_chat_revision
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let sequence = session
+                .sequence
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let frame = encode_state_delta(
+                session.generation,
+                sequence,
+                103,
+                session.cast_chat_revision,
+                revision,
+                1,
+                &payload,
+            )
+            .map_err(|_| ServeEnd::Disconnected)?;
+            write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?;
+            session.sequence = sequence;
+            session.admitted.continuity.server_sequence = sequence;
+            session.cast_chat_revision = revision;
+        }
+    }
     channel_list(stream, authority, session).await?;
     typing(stream, authority, session).await?;
     super::vip_presence::refresh(stream, authority, session).await?;

@@ -34,6 +34,7 @@ pub mod boss_rewards;
 pub mod bosstiary_slots;
 pub mod browse_field;
 pub mod capability_tables;
+pub mod cast;
 pub mod channel_list;
 pub mod character_info;
 pub mod charm;

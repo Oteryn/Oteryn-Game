@@ -2717,6 +2717,10 @@ async fn boot_and_serve(
         config.store_purchases.as_str()
     );
     let owners = GameplaySeamOwners {
+        cast: crate::gameplay_transport::cast::CastRuntimeConfig::from_env(
+            *proof.fact().node_id().as_bytes(),
+        )
+        .map_err(|_| BootError::Serve)?,
         activity_templates: &activity_templates,
         gameplay_idle_policy: config.gameplay_idle,
         store_purchases: config.store_purchases,
