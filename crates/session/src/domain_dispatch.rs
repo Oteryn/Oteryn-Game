@@ -94,8 +94,8 @@ impl<S: SessionStream> Session<S> {
                 )?;
                 let fields =
                     world_spatial_entities::EntityFields::selected(self.selected_capabilities());
-                let (entities_delta, _) =
-                    world_spatial_entities::decode_world_spatial_entities_delta_with_fields(
+                let (entities_delta, _, icons) =
+                    world_spatial_entities::decode_world_spatial_entities_delta_with_icons(
                         delta.payload,
                         fields,
                     )?;
@@ -109,9 +109,17 @@ impl<S: SessionStream> Session<S> {
                     }
                 };
                 appearance_state::validate_entities(self.appearance.as_ref(), Some(&next))?;
+                if icons.as_ref().is_some_and(|icons| icons.iter().any(|icon| {
+                    !next.get(&icon.entity).is_some_and(|entity| entity.kind == EntityKind::Player)
+                })) {
+                    return Err(SessionError::Protocol(FoundationProtocolError::MalformedFrame));
+                }
                 self.entities = Some(next);
                 self.world_spatial.actor_position = entities_delta.actor_position;
                 self.spatial_revision = new_revision;
+                if let Some(icons) = icons {
+                    return Ok(SessionEvent::PartyIcons(applied(server_sequence, base_revision, new_revision, icons)));
+                }
                 Ok(SessionEvent::WorldSpatialEntities(applied(
                     server_sequence,
                     base_revision,

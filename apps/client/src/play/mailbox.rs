@@ -293,6 +293,10 @@ impl Outbox {
             }
         }
         super::feature_0010_analyser::protocol::reduce(&mut mailbox, &events);
+        super::feature_0134_party_skull::protocol::reduce(
+            &mut mailbox.properties.party_skull,
+            &events,
+        );
         super::feature_0287_actor_spell_catalog::protocol::reduce(&mut mailbox, &events);
         mailbox.coalesce_events(events);
         mailbox.check_server_messages();

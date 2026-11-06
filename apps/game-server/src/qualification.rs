@@ -1423,6 +1423,19 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         .execute(&mut owner)
         .await?;
     }
+    // Publish an explicit non-PvP policy through the granted control principal.
+    // Readiness's revision token alone cannot supply the expert-mode projection.
+    sqlx::query("INSERT INTO game_control_field_policy_grants VALUES ($1, encode($2, 'hex')::uuid, 'policy-s3b-1')")
+        .bind(&control_role)
+        .bind(world.as_bytes().as_slice())
+        .execute(&mut owner)
+        .await?;
+    let mut policy_control = sqlx::PgConnection::connect(&control_url).await?;
+    sqlx::query("INSERT INTO game_spell_field_world_policies (world_id, world_policy_revision, world_type, protection_level, in_fight_ms, source_pin, control_role, decision_identity) VALUES (encode($1, 'hex')::uuid, 'policy-s3b-1', 1, 8, 60000, '99902524e052f37574194466c2949c576e4ab269', session_user, 'seam-qualification')")
+        .bind(world.as_bytes().as_slice())
+        .execute(&mut policy_control)
+        .await?;
+    policy_control.close().await?;
     owner.close().await?;
     let writer = RuntimeScopeAssignmentWriter::open(control.clone(), "seam-writer")
         .await

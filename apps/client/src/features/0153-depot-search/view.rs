@@ -5,8 +5,8 @@ impl PlayLink {
         lock(&self.mailbox).depot_search.clone()
     }
 }
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 #[path = "native.rs"]
-mod native;
+pub(in crate::play) mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;

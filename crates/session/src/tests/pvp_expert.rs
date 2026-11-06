@@ -130,3 +130,66 @@ fn pc01_panel_capabilities_have_registered_session_routes() {
         );
     }
 }
+
+#[test]
+fn party_icons_are_typed_and_require_current_visible_player_incarnations() -> Result<(), BoxError> {
+    block_on(async {
+        use oteryn_protocol_oteryn::party_skull::{PartyIcon, encode_party_icons};
+        for (entity, valid) in [
+            (own(at(0, 0)).entity, true),
+            (actor(EntityKind::Player, 9, 1, at(0, 1)).entity, false),
+            (actor(EntityKind::Creature, 1, 1, at(0, 1)).entity, false),
+            (
+                EntityRef {
+                    identity: OWN,
+                    generation: 2,
+                },
+                false,
+            ),
+        ] {
+            let icons = vec![PartyIcon {
+                entity,
+                shield: 3,
+                skull: 2,
+            }];
+            let mut payload = encode_world_spatial_entities_delta(&entities_delta(
+                at(0, 0),
+                vec![],
+                vec![],
+                vec![],
+            ))
+            .map_err(|error| format!("{error:?}"))?;
+            let encoded = encode_party_icons(&icons).map_err(|error| format!("{error:?}"))?;
+            payload.push(0x32);
+            payload.push(u8::try_from(encoded.len())?);
+            payload.extend(encoded);
+            let frame = encode_state_delta(1, 41, 1, 5, 6, 2, &payload)?;
+            let (client, peer) = entity_peer(
+                entity_snapshot(vec![actor(EntityKind::Creature, 1, 1, at(0, 1))]),
+                &[6, 42, 134],
+                vec![Step::Send(frame)],
+            );
+            let mut session = Session::admit(client, entity_admission()?).await?;
+            let result = session.service_liveness(Duration::from_millis(100)).await;
+            if valid {
+                result?;
+                assert_eq!(
+                    session.take_events(),
+                    vec![SessionEvent::PartyIcons(AppliedDelta {
+                        server_sequence: 41,
+                        base_revision: 5,
+                        new_revision: 6,
+                        value: icons,
+                    })]
+                );
+            } else {
+                assert!(result.is_err());
+                assert_eq!(session.spatial_revision, 5);
+                assert!(session.take_events().is_empty());
+            }
+            drop(session);
+            peer.await??;
+        }
+        Ok(())
+    })?
+}

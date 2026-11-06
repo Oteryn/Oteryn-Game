@@ -80,14 +80,17 @@ impl DurabilityRoot {
                 return Ok(Some(result(UseDisposition::Rejected, false)));
             }
             let owner = HarvestOwner { permit: context.2, recovery: &record, node: &node };
-            let disposition = write(&mut tx, fence, &request, operand, context.0, context.1, &owner).await?;
+            let disposition = write(context.2, &mut tx, fence, &request, operand, context.0, context.1, &owner).await?;
             if disposition == UseDisposition::Committed { tx.commit(deadline).await?; }
             Ok(Some(result(disposition, disposition == UseDisposition::Committed)))
         })).await
     }
 }
 
+// Keep the lane proof explicit at the key-33 boundary alongside the harvest inputs.
+#[allow(clippy::too_many_arguments)]
 async fn write<C: ItemLoopContent>(
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     request: &MapHarvestRequest,
@@ -96,6 +99,7 @@ async fn write<C: ItemLoopContent>(
     content: &C,
     owner: &HarvestOwner<'_>,
 ) -> Result<UseDisposition, DurabilityError> {
+    permit.check_scope(fence.runtime_scope)?;
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     let mutation = &operand.mutation;
     if mutation.placement.len() != 40 || operand.actor_position.len() != 10

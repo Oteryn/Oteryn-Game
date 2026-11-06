@@ -496,6 +496,14 @@ node_assigned_ready() { # §4.2–§4.4
   [[ $code == 6 ]] || fail "content activation without an exact-scope grant exit=$code"
   psql_admin oteryn_node_boot <<SQL
 INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM generate_series(1, 4) op;
+INSERT INTO game_control_field_policy_grants VALUES ('nb_control', '$WORLD_ID', 'policy-s3b-1');
+SQL
+  # Match the readiness revision with explicit control-owned non-PvP facts.
+  # Authenticate as the granted login: SET ROLE cannot satisfy the insert guard.
+  docker exec -i -e PGPASSWORD="$CONTROL_PASSWORD" "$PG_CONTAINER" \
+    psql -v ON_ERROR_STOP=1 -qAt -h 127.0.0.1 -U nb_control -d oteryn_node_boot <<SQL
+INSERT INTO game_spell_field_world_policies (world_id, world_policy_revision, world_type, protection_level, in_fight_ms, source_pin, control_role, decision_identity)
+VALUES ('$WORLD_ID', 'policy-s3b-1', 1, 8, 60000, '99902524e052f37574194466c2949c576e4ab269', session_user, 'node-boot-qualification');
 SQL
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json

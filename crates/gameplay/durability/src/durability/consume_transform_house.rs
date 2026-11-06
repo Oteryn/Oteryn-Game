@@ -192,7 +192,7 @@ impl DurabilityRoot {
             location.insert("node".into(), json!(uuid_text(*node.fact().node_id().as_bytes())));
             location.insert("node_revision".into(), json!(node.fact().registration_revision().to_string()));
             let ordinal: String = source.try_get("stack_ordinal")?;
-            let result = persist_action(&mut tx, fence, &request, native, &plan, &before, None, None, 5,
+            let result = persist_action(None, &mut tx, fence, &request, native, &plan, &before, None, None, 5,
                 &ordinal, 20, &[], &source_location, None).await?;
             tx.commit(deadline).await?;
             Ok(result)

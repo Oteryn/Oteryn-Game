@@ -195,7 +195,7 @@ async fn write<C: ItemLoopContent>(
     ground: Option<&GroundActionContext>,
     ground_fences: &ActionGroundFences<'_>,
 ) -> Result<ConsumeTransformResult, DurabilityError> {
-    if let Some(context) = ground { return ground::write(tx, fence, request, native, content, context, premium, ground_fences).await; }
+    if let Some(context) = ground { return ground::write(ground_fences.permit, tx, fence, request, native, content, context, premium, ground_fences).await; }
     let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     // The full Character fence/root lock precedes item locks. The only equipment
     // source admitted here is the unchanged party hat in the actual head slot.
@@ -288,7 +288,7 @@ async fn write<C: ItemLoopContent>(
             || (!conversion.extra_inputs.is_empty() && conversion.recipe != "oteryn:planting.preserve") {
             return Err(DurabilityError::InvalidStoredState);
         }
-        return persist_action(tx, fence, request, native, &conversion, &before, None,
+        return persist_action(Some(ground_fences.permit), tx, fence, request, native, &conversion, &before, None,
             parent.as_deref(), source_kind, &source_ordinal, 20, &[], &source_location, None).await;
     }
     let parent = parent.ok_or(DurabilityError::InvalidStoredState)?;
@@ -442,12 +442,13 @@ async fn write<C: ItemLoopContent>(
         outputs.push(output);
     }
     let secondary_before = secondary.as_ref().map(|row| row.try_get::<Value, _>("before_item")).transpose()?;
-    persist_action(tx, fence, request, native, &conversion, &before, secondary_before.as_ref(),
+    persist_action(Some(ground_fences.permit), tx, fence, request, native, &conversion, &before, secondary_before.as_ref(),
         Some(&parent), source_kind, &source_ordinal, parent_capacity, &outputs, &source_location, None).await
 }
 
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 async fn persist_action(
+    permit: Option<&super::spell_owner_commit::SpellLanePermit>,
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     request: &ConsumeTransformRequest,
@@ -463,6 +464,10 @@ async fn persist_action(
     source_location: &Value,
     ground_admission: Option<(&ActionGroundFences<'_>, &GroundActionContext)>,
 ) -> Result<ConsumeTransformResult, DurabilityError> {
+    // Named-House transforms do not touch key-33 tables; every Ground path must
+    // retain and validate its caller's lane proof before writing the receipt or items.
+    if source_kind == 3 && permit.is_none() { return Err(DurabilityError::InvalidStoredState); }
+    if let Some(permit) = permit { permit.check_scope(fence.runtime_scope)?; }
     let ground_reward = source_kind == 3 && parent.is_none() && plan.effects.get("kind").and_then(Value::as_str) == Some("reward");
     if ground_admission.is_some() != ground_reward {
         return Err(DurabilityError::InvalidStoredState);
@@ -534,14 +539,14 @@ async fn persist_action(
     super::consume_transform_cosmetics::apply(tx, fence, request, plan, &transaction).await?;
     if source_kind == 5 { house::apply_in_transaction(tx, &transaction).await?; }
     if plan.consume_source {
-        consume_count(tx, request.source, before, &transaction, source_kind, plan.source_count).await?;
+        consume_count(permit, tx, request.source, before, &transaction, source_kind, plan.source_count).await?;
         if let Some(target) = request.target {
-            consume_count(tx, target, secondary_before.ok_or(DurabilityError::InvalidStoredState)?, &transaction, 1, 1).await?;
+            consume_count(permit, tx, target, secondary_before.ok_or(DurabilityError::InvalidStoredState)?, &transaction, 1, 1).await?;
         }
     }
     // Afflicted Ground USE leaves the clicked trigger intact and spends all six
     // carried pieces. SQL admits this exact exception with the same owner proofs.
-    for input in &plan.extra_inputs { consume_count(tx, input.item, &input.before, &transaction, input.source_kind, input.count).await?; }
+    for input in &plan.extra_inputs { consume_count(permit, tx, input.item, &input.before, &transaction, input.source_kind, input.count).await?; }
     for (ordinal, output) in outputs.iter().enumerate() {
         if let Some((fences, context)) = ground_admission {
             // Actual source consumption above determines whether its root remains.
@@ -580,9 +585,11 @@ async fn persist_action(
 }
 
 async fn consume_count(
+    permit: Option<&super::spell_owner_commit::SpellLanePermit>,
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     item: [u8; 16], before: &Value, transaction: &str, source_kind: i32, count: u32,
 ) -> Result<(), DurabilityError> {
+    if source_kind == 3 && permit.is_none() { return Err(DurabilityError::InvalidStoredState); }
     let quantity = before.get("quantity").and_then(Value::as_i64).ok_or(DurabilityError::InvalidStoredState)?;
     if count == 0 || i64::from(count) > quantity || !matches!(source_kind, 1 | 3 | 4) {
         return Err(DurabilityError::InvalidStoredState);

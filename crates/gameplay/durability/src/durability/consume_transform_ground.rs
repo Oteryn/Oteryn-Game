@@ -162,6 +162,7 @@ impl DurabilityRoot {
 
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn write<C: ItemLoopContent>(
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     request: &ConsumeTransformRequest,
@@ -171,6 +172,7 @@ pub(super) async fn write<C: ItemLoopContent>(
     premium: Option<&dyn crate::durability::consume_transform_cosmetics::ItemCosmeticPremium>,
     ground_fences: &ActionGroundFences<'_>,
 ) -> Result<ConsumeTransformResult, DurabilityError> {
+    permit.check_scope(fence.runtime_scope)?;
     let source = &context.source;
     if source.item != request.source || source.scope != fence.runtime_scope
         || source.generation != fence.scope_ownership_generation.get()
@@ -261,7 +263,7 @@ pub(super) async fn write<C: ItemLoopContent>(
         // original bounded wire intent while the primary Ground receipt remains unary.
         committed_request.target = None;
     }
-    persist_action(tx, fence, &committed_request, native, &plan, &source.before, None, None, 3,
+    persist_action(Some(ground_fences.permit), tx, fence, &committed_request, native, &plan, &source.before, None, None, 3,
         &source_ordinal, 20, &outputs, &location, None).await
 }
 
@@ -361,7 +363,7 @@ async fn write_reward<C: ItemLoopContent>(
     }
     let source_ordinal = source.location.get("stack_ordinal").and_then(Value::as_i64)
         .filter(|ordinal| *ordinal > 0).ok_or(DurabilityError::InvalidStoredState)?.to_string();
-    persist_action(tx, fence, request, native, &plan, &source.before, None, parent.as_deref(), 3,
+    persist_action(Some(ground_fences.permit), tx, fence, request, native, &plan, &source.before, None, parent.as_deref(), 3,
         &source_ordinal, capacity, &outputs, &source.location, ground.then_some((ground_fences, context))).await
 }
 

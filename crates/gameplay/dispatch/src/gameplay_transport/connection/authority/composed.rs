@@ -138,37 +138,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
-        if let (Some(actor), Some(fence), Some(controller)) = (
-            admitted.runtime_actor,
-            admitted.item_fence,
-            admitted.controller,
-        ) && matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
-            && actor.runtime_scope() == fence.runtime_scope
-        {
-            let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
-                .current_session_at(admitted.game_session_id)
-                .await
-            else {
-                return false;
-            };
-            return item_fence_of(current) == Some(fence)
-                && current.session_state() == GameSessionState::Active
-                && current.current_transport() == Some(controller.transport);
-        }
-        if !admitted
-            .continuity
-            .selected_capabilities
-            .contains(oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1)
-        {
-            return true;
-        }
-        let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
-            return false;
-        };
-        self.root
-            .note_house_transfer_input(self.holder, fence, controller.transport)
-            .await
-            .is_ok()
+        self.note_house_input(admitted).await
     }
     async fn observe_house_map(
         &self,
