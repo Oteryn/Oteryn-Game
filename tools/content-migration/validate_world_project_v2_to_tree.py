@@ -27,12 +27,12 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-NPC_COUNT = 1282
+NPC_COUNT = 1290
 NPC_BINDING_COUNT = 2747
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 108
 DOCUMENT_COUNT = 1609
-DIALOGUE_COUNT = 836
+DIALOGUE_COUNT = 839
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
@@ -43,7 +43,7 @@ REWARD_CLAIM_COUNT = len(json.loads(
     (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4}
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 327, "Service.Travel": 59, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes"), "Service.Bank": ("content/services/bank/", "bank"), "Service.Promotion": ("content/services/promotion/", "promotion"), "Service.Blessing": ("content/services/blessings/", "blessing")}
 
 class ValidationError(RuntimeError):
@@ -490,7 +490,11 @@ def validate_native_bank_admission(declarations: Any) -> None:
     expected_npc["services"].append(reference)
     consumers = [row for row in declarations["records"] if row.get("kind") == "NPC"
                  and reference in row.get("services", [])]
-    require(consumers == [expected_npc], "BANK_NPC_CLOSED_CONSUMER")
+    repairs = load(ROOT / "tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json")["repairs"]
+    admitted = [row["after"] for row in repairs if row["after"]["identity"]["key"] in
+                {"oteryn:npc.murim", "oteryn:npc.muzir", "oteryn:npc.znozel"}]
+    require(len(admitted) == 3, "NPCFIX_BANK_CONSUMER_COUNT")
+    require(canonical_sorted(consumers) == canonical_sorted([expected_npc, *admitted]), "BANK_NPC_CLOSED_CONSUMER")
     expected_dialogue = json.loads(json.dumps(packet["before_dialogue"]))
     expected_dialogue["greet"] = packet["original_oteryn_authored_dialogue"]["greet"]
     expected_dialogue["keywords"] = [packet["original_oteryn_authored_dialogue"]["bank_keyword"]]

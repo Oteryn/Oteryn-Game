@@ -33,6 +33,7 @@ impl GrizzlyShopOffer {
             count: Some(1),
             sub_type: None,
             parity_pending: false,
+            postman_unit_price: None,
         }
     }
 }

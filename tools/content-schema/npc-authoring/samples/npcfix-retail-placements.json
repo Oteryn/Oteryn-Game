@@ -1,0 +1,3668 @@
+[
+  {
+    "npc": "oteryn:npc.a_beggar",
+    "position": {
+      "x": 33594,
+      "y": 31957,
+      "z": 7
+    },
+    "wiki": {
+      "title": "A Beggar",
+      "revid": 1116827
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_behemoth",
+    "position": {
+      "x": 32308,
+      "y": 32582,
+      "z": 15
+    },
+    "wiki": {
+      "title": "A Behemoth",
+      "revid": 1116850
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_dark_priestess",
+    "position": {
+      "x": 33257,
+      "y": 31936,
+      "z": 15
+    },
+    "wiki": {
+      "title": "A Dark Priestess",
+      "revid": 1116766
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_ghostly_guardian",
+    "position": {
+      "x": 32755,
+      "y": 32346,
+      "z": 14
+    },
+    "wiki": {
+      "title": "A Ghostly Guardian",
+      "revid": 880725
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_majestic_warwolf",
+    "position": {
+      "x": 33353,
+      "y": 31992,
+      "z": 8
+    },
+    "wiki": {
+      "title": "A Majestic Warwolf",
+      "revid": 1114321
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_restless_soul",
+    "position": {
+      "x": 32257,
+      "y": 31101,
+      "z": 10
+    },
+    "wiki": {
+      "title": "A Restless Soul",
+      "revid": 1114439
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_sleeping_dragon",
+    "position": {
+      "x": 33243,
+      "y": 31219,
+      "z": 10
+    },
+    "wiki": {
+      "title": "A Sleeping Dragon",
+      "revid": 1116739
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_starving_dog",
+    "position": {
+      "x": 32119,
+      "y": 31094,
+      "z": 5
+    },
+    "wiki": {
+      "title": "A Starving Dog",
+      "revid": 1114424
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_strange_chalice",
+    "position": {
+      "x": 33419,
+      "y": 31125,
+      "z": 9
+    },
+    "wiki": {
+      "title": "A Strange Chalice",
+      "revid": 1174368
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_strange_fellow",
+    "position": {
+      "x": 32910,
+      "y": 32077,
+      "z": 9
+    },
+    "wiki": {
+      "title": "A Strange Fellow",
+      "revid": 1114019
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_swan",
+    "position": {
+      "x": 33185,
+      "y": 31733,
+      "z": 7
+    },
+    "wiki": {
+      "title": "A Swan",
+      "revid": 1116882
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_sweaty_cyclops",
+    "position": {
+      "x": 32697,
+      "y": 31674,
+      "z": 3
+    },
+    "wiki": {
+      "title": "A Sweaty Cyclops",
+      "revid": 1114101
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_weakened_forest_fury",
+    "position": {
+      "x": 32613,
+      "y": 32264,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Weakened Forest Fury",
+      "revid": 1116867
+    }
+  },
+  {
+    "npc": "oteryn:npc.ahmet",
+    "position": {
+      "x": 33126,
+      "y": 32810,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Ahmet",
+      "revid": 1114085
+    }
+  },
+  {
+    "npc": "oteryn:npc.albert",
+    "position": {
+      "x": 33312,
+      "y": 31762,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Albert",
+      "revid": 851488
+    }
+  },
+  {
+    "npc": "oteryn:npc.albinius",
+    "position": {
+      "x": 32335,
+      "y": 32091,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Albinius",
+      "revid": 1061357
+    }
+  },
+  {
+    "npc": "oteryn:npc.alesar",
+    "position": {
+      "x": 33048,
+      "y": 32621,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Alesar",
+      "revid": 1114121
+    }
+  },
+  {
+    "npc": "oteryn:npc.alexander",
+    "position": {
+      "x": 33256,
+      "y": 31839,
+      "z": 3
+    },
+    "wiki": {
+      "title": "Alexander",
+      "revid": 908401
+    }
+  },
+  {
+    "npc": "oteryn:npc.alkestios",
+    "position": {
+      "x": 32615,
+      "y": 31735,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Alkestios",
+      "revid": 1119694
+    }
+  },
+  {
+    "npc": "oteryn:npc.allen",
+    "position": {
+      "x": 32991,
+      "y": 32062,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Allen",
+      "revid": 1114087
+    }
+  },
+  {
+    "npc": "oteryn:npc.altar",
+    "position": {
+      "x": 34070,
+      "y": 32009,
+      "z": 14
+    },
+    "wiki": {
+      "title": "Altar (NPC)",
+      "revid": 1010600
+    }
+  },
+  {
+    "npc": "oteryn:npc.alyxo",
+    "position": {
+      "x": 33941,
+      "y": 31464,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Alyxo",
+      "revid": 1116924
+    }
+  },
+  {
+    "npc": "oteryn:npc.amanda",
+    "position": {
+      "x": 33222,
+      "y": 31814,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Amanda",
+      "revid": 1114032
+    }
+  },
+  {
+    "npc": "oteryn:npc.amra",
+    "position": {
+      "x": 33800,
+      "y": 32755,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Amra",
+      "revid": 938085
+    }
+  },
+  {
+    "npc": "oteryn:npc.an_ominous_bat",
+    "position": {
+      "x": 33264,
+      "y": 31786,
+      "z": 7
+    },
+    "wiki": {
+      "title": "An Ominous Bat",
+      "revid": 1111761
+    }
+  },
+  {
+    "npc": "oteryn:npc.anaztassja_moroia",
+    "position": {
+      "x": 32897,
+      "y": 31422,
+      "z": 12
+    },
+    "wiki": {
+      "title": "Anaztassja Moroia",
+      "revid": 1111763,
+      "coordinate_suffix": "3"
+    },
+    "positions": [
+      {
+        "x": 32897,
+        "y": 31422,
+        "z": 12
+      },
+      {
+        "x": 32915,
+        "y": 31445,
+        "z": 6
+      },
+      {
+        "x": 32879,
+        "y": 31436,
+        "z": 10
+      },
+      {
+        "x": 32943,
+        "y": 31503,
+        "z": 14
+      },
+      {
+        "x": 32948,
+        "y": 31462,
+        "z": 15
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.asphota",
+    "position": {
+      "x": 33778,
+      "y": 32844,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Asphota",
+      "revid": 938092
+    }
+  },
+  {
+    "npc": "oteryn:npc.baltim",
+    "position": {
+      "x": 32346,
+      "y": 31323,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Baltim",
+      "revid": 908364
+    }
+  },
+  {
+    "npc": "oteryn:npc.beatrice",
+    "position": {
+      "x": 33214,
+      "y": 31803,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Beatrice",
+      "revid": 908368
+    }
+  },
+  {
+    "npc": "oteryn:npc.benjamin",
+    "position": {
+      "x": 32350,
+      "y": 32219,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Benjamin",
+      "revid": 1051761
+    }
+  },
+  {
+    "npc": "oteryn:npc.bertha",
+    "position": {
+      "x": 32318,
+      "y": 31112,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Bertha",
+      "revid": 908765
+    }
+  },
+  {
+    "npc": "oteryn:npc.candra",
+    "position": {
+      "x": 33729,
+      "y": 32828,
+      "z": 4
+    },
+    "wiki": {
+      "title": "Candra",
+      "revid": 938105
+    }
+  },
+  {
+    "npc": "oteryn:npc.captain_breezelda",
+    "position": {
+      "x": 32347,
+      "y": 31108,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Captain Breezelda",
+      "revid": 1178790
+    }
+  },
+  {
+    "npc": "oteryn:npc.captain_corsarah",
+    "position": {
+      "x": 34010,
+      "y": 32475,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Captain Corsarah",
+      "revid": 1195603
+    }
+  },
+  {
+    "npc": "oteryn:npc.captain_fearless",
+    "position": {
+      "x": 32955,
+      "y": 32022,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Captain Fearless",
+      "revid": 1194684
+    }
+  },
+  {
+    "npc": "oteryn:npc.captain_haba",
+    "position": {
+      "x": 32355,
+      "y": 31125,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Captain Haba",
+      "revid": 1114589
+    }
+  },
+  {
+    "npc": "oteryn:npc.captain_jack",
+    "position": {
+      "x": 32189,
+      "y": 31957,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Captain Jack",
+      "revid": 1024531
+    }
+  },
+  {
+    "npc": "oteryn:npc.captain_jack_rat",
+    "position": {
+      "x": 33792,
+      "y": 31384,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Captain Jack Rat",
+      "revid": 1116954
+    }
+  },
+  {
+    "npc": "oteryn:npc.captain_marie_denise_banner",
+    "position": {
+      "x": 33837,
+      "y": 32137,
+      "z": 4
+    },
+    "wiki": {
+      "title": "Captain Marie-Denise Banner",
+      "revid": 1143644
+    }
+  },
+  {
+    "npc": "oteryn:npc.captain_max",
+    "position": {
+      "x": 32298,
+      "y": 32896,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Captain Max",
+      "revid": 1178788,
+      "coordinate_suffix": "2"
+    }
+  },
+  {
+    "npc": "oteryn:npc.captain_max_calassa",
+    "position": {
+      "x": 31914,
+      "y": 32709,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Captain Max",
+      "revid": 1178788
+    },
+    "consumer_of": "captain_max"
+  },
+  {
+    "npc": "oteryn:npc.captain_seahorse",
+    "position": {
+      "x": 33176,
+      "y": 31764,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Captain Seahorse",
+      "revid": 1178781
+    }
+  },
+  {
+    "npc": "oteryn:npc.captain_waverider",
+    "position": {
+      "x": 32347,
+      "y": 32859,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Captain Waverider",
+      "revid": 1178786
+    },
+    "positions": [
+      {
+        "x": 32347,
+        "y": 32859,
+        "z": 7
+      },
+      {
+        "x": 32043,
+        "y": 32931,
+        "z": 7
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.cerdras",
+    "position": {
+      "x": 32301,
+      "y": 31816,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Cerdras",
+      "revid": 1116710
+    }
+  },
+  {
+    "npc": "oteryn:npc.chantalle",
+    "position": {
+      "x": 32363,
+      "y": 32791,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Chantalle",
+      "revid": 1114268
+    }
+  },
+  {
+    "npc": "oteryn:npc.charles",
+    "position": {
+      "x": 32529,
+      "y": 32785,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Charles",
+      "revid": 1178785
+    }
+  },
+  {
+    "npc": "oteryn:npc.charlotta",
+    "position": {
+      "x": 32269,
+      "y": 32841,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Charlotta",
+      "revid": 909000
+    }
+  },
+  {
+    "npc": "oteryn:npc.chartan",
+    "position": {
+      "x": 33214,
+      "y": 31058,
+      "z": 9
+    },
+    "wiki": {
+      "title": "Chartan",
+      "revid": 1116736
+    }
+  },
+  {
+    "npc": "oteryn:npc.chavis",
+    "position": {
+      "x": 33547,
+      "y": 31948,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Chavis",
+      "revid": 1116828
+    }
+  },
+  {
+    "npc": "oteryn:npc.chemar",
+    "position": {
+      "x": 33270,
+      "y": 32439,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Chemar",
+      "revid": 908419
+    }
+  },
+  {
+    "npc": "oteryn:npc.chief_grarkharok",
+    "position": {
+      "x": 33232,
+      "y": 31755,
+      "z": 1
+    },
+    "wiki": {
+      "title": "Chief Grarkharok",
+      "revid": 1114617
+    }
+  },
+  {
+    "npc": "oteryn:npc.chondur",
+    "position": {
+      "x": 32360,
+      "y": 32549,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Chondur",
+      "revid": 1114264
+    }
+  },
+  {
+    "npc": "oteryn:npc.chrak",
+    "position": {
+      "x": 33079,
+      "y": 31022,
+      "z": 2
+    },
+    "wiki": {
+      "title": "Chrak",
+      "revid": 1116729
+    }
+  },
+  {
+    "npc": "oteryn:npc.chrystal",
+    "position": {
+      "x": 33174,
+      "y": 31811,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Chrystal",
+      "revid": 908424
+    }
+  },
+  {
+    "npc": "oteryn:npc.chuckles",
+    "position": {
+      "x": 32789,
+      "y": 31236,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Chuckles",
+      "revid": 908425
+    }
+  },
+  {
+    "npc": "oteryn:npc.dankwart",
+    "position": {
+      "x": 32202,
+      "y": 31162,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Dankwart",
+      "revid": 908434
+    }
+  },
+  {
+    "npc": "oteryn:npc.demonguard",
+    "position": {
+      "x": 32854,
+      "y": 32318,
+      "z": 10
+    },
+    "wiki": {
+      "title": "Demonguard",
+      "revid": 851659
+    }
+  },
+  {
+    "npc": "oteryn:npc.dhira",
+    "position": {
+      "x": 33729,
+      "y": 32858,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Dhira",
+      "revid": 938132
+    }
+  },
+  {
+    "npc": "oteryn:npc.doctor_marrow",
+    "position": {
+      "x": 34009,
+      "y": 32643,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Doctor Marrow (NPC)",
+      "revid": 1195614
+    },
+    "audit_slug": "doctor_marrow",
+    "held_reason": "POSITION_CONFLICT"
+  },
+  {
+    "npc": "oteryn:npc.dorian",
+    "position": {
+      "x": 32317,
+      "y": 32208,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Dorian",
+      "revid": 1114600
+    }
+  },
+  {
+    "npc": "oteryn:npc.dream_butterfly",
+    "position": {
+      "x": 33715,
+      "y": 32378,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Dream Butterfly",
+      "revid": 1116823
+    }
+  },
+  {
+    "npc": "oteryn:npc.duncan",
+    "position": {
+      "x": 32336,
+      "y": 32610,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Duncan",
+      "revid": 1114272
+    }
+  },
+  {
+    "npc": "oteryn:npc.dustrunner",
+    "position": {
+      "x": 32914,
+      "y": 32076,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Dustrunner",
+      "revid": 962410
+    }
+  },
+  {
+    "npc": "oteryn:npc.eathar",
+    "position": {
+      "x": 33536,
+      "y": 31948,
+      "z": 13
+    },
+    "wiki": {
+      "title": "Eathar",
+      "revid": 851685
+    }
+  },
+  {
+    "npc": "oteryn:npc.eclesius",
+    "position": {
+      "x": 32291,
+      "y": 32291,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Eclesius",
+      "revid": 1116703
+    }
+  },
+  {
+    "npc": "oteryn:npc.eddy",
+    "position": {
+      "x": 32168,
+      "y": 32431,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Eddy",
+      "revid": 908448
+    }
+  },
+  {
+    "npc": "oteryn:npc.edgar_ellen",
+    "position": {
+      "x": 32357,
+      "y": 32188,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Edgar-Ellen",
+      "revid": 842986
+    }
+  },
+  {
+    "npc": "oteryn:npc.edmund",
+    "position": {
+      "x": 33624,
+      "y": 31894,
+      "z": 4
+    },
+    "wiki": {
+      "title": "Edmund",
+      "revid": 1073466
+    }
+  },
+  {
+    "npc": "oteryn:npc.edowir",
+    "position": {
+      "x": 32343,
+      "y": 32363,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Edowir",
+      "revid": 851691
+    }
+  },
+  {
+    "npc": "oteryn:npc.eirik",
+    "position": {
+      "x": 32223,
+      "y": 31146,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Eirik",
+      "revid": 851695
+    }
+  },
+  {
+    "npc": "oteryn:npc.elane",
+    "position": {
+      "x": 32343,
+      "y": 32239,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Elane",
+      "revid": 1114115
+    }
+  },
+  {
+    "npc": "oteryn:npc.elbert",
+    "position": {
+      "x": 33585,
+      "y": 31988,
+      "z": 12
+    },
+    "wiki": {
+      "title": "Elbert",
+      "revid": 1073467
+    }
+  },
+  {
+    "npc": "oteryn:npc.eldoran_the_ambitious",
+    "position": {
+      "x": 33862,
+      "y": 32104,
+      "z": 2
+    },
+    "wiki": {
+      "title": "Eldoran the Ambitious",
+      "revid": 1154646
+    }
+  },
+  {
+    "npc": "oteryn:npc.eleonore",
+    "position": {
+      "x": 32332,
+      "y": 32764,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Eleonore",
+      "revid": 1114243
+    }
+  },
+  {
+    "npc": "oteryn:npc.eliza",
+    "position": {
+      "x": 33267,
+      "y": 31848,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Eliza",
+      "revid": 1206733
+    }
+  },
+  {
+    "npc": "oteryn:npc.elliott",
+    "position": {
+      "x": 33570,
+      "y": 31908,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Elliott",
+      "revid": 1116836
+    }
+  },
+  {
+    "npc": "oteryn:npc.ellipsis",
+    "position": {
+      "x": 33450,
+      "y": 32805,
+      "z": 11
+    },
+    "wiki": {
+      "title": "...",
+      "revid": 1116920
+    },
+    "audit_slug": "reference_ellipsis"
+  },
+  {
+    "npc": "oteryn:npc.elvith",
+    "position": {
+      "x": 32669,
+      "y": 31607,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Elvith",
+      "revid": 908457
+    }
+  },
+  {
+    "npc": "oteryn:npc.elyen_ravenlock",
+    "position": {
+      "x": 33013,
+      "y": 32359,
+      "z": 11
+    },
+    "wiki": {
+      "title": "Elyen Ravenlock",
+      "revid": 1116804
+    }
+  },
+  {
+    "npc": "oteryn:npc.emberwing",
+    "position": {
+      "x": 32551,
+      "y": 32623,
+      "z": 11
+    },
+    "wiki": {
+      "title": "Emberwing (NPC)",
+      "revid": 1124889
+    },
+    "held_reason": "POSITION_CONFLICT"
+  },
+  {
+    "npc": "oteryn:npc.emiliana",
+    "position": {
+      "x": 31960,
+      "y": 31901,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Emiliana",
+      "revid": 1212191
+    },
+    "positions": [
+      {
+        "x": 31960,
+        "y": 31901,
+        "z": 6
+      },
+      {
+        "x": 32412,
+        "y": 32687,
+        "z": 12
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.emilie",
+    "position": {
+      "x": 32358,
+      "y": 32183,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Emilie",
+      "revid": 844501
+    }
+  },
+  {
+    "npc": "oteryn:npc.emily",
+    "position": {
+      "x": 33612,
+      "y": 31886,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Emily",
+      "revid": 1073468
+    }
+  },
+  {
+    "npc": "oteryn:npc.emperor_rehal",
+    "position": {
+      "x": 32584,
+      "y": 31402,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Emperor Rehal",
+      "revid": 1114712
+    }
+  },
+  {
+    "npc": "oteryn:npc.enpa_rudra",
+    "position": {
+      "x": 33604,
+      "y": 31447,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Enpa Rudra",
+      "revid": 1171613
+    }
+  },
+  {
+    "npc": "oteryn:npc.eremo",
+    "position": {
+      "x": 33322,
+      "y": 31883,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Eremo",
+      "revid": 1178772
+    }
+  },
+  {
+    "npc": "oteryn:npc.eshaya",
+    "position": {
+      "x": 33915,
+      "y": 31498,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Eshaya",
+      "revid": 1116928
+    }
+  },
+  {
+    "npc": "oteryn:npc.esrik",
+    "position": {
+      "x": 33036,
+      "y": 31530,
+      "z": 10
+    },
+    "wiki": {
+      "title": "Esrik",
+      "revid": 908769
+    }
+  },
+  {
+    "npc": "oteryn:npc.etzel",
+    "position": {
+      "x": 32626,
+      "y": 31917,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Etzel",
+      "revid": 908465
+    }
+  },
+  {
+    "npc": "oteryn:npc.eustacio",
+    "position": {
+      "x": 32936,
+      "y": 32030,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Eustacio",
+      "revid": 1116936
+    }
+  },
+  {
+    "npc": "oteryn:npc.eustacios_spy_rat",
+    "position": {
+      "x": 33857,
+      "y": 31332,
+      "z": 9
+    },
+    "wiki": {
+      "title": "Eustacio's Spy Rat",
+      "revid": 1116941
+    },
+    "audit_slug": "eustacios_spy_rat"
+  },
+  {
+    "npc": "oteryn:npc.fabiana",
+    "position": {
+      "x": 33539,
+      "y": 31698,
+      "z": 9
+    },
+    "wiki": {
+      "title": "Fabiana",
+      "revid": 1041528
+    }
+  },
+  {
+    "npc": "oteryn:npc.fayla",
+    "position": {
+      "x": 33640,
+      "y": 31898,
+      "z": 4
+    },
+    "wiki": {
+      "title": "Fayla",
+      "revid": 1073471
+    }
+  },
+  {
+    "npc": "oteryn:npc.ferryman_kamil",
+    "position": {
+      "x": 32153,
+      "y": 32457,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Ferryman Kamil",
+      "revid": 851735
+    }
+  },
+  {
+    "npc": "oteryn:npc.ferryman_kamil_meluna",
+    "position": {
+      "x": 32088,
+      "y": 32470,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Ferryman Kamil",
+      "revid": 851735,
+      "coordinate_suffix": "2"
+    }
+  },
+  {
+    "npc": "oteryn:npc.fillias",
+    "position": {
+      "x": 33573,
+      "y": 31926,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Fillias",
+      "revid": 851737
+    }
+  },
+  {
+    "npc": "oteryn:npc.fitzgerald",
+    "position": {
+      "x": 33382,
+      "y": 32676,
+      "z": 3
+    },
+    "wiki": {
+      "title": "Fitzgerald",
+      "revid": 1177597
+    },
+    "audit_slug": "fitzgerald"
+  },
+  {
+    "npc": "oteryn:npc.flint",
+    "position": {
+      "x": 33635,
+      "y": 31883,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Flint",
+      "revid": 1073472
+    }
+  },
+  {
+    "npc": "oteryn:npc.frank_the_plank",
+    "position": {
+      "x": 33046,
+      "y": 32137,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Frank The Plank",
+      "revid": 1116796
+    }
+  },
+  {
+    "npc": "oteryn:npc.frans",
+    "position": {
+      "x": 32971,
+      "y": 32080,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Frans",
+      "revid": 1009337
+    }
+  },
+  {
+    "npc": "oteryn:npc.freezhild",
+    "position": {
+      "x": 32020,
+      "y": 31444,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Freezhild",
+      "revid": 1197220
+    }
+  },
+  {
+    "npc": "oteryn:npc.fynn",
+    "position": {
+      "x": 32284,
+      "y": 31138,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Fynn",
+      "revid": 851751
+    }
+  },
+  {
+    "npc": "oteryn:npc.fyodor",
+    "position": {
+      "x": 33639,
+      "y": 31898,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Fyodor",
+      "revid": 1073473
+    }
+  },
+  {
+    "npc": "oteryn:npc.g_ezkho",
+    "position": {
+      "x": 34052,
+      "y": 32485,
+      "z": 7
+    },
+    "wiki": {
+      "title": "G'Ezkho",
+      "revid": 1195634
+    }
+  },
+  {
+    "npc": "oteryn:npc.gaberiel",
+    "position": {
+      "x": 32343,
+      "y": 32214,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Gaberiel",
+      "revid": 995954
+    }
+  },
+  {
+    "npc": "oteryn:npc.galuna",
+    "position": {
+      "x": 32342,
+      "y": 32246,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Galuna",
+      "revid": 1051762
+    }
+  },
+  {
+    "npc": "oteryn:npc.gamel",
+    "position": {
+      "x": 32337,
+      "y": 32207,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Gamel",
+      "revid": 1113954
+    }
+  },
+  {
+    "npc": "oteryn:npc.george_the_boyscout",
+    "position": {
+      "x": 33031,
+      "y": 32009,
+      "z": 7
+    },
+    "wiki": {
+      "title": "George The Boyscout",
+      "revid": 851763
+    }
+  },
+  {
+    "npc": "oteryn:npc.georgia_rainbird",
+    "position": {
+      "x": 33588,
+      "y": 31907,
+      "z": 12
+    },
+    "wiki": {
+      "title": "Georgia Rainbird",
+      "revid": 1116845
+    }
+  },
+  {
+    "npc": "oteryn:npc.ghost_captain",
+    "position": {
+      "x": 32169,
+      "y": 32305,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Ghost Captain",
+      "revid": 851768
+    },
+    "held_reason": "NO_PLACEMENT_SOURCE"
+  },
+  {
+    "npc": "oteryn:npc.giri",
+    "position": {
+      "x": 33820,
+      "y": 32768,
+      "z": 4
+    },
+    "wiki": {
+      "title": "Giri",
+      "revid": 938156
+    }
+  },
+  {
+    "npc": "oteryn:npc.glimpse_of_allusion",
+    "position": {
+      "x": 33927,
+      "y": 32117,
+      "z": 15
+    },
+    "wiki": {
+      "title": "Glimpse of Allusion",
+      "revid": 1116908
+    },
+    "audit_slug": "glimpse_of_allusion"
+  },
+  {
+    "npc": "oteryn:npc.gnome_trooper",
+    "position": {
+      "x": 32169,
+      "y": 32651,
+      "z": 13
+    },
+    "wiki": {
+      "title": "Gnome Trooper",
+      "revid": 1116815
+    },
+    "positions": [
+      {
+        "x": 32169,
+        "y": 32651,
+        "z": 13
+      },
+      {
+        "x": 32333,
+        "y": 32590,
+        "z": 13
+      },
+      {
+        "x": 32296,
+        "y": 32505,
+        "z": 14
+      },
+      {
+        "x": 32170,
+        "y": 32662,
+        "z": 14
+      },
+      {
+        "x": 32153,
+        "y": 32522,
+        "z": 15
+      },
+      {
+        "x": 32264,
+        "y": 32708,
+        "z": 15
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.gnomission",
+    "position": {
+      "x": 33007,
+      "y": 31892,
+      "z": 9
+    },
+    "wiki": {
+      "title": "Gnomission",
+      "revid": 1116792
+    }
+  },
+  {
+    "npc": "oteryn:npc.gnommander",
+    "position": {
+      "x": 32248,
+      "y": 32604,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Gnommander",
+      "revid": 1116814
+    }
+  },
+  {
+    "npc": "oteryn:npc.gnops_member",
+    "position": {
+      "x": 32427,
+      "y": 31152,
+      "z": 15
+    },
+    "wiki": {
+      "title": "GNOPS Member",
+      "revid": 1116947
+    },
+    "positions": [
+      {
+        "x": 32427,
+        "y": 31152,
+        "z": 15
+      },
+      {
+        "x": 32538,
+        "y": 31148,
+        "z": 15
+      },
+      {
+        "x": 32533,
+        "y": 31082,
+        "z": 15
+      },
+      {
+        "x": 32424,
+        "y": 31111,
+        "z": 15
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.goldro",
+    "position": {
+      "x": 34055,
+      "y": 32503,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Goldro",
+      "revid": 1195637
+    }
+  },
+  {
+    "npc": "oteryn:npc.gorn",
+    "position": {
+      "x": 32377,
+      "y": 32200,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Gorn",
+      "revid": 1043484
+    }
+  },
+  {
+    "npc": "oteryn:npc.graham",
+    "position": {
+      "x": 33611,
+      "y": 31887,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Graham",
+      "revid": 1073474
+    }
+  },
+  {
+    "npc": "oteryn:npc.grof_the_guard",
+    "position": {
+      "x": 32373,
+      "y": 32184,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Grof, The Guard",
+      "revid": 1114024
+    }
+  },
+  {
+    "npc": "oteryn:npc.grovebeast_npc",
+    "position": {
+      "x": 32551,
+      "y": 32623,
+      "z": 11
+    },
+    "wiki": {
+      "title": "Grovebeast (NPC)",
+      "revid": 1124890
+    },
+    "held_reason": "POSITION_CONFLICT"
+  },
+  {
+    "npc": "oteryn:npc.guardian_of_the_deep_seas",
+    "position": {
+      "x": 33547,
+      "y": 31632,
+      "z": 14
+    },
+    "wiki": {
+      "title": "Guardian of the Deep Seas",
+      "revid": 1116843
+    }
+  },
+  {
+    "npc": "oteryn:npc.guide_elena",
+    "position": {
+      "x": 32952,
+      "y": 32030,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Guide Elena",
+      "revid": 851809
+    }
+  },
+  {
+    "npc": "oteryn:npc.guide_kunibert",
+    "position": {
+      "x": 33493,
+      "y": 31983,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Guide Kunibert",
+      "revid": 851811
+    }
+  },
+  {
+    "npc": "oteryn:npc.guide_luke",
+    "position": {
+      "x": 32319,
+      "y": 32207,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Guide Luke",
+      "revid": 851812
+    }
+  },
+  {
+    "npc": "oteryn:npc.gundralph",
+    "position": {
+      "x": 33268,
+      "y": 31849,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Gundralph",
+      "revid": 1206735
+    }
+  },
+  {
+    "npc": "oteryn:npc.gunther",
+    "position": {
+      "x": 33172,
+      "y": 31777,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Gunther",
+      "revid": 1104770
+    }
+  },
+  {
+    "npc": "oteryn:npc.h_l",
+    "position": {
+      "x": 32643,
+      "y": 32212,
+      "z": 7
+    },
+    "wiki": {
+      "title": "H.L.",
+      "revid": 908509
+    }
+  },
+  {
+    "npc": "oteryn:npc.haani",
+    "position": {
+      "x": 33811,
+      "y": 32772,
+      "z": 4
+    },
+    "wiki": {
+      "title": "Haani",
+      "revid": 938176
+    }
+  },
+  {
+    "npc": "oteryn:npc.hagor",
+    "position": {
+      "x": 32654,
+      "y": 32151,
+      "z": 10
+    },
+    "wiki": {
+      "title": "Hagor",
+      "revid": 1114105
+    }
+  },
+  {
+    "npc": "oteryn:npc.hanna",
+    "position": {
+      "x": 32407,
+      "y": 32219,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Hanna",
+      "revid": 908514
+    }
+  },
+  {
+    "npc": "oteryn:npc.hardek",
+    "position": {
+      "x": 32272,
+      "y": 32339,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Hardek",
+      "revid": 908515
+    }
+  },
+  {
+    "npc": "oteryn:npc.harlow_vengoth",
+    "position": {
+      "x": 32856,
+      "y": 31548,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Harlow",
+      "revid": 1178796
+    }
+  },
+  {
+    "npc": "oteryn:npc.harsky",
+    "position": {
+      "x": 32312,
+      "y": 32170,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Harsky",
+      "revid": 1051775
+    }
+  },
+  {
+    "npc": "oteryn:npc.hawkhurst",
+    "position": {
+      "x": 33357,
+      "y": 31984,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Hawkhurst",
+      "revid": 1154346
+    }
+  },
+  {
+    "npc": "oteryn:npc.hawkyr",
+    "position": {
+      "x": 32251,
+      "y": 31079,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Hawkyr",
+      "revid": 908518
+    }
+  },
+  {
+    "npc": "oteryn:npc.hector_the_mentor",
+    "position": {
+      "x": 32476,
+      "y": 32286,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Hector The Mentor",
+      "revid": 1137942
+    }
+  },
+  {
+    "npc": "oteryn:npc.hemor_the_guard",
+    "position": {
+      "x": 32627,
+      "y": 31925,
+      "z": 3
+    },
+    "wiki": {
+      "title": "Hemor, The Guard",
+      "revid": 851837
+    }
+  },
+  {
+    "npc": "oteryn:npc.henricus",
+    "position": {
+      "x": 32314,
+      "y": 32266,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Henricus",
+      "revid": 1114613
+    }
+  },
+  {
+    "npc": "oteryn:npc.hexel",
+    "position": {
+      "x": 33558,
+      "y": 31945,
+      "z": 14
+    },
+    "wiki": {
+      "title": "Hexel",
+      "revid": 851840
+    }
+  },
+  {
+    "npc": "oteryn:npc.hoaxette",
+    "position": {
+      "x": 32369,
+      "y": 32215,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Hoaxette",
+      "revid": 1114556
+    },
+    "held_reason": "NO_PLACEMENT_SOURCE"
+  },
+  {
+    "npc": "oteryn:npc.humnog_the_guard",
+    "position": {
+      "x": 32627,
+      "y": 31921,
+      "z": 3
+    },
+    "wiki": {
+      "title": "Humnog, The Guard",
+      "revid": 851844
+    }
+  },
+  {
+    "npc": "oteryn:npc.isika",
+    "position": {
+      "x": 33773,
+      "y": 32840,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Isika",
+      "revid": 938186
+    }
+  },
+  {
+    "npc": "oteryn:npc.iwan",
+    "position": {
+      "x": 33217,
+      "y": 31833,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Iwan",
+      "revid": 908783
+    }
+  },
+  {
+    "npc": "oteryn:npc.jack_the_worker",
+    "position": {
+      "x": 33032,
+      "y": 32104,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Jack The Worker",
+      "revid": 851869
+    }
+  },
+  {
+    "npc": "oteryn:npc.janz",
+    "position": {
+      "x": 32279,
+      "y": 31132,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Janz",
+      "revid": 908544
+    }
+  },
+  {
+    "npc": "oteryn:npc.jata",
+    "position": {
+      "x": 33809,
+      "y": 32851,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Jata",
+      "revid": 940848
+    }
+  },
+  {
+    "npc": "oteryn:npc.javala",
+    "position": {
+      "x": 33889,
+      "y": 32654,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Javala",
+      "revid": 1195643
+    }
+  },
+  {
+    "npc": "oteryn:npc.jean_claude",
+    "position": {
+      "x": 33006,
+      "y": 32053,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Jean Claude",
+      "revid": 851877
+    }
+  },
+  {
+    "npc": "oteryn:npc.jessica",
+    "position": {
+      "x": 32299,
+      "y": 31136,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Jessica",
+      "revid": 908546
+    }
+  },
+  {
+    "npc": "oteryn:npc.john_the_carpenter",
+    "position": {
+      "x": 32438,
+      "y": 32473,
+      "z": 8
+    },
+    "wiki": {
+      "title": "John the Carpenter",
+      "revid": 880751
+    }
+  },
+  {
+    "npc": "oteryn:npc.jossel",
+    "position": {
+      "x": 33566,
+      "y": 31948,
+      "z": 13
+    },
+    "wiki": {
+      "title": "Jossel",
+      "revid": 851887
+    }
+  },
+  {
+    "npc": "oteryn:npc.julian",
+    "position": {
+      "x": 32883,
+      "y": 32076,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Julian",
+      "revid": 908552
+    }
+  },
+  {
+    "npc": "oteryn:npc.junkar_mines",
+    "position": {
+      "x": 32555,
+      "y": 32068,
+      "z": 10
+    },
+    "wiki": {
+      "title": "Junkar",
+      "revid": 1178799,
+      "coordinate_suffix": "3"
+    }
+  },
+  {
+    "npc": "oteryn:npc.junkar_robsons",
+    "position": {
+      "x": 32524,
+      "y": 32038,
+      "z": 14
+    },
+    "wiki": {
+      "title": "Junkar",
+      "revid": 1178799
+    }
+  },
+  {
+    "npc": "oteryn:npc.junkar_thais",
+    "position": {
+      "x": 32366,
+      "y": 32202,
+      "z": 13
+    },
+    "wiki": {
+      "title": "Junkar",
+      "revid": 1178799,
+      "coordinate_suffix": "2"
+    }
+  },
+  {
+    "npc": "oteryn:npc.kasmir",
+    "position": {
+      "x": 33212,
+      "y": 32452,
+      "z": 1
+    },
+    "wiki": {
+      "title": "Kasmir",
+      "revid": 1114056
+    }
+  },
+  {
+    "npc": "oteryn:npc.kaumudi",
+    "position": {
+      "x": 33705,
+      "y": 32764,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Kaumudi",
+      "revid": 981271
+    }
+  },
+  {
+    "npc": "oteryn:npc.kjesse",
+    "position": {
+      "x": 32212,
+      "y": 31128,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Kjesse",
+      "revid": 851907
+    }
+  },
+  {
+    "npc": "oteryn:npc.klesar",
+    "position": {
+      "x": 33542,
+      "y": 31947,
+      "z": 14
+    },
+    "wiki": {
+      "title": "Klesar",
+      "revid": 851909
+    }
+  },
+  {
+    "npc": "oteryn:npc.kromrek",
+    "position": {
+      "x": 33554,
+      "y": 31966,
+      "z": 13
+    },
+    "wiki": {
+      "title": "Kromrek",
+      "revid": 851912
+    }
+  },
+  {
+    "npc": "oteryn:npc.lai",
+    "position": {
+      "x": 33834,
+      "y": 32352,
+      "z": 4
+    },
+    "wiki": {
+      "title": "Lai",
+      "revid": 1177429
+    }
+  },
+  {
+    "npc": "oteryn:npc.lailene",
+    "position": {
+      "x": 33282,
+      "y": 31845,
+      "z": 4
+    },
+    "wiki": {
+      "title": "Lailene",
+      "revid": 908562
+    }
+  },
+  {
+    "npc": "oteryn:npc.lesser_messenger_of_heaven",
+    "position": {
+      "x": 33189,
+      "y": 31642,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Lesser Messenger of Heaven",
+      "revid": 851926
+    },
+    "positions": [
+      {
+        "x": 33189,
+        "y": 31642,
+        "z": 7
+      },
+      {
+        "x": 32536,
+        "y": 32026,
+        "z": 7
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.liane",
+    "position": {
+      "x": 32332,
+      "y": 31786,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Liane",
+      "revid": 1051737
+    }
+  },
+  {
+    "npc": "oteryn:npc.lieutenant_harlan",
+    "position": {
+      "x": 33850,
+      "y": 32193,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Lieutenant Harlan",
+      "revid": 1177557
+    }
+  },
+  {
+    "npc": "oteryn:npc.lightfoot",
+    "position": {
+      "x": 32921,
+      "y": 32076,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Lightfoot",
+      "revid": 962411
+    }
+  },
+  {
+    "npc": "oteryn:npc.lisander",
+    "position": {
+      "x": 32815,
+      "y": 31246,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Lisander",
+      "revid": 1114685
+    }
+  },
+  {
+    "npc": "oteryn:npc.livielle",
+    "position": {
+      "x": 32982,
+      "y": 32036,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Livielle",
+      "revid": 908570
+    }
+  },
+  {
+    "npc": "oteryn:npc.lizard_prisoner",
+    "position": {
+      "x": 33261,
+      "y": 31159,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Lizard Prisoner",
+      "revid": 766255
+    },
+    "audit_slug": "lizard_prisoner"
+  },
+  {
+    "npc": "oteryn:npc.lizard_tunnel_guard",
+    "position": {
+      "x": 33379,
+      "y": 31107,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Lizard Tunnel Guard",
+      "revid": 1116741
+    }
+  },
+  {
+    "npc": "oteryn:npc.lizzie",
+    "position": {
+      "x": 31941,
+      "y": 31920,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Lizzie",
+      "revid": 1208557
+    }
+  },
+  {
+    "npc": "oteryn:npc.lokur",
+    "position": {
+      "x": 32648,
+      "y": 31905,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Lokur",
+      "revid": 908919
+    }
+  },
+  {
+    "npc": "oteryn:npc.lorbas",
+    "position": {
+      "x": 32695,
+      "y": 32310,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Lorbas",
+      "revid": 1114078
+    }
+  },
+  {
+    "npc": "oteryn:npc.lubo",
+    "position": {
+      "x": 32488,
+      "y": 32119,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Lubo",
+      "revid": 1051763
+    }
+  },
+  {
+    "npc": "oteryn:npc.lukosch",
+    "position": {
+      "x": 32618,
+      "y": 31947,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Lukosch",
+      "revid": 908575
+    }
+  },
+  {
+    "npc": "oteryn:npc.luna",
+    "position": {
+      "x": 33254,
+      "y": 31840,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Luna",
+      "revid": 908576
+    }
+  },
+  {
+    "npc": "oteryn:npc.lurik",
+    "position": {
+      "x": 32320,
+      "y": 31136,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Lurik",
+      "revid": 1114428
+    }
+  },
+  {
+    "npc": "oteryn:npc.maelyrra",
+    "position": {
+      "x": 33484,
+      "y": 32237,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Maelyrra",
+      "revid": 1116890
+    }
+  },
+  {
+    "npc": "oteryn:npc.maeryn",
+    "position": {
+      "x": 33331,
+      "y": 31686,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Maeryn",
+      "revid": 1116853
+    }
+  },
+  {
+    "npc": "oteryn:npc.malech",
+    "position": {
+      "x": 32605,
+      "y": 31939,
+      "z": 10
+    },
+    "wiki": {
+      "title": "Malech",
+      "revid": 851952
+    }
+  },
+  {
+    "npc": "oteryn:npc.malor",
+    "position": {
+      "x": 33044,
+      "y": 32621,
+      "z": 1
+    },
+    "wiki": {
+      "title": "Malor",
+      "revid": 1114123
+    }
+  },
+  {
+    "npc": "oteryn:npc.maria",
+    "position": {
+      "x": 32912,
+      "y": 32082,
+      "z": 9
+    },
+    "wiki": {
+      "title": "Maria",
+      "revid": 908581
+    }
+  },
+  {
+    "npc": "oteryn:npc.marina",
+    "position": {
+      "x": 32329,
+      "y": 32528,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Marina",
+      "revid": 1105385
+    }
+  },
+  {
+    "npc": "oteryn:npc.maris",
+    "position": {
+      "x": 32649,
+      "y": 31293,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Maris",
+      "revid": 1178794
+    }
+  },
+  {
+    "npc": "oteryn:npc.maris_mistrock",
+    "position": {
+      "x": 32638,
+      "y": 31438,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Maris",
+      "revid": 1178794,
+      "coordinate_suffix": "2"
+    }
+  },
+  {
+    "npc": "oteryn:npc.maritima",
+    "position": {
+      "x": 32905,
+      "y": 31167,
+      "z": 13
+    },
+    "wiki": {
+      "title": "Maritima",
+      "revid": 1116699
+    }
+  },
+  {
+    "npc": "oteryn:npc.markwin",
+    "position": {
+      "x": 32418,
+      "y": 32147,
+      "z": 15
+    },
+    "wiki": {
+      "title": "Markwin",
+      "revid": 1081271
+    }
+  },
+  {
+    "npc": "oteryn:npc.maro",
+    "position": {
+      "x": 33622,
+      "y": 31883,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Maro",
+      "revid": 1073476
+    }
+  },
+  {
+    "npc": "oteryn:npc.marvik",
+    "position": {
+      "x": 32444,
+      "y": 32213,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Marvik",
+      "revid": 1051759
+    }
+  },
+  {
+    "npc": "oteryn:npc.marvin",
+    "position": {
+      "x": 33662,
+      "y": 31878,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Marvin",
+      "revid": 1116837
+    }
+  },
+  {
+    "npc": "oteryn:npc.maryza",
+    "position": {
+      "x": 32634,
+      "y": 31889,
+      "z": 9
+    },
+    "wiki": {
+      "title": "Maryza",
+      "revid": 1114005
+    }
+  },
+  {
+    "npc": "oteryn:npc.melfar",
+    "position": {
+      "x": 32523,
+      "y": 31966,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Melfar",
+      "revid": 1116732
+    }
+  },
+  {
+    "npc": "oteryn:npc.milos",
+    "position": {
+      "x": 33259,
+      "y": 31826,
+      "z": 3
+    },
+    "wiki": {
+      "title": "Milos",
+      "revid": 1116713
+    }
+  },
+  {
+    "npc": "oteryn:npc.minzy",
+    "position": {
+      "x": 32743,
+      "y": 31971,
+      "z": 12
+    },
+    "wiki": {
+      "title": "Minzy",
+      "revid": 1116754
+    },
+    "held_reason": "NO_PLACEMENT_SOURCE"
+  },
+  {
+    "npc": "oteryn:npc.mirabell",
+    "position": {
+      "x": 33174,
+      "y": 31801,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Mirabell",
+      "revid": 1114034
+    }
+  },
+  {
+    "npc": "oteryn:npc.murim",
+    "position": {
+      "x": 33013,
+      "y": 31494,
+      "z": 10
+    },
+    "wiki": {
+      "title": "Murim",
+      "revid": 908787
+    }
+  },
+  {
+    "npc": "oteryn:npc.muzir",
+    "position": {
+      "x": 33221,
+      "y": 32389,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Muzir",
+      "revid": 851994
+    }
+  },
+  {
+    "npc": "oteryn:npc.myzzi",
+    "position": {
+      "x": 33275,
+      "y": 31701,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Myzzi",
+      "revid": 1116915
+    }
+  },
+  {
+    "npc": "oteryn:npc.nagging_naga",
+    "position": {
+      "x": 33909,
+      "y": 32762,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Nagging Naga",
+      "revid": 1116961
+    }
+  },
+  {
+    "npc": "oteryn:npc.nah_bob",
+    "position": {
+      "x": 33104,
+      "y": 32520,
+      "z": 2
+    },
+    "wiki": {
+      "title": "Nah'Bob",
+      "revid": 1114137
+    }
+  },
+  {
+    "npc": "oteryn:npc.nathaniel",
+    "position": {
+      "x": 32953,
+      "y": 32054,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Nathaniel",
+      "revid": 844575
+    }
+  },
+  {
+    "npc": "oteryn:npc.nekaret",
+    "position": {
+      "x": 34034,
+      "y": 32506,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Nekaret",
+      "revid": 1197365
+    }
+  },
+  {
+    "npc": "oteryn:npc.nelliem",
+    "position": {
+      "x": 32883,
+      "y": 32086,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Nelliem",
+      "revid": 908604
+    }
+  },
+  {
+    "npc": "oteryn:npc.nelly",
+    "position": {
+      "x": 32308,
+      "y": 31134,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Nelly",
+      "revid": 908605
+    }
+  },
+  {
+    "npc": "oteryn:npc.nemal",
+    "position": {
+      "x": 32615,
+      "y": 32108,
+      "z": 10
+    },
+    "wiki": {
+      "title": "Nemal",
+      "revid": 1114106
+    }
+  },
+  {
+    "npc": "oteryn:npc.nezil",
+    "position": {
+      "x": 32661,
+      "y": 31912,
+      "z": 9
+    },
+    "wiki": {
+      "title": "Nezil",
+      "revid": 908606
+    }
+  },
+  {
+    "npc": "oteryn:npc.nicholas",
+    "position": {
+      "x": 33640,
+      "y": 31898,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Nicholas",
+      "revid": 1116830
+    }
+  },
+  {
+    "npc": "oteryn:npc.nihaka",
+    "position": {
+      "x": 33721,
+      "y": 32770,
+      "z": 3
+    },
+    "wiki": {
+      "title": "Nihaka",
+      "revid": 938236
+    }
+  },
+  {
+    "npc": "oteryn:npc.nilavarna",
+    "position": {
+      "x": 33730,
+      "y": 32825,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Nilavarna",
+      "revid": 938237
+    }
+  },
+  {
+    "npc": "oteryn:npc.nipuna",
+    "position": {
+      "x": 33778,
+      "y": 32837,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Nipuna",
+      "revid": 938238
+    }
+  },
+  {
+    "npc": "oteryn:npc.nor",
+    "position": {
+      "x": 32001,
+      "y": 31443,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Nor",
+      "revid": 1114433
+    }
+  },
+  {
+    "npc": "oteryn:npc.normod",
+    "position": {
+      "x": 33550,
+      "y": 31939,
+      "z": 14
+    },
+    "wiki": {
+      "title": "Normod",
+      "revid": 852019
+    }
+  },
+  {
+    "npc": "oteryn:npc.oblivion",
+    "position": {
+      "x": 33023,
+      "y": 32309,
+      "z": 10
+    },
+    "wiki": {
+      "title": "Oblivion",
+      "revid": 1116805
+    }
+  },
+  {
+    "npc": "oteryn:npc.ocelus",
+    "position": {
+      "x": 32310,
+      "y": 32622,
+      "z": 4
+    },
+    "wiki": {
+      "title": "Ocelus",
+      "revid": 1114273
+    }
+  },
+  {
+    "npc": "oteryn:npc.oldrak",
+    "position": {
+      "x": 32816,
+      "y": 32260,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Oldrak",
+      "revid": 1114018
+    }
+  },
+  {
+    "npc": "oteryn:npc.oliver",
+    "position": {
+      "x": 32895,
+      "y": 31229,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Oliver",
+      "revid": 1114692
+    }
+  },
+  {
+    "npc": "oteryn:npc.olrik",
+    "position": {
+      "x": 32675,
+      "y": 31698,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Olrik",
+      "revid": 1113931
+    }
+  },
+  {
+    "npc": "oteryn:npc.omar",
+    "position": {
+      "x": 34037,
+      "y": 32487,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Omar",
+      "revid": 1197262
+    }
+  },
+  {
+    "npc": "oteryn:npc.omrabas",
+    "position": {
+      "x": 33020,
+      "y": 32453,
+      "z": 9
+    },
+    "wiki": {
+      "title": "Omrabas",
+      "revid": 1116802
+    }
+  },
+  {
+    "npc": "oteryn:npc.one_eyed_joe",
+    "position": {
+      "x": 32026,
+      "y": 32886,
+      "z": 6
+    },
+    "wiki": {
+      "title": "One-Eyed Joe",
+      "revid": 1116842
+    }
+  },
+  {
+    "npc": "oteryn:npc.ongulf",
+    "position": {
+      "x": 33025,
+      "y": 31540,
+      "z": 14
+    },
+    "wiki": {
+      "title": "Ongulf",
+      "revid": 1116723
+    }
+  },
+  {
+    "npc": "oteryn:npc.ortelio",
+    "position": {
+      "x": 34066,
+      "y": 32498,
+      "z": 14
+    },
+    "wiki": {
+      "title": "Ortelio",
+      "revid": 1099211
+    },
+    "positions": [
+      {
+        "x": 34066,
+        "y": 32498,
+        "z": 14
+      },
+      {
+        "x": 34094,
+        "y": 32391,
+        "z": 14
+      },
+      {
+        "x": 34062,
+        "y": 32427,
+        "z": 14
+      },
+      {
+        "x": 34067,
+        "y": 32460,
+        "z": 14
+      },
+      {
+        "x": 34033,
+        "y": 32365,
+        "z": 14
+      }
+    ]
+  },
+  {
+    "npc": "oteryn:npc.ortheus",
+    "position": {
+      "x": 32879,
+      "y": 31085,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Ortheus",
+      "revid": 1114686
+    }
+  },
+  {
+    "npc": "oteryn:npc.owin",
+    "position": {
+      "x": 33341,
+      "y": 31679,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Owin",
+      "revid": 999104
+    }
+  },
+  {
+    "npc": "oteryn:npc.padreia",
+    "position": {
+      "x": 32300,
+      "y": 31816,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Padreia",
+      "revid": 1187142
+    }
+  },
+  {
+    "npc": "oteryn:npc.palimuth",
+    "position": {
+      "x": 32802,
+      "y": 31223,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Palimuth",
+      "revid": 1114687
+    }
+  },
+  {
+    "npc": "oteryn:npc.partos",
+    "position": {
+      "x": 32323,
+      "y": 32280,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Partos",
+      "revid": 1114080
+    }
+  },
+  {
+    "npc": "oteryn:npc.paulette",
+    "position": {
+      "x": 32399,
+      "y": 32215,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Paulette",
+      "revid": 844587
+    }
+  },
+  {
+    "npc": "oteryn:npc.pemaret",
+    "position": {
+      "x": 33287,
+      "y": 31956,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Pemaret",
+      "revid": 1178771
+    }
+  },
+  {
+    "npc": "oteryn:npc.peremin",
+    "position": {
+      "x": 33550,
+      "y": 31963,
+      "z": 14
+    },
+    "wiki": {
+      "title": "Peremin",
+      "revid": 852059
+    }
+  },
+  {
+    "npc": "oteryn:npc.pescadu",
+    "position": {
+      "x": 34021,
+      "y": 32505,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Pescadu",
+      "revid": 1197366
+    }
+  },
+  {
+    "npc": "oteryn:npc.peter",
+    "position": {
+      "x": 32857,
+      "y": 31302,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Peter",
+      "revid": 1114693
+    }
+  },
+  {
+    "npc": "oteryn:npc.petros",
+    "position": {
+      "x": 33289,
+      "y": 32481,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Petros",
+      "revid": 1178768
+    }
+  },
+  {
+    "npc": "oteryn:npc.pino",
+    "position": {
+      "x": 33192,
+      "y": 31783,
+      "z": 3
+    },
+    "wiki": {
+      "title": "Pino",
+      "revid": 933415
+    }
+  },
+  {
+    "npc": "oteryn:npc.polly",
+    "position": {
+      "x": 32116,
+      "y": 32968,
+      "z": 11
+    },
+    "wiki": {
+      "title": "Polly",
+      "revid": 1116720
+    }
+  },
+  {
+    "npc": "oteryn:npc.pompan",
+    "position": {
+      "x": 33036,
+      "y": 31543,
+      "z": 10
+    },
+    "wiki": {
+      "title": "Pompan",
+      "revid": 908794
+    }
+  },
+  {
+    "npc": "oteryn:npc.puffels",
+    "position": {
+      "x": 33269,
+      "y": 31850,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Puffels",
+      "revid": 1206731
+    }
+  },
+  {
+    "npc": "oteryn:npc.pugwah",
+    "position": {
+      "x": 32809,
+      "y": 31251,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Pugwah",
+      "revid": 1035253
+    }
+  },
+  {
+    "npc": "oteryn:npc.pukosch",
+    "position": {
+      "x": 32551,
+      "y": 31930,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Pukosch",
+      "revid": 908636
+    }
+  },
+  {
+    "npc": "oteryn:npc.pydar",
+    "position": {
+      "x": 32655,
+      "y": 31893,
+      "z": 11
+    },
+    "wiki": {
+      "title": "Pydar",
+      "revid": 1114159
+    }
+  },
+  {
+    "npc": "oteryn:npc.rashid",
+    "position": {
+      "x": 32207,
+      "y": 31155,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Rashid",
+      "revid": 1097793
+    },
+    "positions": [
+      {
+        "x": 32207,
+        "y": 31155,
+        "z": 7
+      },
+      {
+        "x": 32300,
+        "y": 32837,
+        "z": 7
+      },
+      {
+        "x": 32577,
+        "y": 32753,
+        "z": 7
+      },
+      {
+        "x": 33066,
+        "y": 32879,
+        "z": 6
+      },
+      {
+        "x": 33235,
+        "y": 32483,
+        "z": 7
+      },
+      {
+        "x": 33166,
+        "y": 31810,
+        "z": 6
+      },
+      {
+        "x": 32328,
+        "y": 31782,
+        "z": 6
+      }
+    ],
+    "origin": "native",
+    "native_source": {
+      "repository": "Oteryn/Oteryn-Game",
+      "revision": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "path": "crates/gameplay/entities/src/rashid_schedule.rs",
+      "note": "Preserve the existing exact UTC weekday selector cells. Retail Wiki names the same weekday cities and taverns; its indicative Saturday point collides with Mirabell."
+    }
+  },
+  {
+    "npc": "oteryn:npc.ray",
+    "position": {
+      "x": 32621,
+      "y": 32747,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Ray",
+      "revid": 908647
+    }
+  },
+  {
+    "npc": "oteryn:npc.riddler",
+    "position": {
+      "x": 32479,
+      "y": 31902,
+      "z": 2
+    },
+    "wiki": {
+      "title": "Riddler",
+      "revid": 1114109
+    }
+  },
+  {
+    "npc": "oteryn:npc.robert",
+    "position": {
+      "x": 32233,
+      "y": 31072,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Robert",
+      "revid": 908653
+    }
+  },
+  {
+    "npc": "oteryn:npc.robson",
+    "position": {
+      "x": 32526,
+      "y": 32021,
+      "z": 13
+    },
+    "wiki": {
+      "title": "Robson",
+      "revid": 962416
+    }
+  },
+  {
+    "npc": "oteryn:npc.romella",
+    "position": {
+      "x": 32913,
+      "y": 32117,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Romella",
+      "revid": 908657
+    }
+  },
+  {
+    "npc": "oteryn:npc.romir",
+    "position": {
+      "x": 32212,
+      "y": 31057,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Romir",
+      "revid": 908905
+    }
+  },
+  {
+    "npc": "oteryn:npc.rudolph",
+    "position": {
+      "x": 33212,
+      "y": 31812,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Rudolph",
+      "revid": 908664
+    }
+  },
+  {
+    "npc": "oteryn:npc.sane_mage",
+    "position": {
+      "x": 33299,
+      "y": 31811,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Sane Mage",
+      "revid": 846161
+    }
+  },
+  {
+    "npc": "oteryn:npc.shiantis",
+    "position": {
+      "x": 32890,
+      "y": 32086,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Shiantis",
+      "revid": 908678
+    }
+  },
+  {
+    "npc": "oteryn:npc.shortsighted_dwarf",
+    "position": {
+      "x": 32679,
+      "y": 31953,
+      "z": 12
+    },
+    "wiki": {
+      "title": "Shortsighted Dwarf",
+      "revid": 852145
+    }
+  },
+  {
+    "npc": "oteryn:npc.sigurd",
+    "position": {
+      "x": 32626,
+      "y": 31923,
+      "z": 5
+    },
+    "wiki": {
+      "title": "Sigurd",
+      "revid": 908683
+    }
+  },
+  {
+    "npc": "oteryn:npc.sinatuki",
+    "position": {
+      "x": 32426,
+      "y": 31085,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Sinatuki",
+      "revid": 1114431
+    }
+  },
+  {
+    "npc": "oteryn:npc.sirik",
+    "position": {
+      "x": 32323,
+      "y": 31117,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Sirik",
+      "revid": 852152
+    }
+  },
+  {
+    "npc": "oteryn:npc.tarak_inner",
+    "position": {
+      "x": 32917,
+      "y": 31199,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Tarak",
+      "revid": 1178795
+    }
+  },
+  {
+    "npc": "oteryn:npc.tarak_sunken",
+    "position": {
+      "x": 32940,
+      "y": 31182,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Tarak",
+      "revid": 1178795,
+      "coordinate_suffix": "2"
+    }
+  },
+  {
+    "npc": "oteryn:npc.taya",
+    "position": {
+      "x": 33815,
+      "y": 31464,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Taya",
+      "revid": 1116953
+    }
+  },
+  {
+    "npc": "oteryn:npc.telas_golem",
+    "position": {
+      "x": 33267,
+      "y": 31789,
+      "z": 11
+    },
+    "wiki": {
+      "title": "Telas Golem",
+      "revid": 843970
+    }
+  },
+  {
+    "npc": "oteryn:npc.tezila",
+    "position": {
+      "x": 32657,
+      "y": 31922,
+      "z": 9
+    },
+    "wiki": {
+      "title": "Tezila",
+      "revid": 908707
+    }
+  },
+  {
+    "npc": "oteryn:npc.the_orc_king",
+    "position": {
+      "x": 32983,
+      "y": 31728,
+      "z": 9
+    },
+    "wiki": {
+      "title": "The Orc King",
+      "revid": 1114120
+    }
+  },
+  {
+    "npc": "oteryn:npc.thomas",
+    "position": {
+      "x": 33256,
+      "y": 31838,
+      "z": 4
+    },
+    "wiki": {
+      "title": "Thomas",
+      "revid": 908711
+    }
+  },
+  {
+    "npc": "oteryn:npc.thorwulf",
+    "position": {
+      "x": 32267,
+      "y": 31091,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Thorwulf",
+      "revid": 909016
+    }
+  },
+  {
+    "npc": "oteryn:npc.toffee",
+    "position": {
+      "x": 33379,
+      "y": 32179,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Toffee",
+      "revid": 1176253
+    }
+  },
+  {
+    "npc": "oteryn:npc.tulf",
+    "position": {
+      "x": 32586,
+      "y": 31928,
+      "z": 3
+    },
+    "wiki": {
+      "title": "Tulf",
+      "revid": 852227
+    }
+  },
+  {
+    "npc": "oteryn:npc.ursula",
+    "position": {
+      "x": 33268,
+      "y": 31849,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Ursula",
+      "revid": 1206732
+    }
+  },
+  {
+    "npc": "oteryn:npc.wally",
+    "position": {
+      "x": 32566,
+      "y": 32019,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Wally",
+      "revid": 908738
+    }
+  },
+  {
+    "npc": "oteryn:npc.willard",
+    "position": {
+      "x": 33214,
+      "y": 31793,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Willard",
+      "revid": 908741
+    }
+  },
+  {
+    "npc": "oteryn:npc.wox",
+    "position": {
+      "x": 33944,
+      "y": 32117,
+      "z": 15
+    },
+    "wiki": {
+      "title": "WOX",
+      "revid": 1116907
+    },
+    "audit_slug": "wox"
+  },
+  {
+    "npc": "oteryn:npc.wyrdin",
+    "position": {
+      "x": 33268,
+      "y": 31838,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Wyrdin",
+      "revid": 1114674
+    }
+  },
+  {
+    "npc": "oteryn:npc.xelvar",
+    "position": {
+      "x": 32622,
+      "y": 31861,
+      "z": 11
+    },
+    "wiki": {
+      "title": "Xelvar",
+      "revid": 1116780
+    }
+  },
+  {
+    "npc": "oteryn:npc.xorlosh",
+    "position": {
+      "x": 32613,
+      "y": 31499,
+      "z": 14
+    },
+    "wiki": {
+      "title": "Xorlosh",
+      "revid": 1114715
+    }
+  },
+  {
+    "npc": "oteryn:npc.yalahari",
+    "position": {
+      "x": 32801,
+      "y": 31189,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Yalahari (NPC)",
+      "revid": 1116698
+    }
+  },
+  {
+    "npc": "oteryn:npc.yielothax",
+    "position": {
+      "x": 33928,
+      "y": 32137,
+      "z": 15
+    },
+    "wiki": {
+      "title": "Yielothax (NPC)",
+      "revid": 1116906
+    },
+    "audit_slug": "yielothax_npc"
+  },
+  {
+    "npc": "oteryn:npc.yonan",
+    "position": {
+      "x": 33922,
+      "y": 31513,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Yonan",
+      "revid": 1116927
+    }
+  },
+  {
+    "npc": "oteryn:npc.yselda",
+    "position": {
+      "x": 32619,
+      "y": 32488,
+      "z": 12
+    },
+    "wiki": {
+      "title": "Yselda",
+      "revid": 1116949
+    }
+  },
+  {
+    "npc": "oteryn:npc.zalamon",
+    "position": {
+      "x": 33356,
+      "y": 31411,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Zalamon",
+      "revid": 1116724
+    }
+  },
+  {
+    "npc": "oteryn:npc.zarifan",
+    "position": {
+      "x": 33040,
+      "y": 32484,
+      "z": 11
+    },
+    "wiki": {
+      "title": "Zarifan",
+      "revid": 1116809
+    }
+  },
+  {
+    "npc": "oteryn:npc.zebron",
+    "position": {
+      "x": 32931,
+      "y": 32071,
+      "z": 9
+    },
+    "wiki": {
+      "title": "Zebron",
+      "revid": 1114098
+    }
+  },
+  {
+    "npc": "oteryn:npc.zirkon",
+    "position": {
+      "x": 32683,
+      "y": 31392,
+      "z": 12
+    },
+    "wiki": {
+      "title": "Zirkon",
+      "revid": 852298
+    }
+  },
+  {
+    "npc": "oteryn:npc.ziyad",
+    "position": {
+      "x": 33804,
+      "y": 32769,
+      "z": 2
+    },
+    "wiki": {
+      "title": "Ziyad",
+      "revid": 938311
+    }
+  },
+  {
+    "npc": "oteryn:npc.zizzle",
+    "position": {
+      "x": 33103,
+      "y": 31120,
+      "z": 12
+    },
+    "wiki": {
+      "title": "Zizzle",
+      "revid": 1116744
+    }
+  },
+  {
+    "npc": "oteryn:npc.zlak",
+    "position": {
+      "x": 33082,
+      "y": 31220,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Zlak",
+      "revid": 1116743
+    }
+  },
+  {
+    "npc": "oteryn:npc.znozel",
+    "position": {
+      "x": 32822,
+      "y": 31248,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Znozel",
+      "revid": 852301
+    }
+  },
+  {
+    "npc": "oteryn:npc.zora",
+    "position": {
+      "x": 32362,
+      "y": 31324,
+      "z": 6
+    },
+    "wiki": {
+      "title": "Zora",
+      "revid": 908759
+    }
+  },
+  {
+    "npc": "oteryn:npc.ztiss",
+    "position": {
+      "x": 33169,
+      "y": 31230,
+      "z": 11
+    },
+    "wiki": {
+      "title": "Ztiss",
+      "revid": 1116730
+    }
+  },
+  {
+    "npc": "oteryn:npc.zumtah",
+    "position": {
+      "x": 33362,
+      "y": 31207,
+      "z": 8
+    },
+    "wiki": {
+      "title": "Zumtah",
+      "revid": 1116745
+    }
+  },
+  {
+    "npc": "oteryn:npc.zurak",
+    "position": {
+      "x": 33158,
+      "y": 31225,
+      "z": 7
+    },
+    "wiki": {
+      "title": "Zurak",
+      "revid": 1116731
+    }
+  }
+]

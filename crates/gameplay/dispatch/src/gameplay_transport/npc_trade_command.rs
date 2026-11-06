@@ -277,6 +277,33 @@ pub(super) async fn trade(
     let Ok(item) = generation_item_facts(native, &materialized) else {
         return Err(Box::new(NpcTradeStep::rejected()));
     };
+    if offer.side == NpcTradeSide::Buy
+        && let Some(charges) = crate::content::npc_catalogue::service::default_state_purchase(
+            &offer.npc_key,
+            &offer.item_key,
+            u64::from(offer.unit_price),
+        )
+        && charges > 0
+    {
+        use crate::content::ReferenceItemField::Known;
+        let full = native
+            .item_policy(
+                &item.definition.production_key,
+                &item.definition.revision_ref,
+            )
+            .and_then(|policy| match &policy.record().semantics.charges {
+                Known(charges) => match charges.count {
+                    Known(count) => Some(count),
+                    _ => None,
+                },
+                _ => None,
+            });
+        if full != Some(charges) || offer.count != 1 {
+            return Err(Box::new(NpcTradeStep::rejected()));
+        }
+        // Full-charge hireling purchases use the same lazy full-state representation.
+        // The existing trade receipt binds the physical quantity and definition revision.
+    }
     if let Some(selection) = &mut hireling {
         let row = &crate::domain::hireling::catalogue::ROWS[selection.source_row];
         if row.sub_type != 0 {

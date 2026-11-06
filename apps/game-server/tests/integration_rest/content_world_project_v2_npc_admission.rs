@@ -171,6 +171,7 @@ fn offer(
         count: None,
         sub_type: None,
         parity_pending: false,
+        postman_unit_price: None,
     }
 }
 

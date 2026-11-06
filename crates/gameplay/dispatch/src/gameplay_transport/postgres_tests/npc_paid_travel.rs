@@ -125,7 +125,7 @@ fn scenario() -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            14,
+            17,
             channel_pin,
         )
         .map_err(debug)?;
@@ -771,6 +771,45 @@ fn scenario() -> TestResult {
             let command_id = 100 + u64::try_from(index)? * 10;
             owner.clock_origin -= std::time::Duration::from_secs(1);
             talk(&owner, &dependencies, npc, command_id, "hi").await?;
+            if *captain == "petros" && *destination == "issavi" {
+                let before = gold(&h).await?;
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::raw_sql(sqlx::AssertSqlSafe(crate::durability::item_fee_burn::test_support::item(
+                    240, "oteryn:item.tibia.i169", "definition-r1", 1,
+                ))).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) \
+                    VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid, \
+                    (SELECT COALESCE(MAX(placement_ordinal),0)+1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($2,'hex')::uuid),encode($5,'hex')::uuid)")
+                    .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(240).as_slice()).bind(id(42).as_slice()).bind(id(242).as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+                assert!(line(&talk(&owner, &dependencies, npc, command_id + 1, destination).await?).contains("don't sail"));
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::raw_sql(sqlx::AssertSqlSafe(crate::durability::item_fee_burn::test_support::item(
+                    241, "oteryn:item.tibia.i2854", "definition-r1", 1,
+                ))).execute(&mut *tx).await?;
+                sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(240).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) \
+                    VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid, \
+                    (SELECT COALESCE(MAX(placement_ordinal),0)+1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($2,'hex')::uuid),encode($5,'hex')::uuid)")
+                    .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(241).as_slice()).bind(id(42).as_slice()).bind(id(242).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_item_nested_entries(parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) \
+                    VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+                    .bind(id(241).as_slice()).bind(id(240).as_slice()).bind(id(42).as_slice()).bind(id(242).as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                assert!(line(&talk(&owner, &dependencies, npc, command_id + 1, destination).await?).contains("don't sail"), "nested cheese must also block passage");
+                assert_eq!(gold(&h).await?, before, "a refused passage takes no fare");
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(240).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(241).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("UPDATE game_item_instances SET lifecycle=2 WHERE item_instance_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+                    .bind(id(240).as_slice()).bind(id(241).as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+            }
             let track = route.quest_gate.clone().or_else(|| route.yalahar_town_gate.as_ref()
                 .map(|town|format!("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}")));
             if let Some(track) = track {
@@ -1101,6 +1140,9 @@ const S10T_CAPTAINS: &[&str] = &[
     "charles",
     "jack_fate",
     "karith",
+    "petros",
+    "tarak_inner",
+    "tarak_sunken",
 ];
 
 type Passage = (&'static str, &'static str, i64, (i32, i32, i16));
@@ -1109,6 +1151,7 @@ const S10T_PASSAGES: &[Passage] = &[
     ("captain_fearless", "yalahar", 185, (32816, 31272, 6)),
     ("captain_greyhound", "yalahar", 185, (32816, 31272, 6)),
     ("captain_max", "calassa", 200, (31911, 32710, 6)),
+    ("captain_max", "yalahar", 400, (32804, 31270, 6)),
     ("captain_sinbeard", "yalahar", 230, (32816, 31272, 6)),
     ("captain_seahorse", "oramond", 200, (33479, 31985, 7)),
     ("charles", "liberty_bay", 50, (32285, 32892, 6)),
@@ -1117,6 +1160,11 @@ const S10T_PASSAGES: &[Passage] = &[
     ("captain_waverider", "peg leg", 50, (32346, 32625, 7)),
     ("captain_waverider", "passage", 200, (32131, 32913, 7)),
     ("captain_jack_rat", "safe", 0, (33839, 31222, 5)),
+    ("captain_seahorse", "venore", 40, (32954, 32022, 6)),
+    ("petros", "ankrahmun", 100, (33092, 32883, 6)),
+    ("petros", "issavi", 130, (33902, 31462, 6)),
+    ("tarak_inner", "monument tower", 50, (32939, 31182, 7)),
+    ("tarak_sunken", "passage", 0, (32916, 31199, 7)),
 ];
 
 async fn gold(h: &Harness) -> TestResult<i64> {

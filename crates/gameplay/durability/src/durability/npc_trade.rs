@@ -708,6 +708,36 @@ impl DurabilityRoot {
                     if !grizzly::permitted(&mut tx, fence.character_id, &request).await? {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
+                    if let Some((quest, track, value)) = oteryn_gameplay_content::content::npc_catalogue::service::merchant_access(&request.cause.npc_key) {
+                        let stored: Option<i64> = sqlx::query_scalar(
+                            "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND track_key=$3",
+                        )
+                        .bind(fence.character_id.as_bytes().as_slice()).bind(quest).bind(track)
+                        .fetch_optional(&mut **tx).await?;
+                        if stored != Some(value) {
+                            return Ok(Err(NpcTradeError::RequirementNotMet));
+                        }
+                    }
+                    if request.cause.side == NpcTradeSide::Buy
+                        && oteryn_gameplay_content::content::npc_catalogue::service::postage_price(
+                            &request.cause.npc_key, &request.item.definition.production_key, false,
+                        ).is_some()
+                    {
+                        let rank: Option<i64> = sqlx::query_scalar(
+                            "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid \
+                             AND quest_key='oteryn:quest.the_postman_missions_quest' AND track_key=$2",
+                        )
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .bind(oteryn_gameplay_content::content::npc_catalogue::service::POSTMAN_RANK_TRACK)
+                        .fetch_optional(&mut **tx).await?;
+                        let expected = oteryn_gameplay_content::content::npc_catalogue::service::postage_price(
+                            &request.cause.npc_key, &request.item.definition.production_key,
+                            rank.is_some_and(|rank| rank >= 3),
+                        );
+                        if expected != Some(request.unit_price) || request.offer_count != 1 {
+                            return Ok(Err(NpcTradeError::RequirementNotMet));
+                        }
+                    }
                     let backpack = sqlx::query(
                         "SELECT i.item_instance_id::text, i.definition_family, \
                                 i.definition_production_key, i.definition_revision_ref \

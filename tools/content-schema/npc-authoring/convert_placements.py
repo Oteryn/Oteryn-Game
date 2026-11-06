@@ -14,6 +14,7 @@ normalized facts are written. Fails closed on an unadmitted key or an out-of-ran
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import sys
@@ -60,6 +61,8 @@ def cell_of(position: dict) -> tuple[int, int, int]:
 
 
 def provenance(candidate: dict, placement: dict) -> list[dict]:
+    if placement.get("origin") == "native":
+        return [{"origin": "native", **candidate["native_source"], "retail_location": candidate["wiki"]}]
     # Only the placement decisions are evidence for the cell; offer or trade arbitration is not.
     arbitration = sorted(
         (row for row in candidate.get("arbitration", []) if row.get("fact") == "placements"), key=dump
@@ -71,7 +74,8 @@ def provenance(candidate: dict, placement: dict) -> list[dict]:
                 "arbitration": arbitration,
                 "direction_note": "no direction in the source; written as north (engine default)",
                 "origin": "wiki",
-                "pageid": candidate["wiki"]["pageid"],
+                **({"title": candidate["wiki"]["title"]} if "title" in candidate["wiki"] else {}),
+                **({"pageid": candidate["wiki"]["pageid"]} if "pageid" in candidate["wiki"] else {}),
                 "repository": WIKI_REPOSITORY,
                 "revid": candidate["wiki"]["revid"],
             }
@@ -104,6 +108,19 @@ def convert() -> dict[str, str]:
     report = json.loads(CANDIDATES.read_text())
     candidates = {c["identity"]["key"]: c for c in report["candidates"]}
     scope = json.loads(SCOPE.read_text())
+    for row in scope.get("retail_placements", []):
+        npc = row["npc"]
+        candidate = copy.deepcopy(candidates.get(npc, {"identity": {"key": npc}}))
+        candidate["wiki"] = row["wiki"]
+        candidate["placements"] = [{"position": position, "direction": None, "origin": row.get("origin", "wiki")}
+                                   for position in row.get("positions", [row["position"]])]
+        if "native_source" in row:
+            candidate["native_source"] = row["native_source"]
+        if row.get("held_reason") == "NO_PLACEMENT_SOURCE":
+            candidate["placements"] = []
+            candidate["held_evidence"] = [{"wiki": row["wiki"], "reason": "No unconditional placement: event/quest scene selector is not admitted."}]
+        candidate["arbitration"] = []
+        candidates[npc] = candidate
     admitted = admitted_keys()
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):
@@ -127,7 +144,7 @@ def convert() -> dict[str, str]:
             held.append({"evidence": conflicts[npc]["evidence"], "npc": npc, "reason": "POSITION_CONFLICT"})
             continue
         if candidate is None or not candidate["placements"]:
-            held.append({"evidence": [], "npc": npc, "reason": "NO_PLACEMENT_SOURCE"})
+            held.append({"evidence": candidate.get("held_evidence", []) if candidate else [], "npc": npc, "reason": "NO_PLACEMENT_SOURCE"})
             continue
         for placement in candidate["placements"]:
             cell = cell_of(placement["position"])
@@ -201,7 +218,7 @@ def convert() -> dict[str, str]:
             "schema": "OTERYN_FAMILY_INDEX/v1",
             "shard_size": SHARD_SIZE,
             "shards": shards,
-            "source_evidence": "OtsHypothesisOnly",
+            "source_evidence": "TibiaWikiStructuredAndOtsHypothesis" if scope.get("retail_placements") else "OtsHypothesisOnly",
         }
     )
     return {name: text + "\n" for name, text in files.items()}

@@ -563,6 +563,8 @@ def main() -> int:
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
+    # Placement admission reads the freshly materialized NPC identities, including additions.
+    run(["python3", "tools/content-schema/npc-authoring/convert_placements.py"])
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])

@@ -680,6 +680,7 @@ fn item_candidate() -> ProjectV2Draft {
                 count: None,
                 sub_type: None,
                 parity_pending: false,
+                postman_unit_price: None,
             }],
             recipes: vec![],
             routes: vec![],

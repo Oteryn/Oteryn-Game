@@ -17,13 +17,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        427,
-        "3873d0698b98aa2280046cf75d4900863124cf1d6aae6f7c100b1be195260531",
+        391,
+        "6960a262ba4c614058a8f600a9082416174b4338d07fc9c0f2e8de22e4d60d7d",
     ),
     (
         "definitions/declarations.json",
-        27_600_259,
-        "949746ad0a2d1304ca5a1ec75ae4cd707650c1e24d4017a0733af52ca4fa5809",
+        27_647_392,
+        "ac50b43181c054844b372fdb98a9921b501ad182a810c237e65b64ebed38c88b",
     ),
     (
         "definitions/reference.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1960,
-        "13f7bb45ba2dd0f08c4903f1a6b3d50e5d94cc85b9ac206b57e80aed92fad1d4",
+        1948,
+        "b0c79fa1ef2da9b89ba8d7006e68e5d8383af01b4b9aae5acdb639cb1f4462af",
     ),
     (
         "presentations/bindings.json",
@@ -47,13 +47,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        411,
-        "bbedaf68b426c503359199872eaa7cba22bde95b4a5391096567f1ccca05b6c1",
+        399,
+        "5167a1b4e9d8815d4f5d7cb7af49a9979870f5996d058a0c1b588cd447a8321b",
     ),
     (
         "provenance/imports.json",
         6_773_322,
-        "ba6e6ac791b4799e695d7eaab9a54c974c56b798d1d43bd40809af5ed75eba8d",
+        "aeeefdd3e1b432cec366b09a44012c646177afca50401884925f5061d8cad08e",
     ),
     (
         "provenance/sources.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "ce41135b19867a03e20d3ecf98e2e88d076db66101949876fd6e130cd9fbba20";
+const TREE_SHA256: &str = "ead133470634be6a1b343782f3f1815dfffff5851c2b5b95a24282d2ad92eaa8";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -154,11 +154,11 @@ const CREATURES: usize = 1_863;
 const CREATURE_RECORDS: usize = 26_194;
 const CREATURE_PROFILES: usize = 25_052;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1282;
+const NPCS: usize = 1290;
 const NPC_RECORDS: usize = 2564;
 // Includes BANK-3's Henricus blessing Service.
-const NPC_DECLARATIONS: usize = 2507;
-const NPC_DIALOGUES: usize = 836;
+const NPC_DECLARATIONS: usize = 2524;
+const NPC_DIALOGUES: usize = 839;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 108;
@@ -391,10 +391,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(
-        project.project_revision(),
-        "e06-market-crystal-parity-20261031-r1"
-    );
+    assert_eq!(project.project_revision(), "npcfix-retail-20261106-r1");
     // E06 adds the client market mint batch ahead of the Crystal parity batch.
     assert_eq!(project.imports().len(), 35);
     let legacy_imports: Vec<_> = project
@@ -720,7 +717,42 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         1
     );
 
+    // NPCFIX changes only this closed, hash-bound set. Require the complete repaired
+    // record, including unknown source fields, rather than inventing imported profiles.
+    let npcfix_bytes = include_bytes!(
+        "../../../tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json"
+    );
+    assert_eq!(
+        world_project_sha256(npcfix_bytes),
+        "5506fea8ad860c48b83dac5f994270193ca25b2f9fc56366b16d2d538bf6c99b"
+    );
+    let npcfix: serde_json::Value = serde_json::from_slice(npcfix_bytes).expect("NPCFIX packet");
+    let npcfix_records: BTreeMap<_, _> = npcfix["repairs"]
+        .as_array()
+        .expect("NPCFIX repairs")
+        .iter()
+        .map(|repair| {
+            (
+                repair["after"]["identity"]["key"]
+                    .as_str()
+                    .expect("NPCFIX key"),
+                &repair["after"],
+            )
+        })
+        .collect();
+    assert_eq!(npcfix_records.len(), 52);
     assert!(v2.declarations.iter().all(|declaration| {
+        let repaired = match declaration {
+            ProjectV2Declaration::Npc { identity, .. }
+            | ProjectV2Declaration::Dialogue { identity, .. }
+            | ProjectV2Declaration::Service { identity, .. } => {
+                npcfix_records.get(identity.key.as_str())
+            }
+            _ => None,
+        };
+        if let Some(expected) = repaired {
+            return serde_json::to_value(declaration).ok().as_ref() == Some(*expected);
+        }
         match declaration {
             ProjectV2Declaration::Outfit {
                 presentations,
@@ -2479,7 +2511,7 @@ fn npc_corrections_preserve_unexecutable_quest_guards_and_bound_source_links() {
             })
             .expect("existing declaration")
     };
-    for key in ["rashid", "haroun", "nah_bob", "alesar", "yaman"] {
+    for key in ["haroun", "yaman"] {
         let ProjectV2Declaration::Service { offers, fields, .. } =
             find(&format!("oteryn:service.trade.{key}"))
         else {
@@ -2487,6 +2519,25 @@ fn npc_corrections_preserve_unexecutable_quest_guards_and_bound_source_links() {
         };
         assert!(offers.is_empty(), "unmapped quest guard: {key}");
         assert!(!fields.is_empty(), "held source tuples must survive: {key}");
+    }
+    for (key, expected) in [("alesar", 29), ("nah_bob", 32), ("rashid", 155)] {
+        let ProjectV2Declaration::Service { offers, fields, .. } =
+            find(&format!("oteryn:service.trade.{key}"))
+        else {
+            panic!("trade service")
+        };
+        assert_eq!(offers.len(), expected, "audited stock: {key}");
+        assert!(
+            !fields.is_empty(),
+            "original source custody survives: {key}"
+        );
+        assert!(
+            oteryn_game_server::content::npc_catalogue::service::merchant_access(&format!(
+                "oteryn:npc.{key}"
+            ))
+            .is_some(),
+            "executable stock requires the native quest gate"
+        );
     }
     let ProjectV2Declaration::Service { routes, .. } =
         find("oteryn:service.travel.captain_breezelda")

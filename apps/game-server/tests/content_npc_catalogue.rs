@@ -24,17 +24,14 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
         NpcDataCatalogue::from_project(project, npc_catalogue_preproduction_limits().project)
             .expect("data import");
     // The source tree digest is refreshed by regenerate_content.py with the package pins.
-    assert_eq!(
-        catalogue.project_revision(),
-        "e06-market-crystal-parity-20261031-r1"
-    );
+    assert_eq!(catalogue.project_revision(), "npcfix-retail-20261106-r1");
     assert_eq!(
         catalogue.source_tree_digest(),
-        "ce41135b19867a03e20d3ecf98e2e88d076db66101949876fd6e130cd9fbba20"
+        "ead133470634be6a1b343782f3f1815dfffff5851c2b5b95a24282d2ad92eaa8"
     );
-    assert_eq!(catalogue.npc_count(), 1282);
-    assert_eq!(catalogue.dialogue_count(), 836);
-    assert_eq!(catalogue.service_count(), 389);
+    assert_eq!(catalogue.npc_count(), 1290);
+    assert_eq!(catalogue.dialogue_count(), 839);
+    assert_eq!(catalogue.service_count(), 395);
     assert_eq!(catalogue.sources(), sources);
     assert_eq!(catalogue.source_identity_bindings(), bindings);
     let (reference, imported) = catalogue
@@ -116,4 +113,121 @@ fn legacy_project_without_v2_cannot_be_imported_as_npc_data() {
         .expect("validated legacy");
     assert!(legacy.v2().is_none());
     assert!(NpcDataCatalogue::from_project(legacy, limits).is_err());
+}
+
+#[test]
+fn npcfix_retail_services_and_greeting_match_the_audited_repairs() {
+    let packet: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json"
+    ))
+    .expect("NPCFIX evidence");
+    let project = captured();
+    let state = project.v2().expect("v2");
+    for repair in packet["repairs"].as_array().expect("repairs") {
+        let expected: ProjectV2Declaration =
+            serde_json::from_value(repair["after"].clone()).expect("typed repair");
+        assert!(
+            state.declarations.contains(&expected),
+            "missing repair: {}",
+            repair["after"]["identity"]["key"]
+        );
+    }
+    let catalogue =
+        NpcDataCatalogue::from_project(project, npc_catalogue_preproduction_limits().project)
+            .expect("NPCFIX catalogue");
+    let model = catalogue
+        .service_model_for_project()
+        .expect("NPCFIX services");
+    let book = oteryn_gameplay_npc::npc_talk::NpcTalkBook::from_model(&model);
+    let mut unavailable = Vec::new();
+    for repair in packet["repairs"].as_array().expect("repairs") {
+        let after: ProjectV2Declaration =
+            serde_json::from_value(repair["after"].clone()).expect("typed repair");
+        if let ProjectV2Declaration::Service {
+            identity, offers, ..
+        } = after
+        {
+            if offers.is_empty() {
+                continue;
+            }
+            let npc = identity
+                .key
+                .replacen("oteryn:service.trade.", "oteryn:npc.", 1);
+            let entry = book.get(&npc).expect(&npc);
+            let before: Vec<ProjectV2ServiceOffer> = repair["before"]["offers"]
+                .as_array()
+                .map(|rows| {
+                    rows.iter()
+                        .map(|r| serde_json::from_value(r.clone()).expect("before offer"))
+                        .collect()
+                })
+                .unwrap_or_default();
+            for offer in offers.iter().filter(|offer| !before.contains(offer)) {
+                if !entry.offers().contains(offer) {
+                    unavailable.push(format!(
+                        "{npc}: repaired offer must be executable: {offer:?}"
+                    ));
+                }
+            }
+        }
+    }
+    assert!(unavailable.is_empty(), "{}", unavailable.join("\n"));
+    for (key, name) in [
+        ("fitzgerald", "Fitzgerald"),
+        ("lizard_prisoner", "Lizard Prisoner"),
+        ("eustacios_spy_rat", "Eustacio's Spy Rat"),
+        ("ellipsis", "..."),
+        ("glimpse_of_allusion", "Glimpse of Allusion"),
+        ("wox", "WOX"),
+        ("yielothax", "Yielothax"),
+        ("doctor_marrow", "Doctor Marrow"),
+    ] {
+        assert_eq!(book.display_name(&format!("oteryn:npc.{key}")), Some(name));
+    }
+    assert!(
+        book.get("oteryn:npc.lizard_prisoner").is_none(),
+        "the retail prisoners do not answer greetings"
+    );
+    for key in ["murim", "muzir", "znozel"] {
+        assert!(
+            book.get(&format!("oteryn:npc.{key}"))
+                .is_some_and(|entry| entry.bank()),
+            "bank context: {key}"
+        );
+    }
+    let albinius = book.get("oteryn:npc.albinius").expect("Albinius shop");
+    assert!(
+        albinius.offers().iter().any(|offer| {
+            offer.item.key == "oteryn:item.tibia.i23986"
+                && offer.direction == ProjectV2ServiceOfferDirection::BuyFromPlayer
+                && offer.unit_price == 30
+        }),
+        "Albinius buys Heavy Old Tomes for 30 gold"
+    );
+    assert!(
+        book.get("oteryn:npc.a_ghostly_guardian").is_some(),
+        "retail Dream Realm conversation"
+    );
+    for shop in ["flint", "romella"] {
+        let entry = book.get(&format!("oteryn:npc.{shop}")).expect("wraps shop");
+        for (item, price) in [(50293, 347_222), (50294, 1_250_000), (50295, 10_000_000)] {
+            assert!(
+                entry.offers().iter().any(|offer| {
+                    offer.item.key == format!("oteryn:item.tibia.i{item}")
+                        && offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
+                        && offer.unit_price == price
+                        && offer.count.unwrap_or(1) == 1
+                }),
+                "{shop}: full exercise wraps {item} must be executable"
+            );
+        }
+    }
+    assert!(
+        book.get("oteryn:npc.pugwah")
+            .expect("Pugwah")
+            .offers()
+            .iter()
+            .any(|offer| { offer.item.key == "oteryn:item.tibia.i2880" && offer.unit_price == 4 }),
+        "Pugwah sells empty mugs for four gold"
+    );
 }

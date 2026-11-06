@@ -225,6 +225,7 @@ fn scenario() -> TestResult {
             count: None,
             sub_type: None,
             parity_pending: false,
+            postman_unit_price: None,
         };
         let book = NpcTalkBook::from_model(&model)
             .with(

@@ -147,10 +147,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             prompt
         } else {
             // Match the complete authored destination, including spaces and apostrophes.
-            let Some(route) = routes
-                .into_iter()
-                .find(|route| text == route.keyword || text == route.route.key.replace('_', " "))
-            else {
+            let Some(route) = routes.into_iter().find(|route| {
+                text == route.keyword
+                    || text == route.route.key.replace('_', " ")
+                    || (context.2 == "oteryn:npc.tarak_inner"
+                        && matches!(text.as_str(), "passage" | "trip")
+                        && route.route.key == "monument_tower")
+            }) else {
                 return ordinary;
             };
             let Ok(Some(current)) = self.current_quest_fence(session).await else {

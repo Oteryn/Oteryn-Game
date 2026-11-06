@@ -15,6 +15,7 @@ content digests are derived from committed inputs.
   (`tools/merge-driver/regen.sh` is the same command; prefer the python form,
   which the repository's `.claude/settings.json` allows.) Add `--no-stage` to
   leave the index untouched, `--skip-checks` to regenerate only.
+  NPC placements refresh after the NPC definitions, so additions in the placement scope are admitted before validation and pin-refresh.
   The command also refreshes the Quest callback inventory proof in the SOURCE
   approval and receipt, preserving their reviewed core and graph snapshots.
   With `OTERYN_SPELL_SOURCE_ROOT` pointing to `canary/` and `crystal/` Git sources

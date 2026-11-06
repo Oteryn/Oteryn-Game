@@ -23,7 +23,12 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 fn literal_keyword(keyword: &crate::content::ProjectV2DialogueKeyword) -> bool {
-    keyword.reply.len() == 1
+    keyword.reply.len() == 1 && literal_topic(keyword)
+}
+
+fn literal_topic(keyword: &crate::content::ProjectV2DialogueKeyword) -> bool {
+    !keyword.reply.is_empty()
+        && !keyword.triggers.is_empty()
         && keyword.children.is_empty()
         && !keyword.fallback
         && !keyword.only_unfocus
@@ -275,27 +280,75 @@ impl NpcTalkBook {
                 )
             } else if matches!(
                 reference.key.as_str(),
-                "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
-            ) && npc.services.is_empty()
-            {
-                // SUMMER: the model's historical `bank_dialogue` carrier holds the
-                // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
-                // literal, single-line lore is qualified here. Quest callbacks and
-                // multipart/stateful branches remain outside the talk consumer.
+                "oteryn:npc.a_ghostly_guardian"
+                    | "oteryn:npc.albinius"
+                    | "oteryn:npc.alesar"
+                    | "oteryn:npc.benjamin"
+                    | "oteryn:npc.chrystal"
+                    | "oteryn:npc.dixi"
+                    | "oteryn:npc.fyodor"
+                    | "oteryn:npc.kasmir"
+                    | "oteryn:npc.liane"
+                    | "oteryn:npc.lokur"
+                    | "oteryn:npc.lubo"
+                    | "oteryn:npc.mayor_pocaro"
+                    | "oteryn:npc.nah_bob"
+                    | "oteryn:npc.nelly"
+                    | "oteryn:npc.olrik"
+                    | "oteryn:npc.pompan"
+                    | "oteryn:npc.pugwah"
+                    | "oteryn:npc.rashid"
+                    | "oteryn:npc.robson"
+                    | "oteryn:npc.romella"
+                    | "oteryn:npc.shiantis"
+                    | "oteryn:npc.wally"
+                    | "oteryn:npc.wayland_smythers"
+                    | "oteryn:npc.zirkon"
+            ) {
+                // NPCFIX/SUMMER: admit only these audited NPCs' literal replies.
+                // Conditional callbacks remain with their quest/service owners.
                 let Some(dialogue) = &npc.bank_dialogue else {
                     continue;
                 };
-                if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
+                let greeting = match dialogue.greet.as_slice() {
+                    [greeting] => greeting.clone(),
+                    [] if matches!(
+                        reference.key.as_str(),
+                        "oteryn:npc.alesar" | "oteryn:npc.dixi" | "oteryn:npc.nah_bob"
+                    ) =>
+                    {
+                        // These imported callback greetings have no literal source line.
+                        // Use the existing native service greeting; trade eligibility remains
+                        // with the quest owner and is rechecked by the durable writer.
+                        format!("Greetings, I am {}.", npc.name)
+                    }
+                    _ => continue,
+                };
+                let farewell = if dialogue.farewell.len() == 1 {
+                    dialogue.farewell[0].clone()
+                } else if reference.key == "oteryn:npc.albinius"
+                    && dialogue.farewell.is_empty()
+                    && dialogue.walkaway.len() == 1
+                {
+                    // Albinius supplies one authored leave line and no separate farewell.
+                    dialogue.walkaway[0].clone()
+                } else if reference.key == "oteryn:npc.dixi" && dialogue.farewell.is_empty() {
+                    "Farewell.".into()
+                } else {
                     continue;
-                }
+                };
                 (
-                    dialogue.greet[0].clone(),
-                    dialogue.farewell[0].clone(),
+                    greeting,
+                    farewell,
                     None,
                     dialogue
                         .keywords
                         .iter()
-                        .filter(|keyword| literal_keyword(keyword))
+                        .filter(|keyword| {
+                            literal_keyword(keyword)
+                                || (reference.key == "oteryn:npc.a_ghostly_guardian"
+                                    && literal_topic(keyword))
+                        })
                         .cloned()
                         .collect(),
                 )
@@ -419,6 +472,8 @@ pub struct TalkNpc<'a, K> {
 pub struct NpcReply<K> {
     pub id: K,
     pub text: String,
+    /// Remaining source lines of a literal topic, in their authored order.
+    pub continuations: Vec<String>,
 }
 
 /// Words that open the trade window (Canary modules.lua `FOCUS_TRADE_MESSAGE`).
@@ -462,17 +517,21 @@ pub fn talk<K: Copy + PartialEq>(
             return Some(NpcReply {
                 id: npc.id,
                 text: npc.entry.farewell_reply.clone(),
+                continuations: Vec::new(),
             });
         }
-        if let Some(keyword) = npc
-            .entry
-            .dialogue_keywords
-            .iter()
-            .find(|keyword| contains_words(&said, &keyword.triggers))
-        {
+        if let Some(keyword) = npc.entry.dialogue_keywords.iter().find(|keyword| {
+            // Project keywords canonicalize their trigger set by sorting. Every literal
+            // trigger must occur, independently of that serialization order.
+            keyword
+                .triggers
+                .iter()
+                .all(|trigger| contains_words(&said, &words(trigger)))
+        }) {
             return Some(NpcReply {
                 id: npc.id,
                 text: keyword.reply[0].clone(),
+                continuations: keyword.reply[1..].to_vec(),
             });
         }
         if says_any(&said, &TOPICS) && !npc.entry.admitted_dialogue {
@@ -483,6 +542,7 @@ pub fn talk<K: Copy + PartialEq>(
             return Some(NpcReply {
                 id: npc.id,
                 text: line,
+                continuations: Vec::new(),
             });
         }
         // NPC-REGREET-1 (Canary npc_handler.lua `greet`): the NPC already talking to the speaker
@@ -514,6 +574,7 @@ fn start<K: Copy + PartialEq>(
     Some(NpcReply {
         id: npc.id,
         text: npc.entry.greeting_reply.clone(),
+        continuations: Vec::new(),
     })
 }
 

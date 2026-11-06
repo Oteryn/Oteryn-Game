@@ -1,6 +1,7 @@
 """Tests for convert_placements.py: the Npc.Placement family is the scoped promotion candidates."""
 
 import json
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -26,6 +27,32 @@ class ConvertPlacementsTest(unittest.TestCase):
         for name, text in self.files.items():
             self.assertEqual((cp.OUT / name).read_text(), text, name)
         self.assertEqual({p.name for p in cp.OUT.glob("*.json")}, set(self.files))
+
+    def test_npcfix_retail_population_has_each_audited_cell(self):
+        expected = json.loads((cp.HERE / "samples/npcfix-retail-placements.json").read_text())
+        actual = {}
+        for record in self.records:
+            d = record["declaration"]
+            actual.setdefault(d["npc"], set()).add((d["cell"]["x"], d["cell"]["y"], d["cell"]["floor"]))
+        for row in expected:
+            with self.subTest(npc=row["npc"]):
+                if "held_reason" in row:
+                    held = [h for h in self.held if h["npc"] == row["npc"]]
+                    self.assertEqual([h["reason"] for h in held], [row["held_reason"]])
+                    self.assertNotIn(row["npc"], actual)
+                    continue
+                self.assertTrue(row["npc"] in actual, row["npc"])
+                expected_cells = {(cell["x"], cell["y"], cell["z"])
+                                  for cell in row.get("positions", [row["position"]])}
+                self.assertEqual(actual[row["npc"]], expected_cells)
+
+    def test_rashid_population_matches_the_existing_weekday_selector(self):
+        rows = json.loads((cp.HERE / "samples/npcfix-retail-placements.json").read_text())
+        row = next(r for r in rows if r["npc"] == "oteryn:npc.rashid")
+        source = (cp.ROOT / row["native_source"]["path"]).read_text()
+        cells = re.findall(r'destination\("(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)", ([\d_]+), ([\d_]+), (\d+)\)', source)
+        self.assertEqual(len(cells), 7)
+        self.assertEqual(row["positions"], [{"x": int(x.replace("_", "")), "y": int(y.replace("_", "")), "z": int(z)} for x, y, z in cells])
 
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])

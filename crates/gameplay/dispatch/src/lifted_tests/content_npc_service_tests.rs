@@ -64,6 +64,7 @@ fn offer(key: &str, direction: Dir, price: u64, count: Option<u32>) -> ProjectV2
         count,
         sub_type: None,
         parity_pending: false,
+        postman_unit_price: None,
     }
 }
 

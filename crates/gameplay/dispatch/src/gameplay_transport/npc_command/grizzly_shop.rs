@@ -69,17 +69,27 @@ impl NpcConversations {
             .offers()
             .iter()
             .filter(|offer| {
-                crate::content::npc_catalogue::grizzly_shop::visible(
-                    key,
-                    offer,
-                    state.grizzly_shop_points,
-                ) && (key != crate::content::npc_catalogue::grizzly_shop::NPC
-                    || state.grizzly_shop_items.contains(&offer.item.key))
+                (crate::content::npc_catalogue::service::merchant_access(key).is_none()
+                    || state.merchant_access.contains(key))
+                    && crate::content::npc_catalogue::grizzly_shop::visible(
+                        key,
+                        offer,
+                        state.grizzly_shop_points,
+                    )
+                    && (key != crate::content::npc_catalogue::grizzly_shop::NPC
+                        || state.grizzly_shop_items.contains(&offer.item.key))
             })
             .cloned()
             .collect();
         let (shown, sources): (Vec<_>, Vec<_>) = projected(&eligible, items)
-            .map(|(shown, source)| (shown, source.clone()))
+            .filter_map(|(mut shown, source)| {
+                if state.postman_completed
+                    && let Some(price) = source.postman_unit_price
+                {
+                    shown.unit_price = u32::try_from(price).ok()?;
+                }
+                Some((shown, source.clone()))
+            })
             .unzip();
         if shown.is_empty() {
             let previous = state.window.take();
@@ -88,6 +98,7 @@ impl NpcConversations {
         }
         state.window = Some(npc);
         state.window_offers = sources;
+        state.window_postman_completed = state.postman_completed;
         Some(NpcTradeWindow {
             open: Some((npc, book.catalogue_revision())),
             offers: shown,
@@ -152,6 +163,7 @@ mod tests {
             count: Some(1),
             sub_type: None,
             parity_pending: false,
+            postman_unit_price: None,
         };
         // Deliberately put the locked item first; unlocking it changes the next window's index.
         // i10454 is one of Q12's actual physical-conflict rejections. Its canonical

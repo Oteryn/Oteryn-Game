@@ -128,12 +128,12 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 227);
+        assert_eq!(corrections.len(), 237);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 227);
+        assert_eq!(keys.len(), 237);
         let sources = source["rows"].as_array().ok_or("source rows")?;
         let evidence = evidence["records"].as_array().ok_or("evidence rows")?;
         let corrected = corrections
@@ -159,7 +159,15 @@ mod tests {
             if facts["quest_requirements"]["value"] != serde_json::json!([])
                 || !facts["travel_guard_conditions"]["value"].is_null()
             {
-                assert!(row.held, "{}", row.key);
+                if row.key == "oteryn:service.travel.petros/issavi" {
+                    assert_eq!(
+                        facts["travel_guard_conditions"]["value"]["donor_item_id"],
+                        169
+                    );
+                    assert!(!row.held, "NPCFIX installs the native carried-cheese guard");
+                } else {
+                    assert!(row.held, "{}", row.key);
+                }
             }
         }
         Ok(())
@@ -370,12 +378,7 @@ mod tests {
             assert!(row.yalahar_town_gate.is_some());
         }
         // These donor routes cannot be safely offered with the currently admitted owners.
-        for key in [
-            "captain_max/yalahar",
-            "captain_bluebear/targuna",
-            "captain_bluebear/carlin",
-            "captain_seahorse/venore",
-        ] {
+        for key in ["captain_bluebear/targuna", "captain_bluebear/carlin"] {
             assert!(
                 rows.iter()
                     .find(|row| row.key == format!("oteryn:service.travel.{key}"))

@@ -1146,6 +1146,9 @@ pub struct ProjectV2ServiceOffer {
     pub item: ProjectV2DefinitionRef,
     pub direction: ProjectV2ServiceOfferDirection,
     pub unit_price: u64,
+    /// Retail postal price after reaching Grand Postman rank; absent keeps the ordinary price.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub postman_unit_price: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub currency: Option<ProjectV2DefinitionRef>,
     /// Units per trade row (a rune's charges, a stack); absent means one.
@@ -1855,6 +1858,22 @@ fn validate_v2_service_offers(
     if offers.iter().any(|offer| offer.count == Some(0)) {
         return Err(ProjectError::InvalidProject(
             "v2 Service offer count must be positive",
+        ));
+    }
+    if offers.iter().any(|offer| {
+        offer.postman_unit_price.is_some_and(|price| {
+            offer.direction != ProjectV2ServiceOfferDirection::SellToPlayer
+                || offer.currency.is_some()
+                || offer.count.unwrap_or(1) != 1
+                || offer.sub_type.is_some()
+                || !matches!(
+                    (offer.item.key.as_str(), offer.unit_price, price),
+                    ("oteryn:item.tibia.i3505", 8, 5) | ("oteryn:item.tibia.i3503", 15, 10)
+                )
+        })
+    }) {
+        return Err(ProjectError::InvalidProject(
+            "v2 Service has an invalid Postman price",
         ));
     }
     Ok(())

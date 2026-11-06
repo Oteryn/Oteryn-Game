@@ -939,8 +939,7 @@ fn npc_answer(
         };
         reply.text = greeting.to_owned();
     }
-    reply.text =
-        oteryn_gameplay_npc::quest_greetings::render_player_name(&reply.text, &speaking.name);
+    let speaker_name = speaking.name.clone();
     if speaking.engaged.is_some_and(|npc| prior != Some(npc))
         && crowded(sessions, session, reply.id)
     {
@@ -961,24 +960,28 @@ fn npc_answer(
     else {
         return;
     };
-    let Ok(line) = ChatText::parse(&reply.text) else {
-        return;
-    };
     let npc_speaker = ChatSpeaker {
         identity: actor.placement_identity(),
         generation: *generation,
     };
-    for (listener, heard) in local_listeners(SpeechMode::Say, *position, listeners.iter().copied())
-    {
-        if let Some(entry_of) = sessions.get_mut(&listener) {
-            entry_of.egress.push(local_line(
-                npc_speaker,
-                &entry.name,
-                SpeechMode::Say,
-                &line,
-                *position,
-                heard,
-            ));
+    for text in std::iter::once(reply.text).chain(reply.continuations) {
+        let text = oteryn_gameplay_npc::quest_greetings::render_player_name(&text, &speaker_name);
+        let Ok(line) = ChatText::parse(&text) else {
+            continue;
+        };
+        for (listener, heard) in
+            local_listeners(SpeechMode::Say, *position, listeners.iter().copied())
+        {
+            if let Some(entry_of) = sessions.get_mut(&listener) {
+                entry_of.egress.push(local_line(
+                    npc_speaker,
+                    &entry.name,
+                    SpeechMode::Say,
+                    &line,
+                    *position,
+                    heard,
+                ));
+            }
         }
     }
 }
@@ -1934,6 +1937,72 @@ mod tests {
             texts(chat.drain(second.1)).last().map(|l| l.1.clone()),
             Some("Farewell.".to_owned())
         );
+    }
+
+    #[test]
+    fn npcfix_guardian_chat_preserves_name_and_multipart_source_order() {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                use crate::foundation::{
+                    MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
+                };
+                let catalogue = crate::content::NpcDataCatalogue::load(
+                    std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+                    std::ffi::OsStr::new("world"),
+                    crate::content::npc_catalogue_preproduction_limits(),
+                )
+                .expect("NPC catalogue");
+                let book = NpcTalkBook::from_model(
+                    &catalogue.service_model_for_project().expect("NPC model"),
+                );
+                let (mut runtime, chat, first, second) = two_players(0);
+                let spot = runtime
+                    .read_actor_position(first.0)
+                    .expect("position")
+                    .position();
+                runtime
+                    .place_npcs(
+                        &NpcPlacementTable {
+                            npcs: vec![NpcPlacements {
+                                key: "oteryn:npc.a_ghostly_guardian".into(),
+                                placements: vec![NpcPlacement {
+                                    floor: -i8::try_from(spot.floor).expect("floor"),
+                                    y: u16::try_from(spot.y).expect("y"),
+                                    x: u16::try_from(spot.x + 2).expect("x"),
+                                    direction: MovementFacing::South,
+                                }],
+                            }],
+                        },
+                        |_| true,
+                        true,
+                    )
+                    .expect("placed");
+                chat.install_npc_talk(Arc::new(book));
+                chat.set_npc_service(first.1);
+                speak(&chat, &runtime, first, &say("hi"), BASE);
+                let greeting = texts(chat.drain(first.1));
+                assert_eq!(greeting, texts(chat.drain(second.1)));
+                assert_eq!(
+                    greeting[1].1,
+                    "Aela, it is you. I knew you'd be coming someday. The guardian greets you."
+                );
+                speak(&chat, &runtime, first, &say("brotherhood"), BASE);
+                let heard = texts(chat.drain(first.1));
+                assert_eq!(heard, texts(chat.drain(second.1)));
+                assert_eq!(heard.len(), 4);
+                for ((name, line), expected) in heard[1..].iter().zip([
+                    "The Brotherhood intruded these halls",
+                    "It will lead you to a powerful master",
+                    "Resist the temptation of power!",
+                ]) {
+                    assert_eq!(name, "A Ghostly Guardian");
+                    assert!(line.starts_with(expected));
+                }
+            })
+            .expect("chat thread")
+            .join()
+            .expect("chat scenario");
     }
 
     #[test]

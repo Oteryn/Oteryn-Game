@@ -64,6 +64,10 @@ struct SessionNpc {
     window: Option<EntityRef>,
     /// The exact bounded offer list shown in this window, including its rank filter.
     window_offers: Vec<crate::content::ProjectV2ServiceOffer>,
+    /// Display cache from the quest owner; the trade writer checks the current rank under lock.
+    postman_completed: bool,
+    window_postman_completed: bool,
+    merchant_access: std::collections::BTreeSet<String>,
     /// Display cache only; the NPC trade writer independently checks quest points.
     grizzly_shop_points: Option<i64>,
     grizzly_shop_items: std::collections::BTreeSet<String>,
@@ -315,7 +319,17 @@ impl NpcConversations {
         let talking_to = chat.engaged(session);
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
             && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity)
-            && ChatText::parse(&intent.text).is_ok_and(|text| asks_to_trade(&text)))
+            && (ChatText::parse(&intent.text).is_ok_and(|text| asks_to_trade(&text))
+                || (service_context::live_npc(runtime, actor, session, intent.npc_actor)
+                    .is_some_and(|npc| npc.key == "oteryn:npc.robson")
+                    && intent
+                        .text
+                        .split(|c: char| !c.is_alphanumeric())
+                        .any(|word| {
+                            ["parcel", "parcels", "label", "labels"]
+                                .iter()
+                                .any(|keyword| word.eq_ignore_ascii_case(keyword))
+                        }))))
         .then(|| self.open_window(chat, runtime, session, intent.npc_actor, items))
         .flatten();
         outcome.window = match opened {
@@ -357,14 +371,18 @@ impl NpcConversations {
         {
             return Err(Box::new(NpcTradeRefusal::only(Disposition::NotInRange)));
         }
-        let (shown, shown_offers) = self
+        let (shown, shown_offers, postman_completed) = self
             .sessions
             .lock()
             .ok()
             .and_then(|sessions| {
-                sessions
-                    .get(&session)
-                    .map(|state| (state.window, state.window_offers.clone()))
+                sessions.get(&session).map(|state| {
+                    (
+                        state.window,
+                        state.window_offers.clone(),
+                        state.window_postman_completed,
+                    )
+                })
             })
             .unwrap_or_default();
         if shown != Some(intent.npc_actor) {
@@ -410,12 +428,15 @@ impl NpcConversations {
         if intent.catalogue_revision != book.catalogue_revision() {
             return Err(Box::new(stale()));
         }
-        let Some((offer, source)) = usize::try_from(intent.offer_index)
+        let Some((mut offer, source)) = usize::try_from(intent.offer_index)
             .ok()
             .and_then(|index| projected(&shown_offers, items).nth(index))
         else {
             return Err(Box::new(stale()));
         };
+        if postman_completed && let Some(price) = source.postman_unit_price {
+            offer.unit_price = u32::try_from(price).map_err(|_| Box::new(rejected()))?;
+        }
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
         }
@@ -601,7 +622,9 @@ impl NpcConversations {
             disposition: Disposition::Ok,
             conversation: Some(NpcConversation {
                 open,
-                lines: vec![reply.text],
+                lines: std::iter::once(reply.text)
+                    .chain(reply.continuations)
+                    .collect(),
             }),
             window: None,
         }
@@ -646,6 +669,54 @@ pub(super) async fn npc_bank_talk(
         None
     };
     let mut runtime = admission.runtime.lock().await;
+    let postman_completed = admission
+        .states
+        .quest_sessions
+        .lock()
+        .ok()
+        .and_then(|sessions| {
+            sessions
+                .get(&session)
+                .and_then(|entry| entry.copy.as_ref())
+                .and_then(|copy| {
+                    copy.tracks()
+                        .get(crate::content::npc_catalogue::service::POSTMAN_RANK_TRACK)
+                })
+                .copied()
+        })
+        .is_some_and(|rank| rank >= 3);
+    if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() {
+        sessions.entry(session).or_default().postman_completed = postman_completed;
+    }
+    let merchant_access = admission
+        .states
+        .quest_sessions
+        .lock()
+        .ok()
+        .and_then(|sessions| {
+            sessions
+                .get(&session)
+                .and_then(|entry| entry.copy.as_ref())
+                .map(|copy| {
+                    [
+                        "oteryn:npc.alesar",
+                        "oteryn:npc.nah_bob",
+                        "oteryn:npc.rashid",
+                    ]
+                    .into_iter()
+                    .filter(|npc| {
+                        crate::content::npc_catalogue::service::merchant_access(npc).is_some_and(
+                            |(_, track, value)| copy.tracks().get(track) == Some(&value),
+                        )
+                    })
+                    .map(str::to_owned)
+                    .collect()
+                })
+        })
+        .unwrap_or_default();
+    if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() {
+        sessions.entry(session).or_default().merchant_access = merchant_access;
+    }
     let points = admission
         .states
         .quest_sessions
@@ -685,6 +756,65 @@ pub(super) async fn npc_bank_talk(
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
+    }
+    if intent
+        .text
+        .split(|c: char| !c.is_alphanumeric())
+        .any(|word| word.eq_ignore_ascii_case("heal"))
+        && admission
+            .states
+            .npc_conversations
+            .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+            .is_some_and(|context| context.2 == "oteryn:npc.kasmir")
+    {
+        // Reuse the canonical player vitals/condition owner. The runtime lock proves the
+        // exact session and range, and no reserved spell/death can be overwritten.
+        if runtime.assert_actor_spell_unreserved(actor).is_err() {
+            return rejected();
+        }
+        let Ok(mut spells) = admission.states.spell_states.try_lock() else {
+            return rejected();
+        };
+        if spells.is_dead(actor) {
+            return rejected();
+        }
+        let Some(mut next) = spells.get(&runtime, actor, session).cloned() else {
+            return rejected();
+        };
+        let health = next.vitals().health;
+        if health == 0 {
+            return rejected();
+        }
+        for (condition, message) in [
+            ("fire", "Your flames are quenched."),
+            ("poison", "Your poison is cured."),
+            ("energy", "Your electrification is cured."),
+        ] {
+            if crate::spell::actor_conditions::remove_condition_at(
+                &mut next,
+                condition,
+                admission.owner_now().get(),
+            )
+            .unwrap_or(false)
+            {
+                if next.advance_batch_revision().is_err()
+                    || !spells.commit(&runtime, actor, session, next)
+                {
+                    return rejected();
+                }
+                return reply(message.into());
+            }
+        }
+        if health < 40 {
+            if spells
+                .apply_health_gain(&runtime, actor, session, u64::from(40 - health))
+                .is_none()
+            {
+                return rejected();
+            }
+            return reply("Your wounds are healed.".into());
+        }
+        return reply("You do not need a minor healing.".into());
     }
     if let Some(context) = admission
         .states

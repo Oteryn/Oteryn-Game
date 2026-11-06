@@ -19,6 +19,117 @@ pub const NPC_STACK_COUNT_MAX: u32 = 100;
 /// TIMEDITEM0-RL-01: most charges (or sub-type) of one item.
 pub const NPC_CHARGES_MAX: u32 = 65_535;
 
+pub const POSTMAN_RANK_TRACK: &str = "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank";
+
+/// Audited full-state purchases: exercise wraps, an ice rapier or an empty mug. Charges are
+/// checked against the active Item policy by dispatch; fresh Items use its existing full state.
+pub fn default_state_purchase(shop: &str, item: &str, price: u64) -> Option<u32> {
+    let shop = shop
+        .strip_prefix("oteryn:npc.")
+        .or_else(|| shop.strip_prefix("oteryn:service.trade."))?;
+    match (shop, item, price) {
+        ("flint" | "romella", "oteryn:item.tibia.i50293", 347_222) => Some(500),
+        ("flint" | "romella", "oteryn:item.tibia.i50294", 1_250_000) => Some(1_800),
+        ("flint" | "romella", "oteryn:item.tibia.i50295", 10_000_000) => Some(14_400),
+        ("pugwah", "oteryn:item.tibia.i2880", 4) => Some(0),
+        ("alesar", "oteryn:item.tibia.i3284", 5_000) => Some(1),
+        _ => None,
+    }
+}
+
+/// Existing quest-owner tracks that authorize the audited faction and travelling shops.
+pub fn merchant_access(npc: &str) -> Option<(&'static str, &'static str, i64)> {
+    match npc {
+        "oteryn:npc.alesar" => Some((
+            "oteryn:quest.the_djinn_war_efreet_faction",
+            "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+            3,
+        )),
+        "oteryn:npc.nah_bob" => Some((
+            "oteryn:quest.the_djinn_war_marid_faction",
+            "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+            3,
+        )),
+        "oteryn:npc.rashid" => Some((
+            "oteryn:quest.the_travelling_trader_quest",
+            "oteryn:quest-progress/quest/u8_1/the_travelling_trader/mission07",
+            1,
+        )),
+        _ => None,
+    }
+}
+
+/// Closed retail postal shops. Robson explicitly keeps his parcel price after the quest.
+pub fn postage_price(npc: &str, item: &str, completed: bool) -> Option<u64> {
+    match (npc, item) {
+        ("oteryn:npc.robson", "oteryn:item.tibia.i3503") => Some(15),
+        (
+            "oteryn:npc.benjamin"
+            | "oteryn:npc.chemar"
+            | "oteryn:npc.chrystal"
+            | "oteryn:npc.fyodor"
+            | "oteryn:npc.liane"
+            | "oteryn:npc.lokur"
+            | "oteryn:npc.murim"
+            | "oteryn:npc.nelly"
+            | "oteryn:npc.olrik"
+            | "oteryn:npc.ray"
+            | "oteryn:npc.wally",
+            item,
+        ) => match item {
+            "oteryn:item.tibia.i3505" => Some(if completed { 5 } else { 8 }),
+            "oteryn:item.tibia.i3503" => Some(if completed { 10 } else { 15 }),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod postage_tests {
+    use super::postage_price;
+
+    #[test]
+    fn npc_postage_prices_preserve_ordinary_discounted_and_robson_terms() {
+        for npc in [
+            "benjamin", "chemar", "chrystal", "fyodor", "liane", "lokur", "murim", "nelly",
+            "olrik", "ray", "wally",
+        ] {
+            let npc = format!("oteryn:npc.{npc}");
+            assert_eq!(
+                postage_price(&npc, "oteryn:item.tibia.i3505", false),
+                Some(8)
+            );
+            assert_eq!(
+                postage_price(&npc, "oteryn:item.tibia.i3505", true),
+                Some(5)
+            );
+            assert_eq!(
+                postage_price(&npc, "oteryn:item.tibia.i3503", false),
+                Some(15)
+            );
+            assert_eq!(
+                postage_price(&npc, "oteryn:item.tibia.i3503", true),
+                Some(10)
+            );
+        }
+        for completed in [false, true] {
+            assert_eq!(
+                postage_price("oteryn:npc.robson", "oteryn:item.tibia.i3503", completed),
+                Some(15)
+            );
+            assert_eq!(
+                postage_price("oteryn:npc.robson", "oteryn:item.tibia.i3505", completed),
+                None
+            );
+            assert_eq!(
+                postage_price("oteryn:npc.unknown", "oteryn:item.tibia.i3503", completed),
+                None
+            );
+        }
+    }
+}
+
 /// The item facts the model needs, one method per fact, so the model depends on no item
 /// storage. `key` is the Item definition key.
 pub trait NpcItemFacts {
@@ -177,6 +288,7 @@ pub struct NpcServiceEntry {
 pub struct NpcBankDialogue {
     pub greet: Vec<String>,
     pub farewell: Vec<String>,
+    pub walkaway: Vec<String>,
     pub keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
 }
 
@@ -268,7 +380,11 @@ fn count_of(offer: &ProjectV2ServiceOffer) -> u32 {
 }
 
 /// The per-offer rules of NPC-0 section 3.4, in order, before the cross-offer arbitrage rule.
-fn classify(offer: &ProjectV2ServiceOffer, facts: &dyn NpcItemFacts) -> Option<NpcOfferHeldReason> {
+fn classify(
+    service: &str,
+    offer: &ProjectV2ServiceOffer,
+    facts: &dyn NpcItemFacts,
+) -> Option<NpcOfferHeldReason> {
     if offer.currency.is_some() {
         return Some(NpcOfferHeldReason::NonGoldCurrency);
     }
@@ -277,6 +393,49 @@ fn classify(offer: &ProjectV2ServiceOffer, facts: &dyn NpcItemFacts) -> Option<N
         return Some(NpcOfferHeldReason::UnknownItem);
     }
     let count = count_of(offer);
+    if offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
+        && count == 1
+        && offer.sub_type.is_none()
+        && !offer.parity_pending
+        && default_state_purchase(service, key, offer.unit_price).is_some_and(|charges| {
+            if charges == 0 {
+                facts.fluid(key)
+            } else {
+                facts.charged(key)
+            }
+        })
+    {
+        return None;
+    }
+    // These retail buybacks consume one physical item, never a quantity of charges.
+    // The durable trade owner still rejects instances carrying mutable timed state.
+    if offer.direction == ProjectV2ServiceOfferDirection::BuyFromPlayer
+        && count == 1
+        && offer.sub_type.is_none()
+        && !offer.parity_pending
+        && facts.charged(key)
+        && matches!(
+            (service, key, offer.unit_price),
+            (
+                "oteryn:service.trade.nah_bob",
+                "oteryn:item.tibia.i3284",
+                1_000
+            ) | (
+                "oteryn:service.trade.rashid",
+                "oteryn:item.tibia.i814"
+                    | "oteryn:item.tibia.i815"
+                    | "oteryn:item.tibia.i816"
+                    | "oteryn:item.tibia.i817",
+                1_500
+            ) | (
+                "oteryn:service.trade.rashid",
+                "oteryn:item.tibia.i9302" | "oteryn:item.tibia.i9303" | "oteryn:item.tibia.i9304",
+                3_000
+            )
+        )
+    {
+        return None;
+    }
     if let Some(charges) = facts.timed_charges(key) {
         if count != charges {
             return Some(NpcOfferHeldReason::TimedCountMismatch);
@@ -362,11 +521,14 @@ pub fn build(
         );
         let rows: Vec<_> = offers
             .iter()
-            .map(|offer| (offer, classify(offer, facts)))
+            .map(|offer| (offer, classify(&reference.key, offer, facts)))
             .collect();
         for (offer, held) in &rows {
             if held.is_none() && offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer {
-                let unit = (offer.unit_price, count_of(offer));
+                let unit = (
+                    offer.postman_unit_price.unwrap_or(offer.unit_price),
+                    count_of(offer),
+                );
                 lowest_sell
                     .entry((&offer.item, offer.sub_type))
                     .and_modify(|best| {
@@ -415,6 +577,7 @@ pub fn build(
         let ProjectV2Declaration::Npc {
             dialogue,
             services: service_refs,
+            fields,
             ..
         } = declaration
         else {
@@ -428,7 +591,19 @@ pub fn build(
             held_npcs.insert(reference.clone(), NpcHeldReason::UnresolvedService);
             continue;
         }
-        let name = replies::npc_display_name(&reference.key);
+        let name = fields
+            .iter()
+            .find_map(|field| {
+                if field.field_path == "oteryn:source.npc.display_name"
+                    && let crate::content::ProjectV2CandidateValue::Text(name) = &field.value
+                    && !name.is_empty()
+                {
+                    Some(name.clone())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_else(|| replies::npc_display_name(&reference.key));
         let generated_replies = dialogue.is_none().then(|| {
             replies::generate(
                 &name,
@@ -450,6 +625,7 @@ pub fn build(
                         let ProjectV2Declaration::Dialogue {
                             greet,
                             farewell,
+                            walkaway,
                             keywords,
                             ..
                         } = declaration
@@ -459,6 +635,7 @@ pub fn build(
                         Some(NpcBankDialogue {
                             greet: greet.clone(),
                             farewell: farewell.clone(),
+                            walkaway: walkaway.clone(),
                             keywords: keywords.clone(),
                         })
                     })

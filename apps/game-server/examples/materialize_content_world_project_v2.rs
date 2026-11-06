@@ -382,6 +382,8 @@ mod npc_qualified_summer_object;
 mod npc_service_scope_repairs;
 #[path = "npc_materializer/transcript_repairs.rs"]
 mod npc_transcript_repairs;
+#[path = "npc_materializer/npcfix.rs"]
+mod npcfix;
 const NPC_STAGE_TOOL_SHA256: &str =
     "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff";
 const NPC_CANDIDATES_SHA256: &str =
@@ -3097,6 +3099,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         apply_item_drown_protection(&mut draft)?;
         apply_item_market_crystal_parity(&mut draft)?;
         apply_current_power_ring(&mut draft)?;
+        npcfix::apply(&mut draft)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
         // This fresh output contains only the base package just materialized above.
         // The canonical writer requires an absent root for the successor package.
