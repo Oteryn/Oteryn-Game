@@ -12,6 +12,7 @@ use crate::durability::reward_claim_mint::{
 };
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::interaction_chest_use::{ChestUseError, chest_use_disposition, entry_chest};
+use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {
@@ -61,8 +62,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
         })
         .ok()?;
-        if let Some(claim) = bind_hydra_egg(map.overlay.base().as_ref(), |key, appearance| {
-            map.facts.quest_callback_matches(key, None, None, Some(appearance))
+        if let Some(claim) = bind_hydra_egg(map.overlay.base().as_ref(), |key, id, appearance| {
+            crate::map::view::placement_of(key).is_some_and(|(position, ordinal)| {
+                !map.facts.house_tile(position)
+                    && map
+                        .facts
+                        .base_entry(position, ordinal, id)
+                        .is_some_and(|entry| {
+                            entry.appearance_id == appearance && !entry.bound && !entry.pickupable
+                        })
+            })
         }) {
             report.served.push(claim);
         }

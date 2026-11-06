@@ -1022,6 +1022,55 @@ fn hydra_egg_native_nest_once_replay_and_refusal() -> TestResult {
 }
 
 #[test]
+fn braindeath_and_giant_smithhammer_all_claims_once_replay_and_refusal() -> TestResult {
+    let started = std::time::Instant::now();
+    // These rewards are grouped under Beregar and Explorer Society in the
+    // source chest table; their standalone wiki titles have no claim links.
+    let claims = [
+        "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare",
+        "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
+        "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
+        "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon",
+    ];
+    let selected: Vec<_> = cases_including(|claim| claims.contains(&claim))?
+        .into_iter()
+        .filter(|case| claims.contains(&case.claim.as_str()))
+        .collect();
+    assert_eq!(selected.len(), 4);
+    for (unique, position, appearance, root, quantity) in [
+        (6283, (32546, 31522, -11), 1983, "oteryn:item.tibia.i2867", 1),
+        (6079, (32778, 32253, -8), 2472, "oteryn:item.tibia.i3031", 100),
+        (6078, (32776, 32253, -8), 2472, "oteryn:item.tibia.i12510", 1),
+        (6077, (32774, 32253, -8), 2472, "oteryn:item.tibia.i3034", 1),
+    ] {
+        let chest = selected.iter().find(|case| case.unique == unique).ok_or("source chest")?;
+        assert_eq!(chest.position, position);
+        assert_eq!(chest.appearance, appearance);
+        assert_eq!(chest.root, root);
+        assert_eq!(chest.quantity, quantity);
+        if unique == 6283 {
+            assert_eq!(chest.contents, vec![
+                ("oteryn:item.tibia.i3035".into(), 13, 0),
+                ("oteryn:item.tibia.i3003".into(), 1, 0),
+                ("oteryn:item.tibia.i3457".into(), 1, 0),
+                ("oteryn:item.tibia.i268".into(), 1, 0),
+                ("oteryn:item.tibia.i239".into(), 2, 0),
+            ]);
+        } else {
+            assert!(chest.contents.is_empty());
+        }
+    }
+    execute(selected)?;
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some() {
+        println!(
+            "POSTGRES_CASE_COMPLETED braindeath_and_giant_smithhammer_all_claims_once_replay_and_refusal duration={:?}",
+            started.elapsed()
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal() -> TestResult {
     let claims: BTreeSet<_> = [
         "desert2",
@@ -1223,11 +1272,19 @@ pub(super) fn catalogue_source_world(
                     .find(|id| id["server"] == "crystalserver")
                     .ok_or("native source")?;
                 let position = &binding["project_position"];
+                // The accepted native map retains these four objects without
+                // legacy script attributes. Exercise that actual source shape.
+                let native_without_uid = [
+                    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare",
+                    "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
+                    "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
+                    "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon",
+                ].contains(&chest.claim.as_str());
                 placements.push((
                     u16::try_from(position["x"].as_u64().ok_or("source x")?)?,
                     u16::try_from(position["y"].as_u64().ok_or("source y")?)?,
                     -i8::try_from(position["z"].as_u64().ok_or("source z")?)?,
-                    Some(u16::try_from(
+                    (!native_without_uid).then_some(u16::try_from(
                         unique["unique_id"].as_u64().ok_or("source uid")?,
                     )?),
                     u16::try_from(

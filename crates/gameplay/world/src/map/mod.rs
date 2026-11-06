@@ -599,4 +599,15 @@ impl crate::content::world_reward_claims::RewardClaimTile for TileView<'_> {
     fn unique(&self, ordinal: u8) -> Option<UniqueEntry> {
         self.unique(ordinal)
     }
+
+    fn palette_id(&self, ordinal: u8) -> Option<u32> {
+        let at = self
+            .depths()
+            .iter()
+            .enumerate()
+            .filter(|(_, depth)| **depth == 0)
+            .nth(usize::from(ordinal))?
+            .0;
+        self.ids().get(at).copied()
+    }
 }

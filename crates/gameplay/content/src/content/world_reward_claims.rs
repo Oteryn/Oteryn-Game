@@ -41,6 +41,8 @@ pub trait RewardClaimBase {
 pub trait RewardClaimTile {
     fn depths(&self) -> &[u8];
     fn unique(&self, ordinal: u8) -> Option<UniqueEntry>;
+    /// The server palette's compact id of a top-level entry, including unbound roots.
+    fn palette_id(&self, ordinal: u8) -> Option<u32>;
 }
 
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored

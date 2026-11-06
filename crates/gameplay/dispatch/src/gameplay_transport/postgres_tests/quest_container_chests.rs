@@ -9,6 +9,7 @@ use crate::durability::reward_claim_mint::RewardClaimMintRequest;
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
+use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
@@ -264,8 +265,19 @@ fn scenario_case(
             &|_| true,
         )?;
         if let Some(claim) = crate::content::world_reward_claims::bind_hydra_egg(
-            world.base().as_ref(), |key, appearance| {
-                world.facts().quest_callback_matches(key, None, None, Some(appearance))
+            world.base().as_ref(),
+            |key, id, appearance| {
+                crate::map::view::placement_of(key).is_some_and(|(position, ordinal)| {
+                    !world.facts().house_tile(position)
+                        && world
+                            .facts()
+                            .base_entry(position, ordinal, id)
+                            .is_some_and(|entry| {
+                                entry.appearance_id == appearance
+                                    && !entry.bound
+                                    && !entry.pickupable
+                            })
+                })
             },
         ) {
             report.served.push(claim);
@@ -638,7 +650,12 @@ fn scenario_case(
                     let mut expected_texts = chest.texts.clone();
                     expected_texts.sort();
                     assert_eq!(texts, expected_texts, "complete source text plan");
-                    super::quest_catalogue_chests::assert_charges(&harness.pool, root.item_instance_id, chest).await?;
+                    super::quest_catalogue_chests::assert_charges(
+                        &harness.pool,
+                        root.item_instance_id,
+                        chest,
+                    )
+                    .await?;
                     let fluids: Vec<(String, i32)> = sqlx::query_as("SELECT i.definition_production_key,f.fluid_subtype::integer FROM game_item_fluid_states f JOIN game_item_instances i USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid OR i.item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) ORDER BY i.definition_production_key")
                         .bind(root.item_instance_id.as_slice()).fetch_all(&harness.pool).await?;
                     let mut expected_fluids = chest.fluids.clone();
@@ -659,7 +676,9 @@ fn scenario_case(
                         ("oteryn:item.tibia.i3284", 1),
                     ] {
                         if chest.charges.iter().any(|(partial, _)| partial == key)
-                            || (root_key != key && !expected.iter().any(|(child, _, _)| *child == key)) {
+                            || (root_key != key
+                                && !expected.iter().any(|(child, _, _)| *child == key))
+                        {
                             continue;
                         }
                         use crate::content::ReferenceItemField::Known;
