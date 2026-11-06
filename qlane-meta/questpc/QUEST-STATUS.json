@@ -1,7 +1,7 @@
 {
   "task_id": "questpc",
   "scope": "Pinned wiki titles A..M; no numeric or N..Z titles",
-  "lifecycle": "AUTHORING; no frozen candidate or publication",
+  "lifecycle": "AUTHORING on claude/happy-davinci-ijz3wy-questpc-pc2; no frozen candidate, PR or deployment",
   "counts": {
     "QUALIFIED": 56,
     "UNFINISHED": 103,
@@ -7740,7 +7740,7 @@
       "first_unqualified_stage": {
         "key": "s10",
         "kind": "collect",
-        "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
+        "objective": "Zdob\u0105d\u017a Winning Lottery Ticket do \u017ce\u0144skiego Mage potion belt.",
         "targets": [
           "Winning Lottery Ticket"
         ]
@@ -8260,7 +8260,7 @@
       "first_unqualified_stage": {
         "key": "s2",
         "kind": "collect",
-        "objective": "Odszukaj świątynię Inukayi i odbierz pierwszy fragment statuy.",
+        "objective": "Odszukaj \u015bwi\u0105tyni\u0119 Inukayi i odbierz pierwszy fragment statuy.",
         "targets": [
           "Fragment of a Statue (1st)",
           "Inukaya Shrine"
@@ -8277,5 +8277,12 @@
     ],
     "result": "2 passed; 0 failed",
     "duration_seconds": 88.41
+  },
+  "continuation": {
+    "base": "9bf74b42d",
+    "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
+    "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
+    "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
+    "active": "Run existing Elvenbane PG cohort from current committed snapshot before further edits."
   }
 }
