@@ -38,6 +38,8 @@ pub trait RewardClaimBase {
 pub trait RewardClaimTile {
     fn depths(&self) -> &[u8];
     fn unique(&self, ordinal: u8) -> Option<UniqueEntry>;
+    /// Palette appearance of a top-level entry, including entries without a source UID.
+    fn appearance(&self, ordinal: u8) -> Option<u16>;
 }
 
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
@@ -235,6 +237,7 @@ struct CandidatePlacement {
     appearance: u64,
     cell: Option<BoundCell>,
     crystal_unique_id: Option<u64>,
+    native_ordinal: Option<u8>,
     item: TypedDefinitionRef,
     count: u32,
     quest_transition: Option<String>,
@@ -890,9 +893,27 @@ fn candidate_placement(
     } else {
         &["items"]
     };
-    if !only(binding, &["legacy_unique_ids", "project_position"]) || !only(reward, reward_fields) {
+    if !only(
+        binding,
+        &["legacy_unique_ids", "project_position", "native_ordinal"],
+    ) || !only(reward, reward_fields)
+    {
         return Ok(None);
     }
+    // Authoring must select exactly one namespace; a missing source UID never
+    // silently becomes an authored selector.
+    let native_ordinal = match binding.get("native_ordinal") {
+        Some(value) => {
+            if binding.get("legacy_unique_ids").is_some() {
+                return Ok(None);
+            }
+            let Some(ordinal) = value.as_u64().and_then(|n| u8::try_from(n).ok()) else {
+                return Ok(None);
+            };
+            Some(ordinal)
+        }
+        None => None,
+    };
     let key_number = match reward.get("key_binding") {
         None if key_variant => return Ok(None),
         None => None,
@@ -934,18 +955,22 @@ fn candidate_placement(
         ProductionKey::new(text("key")?)?,
         DefinitionRevisionRef::new(text("revision")?)?,
     );
-    let crystal_unique_id = binding
-        .get("legacy_unique_ids")
-        .and_then(Value::as_array)
-        .ok_or(bad.clone())?
-        .iter()
-        .find(|id| id.get("server").and_then(Value::as_str) == Some("crystalserver"))
-        .map(|id| {
-            id.get("unique_id")
-                .and_then(Value::as_u64)
-                .ok_or(bad.clone())
-        })
-        .transpose()?;
+    let crystal_unique_id = if native_ordinal.is_some() {
+        None
+    } else {
+        binding
+            .get("legacy_unique_ids")
+            .and_then(Value::as_array)
+            .ok_or(bad.clone())?
+            .iter()
+            .find(|id| id.get("server").and_then(Value::as_str) == Some("crystalserver"))
+            .map(|id| {
+                id.get("unique_id")
+                    .and_then(Value::as_u64)
+                    .ok_or(bad.clone())
+            })
+            .transpose()?
+    };
     let quest_transition = placement
         .get("quest_transition")
         .map(|key| key.as_str().map(str::to_owned).ok_or(bad.clone()))
@@ -962,6 +987,7 @@ fn candidate_placement(
         appearance,
         cell: native_cell(position),
         crystal_unique_id,
+        native_ordinal,
         item,
         count,
         quest_transition,
@@ -1036,20 +1062,34 @@ fn bind_candidate(
     Ok(())
 }
 
-/// §1.4: the one top-level entry on the cell whose `unique` is the CrystalServer id and whose
-/// palette appearance id is the placement's.
+/// Resolve one top-level entry by its source UID or explicit authored ordinal.
+/// Both selectors require the declared cell and palette appearance.
 fn bind_placement(
     base: &impl RewardClaimBase,
     placement: &CandidatePlacement,
 ) -> Result<(BoundCell, u64), UnboundReason> {
-    let id = placement
-        .crystal_unique_id
-        .ok_or(UnboundReason::NoCrystalUniqueId)?;
+    if placement.native_ordinal.is_none() && placement.crystal_unique_id.is_none() {
+        return Err(UnboundReason::NoCrystalUniqueId);
+    }
     let cell = placement.cell.ok_or(UnboundReason::CellOutOfBounds)?;
     let tile = base
         .tile(cell.x, cell.y, cell.floor)
         .ok_or(UnboundReason::NoEntry)?;
     let top_level = tile.depths().iter().filter(|depth| **depth == 0).count();
+    if let Some(ordinal) = placement.native_ordinal {
+        if usize::from(ordinal) >= top_level {
+            return Err(UnboundReason::NoEntry);
+        }
+        if tile.appearance(ordinal).map(u64::from) != Some(placement.appearance) {
+            return Err(UnboundReason::AppearanceMismatch);
+        }
+        let key = bundle::placement_key(cell.floor, cell.x, cell.y, ordinal)
+            .ok_or(UnboundReason::NoEntry)?;
+        return Ok((cell, key));
+    }
+    let id = placement
+        .crystal_unique_id
+        .ok_or(UnboundReason::NoCrystalUniqueId)?;
     let mut found = None;
     for ordinal in 0..top_level {
         let ordinal = u8::try_from(ordinal).map_err(|_| UnboundReason::NoEntry)?;

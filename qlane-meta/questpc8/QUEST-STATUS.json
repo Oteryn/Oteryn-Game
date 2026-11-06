@@ -1104,7 +1104,7 @@
       "runtime_enabled": false
     },
     "blocker": {
-      "missing_piece": "The five-stage chosen programme, two Formorgar caches and consolidated 201-gold reward lack authored native bindings; the binder currently requires a Crystal UID."
+      "missing_piece": "The five-stage chosen programme, two Formorgar caches and consolidated 201-gold reward lack authored native bindings; explicit authored ordinal binding is now supported, but the chosen placements and stage graph still require composition."
     },
     "first_unqualified_stage": {
       "key": "s1",
@@ -1117,7 +1117,21 @@
     "disposition": "authoring",
     "qualified_elsewhere": [],
     "mechanism": "native_reward_source_placement",
-    "round": "L7"
+    "round": "L7",
+    "qualified_components": [
+      {
+        "batch": "native-authored-placement-prerequisite",
+        "scope": "reusable placement binding only; does not qualify this quest programme",
+        "test": "quest_authored_placement_without_legacy_uid_mints_once_and_replays",
+        "marker": "QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CASE_COMPLETED",
+        "duration": "26.170233947s",
+        "red_duration_seconds": 23.62,
+        "red_failure": "authored selector without a source UID was not served",
+        "qengine2_checked": "5a6de28c1",
+        "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
+        "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      }
+    ]
   },
   {
     "title": "Measuring Tibia Quest",
@@ -1199,7 +1213,7 @@
       "runtime_enabled": false
     },
     "blocker": {
-      "missing_piece": "The six-stage chosen programme, three shrine fragments and Guardian Statue reward lack authored native bindings; the binder currently requires a Crystal UID."
+      "missing_piece": "The six-stage chosen programme, three shrine fragments and Guardian Statue reward lack authored native bindings; explicit authored ordinal binding is now supported, but the chosen placements and stage graph still require composition."
     },
     "first_unqualified_stage": {
       "key": "s2",
@@ -1213,7 +1227,21 @@
     "disposition": "authoring",
     "qualified_elsewhere": [],
     "mechanism": "native_reward_source_placement",
-    "round": "L7"
+    "round": "L7",
+    "qualified_components": [
+      {
+        "batch": "native-authored-placement-prerequisite",
+        "scope": "reusable placement binding only; does not qualify this quest programme",
+        "test": "quest_authored_placement_without_legacy_uid_mints_once_and_replays",
+        "marker": "QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CASE_COMPLETED",
+        "duration": "26.170233947s",
+        "red_duration_seconds": 23.62,
+        "red_failure": "authored selector without a source UID was not served",
+        "qengine2_checked": "5a6de28c1",
+        "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
+        "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      }
+    ]
   },
   {
     "canonical": "oteryn:quest.giant_smithhammer_quest",
@@ -1370,7 +1398,21 @@
     "blocker": {
       "missing_piece": "The five-stage restored Academy programme lacks an admitted lever selector and reward placement, plus full dispatch composition."
     },
-    "round": "L7"
+    "round": "L7",
+    "qualified_components": [
+      {
+        "batch": "native-authored-placement-prerequisite",
+        "scope": "reusable placement binding only; does not qualify this quest programme",
+        "test": "quest_authored_placement_without_legacy_uid_mints_once_and_replays",
+        "marker": "QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CASE_COMPLETED",
+        "duration": "26.170233947s",
+        "red_duration_seconds": 23.62,
+        "red_failure": "authored selector without a source UID was not served",
+        "qengine2_checked": "5a6de28c1",
+        "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
+        "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      }
+    ]
   },
   {
     "canonical": "oteryn:quest.vampire_shield_quest",
@@ -1394,7 +1436,21 @@
     "blocker": {
       "missing_piece": "The four-stage chosen programme lacks swamp-box native selectors and complete kill/use/reward dispatch composition."
     },
-    "round": "L7"
+    "round": "L7",
+    "qualified_components": [
+      {
+        "batch": "native-authored-placement-prerequisite",
+        "scope": "reusable placement binding only; does not qualify this quest programme",
+        "test": "quest_authored_placement_without_legacy_uid_mints_once_and_replays",
+        "marker": "QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CASE_COMPLETED",
+        "duration": "26.170233947s",
+        "red_duration_seconds": 23.62,
+        "red_failure": "authored selector without a source UID was not served",
+        "qengine2_checked": "5a6de28c1",
+        "qengine2_result": "no authored ordinal reward-claim selector present; reward/outfit components retained for subsequent reuse",
+        "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
+      }
+    ]
   },
   {
     "canonical": "oteryn:quest.wrath_of_the_emperor_quest",

@@ -14,6 +14,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[derive(Clone, Copy)]
 enum Case {
+    Authored,
     Bear,
     Key,
     Choice,
@@ -41,6 +42,11 @@ fn execute(case: Case, marker: &'static str) -> TestResult {
         .map_err(|_| "reward container scenario panicked")??;
     println!("{marker} POSTGRES_CASE_COMPLETED {:?}", started.elapsed());
     Ok(())
+}
+
+#[test]
+fn quest_authored_placement_without_legacy_uid_mints_once_and_replays() -> TestResult {
+    execute(Case::Authored, "QUESTPC8_AUTHORED_PLACEMENT")
 }
 
 #[test]
@@ -134,6 +140,13 @@ fn scenario_case(
                     .collect(),
             )
         }
+        Case::Authored => (
+            "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
+            (33313, 31574, -15),
+            0,
+            "oteryn:item.tibia.i3554",
+            vec![],
+        ),
         Case::DemonBoots => (
             "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
             (33313, 31574, -15),
@@ -220,6 +233,9 @@ fn scenario_case(
         let harness =
             Harness::create_with_admission_seed(admin, "quest_container", false, false).await?;
         prepare_current_session(&harness).await?;
+        if matches!(case, Case::Authored) {
+            eprintln!("QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CONNECTED");
+        }
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -259,10 +275,65 @@ fn scenario_case(
             };
             source_world(chest, unique, appearance, 0)?
         };
-        let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
-            world.base().as_ref(),
-            &|_| true,
-        )?;
+        let mut authored_shard = None;
+        let report = if matches!(case, Case::Authored) {
+            // Exercise an authored selector on a real map without borrowing a source UID.
+            let mut definition = None;
+            for shard in crate::content::world_reward_claims::REWARD_CLAIM_SHARDS {
+                let shard: serde_json::Value = serde_json::from_str(shard)?;
+                for row in shard["records"].as_array().ok_or("records")? {
+                    if row["definition"]["identity"]["key"] == claim {
+                        definition = Some(row["definition"].clone());
+                    }
+                }
+            }
+            let mut definition = definition.ok_or("authored fixture reward")?;
+            definition["placements"][0]["source_binding"] = serde_json::json!({
+                "project_position": {"x":chest.0,"y":chest.1,"z":-chest.2},
+                "native_ordinal":1
+            });
+            for invalid in 0..7 {
+                let mut bad = definition.clone();
+                match invalid {
+                    0 => bad["placements"][0]["source_binding"]["native_ordinal"] = 0.into(),
+                    1 => bad["placements"][0]["source_binding"]["native_ordinal"] = 2.into(),
+                    2 => bad["placements"][0]["source_binding"]["native_ordinal"] = 256.into(),
+                    3 => bad["placements"][0]["source_binding"]["native_ordinal"] = (-1).into(),
+                    4 => {
+                        bad["placements"][0]["source_binding"]["legacy_unique_ids"] =
+                            serde_json::json!([])
+                    }
+                    5 => bad["placements"][0]["appearance_tibia_id"] = 2473.into(),
+                    _ => {
+                        bad["placements"][0]["source_binding"]["project_position"]["x"] =
+                            (chest.0 + 1).into()
+                    }
+                }
+                let bad = serde_json::json!({"records":[{"definition":bad}]}).to_string();
+                let refused = crate::content::world_reward_claims::bind_reward_claims(
+                    world.base().as_ref(),
+                    &[&bad],
+                    &|_| true,
+                )?;
+                assert!(
+                    refused.served.is_empty(),
+                    "invalid authored selector {invalid}"
+                );
+            }
+            let shard = serde_json::json!({"records":[{"definition":definition}]}).to_string();
+            let report = crate::content::world_reward_claims::bind_reward_claims(
+                world.base().as_ref(),
+                &[&shard],
+                &|_| true,
+            )?;
+            authored_shard = Some(shard);
+            report
+        } else {
+            crate::content::world_reward_claims::bind_embedded_reward_claims(
+                world.base().as_ref(),
+                &|_| true,
+            )?
+        };
         assert_eq!(
             report.served.iter().any(|row| row.key.as_str() == claim),
             catalogue.is_none_or(|chest| chest.servable),
@@ -363,6 +434,16 @@ fn scenario_case(
         let target = target_at(chest.0)?;
         {
             let mut owner = deps.owner(&harness, &authority);
+            if let Some(shard) = &authored_shard {
+                assert!(
+                    owner
+                        .states
+                        .quest_callbacks
+                        .reward_claims_fixture
+                        .set(vec![shard.clone()])
+                        .is_ok()
+                );
+            }
             owner.active_generation = Some(generation);
             owner.movement_cells = &cells;
             owner.admit_progression_session(&mut admitted).await;
@@ -493,6 +574,16 @@ fn scenario_case(
             }
             {
                 let mut owner = deps.owner(&harness, &authority);
+                if let Some(shard) = &authored_shard {
+                    assert!(
+                        owner
+                            .states
+                            .quest_callbacks
+                            .reward_claims_fixture
+                            .set(vec![shard.clone()])
+                            .is_ok()
+                    );
+                }
                 owner.active_generation = Some(generation);
                 owner.movement_cells = &cells;
                 owner.admit_progression_session(&mut admitted).await;
@@ -529,6 +620,16 @@ fn scenario_case(
                 && row.reason
                     == crate::content::world_reward_claims::UnboundReason::NoCrystalUniqueId));
             let mut owner = deps.owner(&harness, &authority);
+            if let Some(shard) = &authored_shard {
+                assert!(
+                    owner
+                        .states
+                        .quest_callbacks
+                        .reward_claims_fixture
+                        .set(vec![shard.clone()])
+                        .is_ok()
+                );
+            }
             owner.active_generation = Some(generation);
             owner.movement_cells = &cells;
             owner.admit_progression_session(&mut admitted).await;
@@ -564,6 +665,16 @@ fn scenario_case(
             // without an in-memory command-result cache.
             for cold_replay in [false, true] {
                 let mut owner = deps.owner(&harness, &authority);
+                if let Some(shard) = &authored_shard {
+                    assert!(
+                        owner
+                            .states
+                            .quest_callbacks
+                            .reward_claims_fixture
+                            .set(vec![shard.clone()])
+                            .is_ok()
+                    );
+                }
                 owner.active_generation = Some(generation);
                 owner.movement_cells = &cells;
                 owner.admit_progression_session(&mut admitted).await;
@@ -631,7 +742,12 @@ fn scenario_case(
                     let mut expected_texts = chest.texts.clone();
                     expected_texts.sort();
                     assert_eq!(texts, expected_texts, "complete source text plan");
-                    super::quest_catalogue_chests::assert_charges(&harness.pool, root.item_instance_id, chest).await?;
+                    super::quest_catalogue_chests::assert_charges(
+                        &harness.pool,
+                        root.item_instance_id,
+                        chest,
+                    )
+                    .await?;
                     let fluids: Vec<(String, i32)> = sqlx::query_as("SELECT i.definition_production_key,f.fluid_subtype::integer FROM game_item_fluid_states f JOIN game_item_instances i USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid OR i.item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) ORDER BY i.definition_production_key")
                         .bind(root.item_instance_id.as_slice()).fetch_all(&harness.pool).await?;
                     let mut expected_fluids = chest.fluids.clone();
@@ -652,7 +768,9 @@ fn scenario_case(
                         ("oteryn:item.tibia.i3284", 1),
                     ] {
                         if chest.charges.iter().any(|(partial, _)| partial == key)
-                            || (root_key != key && !expected.iter().any(|(child, _, _)| *child == key)) {
+                            || (root_key != key
+                                && !expected.iter().any(|(child, _, _)| *child == key))
+                        {
                             continue;
                         }
                         use crate::content::ReferenceItemField::Known;

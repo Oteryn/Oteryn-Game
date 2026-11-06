@@ -117,3 +117,18 @@ python tools/content-schema/reward-claim-authoring/reward_claim_variant_migratio
 python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content --check
 python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
 ```
+
+## Authored native selectors
+
+The runtime binder also accepts an explicitly authored `source_binding` with
+`project_position` and `native_ordinal` instead of `legacy_unique_ids`. The ordinal
+is zero based among top-level entries, excluding nested container contents. The
+binder verifies the exact cell, ordinal and `appearance_tibia_id` against the pinned
+base map. Missing entries, ambiguous palette appearances, mixed selector namespaces
+and malformed ordinals remain unserved. It never falls back from a missing donor UID.
+
+This selector uses the existing claim reservation, fenced mint and receipt replay
+owners. It does not supply stage progress or qualify a quest completion graph, and
+it changes no source charge or fluid rules. The source-pilot generator continues
+to emit its original donor selectors; authored records must declare their native
+selector explicitly in their own authoring input.

@@ -57,6 +57,8 @@ pub(super) struct PendingCallbacks {
     #[cfg(test)]
     pub(super) fixture: OnceLock<Vec<Callback>>,
     #[cfg(test)]
+    pub(super) reward_claims_fixture: OnceLock<Vec<String>>,
+    #[cfg(test)]
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
 }
 

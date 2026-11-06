@@ -83,7 +83,7 @@ pub(super) fn source_world_choices(
                         palette: 1,
                         depth: 0,
                         attrs: sector::Attrs {
-                            unique: Some(*unique),
+                            unique: (*unique != 0).then_some(*unique),
                             ..Default::default()
                         },
                     },

@@ -1,4 +1,4 @@
-//! Source unique-id chests on the bundle World's real USE route. Content owns the
+//! Source and authored chests on the bundle World's real USE route. Content owns the
 //! binding; DUR-03 owns the claim, reservation, replay and atomic backpack MINT.
 
 use super::ComposedFreshAdmission;
@@ -33,8 +33,8 @@ fn item_ref(item: &crate::content::TypedDefinitionRef) -> TypedDefinitionRef {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// `None` leaves an unbound object to the existing door owner. A source chest
-    /// must bind by position, unique id and appearance, never by client-supplied ids.
+    /// `None` leaves an unbound object to the existing door owner. Content binds
+    /// the exact position and appearance with a source UID or authored ordinal.
     pub(super) async fn use_bundle_chest(
         &self,
         actor: ExactActorRef,
@@ -51,7 +51,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         // This is a bounded, immutable Content pass over the embedded claim catalogue.
         // Unsupported shapes and unadmitted rewards remain closed in the existing binder.
-        let report = bind_embedded_reward_claims(map.overlay.base().as_ref(), &|item| {
+        let admitted = |item: &crate::content::TypedDefinitionRef| {
             generation_item_facts(native, &item_ref(item)).is_ok_and(|facts| {
                 facts.container_capacity.is_none_or(|capacity| capacity > 0)
                     && !matches!(
@@ -59,8 +59,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         crate::durability::item_transfer::ItemStackClass::Unknown
                     )
             })
-        })
-        .ok()?;
+        };
+        #[cfg(test)]
+        let report = if let Some(shards) = self.states.quest_callbacks.reward_claims_fixture.get() {
+            crate::content::world_reward_claims::bind_reward_claims(
+                map.overlay.base().as_ref(),
+                &shards.iter().map(String::as_str).collect::<Vec<_>>(),
+                &admitted,
+            )
+        } else {
+            bind_embedded_reward_claims(map.overlay.base().as_ref(), &admitted)
+        };
+        #[cfg(not(test))]
+        let report = bind_embedded_reward_claims(map.overlay.base().as_ref(), &admitted);
+        let report = report.ok()?;
         let source = MapViewSource {
             overlay: &map.overlay,
             facts: &map.facts,
