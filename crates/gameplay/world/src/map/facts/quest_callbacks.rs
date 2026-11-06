@@ -1,10 +1,18 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
+use sha2::{Digest, Sha256};
 
 #[derive(Clone, Debug)]
 struct MovementDecay {
     revision: u64,
     restore: EntryFacts,
+}
+
+#[derive(Clone, Debug)]
+struct NaginataPick {
+    session: [u8; 16],
+    command: u64,
+    binding: [u8; 32],
 }
 
 #[derive(Clone, Debug, Default)]
@@ -17,6 +25,7 @@ pub(super) struct CallbackStates {
     pub(super) movement_effects: std::collections::VecDeque<(u64, TilePos, u16)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    naginata_picks: Vec<NaginataPick>,
 }
 
 impl CallbackStates {
@@ -32,7 +41,8 @@ impl CallbackStates {
         })
     }
     fn has_capacity(&self, additional: usize) -> bool {
-        let used = self.changed.len()
+        let used = self.naginata_picks.len()
+            + self.changed.len()
             + self.hidden.len()
             + self.movement_decays.len()
             + self.movement_effects.len()
@@ -43,6 +53,92 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    /// The six source rock hits are Channel-local, like the rock's removal.
+    /// Retain their exact command payload bindings beside that projection across reconnect.
+    pub fn naginata_pick_replay(
+        &self,
+        session: [u8; 16],
+        command: u64,
+        payload: &[u8],
+    ) -> Option<bool> {
+        let binding: [u8; 32] = Sha256::digest(payload).into();
+        self.callbacks
+            .lock()
+            .ok()?
+            .naginata_picks
+            .iter()
+            .find(|hit| hit.session == session && hit.command == command)
+            .map(|hit| hit.binding == binding)
+    }
+
+    /// Crystal register_actions.lua:751-774: the sixth shared pick removes the
+    /// exact Naginata rock. The runtime owner applies its physical hit in the same
+    /// turn; a refused hit leaves both the counter and the map unchanged.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "exact map state, command binding and health-owner commit"
+    )]
+    pub fn apply_naginata_pick(
+        &self,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        session: [u8; 16],
+        command: u64,
+        payload: &[u8],
+        hit: impl FnOnce() -> bool,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if pos
+            != (TilePos {
+                x: 32356,
+                y: 32074,
+                floor: -10,
+            })
+            || after.appearance_id != 1791
+            || self.action_at(key) != Some(40031)
+            || command == 0
+            || payload.len() > oteryn_protocol_oteryn::world_object::MAX_USE_INTENT_BYTES
+        {
+            return false;
+        }
+        let binding = Sha256::digest(payload).into();
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if states.naginata_picks.len() >= 6
+            || states
+                .naginata_picks
+                .iter()
+                .any(|hit| hit.session == session && hit.command == command)
+            || states
+                .changed
+                .get(&key)
+                .map_or(0, |(revision, _)| *revision)
+                != expected
+            || expected != states.naginata_picks.len() as u64
+            || !states.has_capacity(2)
+        {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        if states.naginata_picks.try_reserve(1).is_err() || !hit() {
+            return false;
+        }
+        states.naginata_picks.push(NaginataPick {
+            session,
+            command,
+            binding,
+        });
+        states.changed.insert(key, (expected + 1, after));
+        if states.naginata_picks.len() == 6 {
+            states.hidden.insert(key);
+        }
+        true
+    }
+
     /// Records a committed monster step for the dispatch-owned trap pass.
     pub fn record_monster_step(&self, step: MonsterStep) -> bool {
         let Ok(mut steps) = self.monster_steps.lock() else {

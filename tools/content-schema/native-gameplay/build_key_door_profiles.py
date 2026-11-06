@@ -2,6 +2,9 @@
 """Source-derived profiles for the M06 key-door and level-door playable path.
 
 Crystal 201189f data/libs/tables/doors.lua:4,9,265 supplies the identities.
+Its startup/tables/door_level.lua:66 binds 6264 to Noble Armor's level-35 gate.
+Panpipe's captured key-door gate at (32643,32128,8) also needs locked1631;
+closed1632/open1633 are already supplied by the plain door provider.
 The existing pinned importer supplies physics and classifications without overrides.
 """
 import argparse
@@ -12,7 +15,7 @@ from build_tool_item_profiles import build as source_profiles
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/key-door-item-profiles.json'
-IDS = {1628, 1646, 1647, 2967, 2968}
+IDS = {1628, 1631, 1646, 1647, 2967, 2968, 6264, 6265}
 
 
 def build(directory):

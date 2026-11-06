@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 import container_native
+import poison_daggers
 import reward_claim_variant_migration as migration
 
 PROFILE = 'authored_variant_v1'
@@ -175,6 +176,7 @@ def derive_definitions(packet, items, stack_problem):
                         or semantic_digest(items[case['item_identity']['key']]) != case['item_definition_sha256']):
                     raise ValueError('selected source/Item stack normalization inputs changed')
                 serialized_item_stacks(reward, items, stack_problem)
+            poison_daggers.correct_canonical(source['identity']['key'], placement['position'], reward)
             for qi, quantity in enumerate(reward.get('items', [])):
                 problem = stack_problem(items[quantity['item']['key']], quantity['count'])
                 if problem:

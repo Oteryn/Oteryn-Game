@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import json
+import sys
 import xml.etree.ElementTree as ET
 
 import timed_item_profiles as timed
@@ -17,6 +18,30 @@ DEMON_HELMET_REWARDS = {
     'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet': 'oteryn:item.tibia.i3387',
     'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield': 'oteryn:item.tibia.i3420',
 }
+
+CHEST_PROFILES = 'tools/content-schema/native-gameplay/quest-chest-item-profiles.json'
+CHEST_IDS = {1777, 2436, 2438, 2473, 2474}
+
+
+def admit_map_carriers(root, document):
+    """Retain the exact source physics for restored map chest entries."""
+    overlay = json.loads((root / CHEST_PROFILES).read_bytes())
+    rows = overlay['records']
+    keys = [r['production_definition']['production_key'] for r in rows]
+    if (overlay['schema'] != 'OTERYN_NATIVE_QUEST_CHEST_ITEM_PROFILES/v1'
+            or overlay['source_revision'] != '99902524e052f37574194466c2949c576e4ab269'
+            or len(keys) != len(CHEST_IDS)
+            or set(keys) != {f'oteryn:item.tibia.i{i}' for i in CHEST_IDS}):
+        raise ValueError('QUEST_CHEST_ITEM_PROFILE_SET')
+    existing = {row['production_definition']['production_key']: row
+                for row in document['records']}
+    for row in rows:
+        key = row['production_definition']['production_key']
+        if key in existing:
+            if existing[key] != row:
+                raise ValueError('QUEST_CHEST_ITEM_PROFILE_CONFLICT')
+        else:
+            document['records'].append(row)
 
 
 def complete_native_stack(root, record, definition, binding):
@@ -126,6 +151,11 @@ def grant_semantics(root, definition):
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
+    # Map selection and native reward admission must use the same bounded key
+    # proof; the existing runtime key lowering owns the actual atomic mint.
+    sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
+    from quest_chest_bindings import panpipe_key_claim
+
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
@@ -133,6 +163,15 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
+    # Restored startup chest selectors must carry their exact ready reward into
+    # the native provider too. Otherwise a correctly bound chest has nothing to
+    # mint (notably Nightmare Teddy). This is the selected cohort, not a general
+    # promotion of held source definitions.
+    selected_chests = {
+        row['claim']
+        for path in sorted((root / 'tools/content-schema/world-authoring/samples/quest-chest-bindings').glob('*.json'))
+        for row in json.loads(path.read_bytes())['bindings']
+    }
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:
@@ -144,6 +183,18 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     for path in sorted((root / 'content/interactions/reward_claims').glob('reward-claim*.json')):
         for row in json.loads(path.read_bytes())['records']:
             definition = row['definition']
+            if definition['identity']['key'] in selected_chests:
+                # Filled-container/text claims already enter through the exact
+                # W15b native projection below; selection adds only map binding.
+                if definition.get('readiness') == 'ready' or panpipe_key_claim(definition):
+                    keys.update(item['item']['key'] for placement in definition['placements']
+                                for item in placement['reward']['items'])
+                elif (definition.get('readiness') != 'waiting_implementation'
+                      or definition.get('data_holds') != []
+                      or definition.get('native_contents', {}).get('schema')
+                      != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'):
+                    raise ValueError('SELECTED_QUEST_CHEST_REWARD_NOT_READY')
+                selected_chests.remove(definition['identity']['key'])
             demon_item = DEMON_HELMET_REWARDS.get(definition['identity']['key'])
             if demon_item is not None:
                 placements = definition['placements']
@@ -163,6 +214,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 for placement in definition['placements']:
                     if placement.get('quest_transition'):
                         keys.update(item['item']['key'] for item in placement['reward']['items'])
+    if selected_chests:
+        raise ValueError('SELECTED_QUEST_CHEST_MISSING')
     grizzly_path = root / 'content/quests/killing-in-the-name-of.json'
     if grizzly_path.is_file():
         grizzly = json.loads(grizzly_path.read_bytes())
@@ -171,6 +224,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         keys.update(f"oteryn:item.tibia.i{task['item']['source_id']}"
                     for task in grizzly['tasks'] if task.get('item'))
     document = json.loads(generated[profile_path])
+    admit_map_carriers(root, document)
     present = {row['production_definition']['production_key']: row for row in document['records']}
     if len(present) != len(document['records']):
         raise ValueError('QUEST_CALLBACK_DUPLICATE_NATIVE_ITEM')

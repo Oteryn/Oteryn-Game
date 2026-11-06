@@ -28,9 +28,13 @@ class QualificationTests(unittest.TestCase):
     def test_checked_in_ledger_is_valid(self):
         errors, counts = qualification.validate()
         self.assertEqual(errors, [])
-        # Three Demon Helmet selectors now have real USE/PostgreSQL receipt
-        # coverage. The exact remaining denominator still rejects drift.
-        self.assertEqual(sum(counts.values()), 297)
+        # Seventeen additional N--Q selectors have actual dispatch/PG proofs.
+        # Keep both the exact remaining denominator and the full inventory.
+        self.assertEqual(sum(counts.values()), 280)
+        coverage = qualification.read_json(qualification.COVERAGE)
+        self.assertEqual(coverage['counts'], {
+            'dispatch_pg_qualified': 28, 'not_playable': 28, 'supported_unqualified': 280})
+        self.assertEqual(sum(coverage['counts'].values()), 336)
 
     def test_missing_row_is_rejected(self):
         del self.ledger["claims"][next(iter(self.ledger["claims"]))]

@@ -37,6 +37,17 @@ texts, random choices and achievements are later children.
   Duplicate legacy unique ids are server-scoped and recorded with every claim/position;
   validation rejects missing or stale collision diagnostics. Position bindings remain authoritative.
 
+## Poison Daggers target reward
+
+Poison Daggers Quest uses the target's two daggers and thirty poison arrows.
+The [Wiki quest](https://tibia.fandom.com/wiki/Poison_Daggers_Quest) and
+[spoiler](https://tibia.fandom.com/wiki/Poison_Daggers_Quest/Spoiler), captured
+2026-11-06, agree with both pinned donors' comments, while their numeric recipe
+contains only one dagger. `poison_daggers.py` corrects only UID6068 at the exact
+source position and recipe. It keeps the original donor in `source_variant`
+and emits two quantity1 children through the existing container reward owner.
+A changed source recipe, position or container fails closed.
+
 ## D277 charged source rewards
 
 Architect ruling [5933264015](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015)

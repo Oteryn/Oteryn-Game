@@ -14,17 +14,34 @@ import lua_tables
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
 QUALIFIED = {
-    "oteryn:reward-claim.kv.steelhelmet1": "quest_callbacks_source_chest_use_once_replay_and_second_use_refused",
     "oteryn:reward-claim.kv.bear_chest1": "quest_container_chests_bear_bag_once_and_replay",
-    "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies": "quest_container_chests_key_attributes_are_atomic",
-    "oteryn:reward-claim.quest.u7_24.the_annihilator.reward": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
-    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.bplong_sword": "quest_container_chests_authored_book_text_survives_replay",
-    "oteryn:reward-claim.kv.powerbolt2": "quest_container_chests_leaf_text_is_frozen_and_replayed",
-    "oteryn:reward-claim.quest.key.id3002": "quest_container_chests_crystal_key3002_is_minted_once",
     "oteryn:reward-claim.kv.madmageroom3": "quest_container_chests_full_definition_charges_mint_one_instance",
-    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots": "quest_demon_helmet_chests_steel_boots_once_and_replay",
+    "oteryn:reward-claim.kv.naginata": "quest_reward_claims_naginata_use_once_and_replay",
+    "oteryn:reward-claim.kv.nightmare_teddy_quest": "quest_reward_claims_nightmare_teddy_use_once_and_replay",
+    "oteryn:reward-claim.kv.noblearmor1": "quest_reward_claims_noble_armor_use_once_and_replay",
+    "oteryn:reward-claim.kv.noblearmor2": "quest_reward_claims_noble_armor_crown_helmet_use_once_and_replay",
+    "oteryn:reward-claim.kv.orcfortress1": "quest_reward_claims_batch_one_orc_fortress_all_rewards_and_level_gate",
+    "oteryn:reward-claim.kv.orcfortress2": "quest_reward_claims_batch_one_orc_fortress_all_rewards_and_level_gate",
+    "oteryn:reward-claim.kv.orcfortress3": "quest_reward_claims_batch_one_orc_fortress_all_rewards_and_level_gate",
+    "oteryn:reward-claim.kv.orcshaman": "quest_reward_claims_batch_one_orc_shaman_bag_exact_contents",
+    "oteryn:reward-claim.kv.panpipe": "quest_reward_claims_batch_one_panpipe_bag_exact_contents",
+    "oteryn:reward-claim.kv.platearmor": "quest_reward_claims_batch_one_plate_armor_coffin_once_and_replay",
+    "oteryn:reward-claim.kv.poisondaggers": "quest_reward_claims_batch_two_poison_daggers_two_instances_once_and_replay",
+    "oteryn:reward-claim.kv.powerbolt1": "quest_reward_claims_batch_two_power_bolts_book_and_ammunition",
+    "oteryn:reward-claim.kv.powerbolt2": "quest_reward_claims_batch_two_power_bolts_book_and_ammunition",
+    "oteryn:reward-claim.kv.purpletome1": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
+    "oteryn:reward-claim.kv.purpletome2": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
+    "oteryn:reward-claim.kv.purpletome3": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
+    "oteryn:reward-claim.kv.steelhelmet1": "quest_callbacks_source_chest_use_once_replay_and_second_use_refused",
+    "oteryn:reward-claim.quest.key.id3002": "quest_container_chests_crystal_key3002_is_minted_once",
+    "oteryn:reward-claim.quest.key.id4055": "quest_reward_claims_panpipe_key_4055_once_and_replay",
+    "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies": "quest_container_chests_key_attributes_are_atomic",
     "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet": "quest_demon_helmet_chests_demon_helmet_once_and_replay",
     "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield": "quest_demon_helmet_chests_demon_shield_once_and_replay",
+    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots": "quest_demon_helmet_chests_steel_boots_once_and_replay",
+    "oteryn:reward-claim.quest.u7_2.parchment_room.bag": "quest_reward_claims_batch_two_parchment_room_key_bag",
+    "oteryn:reward-claim.quest.u7_24.the_annihilator.reward": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
+    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.bplong_sword": "quest_container_chests_authored_book_text_survives_replay",
 }
 KEY_LOWERING = "KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED"
 SOURCE_SHA256 = {
@@ -33,6 +50,7 @@ SOURCE_SHA256 = {
 }
 CONTAINER_SOURCE = "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
 ACCEPTED_OVERRIDES = {
+    6068: "Target Wiki2026-11-06 and both donor comments: two quantity1 daggers; retain numeric donor one in source_variant",
     6078: "PR2770 Q5/A: retain accepted Item12510 over donor3208",
     6218: "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
     6226: "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
@@ -114,6 +132,12 @@ def coverage(canary, crystal):
             inventory = {
                 "claim": key, "status": status, "reason": reason, "placements": placements,
             }
+            if key == "oteryn:reward-claim.kv.poisondaggers":
+                inventory["target_correction"] = (
+                    "Target Wiki2026-11-06 and both donor comments specify two daggers. "
+                    "The native recipe mints two distinct quantity1 instances; "
+                    "source_variant preserves the donor numeric recipe of one."
+                )
             if native and any(p['reward'].get('written_text') for p in definition['placements']):
                 inventory["qualification_limit"] = (
                     "Reward-grant support includes durable authored book text; "

@@ -16,6 +16,17 @@ class ContainerNativeTests(unittest.TestCase):
                     for r in json.loads(p.read_text())['records']]
         cls.bear = next(d for d in cls.rows if d['identity']['key'] == 'oteryn:reward-claim.kv.bear_chest1')
 
+    def test_poison_daggers_target_has_two_distinct_nonstackable_children(self):
+        definition = next(d for d in self.rows
+                          if d['identity']['key'] == 'oteryn:reward-claim.kv.poisondaggers')
+        recipe = container_native.derive(definition, self.items, plain.stack_problem)
+        self.assertIsNotNone(recipe)
+        self.assertEqual([(q['item']['key'], q['count'])
+                          for q in recipe['placements'][0]['contents']],
+                         [('oteryn:item.tibia.i3448', 30),
+                          ('oteryn:item.tibia.i3299', 1),
+                          ('oteryn:item.tibia.i3299', 1)])
+
     def test_bear_room_bag_keeps_both_rewards_and_source_storage(self):
         recipe = container_native.derive(self.bear, self.items, plain.stack_problem)
         self.assertEqual(recipe['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')

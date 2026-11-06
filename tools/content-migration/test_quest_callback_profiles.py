@@ -93,6 +93,41 @@ class QuestCallbackProfiles(unittest.TestCase):
                          'stack_class': 'NonStackable',
                          'legal_destinations': ['CharacterInventory', 'Ground']})
 
+    def test_static_reward_carriers_retain_source_physics_and_reject_conflicts(self):
+        document = {'records': []}
+        profiles.admit_map_carriers(ROOT, document)
+        self.assertEqual(len(document['records']), 5)
+        for row in document['records']:
+            physical = row['semantics']['physical']['value']
+            box = row['production_definition']['production_key'] == 'oteryn:item.tibia.i2473'
+            self.assertEqual(physical['pickupable'], {'state': 'KNOWN', 'value': box})
+            self.assertEqual(row['attributes']['blocks_movement'], not box)
+            self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+        retained = copy.deepcopy(document)
+        profiles.admit_map_carriers(ROOT, document)
+        self.assertEqual(document, retained)
+        document['records'][0]['attributes']['blocks_movement'] = not document['records'][0]['attributes']['blocks_movement']
+        with self.assertRaisesRegex(ValueError, 'QUEST_CHEST_ITEM_PROFILE_CONFLICT'):
+            profiles.admit_map_carriers(ROOT, document)
+
+    def test_selected_nightmare_teddy_chest_admits_its_exact_canonical_reward(self):
+        key = 'oteryn:item.tibia.i21982'
+        document = json.loads(self.generated[PROFILE])
+        document['records'] = [r for r in document['records']
+                               if r['production_definition']['production_key'] != key]
+        self.generated[PROFILE] = json.dumps(document).encode()
+        self.admit()
+        rows = [r for r in json.loads(self.generated[PROFILE])['records']
+                if r['production_definition']['production_key'] == key]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['production_binding']['target']['key'], key)
+        self.assertEqual(rows[0]['production_binding']['disposition'], 'EXACT')
+        self.assertEqual(rows[0]['admission'], {
+            'materializable': True, 'stack_class': 'NonStackable',
+            'legal_destinations': ['CharacterInventory', 'Ground']})
+        self.assertEqual(rows[0]['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 590})  # items.xml, not the chest's capacity hint
+
     def test_rotten_blood_rust_callback_admits_the_canonical_bloody_tear_once(self):
         # Rotten Blood's fixed callback is authored in Rust, so the JSON callback
         # inventory cannot supply this already admitted source Item by itself.

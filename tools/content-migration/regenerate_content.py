@@ -89,6 +89,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
@@ -553,6 +554,7 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
     refresh_quest_callback_proof()
     # Source-backed field regeneration uses the same explicit source root as its tests.
