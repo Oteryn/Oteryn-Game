@@ -1869,6 +1869,79 @@ mod tests {
     };
     use serde_json::Value;
     #[test]
+    fn itemhold_q_resolved_catalogue_materializes_and_remaining_holds_reject() {
+        use super::super::ReferenceItemField as F;
+        use crate::domain::timed_item::TimedValues;
+        use crate::domain::timed_item_host::TimedDefinitionSource;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = starting_loadout_input::merge(
+            Some(pinned(include_bytes!(
+                "../../../../../content/items/definitions/spell-native-profiles.json"
+            ))),
+            Some(pinned(include_bytes!(
+                "../../../../../content/items/definitions/starting-loadout-profiles.json"
+            ))),
+        )
+        .unwrap();
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        for id in [2881, 2882, 3054, 3056, 3083, 3572, 12369, 14156, 39546] {
+            let policy = decoded
+                .state
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap();
+            let record = policy.record();
+            assert!(record.admission.materializable, "Item {id}");
+            assert_eq!(
+                record.admission.stack_class,
+                NativeItemStackClass::NonStackable
+            );
+            assert!(
+                record
+                    .admission
+                    .legal_destinations
+                    .contains(&NativeItemDestination::CharacterInventory)
+            );
+            assert_eq!(record.semantics.container, F::NotApplicable);
+            assert_eq!(record.semantics.temporal, F::NotApplicable);
+            if let Some(count) = match id {
+                3054 | 3056 => Some(200),
+                3083 => Some(150),
+                _ => None,
+            } {
+                assert!(
+                    matches!(&record.semantics.charges, F::Known(charges) if charges.count == F::Known(count))
+                );
+                let target = super::super::ReferenceItemTarget {
+                    key: record.production_definition.production_key.clone(),
+                    revision: record.production_definition.revision_ref.clone(),
+                };
+                let timed = record
+                    .semantics
+                    .resolve_timed_definition(&target)
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(timed.full, TimedValues::new(Some(count), None).unwrap());
+            }
+            if matches!(id, 2881 | 2882) {
+                assert!(
+                    matches!(&record.semantics.fluid, F::Known(fluid) if fluid.fluid_type == F::NotApplicable)
+                );
+            }
+        }
+        for id in [52732, 33330, 44179] {
+            assert!(
+                decoded
+                    .state
+                    .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                    .is_none()
+            );
+        }
+    }
+
+    #[test]
     fn hireling_lamp_inbox_destination_is_source_bound_and_not_portable() {
         use super::super::ReferenceItemField as F;
         let world = test_source(1).unwrap().world_id;

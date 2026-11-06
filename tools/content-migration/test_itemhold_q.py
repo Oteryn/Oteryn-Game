@@ -1,0 +1,96 @@
+"""ITEMHOLD-Q catalogue admission and retained source-conflict checks."""
+import json
+import copy
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'tools/content-schema/reward-claim-authoring'))
+from reward_claim_authoring import stack_problem
+
+RESOLVED = (3572, 3054, 14156, 12369, 39546, 3083, 3056, 2881, 2882)
+HELD = (52732, 33330, 44179)
+
+
+class ItemholdQTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.items = {}
+        for path in (ROOT / 'content/items/definitions').glob('items-*.json'):
+            for row in json.loads(path.read_bytes())['records']:
+                definition = row['definition']
+                cls.items[definition['identity']['key']] = definition
+
+    def test_resolved_items_materialize_at_catalogue_level(self):
+        for item in RESOLVED:
+            with self.subTest(item=item):
+                definition = self.items[f'oteryn:item.tibia.i{item}']
+                self.assertIsNone(stack_problem(definition, 1))
+                self.assertEqual(definition['stack_class'], 'NonStackable')
+                self.assertIsNotNone(stack_problem(definition, 2))
+
+    def test_remaining_holds_still_reject(self):
+        for item in HELD:
+            with self.subTest(item=item):
+                self.assertIsNotNone(stack_problem(self.items[f'oteryn:item.tibia.i{item}'], 1))
+
+    def test_charged_definitions_keep_exact_donor_counts(self):
+        for item, charges in ((3054, 200), (3056, 200), (3083, 150)):
+            self.assertEqual(self.items[f'oteryn:item.tibia.i{item}']['semantics']['charges'],
+                             {'state': 'KNOWN', 'value': {'count': {'state': 'KNOWN', 'value': charges}}})
+
+    def test_ornamented_shield_charge_conflict_stays_held(self):
+        path = ROOT / 'content/interactions/reward_claims/reward-claim-variants-00000-00099.json'
+        claim = next(row['definition'] for row in json.loads(path.read_bytes())['records']
+                     if row['definition']['identity']['key'].endswith('.kv.ornamentedshield'))
+        self.assertEqual(claim['readiness'], 'waiting_data')
+        self.assertTrue(any(hold['code'] == 'SOURCE_CHARGE_MISMATCH' for hold in claim['data_holds']))
+
+    def test_source_overlay_is_idempotent_and_rejects_conflicting_accepted_facts(self):
+        import itemhold_q
+        definitions = [copy.deepcopy(self.items[f'oteryn:item.tibia.i{i}']) for i in itemhold_q.IDS]
+        itemhold_q.apply_admissions(definitions)
+        once = copy.deepcopy(definitions)
+        itemhold_q.apply_admissions(definitions)
+        self.assertEqual(definitions, once)
+        for group, leaf in (('physical', 'weight'), ('charges', 'count')):
+            conflict = copy.deepcopy(once)
+            amulet = next(d for d in conflict if d['identity']['key'].endswith('.i3054'))
+            amulet['semantics'][group]['value'][leaf]['value'] += 1
+            with self.assertRaisesRegex(ValueError, 'CONFLICT'):
+                itemhold_q.apply_admissions(conflict)
+
+    def test_shared_shard_repin_rejects_any_changed_shop_definition(self):
+        import hashlib
+        import grizzly_shop_profiles as grizzly
+        baseline = json.dumps({'records': [
+            {'definition': {'identity': {'key': 'shop'}, 'materializable': False}},
+            {'definition': {'identity': {'key': 'wolf'}, 'materializable': False}},
+        ]}).encode()
+        for changed_key in ('wolf', 'shop'):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                packet = root / grizzly.PATH
+                packet.parent.mkdir(parents=True)
+                packet.write_text(json.dumps({'canonical_inputs': [{
+                    'path': 'shard.json', 'sha256': hashlib.sha256(baseline).hexdigest()}]}))
+                shard = json.loads(baseline)
+                next(row['definition'] for row in shard['records']
+                     if row['definition']['identity']['key'] == changed_key)['materializable'] = True
+                (root / 'shard.json').write_text(json.dumps(shard))
+                with (patch.object(grizzly, 'selected', return_value=({'shop'}, 'digest')),
+                      patch.object(grizzly.subprocess, 'check_output', return_value=baseline)):
+                    if changed_key == 'shop':
+                        with self.assertRaisesRegex(ValueError, 'SELECTED_DEFINITION_CHANGED'):
+                            grizzly.refresh_canonical_input_pins(root, 'baseline')
+                    else:
+                        grizzly.refresh_canonical_input_pins(root, 'baseline')
+                        self.assertEqual(json.loads(packet.read_bytes())['canonical_inputs'][0]['sha256'],
+                                         hashlib.sha256((root / 'shard.json').read_bytes()).hexdigest())
+
+
+if __name__ == '__main__':
+    unittest.main()
