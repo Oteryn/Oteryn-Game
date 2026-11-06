@@ -1,0 +1,13 @@
+   Compiling oteryn-world-bundle v0.1.0 (/workspace/Oteryn-Game/crates/world-bundle)
+   Compiling oteryn-protocol-oteryn v0.1.0 (/workspace/Oteryn-Game/crates/protocol-oteryn)
+   Compiling oteryn-gameplay-domain v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/domain)
+   Compiling oteryn-gameplay-content v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/content)
+   Compiling oteryn-world-bundle-compiler v0.1.0 (/workspace/Oteryn-Game/tools/world-bundle-compiler)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 45.96s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_content-61d67efa07dcff61)
+
+running 2 tests
+test content::world_reward_claims::standalone_chests::tests::elvenbane_native_drawers_keep_both_filled_bags_and_all_children ... ok
+test content::world_reward_claims::standalone_chests::tests::standalone_native_chests_require_one_root_and_every_admitted_reward ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 315 filtered out; finished in 0.13s

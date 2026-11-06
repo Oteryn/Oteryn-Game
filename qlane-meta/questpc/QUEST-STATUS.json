@@ -1,10 +1,10 @@
 {
   "task_id": "questpc",
   "scope": "Pinned wiki titles A..M; no numeric or N..Z titles",
-  "lifecycle": "AUTHORING on claude/happy-davinci-ijz3wy-questpc-pc2; no frozen candidate, PR or deployment",
+  "lifecycle": "AUTHORING on claude/happy-davinci-ijz3wy-questpc-pc2; green batch commits and fast-forward pushes authorized; no frozen integration candidate.",
   "counts": {
-    "QUALIFIED": 56,
-    "UNFINISHED": 103,
+    "QUALIFIED": 57,
+    "UNFINISHED": 102,
     "BLOCKED": 19
   },
   "owner_excluded_with_blocked_status": 1,
@@ -4075,36 +4075,84 @@
       "title": "Elvenbane Quest",
       "canonical": "oteryn:quest.authored.elvenbane_quest",
       "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/1/definition",
-      "status": "UNFINISHED",
-      "scope": "complete pinned quest path",
-      "reward_claims": [],
-      "queued_stage_binding": {
-        "stage": "s1",
-        "native_dispatch_binding": null,
-        "runtime_enabled": false
+      "status": "QUALIFIED",
+      "scope": "Standalone source reward-only contract: all four personal once-only Elvenbane chests/drawers (source alias ToBlindTheEnemy). The separate chosen authored programme and an end-to-end world walk are not certified.",
+      "reward_claims": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+          "status": "dispatch_pg_qualified",
+          "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+          "status": "dispatch_pg_qualified",
+          "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+          "status": "dispatch_pg_qualified",
+          "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
+          "status": "dispatch_pg_qualified",
+          "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
+        }
+      ],
+      "additional_authored_programme_not_qualified": {
+        "blocker": {
+          "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Elvenbane Castle, stone-ring basement) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+          "evidence": [
+            "content/quests/definitions/quests-00300-00351.json:1#/records/1/definition",
+            "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Elvenbane Quest",
+            "content/quests/missions/completion-binding-plan.json:1#/records/17"
+          ],
+          "attempts": [
+            "Read this canonical definition and chosen recipe, including source references.",
+            "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+            "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+          ]
+        },
+        "first_unqualified_stage": {
+          "key": "s1",
+          "kind": "explore",
+          "objective": "Reach Elvenbane from Ab'Dendriel and enter the stone-ring basement entrance.",
+          "targets": [
+            "Elvenbane Castle",
+            "stone-ring basement"
+          ]
+        },
+        "queued_stage_binding": {
+          "stage": "s1",
+          "native_dispatch_binding": null,
+          "runtime_enabled": false
+        }
       },
-      "blocker": {
-        "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Elvenbane Castle, stone-ring basement) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
-        "evidence": [
-          "content/quests/definitions/quests-00300-00351.json:1#/records/1/definition",
-          "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Elvenbane Quest",
-          "content/quests/missions/completion-binding-plan.json:1#/records/17"
-        ],
-        "attempts": [
-          "Read this canonical definition and chosen recipe, including source references.",
-          "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
-          "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
-        ]
-      },
-      "first_unqualified_stage": {
-        "key": "s1",
-        "kind": "explore",
-        "objective": "Reach Elvenbane from Ab'Dendriel and enter the stone-ring basement entrance.",
-        "targets": [
-          "Elvenbane Castle",
-          "stone-ring basement"
-        ]
-      }
+      "qualification": [
+        {
+          "test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal",
+          "marker": "POSTGRES_CASE_COMPLETED elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal duration=65.031774375s",
+          "duration_seconds": 65.031774375,
+          "placements": [
+            "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield (32591, 31647, -3) native_source=true duration=6.226744874s",
+            "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star (32590, 31647, -3) native_source=true duration=6.039328095s",
+            "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1 (32588, 31645, -3) native_source=true duration=6.316463964s",
+            "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2 (32588, 31644, -3) native_source=true duration=6.617689434s"
+          ],
+          "log": "qlane-meta/questpc/cloud-elvenbane-final.log",
+          "log_sha256": "a5efae7deaeca15ad60505a0764d682dfc083cd9e1dcd088b34c36628204e210",
+          "validation": "qlane-meta/questpc/cloud-elvenbane-validation.json",
+          "source_packet": "tools/content-schema/quest-authoring/samples/native-rewards/standalone-chests.json",
+          "checks": [
+            "exact existing source once identities; no fabricated UID",
+            "both movable chest roots and both immovable drawers",
+            "exact root and every child item/count",
+            "real USE grant, same receipt replay and full-backpack refusal",
+            "controlled missing morning-star binding RED on PostgreSQL, restored GREEN",
+            "native map facts, generated quest/native data, binder units, fmt, check, strict clippy and regenerated world pin"
+          ]
+        }
+      ]
     },
     {
       "title": "Emperor's Cookies Quest",
@@ -8269,20 +8317,50 @@
     }
   ],
   "latest_pg": {
-    "log": ".questpc/restart12-marlin-giant-final.log",
-    "log_sha256": "d8af12b347c50ff191af209282dd96a56cd34b206ad1c5863777722edd36a096",
+    "log": "qlane-meta/questpc/cloud-elvenbane-final.log",
+    "log_sha256": "a5efae7deaeca15ad60505a0764d682dfc083cd9e1dcd088b34c36628204e210",
     "filters": [
-      "marlin_trophy_carried_fish_exchange_is_atomic_once_and_replays",
-      "giant_smithhammer_source_lever_opens_and_restores_the_wall"
+      "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
     ],
-    "result": "2 passed; 0 failed",
-    "duration_seconds": 88.41
+    "result": "1 passed; 0 failed; four source placement markers plus cohort marker",
+    "duration_seconds": 65.031774375
+  },
+  "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
+  "latest_cloud_batch": {
+    "retained_base": "9bf74b42d3d73aa9e3b875cfcea94695502fdf54",
+    "merge_from": "6c09e0365110db6683f938dd08d5d584744cbf37",
+    "source_claim_entries": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
+        "status": "dispatch_pg_qualified",
+        "retained_test": "elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal"
+      }
+    ],
+    "validation": "qlane-meta/questpc/cloud-elvenbane-validation.json",
+    "review": "qlane-meta/questpc/cloud-elvenbane-review.md",
+    "merge_audit": "qlane-meta/questpc/cloud-merge-audit.json"
   },
   "continuation": {
     "base": "9bf74b42d",
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Run existing Elvenbane PG cohort from current committed snapshot before further edits."
+    "active": "Merged incoming Elvenbane qualification; single-writer clarification pending; read-only research and initial PG validation continue.",
+    "concurrent_remote_head": "4e12ac30e"
   }
 }
