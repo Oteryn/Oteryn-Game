@@ -138,12 +138,21 @@ impl DurabilityRoot {
             let world_changes = if request.candidates.iter().any(|candidate| requirements.contains_key(candidate.key.as_str())) {
                 crate::durability::world_event::changes::load(&mut tx, request.world, request.reset_epoch).await?
             } else { None };
+            let shared_changes = if request.candidates.iter().any(|candidate| {
+                requirements.get(candidate.key.as_str()).is_some_and(|required| required == "swamp_fever")
+            }) {
+                crate::durability::world_event::changes::shared(&mut tx, request.world, request.reset_epoch).await?
+            } else { None };
             let mut fired = Vec::new();
             let mut retry_activity = false;
             for candidate in request.candidates {
-                if let Some(required) = requirements.get(candidate.key.as_str())
-                    && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)) {
-                    continue;
+                if let Some(required) = requirements.get(candidate.key.as_str()) {
+                    let active = if required == "swamp_fever" {
+                        shared_changes.as_ref().is_some_and(|state| state.swamp_epidemic)
+                    } else {
+                        world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required))
+                    };
+                    if !active { continue; }
                 }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
                     else if candidate.calendar_window.is_some() { 3 } else { 1 };

@@ -133,11 +133,12 @@ struct Document {
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
-    if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
+    if callbacks.len() > MAX_CALLBACKS.saturating_sub(3) {
         return Err("callback bounds including native source callbacks".into());
     }
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
+    callbacks.push(super::world_contributions::corpse_callback());
     Ok(callbacks)
 }
 

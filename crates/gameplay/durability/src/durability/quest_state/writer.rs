@@ -278,6 +278,10 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     lock_receipt_key(&mut tx, character, &request).await?;
+                    if oteryn_gameplay_quests::quest::world_contributions::recipe(&request.transition_key).is_some()
+                        && !super::super::world_event::changes::custody::current_session(&mut tx,&node,fence).await? {
+                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                    }
                     if let Some(row) = load_receipt(&mut tx, character, &request).await? {
                         if row.try_get::<Vec<u8>, _>("request_binding")? != binding {
                             return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
@@ -575,6 +579,11 @@ impl DurabilityRoot {
                     if let (Some(callback), Some((permit, context))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if !super::super::world_event::changes::custody::contribute_quest(
+                        &mut tx, &recovery, &node, fence, &request,
+                    ).await? {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     let committed_revision = root
                         .revision
                         .checked_add(1)

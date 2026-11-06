@@ -10,6 +10,7 @@ pub const CATALOGUE_JSON: &str =
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContributionKind {
     Coal,
+    Corpses,
     Medicine,
     Votes,
 }
@@ -18,6 +19,7 @@ impl ContributionKind {
     pub fn key(self) -> &'static str {
         match self {
             Self::Coal => "coal",
+            Self::Corpses => "corpses",
             Self::Medicine => "medicine",
             Self::Votes => "votes",
         }

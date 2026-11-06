@@ -240,6 +240,23 @@ pub fn gathering_attempt(
     catch_roll: u32,
     yield_roll: u32,
 ) -> Option<GatheringAttempt> {
+    // Crystal9f5a72c fishing.lua:43-54,92-126: a successful dirty-water
+    // cast spends its tile and worm; 30% fishbones, including 1% Shimmer Swimmer.
+    // Flattening these independent source draws preserves the exact yield weights.
+    if tool == 3483 && (12561..=12563).contains(&target) {
+        if !(1..=100_000).contains(&yield_roll) || !catches(skill, catch_roll) {
+            return None;
+        }
+        return Some(GatheringAttempt {
+            after: Some(target - 3),
+            yield_item: match yield_roll {
+                1..=300 => Some(12557),
+                301..=30_000 => Some(3111),
+                _ => None,
+            },
+            consumes_bait: true,
+        });
+    }
     if tool == 9306 && MECHANICAL_FISHING_WATER.contains(&target) {
         if !(1..=100_000).contains(&yield_roll) || !catches(skill, catch_roll) {
             return None;
@@ -326,6 +343,15 @@ pub fn accepts_fishing_rod(tool_key: &str, water_key: &str) -> bool {
         || (tool_key == "oteryn:item.tibia.i9306" && water_key == "oteryn:item.tibia.i7236")
 }
 
+/// Crystal fishing.lua:43-49: spent dirty water cannot use ordinary-fish fallback.
+/// Keep the broad established WATER catalogue separate from this source-state gate.
+pub fn is_spent_dirty_water(production_key: &str) -> bool {
+    production_key
+        .strip_prefix("oteryn:item.tibia.i")
+        .and_then(|id| id.parse::<u16>().ok())
+        .is_some_and(|id| (12558..=12560).contains(&id))
+}
+
 pub fn is_water(production_key: &str) -> bool {
     production_key
         .strip_prefix("oteryn:item.tibia.i")
@@ -336,6 +362,46 @@ pub fn is_water(production_key: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn wcontrib_spent_dirty_water_is_rejected_before_standard_fish_fallback() {
+        //12560 remains in the established WATER catalogue; the source-specific
+        // spent classification must therefore fence its ordinary-fish fallback.
+        assert!(is_water("oteryn:item.tibia.i12560"));
+        for id in 12558..=12560 {
+            assert!(is_spent_dirty_water(&format!("oteryn:item.tibia.i{id}")));
+            assert_eq!(gathering_attempt(3483, id, 10, 1, 1), None);
+        }
+        for id in 12561..=12563 {
+            assert!(!is_spent_dirty_water(&format!("oteryn:item.tibia.i{id}")));
+        }
+        assert!(!is_spent_dirty_water("oteryn:item.tibia.i629"));
+    }
+
+    #[test]
+    fn wcontrib_dirty_water_uses_source_yields_and_spent_tiles() {
+        for target in 12561..=12563 {
+            for (roll, item) in [
+                (1, Some(12557)),
+                (300, Some(12557)),
+                (301, Some(3111)),
+                (30_000, Some(3111)),
+                (30_001, None),
+                (100_000, None),
+            ] {
+                assert_eq!(
+                    gathering_attempt(3483, target, 10, 10_000, roll),
+                    Some(GatheringAttempt {
+                        after: Some(target - 3),
+                        yield_item: item,
+                        consumes_bait: true
+                    })
+                );
+            }
+            assert_eq!(gathering_attempt(3483, target, 10, 10_001, 1), None);
+            assert_eq!(gathering_attempt(9306, target, 10, 1, 1), None);
+        }
+    }
 
     #[test]
     fn m09_mechanical_rod_is_admitted_on_ice_holes() {

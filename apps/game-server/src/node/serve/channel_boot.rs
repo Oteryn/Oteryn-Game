@@ -100,9 +100,17 @@ pub(super) async fn prepare_channel(
         }
         None => return Err(BootError::Readiness("current world-change epoch")),
     };
+    let shared = root
+        .shared_world_changes(material.world, reset_epoch)
+        .await
+        .map_err(|_| BootError::ContentActivation("durable shared world changes"))?;
+    if reset_epoch != 0 && shared.is_none() {
+        return Err(BootError::Readiness("current shared world-change epoch"));
+    }
     let bundle = bundle
         .map(|checked| {
-            let checked = daily_world_changes::prepare_map(checked, material.world, &daily);
+            let checked =
+                daily_world_changes::prepare_map(checked, material.world, &daily, shared.as_ref());
             boot_bundle_world(checked, material.world, material.channel, gameplay)
         })
         .transpose()?;

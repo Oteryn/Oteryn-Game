@@ -1514,7 +1514,7 @@
       "key": "steamship",
       "title": "Steamship World Change",
       "quest": "oteryn:quest.steamship_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1527,6 +1527,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/world_event/changes/custody.rs",
+          "locator": "Quest transaction contribution participant; migration1110 debit proof"
         }
       ],
       "source_refs": [
@@ -1547,16 +1551,18 @@
           "url": "https://tibia.fandom.com/index.php?curid=54769&oldid=772277"
         }
       ],
-      "reason": "200 sharedCoal and Junkar destinations/prices are known. Coal custody/debit, shared unlock transition and transport gate are absent; savecoal dialogue is not a debit.",
-      "missing_facts": [
-        "200 sharedCoal and Junkar destinations/prices are known. Coal custody/debit, shared unlock transition and transport gate are absent; savecoal dialogue is not a debit."
-      ]
+      "reason": "WCONTRIB: fenced Quest/NPC custody debit and replay receipt; 200 shared Coal opens sourced Junkar travel for the next saved day. Existing prices and destinations retained.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "contribution",
+        "resource": "coal"
+      }
     },
     {
       "key": "swamp_fever",
       "title": "Swamp Fever World Change",
       "quest": "oteryn:quest.swamp_fever_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1569,6 +1575,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/world_event/changes/custody.rs",
+          "locator": "Quest transaction contribution participant; migration1110 debit proof"
         }
       ],
       "source_refs": [
@@ -1589,10 +1599,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=55045&oldid=749214"
         }
       ],
-      "reason": "Ottokar exchanges medicine 12517 for belongings 12413 as an individual task. Epidemic threshold, medicine drop/custody and shared disease transition are absent.",
-      "missing_facts": [
-        "Ottokar exchanges medicine 12517 for belongings 12413 as an individual task. Epidemic threshold, medicine drop/custody and shared disease transition are absent."
-      ]
+      "reason": "WCONTRIB: sourced medicine pouch12517 drop and separate Ottokar exchange retained; explicit epidemic donation debits custody. Owner-authorized conservative assumption:100 daily pouches prevent next-day epidemic; native feverish-citizen raid uses saved disease gate.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:venore.feverishcitizens"
+      }
     },
     {
       "key": "thawing",
@@ -1852,7 +1864,7 @@
       "key": "twisted_waters",
       "title": "Twisted Waters World Change",
       "quest": "oteryn:quest.authored.twisted_waters_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1865,6 +1877,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/world_event/changes/custody.rs",
+          "locator": "Quest transaction contribution participant; migration1110 debit proof"
         }
       ],
       "source_refs": [
@@ -1885,10 +1901,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=55048&oldid=935150"
         }
       ],
-      "reason": "1000 worldcorpse deposits, save transitions and 20-hour personal restriction are known. Deposit debit, lake-state projection and catch eligibility are absent.",
-      "missing_facts": [
-        "1000 worldcorpse deposits, save transitions and 20-hour personal restriction are known. Deposit debit, lake-state projection and catch eligibility are absent."
-      ]
+      "reason": "WCONTRIB: 1000 shared corpse deposits drive next-save lake state. Conservative source gap policy accepts the portable aged Swamp Troll corpse4178 with its sourced decay budget and recovers one lake stage on a day below threshold; native dirty-water fishing retains personal20-hour Shimmer restriction.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "contribution",
+        "resource": "corpses"
+      }
     },
     {
       "key": "warpath",
