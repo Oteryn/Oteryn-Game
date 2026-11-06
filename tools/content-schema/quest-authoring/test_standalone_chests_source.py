@@ -11,7 +11,7 @@ from world_region_codec import decode_region
 
 
 class StandaloneChestsSource(unittest.TestCase):
-    def test_smithhammer_chests_retain_the_pinned_movable_container_facts(self):
+    def test_native_reward_roots_retain_the_pinned_container_facts(self):
         sys.path[:0] = [str(ROOT / 'tools/content-schema/item-authoring'),
                         str(ROOT / 'tools/content-migration')]
         from engine_items import load_appearance_objects
@@ -24,8 +24,13 @@ class StandaloneChestsSource(unittest.TestCase):
         self.assertTrue(flags['flags.take'])
         self.assertFalse(flags.get('flags.unmove', False))
         self.assertTrue(appearances[1983]['flags']['flags.unmove'])
+        drawer = appearances[2434]['flags']
+        self.assertTrue(drawer['flags.container'])
+        self.assertFalse(drawer.get('flags.take', False))
+        self.assertNotIn('flags.unmove', drawer)
+        self.assertTrue(drawer['flags.usable'])
 
-    def test_beregar_and_smithhammer_roots_have_no_legacy_script_attributes(self):
+    def test_fixed_native_roots_have_no_legacy_script_attributes(self):
         palette = json.loads((ROOT / 'content/world/placements/index.json').read_bytes())['palette']
         for x, y, z, appearance in [
             (32546, 31522, 11, 1983),
@@ -34,6 +39,10 @@ class StandaloneChestsSource(unittest.TestCase):
             (32778, 32253, 8, 2472),
             (32778, 32232, 8, 2772),
             (32780, 32231, 8, 389),
+            (32591, 31647, 3, 2472),
+            (32590, 31647, 3, 2472),
+            (32588, 31645, 3, 2434),
+            (32588, 31644, 3, 2434),
         ]:
             path = ROOT / f'content/world/placements/region-z{z:02}-x{x // 256:03}-y{y // 256:03}.b3'
             _, _, _, sectors = decode_region(path.read_bytes())

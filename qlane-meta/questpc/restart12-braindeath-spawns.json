@@ -1,0 +1,1586 @@
+[
+  {
+    "file": "content/world/spawns/spawns-40000-41999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32454,
+          "y": 31169
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32454_y31169_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32458,
+              "y": 31169
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32452,
+              "y": 31171
+            },
+            "creature": "oteryn:creature.elder_bonelord",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-40000-41999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32481,
+          "y": 31183
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32481_y31183_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32479,
+              "y": 31182
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32484,
+              "y": 31186
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-40000-41999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32462,
+          "y": 31202
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32462_y31202_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32465,
+              "y": 31200
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32459,
+              "y": 31202
+            },
+            "creature": "oteryn:creature.bonelord",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32466,
+              "y": 31205
+            },
+            "creature": "oteryn:creature.bonelord",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-14000-15999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 8,
+          "x": 32746,
+          "y": 31023
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32746_y31023_z8",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32749,
+              "y": 31020
+            },
+            "creature": "oteryn:creature.banshee",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32743,
+              "y": 31025
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-14000-15999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 8,
+          "x": 32716,
+          "y": 31042
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32716_y31042_z8",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32717,
+              "y": 31041
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-14000-15999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 8,
+          "x": 32751,
+          "y": 31046
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32751_y31046_z8",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32751,
+              "y": 31047
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-14000-15999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 8,
+          "x": 32720,
+          "y": 31068
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32720_y31068_z8",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32719,
+              "y": 31065
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32721,
+              "y": 31071
+            },
+            "creature": "oteryn:creature.banshee",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-14000-15999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 8,
+          "x": 32745,
+          "y": 31081
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32745_y31081_z8",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32745,
+              "y": 31080
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-14000-15999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 8,
+          "x": 32774,
+          "y": 31083
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32774_y31083_z8",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32774,
+              "y": 31084
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-14000-15999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 8,
+          "x": 32785,
+          "y": 31094
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32785_y31094_z8",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32786,
+              "y": 31095
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-14000-15999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 8,
+          "x": 32687,
+          "y": 31097
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32687_y31097_z8",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32687,
+              "y": 31093
+            },
+            "creature": "oteryn:creature.death_blob",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32685,
+              "y": 31098
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32689,
+              "y": 31100
+            },
+            "creature": "oteryn:creature.death_blob",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-14000-15999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 8,
+          "x": 32751,
+          "y": 31101
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32751_y31101_z8",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 8,
+              "x": 32750,
+              "y": 31102
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32786,
+          "y": 32398
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32786_y32398_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32786,
+              "y": 32398
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32798,
+          "y": 32399
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32798_y32399_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32799,
+              "y": 32397
+            },
+            "creature": "oteryn:creature.vampire",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32798,
+              "y": 32398
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32799,
+              "y": 32398
+            },
+            "creature": "oteryn:creature.souleater",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32800,
+              "y": 32398
+            },
+            "creature": "oteryn:creature.souleater",
+            "direction": "north",
+            "respawn_ms": 14219000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32840,
+          "y": 32399
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32840_y32399_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32840,
+              "y": 32398
+            },
+            "creature": "oteryn:creature.banshee",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32839,
+              "y": 32399
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32795,
+          "y": 32405
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32795_y32405_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32795,
+              "y": 32405
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32819,
+          "y": 32406
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32819_y32406_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32816,
+              "y": 32403
+            },
+            "creature": "oteryn:creature.souleater",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32820,
+              "y": 32403
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32826,
+          "y": 32413
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32826_y32413_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32826,
+              "y": 32413
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32824,
+              "y": 32414
+            },
+            "creature": "oteryn:creature.nightstalker",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32787,
+          "y": 32417
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32787_y32417_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32787,
+              "y": 32417
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32791,
+          "y": 32420
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32791_y32420_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32793,
+              "y": 32421
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32875,
+          "y": 32427
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32875_y32427_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32878,
+              "y": 32425
+            },
+            "creature": "oteryn:creature.souleater",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32873,
+              "y": 32429
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32819,
+          "y": 32434
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32819_y32434_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32820,
+              "y": 32431
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32896,
+          "y": 32434
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32896_y32434_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32894,
+              "y": 32436
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32826,
+          "y": 32455
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32826_y32455_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32824,
+              "y": 32454
+            },
+            "creature": "oteryn:creature.banshee",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32828,
+              "y": 32454
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32861,
+          "y": 32455
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32861_y32455_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32859,
+              "y": 32452
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32875,
+          "y": 32462
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32875_y32462_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32872,
+              "y": 32463
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32798,
+          "y": 32476
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32798_y32476_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32796,
+              "y": 32476
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32798,
+              "y": 32478
+            },
+            "creature": "oteryn:creature.banshee",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32795,
+              "y": 32479
+            },
+            "creature": "oteryn:creature.souleater",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32875,
+          "y": 32476
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32875_y32476_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32872,
+              "y": 32478
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32875,
+              "y": 32478
+            },
+            "creature": "oteryn:creature.nightstalker",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-42000-43999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 12,
+          "x": 32847,
+          "y": 32483
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32847_y32483_z12",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32849,
+              "y": 32480
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32846,
+              "y": 32481
+            },
+            "creature": "oteryn:creature.souleater",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32845,
+              "y": 32482
+            },
+            "creature": "oteryn:creature.souleater",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32848,
+              "y": 32482
+            },
+            "creature": "oteryn:creature.souleater",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 12,
+              "x": 32844,
+              "y": 32484
+            },
+            "creature": "oteryn:creature.nightstalker",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-24000-25999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 9,
+          "x": 32077,
+          "y": 31832
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32077_y31832_z9",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32075,
+              "y": 31829
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32077,
+              "y": 31830
+            },
+            "creature": "oteryn:creature.skeleton",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32076,
+              "y": 31831
+            },
+            "creature": "oteryn:creature.skeleton",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32077,
+              "y": 31831
+            },
+            "creature": "oteryn:creature.skeleton",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32078,
+              "y": 31831
+            },
+            "creature": "oteryn:creature.skeleton",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32079,
+              "y": 31831
+            },
+            "creature": "oteryn:creature.bonelord",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-28000-29999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 9,
+          "x": 32133,
+          "y": 32749
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32133_y32749_z9",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32132,
+              "y": 32752
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-28000-29999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 9,
+          "x": 32112,
+          "y": 32756
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32112_y32756_z9",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32110,
+              "y": 32754
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32112,
+              "y": 32758
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-28000-29999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 9,
+          "x": 32126,
+          "y": 32756
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32126_y32756_z9",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32126,
+              "y": 32754
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32124,
+              "y": 32758
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-28000-29999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 9,
+          "x": 32140,
+          "y": 32784
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32140_y32784_z9",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 9,
+              "x": 32137,
+              "y": 32785
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-38000-39999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 11,
+          "x": 32863,
+          "y": 32435
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32863_y32435_z11",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 11,
+              "x": 32863,
+              "y": 32435
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-38000-39999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 11,
+          "x": 32855,
+          "y": 32436
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32855_y32436_z11",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 11,
+              "x": 32855,
+              "y": 32436
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-52000-53999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 15,
+          "x": 33157,
+          "y": 31759
+        },
+        "identity": {
+          "key": "oteryn:spawn.x33157_y31759_z15",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33159,
+              "y": 31753
+            },
+            "creature": "oteryn:creature.warlock",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33152,
+              "y": 31754
+            },
+            "creature": "oteryn:creature.banshee",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33150,
+              "y": 31756
+            },
+            "creature": "oteryn:creature.diabolic_imp",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33156,
+              "y": 31756
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33161,
+              "y": 31757
+            },
+            "creature": "oteryn:creature.banshee",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33156,
+              "y": 31758
+            },
+            "creature": "oteryn:creature.diabolic_imp",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33161,
+              "y": 31759
+            },
+            "creature": "oteryn:creature.lich",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33151,
+              "y": 31760
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33155,
+              "y": 31760
+            },
+            "creature": "oteryn:creature.warlock",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33162,
+              "y": 31762
+            },
+            "creature": "oteryn:creature.warlock",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33157,
+              "y": 31766
+            },
+            "creature": "oteryn:creature.diabolic_imp",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33162,
+              "y": 31766
+            },
+            "creature": "oteryn:creature.lich",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33165,
+              "y": 31767
+            },
+            "creature": "oteryn:creature.diabolic_imp",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "file": "content/world/spawns/spawns-52000-53999.json",
+    "row": {
+      "declaration": {
+        "centre": {
+          "floor": 15,
+          "x": 33180,
+          "y": 31759
+        },
+        "identity": {
+          "key": "oteryn:spawn.x33180_y31759_z15",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33182,
+              "y": 31752
+            },
+            "creature": "oteryn:creature.diabolic_imp",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33173,
+              "y": 31755
+            },
+            "creature": "oteryn:creature.lich",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33179,
+              "y": 31756
+            },
+            "creature": "oteryn:creature.undead_dragon",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33186,
+              "y": 31756
+            },
+            "creature": "oteryn:creature.diabolic_imp",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33175,
+              "y": 31759
+            },
+            "creature": "oteryn:creature.warlock",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33178,
+              "y": 31759
+            },
+            "creature": "oteryn:creature.lich",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33183,
+              "y": 31760
+            },
+            "creature": "oteryn:creature.braindeath",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33178,
+              "y": 31763
+            },
+            "creature": "oteryn:creature.warlock",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33182,
+              "y": 31763
+            },
+            "creature": "oteryn:creature.lich",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33185,
+              "y": 31763
+            },
+            "creature": "oteryn:creature.lich",
+            "direction": "north",
+            "respawn_ms": 90000
+          },
+          {
+            "cell": {
+              "floor": 15,
+              "x": 33173,
+              "y": 31765
+            },
+            "creature": "oteryn:creature.lich",
+            "direction": "north",
+            "respawn_ms": 90000
+          }
+        ]
+      }
+    }
+  }
+]

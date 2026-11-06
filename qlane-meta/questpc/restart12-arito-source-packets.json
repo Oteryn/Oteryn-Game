@@ -1,0 +1,28 @@
+[
+  {
+    "byte_count": 5891,
+    "cache_path": "blobs/830da9118f435cbfdfdc08a27daa90588afa07cf",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/arito.lua",
+    "git_blob_sha1": "830da9118f435cbfdfdc08a27daa90588afa07cf",
+    "path": "data-global/npc/arito.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "72036db5c28bae5fabb54a43657cb83f57a550665def3fc01b33357a652d79f1",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/arito.lua"
+  },
+  {
+    "byte_count": 5596,
+    "cache_path": "blobs/c4ec365f14a6a7921494b1bfaa19f8c66ebb7565",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muhad.lua",
+    "git_blob_sha1": "c4ec365f14a6a7921494b1bfaa19f8c66ebb7565",
+    "path": "data-global/npc/muhad.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "da135cc046e9dc68900de3ed6810d42c0dc16921c07be63399a8d15d73294642",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/muhad.lua"
+  }
+]

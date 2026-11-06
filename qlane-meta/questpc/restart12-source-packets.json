@@ -1,0 +1,165 @@
+[
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 6503,
+      "cache_path": "blobs/144ece38ad4e5edae486a0d965d61a162d42b70d",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/movements_tar.lua",
+      "git_blob_sha1": "144ece38ad4e5edae486a0d965d61a162d42b70d",
+      "path": "data-global/scripts/quests/cults_of_tibia/movements_tar.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "d70e48686633aad7583a3ecb3fdb99404a040d9f4cf5a34b0aecfdfa837c75c1",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        68,
+        "addEvent(sendConditionCults, 2000, playerId, _type, fromPos, toPos, time)"
+      ],
+      [
+        85,
+        "addEvent(passageFloor1ToFloor2, 1000, playerId, info, time - 1)"
+      ],
+      [
+        124,
+        "function tar.onStepOut(creature, item, position, fromPosition)"
+      ]
+    ],
+    "local_path": ".questpc/source-engine-gaps/cults_of_tibia-movements_tar.lua"
+  },
+  {
+    "title": "Hidden Threats Quest",
+    "file": {
+      "byte_count": 812,
+      "cache_path": "blobs/88b2a4f7efa3bfe32b135f77d8412bde312bb1df",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/hidden_threats/movement-chests_check.lua",
+      "git_blob_sha1": "88b2a4f7efa3bfe32b135f77d8412bde312bb1df",
+      "path": "data-global/scripts/quests/hidden_threats/movement-chests_check.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "0e00845e4ce1d3cf40dba3139210f86bc96dcb0f8f3242345a4a01aa3badc9b4",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        3,
+        "function corymChests.onStepOut(creature, item, position, fromPosition)"
+      ]
+    ],
+    "local_path": ".questpc/source-engine-gaps/hidden_threats-movement-chests_check.lua"
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "file": {
+      "byte_count": 2675,
+      "cache_path": "blobs/96574075398222a9ffe2e1ae5da3e7b20daf73bb",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/movements_vortex_crackler.lua",
+      "git_blob_sha1": "96574075398222a9ffe2e1ae5da3e7b20daf73bb",
+      "path": "data-global/scripts/quests/heart_of_destruction/movements_vortex_crackler.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "b790a0985b6351dfddacf7a303470893b73b6c8673c7ac3c240d0d8f261e6833",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        95,
+        "function vortexCrackler.onStepOut(creature, item, position, fromPosition)"
+      ]
+    ],
+    "local_path": ".questpc/source-engine-gaps/heart_of_destruction-movements_vortex_crackler.lua"
+  },
+  {
+    "title": "Elemental Spheres Quest",
+    "file": {
+      "byte_count": 2852,
+      "cache_path": "blobs/a839d3f060cf86ec53cede8f88e6b69b8561adfa",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua",
+      "git_blob_sha1": "a839d3f060cf86ec53cede8f88e6b69b8561adfa",
+      "path": "data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "5636dd5500df56c79ddd31ae05b139634dd0813f51f8d195da5d82967806fdb9",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        83,
+        "function summonOverlord.onAddItem(moveitem, tileitem, position)"
+      ]
+    ],
+    "local_path": ".questpc/source-engine-gaps/elemental_spheres-movements_summon_overlord.lua"
+  },
+  {
+    "title": "Grave Danger Quest",
+    "file": {
+      "byte_count": 964,
+      "cache_path": "blobs/c5b3902c1e0cb8aebb9f181b595a7b334d4d5095",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grave_danger/movements_firewall_gaffir.lua",
+      "git_blob_sha1": "c5b3902c1e0cb8aebb9f181b595a7b334d4d5095",
+      "path": "data-global/scripts/quests/grave_danger/movements_firewall_gaffir.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "c200ffd7fd2d2ab01a4769f3a98a5a536562e58699d61ca90706d4453d33cfe5",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        28,
+        "function gaffirwall.onStepOut(creature, item, position, fromPosition)"
+      ]
+    ],
+    "local_path": ".questpc/source-engine-gaps/grave_danger-movements_firewall_gaffir.lua"
+  },
+  {
+    "file": {
+      "byte_count": 5699,
+      "cache_path": "blobs/366f1361298fbfe677dce69b8b7d30be220f4a97",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/pemaret.lua",
+      "git_blob_sha1": "366f1361298fbfe677dce69b8b7d30be220f4a97",
+      "path": "data-global/npc/pemaret.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "7860edb917cf36e43f2f675b9a2f9b8bbbc0821051ef20e4a9443cf04649489c",
+      "source": "crystalserver"
+    },
+    "local_path": ".questpc/source-engine-gaps/npc-pemaret.lua"
+  },
+  {
+    "file": {
+      "byte_count": 2283,
+      "cache_path": "blobs/57b6a5ef5bebde5f23cf8a7a90afea6f1bd0fa04",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua",
+      "git_blob_sha1": "57b6a5ef5bebde5f23cf8a7a90afea6f1bd0fa04",
+      "path": "data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "0331b52cf2238b6b5c8e2399f194f2ba59e69537f2fab75e615b108a3319c991",
+      "source": "crystalserver"
+    },
+    "local_path": ".questpc/source-engine-gaps/between_the_lines-actions_teleport_book_world.lua"
+  },
+  {
+    "file": {
+      "byte_count": 483,
+      "cache_path": "blobs/53e1d49e559322ec034876885002f0f46ca285fb",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/giant_smithhammer/lever.lua",
+      "git_blob_sha1": "53e1d49e559322ec034876885002f0f46ca285fb",
+      "path": "data-global/scripts/quests/giant_smithhammer/lever.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "2538569a1a59c1a1f02c5bfa56e95ef4b84c2dec645a247ebe2ac0bed1a32c51",
+      "source": "crystalserver"
+    },
+    "local_path": ".questpc/source-engine-gaps/giant_smithhammer-lever.lua"
+  }
+]

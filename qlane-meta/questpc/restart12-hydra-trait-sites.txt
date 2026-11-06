@@ -1,0 +1,8 @@
+crates/gameplay/content/src/content/world_reward_claims.rs:33:    type Tile<'a>: RewardClaimTile
+crates/gameplay/content/src/content/world_reward_claims.rs:41:pub trait RewardClaimTile {
+crates/gameplay/content/src/content/world_reward_claims.rs:45:    fn palette_id(&self, ordinal: u8) -> Option<u32>;
+crates/gameplay/content/src/content/world_reward_claims/hydra_egg.rs:3:use super::{BoundCell, BoundPlacement, RewardClaimBase, RewardClaimTile, ServedClaim};
+crates/gameplay/content/src/content/world_reward_claims/hydra_egg.rs:77:    impl RewardClaimTile for Tile {
+crates/gameplay/content/src/content/world_reward_claims/hydra_egg.rs:84:        fn palette_id(&self, ordinal: u8) -> Option<u32> {
+crates/gameplay/world/src/map/mod.rs:594:impl crate::content::world_reward_claims::RewardClaimTile for TileView<'_> {
+crates/gameplay/world/src/map/mod.rs:603:    fn palette_id(&self, ordinal: u8) -> Option<u32> {

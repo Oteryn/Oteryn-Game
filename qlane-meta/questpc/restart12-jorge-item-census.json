@@ -1,0 +1,1153 @@
+[
+  {
+    "key": "oteryn:item.tibia.i43510",
+    "name": {
+      "state": "KNOWN",
+      "value": "tibiora's box"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 4200
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i43511",
+    "name": {
+      "state": "KNOWN",
+      "value": "citizen doll"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 2200
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i43517",
+    "name": {
+      "state": "KNOWN",
+      "value": "shield of destiny"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 6800
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i19083",
+    "name": {
+      "state": "KNOWN",
+      "value": "silver raid token"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 100
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i19150",
+    "name": {
+      "state": "KNOWN",
+      "value": "norseman doll"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1000
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i19151",
+    "name": {
+      "state": "KNOWN",
+      "value": "abacus"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1200
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i19152",
+    "name": {
+      "state": "KNOWN",
+      "value": "key of numerous locks"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 150
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i19153",
+    "name": {
+      "state": "KNOWN",
+      "value": "friendship amulet"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 520
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i19154",
+    "name": {
+      "state": "KNOWN",
+      "value": "mexcalibur"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "UNKNOWN"
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1200
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i19155",
+    "name": {
+      "state": "KNOWN",
+      "value": "orc's jaw shredder"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 2500
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i19156",
+    "name": {
+      "state": "KNOWN",
+      "value": "frozen heart"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 2000
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i31265",
+    "name": {
+      "state": "KNOWN",
+      "value": "dragon goblet"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1800
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i31266",
+    "name": {
+      "state": "KNOWN",
+      "value": "pigeon trophy"
+    },
+    "materializable": false,
+    "native_profile": true,
+    "native_admission": {
+      "legal_destinations": [
+        "Ground"
+      ],
+      "materializable": false,
+      "stack_class": "NonStackable"
+    },
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 400
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i31267",
+    "name": {
+      "state": "KNOWN",
+      "value": "loremaster doll"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 7700
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i31268",
+    "name": {
+      "state": "KNOWN",
+      "value": "jade amulet"
+    },
+    "materializable": false,
+    "native_profile": true,
+    "native_admission": {
+      "legal_destinations": [
+        "Ground"
+      ],
+      "materializable": false,
+      "stack_class": "NonStackable"
+    },
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 400
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i37058",
+    "name": {
+      "state": "KNOWN",
+      "value": "little adventurer doll"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 2613
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i37059",
+    "name": {
+      "state": "KNOWN",
+      "value": "lucky clover amulet"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 150
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i37060",
+    "name": {
+      "state": "KNOWN",
+      "value": "shield of endless search"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1100
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i23676",
+    "name": {
+      "state": "KNOWN",
+      "value": "hand puppets"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 5
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i23677",
+    "name": {
+      "state": "KNOWN",
+      "value": "music box"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 2700
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i23678",
+    "name": {
+      "state": "KNOWN",
+      "value": "encyclopedia"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1337
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i23679",
+    "name": {
+      "state": "KNOWN",
+      "value": "doll of Durin The Almighty"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 4000
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i23680",
+    "name": {
+      "state": "KNOWN",
+      "value": "medusa skull"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1000
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i23681",
+    "name": {
+      "state": "KNOWN",
+      "value": "golden newspaper"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 2400
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i23682",
+    "name": {
+      "state": "KNOWN",
+      "value": "bag of oriental spices"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1508
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i23683",
+    "name": {
+      "state": "KNOWN",
+      "value": "imortus"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 4690
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i34210",
+    "name": {
+      "state": "KNOWN",
+      "value": "goromaphone"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 6660
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i25979",
+    "name": {
+      "state": "KNOWN",
+      "value": "draken doll"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1500
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i25980",
+    "name": {
+      "state": "KNOWN",
+      "value": "emblem"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 500
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i25981",
+    "name": {
+      "state": "KNOWN",
+      "value": "crimson doll"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1500
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i25982",
+    "name": {
+      "state": "KNOWN",
+      "value": "mathmaster shield"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 314
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i28894",
+    "name": {
+      "state": "KNOWN",
+      "value": "old radio"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 4015
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i28895",
+    "name": {
+      "state": "KNOWN",
+      "value": "bookworm doll"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 1900
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i28896",
+    "name": {
+      "state": "KNOWN",
+      "value": "golden falcon"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 2000
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i28897",
+    "name": {
+      "state": "KNOWN",
+      "value": "assassin doll"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 2504
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i22026",
+    "name": {
+      "state": "KNOWN",
+      "value": "phoenix statue"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 2000
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i22027",
+    "name": {
+      "state": "KNOWN",
+      "value": "dragon eye"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 2800
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  },
+  {
+    "key": "oteryn:item.tibia.i22028",
+    "name": {
+      "state": "KNOWN",
+      "value": "noble sword"
+    },
+    "materializable": false,
+    "native_profile": false,
+    "native_admission": null,
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 5000
+        }
+      }
+    },
+    "container": {
+      "state": "UNKNOWN"
+    }
+  }
+]

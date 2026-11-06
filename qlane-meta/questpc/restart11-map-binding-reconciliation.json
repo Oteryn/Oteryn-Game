@@ -1,0 +1,8 @@
+{
+  "current_index_sha256": "245f6eb6dec4687b047d9fc860beb34a3c8d93231b1b65eb20809013eadb7cd1",
+  "retained_map_revision": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+  "regions": 1208,
+  "region_declarations_unchanged": true,
+  "palette_source_ids_unchanged": true,
+  "qualification": "retained full-map selector audit remains bound to identical region bytes; changed palette keys do not add missing original UID/AID attributes"
+}

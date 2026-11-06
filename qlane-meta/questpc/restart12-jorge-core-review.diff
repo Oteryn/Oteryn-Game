@@ -1,0 +1,675 @@
+diff --git a/apps/game-server/migrations/1006_raid_token_exchange.sql b/apps/game-server/migrations/1006_raid_token_exchange.sql
+new file mode 100644
+index 000000000..82560cf99
+--- /dev/null
++++ b/apps/game-server/migrations/1006_raid_token_exchange.sql
+@@ -0,0 +1,87 @@
++-- CRAFT1 C8: source-bound Jorge exchange, no new protocol surface or quest state.
++-- Rollback: withdraw the dialogue producer; committed trades remain immutable evidence.
++ALTER TABLE game_npc_trades DROP CONSTRAINT game_npc_trades_side_check,
++ ADD CONSTRAINT game_npc_trades_side_check CHECK (side IN (1,2,3));
++DO $migration$
++DECLARE previous TEXT;
++BEGIN
++ SELECT pg_get_expr(conbin,conrelid) INTO STRICT previous FROM pg_constraint
++ WHERE conrelid='game_npc_trades'::regclass AND conname='game_npc_trades_conservation';
++ ALTER TABLE game_npc_trades DROP CONSTRAINT game_npc_trades_conservation;
++ EXECUTE format('ALTER TABLE game_npc_trades ADD CONSTRAINT game_npc_trades_conservation CHECK ((side IN (1,2) AND (%s)) OR (side=3 AND npc_key=''oteryn:npc.jorge'' AND catalogue_revision=1 AND quantity=1 AND item_units=1 AND unit_price=0 AND total_gold_units=0 AND burned_gold_units=0 AND minted_gold_units=0 AND bank_debit_gold_units=0 AND NOT sell_all AND line_count=2 AND house_key IS NULL))',previous);
++END $migration$;
++
++CREATE FUNCTION game_jorge_exchange_proven(t game_npc_trades) RETURNS void
++LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
++DECLARE b game_npc_trade_lines%ROWTYPE; m game_npc_trade_lines%ROWTYPE;
++        expected INTEGER[] := ARRAY[19151,28897,23682,28895,43511,25981,23679,22027,31265,25979,25980,23678,19153,19156,28896,23681,34210,23676,23683,31268,19152,37058,31267,37059,25982,23680,23677,22028,19150,28894,19155,22026,31266,43517,37060,19154,43510];
++BEGIN
++ SELECT * INTO STRICT b FROM game_npc_trade_lines WHERE transaction_id=t.transaction_id AND line_ordinal=1;
++ SELECT * INTO STRICT m FROM game_npc_trade_lines WHERE transaction_id=t.transaction_id AND line_ordinal=2;
++ IF t.created_xact_id<>pg_current_xact_id() OR b.created_xact_id<>t.created_xact_id OR m.created_xact_id<>t.created_xact_id
++  OR t.side<>3 OR t.npc_key<>'oteryn:npc.jorge' OR t.catalogue_revision<>1 OR t.offer_index NOT BETWEEN 0 AND 36
++  OR t.item_definition_family<>'Item' OR t.item_definition_production_key IS DISTINCT FROM 'oteryn:item.tibia.i'||expected[t.offer_index+1]::text
++  OR t.line_count<>2 OR (SELECT count(*) FROM game_npc_trade_lines WHERE transaction_id=t.transaction_id)<>2
++  OR b.line_kind<>3 OR m.line_kind<>4 OR b.coin_worth IS NOT NULL OR m.coin_worth IS NOT NULL
++  OR b.quantity_before-b.quantity_after<>20 OR m.quantity_before<>0 OR m.quantity_after<>1
++  OR b.item_instance_id=m.item_instance_id OR m.item_instance_id<>t.item_instance_id
++  OR NOT EXISTS(SELECT 1 FROM game_item_container_slots WHERE character_id=t.character_id AND item_instance_id=t.backpack_item_instance_id)
++  OR m.placement_ordinal IS DISTINCT FROM 1+greatest(b.placement_ordinal,
++       (SELECT max(e.placement_ordinal) FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id)
++        WHERE e.parent_item_instance_id=t.backpack_item_instance_id AND i.minted_transaction_id<>t.transaction_id),0)
++  OR (SELECT count(*) FROM game_item_instances WHERE minted_transaction_id=t.transaction_id)<>1
++  OR NOT EXISTS(SELECT 1 FROM game_item_audit_outbox a WHERE a.transaction_id=t.transaction_id AND a.event_id=t.event_id
++       AND a.item_instance_id=t.item_instance_id AND a.occurred_at=t.occurred_at AND a.envelope_sha256=t.envelope_sha256
++       AND a.created_xact_id=t.created_xact_id AND a.publication_state=1 AND a.published_at IS NULL)
++ THEN RAISE EXCEPTION 'Jorge requires one exact token take and replica give with its audit' USING ERRCODE='23514'; END IF;
++ IF EXISTS(SELECT 1 FROM game_npc_trade_lines l LEFT JOIN game_item_instances i USING(item_instance_id)
++   WHERE l.transaction_id=t.transaction_id AND (
++    i.item_instance_id IS NULL OR i.world_id<>t.world_id OR i.quantity<>l.quantity_after
++    OR i.lifecycle<>CASE WHEN l.quantity_after=0 THEN 2 ELSE 1 END
++    OR i.definition_family<>'Item'
++    OR (l.line_kind=3 AND (i.definition_production_key<>'oteryn:item.tibia.i19083'
++      OR i.last_transaction_id IS DISTINCT FROM t.transaction_id OR i.minted_transaction_id=t.transaction_id
++      OR NOT EXISTS(SELECT 1 FROM game_item_transfer_quantity_evidence ev WHERE ev.item_instance_id=i.item_instance_id
++         AND ev.transaction_id=t.transaction_id AND ev.quantity_before=l.quantity_before)))
++    OR (l.line_kind=4 AND ((i.definition_family,i.definition_production_key,i.definition_revision_ref)
++       IS DISTINCT FROM (t.item_definition_family,t.item_definition_production_key,t.item_definition_revision_ref)
++       OR i.minted_transaction_id<>t.transaction_id OR i.last_transaction_id IS NOT NULL))
++    OR EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=i.item_instance_id)
++    OR EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=i.item_instance_id)
++    OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id)
++    OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id)
++    OR (l.quantity_after=0 AND (
++       EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id)
++       OR EXISTS(SELECT 1 FROM game_item_container_slots WHERE item_instance_id=i.item_instance_id)
++       OR EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=i.item_instance_id)
++       OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE item_instance_id=i.item_instance_id)))
++    OR (l.quantity_after>0 AND NOT EXISTS(SELECT 1 FROM game_item_container_entries e
++        WHERE e.item_instance_id=i.item_instance_id AND e.character_id=t.character_id
++         AND e.parent_item_instance_id=t.backpack_item_instance_id AND e.placement_ordinal=l.placement_ordinal
++         AND (l.line_kind=3 OR e.placed_transaction_id=t.transaction_id)))
++   )) OR EXISTS(SELECT 1 FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id)
++     WHERE e.parent_item_instance_id=t.backpack_item_instance_id AND e.placement_ordinal>b.placement_ordinal
++       AND i.item_instance_id<>b.item_instance_id AND i.lifecycle=1 AND i.quantity>=20
++       AND i.definition_family='Item' AND i.definition_production_key='oteryn:item.tibia.i19083'
++       AND i.definition_revision_ref=(SELECT definition_revision_ref FROM game_item_instances WHERE item_instance_id=b.item_instance_id)
++       AND NOT EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=i.item_instance_id)
++       AND NOT EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=i.item_instance_id)
++       AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id)
++       AND NOT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id))
++ THEN RAISE EXCEPTION 'Jorge item before-state, source order or custody is unproven' USING ERRCODE='23514'; END IF;
++END $$;
++REVOKE ALL ON FUNCTION game_jorge_exchange_proven(game_npc_trades) FROM PUBLIC;
++DO $migration$
++DECLARE previous TEXT; at INTEGER;
++BEGIN
++ SELECT pg_get_functiondef('game_npc_trade_consistency_guard()'::regprocedure) INTO previous;
++ at:=strpos(previous,'BEGIN');
++ IF at=0 THEN RAISE EXCEPTION 'NPC trade guard body missing'; END IF;
++ previous:=overlay(previous placing E'BEGIN\n    IF NEW.side=3 THEN PERFORM game_jorge_exchange_proven(NEW); RETURN NULL; END IF;\n' from at for 5);
++ EXECUTE previous;
++END $migration$;
++
++DO $$ BEGIN
++ EXECUTE format('ALTER FUNCTION game_jorge_exchange_proven(game_npc_trades) SET search_path=pg_catalog,%I,pg_temp',current_schema());
++END $$;
++GRANT EXECUTE ON FUNCTION game_jorge_exchange_proven(game_npc_trades) TO oteryn_game_runtime;
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/npc_command/raid_tokens.rs b/crates/gameplay/dispatch/src/gameplay_transport/npc_command/raid_tokens.rs
+new file mode 100644
+index 000000000..3df3faf0a
+--- /dev/null
++++ b/crates/gameplay/dispatch/src/gameplay_transport/npc_command/raid_tokens.rs
+@@ -0,0 +1,320 @@
++//! Jorge's source dialogue uses the C8 exchange arm of the existing NPC item writer.
++use super::super::{ComposedFreshAdmission, connection::UseCommand};
++use super::*;
++use crate::durability::npc_trade::{
++    NpcTradeCause, NpcTradeCoins, NpcTradeError, NpcTradeRequest, NpcTradeSide,
++};
++use crate::foundation::{CommandId, CommandRef};
++use oteryn_gameplay_quests::quest::raid_tokens as source;
++
++type Context = (u64, u64, String);
++#[derive(Clone)]
++pub(super) struct Conversation {
++    context: Context,
++    actor: ExactActorRef,
++    npc: EntityRef,
++    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
++}
++pub(super) enum Step {
++    Reply(String),
++    Exchange(Box<Conversation>, usize),
++}
++
++fn selected(text: &str) -> Option<usize> {
++    let text = text.to_ascii_lowercase();
++    source::offers()
++        .ok()?
++        .iter()
++        .position(|(_, name)| text.contains(&name.to_ascii_lowercase()))
++}
++fn occurrence(command: UseCommand, intent: &NpcTalkIntent) -> [u8; 16] {
++    let tag = format!(
++        "oteryn:jorge-exchange:v1:{:?}:{}:{}",
++        intent.npc_actor.identity, intent.npc_actor.generation, intent.text
++    );
++    super::super::npc_trade_command::derived(
++        tag.as_bytes(),
++        command.game_session_id,
++        command.command_id,
++    )
++}
++fn reply(intent: &NpcTalkIntent, changed: bool, text: &str) -> NpcTalkOutcome {
++    NpcTalkOutcome {
++        inventory_changed: changed,
++        ..NpcConversations::bank_reply(intent, text.into())
++    }
++}
++
++pub(super) fn prepare(
++    admission: &ComposedFreshAdmission<'_, '_, '_>,
++    actor: ExactActorRef,
++    command: UseCommand,
++    intent: &NpcTalkIntent,
++    runtime: &ChannelRuntimeV1,
++) -> Option<Step> {
++    let context = admission.states.npc_conversations.current_npc(
++        &admission.states.chat,
++        runtime,
++        actor,
++        command.game_session_id,
++        intent,
++    )?;
++    let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
++    let state = sessions.get_mut(&command.game_session_id)?;
++    if context.2 != source::NPC {
++        state.raid_tokens = None;
++        return None;
++    }
++    let text = intent.text.to_ascii_lowercase();
++    if text.contains("souvenir") {
++        state.raid_tokens = Some(Conversation {
++            context,
++            actor,
++            npc: intent.npc_actor,
++            fence: command.item_fence?,
++        });
++        return Some(Step::Reply(
++            "Name the souvenir you want for 20 silver raid tokens.".into(),
++        ));
++    }
++    if ["hi", "hello", "hail", "bye"].contains(&text.trim()) {
++        state.raid_tokens = None;
++        return None;
++    }
++    let previous = state.raid_tokens.as_ref()?;
++    if previous.context != context
++        || previous.actor != actor
++        || previous.npc != intent.npc_actor
++        || Some(previous.fence) != command.item_fence
++    {
++        state.raid_tokens = None;
++        return None;
++    }
++    selected(&intent.text).map(|index| Step::Exchange(Box::new(previous.clone()), index))
++}
++
++pub(super) async fn resume(
++    admission: &ComposedFreshAdmission<'_, '_, '_>,
++    command: UseCommand,
++    intent: &NpcTalkIntent,
++) -> Option<NpcTalkOutcome> {
++    let fence = command.item_fence?;
++    let reference = CommandRef::new(
++        command.game_session_id,
++        CommandId::new(command.command_id).ok()?,
++    );
++    match admission
++        .root
++        .read_npc_trade(
++            admission.character,
++            fence.character_id,
++            reference,
++            occurrence(command, intent),
++        )
++        .await
++    {
++        Ok(None) => None,
++        Ok(Some(receipt))
++            if receipt.npc_key == source::NPC
++                && receipt.side == NpcTradeSide::Exchange
++                && selected(&intent.text) == Some(receipt.offer_index as usize) =>
++        {
++            Some(reply(intent, true, "Here is your souvenir."))
++        }
++        Ok(Some(_)) | Err(NpcTradeError::ConflictingOccurrence) => {
++            Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
++        }
++        Err(_) => Some(NpcTalkOutcome {
++            unknown: true,
++            ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
++        }),
++    }
++}
++
++pub(super) async fn apply(
++    admission: &ComposedFreshAdmission<'_, '_, '_>,
++    actor: ExactActorRef,
++    command: UseCommand,
++    intent: NpcTalkIntent,
++    step: Step,
++) -> NpcTalkOutcome {
++    let (conversation, index) = match step {
++        Step::Reply(text) => return reply(&intent, false, &text),
++        Step::Exchange(c, i) => (*c, i),
++    };
++    let rejected = || NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
++    let unknown = || NpcTalkOutcome {
++        unknown: true,
++        ..rejected()
++    };
++    let Some(fence) = command.item_fence else {
++        return rejected();
++    };
++    let Some(_permit) = admission.spell_lane_permit().await else {
++        return unknown();
++    };
++    if !admission
++        .states
++        .player_trades
++        .physical_service(command.game_session_id)
++    {
++        return rejected();
++    }
++    let _slot = admission
++        .revision_sequencer
++        .acquire(fence.character_id)
++        .await;
++    let Ok(Some(current)) = admission.current_quest_fence(command.game_session_id).await else {
++        return unknown();
++    };
++    if current.item_fence() != fence || conversation.fence != fence {
++        return rejected();
++    }
++    let runtime = admission.runtime.lock().await;
++    {
++        let Ok(states) = admission.states.spell_states.try_lock() else {
++            return rejected();
++        };
++        if states.is_dead(actor)
++            || !states.spell_idle(&runtime, actor, command.game_session_id)
++            || !runtime
++                .bound_attacker_lease(actor, command.game_session_id)
++                .is_ok_and(|lease| {
++                    lease.character_id().as_bytes() == fence.character_id.as_bytes()
++                        && lease.generation() == fence.character_lease_generation
++                })
++        {
++            return rejected();
++        }
++    }
++    if admission.states.npc_conversations.current_npc(
++        &admission.states.chat,
++        &runtime,
++        actor,
++        command.game_session_id,
++        &intent,
++    ) != Some(conversation.context)
++    {
++        return rejected();
++    }
++    let Some((gold, platinum, crystal)) = bank_coin_definitions(admission, &runtime) else {
++        return rejected();
++    };
++    let Some(pin) =
++        super::super::item_ref_admission::pinned_index(&runtime, admission.active_generation)
++    else {
++        return rejected();
++    };
++    let Some(native) = admission
++        .active_generation
++        .and_then(crate::content::ActiveGeneration::native_gameplay)
++    else {
++        return rejected();
++    };
++    let facts = |id: u16| {
++        let key = format!("oteryn:item.tibia.i{id}");
++        let definition = crate::durability::item_mint::TypedDefinitionRef {
++            family: "Item".into(),
++            revision_ref: pin.revision(&key)?.into(),
++            production_key: key,
++        };
++        super::super::item_ref_admission::generation_item_facts(native, &definition).ok()
++    };
++    let Ok(offers) = source::offers() else {
++        return rejected();
++    };
++    let Some((output, _)) = offers.get(index) else {
++        return rejected();
++    };
++    let (Some(token), Some(item)) = (facts(source::TOKEN), facts(*output)) else {
++        return rejected();
++    };
++    drop(runtime);
++    let Ok(Some(backpack)) = admission
++        .root
++        .read_character_backpack(admission.character, fence.character_id)
++        .await
++    else {
++        return rejected();
++    };
++    let Ok(backpack) = super::super::item_ref_admission::generation_item_facts(
++        native,
++        &backpack.backpack.definition,
++    ) else {
++        return rejected();
++    };
++    let Ok(command_id) = CommandId::new(command.command_id) else {
++        return rejected();
++    };
++    let derive = |slot: u8| {
++        super::super::npc_trade_command::derived(
++            format!("oteryn:jorge-exchange-id:v1:{slot}").as_bytes(),
++            command.game_session_id,
++            command.command_id,
++        )
++    };
++    let request = NpcTradeRequest {
++        cause: NpcTradeCause {
++            npc_key: source::NPC.into(),
++            catalogue_revision: 1,
++            offer_index: index as u32,
++            side: NpcTradeSide::Exchange,
++            occurrence: occurrence(command, &intent),
++        },
++        command: CommandRef::new(command.game_session_id, command_id),
++        quantity: 1,
++        unit_price: 0,
++        offer_count: 1,
++        item,
++        transaction_id: derive(1),
++        event_id: derive(2),
++        occurred_at_unix_ms: super::super::npc_trade_command::unix_ms_now(),
++        output_item_instance_ids: [derive(3), derive(4), derive(5)],
++        coins: NpcTradeCoins {
++            gold,
++            platinum,
++            crystal,
++        },
++        backpack,
++    };
++    let weights = super::super::item_ref_admission::NativeItemWeights(native)
++        .with_wheel(admission.premium_coordinator);
++    match admission
++        .root
++        .commit_raid_token_exchange(
++            admission.character,
++            admission.holder,
++            fence,
++            request,
++            token,
++            &weights,
++        )
++        .await
++    {
++        Ok(_) => {
++            if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
++                && let Some(state) = sessions.get_mut(&command.game_session_id)
++            {
++                state.raid_tokens = None;
++            }
++            reply(&intent, true, "Here is your souvenir.")
++        }
++        Err(NpcTradeError::InsufficientFunds) => {
++            if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
++                && let Some(state) = sessions.get_mut(&command.game_session_id)
++            {
++                state.raid_tokens = None;
++            }
++            reply(
++                &intent,
++                false,
++                "You need 20 silver raid tokens in one stack.",
++            )
++        }
++        Err(NpcTradeError::Unavailable(_)) => unknown(),
++        Err(error) => {
++            super::super::operator_event(&format!("jorge_exchange_refused reason={error}"));
++            rejected()
++        }
++    }
++}
+diff --git a/crates/gameplay/durability/src/durability/npc_trade/raid_tokens.rs b/crates/gameplay/durability/src/durability/npc_trade/raid_tokens.rs
+new file mode 100644
+index 000000000..38646dce0
+--- /dev/null
++++ b/crates/gameplay/durability/src/durability/npc_trade/raid_tokens.rs
+@@ -0,0 +1,181 @@
++//! CRAFT1 C8: Jorge's one-stack token take and fresh replica give share NPC-TRADE.
++use super::super::item_transfer::ItemWeightLookup;
++use super::*;
++use oteryn_gameplay_quests::quest::raid_tokens as source;
++
++pub(super) fn validate(request: &NpcTradeRequest, token: &ItemDefinitionFacts) -> Result<()> {
++    let offers = source::offers().map_err(|_| NpcTradeError::InvalidInput)?;
++    let Some((item, _)) = offers.get(request.cause.offer_index as usize) else {
++        return Err(NpcTradeError::InvalidInput);
++    };
++    super::super::item_transfer::validate_facts(token).map_err(|_| NpcTradeError::InvalidInput)?;
++    super::super::item_transfer::validate_facts(&request.item)
++        .map_err(|_| NpcTradeError::InvalidInput)?;
++    if request.cause.side != NpcTradeSide::Exchange
++        || request.cause.npc_key != source::NPC
++        || request.cause.catalogue_revision != 1
++        || request.quantity != 1
++        || request.offer_count != 1
++        || request.unit_price != 0
++        || token.definition.family != "Item"
++        || token.definition.production_key != format!("oteryn:item.tibia.i{}", source::TOKEN)
++        || token.container_capacity.is_some()
++        || token.weight.is_none()
++        || stack_maximum(token.stack)
++            .map_err(|_| NpcTradeError::InvalidInput)?
++            .0
++            < source::COST
++        || request.item.definition.family != "Item"
++        || request.item.definition.production_key != format!("oteryn:item.tibia.i{item}")
++        || request.item.container_capacity.is_some()
++        || request.item.weight.is_none()
++    {
++        return Err(NpcTradeError::InvalidInput);
++    }
++    Ok(())
++}
++
++pub(super) fn bind(previous: Vec<u8>, token: &ItemDefinitionFacts) -> Vec<u8> {
++    let mut hash = Sha256::new();
++    hash.update(previous);
++    hash.update(b"oteryn:jorge-token-exchange:v1\0");
++    for field in [
++        &token.definition.family,
++        &token.definition.production_key,
++        &token.definition.revision_ref,
++    ] {
++        hash.update((field.len() as u64).to_be_bytes());
++        hash.update(field.as_bytes());
++    }
++    hash.update(source::COST.to_be_bytes());
++    hash.finalize().to_vec()
++}
++
++pub(super) fn plan(
++    request: &NpcTradeRequest,
++    token: &ItemDefinitionFacts,
++    capacity: usize,
++    entries: &[Entry],
++) -> Result<Plan> {
++    let input = entries
++        .iter()
++        .find(|entry| {
++            entry.live
++                && !entry.not_default
++                && entry.definition == token.definition
++                && entry.quantity >= source::COST
++        })
++        .ok_or(NpcTradeError::InsufficientFunds)?;
++    let after = input.quantity - source::COST;
++    if entries.len() + usize::from(after != 0) > capacity {
++        return Err(NpcTradeError::DoesNotFit);
++    }
++    let ordinal = entries
++        .iter()
++        .map(|entry| entry.placement_ordinal)
++        .max()
++        .unwrap_or(0)
++        .checked_add(1)
++        .ok_or(NpcTradeError::CapacityExceeded)?;
++    let output = request.output_item_instance_ids[2];
++    Ok(Plan {
++        lines: vec![
++            NpcTradeLine {
++                kind: NpcTradeLineKind::ItemBurn,
++                item_instance_id: input.item_instance_id,
++                placement_ordinal: input.placement_ordinal,
++                coin: None,
++                quantity_before: input.quantity,
++                quantity_after: after,
++            },
++            NpcTradeLine {
++                kind: NpcTradeLineKind::ItemMint,
++                item_instance_id: output,
++                placement_ordinal: ordinal,
++                coin: None,
++                quantity_before: 0,
++                quantity_after: 1,
++            },
++        ],
++        burned_gold_units: 0,
++        minted_gold_units: 0,
++        bank_debit_gold_units: 0,
++        bank_debit: None,
++        item_instance_id: output,
++    })
++}
++
++pub(super) fn audit(message: &mut OneItemNpcTradeV1, token: &ItemDefinitionFacts) {
++    for line in &mut message.lines {
++        if line.kind == LINE_ITEM_BURN {
++            for state in [&mut line.before, &mut line.after].into_iter().flatten() {
++                state.definition = Some(OneItemTypedDefinitionRevisionV1 {
++                    family: token.definition.family.clone(),
++                    production_key: token.definition.production_key.clone(),
++                    revision_ref: token.definition.revision_ref.clone(),
++                });
++            }
++        }
++    }
++}
++
++pub(super) async fn weight(
++    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
++    fence: &CurrentCharacterItemFence,
++    request: &NpcTradeRequest,
++    token: &ItemDefinitionFacts,
++    weights: Option<&dyn ItemWeightLookup>,
++) -> Result<()> {
++    let weights = weights.ok_or(NpcTradeError::InvalidInput)?;
++    let carried = super::super::item_loop_move::carried_weight(
++        tx,
++        fence.character_id,
++        *fence.runtime_scope.world_id().as_bytes(),
++        weights,
++    )
++    .await
++    .map_err(|_| NpcTradeError::CapacityExceeded)?;
++    let capacity = super::super::item_transfer::read_derived_transfer_capacity_centi_oz(
++        tx,
++        fence.character_id,
++        weights,
++    )
++    .await?;
++    let removed =
++        u64::from(token.weight.ok_or(NpcTradeError::InvalidInput)?) * u64::from(source::COST);
++    let added = u64::from(request.item.weight.ok_or(NpcTradeError::InvalidInput)?);
++    if carried
++        .checked_sub(removed)
++        .and_then(|n| n.checked_add(added))
++        .is_none_or(|n| n > capacity)
++    {
++        return Err(NpcTradeError::DoesNotFit);
++    }
++    Ok(())
++}
++
++impl DurabilityRoot {
++    /// Jorge's source-bound exchange; the existing NPC cause owns both item lines.
++    pub async fn commit_raid_token_exchange(
++        &self,
++        authority: &ReconciledCharacterAuthority<'_, '_>,
++        node: &NodeIncarnationProof,
++        fence: CurrentCharacterItemFence,
++        request: NpcTradeRequest,
++        token: ItemDefinitionFacts,
++        weights: &dyn ItemWeightLookup,
++    ) -> Result<NpcTradeOutcome> {
++        self.commit_trade(
++            authority,
++            node,
++            fence,
++            request,
++            TradeCommitOptions {
++                exchange: Some(token),
++                weights: Some(weights),
++                ..TradeCommitOptions::default()
++            },
++        )
++        .await
++    }
++}
+diff --git a/crates/gameplay/durability/src/durability/npc_trade_audit/raid_tokens.rs b/crates/gameplay/durability/src/durability/npc_trade_audit/raid_tokens.rs
+new file mode 100644
+index 000000000..c72288b97
+--- /dev/null
++++ b/crates/gameplay/durability/src/durability/npc_trade_audit/raid_tokens.rs
+@@ -0,0 +1,63 @@
++//! Narrow C8 audit shape: one source token BURN and one replica MINT, no value lines.
++use super::*;
++use oteryn_gameplay_quests::quest::raid_tokens as source;
++
++pub(super) fn check(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
++    let invalid = AuditError::InvalidInput;
++    let cause = value.cause.as_ref().ok_or(invalid)?;
++    let offers = source::offers().map_err(|_| invalid)?;
++    let (output, _) = offers.get(cause.offer_index as usize).ok_or(invalid)?;
++    let command = value.command.as_ref().ok_or(invalid)?;
++    if cause.npc_key != source::NPC
++        || cause.catalogue_revision != 1
++        || command.command_id == 0
++        || value.runtime_scope_ownership_generation == 0
++        || value.quantity != 1
++        || value.unit_price != 0
++        || value.total_gold_units != 0
++        || value.burned_gold_units != 0
++        || value.minted_gold_units != 0
++        || value.bank_debit.is_some()
++        || value.sell_all
++        || value.hireling_package.is_some()
++        || value.house_key.is_some()
++        || value.house_furniture_kit.is_some()
++        || value.lines.len() != 2
++    {
++        return Err(invalid);
++    }
++    let [burn, mint] = value.lines.as_slice() else {
++        return Err(invalid);
++    };
++    if burn.kind != LINE_ITEM_BURN
++        || mint.kind != LINE_ITEM_MINT
++        || check_burn(burn, &value.world_id)? != source::COST
++        || check_mint(mint, &value.world_id)? != 1
++        || mint.placement_ordinal <= burn.placement_ordinal
++        || line_item(burn) == line_item(mint)
++    {
++        return Err(invalid);
++    }
++    for (line, expected) in [(burn, source::TOKEN), (mint, *output)] {
++        let state = line.after.as_ref().ok_or(invalid)?;
++        let definition = state.definition.as_ref().ok_or(invalid)?;
++        if definition.family != "Item"
++            || definition.production_key != format!("oteryn:item.tibia.i{expected}")
++        {
++            return Err(invalid);
++        }
++    }
++    let usage = npc_trade_usage(value);
++    if usage.touched_item_instances > 6
++        || usage.location_custody_lines > 6
++        || usage.participants > 6
++        || usage.effect_work_units > 15
++        || usage.events > 1
++        || usage.value_lines != 0
++        || usage.transform_lines != 0
++        || usage.container_expansion != 0
++    {
++        return Err(AuditError::CapacityExceeded);
++    }
++    Ok(())
++}

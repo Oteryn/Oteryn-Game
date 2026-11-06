@@ -1,0 +1,2292 @@
+[
+  {
+    "title": "Elemental Spheres Quest",
+    "file": {
+      "byte_count": 5544,
+      "cache_path": "blobs/080565bc77e6c44c1128398194cb48f31a6f9e2a",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua",
+      "git_blob_sha1": "080565bc77e6c44c1128398194cb48f31a6f9e2a",
+      "path": "data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "b25b9436cb7820a0d19ef1f369fce22f883a65060f61d2358b61f789dd6ae703",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        179,
+        "addEvent(warnPlayers, 5 * 60 * 1000, players)"
+      ],
+      [
+        180,
+        "addEvent(resetRoom, 10 * 60 * 1000, players)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 27447,
+      "cache_path": "blobs/0b0f6783f96510da3235d0362cade47d0f7f7665",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_habitat_venom.lua",
+      "git_blob_sha1": "0b0f6783f96510da3235d0362cade47d0f7f7665",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_habitat_venom.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "57d0be1201c9d94335944ef4303d6372a2bc3c9ef40bf544a3c8229bcaa3f5ad",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        470,
+        "addEvent(transformArea, 2 * 1000)"
+      ],
+      [
+        481,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Grave Danger Quest",
+    "file": {
+      "byte_count": 2046,
+      "cache_path": "blobs/106266a3b0f38bf264381c4d5e9c5debd8da350d",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grave_danger/actions_sir_baeloc_sir_nictros_lever.lua",
+      "git_blob_sha1": "106266a3b0f38bf264381c4d5e9c5debd8da350d",
+      "path": "data-global/scripts/quests/grave_danger/actions_sir_baeloc_sir_nictros_lever.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "74d75d91cefa47e03d6f93f79fe3283e0229924f0482ef5dd108c356465a9f14",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        24,
+        "addEvent(function()"
+      ],
+      [
+        30,
+        "addEvent(function()"
+      ],
+      [
+        57,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 5592,
+      "cache_path": "blobs/11b66e0e17bebe7596419ab34b5b3b9491cf149b",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua",
+      "git_blob_sha1": "11b66e0e17bebe7596419ab34b5b3b9491cf149b",
+      "path": "data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "6269307b6b1e1e4290b9970605d9b4fdd01251b7eb5093746f9de880cd31358c",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        133,
+        "addEvent(revertTeleport, 1 * 60 * 1000, bossConfig.teleportPos, 22761, 1949, Position(33319, 32318, 13))"
+      ],
+      [
+        138,
+        "addEvent(function(playerId)"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 3689,
+      "cache_path": "blobs/13649dc1d6fc8be5f434a6b2a834a8f4b0dbccd9",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/movements_ice.lua",
+      "git_blob_sha1": "13649dc1d6fc8be5f434a6b2a834a8f4b0dbccd9",
+      "path": "data-global/scripts/quests/cults_of_tibia/movements_ice.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "ca1fc4bd255f7b0f8f3d463a7430894006ffcaeb4efe91e8a832f36952628e83",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        32,
+        "addEvent(sendConditionCults, 2000, playerId, info, fromPos, toPos, fromPos2, toPos2, time)"
+      ],
+      [
+        49,
+        "addEvent(floorPassage, 1000, playerId, info, time - 1)"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 6503,
+      "cache_path": "blobs/144ece38ad4e5edae486a0d965d61a162d42b70d",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/movements_tar.lua",
+      "git_blob_sha1": "144ece38ad4e5edae486a0d965d61a162d42b70d",
+      "path": "data-global/scripts/quests/cults_of_tibia/movements_tar.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "d70e48686633aad7583a3ecb3fdb99404a040d9f4cf5a34b0aecfdfa837c75c1",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        68,
+        "addEvent(sendConditionCults, 2000, playerId, _type, fromPos, toPos, time)"
+      ],
+      [
+        85,
+        "addEvent(passageFloor1ToFloor2, 1000, playerId, info, time - 1)"
+      ],
+      [
+        124,
+        "function tar.onStepOut(creature, item, position, fromPosition)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 521,
+      "cache_path": "blobs/14985b1fd55cfa9930c545bc83c155b2600585e5",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_grave_flower.lua",
+      "git_blob_sha1": "14985b1fd55cfa9930c545bc83c155b2600585e5",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_grave_flower.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "b2720911acfbe0548eee1b119275fdf764266effa88daecd5348a313713c54ce",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        13,
+        "addEvent(revertItem, 2 * 60 * 1000, toPosition, 25530, 25529)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 23508,
+      "cache_path": "blobs/1977a0e8826d74a203c306236448cf09f578bdd9",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_habitat_corrupted.lua",
+      "git_blob_sha1": "1977a0e8826d74a203c306236448cf09f578bdd9",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_habitat_corrupted.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "01d5eedda29ed252cef0e927e92d0ac609872dbf722fbb8bc0d4ebd10b2ac5d0",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        399,
+        "addEvent(transformArea, 2 * 1000)"
+      ],
+      [
+        410,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "A Piece of Cake",
+    "file": {
+      "byte_count": 6443,
+      "cache_path": "blobs/2078ddbd9b330229a1c06e1b3506876d48def127",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/a_piece_of_cake/talkactions_gm_cakequest.lua",
+      "git_blob_sha1": "2078ddbd9b330229a1c06e1b3506876d48def127",
+      "path": "data-global/scripts/quests/a_piece_of_cake/talkactions_gm_cakequest.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "95f2d9d2f878b61ebb8b3b07aa60de8b78ed40c8a518faf2adcef809b9004935",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        44,
+        "local bonusInfo = bonusUntil > os.time() and (\" | World bonus until: \" .. os.date(\"%d/%m/%Y %H:%M\", bonusUntil)) or \"\""
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 26811,
+      "cache_path": "blobs/215600987218d13687dfbeee4c95419fea7c78ab",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_habitat_ice.lua",
+      "git_blob_sha1": "215600987218d13687dfbeee4c95419fea7c78ab",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_habitat_ice.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "245abd68420f4567b4e8cd9458461d712d818a0b8268b2d1dc1f0035e0a098c0",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        461,
+        "addEvent(transformArea, 2 * 1000)"
+      ],
+      [
+        472,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Hidden Threats Quest",
+    "file": {
+      "byte_count": 2051,
+      "cache_path": "blobs/2612e99c57d59310db3e5ce0c92bb7fee1222e21",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua",
+      "git_blob_sha1": "2612e99c57d59310db3e5ce0c92bb7fee1222e21",
+      "path": "data-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "be8fc17a2046d2e4201b046a05eeded092464526d9dd4d1cf46e3ecf27ae74de",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        57,
+        "addEvent(clearBossRoom, 60 * room.time * 1000, player.uid, room.centerPos, false, room.rangeX, room.rangeY, room.exitPos)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 1899,
+      "cache_path": "blobs/2b1792a92616158091516e8cc0f2b7856a68f5d7",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_shulgrax.lua",
+      "git_blob_sha1": "2b1792a92616158091516e8cc0f2b7856a68f5d7",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_shulgrax.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "caa78225a995594732f4371b1f54c6a39f5e459528c3c6d7964d620a090660d0",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        45,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(33473, 32776, 13), Position(33496, 32798, 13), Position(33319, 32318, 13))"
+      ]
+    ]
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "file": {
+      "byte_count": 1700,
+      "cache_path": "blobs/2f0b7efe967cea7888add78280f4375ffec9d54e",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_eradicator_lever.lua",
+      "git_blob_sha1": "2f0b7efe967cea7888add78280f4375ffec9d54e",
+      "path": "data-global/scripts/quests/heart_of_destruction/actions_eradicator_lever.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "ba8dc36b79068c1c5dccd991e5cf5e7c6d99d18cd58de479d5de38f3b5ef39e9",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        27,
+        "eradicatorEvent = addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 788,
+      "cache_path": "blobs/2f952dd81d873395a75fb32b69f3c196f1765369",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/creaturescripts_death_dragon.lua",
+      "git_blob_sha1": "2f952dd81d873395a75fb32b69f3c196f1765369",
+      "path": "data-global/scripts/quests/ferumbras_ascension/creaturescripts_death_dragon.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "bd756efd1c4ac55cde33a968295b66dabe46d4527165f2fc5996113435a3128f",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        7,
+        "local monster = addEvent(Game.createMonster, 1 * 1000, \"death dragon\", creature:getPosition(), true, true)"
+      ]
+    ]
+  },
+  {
+    "title": "Children of the Revolution Quest",
+    "file": {
+      "byte_count": 982,
+      "cache_path": "blobs/38566a32901cd76081d772116a09322be5cee5a4",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/children_of_the_revolution/movements_stair.lua",
+      "git_blob_sha1": "38566a32901cd76081d772116a09322be5cee5a4",
+      "path": "data-global/scripts/quests/children_of_the_revolution/movements_stair.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "33419212744bdf82c76d7680cc9979549c200400e4cca327bf870b665a004a9c",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        23,
+        "addEvent(revertStairs, 5 * 30 * 1000)"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 1840,
+      "cache_path": "blobs/41675141e57627ae524fd0997481095c9e029bbc",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/movements_dragonking_vortex.lua",
+      "git_blob_sha1": "41675141e57627ae524fd0997481095c9e029bbc",
+      "path": "data-global/scripts/quests/forgotten_knowledge/movements_dragonking_vortex.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "77fd63a435fb71f7f717da088f3c4a07db321be62480ad7660f7ac479be86a78",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        52,
+        "addEvent(functionBack, 30 * 1000)"
+      ],
+      [
+        53,
+        "addEvent(removeVortex, 15 * 1000, position)"
+      ]
+    ]
+  },
+  {
+    "title": "Killing in the Name of... Quest",
+    "file": {
+      "byte_count": 13034,
+      "cache_path": "blobs/4220280abdca9db1c6d5b12113dcdcf9756de764",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua",
+      "git_blob_sha1": "4220280abdca9db1c6d5b12113dcdcf9756de764",
+      "path": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "cbd900fea9c1d14b75356b6e3ea0b8c4cefea2770f3734b748c5cf8bef7ca013",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        416,
+        "addEvent(clearBossRoom, 60 * 10 * 1000, player.uid, bosses[a].centerPosition, false, bosses[a].rangeX, bosses[a].rangeY, fromPosition)"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 2520,
+      "cache_path": "blobs/42b81b970db81ff9c7c21ebc14879ef01f133acb",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/actions_misguided.lua",
+      "git_blob_sha1": "42b81b970db81ff9c7c21ebc14879ef01f133acb",
+      "path": "data-global/scripts/quests/cults_of_tibia/actions_misguided.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "95e987db881bcc73da06a998d64045fcbb4385e10c5cc08e24263427275f8400",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        37,
+        "addEvent(changeMap, 15000, \"illusion\")"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 459,
+      "cache_path": "blobs/43c0b4332f02c4a24625257fe0cf995371898b77",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua",
+      "git_blob_sha1": "43c0b4332f02c4a24625257fe0cf995371898b77",
+      "path": "data-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "5897251f2dd1b0bb2cc41eb80539b91852e6e8d932f1f5bf84fc4c8e1c4dba5d",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        6,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Dark Trails Quest",
+    "file": {
+      "byte_count": 1237,
+      "cache_path": "blobs/445e6299f372c7dceeae1a65dd9cce7a17f27bb9",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dark_trails/creaturescripts_kill_death_priest_shargon.lua",
+      "git_blob_sha1": "445e6299f372c7dceeae1a65dd9cce7a17f27bb9",
+      "path": "data-global/scripts/quests/dark_trails/creaturescripts_kill_death_priest_shargon.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "e9e0f73dc74e144228812347ae753082678008bf84f41600aea1bd4faa4eb2a2",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        36,
+        "addEvent(removeTeleport, 5 * 60 * 1000, position)"
+      ]
+    ]
+  },
+  {
+    "title": "Lion's Rock Quest",
+    "file": {
+      "byte_count": 5479,
+      "cache_path": "blobs/47a3973d00e08437c9af5d6555a6bc629d5423bf",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/lions_rock/movements_lions_rock.lua",
+      "git_blob_sha1": "47a3973d00e08437c9af5d6555a6bc629d5423bf",
+      "path": "data-global/scripts/quests/lions_rock/movements_lions_rock.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        90,
+        "addEvent(reset, 15 * 1000)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 682,
+      "cache_path": "blobs/4d2fc197bc45918f1597e6d5917110b067c1e893",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/movements_desperate_soul.lua",
+      "git_blob_sha1": "4d2fc197bc45918f1597e6d5917110b067c1e893",
+      "path": "data-global/scripts/quests/ferumbras_ascension/movements_desperate_soul.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "a00635058e8d10660d11e016f1e94f496155a6843d299a7f3cdd363936c2d241",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        14,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Children of the Revolution Quest",
+    "file": {
+      "byte_count": 2390,
+      "cache_path": "blobs/4ffad53435d61e7d95a4720c88fcc2881a8c83c5",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/children_of_the_revolution/actions_mission4_levers_puzzle.lua",
+      "git_blob_sha1": "4ffad53435d61e7d95a4720c88fcc2881a8c83c5",
+      "path": "data-global/scripts/quests/children_of_the_revolution/actions_mission4_levers_puzzle.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "908005a331f2e11c9abd0c2785ac22674cd9a7f9483fdf0cbaec646e81c70083",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        46,
+        "addEvent(revertLever, 5000, fromPosition)"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 19942,
+      "cache_path": "blobs/5075943688785c28f7c9053f7b96d28442986e50",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua",
+      "git_blob_sha1": "5075943688785c28f7c9053f7b96d28442986e50",
+      "path": "data-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "2a7a50923f2c045de091566c27b6f82d04801f5a8a5485c659682b32b2787fce",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        32,
+        "addEvent(spawnStolenSoul, 1000, t_time - 1)"
+      ],
+      [
+        73,
+        "addEvent(spawnDarkSoul, 1000, area, (waitingForPlayer and 1 or 30))"
+      ],
+      [
+        75,
+        "addEvent(spawnDarkSoul, 1000, area, t_time - 1)"
+      ],
+      [
+        90,
+        "addEvent(transformMonster, delay * 15000, itid, 2, monster, Position(_x, frompos.y, frompos.z), {}, _temp + 1)"
+      ],
+      [
+        106,
+        "addEvent(transformMonster, 15000, itid, 3, \"Sphere Of Wrath\", {}, {}, _temp)"
+      ],
+      [
+        115,
+        "addEvent(function()"
+      ],
+      [
+        120,
+        "addEvent(function()"
+      ],
+      [
+        124,
+        "addEvent(function()"
+      ],
+      [
+        134,
+        "addEvent(function()"
+      ],
+      [
+        239,
+        "addEvent(transformMonster, 13 * 15000, 3, 3, \"Sphere Of Wrath\", {}, {}, 0)"
+      ]
+    ]
+  },
+  {
+    "title": "Barbarian Test Quest",
+    "file": {
+      "byte_count": 2435,
+      "cache_path": "blobs/5ed2c03e7406e436403c5c3730bf7f3a7d229599",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/barbarian_test/action_horn.lua",
+      "git_blob_sha1": "5ed2c03e7406e436403c5c3730bf7f3a7d229599",
+      "path": "data-global/scripts/quests/barbarian_test/action_horn.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "ee5a983a8eec21cb3332f908b8baf0e66311797615eae25e103518e1583a197f",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        42,
+        "addEvent(sendSleepEffect, 60 * 1000, toPosition)"
+      ]
+    ]
+  },
+  {
+    "title": "Blood Brothers Quest",
+    "file": {
+      "byte_count": 2364,
+      "cache_path": "blobs/5ff48ee600c4ed0bbd96e9c0aec48a4f67d042c4",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua",
+      "git_blob_sha1": "5ff48ee600c4ed0bbd96e9c0aec48a4f67d042c4",
+      "path": "data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "cdabe288fd28476a9a10c823ce20c27abaec70bb193039480b6148c45a3c4c65",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        47,
+        "addEvent(revertMirror, 30 * 1000, toPosition)"
+      ]
+    ]
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "file": {
+      "byte_count": 15696,
+      "cache_path": "blobs/64bd2f53fda6b190fe7e1d4ec736328b8493aeb5",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_final_lever.lua",
+      "git_blob_sha1": "64bd2f53fda6b190fe7e1d4ec736328b8493aeb5",
+      "path": "data-global/scripts/quests/heart_of_destruction/actions_final_lever.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "4713e40c4cab51d590075c6426572b990937b8fc0f3f78eb55ced22b37609105",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        23,
+        "areaDevourer6 = addEvent(sparkDevourerSpawn, 10000)"
+      ],
+      [
+        178,
+        "areaDevourer4 = addEvent(changeArea, 30000)"
+      ],
+      [
+        220,
+        "areaDevourer5 = addEvent(clearDevourer, 30 * 60000)"
+      ],
+      [
+        221,
+        "areaDevourer6 = addEvent(sparkDevourerSpawn, 10000)"
+      ],
+      [
+        448,
+        "areaDevourer1 = addEvent(clearHunger, 30 * 60000)"
+      ],
+      [
+        449,
+        "areaDevourer2 = addEvent(clearDestruction, 30 * 60000)"
+      ],
+      [
+        450,
+        "areaDevourer3 = addEvent(clearRage, 30 * 60000)"
+      ],
+      [
+        451,
+        "areaDevourer4 = addEvent(changeArea, 30000) --mudar"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 26177,
+      "cache_path": "blobs/65715560a671d1638ef25e498129a119a879e558",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/actions_plant.lua",
+      "git_blob_sha1": "65715560a671d1638ef25e498129a119a879e558",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_plant.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "07578d0db7bf56d47e1300d39ebb70af595453f6a0743dcd3f01c0f5b825e9e1",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        423,
+        "addEvent(revertItem, 10 * 60 * 1000, target:getPosition(), 26484, 26482)"
+      ],
+      [
+        431,
+        "addEvent(revertItem, 10 * 60 * 1000, target:getPosition(), 26483, 26482)"
+      ],
+      [
+        481,
+        "addEvent(revertTree, 1 * 60 * 1000)"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 835,
+      "cache_path": "blobs/708e04d878e5e9a995261a852066779f64f6adfe",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_possessed_tree.lua",
+      "git_blob_sha1": "708e04d878e5e9a995261a852066779f64f6adfe",
+      "path": "data-global/scripts/quests/forgotten_knowledge/creaturescripts_possessed_tree.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "094afc3b236833eca3017cf097c0658b07c146c7da991e17217d665e96f4c570",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        13,
+        "addEvent(Game.createMonster, 60 * 1000, \"possessed tree\", targetMonster:getPosition(), true, true)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 1708,
+      "cache_path": "blobs/7423b8f382005dd5bf0c27ddef659663f3607f85",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_tarbaz.lua",
+      "git_blob_sha1": "7423b8f382005dd5bf0c27ddef659663f3607f85",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_tarbaz.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "f5f6e183c5b9059a1074a8a9e94b7fcc186d9c487d17b801a63cd6a51a7c3925",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        38,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(33446, 32833, 11), Position(33515, 32875, 12), Position(33319, 32318, 13))"
+      ]
+    ]
+  },
+  {
+    "title": "Lion's Rock Quest",
+    "file": {
+      "byte_count": 5391,
+      "cache_path": "blobs/76109691eb6bf60e763abfe9b1606c55034b6d3f",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/lions_rock/actions_lions_rock.lua",
+      "git_blob_sha1": "76109691eb6bf60e763abfe9b1606c55034b6d3f",
+      "path": "data-global/scripts/quests/lions_rock/actions_lions_rock.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "985436b56fe3e623d6574feb0265b2fae6ba04bee76ba2bcb522b4e0b02f5aac",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        69,
+        "addEvent(reset, 15 * 1000, setting)"
+      ],
+      [
+        89,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Grave Danger Quest",
+    "file": {
+      "byte_count": 2602,
+      "cache_path": "blobs/799081897e68e9befe14782a6262d522aad32a01",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grave_danger/cobra_bastion/creaturescripts_ugly_monster.lua",
+      "git_blob_sha1": "799081897e68e9befe14782a6262d522aad32a01",
+      "path": "data-global/scripts/quests/grave_danger/cobra_bastion/creaturescripts_ugly_monster.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "3d0ff9b7a892cde2b5dfaad70dd383ead76dd622d81fae60dd5f3d9635480286",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        31,
+        "removeEvent = addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 990,
+      "cache_path": "blobs/7b1d8c4826e0e5c67507c051cd5e487be5a09de4",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/actions_torch.lua",
+      "git_blob_sha1": "7b1d8c4826e0e5c67507c051cd5e487be5a09de4",
+      "path": "data-global/scripts/quests/cults_of_tibia/actions_torch.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "086f2b69871b135a33ee8c36ad4a4c30627c857b9c2dc8ec10321ae9b18fe258",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        20,
+        "addEvent(Game.createItem, 300000, 1295, 1, Position(32396, 31806, 8))"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 2995,
+      "cache_path": "blobs/7fb6281823e7f8f4a32299be1b87e0f019304fe2",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/actions_dragonking_zyrtarch.lua",
+      "git_blob_sha1": "7fb6281823e7f8f4a32299be1b87e0f019304fe2",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_dragonking_zyrtarch.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "388437b82e425285e6df26c92e1f747b388f3028370d9dd619ae8de4630c53a1",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        75,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(33348, 31172, 10), Position(33368, 31190, 12), Position(33407, 31172, 10))"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 2048,
+      "cache_path": "blobs/82d5535f8e6c9bac1ec538351b6402fe865ffb6b",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_plagirath.lua",
+      "git_blob_sha1": "82d5535f8e6c9bac1ec538351b6402fe865ffb6b",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_plagirath.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "b26bbfee0013e159760774af9491f6912442d862bc84e666fad66ff42fd013c8",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        47,
+        "addEvent(clearForgotten, 30 * 60 * 1000, Position(33159, 31491, 13), Position(33185, 31513, 13), Position(33319, 32318, 13), Storage.Quest.U10_90.FerumbrasAscension.PlagirathTimer)"
+      ]
+    ]
+  },
+  {
+    "title": "Grimvale Quest",
+    "file": {
+      "byte_count": 4400,
+      "cache_path": "blobs/85de7ac4481d43c293eb0d82b8b28b1608ab910e",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua",
+      "git_blob_sha1": "85de7ac4481d43c293eb0d82b8b28b1608ab910e",
+      "path": "data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "df37b976a000f483f0f21db45b5195fb8155456f994ac46b027310d167365ece",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        127,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 4792,
+      "cache_path": "blobs/8897d1fa2089615d792945a313ae8c9ef42a0617",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/creaturescripts_sandking.lua",
+      "git_blob_sha1": "8897d1fa2089615d792945a313ae8c9ef42a0617",
+      "path": "data-global/scripts/quests/cults_of_tibia/creaturescripts_sandking.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "0286ac6ee7066a1b323ffd65803f3dbae154d18b8b5efd3b9396efcfc0de3d84",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        15,
+        "addEvent(spawnSandBoss, 5000, name, frompos, topos)"
+      ],
+      [
+        40,
+        "addEvent(spawnSandBoss, 5000, \"the sandking fake\", Position(33087, 31848, 15), Position(33109, 31871, 15))"
+      ],
+      [
+        46,
+        "addEvent(spawnSandMonster, 5000, name, _time)"
+      ],
+      [
+        110,
+        "addEvent(function(position, corpseid)"
+      ],
+      [
+        125,
+        "addEvent(Game.setStorageValue, 2000, \"sandking\", 5)"
+      ]
+    ]
+  },
+  {
+    "title": "Hidden Threats Quest",
+    "file": {
+      "byte_count": 812,
+      "cache_path": "blobs/88b2a4f7efa3bfe32b135f77d8412bde312bb1df",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/hidden_threats/movement-chests_check.lua",
+      "git_blob_sha1": "88b2a4f7efa3bfe32b135f77d8412bde312bb1df",
+      "path": "data-global/scripts/quests/hidden_threats/movement-chests_check.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "0e00845e4ce1d3cf40dba3139210f86bc96dcb0f8f3242345a4a01aa3badc9b4",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        3,
+        "function corymChests.onStepOut(creature, item, position, fromPosition)"
+      ]
+    ]
+  },
+  {
+    "title": "Grave Danger Quest",
+    "file": {
+      "byte_count": 2919,
+      "cache_path": "blobs/8a25b60c3d166b825ac19e80d4e761ab7fb9776c",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grave_danger/cobra_bastion/actions_scarlett.lua",
+      "git_blob_sha1": "8a25b60c3d166b825ac19e80d4e761ab7fb9776c",
+      "path": "data-global/scripts/quests/grave_danger/cobra_bastion/actions_scarlett.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "7cf1f42e77e0f20423eae7cc8d898200cd7f739e6c4fa0bc57cad08398f9ac2c",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        84,
+        "addEvent(createArmor, 20 * 1000, armorId, 1, armorPos)"
+      ],
+      [
+        85,
+        "addEvent(backMirror, 10 * 1000)"
+      ],
+      [
+        87,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 2698,
+      "cache_path": "blobs/8c2ca9f5bf182a2771662f893ef6e9e292809efe",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/actions_servants_mechanism.lua",
+      "git_blob_sha1": "8c2ca9f5bf182a2771662f893ef6e9e292809efe",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_servants_mechanism.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "af0446a4049f824076d20dcd21c052442aff743ae6f1a1e469d57aaf12608dbc",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        53,
+        "addEvent(turnOff, 10 * 60 * 1000, lever.storage, lever.counter)"
+      ]
+    ]
+  },
+  {
+    "title": "Koshei the Deathless Quest",
+    "file": {
+      "byte_count": 1317,
+      "cache_path": "blobs/8e798af8335f1290d7ffb6d469b71d8e357f9981",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua",
+      "git_blob_sha1": "8e798af8335f1290d7ffb6d469b71d8e357f9981",
+      "path": "data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "73c7e2f3c6b1b5ef582b9e09e068d829fd127ec5553358d443b7c25873b26855",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        39,
+        "addEvent(revertCoffin, 2 * 60 * 1000)"
+      ]
+    ]
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "file": {
+      "byte_count": 5580,
+      "cache_path": "blobs/8ef363796058885ececc3fdb9854c525fd138f37",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_sparks_lever.lua",
+      "git_blob_sha1": "8ef363796058885ececc3fdb9854c525fd138f37",
+      "path": "data-global/scripts/quests/heart_of_destruction/actions_sparks_lever.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "f30390c0e6b8402b4dd2d5aeb00044b1acab87ad8b49e1452a7fedbcd77984cc",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        107,
+        "areaSparks3 = addEvent(renewSparks, 7000)"
+      ],
+      [
+        135,
+        "areaSparks4 = addEvent(createSparks, 1000)"
+      ],
+      [
+        181,
+        "areaSparks1 = addEvent(clearArea, 15 * 60000)"
+      ],
+      [
+        182,
+        "areaSparks2 = addEvent(createSparks, 10000)"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 2526,
+      "cache_path": "blobs/906aa65721c92127fdd3fc40be1cf93516c5bb1e",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/actions_lady_tenebris.lua",
+      "git_blob_sha1": "906aa65721c92127fdd3fc40be1cf93516c5bb1e",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_lady_tenebris.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "ccf7fc04dd78723d0447c84fd8eae6648ad4262b67335aee124a74be9b5aec64",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        57,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(32902, 31589, 14), Position(32924, 31610, 14), Position(32919, 31639, 14))"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 2746,
+      "cache_path": "blobs/920961fe7a6e0df8335d408faff47d4d85508b4c",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/actions_the_thorn_knight.lua",
+      "git_blob_sha1": "920961fe7a6e0df8335d408faff47d4d85508b4c",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_the_thorn_knight.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "9c58ad03fe62ca2bfb605a29d14bb07782b22cf096cdcfe20000583b6b8a4743",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        67,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(32613, 32869, 14), Position(32636, 32892, 14), Position(32678, 32888, 14))"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 2820,
+      "cache_path": "blobs/92584b80c54be7504dfeb1f8832f44f8d3b4ba3e",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_flower_puzzle_lever.lua",
+      "git_blob_sha1": "92584b80c54be7504dfeb1f8832f44f8d3b4ba3e",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_flower_puzzle_lever.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "17ef7feff5c78d9f2582a6ebcff26a487ecbb504d1e1eaded62cfdf2476a5b63",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        42,
+        "addEvent(function()"
+      ],
+      [
+        56,
+        "addEvent(revertItem, 30 * 1000, gate.position, gate.itemid, gate.transform)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 24374,
+      "cache_path": "blobs/94884e25a7004f02f5776abe01d563757c5ce3ba",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_habitat_dimension.lua",
+      "git_blob_sha1": "94884e25a7004f02f5776abe01d563757c5ce3ba",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_habitat_dimension.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "2269c7102263613db2e211d520f7087a017a00aeb77ce3dc89951b7d3ec57e4f",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        414,
+        "addEvent(transformArea, 2 * 1000)"
+      ],
+      [
+        425,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "file": {
+      "byte_count": 2675,
+      "cache_path": "blobs/96574075398222a9ffe2e1ae5da3e7b20daf73bb",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/movements_vortex_crackler.lua",
+      "git_blob_sha1": "96574075398222a9ffe2e1ae5da3e7b20daf73bb",
+      "path": "data-global/scripts/quests/heart_of_destruction/movements_vortex_crackler.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "b790a0985b6351dfddacf7a303470893b73b6c8673c7ac3c240d0d8f261e6833",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        95,
+        "function vortexCrackler.onStepOut(creature, item, position, fromPosition)"
+      ]
+    ]
+  },
+  {
+    "title": "Dark Trails Quest",
+    "file": {
+      "byte_count": 864,
+      "cache_path": "blobs/9a88a6673dcfa41079c06adff0e82f4e60bb20b1",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dark_trails/creaturescripts_kill_the_ravager.lua",
+      "git_blob_sha1": "9a88a6673dcfa41079c06adff0e82f4e60bb20b1",
+      "path": "data-global/scripts/quests/dark_trails/creaturescripts_kill_the_ravager.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "2b6fa0a54272985dfc4ff738470311f97ded05a5871a94ceb056c84d5698e4b2",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        22,
+        "addEvent(removeTeleport, 5 * 60 * 1000, position)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 28829,
+      "cache_path": "blobs/a234295469d7dae8dd8ea85bb4053b734b9ff8be",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_habitat_roshamuul.lua",
+      "git_blob_sha1": "a234295469d7dae8dd8ea85bb4053b734b9ff8be",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_habitat_roshamuul.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "09159017a2a747d21cd60338a5dfff9e13514d61d3de71d57e637a34e841993d",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        487,
+        "addEvent(transformArea, 2 * 1000)"
+      ],
+      [
+        498,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "file": {
+      "byte_count": 8106,
+      "cache_path": "blobs/a517fcab7b8de16a84134f5927d21dfc646808f1",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_charges_lever.lua",
+      "git_blob_sha1": "a517fcab7b8de16a84134f5927d21dfc646808f1",
+      "path": "data-global/scripts/quests/heart_of_destruction/actions_charges_lever.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "35d0aff93c8913821b94d9608968af06b8576b8c869f204529c6ad318b004597",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        160,
+        "areaHeart3 = addEvent(teleportToCharger, 10000)"
+      ],
+      [
+        187,
+        "areaHeart2 = addEvent(teleportToCrackler, 25000)"
+      ],
+      [
+        235,
+        "areaHeart1 = addEvent(clearArea, 15 * 60000)"
+      ],
+      [
+        236,
+        "areaHeart2 = addEvent(teleportToCrackler, 25000)"
+      ]
+    ]
+  },
+  {
+    "title": "Elemental Spheres Quest",
+    "file": {
+      "byte_count": 2852,
+      "cache_path": "blobs/a839d3f060cf86ec53cede8f88e6b69b8561adfa",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua",
+      "git_blob_sha1": "a839d3f060cf86ec53cede8f88e6b69b8561adfa",
+      "path": "data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "5636dd5500df56c79ddd31ae05b139634dd0813f51f8d195da5d82967806fdb9",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        83,
+        "function summonOverlord.onAddItem(moveitem, tileitem, position)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 4251,
+      "cache_path": "blobs/a98438661e588c73509797196cf372f54cd0338a",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/movements_red_gem.lua",
+      "git_blob_sha1": "a98438661e588c73509797196cf372f54cd0338a",
+      "path": "data-global/scripts/quests/ferumbras_ascension/movements_red_gem.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "4eba3cf7ad1246f086534426cec26d9862b5e3c95782245aec04d158c11fa981",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        77,
+        "addEvent(activeBasin, 1 * 1000, position)"
+      ],
+      [
+        78,
+        "addEvent(revertBasin, 60 * 60 * 1000, position)"
+      ],
+      [
+        79,
+        "addEvent(revertStorages, 60 * 60 * 1000)"
+      ],
+      [
+        80,
+        "addEvent(revertItem, 60 * 60 * 1000, position, 8648, item.itemid)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 1904,
+      "cache_path": "blobs/aa564b94fd62c49e0860d4428e678ca464c4869f",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_mazoran.lua",
+      "git_blob_sha1": "aa564b94fd62c49e0860d4428e678ca464c4869f",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_mazoran.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "aa42e74df7fe8513799dc9dae7d8f1e0ae0e40be47a0218071b3ea4000ec48b3",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        46,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(33572, 32679, 14), Position(33599, 32701, 14), Position(33319, 32318, 13))"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 4015,
+      "cache_path": "blobs/aaa8ffd9e6f6cc2d147260f421061dfcd028f1c6",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua",
+      "git_blob_sha1": "aaa8ffd9e6f6cc2d147260f421061dfcd028f1c6",
+      "path": "data-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "a2983294ce7a5cde4df9957575a59944cc70374cf29dcc46c97002c606e93776",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        77,
+        "addEvent(activeBasin, 1 * 1000, position)"
+      ],
+      [
+        78,
+        "addEvent(revertBasin, 60 * 60 * 1000, position)"
+      ],
+      [
+        79,
+        "addEvent(revertStorages, 60 * 60 * 1000)"
+      ],
+      [
+        80,
+        "addEvent(revertItem, 60 * 60 * 1000, position, 8648, item.itemid)"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 2855,
+      "cache_path": "blobs/b6382393afc3ff43e58194b2b7d23c1a4774a9be",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/actions_the_time_guardian.lua",
+      "git_blob_sha1": "b6382393afc3ff43e58194b2b7d23c1a4774a9be",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_the_time_guardian.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "773d326a731c18806ab311d267fa547cc4013c6f248ab796b3fb860d95cb2828",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        69,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(32967, 31654, 13), Position(32989, 31677, 14), Position(32870, 32724, 14))"
+      ]
+    ]
+  },
+  {
+    "title": "Grimvale Quest",
+    "file": {
+      "byte_count": 4327,
+      "cache_path": "blobs/b6db96cced688863ec52506c623a621ced1ebc05",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_portal_minis_ancient_feud.lua",
+      "git_blob_sha1": "b6db96cced688863ec52506c623a621ced1ebc05",
+      "path": "data-global/scripts/quests/grimvale/actions_portal_minis_ancient_feud.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "991f3a577da462c6c4b4de8cd263f9446f6a51faba33bd1b1b3cc2a58e2abcd0",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        119,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 4095,
+      "cache_path": "blobs/b94f3f1e44baac1412ab2e99e599af48dc285b96",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/creaturescripts_the_shatterer_kill.lua",
+      "git_blob_sha1": "b94f3f1e44baac1412ab2e99e599af48dc285b96",
+      "path": "data-global/scripts/quests/ferumbras_ascension/creaturescripts_the_shatterer_kill.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "9a21f05e6f090b6ab63fb3404b8ebfd36dd33290fbb658a3b297e090a7537586",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        100,
+        "addEvent(revertTeleport, 2 * 60 * 1000, teleportPos, 22761, 1949, oldPos)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 4138,
+      "cache_path": "blobs/b9d86f05071108d20436e85d1eecedb8f2b3ba62",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/creaturescripts_rift_invader_death.lua",
+      "git_blob_sha1": "b9d86f05071108d20436e85d1eecedb8f2b3ba62",
+      "path": "data-global/scripts/quests/ferumbras_ascension/creaturescripts_rift_invader_death.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "d1e020110284d7943fa0b0fdc420fc71ce139b214040a0faefebfe89d4f1ce4e",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        58,
+        "addEvent(function(creaturePos)"
+      ]
+    ]
+  },
+  {
+    "title": "Kilmaresh Quest",
+    "file": {
+      "byte_count": 3767,
+      "cache_path": "blobs/bd54e70fa0154e19b5a6db50aecf009251da1d5c",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/kilmaresh/actions_portal_minis_kilmaresh.lua",
+      "git_blob_sha1": "bd54e70fa0154e19b5a6db50aecf009251da1d5c",
+      "path": "data-global/scripts/quests/kilmaresh/actions_portal_minis_kilmaresh.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "ad41c21223a1ca498eba8727e1e9731302debcfc48c43a5b53714f6cf4164f46",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        101,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 1513,
+      "cache_path": "blobs/be6286b7e88fa5e595a4b1ceb0a799d33cf86445",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bound_astral_power.lua",
+      "git_blob_sha1": "be6286b7e88fa5e595a4b1ceb0a799d33cf86445",
+      "path": "data-global/scripts/quests/forgotten_knowledge/creaturescripts_bound_astral_power.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "168e1b709c2d9335679b5328f3da3777846d16779c812116c3b10fb9ab9ddf0a",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        25,
+        "addEvent(Game.setStorageValue, 1 * 60 * 1000, Storage.Quest.U11_02.ForgottenKnowledge.AstralGlyph, 0)"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 524,
+      "cache_path": "blobs/bf8b0ac2d5981b442c1ca946628e51779925e516",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/creaturescripts_splash.lua",
+      "git_blob_sha1": "bf8b0ac2d5981b442c1ca946628e51779925e516",
+      "path": "data-global/scripts/quests/cults_of_tibia/creaturescripts_splash.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "35435ac09df5267687537c2a55cb97d4b4a44bcc229c40db76406804a7a445f0",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        6,
+        "addEvent(function(cid)"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 2942,
+      "cache_path": "blobs/c47ea4d5966cf9846192bb505fde67148e747b43",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/actions_lloyd.lua",
+      "git_blob_sha1": "c47ea4d5966cf9846192bb505fde67148e747b43",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_lloyd.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "2bd54561f922b68fce4759d195fbd885ec8e7beffb2ff771104de12b96f68767",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        74,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(32785, 32814, 14), Position(32812, 32838, 14), Position(32815, 32873, 13))"
+      ]
+    ]
+  },
+  {
+    "title": "Grave Danger Quest",
+    "file": {
+      "byte_count": 964,
+      "cache_path": "blobs/c5b3902c1e0cb8aebb9f181b595a7b334d4d5095",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grave_danger/movements_firewall_gaffir.lua",
+      "git_blob_sha1": "c5b3902c1e0cb8aebb9f181b595a7b334d4d5095",
+      "path": "data-global/scripts/quests/grave_danger/movements_firewall_gaffir.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "c200ffd7fd2d2ab01a4769f3a98a5a536562e58699d61ca90706d4453d33cfe5",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        28,
+        "function gaffirwall.onStepOut(creature, item, position, fromPosition)"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 1530,
+      "cache_path": "blobs/c6f5ce378c657c06dcde8dad7500a1da2c23c3b1",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/creaturescripts_evaporate.lua",
+      "git_blob_sha1": "c6f5ce378c657c06dcde8dad7500a1da2c23c3b1",
+      "path": "data-global/scripts/quests/cults_of_tibia/creaturescripts_evaporate.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "e1402a97d1174ef2ad1ac9fad35db7f8255b1ef2356ffeaf009d93b128e4b803",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        41,
+        "addEvent(function(cid)"
+      ]
+    ]
+  },
+  {
+    "title": "Children of the Revolution Quest",
+    "file": {
+      "byte_count": 3180,
+      "cache_path": "blobs/c8571cdf5a05f5cd6ee5e504dfae96924980b773",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/children_of_the_revolution/movements_click.lua",
+      "git_blob_sha1": "c8571cdf5a05f5cd6ee5e504dfae96924980b773",
+      "path": "data-global/scripts/quests/children_of_the_revolution/movements_click.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "1122d8ba1f98a2524806497cb94fb34771f87a7a63dcd3120c4bc4e22ed1c5da",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        98,
+        "addEvent(summonWave, wave * 30 * 1000, wave)"
+      ],
+      [
+        100,
+        "addEvent(removeStairs, 30 * 1000)"
+      ],
+      [
+        101,
+        "addEvent(doClearMissionArea, 5 * 30 * 1000)"
+      ]
+    ]
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "file": {
+      "byte_count": 5968,
+      "cache_path": "blobs/c9f024653c0c24061eafff0f003e2cbd2c3a1a0f",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_cracklers_lever.lua",
+      "git_blob_sha1": "c9f024653c0c24061eafff0f003e2cbd2c3a1a0f",
+      "path": "data-global/scripts/quests/heart_of_destruction/actions_cracklers_lever.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "ed49ca564b42f746f73a2de879af8138e266de2ba7e9216b2d28a3be48a4dd3c",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        91,
+        "addEvent(function()"
+      ],
+      [
+        100,
+        "addEvent(function()"
+      ],
+      [
+        109,
+        "addEvent(function()"
+      ],
+      [
+        118,
+        "addEvent(function()"
+      ],
+      [
+        126,
+        "areaCrackler2 = addEvent(createVortex, tempo * 1000)"
+      ],
+      [
+        177,
+        "areaCrackler1 = addEvent(clearArea, 15 * 60000)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 24421,
+      "cache_path": "blobs/cbcc87dccb54944eb241df53aeccd1f3ec5a00db",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_habitat_mushroom.lua",
+      "git_blob_sha1": "cbcc87dccb54944eb241df53aeccd1f3ec5a00db",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_habitat_mushroom.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "c4ee86ea2ffae07d233a4c7d54b1319c6f59e1a83b5a59a336bb51a4bfc242ea",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        414,
+        "addEvent(transformArea, 2 * 1000)"
+      ],
+      [
+        425,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 2647,
+      "cache_path": "blobs/ccc452c87ae17532e274fb39e60658b3f4fa8ded",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_dragon_egg.lua",
+      "git_blob_sha1": "ccc452c87ae17532e274fb39e60658b3f4fa8ded",
+      "path": "data-global/scripts/quests/forgotten_knowledge/creaturescripts_dragon_egg.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "ab38de2aab944ebb3709b70e00f84b14e76ce81d5d793ea0dd509f914c260d7c",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        42,
+        "addEvent(revertHorror, 20 * 1000)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 25924,
+      "cache_path": "blobs/ce7f6d329aee170afe08e1d0f8b116cb4e848500",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_habitat_grass.lua",
+      "git_blob_sha1": "ce7f6d329aee170afe08e1d0f8b116cb4e848500",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_habitat_grass.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "bad28dd98b83c2e03d38ae1c4bbf4ca9924f3d72ee358a5324eeb20f15083dcc",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        446,
+        "addEvent(transformArea, 2 * 1000)"
+      ],
+      [
+        457,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "file": {
+      "byte_count": 2159,
+      "cache_path": "blobs/cf315e47e07109e03a2b67fa987ba0c0d1468cb0",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/movements_ice_crack.lua",
+      "git_blob_sha1": "cf315e47e07109e03a2b67fa987ba0c0d1468cb0",
+      "path": "data-global/scripts/quests/heart_of_destruction/movements_ice_crack.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "da945f72f3fcc46dd1fbd312f5d420c54392a776541efd7b94861f1eeafeb241",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        48,
+        "addEvent(removeIceCrack, 5 * 60 * 1000, config[a].position, config[a].itemId)"
+      ],
+      [
+        51,
+        "addEvent(Game.setStorageValue, 5 * 60 * 1000, GlobalStorage.IceCrack, 0)"
+      ]
+    ]
+  },
+  {
+    "title": "Grimvale Quest",
+    "file": {
+      "byte_count": 1051,
+      "cache_path": "blobs/d2f97956d6c1100145ed08d84697e26264d3e55c",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/globalevents_grimvale_feroxa.lua",
+      "git_blob_sha1": "d2f97956d6c1100145ed08d84697e26264d3e55c",
+      "path": "data-global/scripts/quests/grimvale/globalevents_grimvale_feroxa.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "391ab1225bd3ca4a777b897779fa209b23f4221d17c427fadbf5fe25fc9a3934",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        3,
+        "local currentDay = os.date(\"%d\")"
+      ],
+      [
+        17,
+        "addEvent(removeItems, 30 * 60 * 1000)"
+      ],
+      [
+        18,
+        "addEvent(Game.loadMap, 30 * 60 * 1000, DATA_DIRECTORY .. \"/world/world_changes/full_moon/middle.otbm\")"
+      ],
+      [
+        19,
+        "addEvent(grimvaleSpectators, 30 * 60 * 1000)"
+      ]
+    ]
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "file": {
+      "byte_count": 754,
+      "cache_path": "blobs/d39d5ef0227b747aad08fc5ad9f0d3c2663eb852",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/creaturescripts_charger_spawn.lua",
+      "git_blob_sha1": "d39d5ef0227b747aad08fc5ad9f0d3c2663eb852",
+      "path": "data-global/scripts/quests/heart_of_destruction/creaturescripts_charger_spawn.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "8a95005f8839ad7936ebde3600843ff809539827b7de6115aec8116d0f1b34ff",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        23,
+        "addEvent(chargerSpawn, 6000, pos)"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 887,
+      "cache_path": "blobs/d567c4d9448f38951b4af13400af2b22f9d740b4",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_corrupted_soul.lua",
+      "git_blob_sha1": "d567c4d9448f38951b4af13400af2b22f9d740b4",
+      "path": "data-global/scripts/quests/forgotten_knowledge/creaturescripts_corrupted_soul.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "1e03253a5fdbe294e57b0a7066b7ec232dfac8191a7b62665be633d71421c0fa",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        25,
+        "addEvent(removeVortex, 30 * 1000, pos)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 21813,
+      "cache_path": "blobs/d6ebadee7fed12d0112347910896c41fc3b792d6",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_habitat_desert.lua",
+      "git_blob_sha1": "d6ebadee7fed12d0112347910896c41fc3b792d6",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_habitat_desert.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "0cd40a84b482f2630f9af80ffa2a3eeb12823bfeeea2a5abc311bc3a2b56ca8f",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        378,
+        "addEvent(transformArea, 2 * 1000)"
+      ],
+      [
+        389,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 3418,
+      "cache_path": "blobs/d90126664311da7114590a1377e90300be1edd72",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/actions_frozen_horror.lua",
+      "git_blob_sha1": "d90126664311da7114590a1377e90300be1edd72",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_frozen_horror.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "53f1005d33185fe0993cf7324ce6ae3a83618ff3de25edf75ba63fe03d000fe7",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        86,
+        "addEvent(clearForgotten, 30 * 60 * 1000, Position(32264, 31070, 14), Position(32284, 31104, 14), Position(32319, 31091, 14), Storage.Quest.U11_02.ForgottenKnowledge.HorrorKilled)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 4011,
+      "cache_path": "blobs/da8a8e442d23d8cc2b376636a7641644a30c531f",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua",
+      "git_blob_sha1": "da8a8e442d23d8cc2b376636a7641644a30c531f",
+      "path": "data-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "92273d434043db9314cdf65531b16da02c3358503cf10646fabe41dc1422270b",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        76,
+        "addEvent(activeBasin, 1 * 1000, position)"
+      ],
+      [
+        77,
+        "addEvent(revertBasin, 60 * 60 * 1000, position)"
+      ],
+      [
+        78,
+        "addEvent(revertStorages, 60 * 60 * 1000)"
+      ],
+      [
+        79,
+        "addEvent(revertItem, 60 * 60 * 1000, position, 8648, item.itemid)"
+      ]
+    ]
+  },
+  {
+    "title": "Formorgar Mines Quest",
+    "file": {
+      "byte_count": 1622,
+      "cache_path": "blobs/db81c1606c28ac3ac2c2a092a6fc78edb00848a8",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_ice_islands_quest/actions_yakchal.lua",
+      "git_blob_sha1": "db81c1606c28ac3ac2c2a092a6fc78edb00848a8",
+      "path": "data-global/scripts/quests/the_ice_islands_quest/actions_yakchal.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "f8aba95b8748ab80b600f58610fb64b1fa655bd7c6f68a7d438a0fc8585e7bc9",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        33,
+        "addEvent(summonMonster, (i - 1) * 10 * 1000, creature, pos)"
+      ]
+    ]
+  },
+  {
+    "title": "Feaster of Souls Quest",
+    "file": {
+      "byte_count": 1560,
+      "cache_path": "blobs/dd69898f3358b924abdc1d1f270be3543529b151",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/feaster_of_souls/actions_the_unwelcome_lever.lua",
+      "git_blob_sha1": "dd69898f3358b924abdc1d1f270be3543529b151",
+      "path": "data-global/scripts/quests/feaster_of_souls/actions_the_unwelcome_lever.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "4fb9f17c61a42159cd7951e9c28af58d5a1969eb01c2bad8a2c8554b309f53e7",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        17,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Formorgar Mines Quest",
+    "file": {
+      "byte_count": 1332,
+      "cache_path": "blobs/e14f4cc41bac08a5e9affeea050bd1e7bce419c2",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_ice_islands_quest/actions_paint.lua",
+      "git_blob_sha1": "e14f4cc41bac08a5e9affeea050bd1e7bce419c2",
+      "path": "data-global/scripts/quests/the_ice_islands_quest/actions_paint.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "599666e12f2960ab22b820a84a2b79c0ea40db7a0e2b39e7e3ef4cb2931272a5",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        28,
+        "addEvent(transformBack, 30 * 1000, toPosition, 7252, 7178)"
+      ]
+    ]
+  },
+  {
+    "title": "Dark Trails Quest",
+    "file": {
+      "byte_count": 648,
+      "cache_path": "blobs/e31249ee18acf2515c1fd280e0095fd7dd739106",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dark_trails/greater_minion.lua",
+      "git_blob_sha1": "e31249ee18acf2515c1fd280e0095fd7dd739106",
+      "path": "data-global/scripts/quests/dark_trails/greater_minion.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "5a639f53a7d379e225825565348e1a140fa93570277c4d6b3ab7fcc8e640d1ef",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        3,
+        "addEvent(function(cid)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 1971,
+      "cache_path": "blobs/e63df82d82dd67623b25fc67f4aa92f5be63ffff",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_ragiaz.lua",
+      "git_blob_sha1": "e63df82d82dd67623b25fc67f4aa92f5be63ffff",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_ragiaz.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "3535982e927b467b0fbd399ef1d03fea1af6ca67ae8fc839a273b6e39c1f0a29",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        48,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(33472, 32323, 13), Position(33493, 32347, 13), Position(33319, 32318, 13))"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 3523,
+      "cache_path": "blobs/ed6fad7f00e1d24be2f6cafcfdfd795965bc125b",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/actions_the_last_lore_keeper.lua",
+      "git_blob_sha1": "ed6fad7f00e1d24be2f6cafcfdfd795965bc125b",
+      "path": "data-global/scripts/quests/forgotten_knowledge/actions_the_last_lore_keeper.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "3d2af8f8f4991fe56dc028ce7e878726c43586e84d7fdd5d1b5a932b66672c51",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        82,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(31968, 32821, 14), Position(32004, 32865, 15), Position(32035, 32859, 14))"
+      ]
+    ]
+  },
+  {
+    "title": "Grave Danger Quest",
+    "file": {
+      "byte_count": 5016,
+      "cache_path": "blobs/efde14a80fb6bcbaa724ac7b1f51d72060e9dfc9",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grave_danger/creaturescript_duke_krule_tranform.lua",
+      "git_blob_sha1": "efde14a80fb6bcbaa724ac7b1f51d72060e9dfc9",
+      "path": "data-global/scripts/quests/grave_danger/creaturescript_duke_krule_tranform.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "8990fbc6d6af33c04731808be00ddc26c8ca7899ebb11d18ea73d76d95a55760",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        59,
+        "addEvent(periodicEffect, 2000, playerId, transformationType)"
+      ],
+      [
+        62,
+        "addEvent(periodicEffect, 2000, player:getId(), transformedPlayers[player:getId()].type)"
+      ],
+      [
+        64,
+        "addEvent(function()"
+      ],
+      [
+        75,
+        "addEvent(checkProximityAndApplyDamage, 1000, transformedPlayers)"
+      ],
+      [
+        117,
+        "addEvent(checkProximityAndApplyDamage, 1000, transformedPlayers)"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 2223,
+      "cache_path": "blobs/f6427a0dd64d4f1f0ae5f7647ef5af5e758d537f",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_lloyd_preparedeath.lua",
+      "git_blob_sha1": "f6427a0dd64d4f1f0ae5f7647ef5af5e758d537f",
+      "path": "data-global/scripts/quests/forgotten_knowledge/creaturescripts_lloyd_preparedeath.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "d3154b0f93b93721d510275c3c88e357c4468abd34ab0bacbc0a1af22aaab2c9",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        62,
+        "Storage.Quest.U11_02.ForgottenKnowledge.LloydEvent = addEvent(revertLloyd, 10 * 1000, prismCount)"
+      ]
+    ]
+  },
+  {
+    "title": "Grave Danger Quest",
+    "file": {
+      "byte_count": 4136,
+      "cache_path": "blobs/f68cdfc155dda23d1e15666cf1f2a6cc6aa9bdc0",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grave_danger/cobra_bastion/creaturescripts_scarlett.lua",
+      "git_blob_sha1": "f68cdfc155dda23d1e15666cf1f2a6cc6aa9bdc0",
+      "path": "data-global/scripts/quests/grave_danger/cobra_bastion/creaturescripts_scarlett.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "eb1063c24051448fbf3b89d76a97c4a8f132ec33370557d48492b111a22699ca",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        89,
+        "addEvent(eventRemoveFreeze, 4 * 1000, creature:getId(), true)"
+      ],
+      [
+        106,
+        "addEvent(changeScarlett, 50, creature:getId())"
+      ],
+      [
+        130,
+        "addEvent(eventDoDamage, 200, creature:getId(), attacker:getId(), primaryType)"
+      ]
+    ]
+  },
+  {
+    "title": "An Uneasy Alliance Quest",
+    "file": {
+      "byte_count": 714,
+      "cache_path": "blobs/f892ddadcc26402207dd7184f468cb5e0013de36",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/an_uneasy_alliance/actions_crystal_ball.lua",
+      "git_blob_sha1": "f892ddadcc26402207dd7184f468cb5e0013de36",
+      "path": "data-global/scripts/quests/an_uneasy_alliance/actions_crystal_ball.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "6371998f8ecfe0c5d0c14f8dd6eb7e493a54145ebb0a016659ab3330e5b49211",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        18,
+        "addEvent(revert, 10 * 1000, toPosition) -- 10 sec"
+      ]
+    ]
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "file": {
+      "byte_count": 1025,
+      "cache_path": "blobs/f8b17adf7083a4eba8405213d41b230b954ff1ac",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_thorn_knight_death.lua",
+      "git_blob_sha1": "f8b17adf7083a4eba8405213d41b230b954ff1ac",
+      "path": "data-global/scripts/quests/forgotten_knowledge/creaturescripts_thorn_knight_death.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "2c32df19ff50292362326b185a0cd16a8bfeaa4c2dc823e4131034c5ae36e919",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        17,
+        "addEvent(checkBlood, 1, creature:getPosition())"
+      ],
+      [
+        21,
+        "addEvent(checkBlood, 1, creature:getPosition())"
+      ]
+    ]
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "file": {
+      "byte_count": 1653,
+      "cache_path": "blobs/fa186ba1882a586e37eed4fb5c5bcb6cff303036",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/creaturescripts_eradicator_transform.lua",
+      "git_blob_sha1": "fa186ba1882a586e37eed4fb5c5bcb6cff303036",
+      "path": "data-global/scripts/quests/heart_of_destruction/creaturescripts_eradicator_transform.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "2b441f012dccb8c8dc0f399b355e370c79035256c1945f0f27f9b073b1f0dced",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        30,
+        "eradicatorEvent = addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 1759,
+      "cache_path": "blobs/fb8a88cdb0b497b7a688e9ad23becf940c44d0ff",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/movements_begin_task.lua",
+      "git_blob_sha1": "fb8a88cdb0b497b7a688e9ad23becf940c44d0ff",
+      "path": "data-global/scripts/quests/cults_of_tibia/movements_begin_task.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "cbccb9cbff09163263fa83ac69e36d7c6e06069b487b2c72cf6b94c5d0239b7c",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        16,
+        "addEvent(fallFloor, 10000, player:getId(), id)"
+      ],
+      [
+        39,
+        "addEvent(fallFloor, 10000, player:getId(), item:getId())"
+      ]
+    ]
+  },
+  {
+    "title": "Cults of Tibia Quest",
+    "file": {
+      "byte_count": 1538,
+      "cache_path": "blobs/fb9c42e95d0f80abe02ad1624efbfbc546699e18",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/cults_of_tibia/movements_geyser.lua",
+      "git_blob_sha1": "fb9c42e95d0f80abe02ad1624efbfbc546699e18",
+      "path": "data-global/scripts/quests/cults_of_tibia/movements_geyser.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "0d5a459bca16a5be98836f88a1aba76821d5145431bd795e05c3cfdc2cbab012",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        9,
+        "addEvent(bossTransformBack, 4 * 1000, creature:getId(), itemid)"
+      ],
+      [
+        41,
+        "addEvent(bossTransformBack, 4 * 1000, bossTransform:getId(), item:getId())"
+      ]
+    ]
+  },
+  {
+    "title": "Druid Outfits Quest",
+    "file": {
+      "byte_count": 798,
+      "cache_path": "blobs/fbb1dc44d051ea824e304c05a84fbd3f754bd989",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/druid_outfits_quest/globalevents_druid_outfits_blooming_griffinclaw.lua",
+      "git_blob_sha1": "fbb1dc44d051ea824e304c05a84fbd3f754bd989",
+      "path": "data-global/scripts/quests/druid_outfits_quest/globalevents_druid_outfits_blooming_griffinclaw.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "dfbb19aaa00c71ea6b8bdebbfcdc23e617464af4f061ebf3d9da729f0bcb5b11",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        13,
+        "addEvent(bloom, 60 * 60 * 1000)"
+      ],
+      [
+        29,
+        "addEvent(decayFlower, bloomHours * 60 * 60 * 1000, tile)"
+      ],
+      [
+        30,
+        "addEvent(bloom, bloomHours * 60 * 60 * 1000)"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 2052,
+      "cache_path": "blobs/fc3e34a8219cfa7ce06fc3b292f37a29151e0398",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_zamulosh.lua",
+      "git_blob_sha1": "fc3e34a8219cfa7ce06fc3b292f37a29151e0398",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_zamulosh.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "b1235772e4a7409b7c8d7c17609c6292b13b1b7597f460ef2a56c1523e56b278",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        49,
+        "addEvent(kickPlayersAfterTime, 30 * 60 * 1000, playersTable, Position(33634, 32749, 11), Position(33654, 32765, 11), Position(33319, 32318, 13))"
+      ]
+    ]
+  },
+  {
+    "title": "Feaster of Souls Quest",
+    "file": {
+      "byte_count": 3801,
+      "cache_path": "blobs/fc957813d3d2697b73d8b4bbdad206c49a903747",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua",
+      "git_blob_sha1": "fc957813d3d2697b73d8b4bbdad206c49a903747",
+      "path": "data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "a26eb420a5e19418d72ce5d1a23372d7aa249829171dd10015845ab035dc554d",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        102,
+        "addEvent(function()"
+      ]
+    ]
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "file": {
+      "byte_count": 1873,
+      "cache_path": "blobs/fe5b4e06ed9565fa74cbcfc94088b830014cd0fb",
+      "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_razzagorn.lua",
+      "git_blob_sha1": "fe5b4e06ed9565fa74cbcfc94088b830014cd0fb",
+      "path": "data-global/scripts/quests/ferumbras_ascension/actions_razzagorn.lua",
+      "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "21faaf1355ff47db52995885a6d02d2da0174234b5320d75bc422a50fad8b0de",
+      "source": "crystalserver"
+    },
+    "hits": [
+      [
+        40,
+        "addEvent(clearForgotten, 30 * 60 * 1000, Position(33408, 32454, 14), Position(33440, 32480, 14), Position(33319, 32318, 13), Storage.Quest.U10_90.FerumbrasAscension.RazzagornTimer)"
+      ]
+    ]
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "base": "28e4313e1",
+  "rooms": 30,
+  "all_room_facts_unchanged": true,
+  "only_changed_keys": [
+    "inputs_sha256"
+  ]
+}

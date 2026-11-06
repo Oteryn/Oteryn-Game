@@ -1095,6 +1095,78 @@ fn braindeath_and_giant_smithhammer_all_claims_once_replay_and_refusal() -> Test
 }
 
 #[test]
+fn elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let claims = [
+        "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+        "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+        "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+        "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
+    ];
+    let selected: Vec<_> = cases_including(|claim| claims.contains(&claim))?
+        .into_iter()
+        .filter(|case| claims.contains(&case.claim.as_str()))
+        .collect();
+    assert_eq!(selected.len(), 4);
+    for (unique, position, appearance, root, contents) in [
+        (
+            6253,
+            (32591, 31647, -3),
+            2472,
+            "oteryn:item.tibia.i3425",
+            vec![],
+        ),
+        (
+            6254,
+            (32590, 31647, -3),
+            2472,
+            "oteryn:item.tibia.i3282",
+            vec![],
+        ),
+        (
+            6255,
+            (32588, 31645, -3),
+            2434,
+            "oteryn:item.tibia.i2853",
+            vec![
+                ("oteryn:item.tibia.i237".into(), 1, 0),
+                ("oteryn:item.tibia.i3147".into(), 1, 0),
+                ("oteryn:item.tibia.i3059".into(), 1, 0),
+            ],
+        ),
+        (
+            6256,
+            (32588, 31644, -3),
+            2434,
+            "oteryn:item.tibia.i2853",
+            vec![
+                ("oteryn:item.tibia.i3028".into(), 2, 0),
+                ("oteryn:item.tibia.i3031".into(), 100, 0),
+            ],
+        ),
+    ] {
+        let chest = selected
+            .iter()
+            .find(|case| case.unique == unique)
+            .ok_or("Elvenbane source claim")?;
+        assert_eq!(chest.position, position);
+        assert_eq!(chest.appearance, appearance);
+        assert_eq!(chest.root, root);
+        assert_eq!(chest.quantity, 1);
+        assert_eq!(chest.contents, contents);
+    }
+    execute(selected)?;
+    println!(
+        "POSTGRES_CASE_COMPLETED elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+#[test]
 fn quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal() -> TestResult {
     let claims: BTreeSet<_> = [
         "desert2",
@@ -1296,13 +1368,17 @@ pub(super) fn catalogue_source_world(
                     .find(|id| id["server"] == "crystalserver")
                     .ok_or("native source")?;
                 let position = &binding["project_position"];
-                // The accepted native map retains these four objects without
+                // The accepted native map retains these exact objects without
                 // legacy script attributes. Exercise that actual source shape.
                 let native_without_uid = [
                     "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare",
                     "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
                     "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
                     "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon",
+                    "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+                    "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+                    "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+                    "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
                 ]
                 .contains(&chest.claim.as_str());
                 placements.push((
@@ -1338,7 +1414,8 @@ pub(super) fn catalogue_source_world(
     let mut tiles = BTreeMap::<(i8, u16, u16), sector::Tile>::new();
     let movable_native_chest = chest
         .claim
-        .starts_with("oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.");
+        .starts_with("oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.")
+        || matches!(chest.unique, 6253 | 6254);
     let mut item_definitions = BTreeMap::new();
     for (x, y, floor, unique, appearance) in placements {
         let palette = if let Some(index) = appearances.get(&appearance) {

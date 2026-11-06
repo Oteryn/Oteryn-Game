@@ -1,8 +1,8 @@
-//! Four source chests whose exact native objects have no legacy script UID.
+//! Source chests whose exact native objects have no legacy script UID.
 //! Reward shapes, item admission and once identities remain in the existing catalogue.
 use super::*;
 
-/// Bind only the standalone Beregar coffin and the three smithhammer chests.
+/// Bind only the source-backed Beregar, Elvenbane and smithhammer objects.
 /// `matches` reads immutable server facts for the actual top-level palette entry.
 pub fn bind_standalone_chests(
     base: &impl RewardClaimBase,
@@ -10,14 +10,6 @@ pub fn bind_standalone_chests(
     matches: impl Fn(u64, u32, u16) -> bool,
 ) -> Result<Vec<ServedClaim>, ClaimsError> {
     let sources = [
-        (
-            "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare",
-            6283,
-            32546,
-            31522,
-            -11,
-            1983,
-        ),
         (
             "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
             6079,
@@ -41,6 +33,46 @@ pub fn bind_standalone_chests(
             32253,
             -8,
             2472,
+        ),
+        (
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+            6255,
+            32588,
+            31645,
+            -3,
+            2434,
+        ),
+        (
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+            6256,
+            32588,
+            31644,
+            -3,
+            2434,
+        ),
+        (
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+            6253,
+            32591,
+            31647,
+            -3,
+            2472,
+        ),
+        (
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
+            6254,
+            32590,
+            31647,
+            -3,
+            2472,
+        ),
+        (
+            "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare",
+            6283,
+            32546,
+            31522,
+            -11,
+            1983,
         ),
     ];
     let mut served = Vec::new();
@@ -158,6 +190,44 @@ mod tests {
         fn palette_id(&self, ordinal: u8) -> Option<u32> {
             (ordinal < 2).then_some(u32::from(ordinal))
         }
+    }
+
+    struct Elvenbane;
+    impl RewardClaimBase for Elvenbane {
+        type Tile<'a> = Tile;
+        fn tile(&self, x: u16, y: u16, floor: i8) -> Option<Tile> {
+            ([
+                (32588, 31644, -3),
+                (32588, 31645, -3),
+                (32590, 31647, -3),
+                (32591, 31647, -3),
+            ]
+            .contains(&(x, y, floor)))
+            .then_some(Tile)
+        }
+    }
+    #[test]
+    fn elvenbane_native_drawers_keep_both_filled_bags_and_all_children() -> Result<(), ClaimsError>
+    {
+        let drawer = |_, id, appearance| id == 1 && appearance == 2434;
+        let claims = bind_standalone_chests(&Elvenbane, &|_| true, drawer)?;
+        assert_eq!(claims.len(), 2);
+        for claim in &claims {
+            assert_eq!(
+                claim.placements[0].placement.items[0].item.key().as_str(),
+                "oteryn:item.tibia.i2853"
+            );
+        }
+        assert_eq!(claims[0].placements[0].contents.len(), 3);
+        assert_eq!(claims[1].placements[0].contents.len(), 2);
+        let held = bind_standalone_chests(
+            &Elvenbane,
+            &|item| item.key().as_str() != "oteryn:item.tibia.i3147",
+            drawer,
+        )?;
+        assert_eq!(held.len(), 1);
+        assert!(held[0].key.as_str().ends_with(".bp2"));
+        Ok(())
     }
 
     #[test]

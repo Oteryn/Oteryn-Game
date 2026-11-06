@@ -1,0 +1,8 @@
+crates/gameplay/content/src/content/world_reward_claims.rs:12:pub use hydra_egg::bind_hydra_egg;
+crates/gameplay/content/src/content/world_reward_claims/hydra_egg.rs:11:pub fn bind_hydra_egg(
+crates/gameplay/content/src/content/world_reward_claims/hydra_egg.rs:93:        let bound = bind_hydra_egg(&Base, |key, appearance| key == nest && appearance == 5676)
+crates/gameplay/content/src/content/world_reward_claims/hydra_egg.rs:100:        assert!(bind_hydra_egg(&Base, |_, _| false).is_none());
+crates/gameplay/content/src/content/world_reward_claims/hydra_egg.rs:102:            bind_hydra_egg(&Base, |_, _| true).is_none(),
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:8:use crate::content::world_reward_claims::{bind_embedded_reward_claims, bind_hydra_egg};
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:64:        if let Some(claim) = bind_hydra_egg(map.overlay.base().as_ref(), |key, appearance| {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:266:        if let Some(claim) = crate::content::world_reward_claims::bind_hydra_egg(

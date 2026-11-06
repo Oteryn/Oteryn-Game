@@ -1,0 +1,9 @@
+{
+  "flags.container": true,
+  "flags.usable": true,
+  "flags.avoid": true,
+  "flags.rotate": true,
+  "flags.height": true,
+  "height.elevation": 12,
+  "flags.wrap": true
+}

@@ -1,0 +1,28 @@
+[
+  {
+    "byte_count": 18731,
+    "cache_path": "blobs/fedb84e56e759418b2c60837edccdaf74e1d89cb",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua",
+    "git_blob_sha1": "fedb84e56e759418b2c60837edccdaf74e1d89cb",
+    "path": "data-global/npc/amber.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/amber.lua"
+  },
+  {
+    "byte_count": 1000,
+    "cache_path": "blobs/61786e84ec35fc2b857d8894de783c1cec02d16e",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+    "git_blob_sha1": "61786e84ec35fc2b857d8894de783c1cec02d16e",
+    "path": "data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "f24ab1e72f54048662b0cd436129ff69657f80fbbb359154f6502b194f4893f9",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/actions_life_ring_lever.lua"
+  }
+]

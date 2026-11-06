@@ -1,0 +1,24 @@
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/raid_tokens.rs:8:use oteryn_gameplay_quests::quest::raid_tokens as source;
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/raid_tokens.rs:284:        .commit_raid_token_exchange(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:626:    if let Some(outcome) = raid_tokens::resume(admission, command, &intent).await {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:718:    if let Some(step) = raid_tokens::prepare(admission, actor, command, &intent, &runtime) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:721:        return raid_tokens::apply(admission, actor, command, intent, step).await;
+crates/gameplay/durability/src/durability/npc_trade.rs:682:            raid_tokens::validate(&request, token)?;
+crates/gameplay/durability/src/durability/npc_trade.rs:701:            binding = raid_tokens::bind(binding, token);
+crates/gameplay/durability/src/durability/npc_trade.rs:812:                    let plan = if let Some(token) = &exchange { raid_tokens::plan(&request, token, capacity, &entries).map(|plan| (plan, 0, 1)) } else if hireling_sell {sell_hireling::plan(&request,priced,capacity,&entries)} else {match (priced, request.cause.side) {
+crates/gameplay/durability/src/durability/npc_trade.rs:828:                        if let Err(error) = raid_tokens::weight(&mut tx, &fence, &request, token, *weights).await { return Ok(Err(error)); }
+crates/gameplay/durability/src/durability/npc_trade.rs:858:                    if let Some(token) = &exchange { raid_tokens::audit(&mut message, token); }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/raid_tokens.rs:139:    let offers = oteryn_gameplay_quests::quest::raid_tokens::offers()?;
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:441:    request.cause.npc_key = oteryn_gameplay_quests::quest::raid_tokens::NPC.into();
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:443:    let output = oteryn_gameplay_quests::quest::raid_tokens::offers().unwrap()[0].0;
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:449:    raid_tokens::validate(&request, &token).unwrap();
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:453:        raid_tokens::plan(&request, &token, 20, &[one, nineteen]),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:457:    let plan = raid_tokens::plan(&request, &token, 1, &[twenty]).unwrap();
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:468:        raid_tokens::plan(&request, &token, 1, &[hundred]),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:474:        raid_tokens::plan(&request, &token, 20, &[modified]),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:479:        raid_tokens::validate(&request, &token),
+crates/gameplay/durability/src/durability/npc_trade/grizzly.rs:17:            return Ok(request.cause.npc_key == oteryn_gameplay_quests::quest::raid_tokens::NPC);
+crates/gameplay/durability/src/durability/npc_trade_audit.rs:344:    if side == SIDE_EXCHANGE { return raid_tokens::check(value); }
+crates/gameplay/durability/src/durability/npc_trade/raid_tokens.rs:4:use oteryn_gameplay_quests::quest::raid_tokens as source;
+crates/gameplay/durability/src/durability/npc_trade/raid_tokens.rs:159:    pub async fn commit_raid_token_exchange(
+crates/gameplay/durability/src/durability/npc_trade_audit/raid_tokens.rs:3:use oteryn_gameplay_quests::quest::raid_tokens as source;

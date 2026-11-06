@@ -22,6 +22,11 @@
 //!   state, each burned whole in display order, for `unit_price` per unit, under the coin MINT and
 //!   free-entry rules of SELL. The stored and audited quantity is the units sold.
 //!
+//! - EXCHANGE (CRAFT1 C8): Jorge's native dialogue takes20 silver raid tokens from
+//!   one plain direct main-backpack stack and gives one fresh source replica. It
+//!   uses this same cause, writer and audit with no gold or CharacterRevision.
+//!   The dialogue adapter does not expose a new trade-window side or capability.
+//!
 //! The cause record is keyed by (occurrence, Character) forever: a replay with the same binding
 //! returns the first outcome without reacquiring session authority, a changed binding conflicts.
 //! Any refusal writes nothing. The caller supplies the offer from the server catalogue at the
@@ -824,8 +829,9 @@ impl DurabilityRoot {
                     };
                     // A sell-all records and audits the units it sold as its quantity.
                     let quantity = if sell_all { units } else { request.quantity };
-                    if let Some(token) = &exchange {
-                        if let Err(error) = raid_tokens::weight(&mut tx, &fence, &request, token, *weights).await { return Ok(Err(error)); }
+                    if let Some(token) = &exchange
+                        && let Err(error) = raid_tokens::weight(&mut tx, &fence, &request, token, *weights).await {
+                        return Ok(Err(error));
                     }
 
                     if plan.bank_debit_gold_units > 0 {

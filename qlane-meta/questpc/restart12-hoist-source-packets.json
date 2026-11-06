@@ -1,0 +1,15 @@
+[
+  {
+    "byte_count": 1020,
+    "cache_path": "blobs/5fd560ef6dbdf27bcb58f0f14447750fe90dc062",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua",
+    "git_blob_sha1": "5fd560ef6dbdf27bcb58f0f14447750fe90dc062",
+    "path": "data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "f8dbf2dc33f7165f45e8f0c0a834ed5ee9224941db690b0197051ea06552a30c",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/hoist-movements_hoist.lua"
+  }
+]

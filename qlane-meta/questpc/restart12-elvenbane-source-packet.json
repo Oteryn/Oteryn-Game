@@ -1,0 +1,19 @@
+{
+  "endpoint": "https://tibia.fandom.com/api.php",
+  "pages": [
+    {
+      "title": "Elvenbane Quest",
+      "file": ".questpc/phase-a-source/Elvenbane Quest.wiki",
+      "revision": 683844,
+      "timestamp": "2016-11-28T14:12:32Z",
+      "sha256": "688eef4296b753a49d8fad706b2fc48c100d9e036e9c07217cfeea83db110eee"
+    },
+    {
+      "title": "Elvenbane Quest/Spoiler",
+      "file": ".questpc/phase-a-source/Elvenbane Quest_Spoiler.wiki",
+      "revision": 265159,
+      "timestamp": "2009-10-18T07:30:38Z",
+      "sha256": "c8a05aa4db16823a8a8b83fd82f295d7deaad46101036b6232d8597a68f16d3c"
+    }
+  ]
+}

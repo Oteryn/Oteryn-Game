@@ -1,0 +1,19 @@
+crates/gameplay/quests/src/quest/npc_rules/marlin_trophy.rs:6:    pub fn plan_marlin_items(
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:2:use super::super::quest_state::npc_program::{NpcProgramCommit, NpcProgramRequest};
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:18:    ) -> Result<NpcProgramCommit, CharacterProgressionError> {
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:38:impl SequencedOutcome for NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:20:pub struct NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:141:        source.plan_marlin_items(&input)
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:156:    ) -> Result<Option<NpcProgramCommit>> {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:183:    ) -> Result<NpcProgramCommit> {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:249:                Some(fathers_burden::inventory_for(&mut tx, fence, &[marlin_trophy::FISH.into()]).await?)
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:255:                let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true };
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:331:            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),reply:plan.reply,next_topic:plan.next_topic,read_only:false}))
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:336:fn refused(refusal: QuestRefusal) -> NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:337:    NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:349:) -> StoredResult<Result<Option<NpcProgramCommit>>> {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:358:    Ok(Ok(Some(NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs:49:    inventory_for(tx, fence, &keys).await
+crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs:52:pub(super) async fn inventory_for(
+crates/gameplay/durability/src/durability/quest_state/npc_program/marlin_trophy.rs:63:    if !fathers_burden::burn(
+crates/gameplay/durability/src/durability/quest_state/npc_program/marlin_trophy.rs:75:    match crate::durability::reward_claim_mint::marlin_trophy::claim(

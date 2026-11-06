@@ -1,0 +1,5 @@
+{
+  "command": "python3 -m unittest discover -s tools/content-migration -p test_quest_reward_item_semantics.py",
+  "exit": 0,
+  "duration_seconds": 0.237
+}

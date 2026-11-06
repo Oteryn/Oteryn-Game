@@ -57,9 +57,15 @@ pub(super) async fn exercise(
     )
     .await?;
     super::classic_quests::talk(owner, admitted, jorge, 9001, "abacus").await?;
-    assert_eq!(carried_tokens(h).await?, 20, "a souvenir needs an open source offer");
-    let before_offer:i64=sqlx::query_scalar("SELECT count(*) FROM game_npc_trades WHERE side=3").fetch_one(&h.pool).await?;
-    assert_eq!(before_offer,0);
+    assert_eq!(
+        carried_tokens(h).await?,
+        20,
+        "a souvenir needs an open source offer"
+    );
+    let before_offer: i64 = sqlx::query_scalar("SELECT count(*) FROM game_npc_trades WHERE side=3")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(before_offer, 0);
     let before_experience: i64 = sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     super::classic_quests::talk(owner, admitted, jorge, 10001, "souvenir").await?;

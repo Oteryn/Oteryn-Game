@@ -1,0 +1,19 @@
+crates/gameplay/quests/src/quest/npc_rules.rs:473:    pub fn plan_father_items(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:304:        .commit_npc_program(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:157:        slot.commit_npc_program(
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:2:use super::super::quest_state::npc_program::{NpcProgramCommit, NpcProgramRequest};
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:9:    pub async fn commit_npc_program<C: super::super::item_loop_move::ItemLoopContent>(
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:18:    ) -> Result<NpcProgramCommit, CharacterProgressionError> {
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:24:                root.commit_character_npc_program(
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:38:impl SequencedOutcome for NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:19:pub struct NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:128:        source.plan_father_items(&input)
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:141:    ) -> Result<Option<NpcProgramCommit>> {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:160:    pub async fn commit_character_npc_program<C: super::super::item_loop_move::ItemLoopContent>(
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:168:    ) -> Result<NpcProgramCommit> {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:236:                let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true };
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:307:            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),reply:plan.reply,next_topic:plan.next_topic,read_only:false}))
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:312:fn refused(refusal: QuestRefusal) -> NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:313:    NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:325:) -> StoredResult<Result<Option<NpcProgramCommit>>> {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:334:    Ok(Ok(Some(NpcProgramCommit {

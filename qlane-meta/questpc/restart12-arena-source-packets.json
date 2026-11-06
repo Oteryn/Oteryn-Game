@@ -1,0 +1,67 @@
+[
+  {
+    "byte_count": 1647,
+    "cache_path": "blobs/16eb4a2ce1925155f538f0d19ac882acb9b7fb15",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua",
+    "git_blob_sha1": "16eb4a2ce1925155f538f0d19ac882acb9b7fb15",
+    "path": "data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "06d43f34a3e926a5222193f789b7b92a2d2ca9da9a5cb08fd95a200126eccbf0",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/svargrond_arena-creaturescripts_arena_kill.lua"
+  },
+  {
+    "byte_count": 394,
+    "cache_path": "blobs/f55c21aad884f0c00cc6287e9377b0e3202814ae",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/svargrond_arena/creaturescripts_player_death.lua",
+    "git_blob_sha1": "f55c21aad884f0c00cc6287e9377b0e3202814ae",
+    "path": "data-global/scripts/quests/svargrond_arena/creaturescripts_player_death.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "74a8490b52d739872ffd5ebc6712e30b5bbd68d425169cb6cda73758a97dac97",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/svargrond_arena-creaturescripts_player_death.lua"
+  },
+  {
+    "byte_count": 1390,
+    "cache_path": "blobs/cd2a0025aa36608051fef8c50d75269c4523ca2b",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/svargrond_arena/movements_arena_enter.lua",
+    "git_blob_sha1": "cd2a0025aa36608051fef8c50d75269c4523ca2b",
+    "path": "data-global/scripts/quests/svargrond_arena/movements_arena_enter.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "72465b5bbce5f9428c07317df8bd35ab07372cae044f0b4a4fc7e06dbbc61736",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/svargrond_arena-movements_arena_enter.lua"
+  },
+  {
+    "byte_count": 2873,
+    "cache_path": "blobs/7cd7da2ae134c544502b759431b1c698fdcec895",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua",
+    "git_blob_sha1": "7cd7da2ae134c544502b759431b1c698fdcec895",
+    "path": "data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "a436accd84be23bf4f65e3c64a9faad3cc3d89309b869e906f7dd79655d0c9f1",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/svargrond_arena-movements_arena_pit.lua"
+  },
+  {
+    "byte_count": 821,
+    "cache_path": "blobs/ba8a6888accc3f693bb8e0bd6ff9fd4e2d127ba6",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/svargrond_arena/movements_arena_trophy.lua",
+    "git_blob_sha1": "ba8a6888accc3f693bb8e0bd6ff9fd4e2d127ba6",
+    "path": "data-global/scripts/quests/svargrond_arena/movements_arena_trophy.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "cefe89169b60d6a26c73749ca8e44d0fe5b22fb2e9fe8f5bed0d502b866763fd",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/svargrond_arena-movements_arena_trophy.lua"
+  }
+]

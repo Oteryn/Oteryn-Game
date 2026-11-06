@@ -1,0 +1,33 @@
+{
+  "batchcomplete": "",
+  "query": {
+    "pages": {
+      "18593": {
+        "pageid": 18593,
+        "ns": 6,
+        "title": "File:Mastermindquest1.jpg",
+        "imagerepository": "local",
+        "imageinfo": [
+          {
+            "url": "https://static.wikia.nocookie.net/tibia/images/7/7b/Mastermindquest1.jpg/revision/latest?cb=20070827142306&path-prefix=en",
+            "descriptionurl": "https://tibia.fandom.com/wiki/File:Mastermindquest1.jpg",
+            "descriptionshorturl": "https://tibia.fandom.com/index.php?curid=18593"
+          }
+        ]
+      },
+      "18594": {
+        "pageid": 18594,
+        "ns": 6,
+        "title": "File:Mastermindquest2.jpg",
+        "imagerepository": "local",
+        "imageinfo": [
+          {
+            "url": "https://static.wikia.nocookie.net/tibia/images/e/e8/Mastermindquest2.jpg/revision/latest?cb=20070827142614&path-prefix=en",
+            "descriptionurl": "https://tibia.fandom.com/wiki/File:Mastermindquest2.jpg",
+            "descriptionshorturl": "https://tibia.fandom.com/index.php?curid=18594"
+          }
+        ]
+      }
+    }
+  }
+}

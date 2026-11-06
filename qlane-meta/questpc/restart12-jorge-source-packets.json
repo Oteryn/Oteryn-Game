@@ -1,0 +1,15 @@
+[
+  {
+    "byte_count": 5249,
+    "cache_path": "blobs/94653f723746a987c1ca8e57715094abd7371fe5",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jorge.lua",
+    "git_blob_sha1": "94653f723746a987c1ca8e57715094abd7371fe5",
+    "path": "data-global/npc/jorge.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+    "source": "crystalserver",
+    "local_path": ".questpc/source-engine-gaps/jorge.lua"
+  }
+]

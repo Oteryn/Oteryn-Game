@@ -623,10 +623,10 @@ pub(super) async fn npc_bank_talk(
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef};
-    if let Some(outcome) = raid_tokens::resume(admission, command, &intent).await {
+    if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {
         return outcome;
     }
-    if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {
+    if let Some(outcome) = raid_tokens::resume(admission, command, &intent).await {
         return outcome;
     }
     let session = command.game_session_id;

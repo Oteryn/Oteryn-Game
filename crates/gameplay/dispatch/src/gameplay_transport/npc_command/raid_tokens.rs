@@ -17,7 +17,7 @@ pub(super) struct Conversation {
 }
 pub(super) enum Step {
     Reply(String),
-    Exchange(Conversation, usize),
+    Exchange(Box<Conversation>, usize),
 }
 
 fn selected(text: &str) -> Option<usize> {
@@ -90,7 +90,7 @@ pub(super) fn prepare(
         state.raid_tokens = None;
         return None;
     }
-    selected(&intent.text).map(|index| Step::Exchange(previous.clone(), index))
+    selected(&intent.text).map(|index| Step::Exchange(Box::new(previous.clone()), index))
 }
 
 pub(super) async fn resume(
@@ -140,7 +140,7 @@ pub(super) async fn apply(
 ) -> NpcTalkOutcome {
     let (conversation, index) = match step {
         Step::Reply(text) => return reply(&intent, false, &text),
-        Step::Exchange(c, i) => (c, i),
+        Step::Exchange(c, i) => (*c, i),
     };
     let rejected = || NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
     let unknown = || NpcTalkOutcome {

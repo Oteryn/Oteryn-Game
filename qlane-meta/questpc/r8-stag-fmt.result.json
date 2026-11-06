@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check",
+  "exit": 1,
+  "duration_seconds": 150.965
+}

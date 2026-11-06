@@ -1,0 +1,12 @@
+{
+  "byte_count": 92703,
+  "cache_path": "blobs/ea2ef1963395a479ed927481bc3a14065b125a3f",
+  "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua",
+  "git_blob_sha1": "ea2ef1963395a479ed927481bc3a14065b125a3f",
+  "path": "data-global/startup/tables/chest.lua",
+  "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+  "repository": "zimbadev/crystalserver",
+  "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+  "sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+  "source": "crystalserver"
+}
