@@ -18,6 +18,7 @@ mod event_fixture;
 
 #[test]
 fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
+    let started = std::time::Instant::now();
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -31,6 +32,7 @@ fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
         })?
         .join()
         .map_err(|_| "world event e2e panicked")??;
+    eprintln!("T94_DISPATCH_PG_EXECUTED reset/dispatch/restart elapsed_ms={}",started.elapsed().as_millis());
     Ok(())
 }
 
@@ -56,7 +58,21 @@ fn scenario(epochs: u64) -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
+        h.root.t94_initialize(&authority,"oteryn:game:primary",&mut T94Bootstrap).await?;
+        h.root.t94_start_world(&authority,world,&Default::default(),"oteryn:game:primary").await?;
         event_fixture::reset_epochs(&h, &authority, room, world, channel, epochs).await?;
+        for _ in 0..16 {
+            h.root.t94_start_world(&authority,world,&Default::default(),"oteryn:game:primary").await?;
+            h.root.t94_produce(&authority).await?;
+        }
+        let source_count:i64=sqlx::query_scalar("SELECT count(*) FROM game_t94_native_receipts WHERE kind IN('WORLD_CHANGE','DAILY_WORLD_GATE')").fetch_one(&h.pool).await?;
+        assert_eq!(source_count,2*i64::try_from(epochs)?);
+        let publication=h.root.t94_next(&authority,"world_event_outcome").await?.ok_or("T94 native reset publication")?;
+        let snapshot=crate::native_admission_source::world_event_outcomes::Snapshot::decode(&publication.wire)?;
+        let crate::native_admission_source::world_event_outcomes::Snapshot::Event(snapshot)=snapshot else{return Err("T94 family".into())};
+        assert!(matches!(snapshot.event[0].state.as_str(),"VOID"|"CLOSED"));
+        assert!(snapshot.event[0].outcome.is_empty());
+        assert!(!publication.audit.is_empty());
         event_fixture::admit(&h, epochs + 1).await?;
         let mut deps = Dependencies::new()?;
         deps.room = room.clone();
@@ -370,4 +386,10 @@ async fn exchange(
         cursor += 4 + length;
     }
     Ok(results)
+}
+
+struct T94Bootstrap;
+impl crate::native_admission_source::account_characters::EpochFence for T94Bootstrap{
+ fn read(&mut self)->Result<u64,crate::native_admission_source::account_characters::FenceUnusable>{Ok(0)}
+ fn persist(&mut self,_:u64)->Result<(),crate::native_admission_source::account_characters::FenceUnusable>{Ok(())}
 }

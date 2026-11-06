@@ -139,6 +139,38 @@ pub struct PlatformConfig {
     /// (the default): the public-projection publisher does not run. Endpoint,
     /// peer name and trust roots are those above.
     pub public_projections: Option<PublicProjectionsConfig>,
+    /// Owner 2026-11-06: T94 runs by default; explicit enabled=false disables it.
+    #[serde(default = "default_t94_section")]
+    pub world_event_outcomes: Option<WorldEventOutcomesConfig>,
+}
+
+/// Purpose-separated T94 client. Paths identify deployment credentials, never embedded keys.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct WorldEventOutcomesConfig {
+    pub enabled: bool,
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+    pub source_authority: String,
+    pub epoch_fence_file: PathBuf,
+    pub defaults: crate::native_admission_source::world_event_outcomes::ProducerDefaults,
+    pub resync_request_id: Option<String>,
+}
+impl Default for WorldEventOutcomesConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            client_certificate_file: "/etc/oteryn/credentials/t94-client.crt".into(),
+            client_key_file: "/etc/oteryn/credentials/t94-client.key".into(),
+            source_authority: "oteryn:game:primary".into(),
+            epoch_fence_file: "/var/lib/oteryn-fences/t94.epoch".into(),
+            defaults: Default::default(),
+            resync_request_id: None,
+        }
+    }
+}
+fn default_t94_section() -> Option<WorldEventOutcomesConfig> {
+    Some(WorldEventOutcomesConfig::default())
 }
 
 /// The node host's own runtime-status identity (never the evidence one).
@@ -648,6 +680,33 @@ impl NodeConfig {
         if let Some(public) = &platform.public_projections {
             check_public_projections(platform, public, &self.character, readiness)?;
         }
+        if let Some(league) = &platform.world_event_outcomes {
+            check_public_projections(
+                platform,
+                &PublicProjectionsConfig {
+                    enabled: league.enabled,
+                    client_certificate_file: league.client_certificate_file.clone(),
+                    client_key_file: league.client_key_file.clone(),
+                    source_authority: league.source_authority.clone(),
+                    epoch_fence_file: league.epoch_fence_file.clone(),
+                },
+                &self.character,
+                readiness,
+            )
+            .map_err(|_| ConfigError {
+                key: "platform.world_event_outcomes",
+            })?;
+            if league.source_authority
+                == crate::native_admission_source::world_event_outcomes::publisher::PURPOSE
+                || platform.public_projections.as_ref().is_some_and(|public| {
+                    public.client_certificate_file == league.client_certificate_file
+                        || public.client_key_file == league.client_key_file
+                        || public.epoch_fence_file == league.epoch_fence_file
+                })
+            {
+                return reject("platform.world_event_outcomes");
+            }
+        }
         if platform.descriptor_revision == 0 {
             return reject("platform.descriptor_revision");
         }
@@ -968,6 +1027,33 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
         ] {
             assert!(NodeConfig::parse(invalid.as_bytes()).is_err());
         }
+    }
+
+    #[test]
+    fn t94_node_default_on_explicit_disable_and_dedicated_identity() {
+        let c = NodeConfig::parse(NODE.as_bytes()).expect("valid node");
+        let t94 = c.platform.world_event_outcomes.expect("default T94");
+        assert!(t94.enabled);
+        assert_eq!(t94.source_authority, "oteryn:game:primary");
+        assert_eq!(t94.defaults.season_seconds, 86400);
+        let disabled = format!("{NODE}\n[platform.world_event_outcomes]\nenabled=false\n");
+        assert!(
+            !NodeConfig::parse(disabled.as_bytes())
+                .expect("disabled")
+                .platform
+                .world_event_outcomes
+                .expect("T94")
+                .enabled
+        );
+        let shared = format!(
+            "{NODE}\n[platform.world_event_outcomes]\nclient_certificate_file=\"/etc/oteryn/node/platform.crt\"\n"
+        );
+        let c = NodeConfig::parse(NODE.as_bytes()).expect("node");
+        let shared = shared.replace(
+            "/etc/oteryn/node/platform.crt",
+            c.platform.client_certificate_file.to_str().expect("path"),
+        );
+        assert!(NodeConfig::parse(shared.as_bytes()).is_err());
     }
 
     #[test]

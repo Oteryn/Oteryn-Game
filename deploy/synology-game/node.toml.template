@@ -72,6 +72,13 @@ epoch_fence_file = "<BASE>/projection/epoch-fence"
 # client_certificate_file = "<BASE>/node/secrets/character-commands.crt"
 # client_key_file = "<BASE>/node/secrets/character-commands.key"
 # source_authority = "oteryn:character-authority:primary"
+# T94 owner 2026-11-06: enabled by default, with a dedicated mTLS identity.
+[platform.world_event_outcomes]
+enabled = true
+source_authority = "oteryn:game:primary"
+client_certificate_file = "<BASE>/node/secrets/t94-client.crt"
+client_key_file = "<BASE>/node/secrets/t94-client.key"
+epoch_fence_file = "<BASE>/t94/epoch-fence"
 [launch]
 authorization_file = "<BASE>/state/launch-initial.json"
 s2_authorization_file = "<BASE>/state/s2-fresh-store.json"

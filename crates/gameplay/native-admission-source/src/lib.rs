@@ -9,6 +9,7 @@ pub mod restore_notice;
 pub mod runtime_status;
 pub mod scope_assignment;
 pub mod store;
+pub mod world_event_outcomes;
 pub const HANDSHAKE_INBOUND_BYTES: usize = 65_536;
 pub const PIPELINE_SLOTS: usize = 2;
 pub const QUEUED_REQUESTS: usize = 8;

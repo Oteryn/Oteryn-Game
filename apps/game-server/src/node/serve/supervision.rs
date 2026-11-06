@@ -125,15 +125,28 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                 &loops_stop
             ),
         ),
-        public_projections_loop(
-            root,
-            authority,
-            material
-                .public_projections
-                .lock()
-                .ok()
-                .and_then(|mut public| public.take()),
-            &loops_stop
+        both(
+            t94::run(
+                root,
+                authority,
+                material
+                    .world_event_outcomes
+                    .lock()
+                    .ok()
+                    .and_then(|mut value| value.take()),
+                material.world,
+                &loops_stop
+            ),
+            public_projections_loop(
+                root,
+                authority,
+                material
+                    .public_projections
+                    .lock()
+                    .ok()
+                    .and_then(|mut public| public.take()),
+                &loops_stop
+            )
         ),
     ));
     let mut projection_done = false;

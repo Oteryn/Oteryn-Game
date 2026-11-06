@@ -42,7 +42,7 @@ fn global_case(case: GlobalCase) -> TestResult {
         let run = || -> TestResult {
             runtime()?.block_on(async {
                 let h = Harness::create(admin, case.name(), false).await?;
-                let result = global_exercise(&h, case).await;
+                let result = global_exercise(&h, case, false).await;
                 let cleanup = h.cleanup().await;
                 result?;
                 cleanup
@@ -135,7 +135,7 @@ fn global_definition(case: GlobalCase) -> TestResult<RaidDefinition> {
     Ok(definition)
 }
 
-async fn global_seed(h: &Harness, definition: &RaidDefinition, firing: [u8; 16], key: &str) -> TestResult {
+async fn global_seed(h: &Harness, definition: &RaidDefinition, firing: [u8; 16], key: &str, time_base:i64) -> TestResult {
     let deadline = i64::from(definition.waves.iter().map(|wave| wave.delay_ms).max().ok_or("missing wave")?)
         + i64::from(definition.despawn_after_ms.unwrap_or(0));
     sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01') ON CONFLICT DO NOTHING")
@@ -144,8 +144,8 @@ async fn global_seed(h: &Harness, definition: &RaidDefinition, firing: [u8; 16],
         .bind(id(WORLD).as_slice()).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_raid_schedules VALUES(encode($1,'hex')::uuid,$2,2,1,1,2,60000,0,NULL,false)")
         .bind(id(WORLD).as_slice()).bind(key).execute(&h.pool).await?;
-    sqlx::query("INSERT INTO game_world_raid_firings VALUES(encode($1,'hex')::uuid,$2,1,encode($3,'hex')::uuid,1,0,$4,$5,1)")
-        .bind(id(WORLD).as_slice()).bind(key).bind(firing.as_slice()).bind(deadline).bind([7_u8;32].as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_raid_firings VALUES(encode($1,'hex')::uuid,$2,1,encode($3,'hex')::uuid,1,$6,$4,$5,1)")
+        .bind(id(WORLD).as_slice()).bind(key).bind(firing.as_slice()).bind(deadline+time_base).bind([7_u8;32].as_slice()).bind(time_base).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_raid_targets VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1)")
         .bind(firing.as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_raid_scheduler_clocks VALUES(encode($1,'hex')::uuid,1,0) ON CONFLICT DO NOTHING")
@@ -190,13 +190,19 @@ async fn assert_live_effect_guard(h: &Harness, step: &CommittedRaidStep, pending
     Ok(())
 }
 
-async fn global_exercise(h: &Harness, case: GlobalCase) -> TestResult {
+async fn global_exercise(h: &Harness, case: GlobalCase, qualify_t94:bool) -> TestResult {
+    if qualify_t94{
+        let seal=h.recovery.seal_current().map_err(debug)?;
+        let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
+        h.root.t94_initialize(&authority,"oteryn:game:primary",&mut T94FreshFence).await?;
+    }
+    let time_base:i64=if qualify_t94{sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&h.pool).await?}else{0};
     let definition = global_definition(case)?;
     let firing = id(61);
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
     // The durable firing reader reconstructs a ProductionKey, whose contract rejects test-only markers.
-    global_seed(h, &definition, firing, if matches!(case, GlobalCase::Badger) { "raid:badger" } else { "raid:qualification" }).await?;
+    global_seed(h, &definition, firing, if matches!(case, GlobalCase::Badger) { "raid:badger" } else { "raid:qualification" },time_base).await?;
     if matches!(case, GlobalCase::FailedSingle) {
         return failed_single_exercise(h, firing, definition).await;
     }
@@ -206,6 +212,7 @@ async fn global_exercise(h: &Harness, case: GlobalCase) -> TestResult {
     assert_eq!(h.root.due_raid_firings(channel).await?.len(), 1);
     let first_at = if matches!(case, GlobalCase::Announcement | GlobalCase::Boss | GlobalCase::PersistentBoss) { 0 }
         else if matches!(case, GlobalCase::Badger) { 1_000 } else { 10 };
+    let first_at=first_at+time_base;
     let first = global_next(h, firing, &definition, first_at).await?;
     let replay = global_next(h, firing, &definition, first_at).await?;
     assert_eq!(first.identity, replay.identity);
@@ -260,7 +267,7 @@ async fn global_exercise(h: &Harness, case: GlobalCase) -> TestResult {
             assert!(h.root.advance_raid_run(&h.node, firing, channel, generation, definition, end_at + 1).await?.is_none());
         }
         GlobalCase::Lost => {
-            let pending_announcement = global_next(h, firing, &definition, 20).await?;
+            let pending_announcement = global_next(h, firing, &definition, 20+time_base).await?;
             assert!(matches!(pending_announcement.action, CommittedRaidAction::Announcement { .. }));
             let replacement = register(&h.root, 2).await?;
             let predecessor = h.root.read_runtime_scope_predecessor(scope()?).await.map_err(debug)?.ok_or("scope predecessor")?;
@@ -274,19 +281,25 @@ async fn global_exercise(h: &Harness, case: GlobalCase) -> TestResult {
             crate::bestiary_postgres_harness::publish_readiness_for_scope(
                 &h.pool, &h.root, &replacement, new_generation.get(), scope()?,
             ).await?;
-            assert!(h.root.advance_raid_run(&h.node, firing, channel, generation, definition.clone(), 30).await?.is_none());
-            assert_eq!(h.root.acknowledge_raid_effect(&h.node, pending_announcement.identity, Vec::new(), 30).await?, RaidWrite::CompareFailed);
+            assert!(h.root.advance_raid_run(&h.node, firing, channel, generation, definition.clone(), 30+time_base).await?.is_none());
+            assert_eq!(h.root.acknowledge_raid_effect(&h.node, pending_announcement.identity, Vec::new(), 30+time_base).await?, RaidWrite::CompareFailed);
             // Removed catalogue content is not needed to retire an obsolete generation.
-            let lost = h.root.claim_lost_raid_run(&replacement, firing, channel, new_generation, 30).await?.ok_or("LOST cleanup")?;
+            let lost = h.root.claim_lost_raid_run(&replacement, firing, channel, new_generation, 30+time_base).await?.ok_or("LOST cleanup")?;
             assert_eq!(lost.action, CommittedRaidAction::Lost);
-            assert_eq!(h.root.acknowledge_raid_effect(&replacement, lost.identity, Vec::new(), 30).await?, RaidWrite::Applied);
-            assert!(h.root.advance_raid_run(&replacement, firing, channel, new_generation, definition, 31).await?.is_none());
+            assert_eq!(h.root.acknowledge_raid_effect(&replacement, lost.identity, Vec::new(), (if qualify_t94{31}else{30})+time_base).await?, RaidWrite::Applied);
+            assert!(h.root.advance_raid_run(&replacement, firing, channel, new_generation, definition, 31+time_base).await?.is_none());
             let state: i16 = sqlx::query_scalar("SELECT state FROM game_world_raid_channel_runs").fetch_one(&h.pool).await?;
             assert_eq!(state, 3);
             let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_raid_creatures WHERE state=1").fetch_one(&h.pool).await?;
             assert_eq!(live, 0);
             let discarded: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_raid_effects WHERE action_kind=1 AND state=3").fetch_one(&h.pool).await?;
             assert_eq!(discarded, 1);
+            if qualify_t94{
+                let quarantined:bool=sqlx::query_scalar("SELECT quarantined FROM game_t94_control WHERE singleton").fetch_one(&h.pool).await?;
+                assert!(!quarantined,"a later cleanup ACK must replay the committed loss evidence");
+                let losses:i64=sqlx::query_scalar("SELECT count(*) FROM game_t94_native_receipts WHERE source_cut LIKE '%/source-unavailable'").fetch_one(&h.pool).await?;
+                assert_eq!(losses,1);
+            }
         }
         GlobalCase::Boss | GlobalCase::PersistentBoss => {
             let boss = outcomes.last().ok_or("boss placement")?.identity;
@@ -558,4 +571,24 @@ async fn exercise(h: &Harness) -> TestResult {
         tx.rollback().await?;
     }
     Ok(())
+}
+
+struct T94FreshFence;
+impl crate::native_admission_source::account_characters::EpochFence for T94FreshFence{
+ fn read(&mut self)->Result<u64,crate::native_admission_source::account_characters::FenceUnusable>{Ok(0)}
+ fn persist(&mut self,_:u64)->Result<(),crate::native_admission_source::account_characters::FenceUnusable>{Ok(())}
+}
+#[test]
+fn t94_raid_loss_later_ack_replays_native_receipt()->TestResult{
+ let Some(admin)=configured_admin()else{return Ok(())};
+ std::thread::Builder::new().stack_size(64<<20).spawn(move||->Result<(),String>{
+  runtime().map_err(debug)?.block_on(async{
+   let started=std::time::Instant::now();
+   let h=Harness::create(admin,"t94_raid_loss",false).await?;
+   let result=global_exercise(&h,GlobalCase::Lost,true).await;
+   h.cleanup().await?;
+   eprintln!("T94_RAID_PG_EXECUTED loss/replay/native_owner elapsed_ms={}",started.elapsed().as_millis());
+   result
+  }).map_err(debug)
+ })?.join().map_err(|_|"T94 raid thread failed")?.map_err(Into::into)
 }

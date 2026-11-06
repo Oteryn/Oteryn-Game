@@ -57,6 +57,9 @@ pub enum Operation {
     /// Public projection liveness watermark (same contract, §5.1).
     PublishPublicProjectionWatermarkV1,
     PublishGameRestoreNoticeV1,
+    PublishWorldEventOutcomeV1,
+    PublishGuildSeasonV1,
+    PublishLeagueWatermarkV1,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
@@ -94,6 +97,9 @@ impl Operation {
             Self::PublishWorldTotalsV1 => super::public_projections::world_totals::PATH,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_PATH,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::PATH,
+            Self::PublishWorldEventOutcomeV1 => "/internal/v1/game-public/world-event-outcome",
+            Self::PublishGuildSeasonV1 => "/internal/v1/game-public/guild-season",
+            Self::PublishLeagueWatermarkV1 => "/internal/v1/game-public/league-watermark",
         }
     }
     /// Request body cap: `NSRC-HTTP-REQUEST-BODY-BYTES`, or `NRS-REPORT-BYTES`
@@ -129,6 +135,9 @@ impl Operation {
             Self::PublishWorldTotalsV1 => super::public_projections::world_totals::REQUEST_BYTES,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_BYTES,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::NOTICE_BYTES,
+            Self::PublishWorldEventOutcomeV1 => super::world_event_outcomes::EVENT_BYTES,
+            Self::PublishGuildSeasonV1 => super::world_event_outcomes::SEASON_BYTES,
+            Self::PublishLeagueWatermarkV1 => super::world_event_outcomes::WATERMARK_BYTES,
             Self::ReadAccountSecurityV1
             | Self::ReadFreshSigningTrustV1
             | Self::ReadRecoveryAccountSecurityV2

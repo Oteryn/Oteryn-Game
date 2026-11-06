@@ -404,6 +404,9 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     | Operation::PublishWorldOnlineV1
                     | Operation::PublishWorldTotalsV1
                     | Operation::PublishPublicProjectionWatermarkV1
+                    | Operation::PublishWorldEventOutcomeV1
+                    | Operation::PublishGuildSeasonV1
+                    | Operation::PublishLeagueWatermarkV1
                     | Operation::PublishGameRestoreNoticeV1 => {
                         return Err(io::Error::new(io::ErrorKind::InvalidData, "operation"));
                     }
@@ -471,6 +474,9 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                 | Operation::PublishWorldOnlineV1
                 | Operation::PublishWorldTotalsV1
                 | Operation::PublishPublicProjectionWatermarkV1
+                | Operation::PublishWorldEventOutcomeV1
+                | Operation::PublishGuildSeasonV1
+                | Operation::PublishLeagueWatermarkV1
                 | Operation::PublishGameRestoreNoticeV1 => {
                     return Err("operation".into());
                 }

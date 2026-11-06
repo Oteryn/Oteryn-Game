@@ -54,6 +54,7 @@ pub(super) enum Case {
     TaskBoardPrechange,
     TaskBoardOrdered,
     SoulWarTerminal,
+    T94,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -207,7 +208,9 @@ pub(super) fn run(case: Case) -> TestResult {
 }
 async fn scenario(h: &Harness, case: Case) -> TestResult {
     let task_board_case = case;
+    let t94_case=matches!(case,Case::T94);
     let case = match case {
+        Case::T94 => Case::Shared,
         Case::TaskBoardParty
         | Case::TaskBoardUnbound
         | Case::TaskBoardPrechange
@@ -671,6 +674,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     let first_id = first.current_character_lease().character_id();
     let second_id = second.current_character_lease().character_id();
+    if t94_case{t94::prepare(h,&recovery,world,first_id,second_id).await?;}
     if matches!(case, Case::Modifiers) {
         for (index, kind) in [(0, 1_u8), (1, 3_u8)] {
             let (actor, session) = players[index];
@@ -1404,6 +1408,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             );
         }
     }
+    if t94_case{t94::verify(h,&recovery).await?;}
     if let Some(entry) = task_board_entry {
         task_board::assert_replay(
             &mut owner,
@@ -1559,3 +1564,8 @@ use support::{initialize_build, join_two};
 
 #[path = "party_xp/task_board.rs"]
 mod task_board;
+
+#[path="party_xp/t94.rs"]
+mod t94;
+#[test]
+fn t94_guild_season_real_kill_dispatch_membership_cut()->TestResult{let started=std::time::Instant::now();run(Case::T94)?;if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some(){eprintln!("T94_GUILD_DISPATCH_PG_EXECUTED membership/dedup/ranking elapsed_ms={}",started.elapsed().as_millis());}Ok(())}

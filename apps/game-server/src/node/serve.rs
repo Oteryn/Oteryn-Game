@@ -11,6 +11,7 @@
 mod channel_boot;
 mod qualification_fixture;
 mod supervision;
+mod t94;
 mod world_reset;
 
 use super::cancellation::first;
@@ -434,6 +435,7 @@ struct Material {
     /// by the serving loop.
     public_projections:
         std::sync::Mutex<Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>>,
+    world_event_outcomes: std::sync::Mutex<Option<t94::Material>>,
     descriptor: DescriptorRegistration,
     launch: LaunchAuthorizationFile,
     s2: Option<S2AuthorizationFile>,
@@ -699,6 +701,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         }
         _ => None,
     };
+    let world_event_outcomes = t94::material(platform, endpoint.clone(), &roots, &client)?;
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -756,6 +759,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         account_characters: std::sync::Mutex::new(account_characters),
         character_commands: std::sync::Mutex::new(character_commands),
         public_projections: std::sync::Mutex::new(public_projections),
+        world_event_outcomes: std::sync::Mutex::new(world_event_outcomes),
         descriptor,
         launch,
         s2,
@@ -2124,6 +2128,9 @@ async fn audit_expiry_loop(
                     break;
                 }
             }
+        }
+        if root.t94_expire(authority).await.is_err() {
+            failed = true;
         }
         match root.expire_staff_audit().await {
             Ok(count) => deleted = deleted.saturating_add(count),

@@ -133,6 +133,9 @@ const fn request_envelope_max(operation: Operation) -> usize {
         Operation::PublishWorldOnlineV1 => {
             super::public_projections::ONLINE_BYTES + REQUEST_HEAD_BYTES
         }
+        Operation::PublishWorldEventOutcomeV1 | Operation::PublishGuildSeasonV1 => {
+            operation.request_bytes_max() + REQUEST_HEAD_BYTES
+        }
         _ => REQUEST_ENVELOPE_BYTES,
     }
 }
@@ -185,6 +188,9 @@ async fn exchange_status(
             return Err(SourceError::CapacityExceeded);
         }
         tls.write_all(request.as_bytes()).await?;
+        if super::world_event_outcomes::is_operation(operation) {
+            return read_t94_response(&mut tls).await;
+        }
         if let Some(max) = super::store::response_bytes_max(operation) {
             let mut retry_after = None;
             let (status, raw) = read_response_inner(
@@ -195,6 +201,7 @@ async fn exchange_status(
                 &[],
                 false,
                 Some(&mut retry_after),
+                true,
             )
             .await?;
             return Ok((status, raw, retry_after));
@@ -257,7 +264,12 @@ async fn exchange_status(
         }?;
         Ok((status, raw, None))
     };
-    tokio::time::timeout(Duration::from_millis(EXCHANGE_DEADLINE_MS), future)
+    let exchange_ms = if super::world_event_outcomes::is_operation(operation) {
+        5_000
+    } else {
+        EXCHANGE_DEADLINE_MS
+    };
+    tokio::time::timeout(Duration::from_millis(exchange_ms), future)
         .await
         .map_err(|_| SourceError::Unavailable)?
 }
@@ -265,6 +277,26 @@ pub async fn read_response<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u
     read_response_status(stream, true)
         .await
         .map(|(_, body)| body)
+}
+async fn read_t94_response<S: AsyncRead + Unpin>(
+    stream: &mut S,
+) -> Result<(u16, Vec<u8>, Option<Duration>), SourceError> {
+    let mut retry_after = None;
+    let (status, raw) = read_response_inner(
+        stream,
+        false,
+        256,
+        true,
+        &[],
+        false,
+        Some(&mut retry_after),
+        false,
+    )
+    .await?;
+    if !matches!(status, 200 | 400 | 401 | 409 | 429 | 503) || (status != 200 && !raw.is_empty()) {
+        return Err(SourceError::InvalidInput);
+    }
+    Ok((status, raw, retry_after))
 }
 /// A final status: `HTTP/1.1 <200-599>[ <reason>]`; informational and
 /// malformed status lines are invalid.
@@ -328,12 +360,13 @@ pub(crate) async fn read_response_framed<S: AsyncRead + Unpin>(
         body_statuses,
         oversized_ok,
         None,
+        false,
     )
     .await
 }
 #[allow(
     clippy::too_many_arguments,
-    reason = "Store additionally retains Retry-After while sharing the bounded HTTP parser"
+    reason = "Store and T94 share framing but have distinct Retry-After requirements"
 )]
 async fn read_response_inner<S: AsyncRead + Unpin>(
     stream: &mut S,
@@ -343,6 +376,7 @@ async fn read_response_inner<S: AsyncRead + Unpin>(
     body_statuses: &[u16],
     oversized_ok: bool,
     mut store_retry: Option<&mut Option<Duration>>,
+    require_retry_after: bool,
 ) -> Result<(u16, Vec<u8>), SourceError> {
     if body_max == 0 || body_max > if store_retry.is_some() { 12288 } else { 8192 } {
         return Err(SourceError::InvalidInput);
@@ -459,14 +493,25 @@ async fn read_response_inner<S: AsyncRead + Unpin>(
             retry_after = Some(if delay.is_zero() {
                 delay
             } else {
-                delay.clamp(crate::store::POLL, crate::store::MAX_BACKOFF)
+                delay.clamp(
+                    crate::store::POLL,
+                    if require_retry_after {
+                        crate::store::MAX_BACKOFF
+                    } else {
+                        Duration::from_secs(10)
+                    },
+                )
             });
         } else if name.eq_ignore_ascii_case("location") {
             return Err(SourceError::InvalidInput);
         }
     }
     if let Some(target) = store_retry.as_mut() {
-        if !no_store || (code == 429 && retry_after.is_none_or(|delay| delay.is_zero())) {
+        if !no_store
+            || (require_retry_after
+                && code == 429
+                && retry_after.is_none_or(|delay| delay.is_zero()))
+        {
             return Err(SourceError::InvalidInput);
         }
         **target = retry_after;
@@ -770,6 +815,30 @@ mod character_command_response_tests {
 mod store_response_tests {
     use super::*;
     #[test]
+    fn t94_rate_limit_does_not_require_store_retry_header() -> Result<(), Box<dyn std::error::Error>>
+    {
+        tokio::runtime::Builder::new_current_thread()
+            .build()?
+            .block_on(async {
+                let raw =
+                    b"HTTP/1.1 429 Limited\r\nCache-Control: no-store\r\nContent-Length: 0\r\n\r\n";
+                let response = read_t94_response(&mut raw.as_slice()).await?;
+                assert_eq!(response, (429, Vec::new(), None));
+                let raw = b"HTTP/1.1 429 Limited\r\nCache-Control: no-store\r\nContent-Length: 0\r\nRetry-After: 600\r\n\r\n";
+                assert_eq!(read_t94_response(&mut raw.as_slice()).await?.2, Some(Duration::from_secs(10)));
+                for mut raw in [
+                    b"HTTP/1.1 400 Bad\r\nContent-Length: 0\r\n\r\n".as_slice(),
+                    b"HTTP/1.1 400 Bad\r\nCache-Control: no-store\r\nContent-Length: 1\r\n\r\nx",
+                    b"HTTP/1.1 500 Bad\r\nCache-Control: no-store\r\nContent-Length: 0\r\n\r\n",
+                    b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: 257\r\n\r\n",
+                ] {
+                    assert!(read_t94_response(&mut raw).await.is_err());
+                }
+                Ok::<(), SourceError>(())
+            })?;
+        Ok(())
+    }
+    #[test]
     fn store_response_bounds_and_retry_after() -> Result<(), Box<dyn std::error::Error>> {
         tokio::runtime::Builder::new_current_thread().build()?.block_on(async {
             for status in [200, 409, 429, 503] {
@@ -777,7 +846,7 @@ mod store_response_tests {
                 let raw = format!("HTTP/1.1 {status} Test\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: {}\r\nRetry-After: 17\r\n\r\n{body}", body.len());
                 let mut bytes = raw.as_bytes();
                 let mut retry_after = None;
-                let (got, decoded) = read_response_inner(&mut bytes, false, 12288, true, &[], false, Some(&mut retry_after)).await?;
+                let (got, decoded) = read_response_inner(&mut bytes, false, 12288, true, &[], false, Some(&mut retry_after), true).await?;
                 assert_eq!(got, status);
                 assert_eq!(decoded, body.as_bytes());
                 assert_eq!(retry_after, Some(Duration::from_secs(17)));
@@ -785,10 +854,10 @@ mod store_response_tests {
             for fields in ["", "Retry-After: x\r\n", "Retry-After: 1\r\nRetry-After: 2\r\n"] {
                 let raw = format!("HTTP/1.1 429 Limited\r\nCache-Control: no-store\r\nContent-Length: 0\r\n{fields}\r\n");
                 let mut bytes = raw.as_bytes();
-                assert!(read_response_inner(&mut bytes, false, 512, true, &[], false, Some(&mut None)).await.is_err());
+                assert!(read_response_inner(&mut bytes, false, 512, true, &[], false, Some(&mut None), true).await.is_err());
             }
             let raw = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: 513\r\n\r\n";
-            assert!(read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut None)).await.is_err());
+            assert!(read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut None), true).await.is_err());
             Ok::<(), SourceError>(())
         })?;
         Ok(())
@@ -799,7 +868,7 @@ mod store_response_tests {
         tokio::runtime::Builder::new_current_thread().build()?.block_on(async {
             let raw = b"HTTP/1.1 429 Busy\r\nCache-Control: no-store\r\nContent-Length: 0\r\nRetry-After: 4294967295\r\n\r\n";
             let mut retry = None;
-            read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut retry)).await?;
+            read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut retry), true).await?;
             assert_eq!(retry, Some(crate::store::MAX_BACKOFF));
             Ok::<(), SourceError>(())
         })?;
