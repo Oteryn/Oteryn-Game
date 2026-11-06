@@ -223,6 +223,11 @@ pub mod server_save_countdown;
 #[path = "features/0072-task-board/mod.rs"]
 pub mod task_board;
 
+#[path = "features/0051-staff/mod.rs"]
+pub mod staff;
+#[path = "features/0330-staff-tools/mod.rs"]
+pub mod staff_tools;
+
 /// Server-owned stash browsing and conversion controls.
 #[path = "features/0062-stash/mod.rs"]
 pub mod stash;

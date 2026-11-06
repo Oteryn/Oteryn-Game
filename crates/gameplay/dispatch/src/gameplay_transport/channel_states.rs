@@ -92,6 +92,8 @@ pub struct ChannelSessionStates {
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
     pub(super) tibiadrome: super::tibiadrome::Drome,
     pub(super) timed_items: super::timed_item::TimedRuntime,
+    /// NX-1: current-session staff flags and uncertain world-effect receipts.
+    pub(super) staff_world: super::staff_tools::WorldTools,
     /// PAR-P12a: Characters whose level, tracked kill or boss kill may have changed a title
     /// predicate; refreshed on the actor's cadence like `level_refresh`. A leaf lock.
     pub(super) title_refresh: level_up_live::LevelRefresh,
@@ -133,6 +135,7 @@ impl ChannelSessionStates {
 
     /// Forget exactly the state retired after the runtime removes a terminal session.
     pub(super) fn forget_session(&self, session: GameSessionId) {
+        self.staff_world.forget(session);
         self.dawnport_departures.forget(session);
         self.analyser.forget(session);
         self.fence_holders.forget(session);

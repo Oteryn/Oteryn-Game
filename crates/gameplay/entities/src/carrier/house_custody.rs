@@ -416,7 +416,7 @@ impl ChannelRuntimeV1 {
                 } => {
                     *game_session_id = Some(destination);
                     *position = Some(restored);
-                    lifecycle.control_loss = None;
+                    lifecycle.clear_control_loss()?;
                 }
                 _ => return Err(CarrierError::WrongScope),
             }

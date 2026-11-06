@@ -48,6 +48,9 @@ impl PlayLink {
         }
     }
     pub fn mail_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if self.staff_input(events) {
+            return true;
+        }
         if !oteryn_client_ui::mail::open_key(events) {
             return false;
         }

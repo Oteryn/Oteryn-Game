@@ -634,6 +634,12 @@ impl ChannelAttackStates {
         let Ok(command) = CommandId::new(command_id) else {
             return AttackIntentDisposition::Rejected;
         };
+        if runtime
+            .actor_staff_visibility(actor)
+            .is_ok_and(|flags| flags.0)
+        {
+            return AttackIntentDisposition::Rejected;
+        }
         let visible = runtime.visible_entities();
         let named = |actor: ExactActorRef, generation: u64| {
             actor.placement_identity() == target_ref.identity && generation == target_ref.generation

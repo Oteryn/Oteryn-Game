@@ -135,6 +135,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut pvp_hits = Vec::new();
         for entry in entries.iter_mut() {
+            if runtime
+                .actor_staff_visibility(entry.actor)
+                .is_ok_and(|flags| flags.0)
+            {
+                entry.clear_target();
+                continue;
+            }
             let state_before = entry.state.clone();
             let ordinal_before = entry.next_ordinal;
             let Some(mut selected) =

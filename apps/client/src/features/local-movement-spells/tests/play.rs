@@ -20,6 +20,45 @@ fn movement_spell_controls_clear_on_logout() {
     assert!(!link.chat_public_panel().pending);
 }
 
+#[test]
+fn ordinary_chat_reply_does_not_clear_pending_movement_spell() -> Result<(), Error> {
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.movement_spells_initialize(true);
+    crate::play::feature_local_movement_spells::input::enqueue(
+        &mut crate::play::mailbox::lock(&link.mailbox),
+        &link.commands,
+        MovementSpell::MagicRope,
+    );
+    assert_eq!(
+        incoming.try_recv()?,
+        crate::combat_input::PlayCommand::MovementSpeech(ChatIntent::Say {
+            mode: ChatSpeechMode::Say,
+            text: "exani tera".into(),
+        })
+    );
+    let earlier_say = ChatIntent::Say {
+        mode: ChatSpeechMode::Say,
+        text: "Earlier ordinary speech".into(),
+    };
+    let outcome = ChatOutcome {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        disposition: ChatDisposition::Rejected,
+        wait_seconds: 0,
+        result_server_sequence: 1,
+    };
+    outbox.chat_result(&earlier_say, &outcome);
+    assert!(link.chat_public_panel().pending);
+    assert_eq!(link.chat_public_panel().feedback, None);
+    outbox.chat_public_result(&outcome);
+    assert!(!link.chat_public_panel().pending);
+    assert_eq!(
+        link.chat_public_panel().feedback.as_deref(),
+        Some("The server rejected the chat command")
+    );
+    Ok(())
+}
+
 struct Peer(Arc<Mutex<Vec<ChatIntent>>>);
 
 impl Stepper for Peer {

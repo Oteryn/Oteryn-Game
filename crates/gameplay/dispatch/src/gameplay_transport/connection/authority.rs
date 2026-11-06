@@ -25,6 +25,10 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// NX-1: current durable bans/kicks and session staff flags; independent of presentation capabilities.
+    fn staff_refresh(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { true }
+    }
     #[cfg(test)]
     fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
         None

@@ -5,6 +5,9 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
+        self.refresh_staff(admitted).await
+    }
     #[cfg(test)]
     fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
         Some(self.root)

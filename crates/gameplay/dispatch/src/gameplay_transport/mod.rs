@@ -949,6 +949,10 @@ enum TerminalRelease {
     /// LOGOUT-WIRE-1 (ARCH-KILL-REWARD-LOGOUT-1 §1.6): the session's own `LOGOUT_INTENT`, on its
     /// exact current transport, with or without a control-loss epoch.
     Logout(AuthenticatedTransportRefV1),
+    /// A signed staff disconnect releases this exact controller after actor-end saves.
+    /// It is not a client logout and deliberately bypasses combat/NOLOGOUT waiting.
+    StaffKick(AuthenticatedTransportRefV1),
+    StaffKickLost(ControlLossEpochRefV1),
 }
 
 impl TerminalRelease {
@@ -959,10 +963,12 @@ impl TerminalRelease {
     /// session has no loss mark, so its release mints a transition id; so does a logout.
     fn fence(self, runtime: &mut ChannelRuntimeV1) -> Result<TransitionFence, CarrierError> {
         match self {
-            Self::Abandoned(_) | Self::Logout(_) => runtime
+            Self::Abandoned(_) | Self::Logout(_) | Self::StaffKick(_) => runtime
                 .mint_transition_fence()
                 .map(TransitionFence::Transition),
-            Self::CapabilityMismatch(epoch) => Ok(TransitionFence::GraceExpiry(epoch.get())),
+            Self::CapabilityMismatch(epoch) | Self::StaffKickLost(epoch) => {
+                Ok(TransitionFence::GraceExpiry(epoch.get()))
+            }
         }
     }
 }

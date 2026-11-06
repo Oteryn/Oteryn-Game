@@ -2,7 +2,7 @@
 use crate::ItemHandle;
 pub use oteryn_protocol_oteryn::{
     appearance, attack, bestiary, charm, charm_progression, guild_bank, house_podium,
-    loop_training, mail, pvp_expert,
+    loop_training, mail, pvp_expert, staff, staff_tools,
 };
 
 pub use oteryn_protocol_oteryn::house_move_out;

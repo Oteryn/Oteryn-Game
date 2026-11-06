@@ -16,6 +16,7 @@ pub(in crate::play) struct Panels {
     pub guildhall: oteryn_client_ui::guildhall::Panel,
     pub house_move_out: oteryn_client_ui::house_move_out::Panel,
     pub house_transfer: oteryn_client_ui::house_transfer::Panel,
+    pub staff: super::super::feature_0051_staff::state::Panel,
     pub player_report: oteryn_client_ui::player_report::Panel,
     pub pvp_expert: oteryn_client_ui::pvp_expert::Panel,
     pub mail: Panel,
@@ -26,6 +27,10 @@ pub(in crate::play) struct Panels {
 }
 impl Panels {
     pub fn end(&mut self) {
+        self.staff = super::super::feature_0051_staff::state::Panel {
+            feedback: "The session has ended".into(),
+            ..Default::default()
+        };
         self.party_skull = oteryn_client_ui::party_skull::Panel {
             feedback: "The session has ended".into(),
             ..Default::default()
@@ -117,6 +122,11 @@ impl Panels {
 impl Outbox {
     pub(in crate::play) fn properties_initialize<T: Stepper>(&self, session: &T) {
         let mut shared = lock(&self.0);
+        shared.properties.staff = super::super::feature_0051_staff::state::Panel {
+            selected: session.feature_selected(51),
+            tools: session.feature_selected(330),
+            ..Default::default()
+        };
         shared.properties.party_skull = oteryn_client_ui::party_skull::Panel {
             selected: session.feature_selected(134),
             ..Default::default()
@@ -190,6 +200,11 @@ impl Outbox {
     ) {
         let mut shared = lock(&self.0);
         match command.capability {
+            51 | 330 => super::super::feature_0051_staff::protocol::apply(
+                &mut shared.properties.staff,
+                command,
+                result,
+            ),
             25 => super::super::feature_0025_appearance::protocol::apply(
                 &mut shared.properties.appearance,
                 command,

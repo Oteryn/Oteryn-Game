@@ -148,6 +148,9 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if !authority.staff_refresh(admitted).await {
+        return ServeEnd::Disconnected.finish(admitted);
+    }
     let mut integrity = integrity::Integrity::default();
     let root_authority = authority;
     // Keep one guard across owner changes. It must also drop the transferred
@@ -228,6 +231,9 @@ where
             }
         }
         loop {
+            if !authority.staff_refresh(session.admitted).await {
+                return ServeEnd::Disconnected.finish(session.admitted);
+            }
             if !authority.remember_activity_connection(session.admitted) {
                 return ServeEnd::Disconnected.finish(session.admitted);
             }
@@ -256,6 +262,9 @@ where
                 }
                 Ok(None) => {}
                 Err(end) => return end.finish(session.admitted),
+            }
+            if !authority.staff_refresh(session.admitted).await {
+                return ServeEnd::Disconnected.finish(session.admitted);
             }
             let input = match inbound::receive(stream, authority, &mut session, next).await {
                 Ok(Some(input)) => input,
