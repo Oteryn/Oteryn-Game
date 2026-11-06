@@ -184,6 +184,12 @@ fn derived_gated_routes_match_previous_table() {
         (92, &[], &[57]),
         (168, &[232], &[]),
         (274, &[488], &[]),
+        (276, &[492], &[]),
+        (277, &[493], &[]),
+        (278, &[494], &[]),
+        (279, &[495], &[]),
+        (280, &[496], &[]),
+        (370, &[640], &[]),
         // CL25J: native feature adapters now use these existing gated wire routes.
         (151, &[177], &[]),
         (152, &[181], &[]),

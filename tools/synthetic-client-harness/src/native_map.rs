@@ -267,6 +267,7 @@ fn native_live_appearance_snapshot_reaches_visible_scene()
                             appearances: vec![oteryn_session::VisibleAppearance {
                                 entity,
                                 look: None,
+                                light: None,
                             }],
                         },
                         commands,

@@ -136,8 +136,16 @@ impl Scene {
     }
 
     pub fn set_ambient(&mut self, ambient: [u8; 3]) -> Result<(), BatchError> {
-        self.lit_atlas = Some(oteryn_renderer::lit_atlas(self.unlit_atlas(), ambient));
+        self.sprites.lighting.ambient = ambient;
+        self.sprites.lighting.palette = self
+            .unlit_atlas()
+            .uv_rect(oteryn_renderer::world::PALETTE_CELL)
+            .ok();
         Ok(())
+    }
+
+    pub(crate) fn set_lights(&mut self, sources: Vec<oteryn_renderer::lighting::PointLight>) {
+        self.sprites.lighting.sources = sources;
     }
 
     /// Rebuilds base sprites before appending this frame's transient visual quads.
@@ -267,6 +275,7 @@ impl Scene {
                 )?;
             }
         }
+        sprites.lighting.clone_from(&self.sprites.lighting);
         self.sprites = sprites;
         if self.minimap {
             self.draw_minimap()?;

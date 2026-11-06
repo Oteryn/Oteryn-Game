@@ -1,0 +1,10 @@
+{
+  "id": 492,
+  "name": "CONDITION_STATUS_QUERY",
+  "owner_decision": "GAP-SV7 C08",
+  "capability": 276,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/condition-status-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/condition-status-v1.md#reply",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 641
+}

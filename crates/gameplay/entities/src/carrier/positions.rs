@@ -853,6 +853,19 @@ impl ChannelActorCarrier {
     ) -> Result<PositionSnapshot, CarrierError> {
         let index = self.validate_ref(continuity, expected.actor_ref)?;
         self.assert_slot_spell_unreserved(index)?;
+        // W17: the physical arena boundary prevents carrying a Drome exemption into
+        // ordinary combat. Administrative return remains inside its original hall cell.
+        if let Slot::Occupied { spell_combat, .. } = &self.slots[index]
+            && let Some(origin) = spell_combat
+                .tibiadrome_origin
+                .filter(|_| spell_combat.tibiadrome)
+            && (next_position.floor != origin.floor
+                || next_position.x.abs_diff(origin.x) > 6
+                || next_position.y.abs_diff(origin.y) > 6)
+        {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        }
+
         if matches!(
             &self.slots[index],
             Slot::CreatureOccupied {

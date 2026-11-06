@@ -7,18 +7,30 @@ fn hireling_management_crosses_the_real_session_loop()
             use crate::play::{Stepper, play_channel, run_session};
             use oteryn_client_runtime::raw_feature::FeatureCommand;
             use oteryn_session::{GatedCommandResult, SessionError};
+            fn identity() -> [u8; 16] {
+                let mut id = [1; 16];
+                id[6] = 0x70;
+                id[8] = 0x80;
+                id
+            }
             struct Features;
-            fn result(capability: u32) -> GatedCommandResult {
-                GatedCommandResult {
+            fn result(capability: u32) -> Result<GatedCommandResult, SessionError> {
+                Ok(GatedCommandResult {
                     command_id: 1,
                     status: oteryn_session::CommandStatus::Accepted,
                     server_sequence: 1,
                     payload: if capability == 250 {
-                        vec![0, 0]
+                        oteryn_client_ui::hireling_management::wire::Reply::State(vec![
+                            oteryn_client_ui::hireling_management::wire::Entry {
+                                hireling: identity(), name: "Alice".into(), sex: 2,
+                                look_type: 1107, colors: [1, 2, 3, 4],
+                                skills: 15, outfits: 1, position: Some((7, 9, -1)),
+                            }
+                        ]).encode().ok_or(SessionError::SessionUnusable)?
                     } else {
                         vec![255]
                     },
-                }
+                })
             }
             impl Stepper for Features {
                 async fn step(
@@ -27,8 +39,9 @@ fn hireling_management_crosses_the_real_session_loop()
                 ) -> Result<oteryn_session::StepOutcome, SessionError> {
                     Err(SessionError::SessionUnusable)
                 }
-                async fn serve(&mut self, _: std::time::Duration) -> Result<(), SessionError> {
-                    Err(SessionError::SessionUnusable)
+                async fn serve(&mut self, duration: std::time::Duration) -> Result<(), SessionError> {
+                    tokio::time::sleep(duration).await;
+                    Ok(())
                 }
                 fn drain(&mut self) -> Vec<oteryn_session::SessionEvent> {
                     Vec::new()
@@ -51,20 +64,53 @@ fn hireling_management_crosses_the_real_session_loop()
                     &mut self,
                     command: &FeatureCommand,
                 ) -> Result<GatedCommandResult, SessionError> {
-                    Ok(result(command.capability))
+                    use oteryn_client_ui::hireling_management::wire;
+                    if let Some(wire::Request::Outfit { hireling, look_type, colors }) =
+                        wire::Request::decode(&command.payload)
+                    {
+                        assert_eq!(hireling, identity());
+                        assert_eq!(look_type, 1109);
+                        assert_eq!(colors, [5, 6, 7, 8]);
+                        let mut reply = result(command.capability)?;
+                        reply.payload = vec![1];
+                        return Ok(reply);
+                    }
+                    assert_eq!(wire::Request::decode(&command.payload), Some(wire::Request::List));
+                    result(command.capability)
                 }
             }
-            let (link, commands, outbox) = play_channel();
-            outbox.hireling_management_initialize(true);
-            link.hireling_management_request(oteryn_client_ui::hireling_management::Intent::List);
             tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()?
-                .block_on(run_session(Features, commands, outbox));
-            let panel = link.hireling_management_panel();
-            assert!(panel.pending.is_none());
-            assert!(panel.entries.is_empty());
-            assert!(panel.feedback.is_none());
+                .block_on(async {
+                    use oteryn_client_ui::hireling_management::{Intent, select};
+                    let (link, commands, outbox) = play_channel();
+                    outbox.hireling_management_initialize(true);
+                    link.hireling_management_request(Intent::List);
+                    let task = tokio::spawn(run_session(Features, commands, outbox));
+                    async fn ready(link: &crate::play::PlayLink) -> Result<(), tokio::time::error::Elapsed> {
+                        tokio::time::timeout(std::time::Duration::from_secs(3), async {
+                            while link.hireling_management_panel().pending.is_some() {
+                                tokio::task::yield_now().await;
+                            }
+                        }).await
+                    }
+                    ready(&link).await?;
+                    let panel = link.hireling_management_panel();
+                    assert_eq!(panel.entries.len(), 1);
+                    assert_eq!(panel.entries[0].name, "Alice");
+                    assert_eq!(panel.entries[0].colors, [1, 2, 3, 4]);
+                    assert!(select(&mut crate::play::mailbox::lock(&link.mailbox).hireling_management, 0));
+                    link.hireling_management_request(Intent::Outfit { look_type: 1109, colors: [5, 6, 7, 8] });
+                    ready(&link).await?;
+                    let panel = link.hireling_management_panel();
+                    assert_eq!(panel.entries[0].look_type, 1109);
+                    assert_eq!(panel.entries[0].colors, [5, 6, 7, 8]);
+                    assert_eq!(panel.feedback, Some("Outfit saved; refresh to read current server state"));
+                    drop(link);
+                    task.await?;
+                    Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
+                })?;
             Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
         })?
         .join()

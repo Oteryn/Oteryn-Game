@@ -46,6 +46,12 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
+    outbox.condition_status_initialize(session.feature_selected(276));
+    outbox.rest_status_initialize(session.feature_selected(277));
+    outbox.battle_instinct_status_initialize(session.feature_selected(278));
+    outbox.skill_progress_initialize(session.feature_selected(279));
+    outbox.skill_display_initialize(session.feature_selected(370));
+    outbox.party_effects_initialize(session.feature_selected(280));
     outbox.quest_initialize(session.quest_state());
     outbox.task_board_initialize(session.task_board_selected());
     outbox.stash_initialize(session.stash_selected());
@@ -68,7 +74,7 @@ pub async fn run_session<T: Stepper>(
     outbox.hireling_initialize(session.hireling_selected());
     outbox.hireling_management_initialize(session.feature_selected(250));
     outbox.market_initialize(session.market_selected());
-    outbox.chat_public_initialize(session.chat_public_selected(), session.chat_state());
+    outbox.chat_with_movement_initialize(&session);
     outbox.chat_private_publish(&session);
     outbox.player_typing_initialize(session.player_typing_selected());
     outbox.arena_initialize(session.feature_selected(170));
@@ -125,6 +131,11 @@ pub async fn run_session<T: Stepper>(
                         199 => outbox.cyclopedia_character_result(&result),
                         225 => outbox.boss_difficulty_result(&result),
                         250 => outbox.hireling_management_result(&result),
+                        276 => outbox.condition_status_result(&result),
+                        277 => outbox.rest_status_result(&result),
+                        278 => outbox.battle_instinct_status_result(&result),
+                        279 | 370 => outbox.skill_progress_result(&result),
+                        280 => outbox.party_effects_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
@@ -381,6 +392,14 @@ pub async fn run_session<T: Stepper>(
                     Err(error) => error,
                 }
             }
+            Ok(PlayCommand::MovementSpeech(intent)) => match session.chat_public(&intent).await {
+                Ok(outcome) => {
+                    outbox.chat_public_result(&outcome);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::ChatPublic(intent)) => match session.chat_public(&intent).await {
                 Ok(outcome) => {
                     outbox.chat_result(&intent, &outcome);

@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let classic_npc = matches!(name, "classic-quests-npc" | "classic-rottin-disrepair" | "threatened-dreams-npc" | "conditional-quest-greetings");
+    let classic_npc = matches!(name, "nx6-wayfarer" | "classic-quests-npc" | "classic-rottin-disrepair" | "threatened-dreams-npc" | "conditional-quest-greetings");
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(if classic_npc {
@@ -187,6 +187,8 @@ fn scenario_case(
                 expected_destination,
             )
             .await?;
+        } else if name == "nx6-wayfarer" {
+            super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "conditional-quest-greetings" {
             super::super::conditional_quest_greetings::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "threatened-dreams-npc" {

@@ -337,7 +337,7 @@ mod postgres {
     use harness::{CHANNEL, Harness, TestResult, WORLD, debug, id};
     use sqlx::{Postgres, Transaction};
 
-    fn run<F>(tag: &'static str, body: F) -> TestResult
+    pub(super) fn run<F>(tag: &'static str, body: F) -> TestResult
     where
         F: AsyncFnOnce(&Harness) -> TestResult,
     {
@@ -359,7 +359,7 @@ mod postgres {
             result
         })
     }
-    fn target() -> SpellGroundTarget {
+    pub(super) fn target() -> SpellGroundTarget {
         SpellGroundTarget {
             spatial_position: [
                 120_i32.to_be_bytes().as_slice(),
@@ -372,7 +372,7 @@ mod postgres {
             placement_context: id(6).to_vec(),
         }
     }
-    fn definition() -> TypedDefinitionRef {
+    pub(super) fn definition() -> TypedDefinitionRef {
         TypedDefinitionRef {
             family: "Item".into(),
             production_key: "fixture:ground.root".into(),
@@ -400,7 +400,7 @@ mod postgres {
             minted_transaction_id: id(number),
         })
     }
-    async fn authority(
+    pub(super) async fn authority(
         tx: &mut Transaction<'_, Postgres>,
         h: &Harness,
     ) -> TestResult<(SpellLanePermit, SpellItemScopeAuthority)> {
@@ -432,7 +432,7 @@ mod postgres {
     ) -> TestResult<Vec<[u8; 16]>> {
         mint_quantity(h, first, count, at, 100).await
     }
-    async fn mint_quantity(
+    pub(super) async fn mint_quantity(
         h: &Harness,
         first: u32,
         count: u32,
@@ -569,14 +569,14 @@ mod postgres {
         ])
     }
 
-    fn command(number: u64) -> TestResult<CommandRef> {
+    pub(super) fn command(number: u64) -> TestResult<CommandRef> {
         Ok(CommandRef::new(
             GameSessionId::decode(&id(harness::SESSION)).map_err(debug)?,
             CommandId::new(number).map_err(debug)?,
         ))
     }
 
-    async fn player_authority(
+    pub(super) async fn player_authority(
         tx: &mut Transaction<'_, Postgres>,
         h: &Harness,
         command: CommandRef,
@@ -607,7 +607,7 @@ mod postgres {
         Ok((permit, authority))
     }
 
-    fn ground_placement(at: &SpellGroundTarget) -> GroundPlacement {
+    pub(super) fn ground_placement(at: &SpellGroundTarget) -> GroundPlacement {
         GroundPlacement {
             spatial_position: at.spatial_position.clone(),
             corpse_ref: id(3).to_vec(),
@@ -617,7 +617,8 @@ mod postgres {
         }
     }
 
-    fn spell_definition() -> crate::durability::spell_items_abi::QualifiedItemDefinition {
+    pub(super) fn spell_definition() -> crate::durability::spell_items_abi::QualifiedItemDefinition
+    {
         // Explicit native SQL-writer definition input fixture, not an assertion
         // that a runtime cast or compatible Content producer was admitted.
         crate::durability::spell_items_abi::QualifiedItemDefinition {
@@ -638,7 +639,7 @@ mod postgres {
         }
     }
 
-    fn spell_origin(
+    pub(super) fn spell_origin(
         h: &Harness,
     ) -> TestResult<(
         crate::foundation::ChannelRuntimeV1,
@@ -676,7 +677,7 @@ mod postgres {
         Ok((owner, origin))
     }
 
-    fn spell_backpack() -> crate::durability::spell_items_abi::QualifiedItemDefinition {
+    pub(super) fn spell_backpack() -> crate::durability::spell_items_abi::QualifiedItemDefinition {
         let mut backpack = spell_definition();
         backpack.definition = definition();
         backpack.stack_maximum = 1;
@@ -684,7 +685,7 @@ mod postgres {
         backpack
     }
 
-    fn spell_mint(number: u8) -> crate::durability::spell_items_abi::SpellItemOperation {
+    pub(super) fn spell_mint(number: u8) -> crate::durability::spell_items_abi::SpellItemOperation {
         crate::durability::spell_items_abi::SpellItemOperation::MintGround {
             item_instance_id: id(number),
             definition: spell_definition(),
@@ -697,7 +698,7 @@ mod postgres {
         }
     }
 
-    fn spell_request(
+    pub(super) fn spell_request(
         origin: &crate::durability::spell_items_abi::SourceCasterOrigin,
         number: u64,
         transaction: u8,

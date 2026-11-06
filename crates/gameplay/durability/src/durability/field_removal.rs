@@ -96,7 +96,7 @@ pub async fn remove_field_in_transaction(
 
 /// The current scope owner clears volatile fields of earlier generations, in
 /// the same bounded pass as expiry. An old caster never authorizes this write.
-pub(super) async fn retire_restarted_fields(
+pub async fn retire_restarted_fields(
     tx: &mut Transaction<'_, Postgres>,
     authority: &super::spell_item_transaction::SpellItemScopeAuthority,
     limit: usize,
@@ -108,7 +108,7 @@ pub(super) async fn retire_restarted_fields(
     let Some(channel) = authority.channel_bytes() else {
         return Ok(0);
     };
-    let rows=sqlx::query("SELECT i.item_instance_id::text,i.state_revision::text,i.minted_transaction_id::text,g.runtime_scope_ownership_generation::text AS generation,g.stack_ordinal,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.transaction_id=i.minted_transaction_id AND l.operation_kind=1 WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.runtime_scope_ownership_generation<$3::text::numeric AND i.lifecycle=1 AND i.quantity=1 AND (l.expires_at_unix_ms IS NOT NULL OR EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules p WHERE p.item_instance_id=i.item_instance_id AND p.source_transaction_id=l.transaction_id)) ORDER BY g.stack_ordinal,i.item_instance_id LIMIT $4 FOR UPDATE OF i")
+    let rows=sqlx::query("SELECT i.item_instance_id::text,i.state_revision::text,i.minted_transaction_id::text,g.runtime_scope_ownership_generation::text AS generation,g.stack_ordinal,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.transaction_id=i.minted_transaction_id AND l.operation_kind=1 WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.runtime_scope_ownership_generation<$3::text::numeric AND i.lifecycle=1 AND i.quantity=1 AND NOT game_item_general_decay_chain(i.item_instance_id) AND (l.expires_at_unix_ms IS NOT NULL OR EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules p WHERE p.item_instance_id=i.item_instance_id AND p.source_transaction_id=l.transaction_id)) ORDER BY g.stack_ordinal,i.item_instance_id LIMIT $4 FOR UPDATE OF i")
         .bind(authority.world_bytes().as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string()).bind(i64::try_from(limit).map_err(|_|SpellItemError::Rejected("field restart batch bound"))?).fetch_all(&mut **tx).await?;
     for row in &rows {
         let item: String = row.try_get("item_instance_id")?;

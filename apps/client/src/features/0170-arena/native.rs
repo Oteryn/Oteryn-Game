@@ -2,7 +2,7 @@
 #![allow(unsafe_code)] // Win32 controls require FFI; pointers never cross the window thread.
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_runtime::arena::ArenaAction;
-use oteryn_client_ui::arena::{Intent, panel_text, request};
+use oteryn_client_ui::arena::{DROME_REWARDS, Intent, drome_intent, panel_text, request};
 use std::{
     ptr::{null, null_mut},
     sync::{Arc, Weak},
@@ -75,12 +75,12 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Svargrond Arena — Ctrl+Shift+Z").as_ptr(),
+            wide("Arenas — Ctrl+Shift+Z").as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             680,
-            530,
+            620,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -117,7 +117,7 @@ fn run(
             SendMessageW(rank, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }
         SendMessageW(rank, CB_SETCURSEL, 0, 0);
-        let buttons: Vec<_> = LABELS
+        let mut buttons: Vec<_> = LABELS
             .iter()
             .enumerate()
             .map(|(i, label)| {
@@ -136,11 +136,55 @@ fn run(
                 )
             })
             .collect();
-        if status.is_null() || rank.is_null() || buttons.iter().any(|h| h.is_null()) {
+        for (index, label) in [
+            "Drome status",
+            "Drome enter",
+            "Drome leave",
+            "Lower start -5",
+            "Claim potion",
+        ]
+        .iter()
+        .enumerate()
+        {
+            buttons.push(control(
+                hwnd,
+                "BUTTON",
+                label,
+                index + 200,
+                [10 + index as i32 * 128, 465, 120, 30],
+                WS_TABSTOP,
+            ));
+        }
+        let reward = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            92,
+            [10, 515, 440, 300],
+            CBS_DROPDOWNLIST as u32 | WS_TABSTOP | WS_VSCROLL,
+        );
+        for label in DROME_REWARDS {
+            SendMessageW(reward, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+        }
+        SendMessageW(reward, CB_SETCURSEL, 0, 0);
+        buttons.push(control(
+            hwnd,
+            "BUTTON",
+            "Buy Drome reward",
+            205,
+            [460, 515, 190, 30],
+            WS_TABSTOP,
+        ));
+        if status.is_null()
+            || rank.is_null()
+            || reward.is_null()
+            || buttons.iter().any(|h| h.is_null())
+        {
             DestroyWindow(hwnd);
             close(&weak);
             return;
         }
+        let mut rendered = String::new();
         loop {
             let mut message: MSG = std::mem::zeroed();
             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -161,6 +205,7 @@ fn run(
                     102 => Some(Intent::Action(ArenaAction::Enter)),
                     103 => Some(Intent::Action(ArenaAction::Advance)),
                     104 => Some(Intent::Action(ArenaAction::Leave)),
+                    200..=205 => drome_intent(id, SendMessageW(reward, CB_GETCURSEL, 0, 0)),
                     105..=110 => {
                         let rank = SendMessageW(rank, CB_GETCURSEL, 0, 0);
                         let (category, choice) = match id {
@@ -191,12 +236,17 @@ fn run(
                     mailbox.arena.feedback = Some("The session has ended");
                 }
             }
-            SetWindowTextW(status, wide(&panel_text(&mailbox.arena)).as_ptr());
+            let text = panel_text(&mailbox.arena);
+            if text != rendered {
+                SetWindowTextW(status, wide(&text).as_ptr());
+                rendered = text;
+            }
             let ready = mailbox.arena.selected && mailbox.arena.pending.is_none();
             for button in &buttons {
                 EnableWindow(*button, i32::from(ready));
             }
             EnableWindow(rank, i32::from(ready));
+            EnableWindow(reward, i32::from(ready));
             drop(mailbox);
             // Native message-loop redraw cadence; gameplay timing remains server-owned.
             std::thread::sleep(Duration::from_millis(30));

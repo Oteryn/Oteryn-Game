@@ -3,6 +3,7 @@ use oteryn_foundation::ProcessGeneration;
 use std::fmt::{self, Display, Formatter};
 
 mod batch;
+pub mod lighting;
 mod resources;
 
 #[cfg(windows)]

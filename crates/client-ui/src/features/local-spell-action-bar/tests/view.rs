@@ -39,7 +39,7 @@ fn hud_shows_current_max_and_bounded_bars() {
     };
     assert_eq!(
         vitals_text(Some(&vitals)),
-        "HP [█████░░░░░] 50/100   MP [░░░░░░░░░░] 5/0"
+        "HP [█████░░░░░] 50/100   MP [░░░░░░░░░░] 5/0   Soul: 0   Harmony: 0/5   Serene: inactive"
     );
 }
 
@@ -54,6 +54,6 @@ fn hud_clamps_overfull_and_handles_largest_vitals() {
     };
     assert_eq!(
         vitals_text(Some(&vitals)),
-        "HP [██████████] 4294967295/1   MP [██████████] 4294967295/4294967295"
+        "HP [██████████] 4294967295/1   MP [██████████] 4294967295/4294967295   Soul: 0   Harmony: 0/5   Serene: inactive"
     );
 }

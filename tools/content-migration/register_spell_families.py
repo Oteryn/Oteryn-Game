@@ -373,6 +373,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     condition_potion_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import drome_item_profiles
     drome_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import starting_loadout_profiles
+    starting_loadout_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import enchanting_item_profiles
     enchanting_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Preserve every earlier owner cohort before adding the missing Task Board policies.
@@ -446,6 +448,14 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
         prey_difficulty.apply_native(root, generated, spell_import.canonical_bytes)
 
     descriptors = spell_import.descriptors(root, generated)
+    fragment = starting_loadout_profiles.FRAGMENT
+    descriptors.setdefault("Item", []).append({
+        "path": fragment, "sha256": hashlib.sha256(generated[fragment]).hexdigest(),
+        "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "record_count": 8,
+        "schema_contract": {"kind": "rust_serde", "path": spell_import.NATIVE_SCHEMA_CONTRACTS["item_profiles"]},
+        "representation": "native_profile_overlay", "creates_canonical_identities": False,
+        "runtime_activation": False,
+    })
     for family, path in FAMILY_INDEXES.items():
         index = json.loads((root / path).read_bytes())
         index["spell_imports"] = descriptors.get(family, [])

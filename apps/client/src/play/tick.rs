@@ -36,6 +36,22 @@ impl PlayView {
         self.world_context_feedback = link.world_context_feedback();
         self.project_death(link).map_err(|_error| UNAVAILABLE)?;
         self.vitals = link.actor_vitals();
+        let battle = link.battle_instinct_status_panel();
+        self.battle_instinct = if battle.selected && battle.error.is_none() {
+            battle.snapshot
+        } else {
+            None
+        };
+        let now = std::time::Instant::now();
+        if battle.selected
+            && self
+                .battle_instinct_refresh
+                .is_none_or(|last| now.duration_since(last) >= std::time::Duration::from_secs(2))
+        {
+            link.battle_instinct_status_request();
+            self.battle_instinct_refresh = Some(now);
+        }
+
         self.target_walk_feedback = link.target_walk_feedback();
         // One chronological queue: each input goes out in the order it was given. A step still
         // in flight holds back the arrow and what was given after it.

@@ -334,6 +334,13 @@ impl LoadedNpcCatalogue {
             .ok_or(BootError::ContentActivation("NPC catalogue content root"))?;
         let catalogue_sha256 = npc::catalogue_sha256(content)
             .map_err(|_| BootError::ContentActivation("NPC catalogue digest"))?;
+        let mut talk = NpcTalkBook::from_model(&model);
+        talk.bind_source_voices(catalogue, &model, |text| {
+            crate::chat::ChatText::parse(text)
+                .ok()
+                .map(|text| text.as_str().to_owned())
+        })
+        .map_err(|_| BootError::ContentActivation("NPC source voices"))?;
         Ok(Self {
             admitted: model
                 .npcs()
@@ -341,7 +348,7 @@ impl LoadedNpcCatalogue {
                 .map(|reference| reference.key.clone())
                 .collect(),
             catalogue_sha256,
-            talk: Arc::new(NpcTalkBook::from_model(&model)),
+            talk: Arc::new(talk),
         })
     }
 }

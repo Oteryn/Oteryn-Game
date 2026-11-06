@@ -111,10 +111,16 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_EMPTY_OUTFIT_V1,
+    condition_status::CAPABILITY_CONDITION_STATUS_V1,
+    rest_status::CAPABILITY_REST_STATUS_V1,
+    battle_instinct_status::CAPABILITY_BATTLE_INSTINCT_STATUS_V1,
+    skill_progress::CAPABILITY_SKILL_PROGRESS_V1,
+    party_effects::CAPABILITY_PARTY_EFFECTS_V1,
     oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
     oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
+    skill_display::CAPABILITY_SKILL_DISPLAY_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -190,9 +196,15 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     player_typing::CAPABILITY_PLAYER_TYPING_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
+    condition_status::CAPABILITY_CONDITION_STATUS_V1,
+    rest_status::CAPABILITY_REST_STATUS_V1,
+    battle_instinct_status::CAPABILITY_BATTLE_INSTINCT_STATUS_V1,
+    skill_progress::CAPABILITY_SKILL_PROGRESS_V1,
+    party_effects::CAPABILITY_PARTY_EFFECTS_V1,
     oteryn_protocol_oteryn::store::CAPABILITY_STORE_PURCHASE_HISTORY_V1,
     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
+    skill_display::CAPABILITY_SKILL_DISPLAY_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

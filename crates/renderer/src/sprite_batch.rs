@@ -9,6 +9,11 @@ impl SpriteBatch {
     pub const fn new() -> Self {
         Self {
             instances: Vec::new(),
+            lighting: crate::lighting::SceneLighting {
+                ambient: [255; 3],
+                sources: Vec::new(),
+                palette: None,
+            },
         }
     }
 

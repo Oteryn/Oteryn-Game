@@ -8,6 +8,7 @@ use super::*;
 pub struct WorldEntities {
     pub(super) own_identity: [u8; world_spatial_entities::ENTITY_IDENTITY_BYTES],
     pub(super) entities: BTreeMap<EntityRef, WorldSpatialEntity>,
+    pub(super) lights: world_spatial_entities::EntityLights,
 }
 
 impl WorldEntities {
@@ -46,9 +47,11 @@ impl WorldEntities {
 
     pub(super) fn from_snapshot(
         snapshot: &world_spatial_entities::WorldSpatialEntitiesSnapshot,
+        lights: world_spatial_entities::EntityLights,
     ) -> Self {
         Self {
             own_identity: snapshot.own_identity,
+            lights,
             entities: snapshot
                 .entities
                 .iter()
@@ -67,15 +70,21 @@ impl WorldEntities {
     }
 
     /// The store after `delta`, or the reason the delta contradicts it. Nothing changes here.
-    pub(super) fn after(&self, delta: &WorldSpatialEntitiesDelta) -> Result<Self, SessionError> {
+    pub(super) fn after(
+        &self,
+        delta: &WorldSpatialEntitiesDelta,
+        lights: &world_spatial_entities::EntityLights,
+    ) -> Result<Self, SessionError> {
         let inconsistent = |reason| SessionError::EntityStoreInconsistent { reason };
         let mut next = self.clone();
         for reference in &delta.leave {
+            next.lights.remove(&reference.identity);
             if next.entities.remove(reference).is_none() {
                 return Err(inconsistent("leave of an entity that is not stored"));
             }
         }
         for entity in &delta.update {
+            next.lights.remove(&entity.entity.identity);
             match next.entities.get_mut(&entity.entity) {
                 Some(stored) => *stored = *entity,
                 None => return Err(inconsistent("update of an entity that is not stored")),
@@ -87,6 +96,7 @@ impl WorldEntities {
             }
             next.entities.insert(entity.entity, *entity);
         }
+        next.lights.extend(lights);
         if next.entities.len() > MAX_SNAPSHOT_ENTITIES {
             return Err(inconsistent("more entities than the snapshot bound"));
         }

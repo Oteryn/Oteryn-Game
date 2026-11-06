@@ -2,6 +2,51 @@
 
 use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
 
+#[path = "starting_loadout.rs"]
+pub mod starting_loadout;
+
+/// A native definition resolved from the dedicated donor input, never from a client payload.
+#[derive(Debug, Clone)]
+pub struct StartingLoadout {
+    pub vocation: String,
+    pub backpack: TypedDefinitionRef,
+    pub items: Vec<(TypedDefinitionRef, u32, u8)>,
+}
+
+impl StartingLoadout {
+    pub fn resolve(
+        vocation: &str,
+        mut definition: impl FnMut(u32) -> Option<TypedDefinitionRef>,
+    ) -> Option<Self> {
+        Some(Self {
+            vocation: vocation.into(),
+            backpack: definition(2854)?,
+            items: starting_loadout::items(vocation)?
+                .iter()
+                .map(|&(id, quantity, slot)| Some((definition(id)?, quantity, slot)))
+                .collect::<Option<_>>()?,
+        })
+    }
+
+    /// Re-check mutable public input at the durable boundary.
+    pub fn matches_source(&self) -> bool {
+        let Some(source) = starting_loadout::items(&self.vocation) else {
+            return false;
+        };
+        self.backpack.family == "Item"
+            && self.backpack.production_key == "oteryn:item.tibia.i2854"
+            && source.len() == self.items.len()
+            && source.iter().zip(&self.items).all(
+                |(&(id, quantity, slot), (definition, count, destination))| {
+                    definition.family == "Item"
+                        && definition.production_key == format!("oteryn:item.tibia.i{id}")
+                        && *count == quantity
+                        && *destination == slot
+                },
+            )
+    }
+}
+
 /// One starter template: its registered label and revision, and the one item it grants.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StarterTemplate {

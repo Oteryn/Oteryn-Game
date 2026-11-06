@@ -499,6 +499,11 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>) -> TestResult {
                 }
             }
         }
+        drop(states);
+        drop(runtime);
+        for (index, (actor, session)) in players.iter().copied().enumerate() {
+            super::party_effects::check_buffs(h, &owner, actor, session, key, index != 2).await?;
+        }
     }
     Ok(())
 }

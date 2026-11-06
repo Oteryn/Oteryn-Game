@@ -85,6 +85,7 @@ fn live_names_reach_scene_and_disappear_with_visibility() -> Result<(), BatchErr
         },
     };
     view.set_presentations(vec![oteryn_session::VisibleAppearance {
+        light: None,
         entity,
         look: None,
     }])?;
@@ -99,6 +100,7 @@ fn own_identity_draws_once_between_step_and_appearance_publish() -> Result<(), B
     let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
     view.set_own_identity([1; 16]);
     let own = oteryn_session::VisibleAppearance {
+        light: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: None,
             kind: oteryn_session::EntityKind::Player,
@@ -154,7 +156,11 @@ fn live_presentations_keep_target_clock_and_light_through_rebuilds() -> Result<(
             identity: [8; 16],
             generation: 1,
         },
-        position: ActorPosition { x: 101, y: 200, floor: 0 },
+        position: ActorPosition {
+            x: 101,
+            y: 200,
+            floor: 0,
+        },
         detail: oteryn_session::EntityDetail::Actor {
             direction: StepDirection::South,
             appearance_ref: 1,
@@ -165,7 +171,11 @@ fn live_presentations_keep_target_clock_and_light_through_rebuilds() -> Result<(
     view.click(TileCoord::new(101, 200))?;
     let selected = view.scene().target();
     assert!(selected.is_some());
-    let appearance = oteryn_session::VisibleAppearance { entity, look: None };
+    let appearance = oteryn_session::VisibleAppearance {
+        light: None,
+        entity,
+        look: None,
+    };
     view.apply_pushed(&Pushed {
         appearances: Some(vec![appearance.clone()]),
         world_clock: Some(oteryn_session::world_clock::WorldClock {
@@ -175,16 +185,112 @@ fn live_presentations_keep_target_clock_and_light_through_rebuilds() -> Result<(
         }),
         ..Pushed::default()
     })?;
-    let lit = view.scene().atlas().clone();
+    let lit = view.scene().sprites().lighting.clone();
     let mut unlit = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
     unlit.set_presentations(vec![appearance])?;
-    assert_eq!(lit.cell_count(), unlit.scene().atlas().cell_count());
-    assert_ne!(lit.rgba(), unlit.scene().atlas().rgba());
+    assert_eq!(lit.ambient, [128, 0, 0]);
+    assert_ne!(lit, unlit.scene().sprites().lighting);
     assert_eq!(view.scene().name_count(), 1);
     assert!(view.hud_status().contains("23:59"));
     assert_eq!(view.scene().target(), selected);
     view.apply_pushed(&Pushed::default())?;
-    assert_eq!(view.scene().atlas(), &lit);
+    assert_eq!(view.scene().sprites().lighting, lit);
     assert_eq!(view.scene().target(), selected);
+    Ok(())
+}
+
+#[test]
+fn echo_portal_click_walks_and_reward_remains_in_native_container()
+-> Result<(), Box<dyn std::error::Error>> {
+    use super::feature_local_world_view::live_snapshot;
+    use oteryn_session::world_map::{decode_world_map_snapshot, encode_world_map_snapshot};
+    let mut map = live_snapshot(101);
+    // The real PG producer emits this appearance with a session handle.
+    // Compact definition references remain generation-specific.
+    map.tiles[0].items[0].appearance_id = 54133;
+    map.tiles[0].items[0].origin = oteryn_session::world_map::MapOrigin::Handle(1.try_into()?);
+    let bytes = encode_world_map_snapshot(&map).map_err(|e| format!("{e:?}"))?;
+    let decoded = decode_world_map_snapshot(&bytes).map_err(|e| format!("{e:?}"))?;
+    let mut play = view()?;
+    play.set_live_map(&decoded)?;
+    let portal_quads = play.scene().sprites().len();
+    play.click(TileCoord::new(101, 200))?;
+    assert_eq!(
+        play.inputs.back(),
+        Some(&Input::TargetWalk(ActorPosition {
+            x: 101,
+            y: 200,
+            floor: 0
+        })),
+        "a volatile Echo portal must not swallow the click needed to step into it"
+    );
+    assert_eq!(
+        play.scene().sprites().len(),
+        portal_quads,
+        "walking does not erase the server map"
+    );
+    // Ordinary handled items on the same tile remain selectable.
+    let mut ordinary = decoded.clone();
+    ordinary.tiles[0].items[0].appearance_id = 42;
+    play.inputs.clear();
+    play.set_live_map(&ordinary)?;
+    play.click(TileCoord::new(101, 200))?;
+    assert!(play.inputs.is_empty());
+    assert!(
+        play.scene()
+            .target()
+            .and_then(|target| target.item)
+            .is_some()
+    );
+    play.set_live_map(&decoded)?;
+    // The server removes the portal after activation; no local encounter or payout is invented.
+    map.tiles[0].items.clear();
+    play.set_live_map(&map)?;
+    assert!(play.scene().target().is_none());
+    let (link, _commands, outbox) = play_channel();
+    use oteryn_client_runtime::container_tree::{ContainerView, ContainerViews};
+    let rewards = ContainerViews {
+        views: vec![ContainerView {
+            view_id: 0,
+            container_handle: 90.try_into()?,
+            parent_handle: None,
+            capacity: 20,
+            entries: vec![
+                oteryn_session::ItemEntry {
+                    handle: 91.try_into()?,
+                    // Compact generation reference, not a donor item ID.
+                    item_definition_ref: 42.try_into()?,
+                    count: 1.try_into()?,
+                    sub_type: 0,
+                },
+                oteryn_session::ItemEntry {
+                    handle: 92.try_into()?,
+                    item_definition_ref: 43.try_into()?,
+                    count: 1.try_into()?,
+                    sub_type: 0,
+                },
+            ],
+            browse: None,
+        }],
+    };
+    outbox.container_initialize(Some(ContainerViews::default()));
+    outbox.container_events(&[SessionEvent::ContainerViews(AppliedDelta {
+        server_sequence: 3,
+        base_revision: 1,
+        new_revision: 2,
+        value: {
+            use oteryn_session::container_tree::{decode_container_views, encode_container_views};
+            let bytes = encode_container_views(&rewards).map_err(|e| format!("{e:?}"))?;
+            decode_container_views(&bytes).map_err(|e| format!("{e:?}"))?
+        },
+    })]);
+    let panel = link.container_panel();
+    assert_eq!(
+        panel.current().ok_or("missing reward container")?.entries,
+        rewards.views[0].entries
+    );
+    assert!(oteryn_client_ui::container_tree::view::panel_text(&panel).contains("2 / 20"));
+    outbox.container_end();
+    assert!(link.container_panel().current().is_none());
     Ok(())
 }
