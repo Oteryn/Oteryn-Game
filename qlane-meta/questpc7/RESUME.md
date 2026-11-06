@@ -1,3 +1,30 @@
+## Reward engine integration in progress
+
+PG RED executed: qengine_rewards_knight_outfit,73.19329316s, NoConversation
+instead of the source reward greeting. Pure reward catalogue2 units and source
+producer12 tests pass. The selected NPC backend is now being integrated from
+qengine2; world signatures/read-only travel remain unchanged. Crate check
+found two additional explicit charge/fluid defaults needed in nested MINT
+contents; complete those fields and run the focused PG case to GREEN. This is
+an in-progress mechanism, not a claimed green product slice.
+Owner requires a push at least every30 minutes and no fact investigation over
+ten minutes. CONTRACT-NOTES.md records the integration decisions.
+
+# Current continuation after a056392a4
+
+The ordered NPC exchange batch is committed and pushed as `a056392a4`.
+All required gates passed; `NPC-EXCHANGE-VALIDATION.json` holds exact evidence.
+Fresh qengine2 fetch advanced5a6de28c1 to9d3c3869f. Its six QUALIFIED titles
+include Festive Outfits, which overlaps this ledger. Per owner instruction,
+Festive is now recorded QUALIFIED externally and is skipped here. Remaining
+scope is24 ACTIVE entries; eight exclusions/world-change rows remain outside
+scope. No ownership question or shared-engine deferral is pending.
+Reuse the updated9d3c3869f reward/outfit mechanism, preserving this lane's
+charge/fluid, UTC ordered NPC and Father atomic transaction changes. Inspect
+its new read-only prerequisite support before applying selected source files.
+Do not merge unrelated workflow/repository-tool changes or binary placements.
+Continue batching through full quest routes, commit/push each green batch.
+
 # questpc7 Cloud continuation checkpoint — 2026-11-06
 
 Branch: `claude/happy-davinci-ijz3wy-questpc7`; starting HEAD

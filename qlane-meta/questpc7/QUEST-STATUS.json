@@ -231,7 +231,7 @@
     "title": "Festive Outfits Quest",
     "canonical": "oteryn:quest.festive_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/42/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -248,18 +248,16 @@
       ]
     },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Festive Outfits, Festive first addon, Festive second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/42/definition",
-        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
-      ],
-      "attempts": [
-        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    "qualification": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "scope": "Introduction, base and both addons through real NPC commands; exact consumption and normal appearance selection",
+      "postgres_version": "18.6",
+      "case_seconds": 89.658220585,
+      "batch_result": "3 full stories passed in95.79s",
+      "source": "qlane-meta/qengine2/RESUME.md:44; case marker at:54"
     }
   },
   {
