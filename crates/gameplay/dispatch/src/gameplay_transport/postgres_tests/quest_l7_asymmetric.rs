@@ -26,12 +26,12 @@ fn quest_l7_giant_smithhammer_four_source_states() -> TestResult {
 }
 
 pub(super) async fn exercise(
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     callback: &Callback,
     trigger: Position,
+    world: &crate::map::boot::BundleWorld,
 ) -> TestResult {
-    let map = owner.bundle_map().ok_or("map")?;
     let pos = crate::map::overlay::TilePos {
         x: trigger.x,
         y: trigger.y,
@@ -51,6 +51,13 @@ pub(super) async fn exercise(
         .into_iter()
         .enumerate()
     {
+        // Drive the fixture clock beyond USE exhaustion, preserving the real
+        // command pacing checks and avoiding a wall-clock sleep.
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("fixture clock")?;
+        let map = owner.bundle_map().ok_or("map")?;
         let mut before = map.facts.base_entry(pos, 1, 1).ok_or("lever")?;
         before.appearance_id = if closed { 2773 } else { 2772 };
         assert!(map.facts.apply_quest_callback(
@@ -79,7 +86,8 @@ pub(super) async fn exercise(
         .await?;
         assert_eq!(
             decode_use_result(&reply).map_err(debug)?,
-            UseDisposition::Committed
+            UseDisposition::Committed,
+            "USE branch closed={closed} rock_absent={absent}"
         );
         let should_change = closed == absent;
         assert_eq!(
@@ -92,9 +100,8 @@ pub(super) async fn exercise(
             if should_change { !closed } else { absent }
         );
         assert_eq!(
-            map.facts
-                .quest_callback_blocked(map.overlay.base(), rock_pos, false),
-            !map.facts.base_hidden(rock_key),
+            world.enterable(rock_pos),
+            map.facts.base_hidden(rock_key),
             "rock visibility and collision must agree",
         );
         assert_eq!(

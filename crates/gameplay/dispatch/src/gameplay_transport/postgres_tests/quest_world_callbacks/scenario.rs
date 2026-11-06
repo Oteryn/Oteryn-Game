@@ -201,10 +201,11 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if name == "giant-smithhammer-asymmetric" {
             super::super::quest_l7_asymmetric::exercise(
-                &owner,
+                &mut owner,
                 &mut admitted,
                 &callback,
                 trigger,
+                &world,
             )
             .await?;
         } else if let Some(expected_destination) = stateless_destination {
