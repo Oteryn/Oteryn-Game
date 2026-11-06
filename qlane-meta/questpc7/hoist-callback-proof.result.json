@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python3",
+    "-c",
+    "import sys; sys.path.insert(0,\"tools/content-migration\"); import regenerate_content; regenerate_content.refresh_quest_callback_proof()"
+  ],
+  "exit_code": 0,
+  "seconds": 0.307,
+  "log": ".questpc7/hoist-callback-proof.log"
+}

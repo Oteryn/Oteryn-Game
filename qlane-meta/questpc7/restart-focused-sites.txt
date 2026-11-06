@@ -1,0 +1,129 @@
+apps/game-server/src/node/serve/bundle_npcs.rs:354:            talk: Arc::new(NpcTalkBook::from_model_with_native_quests(
+crates/gameplay/content/src/content/world_reward_claims.rs:83:    OwnerExcluded,
+crates/gameplay/content/src/content/world_reward_claims.rs:293:        return Ok(Err(LeftOut::OwnerExcluded));
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:678:    for (reason, expected) in [(LeftOut::OwnerExcluded, 2), (LeftOut::Variant, 6)] {
+apps/game-server/tests/support/combat_bestiary_postgres_cases.rs:73:        tutorial_corruptor: None,
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:8:fn tutorial_corruptor_preparation_preserves_arm_and_rejects_stale_authority() -> TestResult {
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:14:        let h = fixture::Harness::create(admin, "tutorial_corruptor", true).await?;
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:49:                    .prepare_tutorial_corruptor(&authority, &h.node, stale, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:57:                    .prepare_tutorial_corruptor(&authority, &h.node, current, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:62:            assert_eq!(h.count("game_tutorial_corruptor_claims").await?, 0);
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:65:                    .prepare_tutorial_corruptor(&authority, &h.node, current, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:70:            assert_eq!(h.count("game_tutorial_corruptor_claims").await?, 0);
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:80:                    .prepare_tutorial_corruptor(&authority, &h.node, stale, death)
+apps/game-server/tests/support/attack_kill_reward_postgres_cases.rs:576:        tutorial_corruptor: None,
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:46:#[path = "tutorial_corruptor_postgres_cases.rs"]
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:47:mod tutorial_corruptor;
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:617:        tutorial_corruptor: None,
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:1575:                tutorial_corruptor: None,
+crates/gameplay/combat/src/combat/death_reward.rs:235:    pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/combat/src/combat/death_reward.rs:477:    tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/combat/src/combat/death_reward.rs:488:    if let Some(claim) = &tutorial_corruptor {
+crates/gameplay/combat/src/combat/death_reward.rs:489:        if claim.source_outputs().len() != claim.items().len() {
+crates/gameplay/combat/src/combat/death_reward.rs:501:                    .source_outputs()
+crates/gameplay/combat/src/combat/death_reward.rs:513:        for (offset, (id, source)) in claim.source_outputs().enumerate() {
+crates/gameplay/combat/src/combat/death_reward.rs:530:            let purpose = crate::durability::tutorial_corruptor::guarantee_purpose(id);
+crates/gameplay/combat/src/combat/death_reward.rs:587:    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
+crates/gameplay/combat/src/combat/death_reward.rs:638:                tutorial_corruptor,
+crates/gameplay/combat/src/combat/death_reward.rs:876:        input.tutorial_corruptor.clone(),
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:32:    pub fn bind_draw_ordinals(mut self, first: u32) -> Option<Self> {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:40:    pub fn source_outputs(&self) -> impl ExactSizeIterator<Item = (u32, u32)> + '_ {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:58:    pub async fn prepare_tutorial_corruptor(
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:123:    let prior: Option<Vec<i32>> = sqlx::query_scalar("SELECT item_ids FROM game_tutorial_corruptor_claims WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid AND scope_generation=$4::text::numeric(20,0) AND actor_id=$5 AND actor_generation=$6::text::numeric(20,0)")
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:179:    sqlx::query("INSERT INTO game_tutorial_corruptor_claims(character_id,world_id,channel_id,scope_generation,actor_id,actor_generation,item_ids) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),$5,$6::text::numeric(20,0),$7)")
+crates/gameplay/quests/src/tutorial/corruptor_loot_tests.rs:4:fn tutorial_corruptor_rewards_use_source_items_and_base_vocations() {
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:7:use crate::durability::tutorial_corruptor::TutorialCorruptorClaim;
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:10:    pub(super) async fn tutorial_corruptor_table(
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:24:            .prepare_tutorial_corruptor(self.character, self.holder, fence, entry.facts.death)
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:48:        let claim = claim.bind_draw_ordinals(first).ok_or(())?;
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:29:        fallback_lines: Vec<String>,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:43:    fallback_lines: Vec<String>,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:160:    let fallback_lines = if greeting && plan.reply.is_empty() {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:174:        fallback_lines,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:229:        fallback_lines,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:297:            fallback_lines: fallback_lines.clone(),
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:334:                    fallback_lines
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:368:        fallback_lines,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:404:                        fallback_lines
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:4:use crate::durability::tutorial_viola::{ViolaAction, ViolaReply};
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:24:    action: Option<ViolaAction>,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:58:        "mission" | "task" | "book" => Some(ViolaAction::Mission),
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:74:                Some(ViolaAction::Accept)
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:97:fn line(reply: ViolaReply) -> &'static str {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:99:        ViolaReply::ReturnOffer => "Glad to see you are back. Did you find my book? Say yes or no.",
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:100:        ViolaReply::Offer => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:103:        ViolaReply::Accepted => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:106:        ViolaReply::MissingBook => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:109:        ViolaReply::Completed => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:112:        ViolaReply::AlreadyCompleted => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:115:        ViolaReply::NoRoom => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:125:    reply: ViolaReply,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:130:        state.viola = if matches!(reply, ViolaReply::Offer | ViolaReply::ReturnOffer) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:143:    if reply == ViolaReply::Completed
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:149:        inventory_changed: reply == ViolaReply::Completed,
+crates/gameplay/durability/src/durability/item_mint.rs:910:        tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/durability/src/durability/item_mint.rs:950:        if let Some(claim) = &tutorial_corruptor {
+crates/gameplay/durability/src/durability/item_mint.rs:961:                    let purpose = super::tutorial_corruptor::guarantee_purpose(*id);
+crates/gameplay/durability/src/durability/item_mint.rs:1025:                    if let Some(claim) = &tutorial_corruptor
+crates/gameplay/durability/src/durability/item_mint.rs:1163:                    if let Some(claim) = &tutorial_corruptor {
+crates/gameplay/durability/src/durability/item_mint.rs:1164:                        super::tutorial_corruptor::consume_in_transaction(&mut tx, &node, claim).await?;
+crates/gameplay/durability/src/durability/core_modules.rs:157:pub mod tutorial_corruptor;
+crates/gameplay/dispatch/src/gameplay_transport/mod.rs:191:mod tutorial_corruptor;
+crates/gameplay/durability/src/durability/tutorial_viola.rs:21:pub enum ViolaAction {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:25:impl ViolaAction {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:34:pub enum ViolaReply {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:43:impl ViolaReply {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:76:    ) -> Result<Option<ViolaReply>, CharacterProgressionError> {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:105:        action: ViolaAction,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:110:    ) -> Result<ViolaReply, CharacterProgressionError> {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:134:                (2,_)=>ViolaReply::AlreadyCompleted,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:135:                (0,ViolaAction::Mission)=>ViolaReply::Offer,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:136:                (0,ViolaAction::Accept)=>{sqlx::query("INSERT INTO game_character_viola(character_id,stage) VALUES(encode($1,'hex')::uuid,1)").bind(fence.character_id.as_bytes().as_slice()).execute(&mut **tx).await?;ViolaReply::Accepted},
+crates/gameplay/durability/src/durability/tutorial_viola.rs:137:                (1,ViolaAction::Mission)=>ViolaReply::ReturnOffer,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:138:                (1,ViolaAction::Accept)=>{
+crates/gameplay/durability/src/durability/tutorial_viola.rs:146:                        Exchange::Missing=>ViolaReply::MissingBook,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:147:                        Exchange::NoRoom=>ViolaReply::NoRoom,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:154:                            craft=Some(transaction);xp=Some(occurrence.as_bytes().to_vec());ViolaReply::Completed
+crates/gameplay/durability/src/durability/tutorial_viola.rs:171:    action: Option<ViolaAction>,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:172:) -> Result<Option<ViolaReply>, DurabilityError> {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:178:            ViolaReply::stored(reply)
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2872:        let Ok((loot_table, tutorial_corruptor)) = admission
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2873:            .tutorial_corruptor_table(fence, &entry, loot_table)
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2884:        if tutorial_corruptor.is_some()
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2908:            tutorial_corruptor,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:7:pub(super) type CatalogueActivation = (
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:12:pub(super) struct CatalogueChest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:32:fn cases() -> TestResult<Vec<CatalogueChest>> {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:36:fn cases_including(include: impl Fn(&str) -> bool) -> TestResult<Vec<CatalogueChest>> {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:142:                cases.push(CatalogueChest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:366:fn phase_a_cohort(quests: &[&str]) -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:425:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:436:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:447:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:458:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:469:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:480:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:491:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:502:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:513:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:524:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:535:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:664:    chest: &CatalogueChest,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:748:    chest: &CatalogueChest,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:912:fn execute(cases: Vec<CatalogueChest>) -> TestResult {
+crates/gameplay/npc/src/npc_talk.rs:135:        Self::from_model_with_native_quests(model, &[])
+crates/gameplay/npc/src/npc_talk.rs:140:    pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
+crates/gameplay/npc/src/npc_talk.rs:552:        let book = NpcTalkBook::from_model_with_native_quests(&model, &keys);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:399:            .prepare_tutorial_corruptor(&authority, &h.node, current, facts.death)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:416:                "CREATE FUNCTION newhaven_reject_claim() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'newhaven simulated commit failure'; END $$; CREATE TRIGGER newhaven_reject_claim BEFORE INSERT ON game_tutorial_corruptor_claims FOR EACH ROW EXECUTE FUNCTION newhaven_reject_claim();".to_owned()
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:443:            sqlx::raw_sql(sqlx::AssertSqlSafe("DROP TRIGGER newhaven_reject_claim ON game_tutorial_corruptor_claims; DROP FUNCTION newhaven_reject_claim();".to_owned()))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:498:                .bind(crate::durability::tutorial_corruptor::guarantee_purpose(*id))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:647:        let claims:i64 = sqlx::query_scalar("SELECT count(*) FROM game_tutorial_corruptor_claims WHERE character_id=encode($1,'hex')::uuid")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs:70:        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:111:    chest: &super::quest_catalogue_chests::CatalogueChest,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:112:    activation: &super::quest_catalogue_chests::CatalogueActivation,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:119:    catalogue: Option<&super::quest_catalogue_chests::CatalogueChest>,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:120:    activation: Option<&super::quest_catalogue_chests::CatalogueActivation>,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/falcon_chests.rs:87:    activation: &super::quest_catalogue_chests::CatalogueActivation,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:374:            Some(crate::durability::tutorial_viola::ViolaReply::Completed)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:428:        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model_with_native_quests(

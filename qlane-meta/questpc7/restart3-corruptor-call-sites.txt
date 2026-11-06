@@ -1,0 +1,34 @@
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:7:use crate::durability::tutorial_corruptor::TutorialCorruptorClaim;
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:10:    pub(super) async fn tutorial_corruptor_table(
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:15:    ) -> Result<(LootTableDefinition, Option<TutorialCorruptorClaim>), ()> {
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:24:            .prepare_tutorial_corruptor(self.character, self.holder, fence, entry.facts.death)
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:87:    fn newhaven_corruptor_guarantee_survives_low_factor_and_keeps_independent_ordinary_drop()
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:18:pub struct TutorialCorruptorClaim {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:25:impl TutorialCorruptorClaim {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:49:pub fn guarantee_purpose(item: u32) -> String {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:58:    pub async fn prepare_tutorial_corruptor(
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:64:    ) -> Result<Option<TutorialCorruptorClaim>, CharacterProgressionError> {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:103:                    Ok(Ok((!items.is_empty()).then_some(TutorialCorruptorClaim {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:141:    claim: &TutorialCorruptorClaim,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:17:fn newhaven_corruptor_all_five_vocations_kill_loot_take_equip() -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:35:fn newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary() -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:51:fn newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set() -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:68:fn newhaven_corruptor_lifecycle_recovers_original_corpse_and_child_custody() -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:98:            Harness::create_with_admission_seed(admin, "newhaven_corruptor", false, false).await?;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:417:            .prepare_tutorial_corruptor(&authority, &h.node, current, facts.death)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:521:                .bind(crate::durability::tutorial_corruptor::guarantee_purpose(*id))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:817:fn newhaven_corruptor_lifecycle_process_restart() -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:919:            "newhaven_corruptor_lifecycle_process_restart",
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2873:            .tutorial_corruptor_table(fence, &entry, loot_table)
+tools/content-migration/test_quest_finish_newhaven_items.py:7:import quest_finish_newhaven_items as newhaven
+crates/gameplay/combat/src/combat/death_reward.rs:235:    pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/combat/src/combat/death_reward.rs:477:    tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/combat/src/combat/death_reward.rs:530:            let purpose = crate::durability::tutorial_corruptor::guarantee_purpose(id);
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:49:                    .prepare_tutorial_corruptor(&authority, &h.node, stale, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:57:                    .prepare_tutorial_corruptor(&authority, &h.node, current, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:65:                    .prepare_tutorial_corruptor(&authority, &h.node, current, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:80:                    .prepare_tutorial_corruptor(&authority, &h.node, stale, death)
+crates/gameplay/durability/src/durability/item_mint.rs:910:        tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/durability/src/durability/item_mint.rs:961:                    let purpose = super::tutorial_corruptor::guarantee_purpose(*id);
+tools/content-migration/register_spell_families.py:366:    import quest_finish_newhaven_items
+tools/content-migration/register_spell_families.py:367:    quest_finish_newhaven_items.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)

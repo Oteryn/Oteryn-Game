@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python3",
+    "tools/content-schema/quest-authoring/quest_rollout_authoring.py"
+  ],
+  "exit_code": 0,
+  "seconds": 0.82,
+  "log": ".questpc7/hoist-rollout.log"
+}

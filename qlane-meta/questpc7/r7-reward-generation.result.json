@@ -1,0 +1,5 @@
+{
+  "command": "python3 tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content",
+  "exit": 0,
+  "duration_seconds": 2.368
+}

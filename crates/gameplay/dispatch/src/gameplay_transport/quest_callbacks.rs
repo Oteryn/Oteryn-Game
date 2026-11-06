@@ -530,6 +530,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => None,
             };
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+            let read_only_gate = if callback.is_read_only() {
+                let context = {
+                    let runtime = self.runtime.lock().await;
+                    if runtime.read_actor_position(actor) != Ok(entered) {
+                        return entered;
+                    }
+                    QuestWorldContext {
+                        map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                        content_revision: format!(
+                            "sha256:{}",
+                            hex(&runtime.content_pin().server_artifact_digest())
+                        ),
+                        placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+                        reset_epoch: self.reset_epoch,
+                        actor_placement: actor.placement_identity(),
+                        movement_revision: entered.revision(),
+                    }
+                };
+                let admitted = self
+                    .states
+                    .world_gate
+                    .lock()
+                    .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()));
+                let allowed = if let (true, Some(fence), Some(catalogue)) =
+                    (admitted, fence, self.quest_catalogue.as_ref())
+                {
+                    self.root
+                        .check_character_world_callback(
+                            self.character,
+                            self.holder,
+                            fence,
+                            &callback.key,
+                            std::sync::Arc::clone(catalogue),
+                            permit,
+                            context,
+                        )
+                        .await
+                        .is_ok_and(|allowed| allowed)
+                } else {
+                    false
+                };
+                allowed.then(|| ReadOnlyGate {
+                    actor,
+                    session,
+                    expected: entered,
+                    callback: callback.key.clone(),
+                })
+            } else {
+                None
+            };
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(actor) != Ok(entered) {
@@ -551,7 +601,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     slot.as_mut(),
                     optional_pvp,
-                    None,
+                    read_only_gate.as_ref(),
                 )
                 .await;
             let unresolved =
@@ -584,6 +634,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match tokio::time::timeout(std::time::Duration::from_secs(10), operation).await {
             Ok(snapshot) => snapshot,
+            Err(_) if callback.is_read_only() => {
+                // This path cannot have a durable commit to reconcile. A cancelled
+                // read returns to the step origin rather than reserving a write.
+                let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+                let mut runtime = self.runtime.lock().await;
+                let mut states = self.states.spell_states.lock().await;
+                if runtime.read_actor_position(actor) == Ok(entered) {
+                    self.refuse_quest_step(
+                        optional_pvp,
+                        &mut runtime,
+                        &mut states,
+                        actor,
+                        session,
+                        map,
+                        callback,
+                        entered,
+                        origin,
+                    );
+                }
+                runtime.read_actor_position(actor).unwrap_or(entered)
+            }
             Err(_) => {
                 if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
                     let pending = records.entry(session).or_insert(Pending {

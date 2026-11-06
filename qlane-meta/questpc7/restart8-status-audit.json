@@ -1,0 +1,33 @@
+{
+  "task_id": "questpc",
+  "titles": 178,
+  "counts": {
+    "BLOCKED": 156,
+    "QUALIFIED": 22
+  },
+  "terminal_condition_satisfied": true,
+  "unchanged_inherited_product_files": 174,
+  "validated_blocker_references": 427,
+  "retained_passing_pg_cohorts": 9,
+  "retained_positive_native_pg_markers": 82,
+  "pg_rerun_this_continuation": false,
+  "fresh_dispatch_check_exit": 0,
+  "fresh_dispatch_check_log": ".questpc/restart8-initial-check.log",
+  "exact_retained_pg_filters": [
+    "quest_catalogue_chests_phase_a_01_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_02_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_03_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_04_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_05_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_06_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_08_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_09_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_11_use_replay_and_refusal"
+  ],
+  "changed_files_this_continuation": [
+    ".questpc/restart8-initial-check.log",
+    ".questpc/restart8-status-audit.json",
+    ".questpc/RESUME.md"
+  ],
+  "unfinished": "155 nonexcluded full quest paths plus excluded Dawnport are BLOCKED; exact missing pieces, file:line references and attempts remain in QUEST-STATUS.json. Hot Cuisine retains command2603 hi Rejected!=Ok at classic_quests.rs:168. No new full-quest, PG pass, CI, independent review or publication claim."
+}

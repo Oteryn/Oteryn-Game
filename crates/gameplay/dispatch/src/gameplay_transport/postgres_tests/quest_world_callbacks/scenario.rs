@@ -197,7 +197,18 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if let Some(expected_destination) = stateless_destination {
+        if name.starts_with("formogar-hoist-") {
+            super::super::questpc7_hoist::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                trigger,
+            )
+            .await?;
+        } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,
                 &mut admitted,

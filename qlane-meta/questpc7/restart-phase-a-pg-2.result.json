@@ -1,0 +1,35 @@
+{
+  "log": ".questpc/restart-phase-a-pg-2.log",
+  "log_sha256": "47b2475cd4943c87df73cca9e4a45df82391ece354cdbaa38d561cf2d6922292",
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--all-features",
+    "--lib",
+    "quest_catalogue_chests_phase_a_",
+    "--",
+    "--test-threads=2",
+    "--nocapture"
+  ],
+  "exit": 0,
+  "duration_seconds": 1003.407,
+  "test_results": {
+    "quest_catalogue_chests_phase_a_02_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_phase_a_01_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_phase_a_03_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_phase_a_04_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_phase_a_06_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_phase_a_05_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_phase_a_08_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_phase_a_07_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_phase_a_09_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_phase_a_10_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_phase_a_11_use_replay_and_refusal": "ok"
+  },
+  "qualified_cohorts": 11,
+  "qualified_quests": 54
+}

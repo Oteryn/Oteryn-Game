@@ -1,0 +1,5 @@
+{
+  "command": "python3 tools/content-schema/quest-authoring/grizzly_rooms.py",
+  "exit": 0,
+  "duration_seconds": 4.211
+}

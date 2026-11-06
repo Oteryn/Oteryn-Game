@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python3",
+    "tools/content-schema/quest-authoring/quest_completion_import.py"
+  ],
+  "exit_code": 0,
+  "seconds": 4.672,
+  "log": ".questpc7/hoist-completion-import.log"
+}

@@ -1,0 +1,1533 @@
+[
+  {
+    "title": "Exchange Quests",
+    "canonical": "oteryn:quest.friends_and_traders",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/47/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Collect three Bast Skirts for the cyclops' partner.",
+      "targets": [
+        "Bast Skirt"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Implement the existing fenced quest writer’s atomic consume/output/progress transaction for every exact selected recipe; use one receipt, preserve rollback/replay/capacity refusal, and wire each missing NPC into real dispatch.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/47/definition",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230"
+      ],
+      "attempts": [
+        "Traced plan_storage and the Father-only plan_father_items exception; neither can commit Bast Skirts, Honeycombs or the Blessed Wooden Stake exchange."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.atomic_npc_exchange",
+      "source_recipe_requirement": "The Sweaty Cyclops/Marina/Quentin exchanges require consumption of the exact carried inputs, output minting and quest progress under one receipt and Character fence."
+    }
+  },
+  {
+    "title": "Falconer Outfits Quest",
+    "canonical": "oteryn:quest.falconer_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/40/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "use",
+      "objective": "Inspect the Task Board and select a chosen weekly hunting assignment.",
+      "targets": [
+        "Task Board"
+      ]
+    },
+    "blocker": {
+      "kind": "owner_exclusion",
+      "dependency": "P23",
+      "missing_piece": "Owner-excluded P23 Prey/Hunting Tasks: the chosen path starts at the Task Board and redeems its Hunting Task Shop outfit/addon offers. The owner exclusions apply even though the task-board catalogue already lists those cosmetics; shop metadata is not a quest completion.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/40/definition",
+        "crates/gameplay/quests/src/quest/task_board_catalogue.rs:39",
+        ".questpc7/OWNER-SCOPE-ALL.md:4"
+      ],
+      "attempts": [
+        "Read the Task Board/kill/shop stages and found the exact Falconer/Feral Trapper offers in the existing catalogue; applied the explicit P23 owner exclusion rather than requalifying that other mechanic."
+      ],
+      "boundary": "Current user explicitly permits this named owner exclusion.",
+      "owner": "owner-excluded P23"
+    }
+  },
+  {
+    "title": "Feaster of Souls Quest",
+    "canonical": "oteryn:quest.feaster_of_souls_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/41/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Ring the Death Knell at Carlin Graveyard, Ghostlands and Dark Cathedral.",
+      "targets": [
+        "Death Knell",
+        "Carlin Graveyard",
+        "Ghostlands",
+        "Dark Cathedral"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Poltergeist Outfits: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/41/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Feral Trappers Quest",
+    "canonical": "oteryn:quest.feral_trappers_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/74/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "use",
+      "objective": "Accept the authored hunting programme at the Task Board.",
+      "targets": [
+        "Task Board"
+      ]
+    },
+    "blocker": {
+      "kind": "owner_exclusion",
+      "dependency": "P23",
+      "missing_piece": "Owner-excluded P23 Prey/Hunting Tasks: the chosen path starts at the Task Board and redeems its Hunting Task Shop outfit/addon offers. The owner exclusions apply even though the task-board catalogue already lists those cosmetics; shop metadata is not a quest completion.",
+      "evidence": [
+        "content/quests/definitions/quests-00200-00299.json:1#/records/74/definition",
+        "crates/gameplay/quests/src/quest/task_board_catalogue.rs:39",
+        ".questpc7/OWNER-SCOPE-ALL.md:4"
+      ],
+      "attempts": [
+        "Read the Task Board/kill/shop stages and found the exact Falconer/Feral Trapper offers in the existing catalogue; applied the explicit P23 owner exclusion rather than requalifying that other mechanic."
+      ],
+      "boundary": "Current user explicitly permits this named owner exclusion.",
+      "owner": "owner-excluded P23"
+    }
+  },
+  {
+    "title": "Ferumbras' Ascension Quest",
+    "canonical": "oteryn:quest.ferumbras_ascension_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/35/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones (33393, 32373, -11) native_source=true duration=5.156270693s",
+        "duration_seconds": 5.156270693,
+        "source_position": [
+          33393,
+          32373,
+          -11
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:361"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night (33384, 32323, -12) native_source=true duration=5.249561645s",
+        "duration_seconds": 5.249561645,
+        "source_position": [
+          33384,
+          32323,
+          -12
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:365"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth (33408, 32396, -11) native_source=true duration=5.888040457s",
+        "duration_seconds": 5.888040457,
+        "source_position": [
+          33408,
+          32396,
+          -11
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:369"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the infernal entrance beneath Darashia.",
+      "targets": [
+        "Darashia infernal entrance"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Rift Warrior Outfits: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00000-00099.json:1#/records/35/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Festive Outfits Quest",
+    "canonical": "oteryn:quest.festive_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/42/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Collect three Porcelain Masks for the first costume accessory.",
+      "targets": [
+        "Porcelain Mask"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Festive Outfits, Festive first addon, Festive second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/42/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Fiend Slayer Outfits Quest",
+    "canonical": "oteryn:quest.fiend_slayer_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/43/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Recover one Demon Claws addon token from the Azzilon challenge.",
+      "targets": [
+        "Demon Claws"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Fiend Slayer Outfits, Fiend Slayer first addon, Fiend Slayer second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/43/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Fire from the Earth Mini World Change",
+    "canonical": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/2/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter the erupting Hellgore volcano on Goroma.",
+      "targets": [
+        "Hellgore",
+        "Goroma"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/2/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Fire-Fighter Outfits Quest",
+    "canonical": "oteryn:quest.fire_fighter_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/44/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the Gnomprona fire-fighting staging area.",
+      "targets": [
+        "Gnomprona"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Fire-Fighter Outfits, Fire-Fighter first addon, Fire-Fighter second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/44/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Forgotten Knowledge Quest",
+    "canonical": "oteryn:quest.forgotten_knowledge_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/45/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward1",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward1 (32349, 32194, -9) native_source=true duration=5.090969993s",
+        "duration_seconds": 5.090969993,
+        "source_position": [
+          32349,
+          32194,
+          -9
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:322"
+      },
+      {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward2",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward2 (32382, 32368, -9) native_source=true duration=4.959183813s",
+        "duration_seconds": 4.959183813,
+        "source_position": [
+          32382,
+          32368,
+          -9
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:330"
+      },
+      {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward3",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward3 (32287, 32119, -7) native_source=true duration=4.791148415s",
+        "duration_seconds": 4.791148415,
+        "source_position": [
+          32287,
+          32119,
+          -7
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:336"
+      },
+      {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward4",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward4 (32389, 32001, -6) native_source=true duration=5.282838658s",
+        "duration_seconds": 5.282838658,
+        "source_position": [
+          32389,
+          32001,
+          -6
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:340"
+      },
+      {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward5",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.halls_of_hope.reward5 (32449, 32109, -8) native_source=true duration=5.867407945s",
+        "duration_seconds": 5.867407945,
+        "source_position": [
+          32449,
+          32109,
+          -8
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:345"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.ghostsilver_lantern_quest",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ghostsilver_lantern_quest (32825, 31664, -9) native_source=true duration=5.5331575s",
+        "duration_seconds": 5.5331575,
+        "source_position": [
+          32825,
+          31664,
+          -9
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:349"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.imbuing_crystal_quest",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.imbuing_crystal_quest (33026, 31662, -14) native_source=true duration=5.149054894s",
+        "duration_seconds": 5.149054894,
+        "source_position": [
+          33026,
+          31662,
+          -14
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:353"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.painting_of_agirl_quest",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.painting_of_agirl_quest (32883, 31686, -10) native_source=true duration=5.716749517s",
+        "duration_seconds": 5.716749517,
+        "source_position": [
+          32883,
+          31686,
+          -10
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:357"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Recover one Heavy Old Tome to restore the temple record.",
+      "targets": [
+        "Heavy Old Tome"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Compose the selected route through the shared encounter/party admission and frozen-participant death settlement owner; earn access and rewards only from real encounter settlement, then prove repeat/reset/recovery behavior.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/45/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
+        "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92"
+      ],
+      "attempts": [
+        "Inspected the selected boss stages, current callback operation shape and frozen kill entry; selected all eight exact reward claims for independent real-USE qualification."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine.encounter_party_access"
+    }
+  },
+  {
+    "title": "Formal Dress Outfits Quest",
+    "canonical": "oteryn:quest.formal_dress_outfits_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/75/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Visit the anniversary exhibition and locate the formal-dress display.",
+      "targets": [
+        "25 Years of Tibia exhibition"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Formal Dress Outfits, Formal Dress first addon, Formal Dress second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00200-00299.json:1#/records/75/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Formorgar Mines Hoist Quest",
+    "canonical": "oteryn:quest.formogar_mine_hoist",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/46/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter Formorgar Mines and locate the old surveying route.",
+      "targets": [
+        "Formorgar Mines"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Implement UID3060 destination selection from the remote lever at (32156,31125,10): floor11 when2772 exists, floor9 otherwise; UID3059/3061 lead to (32157,31125,10). Check both instruction flags through a read-only STEP gate on every trip, with return-on-refusal and no quest write per trip.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/46/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:178"
+      ],
+      "attempts": [
+        "Read both exact donor movements_hoist.lua bodies from the pinned corpus and fresh Wiki instructions; checked the closed callback parser rather than promoting a fixed-destination approximation. Tested the two existing instruction-book claims separately."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine.paired_portal_and_remote_lever_predicate"
+    }
+  },
+  {
+    "title": "Formorgar Mines Quest",
+    "canonical": "oteryn:quest.the_ice_islands_quest",
+    "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/27/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_formorgar_books_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_formorgar_books_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest (32027, 31104, -11) native_source=true duration=4.973961658s",
+        "duration_seconds": 4.973961658,
+        "source_position": [
+          32027,
+          31104,
+          -11
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:323"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_formorgar_books_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_formorgar_books_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton (32121, 31106, -12) native_source=true duration=4.975769275s",
+        "duration_seconds": 4.975769275,
+        "source_position": [
+          32121,
+          31106,
+          -12
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:331"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s6",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s6",
+      "kind": "talk",
+      "objective": "Question the restless soul in Formorgar Mines.",
+      "targets": [
+        "A Restless Soul"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Norseman Outfits: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00200-00299.json:1#/records/27/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Fury Gates Mini World Change",
+    "canonical": "oteryn:quest.fury_gates_mini_world_change",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/48/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Locate the chosen active Fury Gate entrance.",
+      "targets": [
+        "Fury Gate"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/48/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Giant Smithhammer Quest",
+    "canonical": "oteryn:quest.giant_smithhammer_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/49/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
+        "status": "QUALIFIED",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin (32778, 32253, -8) native_source=true duration=4.573228216s",
+        "duration_seconds": 4.573228216,
+        "source_position": [
+          32778,
+          32253,
+          -8
+        ],
+        "log": ".questpc7/asymmetric-rechecked-pg.log:72",
+        "retained_test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
+        "status": "QUALIFIED",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer (32776, 32253, -8) native_source=true duration=4.45732072s",
+        "duration_seconds": 4.45732072,
+        "source_position": [
+          32776,
+          32253,
+          -8
+        ],
+        "log": ".questpc7/asymmetric-rechecked-pg.log:76",
+        "retained_test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon",
+        "status": "QUALIFIED",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon (32774, 32253, -8) native_source=true duration=4.386249664s",
+        "duration_seconds": 4.386249664,
+        "source_position": [
+          32774,
+          32253,
+          -8
+        ],
+        "log": ".questpc7/asymmetric-rechecked-pg.log:80",
+        "retained_test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Locate the smith's hidden cache in the Plains of Havoc.",
+      "targets": [
+        "Plains of Havoc giant-smith cache"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "The asymmetric lever mechanism and three exact source reward claims have final real PG proof. Implement and compose the pinned explore -> Giant Spider kill -> cache -> completion programme through real dispatch and qualify its entire stage graph. Existing recipe runtime_enabled remains false; mechanism/reward slices do not qualify that programme.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/49/definition",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:62",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+      ],
+      "attempts": [
+        "Extracted both donor lever.lua bodies; compared all four lever/rock states to the current executor. Found the three reward claims under Explorer Society and added their exact source-position/item/quantity PG cohort; retained the accepted PR2770 Q5/A Item12510 substitute rather than overriding that decision."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine.asymmetric_lever"
+    },
+    "mechanism_progress": {
+      "asymmetric_lever": {
+        "state": "QUALIFIED_MECHANISM_ONLY",
+        "source": ".questpc7/giant-smithhammer-lever.lua:4-18",
+        "test": "questpc7_giant_smithhammer_asymmetric_lever_all_four_states",
+        "red_log": ".questpc7/asymmetric-red.log",
+        "green_log": ".questpc7/asymmetric-green.log",
+        "green_duration_seconds": 29.695032877,
+        "scope": "Four native lever/rock combinations through real USE, non-zero PG proof. Whole pinned quest stages remain ACTIVE and unqualified.",
+        "final_log": ".questpc7/asymmetric-rechecked-pg.log",
+        "final_duration_seconds": 35.916384503
+      }
+    }
+  },
+  {
+    "title": "Glooth Engineer Outfits Quest",
+    "canonical": "oteryn:quest.glooth_engineer_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/50/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Present the authored Dark Trails qualification for the base outfit.",
+      "targets": [
+        "Dark Trails completion qualification"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Glooth Engineer Outfits, Glooth Engineer first addon, Glooth Engineer second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/50/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Goblin Merchant Quest",
+    "canonical": "oteryn:quest.goblin_merchant_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Place three Advertisement Signs on cracked swamp stones.",
+      "targets": [
+        "Advertisement Sign",
+        "Cracked Stone"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Implement the Guardcatcher/Adventurer carried-tool consumption, exact live-creature capture/removal and captured-item delivery atomically; compose the selected pickup/reset, NPC and quest progression route.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+      ],
+      "attempts": [
+        "Read the chosen Guardcatcher/Adventurer and perfume/trunk stages; compared the single-carried-item map callback schema with the required actor capture operation."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine.creature_capture_and_pickup"
+    }
+  },
+  {
+    "title": "Golden Outfits Quest",
+    "canonical": "oteryn:quest.golden_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/52/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather the chosen hundred-thousand-coin base commissioning payment.",
+      "targets": [
+        "Gold Coin"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Golden Outfits, Golden boots and gloves addon, Golden helmet addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/52/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Grave Danger Quest",
+    "canonical": "oteryn:quest.grave_danger_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/53/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Visit the haunted grave in each of the twelve recorded regions.",
+      "targets": [
+        "Edron north",
+        "Dark Cathedral",
+        "Ghostlands",
+        "Cormaya",
+        "Femor Hills",
+        "isle northeast of Ankrahmun",
+        "Kilmaresh",
+        "Vengoth",
+        "Darashia",
+        "old Thais temple",
+        "Orclands entrance",
+        "southern Ice Islands"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Hand of the Inquisition Outfits: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/53/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Grimvale Mini World Change",
+    "canonical": "oteryn:quest.grimvale_mini_world_change",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/54/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach Grimvale during the authored full-moon encounter.",
+      "targets": [
+        "Grimvale"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/54/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Grimvale Quest",
+    "canonical": "oteryn:quest.grimvale_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/55/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "collect",
+      "objective": "Gather five Purple Nightshade Blossoms for the curse investigation.",
+      "targets": [
+        "Purple Nightshade Blossom"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Compose the selected route through the shared encounter/party admission and frozen-participant death settlement owner; earn access and rewards only from real encounter settlement, then prove repeat/reset/recovery behavior.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/55/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
+        "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92"
+      ],
+      "attempts": [
+        "Checked the Liquid Silver Trap, Feroxa, four named bosses and ritual stages against the current fixed teleport and frozen kill-entry interfaces."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine.encounter_party_access"
+    }
+  },
+  {
+    "title": "Hand of the Inquisition Outfits Quest",
+    "canonical": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/56/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Recover one Final Judgement token for the first addon.",
+      "targets": [
+        "Final Judgement"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Hand of the Inquisition Outfits, Hand of the Inquisition first addon, Hand of the Inquisition second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/56/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Heart of Destruction Quest",
+    "canonical": "oteryn:quest.heart_of_destruction_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/57/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter the Otherworld through the chosen Zao breach.",
+      "targets": [
+        "Zao Steppe Otherworld breach"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Compose boss-room admission, frozen participant capture, room death/vortex effects and encounter settlement through their existing owners; wire the pinned quest progression and qualify the full route.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/57/definition",
+        "content/quests/native-death-bindings/quest-batch3-c-heart_of_destruction.json:1",
+        "content/quests/heart-of-destruction-deaths.json:1",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+      ],
+      "attempts": [
+        "Read all six exact room-death rules and their scope block; traced the existing kill-settlement interface and checked that no production native-death consumer loads this packet. Kept runtime_enabled=false."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine.encounter_party_access_and_room_death"
+    }
+  },
+  {
+    "title": "Hero of Rathleton Quest",
+    "canonical": "oteryn:quest.hero_of_rathleton_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/58/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Investigate the voice in the darkness beneath Rathleton.",
+      "targets": [
+        "Rathleton underground voice"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Compose the selected route through the shared encounter/party admission and frozen-participant death settlement owner; earn access and rewards only from real encounter settlement, then prove repeat/reset/recovery behavior.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/58/definition",
+        "content/quests/world-callbacks-held/batch3-b-hero_of_rathleton.json:1",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+      ],
+      "attempts": [
+        "Read the full selected item/combat/dungeon stages and the held world callback packet; distinguished its literal callbacks and retained greeting proof from the shared encounter admission operation."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine.encounter_party_access"
+    }
+  },
+  {
+    "title": "Hidden Threats Quest",
+    "canonical": "oteryn:quest.hidden_threats_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/43/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01 (33080, 32014, -13) native_source=true duration=5.144586582s",
+        "duration_seconds": 5.144586582,
+        "source_position": [
+          33080,
+          32014,
+          -13
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:373"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02 (33031, 32050, -13) native_source=true duration=4.95113004s",
+        "duration_seconds": 4.95113004,
+        "source_position": [
+          33031,
+          32050,
+          -13
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:377"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file (33078, 31980, -13) native_source=true duration=4.98521715s",
+        "duration_seconds": 4.98521715,
+        "source_position": [
+          33078,
+          31980,
+          -13
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:381"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter the Corym Mines and survey the concealed chamber route.",
+      "targets": [
+        "Corym Mines"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Implement Hidden Threats’ exact fragment/tool assembly through one fenced inventory/quest receipt, then compose the selected mine/key route. Do not split input consumption from output/progress commit.",
+      "evidence": [
+        "content/quests/definitions/quests-00000-00099.json:1#/records/43/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230"
+      ],
+      "attempts": [
+        "Compared the key-fragment/metal-file source rewards and full selected mine route with both current transaction interfaces; selected all three source rewards for independent USE/replay/refusal qualification."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.atomic_multi_item_exchange"
+    }
+  },
+  {
+    "title": "Hive Born World Change",
+    "canonical": "oteryn:quest.authored.hive_born_world_change",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/3/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Earn fifty Favour Points by completing War Against the Hive tasks.",
+      "targets": [
+        "Favour Points"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/3/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Hive Outpost Mini World Change",
+    "canonical": "oteryn:quest.authored.hive_outpost_mini_world_change",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/4/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the Hive outpost west of Liberty Bay on Vandura.",
+      "targets": [
+        "Vandura Hive outpost",
+        "Liberty Bay"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/4/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Horse Station World Change",
+    "canonical": "oteryn:quest.horse_station_world_change",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/59/definition",
+    "status": "BLOCKED",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Visit the horse station east of Thais and inspect its pasture.",
+      "targets": [
+        "Thaian Horse Station"
+      ]
+    },
+    "blocker": {
+      "kind": "external_lane_dependency",
+      "dependency": "WORLDCHG",
+      "missing_piece": "World-change activation, native layer/spawn/NPC/raid binding and activation/reset lifecycle belong to WORLDCHG under the current owner directive. These Game world changes are not reclassified as OT-only content.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/59/definition",
+        "crates/gameplay/world-change/src/content.rs:117",
+        "docs/agents/tasks/EVENTS-WORLD-1.md:1"
+      ],
+      "attempts": [
+        "Read the exact title recipe and original source world-change scope; traced the typed W1 boundary and its six explicit binding gaps. Did not activate selection-only data or claim the personal adaptation runs."
+      ],
+      "boundary": "Current user retains WORLDCHG ownership; questpc7 implements other missing Game mechanisms.",
+      "owner": "WORLDCHG"
+    }
+  },
+  {
+    "title": "Hot Cuisine Quest",
+    "canonical": "oteryn:quest.hot_cuisine_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/60/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "source_binding_queue": {
+      "transitions": 48,
+      "native_binding_count": 0
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather 2 Meat for the Rotworm Stew course.",
+      "targets": [
+        "Meat"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Implement the existing fenced quest writer’s atomic consume/output/progress transaction for every exact selected recipe; use one receipt, preserve rollback/replay/capacity refusal, and wire each missing NPC into real dispatch.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/60/definition",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230",
+        "crates/gameplay/quests/src/quest/mod.rs:21",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs:148"
+      ],
+      "attempts": [
+        "Read the source recipe/bonus calendar planner and the real generic writer; traced the retained Jean Pierre hi rejection to unsupported CalendarMonth rather than interpreting it as an absent test. Did not duplicate qengine2 or activate the test-only cooking planner."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.atomic_npc_exchange",
+      "source_recipe_requirement": "Each Jean Pierre cooking operation must consume all exact ingredient quantities and fluid subtypes, deliver the dish and commit cooking progress under one receipt/fence."
+    }
+  },
+  {
+    "title": "Hunter Outfits Quest",
+    "canonical": "oteryn:quest.hunter_outfits_quest",
+    "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/44/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [
+      {
+        "claim": "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow",
+        "status": "QUALIFIED",
+        "retained_test": "questpc7_story_rewards_use_replay_and_refusal",
+        "scope": "source reward USE, command and cold-owner replay, exact outputs and atomic refusal; access/storyline not qualified",
+        "test": "questpc7_story_rewards_use_replay_and_refusal",
+        "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow (32369, 32795, -10) native_source=true duration=5.093611834s",
+        "duration_seconds": 5.093611834,
+        "source_position": [
+          32369,
+          32795,
+          -10
+        ],
+        "log": ".questpc7/lane-rewards-pg.log:385"
+      }
+    ],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Recover Elane's Crossbow from the chosen cult-route cache.",
+      "targets": [
+        "Elane's Crossbow"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Hunter Outfits, Hunter first addon, Hunter second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00000-00099.json:1#/records/44/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  },
+  {
+    "title": "Hunting for Tokens Quest",
+    "canonical": "oteryn:quest.hunting_for_tokens",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/61/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather twenty Silver Raid Tokens.",
+      "targets": [
+        "Silver Raid Token"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Implement the existing fenced quest writer’s atomic consume/output/progress transaction for every exact selected recipe; use one receipt, preserve rollback/replay/capacity refusal, and wire each missing NPC into real dispatch.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/61/definition",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230"
+      ],
+      "attempts": [
+        "Read the exact twenty-token/one-Abacus recipe and item-resolution hold; traced the generic writer and its Father-only exception before considering a lane NPC hook. No independent consume-then-mint transaction was introduced."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.atomic_npc_exchange",
+      "source_recipe_requirement": "Jorge must atomically consume exactly twenty Silver Raid Tokens and deliver one chosen Abacus replica with the quest receipt."
+    }
+  },
+  {
+    "title": "Hydra Egg Quest",
+    "canonical": "oteryn:quest.hydra_egg_quest",
+    "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/62/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s1",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the eastern Tiquanda stairway to the Hydra chamber.",
+      "targets": [
+        "eastern Tiquanda Hydra chamber"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Implement the Hydra Egg native nest pickup/replenishment lifecycle and admit the exact egg item from source facts, then compose and qualify the selected quest path. Preserve ordinary map pickup ownership; do not invent a UID reward chest.",
+      "evidence": [
+        "content/quests/definitions/quests-00100-00199.json:1#/records/62/definition",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:200",
+        "content/items/definitions/items-26500-26999.json:1#/records/465/definition"
+      ],
+      "attempts": [
+        "Read the fresh Wiki route (explicitly permits ignoring the Hydra), searched all reward-claim shards and both pinned donor trees for the nest owner, and checked Item4839 native admission. Did not fabricate a selector or use a test-only mint as the quest reward."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine.reset_pickup"
+    }
+  },
+  {
+    "title": "Illuminated Warrior Outfits Quest",
+    "canonical": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+    "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/5/definition",
+    "status": "ACTIVE",
+    "scope": "complete pinned quest path",
+    "reward_claims": [],
+    "queued_stage_binding": {
+      "stage": "s2",
+      "native_dispatch_binding": null,
+      "runtime_enabled": false
+    },
+    "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather scraps for the basic outfit.",
+      "targets": [
+        "Scraps of a Radiant Attire"
+      ]
+    },
+    "owner": "questpc7",
+    "remaining_work": {
+      "kind": "lane_implementation_work",
+      "missing_piece": "Illuminated Warrior Outfits, Illuminated Warrior first addon, Illuminated Warrior second addon: extend the existing receipt-bearing quest outfit/addon grant and account appearance selection mapping, preserving atomic quest/entitlement provenance. Implement each source recipe and compose the whole pinned quest route in questpc7.",
+      "evidence": [
+        "content/quests/definitions/quests-00300-00351.json:1#/records/5/definition",
+        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
+        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
+      ],
+      "attempts": [
+        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
+      ],
+      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
+      "previous_dependency": "qengine2.quest_outfit_and_addon_grant"
+    }
+  }
+]

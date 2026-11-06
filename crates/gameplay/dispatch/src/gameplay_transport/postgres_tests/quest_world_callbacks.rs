@@ -236,6 +236,7 @@ fn world_ordinal(
         .map(|p| p.position)
         .chain(callback.offerings.iter().map(|p| p.position))
         .chain(callback.teleport)
+        .chain(callback.remote_teleport.iter().flat_map(|remote| [remote.position, remote.destination]))
     {
         cells
             .entry((position.floor, position.x, position.y))
@@ -251,6 +252,21 @@ fn world_ordinal(
             ground_speed: None,
         }),
     });
+    if let Some(remote) = &callback.remote_teleport {
+        let palette = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{}", remote.appearance),
+            family: bundle::Family::Terrain,
+            id: palette,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+        cells.entry((remote.position.floor, remote.position.x, remote.position.y))
+            .or_default().push(sector::Item { palette, depth: 0, attrs: Default::default() });
+    }
     if let Some(appearance) = callback
         .item_on_target
         .as_ref()

@@ -98,6 +98,16 @@ pub struct MonkReward {
     pub final_shrine: bool,
 }
 
+/// Choose the alternate destination when a live base object has this appearance.
+/// The ordinary teleport is the destination when that object is absent.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RemoteTeleport {
+    pub position: Position,
+    pub appearance: u16,
+    pub destination: Position,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
@@ -110,6 +120,8 @@ pub struct Callback {
     pub reversible: bool,
     pub passages: Vec<Passage>,
     pub teleport: Option<Position>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote_teleport: Option<RemoteTeleport>,
     pub storage: Vec<Storage>,
     /// Checked against the progression owner in the same fenced quest transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -176,12 +188,18 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback.remote_teleport.as_ref().is_some_and(|remote| {
+                !callback.is_read_only()
+                    || callback.trigger != Trigger::StepIn
+                    || remote.appearance == 0
+                    || !valid_pos(remote.position)
+                    || !valid_pos(remote.destination)
+            })
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
             || unique_storage.len() != callback.storage.len()
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
-                    || callback.trigger != Trigger::Use
                     || callback.teleport.is_none()
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()
@@ -409,12 +427,55 @@ mod tests {
             match case {
                 0 => callback["experience"] = 1.into(),
                 1 => callback["storage"][0]["preserve"] = true.into(),
-                2 => callback["trigger"] = "step_in".into(),
+                2 => callback["lever"] = serde_json::json!([2772, 2773]),
                 _ => callback["teleport"] = serde_json::Value::Null,
             }
             assert!(
                 parse(&serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string())
                     .is_err()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_step_world_callback_has_no_quest_write_transition() -> Result<(), String> {
+        let mut row: serde_json::Value = serde_json::from_str::<serde_json::Value>(EMBEDDED)
+            .map_err(|e| e.to_string())?["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|row| row["key"] == "oteryn:quest-callback/formogar-hoist-3059")
+            .ok_or("hoist")?
+            .clone();
+        for storage in row["storage"].as_array_mut().ok_or("storage")? {
+            storage.as_object_mut().ok_or("storage")?.remove("preserve");
+            storage["read_only"] = true.into();
+        }
+        let callbacks = parse(&serde_json::json!({"schema": 1, "callbacks": [row]}).to_string())?;
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("catalogue")?,
+            &callbacks,
+        )?;
+        assert!(catalogue.transition(&callbacks[0].key).is_none());
+        let mut row = serde_json::to_value(&callbacks[0]).map_err(|e| e.to_string())?;
+        row["remote_teleport"] = serde_json::json!({
+            "position": {"x": 32156, "y": 31125, "floor": -10},
+            "appearance": 2772,
+            "destination": {"x": 32157, "y": 31125, "floor": -11},
+        });
+        parse(&serde_json::json!({"schema": 1, "callbacks": [row.clone()]}).to_string())?;
+        for case in 0..5 {
+            let mut bad = row.clone();
+            match case {
+                0 => bad["remote_teleport"]["appearance"] = 0.into(),
+                1 => bad["remote_teleport"]["position"]["floor"] = 1.into(),
+                2 => bad["remote_teleport"]["destination"]["floor"] = 1.into(),
+                3 => bad["storage"] = serde_json::json!([]),
+                _ => bad["teleport"] = serde_json::Value::Null,
+            }
+            assert!(
+                parse(&serde_json::json!({"schema": 1, "callbacks": [bad]}).to_string()).is_err()
             );
         }
         Ok(())

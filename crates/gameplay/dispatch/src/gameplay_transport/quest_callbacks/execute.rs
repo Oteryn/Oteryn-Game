@@ -144,7 +144,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        let teleport = match callback.teleport {
+        let mut destination = callback.teleport;
+        if let Some(remote) = &callback.remote_teleport {
+            let p = tile(remote.position);
+            let Some(base) = map.overlay.base().tile(p.x, p.y, p.floor) else {
+                return UseDisposition::Rejected;
+            };
+            let present = base
+                .ids()
+                .iter()
+                .zip(base.depths())
+                .filter(|(_, depth)| **depth == 0)
+                .enumerate()
+                .any(|(ordinal, (id, _))| {
+                    let Ok(ordinal) = u8::try_from(ordinal) else {
+                        return false;
+                    };
+                    let Some(key) = placement_key(p, ordinal) else {
+                        return false;
+                    };
+                    !map.facts.base_hidden(key)
+                        && map
+                            .facts
+                            .base_entry(p, ordinal, *id)
+                            .is_some_and(|facts| facts.appearance_id == remote.appearance)
+                });
+            if present {
+                destination = Some(remote.destination);
+            }
+        }
+        let teleport = match destination {
             Some(to) => match crate::map::floor::prepare_quest_callback_teleport(
                 runtime,
                 self.movement_cells,
@@ -160,9 +189,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             None => None,
         };
-        if !map
-            .facts
-            .quest_callback_capacity(key, expected_revision, callback.passages.len())
+        if !callback.is_read_only()
+            && !map
+                .facts
+                .quest_callback_capacity(key, expected_revision, callback.passages.len())
         {
             return UseDisposition::Exhausted;
         }
@@ -280,14 +310,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Dryad watersplash54 is source metadata only until a live Item
         // presentation consumer exists; the existing teleport owner still commits.
-        if !map.facts.apply_quest_callback(
-            key,
-            expected_revision,
-            after,
-            &passages,
-            &replacements,
-            close,
-        ) {
+        if !callback.is_read_only()
+            && !map.facts.apply_quest_callback(
+                key,
+                expected_revision,
+                after,
+                &passages,
+                &replacements,
+                close,
+            )
+        {
             return UseDisposition::Rejected;
         }
         if let Some(proof) = teleport {

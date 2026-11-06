@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "tools/content-schema/quest-authoring/quest_tree_authoring.py",
+    "content",
+    "--source-packet",
+    "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"
+  ],
+  "exit_code": 0,
+  "seconds": 31.855,
+  "log": ".questpc7/hoist-quest-tree.log"
+}

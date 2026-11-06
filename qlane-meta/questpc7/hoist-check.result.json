@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "--locked",
+    "--offline",
+    "check",
+    "-p",
+    "oteryn-gameplay-quests",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--quiet"
+  ],
+  "exit_code": 0,
+  "seconds": 164.265,
+  "log": ".questpc7/hoist-check.log"
+}
