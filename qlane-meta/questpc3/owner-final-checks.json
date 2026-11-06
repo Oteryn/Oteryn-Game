@@ -1,0 +1,371 @@
+{
+  "task_id": "questpc3",
+  "head": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "lifecycle": "local AUTHORING; supplied detached worktree; no frozen candidate or PR",
+  "policy_version": "3.1.0",
+  "policy_commit": "1bfb5ff98c8aa156e73669a14e083a1d464c29fb",
+  "scope": "quests R–S; migrations1040–1059; only1040 used; no new commands/capabilities",
+  "new_quest_implementations_this_continuation": 0,
+  "non_record_inputs_verified_unchanged": 86,
+  "input_snapshot": "restart-next-inputs.json",
+  "checks": [
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "check",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "continuation-owner-check.log",
+      "log_sha256": "d3951de6c51dccf7d4352255ac1c2362822af4cae7bc1ad2b4dd367c7755482d",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      }
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "questpc3_reward_chests",
+        "--",
+        "--nocapture",
+        "--test-threads=2"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-chests.log",
+      "log_sha256": "4d5a964fcf20447b2a91c30550b18b42ebe17fb4a16a52b128b736b1941f2f2c",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "rust_results": [
+        {
+          "passed": 23,
+          "failed": 0,
+          "ignored": 0,
+          "duration_seconds": 402.79
+        }
+      ]
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "rookgaard_exchanges",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-npc.log",
+      "log_sha256": "5b027e0ba4edf371f26b3c6dbf11b5f8e232224de0d056ca29a164b18bfee491",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "rust_results": [
+        {
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "duration_seconds": 241.92
+        }
+      ]
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-content",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--all-targets",
+        "--all-features",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-clippy.log",
+      "log_sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      }
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-content",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-units.log",
+      "log_sha256": "f50712d00eacf3e6449d8560e077dc03ab91255161ca730b646802d58b2611b7",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "rust_results": [
+        {
+          "passed": 312,
+          "failed": 0,
+          "ignored": 1,
+          "duration_seconds": 165.77
+        },
+        {
+          "passed": 24,
+          "failed": 0,
+          "ignored": 0,
+          "duration_seconds": 48.82
+        },
+        {
+          "passed": 251,
+          "failed": 0,
+          "ignored": 0,
+          "duration_seconds": 2.82
+        }
+      ]
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      }
+    },
+    {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/rookgaard_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_reward_chests.rs"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-mounted-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/reward-claim-authoring",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-authoring.log",
+      "log_sha256": "65a5ee16cc6a531a7d8f2123f8666b5ef7fa93b248ed26ccb43bf665472432fc",
+      "python_result": {
+        "passed": 61,
+        "duration_seconds": 45.114
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/world-authoring",
+        "-p",
+        "test_quest_chest_bindings_rs.py"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-overlay.log",
+      "log_sha256": "096f8dece2f1af45995e0b4fa91181cf0fa5bb6f8bbc2aa2f831059a3efffe44",
+      "python_result": {
+        "passed": 3,
+        "duration_seconds": 1.341
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_quest_callback_profiles.py"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-admissions.log",
+      "log_sha256": "194cbc79e796f0be829939ca8eb2a329ecfd3fbb6d88cde7363d7ec60237209c",
+      "python_result": {
+        "passed": 14,
+        "duration_seconds": 61.381
+      }
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "quest_callbacks_binding_and_coverage_require_exact_source_witnesses",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-coverage.log",
+      "log_sha256": "df67ea5d1cd019057948f8da8b052130779f803c72365cb480a7fe7edcee01a6",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "rust_results": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "duration_seconds": 0.14
+        }
+      ]
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "fluid_ingredient_tests",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-craft-unit.log",
+      "log_sha256": "811644f5bd1e216eb33a96e36a15bdb702402ab9a9deede9f6343f29ac40f215",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "rust_results": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "duration_seconds": 0.0
+        }
+      ]
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        ".",
+        ":(exclude).questpc3/wiki/**",
+        ":(exclude).questpc3/full-code.diff"
+      ],
+      "exit_code": 0,
+      "log": "owner-final-diff-check.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "terminal_status_validation": {
+    "passed": true,
+    "titles_checked": 56,
+    "qualified": 17,
+    "blocked_implementation": 38,
+    "blocked_scope_exclusion": 1,
+    "record": "owner-final-status.json",
+    "inventory": "wiki/revisions.json"
+  },
+  "review": {
+    "owner_checklist": "/home/mole/oteryn-cache/CODEX-CHECKLIST.md",
+    "map_report": "owner-final-map-review.json",
+    "json_report": "owner-final-json-review.json",
+    "new_concrete_defects": []
+  },
+  "unfinished": [
+    "Rascoohan Outfits Quest",
+    "Rathleton Quest",
+    "Ravenous Madness Quest",
+    "Realm of Dreams Quest",
+    "Research and Development Quest",
+    "Rest in Hallowed Ground Quest",
+    "Revenant Outfits Quest",
+    "Rift Warrior Outfits Quest",
+    "Rise of Devovorga",
+    "River Runs Deep Mini World Change",
+    "Rootwalker Outfits Quest",
+    "Roshamuul Quest",
+    "Rotten Blood Quest",
+    "Rottin Wood and the Married Men Quest",
+    "Royal Bounacean Advisor Outfits Quest",
+    "Royal Costume Outfits Quest",
+    "Sam's Old Backpack Quest",
+    "Sea of Light Quest",
+    "Secret Service Quest",
+    "Serpentine Tower Quest",
+    "Shadows of Yalahar Quest",
+    "Shaman Outfits Quest",
+    "Shards of a Broken Moon Quest",
+    "Sinatuki Quest",
+    "Skeleton Decoration Quest",
+    "Small Ruby Quest",
+    "Soil Guardian Outfits Quest",
+    "Soul War Quest",
+    "Spider Nest Mini World Change",
+    "Spike Tasks Quest",
+    "Spirit Grounds Mini World Change",
+    "Spirithunters Quest",
+    "Spring into Life",
+    "Stampede Mini World Change",
+    "Steal From Thieves Quest",
+    "Steamship World Change",
+    "Summoner Outfits Quest",
+    "Swamp Fever World Change"
+  ],
+  "scope_exclusions": [
+    "Sanctuary of the Lizard God Quest"
+  ],
+  "failed_tests_ci_only": [],
+  "pending_owner_questions": [],
+  "running_checks": [],
+  "git_writes": false,
+  "external_mutations": false
+}

@@ -1,0 +1,107 @@
+{
+  "task_id": "questpc3-L4",
+  "native_tree_manifest": "l4-native-tree-final.json",
+  "checks": [
+    {
+      "check": "quest unit",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-quests --lib stampede -- --nocapture",
+      "exit_code": 0,
+      "log": "l4-stampede-unit.log",
+      "results": [
+        "test quest::stampede::tests::stampede_embedded_counter_counts_five_native_kills_and_then_refuses ... ok",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 251 filtered out; finished in 0.57s"
+      ]
+    },
+    {
+      "check": "daily unit",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-world-change --lib daily::tests -- --nocapture",
+      "exit_code": 0,
+      "log": "l4-daily-regression-unit.log",
+      "results": [
+        "test daily::tests::w05b_chances_follow_the_donor_percentages ... ok",
+        "test daily::tests::stampede_uses_its_own_reset_draw_at_exactly_125_permille ... ok",
+        "test daily::tests::w05b_thawing_places_fourteen_ice_flowers_only_on_a_thawing_day ... ok",
+        "test daily::tests::w05b_the_day_takes_each_roll_from_its_own_draw ... ok",
+        "test daily::tests::w05b_rosemarie_stands_only_in_june ... ok",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "check": "raid planner unit",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-encounter-rules --lib stampede -- --nocapture",
+      "exit_code": 0,
+      "log": "l4-raid-rule-unit.log",
+      "results": [
+        "test raid::catalogue::tests::stampede_admitted_day_fires_on_first_check_and_only_once_per_reset ... ok",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 60 filtered out; finished in 0.04s"
+      ]
+    },
+    {
+      "check": "server selection unit",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --lib stampede_activation -- --nocapture",
+      "exit_code": 0,
+      "log": "l4-server-selection-unit.log",
+      "results": [
+        "test node::raid_scheduler::tests::stampede_activation_is_stable_for_the_epoch_and_excludes_inactive_days ... ok",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 559 filtered out; finished in 0.07s"
+      ]
+    },
+    {
+      "check": "native PostgreSQL",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib quest_l4_stampede -- --nocapture",
+      "exit_code": 0,
+      "log": "l4-stampede-independent-green.log",
+      "results": [
+        "RAIDS_GLOBAL POSTGRES_CASE_COMPLETED quest_l4_stampede_spawn",
+        "QUEST_L4_STAMPEDE_SPAWN POSTGRES_CASE_COMPLETED duration_ms=34988",
+        "test gameplay_transport::monk_save::postgres_tests::raid_live::quest_l4_stampede_raid_sixteen_native_elephants_and_spawn_replay ... ok",
+        "QUEST_L4_STAMPEDE POSTGRES_CASE_COMPLETED duration_ms=36202",
+        "test gameplay_transport::monk_save::postgres_tests::quest_l4_occurrences::quest_l4_stampede_native_five_kills_achievement_and_occurrence_replay ... ok",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2542 filtered out; finished in 36.20s"
+      ]
+    },
+    {
+      "check": "six changed crates Clippy",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-gameplay-encounter-rules -p oteryn-gameplay-world-change -p oteryn-game-server --all-targets --quiet -- -D warnings",
+      "exit_code": 0,
+      "log": "l4-final-clippy.log",
+      "results": []
+    },
+    {
+      "check": "Clippy after narrow repair",
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings",
+      "exit_code": 0,
+      "log": "l4-independent-clippy.log",
+      "results": []
+    },
+    {
+      "check": "cargo fmt",
+      "command": "/home/mole/.cargo/bin/cargo fmt --all --check",
+      "exit_code": 0,
+      "log": "l4-fmt-check.log"
+    },
+    {
+      "check": "included/new helper rustfmt",
+      "command": "/home/mole/.cargo/bin/rustfmt --edition 2024 --check crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_occurrences.rs crates/gameplay/dispatch/src/gameplay_transport/quest_kills.rs crates/gameplay/durability/src/durability/quest_state/stampede.rs",
+      "exit_code": 0,
+      "log": "l4-mounted-fmt-check.log"
+    }
+  ],
+  "red_cases": [
+    {
+      "log": "l4-stampede-red.log",
+      "duration_seconds": 29.89,
+      "failure": "native elephant deaths refused before quest-only queue admission"
+    },
+    {
+      "log": "l4-stampede-independent-red.log",
+      "duration_seconds": 32.0,
+      "failure": "current admitted Stampede day suppressed by busy legacy raid"
+    }
+  ],
+  "counts": {
+    "qualified": 1,
+    "unfinished": 21,
+    "blocked": 0
+  }
+}

@@ -1,0 +1,338 @@
+[
+  {
+    "quest": "Rapier Quest",
+    "status": "QUALIFIED",
+    "test_count": 1,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Rascoohan Outfits Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Rathleton Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Ravenous Madness Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Realm of Dreams Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Research and Development Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Rest in Hallowed Ground Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Revenant Outfits Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Rift Warrior Outfits Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Ring Quest",
+    "status": "QUALIFIED",
+    "test_count": 2,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Rise of Devovorga",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "River Runs Deep Mini World Change",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Rootwalker Outfits Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Roshamuul Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Rotten Blood Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Rottin Wood and the Married Men Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Royal Bounacean Advisor Outfits Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Royal Costume Outfits Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Sam's Old Backpack Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Sanctuary of the Lizard God Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Scale Armor Quest",
+    "status": "QUALIFIED",
+    "test_count": 1,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Sea of Light Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Secret Service Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Serpentine Tower Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Shadows of Yalahar Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Shaman Outfits Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Shaman Treasure Quest",
+    "status": "QUALIFIED",
+    "test_count": 1,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Shards of a Broken Moon Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Short Sword Quest",
+    "status": "QUALIFIED",
+    "test_count": 2,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Silver Amulet Quest",
+    "status": "QUALIFIED",
+    "test_count": 1,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Silver Brooch Quest",
+    "status": "QUALIFIED",
+    "test_count": 1,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Sinatuki Quest",
+    "status": "QUALIFIED",
+    "test_count": 2,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Six Rubies Quest",
+    "status": "QUALIFIED",
+    "test_count": 1,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Skeleton Decoration Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Skull of Ratha Quest",
+    "status": "QUALIFIED",
+    "test_count": 3,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Small Health Potion Quest",
+    "status": "QUALIFIED",
+    "test_count": 1,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Small Ruby Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Small Sapphire Quest",
+    "status": "QUALIFIED",
+    "test_count": 1,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Soil Guardian Outfits Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Soul War Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Spider Nest Mini World Change",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Spike Sword Quest",
+    "status": "QUALIFIED",
+    "test_count": 1,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Spike Tasks Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Spirit Grounds Mini World Change",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Spirithunters Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Spring into Life",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Stampede Mini World Change",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Steal From Thieves Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Stealth Ring Quest",
+    "status": "QUALIFIED",
+    "test_count": 2,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Steamship World Change",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Steel Helmet Quest",
+    "status": "QUALIFIED",
+    "test_count": 4,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Strong Potions Quest",
+    "status": "QUALIFIED",
+    "test_count": 1,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Studded Legs Quest",
+    "status": "QUALIFIED",
+    "test_count": 2,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Studded Shield Quest",
+    "status": "QUALIFIED",
+    "test_count": 3,
+    "marker_duration_and_test_name": "verified"
+  },
+  {
+    "quest": "Summoner Outfits Quest",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  },
+  {
+    "quest": "Swamp Fever World Change",
+    "status": "BLOCKED",
+    "missing_piece_and_attempt": "present",
+    "file_line": "verified"
+  }
+]

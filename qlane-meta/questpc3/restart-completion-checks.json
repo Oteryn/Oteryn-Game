@@ -1,0 +1,261 @@
+{
+  "task_id": "questpc3",
+  "head": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "lifecycle": "AUTHORING; local worker; no frozen SHA or PR",
+  "environment": {
+    "CARGO_BUILD_JOBS": "4",
+    "CARGO_NET_OFFLINE": "true (fresh completion checks)"
+  },
+  "counts": {
+    "inventory": 56,
+    "qualified": 18,
+    "blocked": 38
+  },
+  "source_input_snapshot": "active-inputs.json",
+  "source_input_count": 89,
+  "source_input_drift": [],
+  "checks": [
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "log": "restart-dispatch-check.log",
+      "log_sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e",
+      "executed_in_completion_resume": true
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-content",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--all-targets",
+        "--all-features",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "restart-final-clippy.log",
+      "log_sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e",
+      "executed_in_completion_resume": true
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "restart-final-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executed_in_completion_resume": true
+    },
+    {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "--config",
+        "skip_children=true",
+        "crates/gameplay/content/src/content/world_reward_claims.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/rookgaard_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_reward_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/rookgaard_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/sinatuki.rs",
+        "crates/gameplay/durability/src/durability/item_craft.rs",
+        "crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs",
+        "crates/gameplay/durability/src/durability/item_craft/npc_exchange/sinatuki.rs",
+        "crates/gameplay/npc/src/npc_talk.rs",
+        "crates/gameplay/quests/src/quest/mod.rs",
+        "crates/gameplay/quests/src/quest/rookgaard_exchanges.rs"
+      ],
+      "exit_code": 0,
+      "log": "restart-mounted-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executed_in_completion_resume": true
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "fluid_ingredient_tests",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "log": "restart-fluid-tests.log",
+      "log_sha256": "002d4e55f56c70de2b44a1e5cc2579529cb0ca85e7ccdeffdcf9b03441cc3fd4",
+      "executed_in_completion_resume": true,
+      "results": {
+        "passed": 1,
+        "failed": 0
+      }
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "migration_numbers_are_unique_and_match_embedded_migrator",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "log": "restart-migration-tests.log",
+      "log_sha256": "767c0036977152889b97706cedf6b12c218277617628f76d070fc06e2292f144",
+      "executed_in_completion_resume": true,
+      "results": {
+        "passed": 1,
+        "failed": 0
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/reward-claim-authoring",
+        "-p",
+        "test_scripted_chests_rs.py"
+      ],
+      "exit_code": 0,
+      "log": "restart-scripted-chests-tests.log",
+      "log_sha256": "3515ee8a0685b3175c384839a7793b8e0b996b3b5db2a4c0824329013247a6d7",
+      "executed_in_completion_resume": true,
+      "results": {
+        "passed": 3,
+        "failed": 0
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/world-authoring",
+        "-p",
+        "test_quest_chest_bindings_rs.py"
+      ],
+      "exit_code": 0,
+      "log": "restart-map-tests.log",
+      "log_sha256": "490e2173fac9f9d768bb71b1a55a5fcb655fd0b58eeaea1e45913f25da493be8",
+      "executed_in_completion_resume": true,
+      "results": {
+        "passed": 3,
+        "failed": 0
+      }
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "questpc3_reward_chests",
+        "--",
+        "--nocapture",
+        "--test-threads=2"
+      ],
+      "exit_code": 0,
+      "log": "current-restart-chests.log",
+      "log_sha256": "52801803faa09caf4f2d073348ec9e68e63777c54ddbb189e689fd1fc15d66ec",
+      "executed_in_completion_resume": false,
+      "results": {
+        "passed": 23,
+        "failed": 0,
+        "completion_markers": 24,
+        "source_hashes_unchanged": true
+      }
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "rookgaard_exchanges",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "log": "rookgaard-final-pg.log",
+      "log_sha256": "276dbf10c77fdf073113390fbb5ba5db42f3383922811d92b94fc3d9373714d3",
+      "executed_in_completion_resume": false,
+      "results": {
+        "passed": 4,
+        "failed": 0,
+        "completion_markers": 4,
+        "source_hashes_unchanged": true
+      }
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "sinatuki",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "log": "sinatuki-final-pg.log",
+      "log_sha256": "154e7fe7ca6d51f5738775130ef6ee558b93807f72c15a9dd82a973bce76ad9d",
+      "executed_in_completion_resume": false,
+      "results": {
+        "passed": 2,
+        "failed": 0,
+        "completion_markers": 2,
+        "source_hashes_unchanged": true
+      }
+    }
+  ],
+  "full_r_s_gameplay_complete": false,
+  "git_mutations": false,
+  "publication_or_independent_review_claimed": false
+}

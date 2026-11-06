@@ -1,0 +1,89 @@
+{
+  "filter": "questpc3_",
+  "cases": 20,
+  "failed": 0,
+  "ignored": 0,
+  "duration_seconds": 419.15,
+  "claims": [
+    {
+      "key": "oteryn:reward-claim.kv.ringquest2",
+      "duration_ms": 49869
+    },
+    {
+      "key": "oteryn:reward-claim.kv.rapier",
+      "duration_ms": 50230
+    },
+    {
+      "key": "oteryn:reward-claim.kv.ringquest1",
+      "duration_ms": 41412
+    },
+    {
+      "key": "oteryn:reward-claim.kv.scalearmor",
+      "duration_ms": 41250
+    },
+    {
+      "key": "oteryn:reward-claim.kv.shortswordbook",
+      "duration_ms": 36592
+    },
+    {
+      "key": "oteryn:reward-claim.kv.shamantreasure",
+      "duration_ms": 37088
+    },
+    {
+      "key": "oteryn:reward-claim.kv.silverbrooch",
+      "duration_ms": 33091
+    },
+    {
+      "key": "oteryn:reward-claim.kv.sixrubies",
+      "duration_ms": 33507
+    },
+    {
+      "key": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
+      "duration_ms": 36577
+    },
+    {
+      "key": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
+      "duration_ms": 36634
+    },
+    {
+      "key": "oteryn:reward-claim.kv.witch_house_quest",
+      "duration_ms": 38581
+    },
+    {
+      "key": "oteryn:reward-claim.kv.spikesword",
+      "duration_ms": 38688
+    },
+    {
+      "key": "oteryn:reward-claim.kv.stealhring2",
+      "duration_ms": 44282
+    },
+    {
+      "key": "oteryn:reward-claim.kv.steelhelmet1",
+      "duration_ms": 44818
+    },
+    {
+      "key": "oteryn:reward-claim.kv.steelhelmet3",
+      "duration_ms": 48729
+    },
+    {
+      "key": "oteryn:reward-claim.kv.steelhelmet4",
+      "duration_ms": 48381
+    },
+    {
+      "key": "oteryn:reward-claim.kv.steelhelmet2",
+      "duration_ms": 37380
+    },
+    {
+      "key": "oteryn:reward-claim.quest.u8_1.strong_potions.reward",
+      "duration_ms": 37466
+    },
+    {
+      "key": "oteryn:reward-claim.kv.bananafree",
+      "duration_ms": 49733
+    },
+    {
+      "key": "oteryn:reward-claim.kv.bananapremium",
+      "duration_ms": 51274
+    }
+  ]
+}

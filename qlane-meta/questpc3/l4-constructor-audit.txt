@@ -1,0 +1,26 @@
+apps/game-server/src/node/serve/daily_world_changes.rs:11:use oteryn_gameplay_world_change::daily::DailyWorldChanges;
+apps/game-server/src/node/serve/daily_world_changes.rs:18:pub(in crate::node) fn roll(world: WorldId, reset_epoch: u64, unix_ms: i64) -> DailyWorldChanges {
+apps/game-server/src/node/serve/daily_world_changes.rs:26:    DailyWorldChanges::roll(reset_epoch, month, day, |purpose| {
+apps/game-server/src/node/serve/daily_world_changes.rs:39:fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily::DailyMap {
+apps/game-server/src/node/serve/daily_world_changes.rs:55:    changes: &DailyWorldChanges,
+apps/game-server/src/node/serve/daily_world_changes.rs:64:    changes: &DailyWorldChanges,
+apps/game-server/src/node/serve/daily_world_changes.rs:101:    changes: &DailyWorldChanges,
+apps/game-server/src/node/serve/daily_world_changes.rs:214:        let rate = |hit: fn(&DailyWorldChanges) -> bool| days.iter().filter(|d| hit(d)).count();
+apps/game-server/src/node/serve/daily_world_changes.rs:255:        let changes = DailyWorldChanges::roll(1, 1, 1, |_| 0);
+apps/game-server/src/node/serve/daily_world_changes.rs:407:    fn boot_physical(changes: &DailyWorldChanges) -> crate::map::boot::BundleWorld {
+apps/game-server/src/node/serve/daily_world_changes.rs:434:        let day = DailyWorldChanges::roll(epoch, 1, 1, |_| 0);
+apps/game-server/src/node/serve/daily_world_changes.rs:468:        let none = boot_physical(&DailyWorldChanges::roll(epoch, 1, 1, |_| u64::MAX));
+apps/game-server/src/node/serve/daily_world_changes.rs:495:            let mut day = DailyWorldChanges::roll(epoch, 1, 1, |_| u64::MAX);
+apps/game-server/src/node/serve/daily_world_changes.rs:584:            let changes = DailyWorldChanges::roll(epoch, 1, day, |_| u64::MAX);
+apps/game-server/src/node/serve/daily_world_changes.rs:716:        let day = DailyWorldChanges::roll(1, 1, 1, |_| 0);
+crates/gameplay/world-change/src/daily.rs:5://! donor script; [`DailyWorldChanges::npcs`] lists the effects this repository applies to the
+crates/gameplay/world-change/src/daily.rs:85:pub const DRAW_PURPOSES: [&str; 5] = [
+crates/gameplay/world-change/src/daily.rs:95:pub struct DailyWorldChanges {
+crates/gameplay/world-change/src/daily.rs:107:impl DailyWorldChanges {
+crates/gameplay/world-change/src/daily.rs:111:        let [thawing, voice, trader, town, stampede] = DRAW_PURPOSES;
+crates/gameplay/world-change/src/daily.rs:172:            DailyWorldChanges::roll(9, month, day, |purpose| {
+crates/gameplay/world-change/src/daily.rs:173:                let index = DRAW_PURPOSES.iter().position(|p| *p == purpose);
+crates/gameplay/world-change/src/daily.rs:180:            DailyWorldChanges {
+crates/gameplay/world-change/src/daily.rs:208:            DailyWorldChanges::roll(5, 1, 1, |purpose| {
+crates/gameplay/world-change/src/daily.rs:225:        let day = |month| DailyWorldChanges::roll(1, month, 1, |_| u64::MAX);
+crates/gameplay/world-change/src/daily.rs:239:            DailyWorldChanges::roll(1, 1, 1, |_| draws.next().unwrap_or(u64::MAX))

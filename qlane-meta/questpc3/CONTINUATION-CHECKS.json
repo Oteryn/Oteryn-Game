@@ -1,0 +1,109 @@
+[
+  {
+    "name": "altar-regression",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--lib",
+      "rotten_blood_postgres_literal_altar_consumption_and_replay",
+      "--",
+      "--nocapture"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 38.205,
+    "log": ".questpc3/mechanism-altar-regression.log"
+  },
+  {
+    "name": "callback-unit",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-quests",
+      "--lib",
+      "world_callbacks::tests",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 9.021,
+    "log": ".questpc3/mechanism-callback-unit.log"
+  },
+  {
+    "name": "check",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "check",
+      "--locked",
+      "--offline",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "-p",
+      "oteryn-gameplay-durability",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 84.92,
+    "log": ".questpc3/mechanism-check.log"
+  },
+  {
+    "name": "clippy",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "clippy",
+      "--locked",
+      "--offline",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "-p",
+      "oteryn-gameplay-durability",
+      "--all-targets",
+      "--quiet",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 159.265,
+    "log": ".questpc3/mechanism-clippy.log"
+  },
+  {
+    "name": "fmt",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "fmt",
+      "--all",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 9.802,
+    "log": ".questpc3/mechanism-fmt.log"
+  },
+  {
+    "name": "included-rustfmt",
+    "command": [
+      "rustfmt",
+      "--edition",
+      "2024",
+      "--check",
+      "crates/gameplay/durability/src/durability/quest_world_callback.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/multi_stack_handin.rs"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.031,
+    "log": ".questpc3/mechanism-included-rustfmt.log"
+  }
+]

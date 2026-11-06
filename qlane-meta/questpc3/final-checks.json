@@ -1,0 +1,279 @@
+[
+  {
+    "check": "restart-pin-refresh",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "run",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-world-bundle-compiler",
+      "--",
+      "pin-refresh",
+      "."
+    ],
+    "exit_code": 0,
+    "duration_s": 185.34
+  },
+  {
+    "check": "restart-pin-check",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "run",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-world-bundle-compiler",
+      "--",
+      "pin-check",
+      ".",
+      ".questpc3/tmp/final-pin-check"
+    ],
+    "exit_code": 0,
+    "duration_s": 185.86
+  },
+  {
+    "check": "restart-clippy",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "clippy",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-content",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "-p",
+      "oteryn-gameplay-durability",
+      "-p",
+      "oteryn-gameplay-quests",
+      "-p",
+      "oteryn-gameplay-npc",
+      "--all-targets",
+      "--all-features",
+      "--quiet",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "duration_s": 333.89
+  },
+  {
+    "check": "restart-unit-content",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-content",
+      "--all-features",
+      "--lib",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "duration_s": 295.56
+  },
+  {
+    "check": "restart-unit-npc-quests",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-npc",
+      "-p",
+      "oteryn-gameplay-quests",
+      "--all-features",
+      "--lib",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "duration_s": 144.91
+  },
+  {
+    "check": "final-pg-chests",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--all-features",
+      "--lib",
+      "questpc3_reward_chests",
+      "--",
+      "--nocapture",
+      "--test-threads=2"
+    ],
+    "exit_code": 0,
+    "duration_s": 451.03
+  },
+  {
+    "check": "final-pg-npc",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--all-features",
+      "--lib",
+      "questpc3_npc_exchanges",
+      "--",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "exit_code": 0,
+    "duration_s": 178.05
+  },
+  {
+    "check": "restart-coverage-binding",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--all-features",
+      "--lib",
+      "quest_callbacks_binding_and_coverage_require_exact_source_witnesses",
+      "--",
+      "--nocapture"
+    ],
+    "exit_code": 0,
+    "duration_s": 0.45
+  },
+  {
+    "check": "restart-test-world-repository",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-game-server",
+      "--test",
+      "content_world_project_repository",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "duration_s": 124.05
+  },
+  {
+    "check": "restart-test-content-integration",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-game-server",
+      "--test",
+      "integration_rest",
+      "content_",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "duration_s": 6.02
+  },
+  {
+    "check": "final-fmt-check",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "fmt",
+      "--all",
+      "--check"
+    ],
+    "exit_code": 0,
+    "duration_s": 8.0
+  },
+  {
+    "check": "final-mounted-fmt",
+    "command": [
+      "rustfmt",
+      "--edition",
+      "2024",
+      "--check",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_reward_chests.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_npc_exchanges.rs"
+    ],
+    "exit_code": 0,
+    "duration_s": 0.03
+  },
+  {
+    "check": "final-clippy",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "clippy",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-gameplay-content",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "-p",
+      "oteryn-gameplay-durability",
+      "-p",
+      "oteryn-gameplay-quests",
+      "-p",
+      "oteryn-gameplay-npc",
+      "--all-targets",
+      "--all-features",
+      "--quiet",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "duration_s": 75.48
+  },
+  {
+    "check": "final-coverage-check",
+    "command": [
+      "python3",
+      "tools/content-schema/quest-authoring/quest_callback_coverage.py",
+      "--canary",
+      ".questpc3/reference/canary",
+      "--crystal",
+      ".questpc3/reference/crystal",
+      "--check"
+    ],
+    "exit_code": 0,
+    "duration_s": 0.12
+  },
+  {
+    "check": "final-pin-check",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "run",
+      "--locked",
+      "-j",
+      "4",
+      "-p",
+      "oteryn-world-bundle-compiler",
+      "--",
+      "pin-check",
+      ".",
+      ".questpc3/tmp/metadata-pin-check"
+    ],
+    "exit_code": 0,
+    "duration_s": 84.51
+  }
+]

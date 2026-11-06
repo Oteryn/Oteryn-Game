@@ -1,0 +1,346 @@
+{
+  "task": "questpc3",
+  "head": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "scope": "uncommitted local worker continuation; no Git or external write",
+  "checks": [
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--quiet"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "exit_code": 0,
+      "log": "restart-current-check.log"
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "questpc3_reward_chests",
+        "--",
+        "--nocapture",
+        "--test-threads=2"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "exit_code": 0,
+      "log": "restart-current-chests.log"
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "rookgaard_studded_legs_lee_delle_exchange_atomic_repeatable_replay",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "exit_code": 101,
+      "log": "restart-greeting-red.log"
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "rookgaard_exchanges",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "exit_code": 0,
+      "log": "restart-greeting-green.log"
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-content",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--all-targets",
+        "--all-features",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "exit_code": 0,
+      "log": "restart-current-clippy.log"
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "exit_code": 0,
+      "log": "restart-current-fmt.log"
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "rookgaard",
+        "--quiet"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "exit_code": 0,
+      "log": "restart-current-unit.log"
+    },
+    {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/rookgaard_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_reward_chests.rs"
+      ],
+      "exit_code": 0,
+      "log": "restart-current-mounted-fmt.log"
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/reward-claim-authoring",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 0,
+      "tests": 61,
+      "log": "restart-current-authoring.log"
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/world-authoring",
+        "-p",
+        "test_quest_chest_bindings_rs.py"
+      ],
+      "exit_code": 0,
+      "tests": 3,
+      "log": "restart-current-python-unittest.log"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        ".",
+        ":!.questpc3/wiki/**",
+        ":!.questpc3/full-code.diff"
+      ],
+      "exit_code": 0,
+      "log": "restart-current-diff-check.log",
+      "scope_note": "Pinned source captures and historical full-code.diff retain their original bytes"
+    }
+  ],
+  "postgres": [
+    {
+      "kind": "claims",
+      "log": "restart-current-chests.log",
+      "tests_passed": 23,
+      "duration_seconds": 549.11,
+      "completed": [
+        {
+          "case": "oteryn:reward-claim.kv.rapier",
+          "duration_ms": 37617
+        },
+        {
+          "case": "oteryn:reward-claim.kv.silveramulet",
+          "duration_ms": 37620
+        },
+        {
+          "case": "oteryn:reward-claim.kv.ringquest2",
+          "duration_ms": 37729
+        },
+        {
+          "case": "oteryn:reward-claim.kv.stealhring1",
+          "duration_ms": 37867
+        },
+        {
+          "case": "oteryn:reward-claim.kv.scalearmor",
+          "duration_ms": 36125
+        },
+        {
+          "case": "oteryn:reward-claim.kv.ringquest1",
+          "duration_ms": 36403
+        },
+        {
+          "case": "oteryn:reward-claim.kv.shortswordbook",
+          "duration_ms": 32697
+        },
+        {
+          "case": "oteryn:reward-claim.kv.shamantreasure",
+          "duration_ms": 33066
+        },
+        {
+          "case": "oteryn:reward-claim.kv.sixrubies",
+          "duration_ms": 34310
+        },
+        {
+          "case": "oteryn:reward-claim.kv.silverbrooch",
+          "duration_ms": 35522
+        },
+        {
+          "case": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
+          "duration_ms": 31996
+        },
+        {
+          "case": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
+          "duration_ms": 33006
+        },
+        {
+          "case": "oteryn:reward-claim.kv.witch_house_quest",
+          "duration_ms": 31908
+        },
+        {
+          "case": "oteryn:reward-claim.kv.smallsapphire",
+          "duration_ms": 31887
+        },
+        {
+          "case": "oteryn:reward-claim.kv.stealhring2",
+          "duration_ms": 32770
+        },
+        {
+          "case": "oteryn:reward-claim.kv.spikesword",
+          "duration_ms": 32948
+        },
+        {
+          "case": "oteryn:reward-claim.kv.steelhelmet1",
+          "duration_ms": 46888
+        },
+        {
+          "case": "oteryn:reward-claim.kv.steelhelmet3",
+          "duration_ms": 47612
+        },
+        {
+          "case": "oteryn:reward-claim.kv.steelhelmet4",
+          "duration_ms": 64682
+        },
+        {
+          "case": "oteryn:reward-claim.kv.steelhelmet2",
+          "duration_ms": 64092
+        },
+        {
+          "case": "oteryn:reward-claim.kv.honeyflower",
+          "duration_ms": 74258
+        },
+        {
+          "case": "oteryn:reward-claim.quest.u8_1.strong_potions.reward",
+          "duration_ms": 76997
+        },
+        {
+          "case": "oteryn:reward-claim.kv.bananapremium",
+          "duration_ms": 83863
+        },
+        {
+          "case": "oteryn:reward-claim.kv.bananafree",
+          "duration_ms": 86296
+        }
+      ]
+    },
+    {
+      "kind": "NPC exchanges",
+      "log": "restart-greeting-green.log",
+      "tests_passed": 4,
+      "duration_seconds": 201.71,
+      "completed": [
+        {
+          "case": "oteryn:npc.amber",
+          "duration_ms": 55021
+        },
+        {
+          "case": "oteryn:npc.billy",
+          "duration_ms": 52121
+        },
+        {
+          "case": "oteryn:npc.lee_delle",
+          "duration_ms": 47827
+        },
+        {
+          "case": "oteryn:npc.willie",
+          "duration_ms": 46737
+        }
+      ]
+    }
+  ],
+  "qualification": {
+    "paths": 17,
+    "unfinished": 38,
+    "excluded_dawnport": 1,
+    "additional_paths_this_continuation": 0
+  },
+  "production_test_sha256": {
+    "crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs": "8e7d67502da7249fc75a16c6bae99b860d418b88fb480d962c947ead88a274a9",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/rookgaard_exchanges.rs": "a19e19315f51839fb6d14d6b59ff611bdc6a5f81f9bed8ac3032ab2c891c60d0"
+  },
+  "review": [
+    "restart-current-map-review.json",
+    "restart-current-json-review.json",
+    "restart-current-constructor-review.log",
+    "restart-current-callers.log",
+    "restart-current-case-state-review.log"
+  ],
+  "unfinished": "PHASE-BC-BLOCKERS.md and QUEST-STATUS.md",
+  "ci_only_failures": [],
+  "python_runner_note": "pytest module was unavailable; existing unittest runners executed all required cases without installing dependencies"
+}

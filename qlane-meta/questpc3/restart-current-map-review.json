@@ -1,0 +1,207 @@
+[
+  {
+    "file": "content/world/placements/region-z03-x125-y125.b3",
+    "marker_additions": [
+      {
+        "x": 32005,
+        "y": 32139,
+        "unique": 6182
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z04-x126-y124.b3",
+    "marker_additions": [
+      {
+        "x": 32462,
+        "y": 31947,
+        "unique": 6178
+      },
+      {
+        "x": 32467,
+        "y": 31962,
+        "unique": 6179
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z05-x124-y125.b3",
+    "marker_additions": [
+      {
+        "x": 31983,
+        "y": 32193,
+        "unique": 6017
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z05-x126-y124.b3",
+    "marker_additions": [
+      {
+        "x": 32460,
+        "y": 31951,
+        "unique": 6176
+      },
+      {
+        "x": 32464,
+        "y": 31957,
+        "unique": 6177
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z06-x128-y124.b3",
+    "marker_additions": [
+      {
+        "x": 32845,
+        "y": 31917,
+        "unique": 6083
+      },
+      {
+        "x": 32847,
+        "y": 31917,
+        "unique": 6084
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z07-x125-y125.b3",
+    "marker_additions": [
+      {
+        "x": 32172,
+        "y": 32169,
+        "unique": 6016
+      },
+      {
+        "x": 32171,
+        "y": 32197,
+        "unique": 6013
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z07-x128-y126.b3",
+    "marker_additions": [
+      {
+        "x": 32962,
+        "y": 32429,
+        "unique": 64993
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z08-x128-y124.b3",
+    "marker_additions": [
+      {
+        "x": 32867,
+        "y": 31909,
+        "unique": 6188
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z09-x125-y125.b3",
+    "marker_additions": [
+      {
+        "x": 32099,
+        "y": 32198,
+        "unique": 14042
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z09-x126-y125.b3",
+    "marker_additions": [
+      {
+        "x": 32357,
+        "y": 32130,
+        "unique": 6153
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z09-x126-y126.b3",
+    "marker_additions": [
+      {
+        "x": 32506,
+        "y": 32269,
+        "unique": 6154
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z09-x129-y124.b3",
+    "marker_additions": [
+      {
+        "x": 33127,
+        "y": 31885,
+        "unique": 6069
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z11-x128-y125.b3",
+    "marker_additions": [
+      {
+        "x": 32775,
+        "y": 32006,
+        "unique": 6155
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z11-x130-y126.b3",
+    "marker_additions": [
+      {
+        "x": 33315,
+        "y": 32277,
+        "unique": 6174
+      },
+      {
+        "x": 33315,
+        "y": 32282,
+        "unique": 6175
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z12-x126-y126.b3",
+    "marker_additions": [
+      {
+        "x": 32371,
+        "y": 32262,
+        "unique": 6156
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z12-x127-y125.b3",
+    "marker_additions": [
+      {
+        "x": 32568,
+        "y": 32085,
+        "unique": 6171
+      }
+    ]
+  },
+  {
+    "file": "content/world/placements/region-z15-x129-y123.b3",
+    "marker_additions": [
+      {
+        "x": 33163,
+        "y": 31603,
+        "unique": 6070
+      },
+      {
+        "x": 33131,
+        "y": 31624,
+        "unique": 6037
+      },
+      {
+        "x": 33134,
+        "y": 31624,
+        "unique": 6038
+      }
+    ]
+  }
+]

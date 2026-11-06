@@ -1,0 +1,1867 @@
+diff --git a/apps/game-server/migrations/1040_questpc3_npc_exchanges.sql b/apps/game-server/migrations/1040_questpc3_npc_exchanges.sql
+new file mode 100644
+index 000000000..8e4499f47
+--- /dev/null
++++ b/apps/game-server/migrations/1040_questpc3_npc_exchanges.sql
+@@ -0,0 +1,51 @@
++-- questpc3: four exact repeatable Rookgaard exchanges use the existing craft
++-- receipt, source/custody guards, audit and deferred debit+mint completion proof.
++-- Forward rollback: disable the NPC adapters; retain immutable receipts.
++ALTER TABLE game_item_craft_records ADD COLUMN npc_exchange JSONB;
++ALTER TABLE game_item_craft_records ADD CONSTRAINT game_item_craft_npc_exchange_check CHECK (
++    (npc_exchange IS NULL AND recipe NOT LIKE 'oteryn:npc-quest-exchange.%')
++    OR (npc_exchange IS NOT NULL AND (
++        jsonb_typeof(npc_exchange) = 'object'
++        AND npc_exchange ?& ARRAY['npc_key','npc_identity','npc_generation',
++            'catalogue_revision','conversation_revision']
++        AND jsonb_typeof(npc_exchange->'npc_identity') = 'array'
++        AND jsonb_array_length(npc_exchange->'npc_identity') = 16
++        AND (npc_exchange->>'npc_generation')::numeric BETWEEN 1 AND 18446744073709551615
++        AND (npc_exchange->>'catalogue_revision')::numeric BETWEEN 1 AND 18446744073709551615
++        AND (npc_exchange->>'conversation_revision')::numeric BETWEEN 1 AND 18446744073709551615
++        AND recipe = 'oteryn:npc-quest-exchange.' || substring(npc_exchange->>'npc_key' FROM 12)
++        AND consume_source AND ingredient_item_instance_id IS NULL
++        AND before_item->>'definition_family' = 'Item'
++        AND before_item->>'definition_revision_ref' = 'definition-r1'
++        AND jsonb_array_length(outputs) = 1
++        AND outputs->0->>'count' = '1'
++        AND outputs->0->>'revision' = 'definition-r1'
++        AND (npc_exchange->>'npc_key', before_item->>'definition_production_key', outputs->0->>'key') IN (
++            ('oteryn:npc.amber','oteryn:item.tibia.i2821','oteryn:item.tibia.i3294'),
++            ('oteryn:npc.billy','oteryn:item.tibia.i3466','oteryn:item.tibia.i7876'),
++            ('oteryn:npc.lee_delle','oteryn:item.tibia.i2984','oteryn:item.tibia.i3362'),
++            ('oteryn:npc.willie','oteryn:item.tibia.i3587','oteryn:item.tibia.i3426'))
++    ) IS TRUE)
++);
++
++-- Reuse the existing nested-source proof, including exact location snapshot,
++-- bounded carried ancestry and its deferred retirement/custody checks.
++DO $migration$
++DECLARE expression TEXT; body TEXT; before TEXT; after TEXT;
++BEGIN
++    SELECT pg_get_expr(conbin, conrelid) INTO STRICT expression FROM pg_constraint
++        WHERE conrelid='game_item_craft_records'::regclass
++            AND conname='game_item_craft_event_source_location_check';
++    ALTER TABLE game_item_craft_records DROP CONSTRAINT game_item_craft_event_source_location_check;
++    EXECUTE format('ALTER TABLE game_item_craft_records ADD CONSTRAINT game_item_craft_event_source_location_check CHECK ((%s) OR (npc_exchange IS NOT NULL AND jsonb_typeof(event_source_location) IS NOT DISTINCT FROM ''object'' AND octet_length(event_source_location::text) BETWEEN 2 AND 4096 AND event_source_location ?& ARRAY[''item_instance_id'',''parent_item_instance_id'',''world_id'',''placement_ordinal'',''placed_transaction_id'']))',expression);
++
++    -- The notebook earned from Short Sword's real chest has text. Keep every
++    -- other plain-input restriction and allow only Amber's typed notebook debit.
++    body := pg_get_functiondef('game_item_craft_admit()'::regprocedure);
++    before := 'OR EXISTS(SELECT 1 FROM game_item_texts WHERE item_instance_id=i.item_instance_id)';
++    after := $new$OR (EXISTS(SELECT 1 FROM game_item_texts WHERE item_instance_id=i.item_instance_id)
++        AND NOT (NEW.npc_exchange IS NOT NULL AND NEW.recipe='oteryn:npc-quest-exchange.amber'
++            AND i.definition_production_key='oteryn:item.tibia.i2821'))$new$;
++    IF strpos(body,before)=0 THEN RAISE EXCEPTION 'unexpected craft text input guard'; END IF;
++    EXECUTE replace(body,before,after);
++END $migration$;
+diff --git a/crates/gameplay/content/src/content/world_reward_claims.rs b/crates/gameplay/content/src/content/world_reward_claims.rs
+index 5c7071e30..7bbdeff07 100644
+--- a/crates/gameplay/content/src/content/world_reward_claims.rs
++++ b/crates/gameplay/content/src/content/world_reward_claims.rs
+@@ -41,7 +41,7 @@ pub trait RewardClaimTile {
+ /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
+ /// variant shards. Keys and the exact W15b native container projection are served;
+ /// other source dispositions remain closed.
+-pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
++pub const REWARD_CLAIM_SHARDS: [&str; 6] = [
+     include_str!(
+         "../../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"
+     ),
+@@ -57,6 +57,9 @@ pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
+     include_str!(
+         "../../../../../content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
+     ),
++    include_str!(
++        "../../../../../content/interactions/reward_claims/reward-claims-scripted-rs.json"
++    ),
+ ];
+ 
+ /// Why a placement is not bound (§1.4). Each is exactly one reason.
+@@ -319,7 +322,16 @@ fn candidate(
+             None => candidate_placement(placement, key_variant)?,
+         };
+         match parsed_placement {
+-            Some(placement) => parsed.push(placement),
++            Some(mut placement) => {
++                if definition.get("definition_profile").and_then(Value::as_str)
++                    == Some("scripted_rs_v1")
++                {
++                    // Native import marker; the source packet retains an empty
++                    // donor UID list. Position and appearance remain mandatory.
++                    placement.crystal_unique_id = Some(64993);
++                }
++                parsed.push(placement);
++            }
+             None => all_encoded = false,
+         }
+     }
+@@ -382,6 +394,38 @@ fn key_number(binding: &str) -> Option<u16> {
+ /// native projection admits a filled container; missing source or Item facts
+ /// still refuse the entire claim (no partial rewards).
+ fn native_container_placements(definition: &serde_json::Map<String, Value>) -> Option<&Vec<Value>> {
++    if definition.get("definition_profile")?.as_str()? == "scripted_rs_v1" {
++        let projection = definition.get("native_contents")?;
++        if definition.get("identity")?.get("key")?.as_str()?
++            != "oteryn:reward-claim.kv.smallsapphire"
++            || definition.get("readiness")?.as_str()? != "ready"
++            || !only(
++                projection,
++                &[
++                    "schema",
++                    "revision",
++                    "source_sha256",
++                    "native_unique_id",
++                    "placements",
++                ],
++            )
++            || projection.get("schema")?.as_str()? != "OTERYN_NATIVE_CONTAINER_REWARD/v1"
++            || projection.get("revision")?.as_str()? != "tibiawiki-small-sapphire-v1"
++            || projection.get("native_unique_id")?.as_u64()? != 64993
++            || projection.get("source_sha256")?.as_str()?
++                != "229eb3979fe64d69d726104122a3d76e2c281902777ef151cc796834c38a4291"
++            || definition.get("placements")?.as_array()?.len() != 1
++            || definition["placements"][0]["source_binding"]
++                != serde_json::json!({"project_position":{"x":32962,"y":32429,"z":7},"legacy_unique_ids":[]})
++            || definition["placements"][0]["appearance_tibia_id"] != 2472
++        {
++            return None;
++        }
++        return projection
++            .get("placements")?
++            .as_array()
++            .filter(|rows| rows.len() == 1);
++    }
+     if definition.get("definition_profile")?.as_str()? != "authored_variant_v1"
+         || definition.get("native_admission")?.as_str()? != "WAITING_IMPLEMENTATION"
+         || definition.get("readiness")?.as_str()? != "waiting_implementation"
+@@ -402,7 +446,7 @@ fn native_container_placements(definition: &serde_json::Map<String, Value>) -> O
+     ) || projection.get("schema")?.as_str()? != "OTERYN_NATIVE_CONTAINER_REWARD/v1"
+         || projection.get("revision")?.as_str()? != "201189f871d23597b82caf88fd611454a2ddefb8"
+         || projection.get("source_sha256")?.as_str()?
+-            != "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
++            != "2680c60528637a13eed808085a08acfbd81fe61e884d1be9fa038d4103e49a62"
+     {
+         return None;
+     }
+@@ -614,15 +658,16 @@ fn candidate_container_placement(
+                 let Some(body) = body.as_str() else {
+                     return Ok(None);
+                 };
+-                if child.count != 1
+-                    || result.crystal_unique_id != Some(6195)
+-                    || !authored_text_matches(
++                let original = result.crystal_unique_id == Some(6195)
++                    && authored_text_matches(
+                         body,
+                         reward.get("written_text"),
+                         &row["item"],
+                         result.crystal_unique_id,
+-                    )
+-                {
++                    );
++                let scripted = result.crystal_unique_id.is_none()
++                    && small_sapphire_text_matches(body, &row["item"]);
++                if child.count != 1 || !(original || scripted) {
+                     return Ok(None);
+                 }
+                 Some(body.to_owned())
+@@ -635,18 +680,44 @@ fn candidate_container_placement(
+             text,
+         });
+     }
++    let expected_texts = if result.crystal_unique_id.is_none() {
++        // Only the closed Small Sapphire profile has a native import marker
++        // rather than a donor UID; both independently pinned books are required.
++        2
++    } else {
++        usize::from(reward.get("written_text").is_some())
++    };
+     if result
+         .contents
+         .iter()
+         .filter(|child| child.text.is_some())
+         .count()
+-        != usize::from(reward.get("written_text").is_some())
++        != expected_texts
+     {
+         return Ok(None);
+     }
+     Ok(Some(result))
+ }
+ 
++fn small_sapphire_text_matches(body: &str, item: &Value) -> bool {
++    let expected = match item.get("key").and_then(Value::as_str) {
++        Some("oteryn:item.tibia.i2822") => {
++            "58ba7fb0e045b40b04857117bb432b74af40b3f9b84770b65bdc4064f4e39c77"
++        }
++        Some("oteryn:item.tibia.i637") => {
++            "32d0b4f84759294ec91f851631d77512dcb89b8d78002ce7b34ab8d0cb017b5e"
++        }
++        _ => return false,
++    };
++    let digest = Sha256::digest(body.as_bytes())
++        .iter()
++        .map(|byte| format!("{byte:02x}"))
++        .collect::<String>();
++    item.get("family").and_then(Value::as_str) == Some("Item")
++        && item.get("revision").and_then(Value::as_str) == Some("definition-r1")
++        && digest == expected
++}
++
+ /// Exact source book identities and normalized text digests. The established
+ /// chest authoring strips outer LF; no other text or carrier is admitted.
+ fn authored_text_matches(
+@@ -947,6 +1018,49 @@ mod container_tests {
+         None
+     }
+ 
++    #[test]
++    fn small_sapphire_requires_the_exact_native_binding_and_both_source_texts() {
++        let source = authored("kv.smallsapphire").expect("Small Sapphire source");
++        let decoded = candidate(source.as_object().expect("definition"), &|_| true)
++            .expect("decoded")
++            .expect("native recipe");
++        assert_eq!(decoded.placements[0].contents.len(), 4);
++        assert_eq!(decoded.placements[0].crystal_unique_id, Some(64993));
++        for change in ["source", "position", "marker", "first text", "second text"] {
++            let mut changed = source.clone();
++            match change {
++                "source" => changed["native_contents"]["source_sha256"] = "unproved".into(),
++                "position" => {
++                    changed["placements"][0]["source_binding"]["project_position"]["x"] =
++                        32963.into()
++                }
++                "marker" => changed["native_contents"]["native_unique_id"] = 64994.into(),
++                "first text" => {
++                    changed["native_contents"]["placements"][0]["contents"][2]["text"] =
++                        "changed".into()
++                }
++                _ => {
++                    changed["native_contents"]["placements"][0]["contents"][3]["text"] =
++                        "changed".into()
++                }
++            }
++            assert!(
++                candidate(changed.as_object().expect("definition"), &|_| true)
++                    .expect("decoded")
++                    .is_err(),
++                "{change}"
++            );
++        }
++        assert!(
++            candidate(source.as_object().expect("definition"), &|item| item
++                .key()
++                .as_str()
++                != "oteryn:item.tibia.i637")
++            .expect("decoded")
++            .is_err()
++        );
++    }
++
+     #[test]
+     fn container_projection_requires_every_exact_source_child_and_admitted_item() {
+         let source = authored("kv.bear_chest1").expect("bear source");
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs b/crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs
+index 159dfa420..fa6a8bc7f 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs
+@@ -96,10 +96,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+                 ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+             };
+         }
++        if let Some(outcome) =
++            npc_command::rookgaard_exchanges::resume(self, actor, command, Some(&intent)).await
++        {
++            return outcome;
++        }
++        // Opening a conversation consumes the greeting; its remaining words
++        // must not also initiate a focused Rookgaard exchange.
++        let exchange_engaged = self.states.chat.engaged(session).is_some_and(|npc| {
++            npc.placement_identity() == intent.npc_actor.identity
++                && npc.actor_local_generation() == intent.npc_actor.generation
++        });
+         let ordinary = npc_command::npc_bank_talk(self, actor, command, intent.clone()).await;
+         if ordinary.disposition != NpcIntentDisposition::Ok {
+             return ordinary;
+         }
++        if exchange_engaged && !ordinary.unknown && !ordinary.inventory_changed {
++            let step = {
++                let runtime = self.runtime.lock().await;
++                npc_command::rookgaard_exchanges::prepare(self, actor, command, &intent, &runtime)
++            };
++            if let Some(step) = step {
++                return npc_command::rookgaard_exchanges::apply(self, actor, command, intent, step)
++                    .await;
++            }
++        }
+         let ordinary = self
+             .paid_travel_talk(actor, command, &intent, ordinary)
+             .await;
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs b/crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
+index d1f610e5e..eafa55ec9 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
+@@ -48,6 +48,7 @@ mod liquid_black;
+ mod monk;
+ mod premium_purchase;
+ mod quest_dialogue;
++pub(super) mod rookgaard_exchanges;
+ mod service_context;
+ mod session_transfer;
+ mod threatened_dreams;
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs b/crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs
+index 65fb66e88..ae65a6855 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs
+@@ -312,6 +312,10 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
+     actor: ExactActorRef,
+     command: UseCommand,
+ ) -> Option<NpcTalkOutcome> {
++    if let Some(outcome) = super::rookgaard_exchanges::resume(admission, actor, command, None).await
++    {
++        return Some(outcome);
++    }
+     if let Some(outcome) = super::grizzly::resume(admission, actor, command).await {
+         return Some(outcome);
+     }
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs b/crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs
+index c10c5d89a..eb31be934 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs
+@@ -34,6 +34,7 @@ pub(super) struct Choice {
+ 
+ #[derive(Default)]
+ pub(super) struct State {
++    pub(super) rookgaard_exchange: super::rookgaard_exchanges::State,
+     context: Option<Context>,
+     topic: Topic,
+     pending: Option<Pending>,
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc3_exchanges.rs b/crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc3_exchanges.rs
+deleted file mode 100644
+index e69de29bb..000000000
+diff --git a/crates/gameplay/durability/src/durability/item_craft.rs b/crates/gameplay/durability/src/durability/item_craft.rs
+index 57da54157..ea8a0577e 100644
+--- a/crates/gameplay/durability/src/durability/item_craft.rs
++++ b/crates/gameplay/durability/src/durability/item_craft.rs
+@@ -15,7 +15,9 @@ use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
+ use oteryn_gameplay_items::item_craft::{
+     carried_cooking_conversion_with_sub_type, cooking_conversion, fishing_conversion,
+ };
+-use oteryn_gameplay_items::reward_bag::{is_reward_bag_output, reward_bag_conversion, reward_bag_draw};
++use oteryn_gameplay_items::reward_bag::{
++    is_reward_bag_output, reward_bag_conversion, reward_bag_draw,
++};
+ use oteryn_protocol_oteryn::world_object::UseDisposition;
+ use serde_json::{Value, json};
+ use sqlx::Row;
+@@ -24,6 +26,7 @@ pub(crate) mod audit;
+ mod enchanting;
+ mod event_containers;
+ mod harvest;
++pub mod npc_exchange;
+ pub mod soulpit;
+ pub use enchanting::EnchantingCraft;
+ pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
+@@ -112,11 +115,11 @@ impl DurabilityRoot {
+             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:item-craft:' || encode($1,'hex') || ':' || $2,0))")
+                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
+                 .execute(&mut **tx).await?;
+-            let previous: Option<(Vec<u8>, Vec<u8>)> = sqlx::query_as("SELECT intent,uuid_send(character_id) FROM game_item_craft_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
++            let previous: Option<(Vec<u8>, Vec<u8>, bool)> = sqlx::query_as("SELECT intent,uuid_send(character_id),npc_exchange IS NULL FROM game_item_craft_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
+                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
+                 .fetch_optional(&mut **tx).await?;
+-            if let Some((intent, character)) = previous {
+-                let result = if intent == request.intent && character == fence.character_id.as_bytes() { UseDisposition::Committed } else { UseDisposition::Rejected };
++            if let Some((intent, character, ordinary_craft)) = previous {
++                let result = if ordinary_craft && intent == request.intent && character == fence.character_id.as_bytes() { UseDisposition::Committed } else { UseDisposition::Rejected };
+                 tx.commit(deadline).await?;
+                 return Ok(Some(result));
+             }
+@@ -124,7 +127,7 @@ impl DurabilityRoot {
+             if assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(request.command), context.1.loop_content_digest()).await.is_err() {
+                 return Ok(Some(UseDisposition::Rejected));
+             }
+-            let result = write(&mut tx, fence, &request, context.0, context.1).await?;
++            let result = write(&mut tx, fence, &request, context.0, context.1, None).await?;
+             if result == UseDisposition::Committed {
+                 if let Some(window) = context.2.as_mut() {
+                     super::pvp_live::commit_live_pvp_transaction(tx.into_inner(), deadline, window).await?;
+@@ -142,6 +145,7 @@ async fn write<C: ItemLoopContent>(
+     request: &ItemCraftRequest,
+     native: &NativeGameplayState,
+     content: &C,
++    npc_exchange: Option<&npc_exchange::NpcQuestExchange>,
+ ) -> Result<UseDisposition, DurabilityError> {
+     if request.enchanting.is_some() {
+         return enchanting::write(tx, fence, request, native, content).await;
+@@ -152,8 +156,12 @@ async fn write<C: ItemLoopContent>(
+         .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+     let source = match source {
+         Some(source) => Some(source),
+-        None if request.station.is_none() && request.tool.is_none() && request.gathering.is_none() =>
+-            event_containers::nested_source(tx, fence, request.source, *world.as_bytes()).await?,
++        None if request.station.is_none()
++            && request.tool.is_none()
++            && request.gathering.is_none() =>
++        {
++            event_containers::nested_source(tx, fence, request.source, *world.as_bytes()).await?
++        }
+         None => None,
+     };
+     let Some(source) = source else {
+@@ -165,8 +173,12 @@ async fn write<C: ItemLoopContent>(
+         production_key: source.try_get("definition_production_key")?,
+         revision_ref: source.try_get("definition_revision_ref")?,
+     };
+-    if nested_source.is_some()
+-        && oteryn_gameplay_items::reward_bag::event_containers::event_container_rule(&definition.production_key).is_none()
++    if npc_exchange.is_none()
++        && nested_source.is_some()
++        && oteryn_gameplay_items::reward_bag::event_containers::event_container_rule(
++            &definition.production_key,
++        )
++        .is_none()
+     {
+         return Ok(UseDisposition::NothingToUse);
+     }
+@@ -174,7 +186,9 @@ async fn write<C: ItemLoopContent>(
+         .gathering
+         .as_ref()
+         .is_none_or(|g| g.attempt.consumes_bait);
+-    let conversion = if let Some(gathering) = &request.gathering {
++    let conversion = if let Some(binding) = npc_exchange {
++        npc_exchange::conversion(tx, fence, binding, native, &definition).await?
++    } else if let Some(gathering) = &request.gathering {
+         let bait = if gathering.mutation.tool_key == "oteryn:item.tibia.i9306"
+             && u16::try_from(gathering.mutation.before).is_ok_and(|target| {
+                 oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target)
+@@ -186,14 +200,28 @@ async fn write<C: ItemLoopContent>(
+         let tool_id = request.tool.unwrap_or(request.source);
+         let tool: Option<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND e.world_id=i.world_id AND b.world_id=i.world_id AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
+             .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+-        let planting = definition.production_key.strip_prefix("oteryn:item.tibia.i")
++        let planting = definition
++            .production_key
++            .strip_prefix("oteryn:item.tibia.i")
+             .and_then(|id| id.parse::<u16>().ok())
+-            .and_then(|seed| u16::try_from(gathering.mutation.before).ok()
+-                .and_then(|target| oteryn_gameplay_items::event_planting::planting_attempt(seed, target)));
+-        let seed_is_qualified = planting.is_some_and(|plan| plan == gathering.attempt
+-            && gathering.mutation.after == plan.after.map_or(0, u32::from)
+-            && gathering.mutation.decay == plan.after.map(oteryn_gameplay_items::event_planting::planting_decays).unwrap_or_default()
+-            && request.tool.is_none() && tool_id == request.source);
++            .and_then(|seed| {
++                u16::try_from(gathering.mutation.before)
++                    .ok()
++                    .and_then(|target| {
++                        oteryn_gameplay_items::event_planting::planting_attempt(seed, target)
++                    })
++            });
++        let seed_is_qualified = planting.is_some_and(|plan| {
++            plan == gathering.attempt
++                && gathering.mutation.after == plan.after.map_or(0, u32::from)
++                && gathering.mutation.decay
++                    == plan
++                        .after
++                        .map(oteryn_gameplay_items::event_planting::planting_decays)
++                        .unwrap_or_default()
++                && request.tool.is_none()
++                && tool_id == request.source
++        });
+         if tool
+             .as_ref()
+             .map(|(key, revision)| (key.as_str(), revision.as_str()))
+@@ -225,7 +253,12 @@ async fn write<C: ItemLoopContent>(
+             .collect::<Option<Vec<_>>>();
+         outputs.map(
+             |outputs| oteryn_gameplay_items::item_craft::CookingConversion {
+-                recipe: if seed_is_qualified { "oteryn:planting.crystal" } else { "oteryn:gathering.crystal" }.into(),
++                recipe: if seed_is_qualified {
++                    "oteryn:planting.crystal"
++                } else {
++                    "oteryn:gathering.crystal"
++                }
++                .into(),
+                 outputs,
+             },
+         )
+@@ -290,7 +323,10 @@ async fn write<C: ItemLoopContent>(
+     let quantity: i64 = source.try_get("quantity")?;
+     let consumed_quantity = if !consumes_source {
+         0
+-    } else if oteryn_gameplay_items::reward_bag::event_containers::consumes_whole_stack(&conversion.recipe) {
++    } else if conversion.recipe == "oteryn:npc-quest-exchange.sinatuki"
++        || oteryn_gameplay_items::reward_bag::event_containers::consumes_whole_stack(
++        &conversion.recipe,
++    ) {
+         quantity
+     } else {
+         1
+@@ -371,10 +407,14 @@ async fn write<C: ItemLoopContent>(
+         output_weight += u64::from(weight) * u64::from(*count);
+     }
+     let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
+-    if carried
++    // Sinatuki's partial hand-in only removes weight. An already overweight
++    // character may feed her; the final five-shard mint still checks capacity.
++    if !(conversion.recipe == "oteryn:npc-quest-exchange.sinatuki" && conversion.outputs.is_empty())
++        && carried
+         .checked_sub(if consumes_source {
+             u64::from(used_weight)
+-                * u64::try_from(consumed_quantity).map_err(|_| DurabilityError::InvalidStoredState)?
++                * u64::try_from(consumed_quantity)
++                    .map_err(|_| DurabilityError::InvalidStoredState)?
+         } else {
+             0
+         })
+@@ -434,8 +474,8 @@ async fn write<C: ItemLoopContent>(
+             .bind(ingredient.as_slice()).fetch_optional(&mut ***tx).await?,
+         None => None,
+     };
+-    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,ingredient_item_instance_id,ingredient_before_item,event_source_location) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,$18,$19)")
+-        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).bind(request.ingredient.map(|id| id.to_vec())).bind(ingredient_before).bind(&nested_source).execute(&mut ***tx).await?;
++    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,ingredient_item_instance_id,ingredient_before_item,event_source_location,npc_exchange) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,$18,$19,$20)")
++        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).bind(request.ingredient.map(|id| id.to_vec())).bind(ingredient_before).bind(&nested_source).bind(npc_exchange.map(serde_json::to_value).transpose().map_err(|_| DurabilityError::InvalidStoredState)?).execute(&mut ***tx).await?;
+     if consumes_source {
+         sqlx::query("UPDATE game_item_instances SET quantity=quantity-$3,lifecycle=CASE WHEN quantity=$3 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
+         .bind(request.source.as_slice()).bind(&transaction).bind(consumed_quantity).execute(&mut ***tx).await?;
+@@ -452,7 +492,10 @@ async fn write<C: ItemLoopContent>(
+         } else {
+             "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid"
+         };
+-        sqlx::query(deletion).bind(request.source.as_slice()).execute(&mut ***tx).await?;
++        sqlx::query(deletion)
++            .bind(request.source.as_slice())
++            .execute(&mut ***tx)
++            .await?;
+     }
+     for output in outputs {
+         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
+@@ -461,13 +504,28 @@ async fn write<C: ItemLoopContent>(
+             .bind(&output).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&parent).bind(&transaction).execute(&mut ***tx).await?;
+     }
+     if conversion.recipe == "oteryn:planting.crystal"
+-        && request.gathering.as_ref().is_some_and(|g| g.mutation.before == 14029) {
+-        super::account_achievement::grant_missing(tx, fence.character_id,
+-            &["oteryn:achievement/preservationist"], "map_seed_planting",
+-            &super::item_mint::uuid_text(&event)?).await?;
++        && request
++            .gathering
++            .as_ref()
++            .is_some_and(|g| g.mutation.before == 14029)
++    {
++        super::account_achievement::grant_missing(
++            tx,
++            fence.character_id,
++            &["oteryn:achievement/preservationist"],
++            "map_seed_planting",
++            &super::item_mint::uuid_text(&event)?,
++        )
++        .await?;
+     }
+     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
+         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;
++    if conversion.recipe == "oteryn:npc-quest-exchange.sinatuki" && !conversion.outputs.is_empty() {
++        super::account_achievement::grant_missing(
++            tx, fence.character_id, &["oteryn:achievement/jamjam"],
++            "oteryn:sinatuki", &super::item_mint::uuid_text(&event)?,
++        ).await?;
++    }
+     // The successful yield, counter and grant share the craft receipt transaction.
+     // Exact replay returned before this writer, so a retry never advances the counter.
+     use oteryn_gameplay_progression::achievement_granters;
+diff --git a/crates/gameplay/npc/src/npc_talk.rs b/crates/gameplay/npc/src/npc_talk.rs
+index 14c86f96e..acc615c6c 100644
+--- a/crates/gameplay/npc/src/npc_talk.rs
++++ b/crates/gameplay/npc/src/npc_talk.rs
+@@ -220,6 +220,8 @@ impl NpcTalkBook {
+                     None,
+                     Vec::new(),
+                 )
++            } else if let Some((greet, farewell, _)) = rookgaard_exchange_messages(&reference.key) {
++                (greet.into(), farewell.into(), None, Vec::new())
+             } else if let Some(greeting) = endgame_greeting(&reference.key) {
+                 // W11: only these four source NPCs have native stateful Quest
+                 // consumers. This admits their greeting, not their Lua/script
+@@ -328,11 +330,16 @@ impl NpcTalkBook {
+                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                     greeting_reply,
+                     farewell_reply,
+-                    source_name_templates: dark_messages.is_some() || isle_messages.is_some(),
++                    source_name_templates: dark_messages.is_some()
++                        || isle_messages.is_some()
++                        || rookgaard_exchange_messages(&reference.key).is_some(),
+                     source_walkaway: if dark_messages.is_some() {
+                         Some(dark_trails::WALKAWAY.into())
+                     } else {
+-                        isle_messages.map(|messages| messages.walkaway)
++                        isle_messages.map(|messages| messages.walkaway).or_else(|| {
++                            rookgaard_exchange_messages(&reference.key)
++                                .map(|(_, _, walkaway)| walkaway.into())
++                        })
+                     },
+                     topic_reply,
+                     dialogue_keywords,
+@@ -391,6 +398,35 @@ fn endgame_greeting(key: &str) -> Option<&'static str> {
+     })
+ }
+ 
++// Crystal201189f amber.lua:426-428, billy.lua:145-148,
++// lee_delle.lua:152-155 and willie.lua:285-288. Dialogue mutations live in dispatch.
++fn rookgaard_exchange_messages(key: &str) -> Option<(&'static str, &'static str, &'static str)> {
++    Some(match key {
++        "oteryn:npc.amber" => (
++            "Oh hello, nice to see you |PLAYERNAME|. Are you here to hear some stories of my {adventures} or do you need {help}?",
++            "See you later, |PLAYERNAME|.",
++            "Yeah, see you later.",
++        ),
++        "oteryn:npc.billy" => (
++            "Howdy |PLAYERNAME|. I'm a farmer and cook, maybe I can interest you in a {trade} with food? You can also ask me for general {hints} about the game.",
++            "Bye.",
++            "HOW RUDE!",
++        ),
++        "oteryn:npc.lee_delle" => (
++            "Nice to see you, |PLAYERNAME|! Ask me for a {trade} if you like to see my exclusive offers.",
++            "Bye, bye, |PLAYERNAME|.",
++            "Bye, bye.",
++        ),
++        "oteryn:npc.sinatuki" => ("Sajoq, jinuma!", "Sajoq!", "Sajoq!"),
++        "oteryn:npc.willie" => (
++            "Hiho |PLAYERNAME|. I hope you're here to {trade}.",
++            "Yeah, bye |PLAYERNAME|.",
++            "Yeah go away!",
++        ),
++        _ => return None,
++    })
++}
++
+ /// FNV-1a over the digest text; 1 in place of 0.
+ fn revision_of(digest: &str) -> u64 {
+     let hash = digest
+diff --git a/crates/gameplay/quests/src/quest/mod.rs b/crates/gameplay/quests/src/quest/mod.rs
+index 1dc2d29a0..ca5edfef4 100644
+--- a/crates/gameplay/quests/src/quest/mod.rs
++++ b/crates/gameplay/quests/src/quest/mod.rs
+@@ -35,6 +35,7 @@ pub mod native_rules;
+ #[cfg(test)]
+ pub mod npc_rules;
+ mod quests_2_focus;
++pub mod rookgaard_exchanges;
+ pub mod rotten_blood;
+ pub mod soul_war;
+ pub mod soul_war_dialogue;
+diff --git a/deploy/synology-game/preprod-topology.toml b/deploy/synology-game/preprod-topology.toml
+index d0cbc640b..34a3e4a88 100644
+--- a/deploy/synology-game/preprod-topology.toml
++++ b/deploy/synology-game/preprod-topology.toml
+@@ -43,7 +43,7 @@ route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
+ runtime_observation_revision = "obs.1"
+ ruleset_revision = "game.<GAME_COMMIT_12HEX>"
+ content_revision = "game.<GAME_COMMIT_12HEX>"
+-map_revision = "3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
++map_revision = "e4b3e414c7c4fb5104cd011924da6146bb5a29900efa375c2a740128025a4f69"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+ world_policy_revision = "wp.1"
+ offer_revision = "offer.1"
+ 
+@@ -55,7 +55,7 @@ offer_revision = "offer.1"
+ # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
+ enabled = true
+ path = "<BASE>/world/world.otbundle"
+-digest = "3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd"
++digest = "e4b3e414c7c4fb5104cd011924da6146bb5a29900efa375c2a740128025a4f69"
+ project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
+ world_schema_version = "reference-schema-v1"
+ content_revision = "e06-market-crystal-parity-20261031-r1"
+diff --git a/docs/balance/PREY-SLOT-VALUE-2026-11-01.md b/docs/balance/PREY-SLOT-VALUE-2026-11-01.md
+index 120877c8b..66a9cc20d 100644
+--- a/docs/balance/PREY-SLOT-VALUE-2026-11-01.md
++++ b/docs/balance/PREY-SLOT-VALUE-2026-11-01.md
+@@ -2,7 +2,7 @@
+ 
+ Generated by the same deterministic model and content generator; do not edit.
+ 
+-Model input SHA-256: `f393c552d16d3535e602239fc9b7d2b9fcc3ec635a718c29ee8fbd1ad7c7bd70`. NPC policy: `maximum_catalogue_offer`. Source: `content/services/trade/trade-*.json`, `BuyFromPlayer` offers; coin worth from `domain/currency.rs`. Items without an NPC offer contribute zero NPC sell value. Loot expectation sums exact source chance × average count × NPC value, with exact rational arithmetic until micro-gold truncation.
++Model input SHA-256: `5528ef6d7116ee1bbdb95ccb45522cf1ead716da24dcd625ef16846643d180da`. NPC policy: `maximum_catalogue_offer`. Source: `content/services/trade/trade-*.json`, `BuyFromPlayer` offers; coin worth from `domain/currency.rs`. Items without an NPC offer contribute zero NPC sell value. Loot expectation sums exact source chance × average count × NPC value, with exact rational arithmetic until micro-gold truncation.
+ 
+ Coverage: 776 eligible creatures, 1437 whole-gold NPC/coin prices. 40 creatures have zero physical throughput because they did not complete all 32 required bounded duels with kills; sampling stopped at the first failed duel. The zero is specific to this preset and bound, not a claim about other builds.
+ 
+diff --git a/docs/balance/PREY-TIME-SIM-2026-11-01.md b/docs/balance/PREY-TIME-SIM-2026-11-01.md
+index 35e209e2c..b2486ba3b 100644
+--- a/docs/balance/PREY-TIME-SIM-2026-11-01.md
++++ b/docs/balance/PREY-TIME-SIM-2026-11-01.md
+@@ -2,7 +2,7 @@
+ 
+ Generated by `python3 tools/content-migration/prey_difficulty.py --simulate`; do not edit.
+ 
+-Input SHA-256: `f393c552d16d3535e602239fc9b7d2b9fcc3ec635a718c29ee8fbd1ad7c7bd70`. Seed: `20261101`. Prey duration: `7200` seconds, read from `progression::prey::HUNTING_SECONDS`.
++Input SHA-256: `5528ef6d7116ee1bbdb95ccb45522cf1ead716da24dcd625ef16846643d180da`. Seed: `20261101`. Prey duration: `7200` seconds, read from `progression::prey::HUNTING_SECONDS`.
+ 
+ Sampling: up to 32 seeded duels per creature; each duel is bounded to 3600 seconds. Sampling stops at the first duel without a kill; a positive throughput estimate requires all 32 duels to finish with kills. Each route is observed for at most 24 hours, or until all four time policies exhaust the Prey.
+ 
+diff --git a/tools/content-migration/quest_callback_profiles.py b/tools/content-migration/quest_callback_profiles.py
+index 16dcdfea9..088e9bf70 100644
+--- a/tools/content-migration/quest_callback_profiles.py
++++ b/tools/content-migration/quest_callback_profiles.py
+@@ -133,6 +133,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
+     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
+     # apply the same pinned source, exact binding and portability checks below.
+     keys.add('oteryn:item.tibia.i32594')
++    # R–S once-only source claims, qualified through literal USE and cold replay.
++    # Crystal201189f Rapier script:4-11 and chest.lua:858-871 (Ring).
++    keys.update(('oteryn:item.tibia.i3272', 'oteryn:item.tibia.i3053',
++                 'oteryn:item.tibia.i3091', 'oteryn:item.tibia.i3587',
++                 'oteryn:item.tibia.i3466'))
+     for callback in callbacks['callbacks']:
+         item = callback.get('item_on_target')
+         if item:
+diff --git a/tools/content-migration/questpc3_item_admission.py b/tools/content-migration/questpc3_item_admission.py
+new file mode 100644
+index 000000000..8ea18649e
+--- /dev/null
++++ b/tools/content-migration/questpc3_item_admission.py
+@@ -0,0 +1,82 @@
++"""Admit Rapier's exact existing portable, nonstacking Item facts for its chest.
++
++Crystal201189f rookgaard/rapier_quest.lua:4-11 grants one 3272. Canonical Item
++facts already prove its 15 oz weight, portability and nonstackability. Preserve
++all existing equipment/weapon facts and reject contradictory core facts.
++"""
++
++import hashlib
++import json
++from pathlib import Path
++
++SMALL_SAPPHIRE_SOURCE_SHA256 = '229eb3979fe64d69d726104122a3d76e2c281902777ef151cc796834c38a4291'
++
++
++def apply_admissions(definitions):
++    matches = [d for d in definitions if d['identity']['key'] == 'oteryn:item.tibia.i3272']
++    if len(matches) != 1:
++        raise ValueError('Rapier canonical identity missing or duplicated')
++    item = matches[0]
++    physical = item['semantics']['physical']
++    stack = item['semantics']['stack']
++    known = lambda value: {'state': 'KNOWN', 'value': value}
++    if (item['identity'] != {'family': 'Item', 'key': 'oteryn:item.tibia.i3272',
++                            'revision': 'definition-r1'}
++            or physical != known({'weight': known(1500), 'movable': known(True),
++                                  'pickupable': known(True)})
++            or stack.get('state') != 'KNOWN'
++            or stack['value']['stackable'] != known(False)
++            or (item['materializable'], item['stack_class']) not in
++               ((False, 'Unknown'), (True, 'NonStackable'))):
++        raise ValueError('Rapier core facts changed')
++    item['materializable'] = True
++    item['stack_class'] = 'NonStackable'
++    # Crystal201189f lee_delle.lua:149 and willie.lua:272. These two
++    # existing canonical equipment definitions already carry exact portable facts.
++    # Small Sapphire's certificate likewise has exact 2 oz portable paper facts
++    # (TibiaWiki Document (Certificate), captured in small_sapphire_source.json).
++    for ident, weight in ((3362, 2600), (3426, 5900), (637, 200)):
++        key = f'oteryn:item.tibia.i{ident}'
++        candidates = [row for row in definitions if row['identity']['key'] == key]
++        if len(candidates) != 1:
++            raise ValueError(f'R–S reward missing or duplicated: {key}')
++        reward = candidates[0]
++        if ident == 637:
++            source = Path(__file__).resolve().parents[2] / 'tools/content-schema/reward-claim-authoring/small_sapphire_source.json'
++            raw = source.read_bytes()
++            if hashlib.sha256(raw).hexdigest() != SMALL_SAPPHIRE_SOURCE_SHA256:
++                raise ValueError('Small Sapphire source packet changed')
++            proof = json.loads(raw)['certificate_stack_evidence']
++            if proof['object_id'] != 637 or proof['flags_cumulative'] is not False:
++                raise ValueError('Certificate source stack fact changed')
++            if reward['semantics']['stack'] == {'state': 'UNKNOWN'}:
++                reward['semantics']['stack'] = known({
++                    'stackable': known(False), 'stack_max': {'state': 'NOT_APPLICABLE'}})
++        if (reward['identity'] != {'family': 'Item', 'key': key, 'revision': 'definition-r1'}
++                or reward['semantics']['physical'] != known({
++                    'weight': known(weight), 'movable': known(True), 'pickupable': known(True)})
++                or reward['semantics']['stack'].get('state') != 'KNOWN'
++                or reward['semantics']['stack']['value']['stackable'] != known(False)
++                or (reward['materializable'], reward['stack_class']) not in
++                   ((False, 'Unknown'), (True, 'NonStackable'))):
++            raise ValueError(f'R–S reward core facts changed: {key}')
++        reward['materializable'] = True
++        reward['stack_class'] = 'NonStackable'
++
++    # Source chest.lua:1780-1786 / :1949-1955 gives full definition charges.
++    # Absence of a timed row means these full values under TIMED-ITEM-0.
++    for ident, weight, charges in ((3054, 500, 200), (3084, 550, 250)):
++        key = f'oteryn:item.tibia.i{ident}'
++        candidates = [row for row in definitions if row['identity']['key'] == key]
++        if len(candidates) != 1:
++            raise ValueError(f'R–S charged reward missing or duplicated: {key}')
++        reward = candidates[0]
++        if (reward['identity'] != {'family': 'Item', 'key': key, 'revision': 'definition-r1'}
++                or reward['semantics']['physical'] != known({
++                    'weight': known(weight), 'movable': known(True), 'pickupable': known(True)})
++                or reward['semantics']['charges'] != known({'count': known(charges)})
++                or reward['semantics']['stack'].get('state') != 'KNOWN'
++                or reward['semantics']['stack']['value']['stackable'] != known(False)
++                or reward['stack_class'] != 'NonStackable'):
++            raise ValueError(f'R–S charged core facts changed: {key}')
++        reward['materializable'] = True
+diff --git a/tools/content-migration/regenerate_content.py b/tools/content-migration/regenerate_content.py
+index f8ee61b4f..7741d92eb 100644
+--- a/tools/content-migration/regenerate_content.py
++++ b/tools/content-migration/regenerate_content.py
+@@ -102,6 +102,7 @@ CHECKS = (
+     ["python3", "tools/content-schema/validate_materialized_game_tree.py"],
+     ["python3", "tools/content-census/item_key_references.py"],
+     *(["python3", tool, "content", "--check"] for tool in AUTHORING_TOOLS),
++    ["python3", "tools/content-schema/world-authoring/quest_chest_bindings_rs.py", "--check"],
+     ["python3", "tools/content-schema/item-authoring/test_engine_items.py"],
+     [
+         "python3",
+@@ -566,6 +567,7 @@ def main() -> int:
+     for tool in AUTHORING_TOOLS:
+         if (ROOT / tool).is_file():
+             run(["python3", tool, "content"])
++    run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings_rs.py"])
+     if not args.skip_checks:
+         for command in CHECKS:
+             if command[0] != "python3" or (ROOT / command[1]).is_file():
+diff --git a/tools/content-migration/test_quest_callback_profiles.py b/tools/content-migration/test_quest_callback_profiles.py
+index 1716ee942..ebe78fbba 100644
+--- a/tools/content-migration/test_quest_callback_profiles.py
++++ b/tools/content-migration/test_quest_callback_profiles.py
+@@ -93,6 +93,26 @@ class QuestCallbackProfiles(unittest.TestCase):
+                          'stack_class': 'NonStackable',
+                          'legal_destinations': ['CharacterInventory', 'Ground']})
+ 
++    def test_rapier_admission_preserves_facts_and_rejects_physical_drift(self):
++        from questpc3_item_admission import apply_admissions
++        key = 'oteryn:item.tibia.i3272'
++        selected = {f'oteryn:item.tibia.i{ident}' for ident in (3272, 3362, 3426, 3054, 3084, 637)}
++        canonical_items = [row['definition']
++                           for path in sorted((ROOT / 'content/items/definitions').glob('items-*.json'))
++                           for row in json.loads(path.read_bytes())['records']
++                           if row['definition']['identity']['key'] in selected]
++        candidates = copy.deepcopy(canonical_items)
++        candidate = next(item for item in candidates if item['identity']['key'] == key)
++        candidate['materializable'] = False
++        candidate['stack_class'] = 'Unknown'
++        apply_admissions(candidates)
++        self.assertEqual(candidates, canonical_items)
++        apply_admissions(candidates)
++        self.assertEqual(candidates, canonical_items)
++        candidate['semantics']['physical']['value']['weight']['value'] += 1
++        with self.assertRaisesRegex(ValueError, 'Rapier core facts changed'):
++            apply_admissions(candidates)
++
+     def test_rotten_blood_rust_callback_admits_the_canonical_bloody_tear_once(self):
+         # Rotten Blood's fixed callback is authored in Rust, so the JSON callback
+         # inventory cannot supply this already admitted source Item by itself.
+@@ -171,7 +191,7 @@ class QuestCallbackProfiles(unittest.TestCase):
+                 for placement in record['definition'].get('native_contents', {}).get('placements', []):
+                     expected.add(placement['root']['key'])
+                     expected.update(child['item']['key'] for child in placement['contents'])
+-        self.assertEqual(len(expected), 130)
++        self.assertEqual(len(expected), 135)
+         for key in expected:
+             row = rows[key]
+             self.assertTrue(row['admission']['materializable'], key)
+diff --git a/tools/content-migration/test_world_project_v2_to_tree.py b/tools/content-migration/test_world_project_v2_to_tree.py
+index 53da1f8ed..84222a707 100644
+--- a/tools/content-migration/test_world_project_v2_to_tree.py
++++ b/tools/content-migration/test_world_project_v2_to_tree.py
+@@ -109,7 +109,10 @@ def test_closed_weapon_metadata_admission():
+         else:
+             raise AssertionError("forged weapon packet accepted")
+     print("ok test_closed_weapon_metadata_admission")
+-source_claim_count = len(json.loads((ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
++sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
++from scripted_chests_rs import record_count as scripted_rs_count
++
++source_claim_count = len(json.loads((ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"]) + scripted_rs_count()
+ project = json.loads((ROOT / "content/project.json").read_text(encoding="utf-8"))
+ manifest = json.loads((ROOT / "content/manifest.json").read_text(encoding="utf-8"))
+ lock = json.loads((ROOT / "content/content.lock.json").read_text(encoding="utf-8"))
+@@ -177,7 +180,12 @@ assert sum(path.startswith("content/proficiencies/proficiencies-") for path in p
+ assert "content/proficiencies/index.json" in paths and "content/proficiencies/bindings.json" in paths
+ assert manifest["families"]["RewardClaim"] == {"records": source_claim_count, "index": "content/interactions/reward_claims/index.json"}
+ assert "RewardClaim" in project["migrated_families"]
+-assert sum(path.startswith("content/interactions/reward_claims/reward-claims-") for path in paths) == 3
++assert {path for path in paths if path.startswith("content/interactions/reward_claims/reward-claims-")} == {
++    "content/interactions/reward_claims/reward-claims-00000-00099.json",
++    "content/interactions/reward_claims/reward-claims-00100-00199.json",
++    "content/interactions/reward_claims/reward-claims-00200-00230.json",
++    "content/interactions/reward_claims/reward-claims-scripted-rs.json",
++}
+ assert "content/interactions/reward_claims/index.json" in paths
+ assert manifest["families"]["StarterKit"] == {"records": 1, "index": "content/starter/index.json"}
+ assert "StarterKit" in project["migrated_families"]
+diff --git a/tools/content-migration/validate_world_project_v2_to_tree.py b/tools/content-migration/validate_world_project_v2_to_tree.py
+index 4be164463..e84f01221 100644
+--- a/tools/content-migration/validate_world_project_v2_to_tree.py
++++ b/tools/content-migration/validate_world_project_v2_to_tree.py
+@@ -39,8 +39,11 @@ CHARM_COUNT = 25
+ PROFICIENCY_COUNT = 443
+ PROFICIENCY_BINDING_COUNT = 665  # ITEM-ADD-1 plus the admitted appearance-only Snowball
+ # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
++sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
++from scripted_chests_rs import record_count as scripted_rs_count
++
+ REWARD_CLAIM_COUNT = len(json.loads(
+-    (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
++    (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"]) + scripted_rs_count()
+ # StarterKit likewise (tools/content-schema/starter-kit-authoring).
+ STARTER_KIT_COUNT = 1
+ SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4}
+@@ -743,6 +746,8 @@ def main() -> int:
+     # I19: the 72 source-qualified enchanting results now admit stacks/charges in the tree.
+     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
+     apply_enchanting_admissions(legacy_items)
++    from questpc3_item_admission import apply_admissions as apply_questpc3_admissions
++    apply_questpc3_admissions(legacy_items)
+     require(migrated_items == legacy_items and expected_start == 34111, "ITEM_DEFINITION_ROUNDTRIP")
+ 
+     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
+diff --git a/tools/content-migration/world_project_v2_to_tree.py b/tools/content-migration/world_project_v2_to_tree.py
+index 6e974b6e0..92064a290 100644
+--- a/tools/content-migration/world_project_v2_to_tree.py
++++ b/tools/content-migration/world_project_v2_to_tree.py
+@@ -195,6 +195,8 @@ def main() -> int:
+     apply_container_fact(item_records, ROOT)
+     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
+     apply_enchanting_admissions(item_records)
++    from questpc3_item_admission import apply_admissions as apply_questpc3_admissions
++    apply_questpc3_admissions(item_records)
+     item_shards: list[str] = []
+     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
+         rows = []
+diff --git a/tools/content-schema/quest-authoring/quest_callback_coverage.py b/tools/content-schema/quest-authoring/quest_callback_coverage.py
+index 45f864ff5..281ea0b9f 100644
+--- a/tools/content-schema/quest-authoring/quest_callback_coverage.py
++++ b/tools/content-schema/quest-authoring/quest_callback_coverage.py
+@@ -14,24 +14,47 @@ import lua_tables
+ ROOT = Path(__file__).resolve().parents[3]
+ OUTPUT = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
+ QUALIFIED = {
+-    "oteryn:reward-claim.kv.steelhelmet1": "quest_callbacks_source_chest_use_once_replay_and_second_use_refused",
++    "oteryn:reward-claim.kv.bananafree": "questpc3_studded_shield_free_banana_once_and_replay",
++    "oteryn:reward-claim.kv.bananapremium": "questpc3_studded_shield_premium_banana_once_and_replay",
+     "oteryn:reward-claim.kv.bear_chest1": "quest_container_chests_bear_bag_once_and_replay",
+-    "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies": "quest_container_chests_key_attributes_are_atomic",
+-    "oteryn:reward-claim.quest.u7_24.the_annihilator.reward": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
+-    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.bplong_sword": "quest_container_chests_authored_book_text_survives_replay",
++    "oteryn:reward-claim.kv.honeyflower": "questpc3_studded_legs_honey_flower_once_and_replay",
++    "oteryn:reward-claim.kv.madmageroom3": "quest_container_chests_full_definition_charges_mint_one_instance",
+     "oteryn:reward-claim.kv.powerbolt2": "quest_container_chests_leaf_text_is_frozen_and_replayed",
++    "oteryn:reward-claim.kv.rapier": "questpc3_rapier_claim_once_and_replay",
++    "oteryn:reward-claim.kv.ringquest1": "questpc3_ring_time_ring_claim_once_and_replay",
++    "oteryn:reward-claim.kv.ringquest2": "questpc3_ring_sword_ring_claim_once_and_replay",
++    "oteryn:reward-claim.kv.scalearmor": "questpc3_scale_armor_bag_once_and_replay",
++    "oteryn:reward-claim.kv.shamantreasure": "questpc3_shaman_treasure_bag_once_and_replay",
++    "oteryn:reward-claim.kv.shortswordbook": "questpc3_short_sword_notebook_once_and_replay",
++    "oteryn:reward-claim.kv.silveramulet": "questpc3_charged_amulet_cohort_once_and_replay",
++    "oteryn:reward-claim.kv.silverbrooch": "questpc3_silver_brooch_full_bag_once_and_replay",
++    "oteryn:reward-claim.kv.sixrubies": "questpc3_six_rubies_claim_once_and_replay",
++    "oteryn:reward-claim.kv.smallsapphire": "questpc3_small_sapphire_full_recipe_once_and_replay",
++    "oteryn:reward-claim.kv.spikesword": "questpc3_spike_sword_claim_once_and_replay",
++    "oteryn:reward-claim.kv.stealhring1": "questpc3_charged_amulet_cohort_once_and_replay",
++    "oteryn:reward-claim.kv.stealhring2": "questpc3_stealth_ring_ring_once_and_replay",
++    "oteryn:reward-claim.kv.steelhelmet1": "quest_callbacks_source_chest_use_once_replay_and_second_use_refused",
++    "oteryn:reward-claim.kv.steelhelmet2": "questpc3_steel_helmet_second_coins_once_and_replay",
++    "oteryn:reward-claim.kv.steelhelmet3": "questpc3_steel_helmet_helmet_once_and_replay",
++    "oteryn:reward-claim.kv.steelhelmet4": "questpc3_steel_helmet_letter_once_and_replay",
++    "oteryn:reward-claim.kv.witch_house_quest": "questpc3_skull_of_ratha_witch_house_full_bag_once_and_replay",
+     "oteryn:reward-claim.quest.key.id3002": "quest_container_chests_crystal_key3002_is_minted_once",
+-    "oteryn:reward-claim.kv.madmageroom3": "quest_container_chests_full_definition_charges_mint_one_instance",
+-    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots": "quest_demon_helmet_chests_steel_boots_once_and_replay",
++    "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies": "quest_container_chests_key_attributes_are_atomic",
+     "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet": "quest_demon_helmet_chests_demon_helmet_once_and_replay",
+     "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield": "quest_demon_helmet_chests_demon_shield_once_and_replay",
++    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots": "quest_demon_helmet_chests_steel_boots_once_and_replay",
++    "oteryn:reward-claim.quest.u7_24.the_annihilator.reward": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
++    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1": "questpc3_skull_of_ratha_skull_and_pearl_once_and_replay",
++    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2": "questpc3_skull_of_ratha_chain_and_ring_once_and_replay",
++    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.bplong_sword": "quest_container_chests_authored_book_text_survives_replay",
++    "oteryn:reward-claim.quest.u8_1.strong_potions.reward": "questpc3_strong_potions_full_bag_once_and_replay",
+ }
+ KEY_LOWERING = "KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED"
+ SOURCE_SHA256 = {
+     "canary": "2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda",
+     "crystalserver": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+ }
+-CONTAINER_SOURCE = "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
++CONTAINER_SOURCE = "2680c60528637a13eed808085a08acfbd81fe61e884d1be9fa038d4103e49a62"
+ ACCEPTED_OVERRIDES = {
+     6078: "PR2770 Q5/A: retain accepted Item12510 over donor3208",
+     6218: "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
+@@ -114,7 +137,9 @@ def coverage(canary, crystal):
+             inventory = {
+                 "claim": key, "status": status, "reason": reason, "placements": placements,
+             }
+-            if native and any(p['reward'].get('written_text') for p in definition['placements']):
++            if native and (any(p['reward'].get('written_text') for p in definition['placements'])
++                           or any(child.get('text') for recipe in native.get('placements', [])
++                                  for child in recipe.get('contents', []))):
+                 inventory["qualification_limit"] = (
+                     "Reward-grant support includes durable authored book text; "
+                     "ordinary carried-book READ/TextWindow transport is not implemented. "
+diff --git a/tools/content-schema/reward-claim-authoring/README.md b/tools/content-schema/reward-claim-authoring/README.md
+index 06d60a0e7..08fd9997c 100644
+--- a/tools/content-schema/reward-claim-authoring/README.md
++++ b/tools/content-schema/reward-claim-authoring/README.md
+@@ -49,9 +49,13 @@ Only an exact binding with known NonStackable semantics and positive
+ disagreement remains an independent diagnostic. The original pilot stays unchanged;
+ `source_checks` preserves the raw argument and the derived canonical quantity.
+ 
+-A default-matching reward stays held as `NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED`:
+-current native MINT request/after-state have no charge initialization or persistence.
+-This is an implementation gap under covered architecture. Source/default disagreement
++The closed full-charge leaves (Mad Mage Room's Stone Skin Amulet, Silver Amulet,
++and Stealth Ring's Protection Amulet) mint one instance at their exact definition
++charges. TIMED-ITEM-0 opens an absent timed row at revision zero with those full
++values; no partial subtype is invented. Admission requires the exact pinned
++Crystal UID, source position, Item identity, raw argument, materializable
++NonStackable Item and matching definition charges. Other bindings remain held as
++`NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED`. Source/default disagreement
+ stays `SOURCE_CHARGE_MISMATCH` (CONFLICT), notably Banshee3081 raw1 versus definition5.
+ Unproved source arguments and unknown definition charges remain UNKNOWN without
+ normalization. Stackable rune charge definitions retain quantity as piece count.
+@@ -110,6 +114,16 @@ then regenerate the source variant packet so its input hashes bind the new shard
+ `native_lowering_errors()` provides explicit unsupported-profile diagnostics before
+ any consumer attempts the existing plain native model; this is not a runtime implementation.
+ 
++`scripted_chests_rs.py` adds Rapier's source-script claim in a separate shard,
++without reshuffling the historical pilot or variant shards. The canonical Item
++admission preserves its existing physical and weapon facts. After authoring,
++`python3 tools/content-schema/world-authoring/quest_chest_bindings_rs.py` restores
++the qualified R–S chest startup UIDs onto their exact committed map appearances.
++It rejects missing or ambiguous chests and conflicting UIDs, preserves all other
++map facts, and is idempotent. The normal content regeneration command reapplies
++and checks this overlay; full map authoring reapplies it after source validation.
++Regenerate world pins with the bundle compiler after a placement change.
++
+ ```sh
+ python tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
+ python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content
+@@ -117,3 +131,24 @@ python tools/content-schema/reward-claim-authoring/reward_claim_variant_migratio
+ python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content --check
+ python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
+ ```
++
++## R–S scripted claims
++
++`scripted_chests_rs.py` adds the source Rapier claim and the closed
++`scripted_rs_v1` Small Sapphire recipe to one separate generated shard. The
++Small Sapphire packet pins six wiki revisions, the complete four-item recipe
++and both document texts. The native binder checks its exact position,
++appearance, native marker and source digest; text is checked by Item identity
++and SHA-256. An unadmitted child refuses the whole recipe.
++
++The Small Sapphire donor map has no UID on its chest. Native import assigns
++marker64993 at that exact chest and retains an empty `legacy_unique_ids` list.
++This marker is native binding metadata, not a claimed donor fact or a command
++ID. `quest_chest_bindings_rs.py` reapplies it during World regeneration, just as
++it restores startup UIDs for the other R–S claims. The packet records the
++one-tile difference between the wiki marker and the only adjacent map chest.
++
++Certificate637's existing canonical physical facts, including weight200, stay
++unchanged. Its nonstackable fact comes from the pinned appearance object's
++`cumulative=false` flag. The donor XML weight150 remains a recorded conflict;
++it does not replace the accepted canonical/TibiaWiki weight.
+diff --git a/tools/content-schema/reward-claim-authoring/capture_container_native_source.py b/tools/content-schema/reward-claim-authoring/capture_container_native_source.py
+index bc337aec4..64fdfd1b9 100644
+--- a/tools/content-schema/reward-claim-authoring/capture_container_native_source.py
++++ b/tools/content-schema/reward-claim-authoring/capture_container_native_source.py
+@@ -38,7 +38,7 @@ def capture(root):
+                      'item_id': lua_tables.as_python(f['value'])['itemId'],
+                      'text': lua_tables.as_python(f['value'])['text']} for f in attributes]
+     leaf_ids = {row['unique_id'] for row in text_entries} - {6195}
+-    leaf_ids |= {6093, 6082}
++    leaf_ids |= {6093, 6082, 6154, 6174}
+     achievements = lua_tables.assignments(handler, {'achievementTable'})['achievementTable']['fields']
+     return {
+         'schema': 'OTERYN_CRYSTAL_CONTAINER_REWARD_SOURCE/v1',
+diff --git a/tools/content-schema/reward-claim-authoring/container_native.py b/tools/content-schema/reward-claim-authoring/container_native.py
+index d5acc5a33..f08209b28 100644
+--- a/tools/content-schema/reward-claim-authoring/container_native.py
++++ b/tools/content-schema/reward-claim-authoring/container_native.py
+@@ -11,7 +11,7 @@ import re
+ from pathlib import Path
+ 
+ SOURCE = Path(__file__).with_name('container_native_source.json')
+-SOURCE_SHA256 = 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
++SOURCE_SHA256 = '2680c60528637a13eed808085a08acfbd81fe61e884d1be9fa038d4103e49a62'
+ REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
+ MAX_CONTENTS = 20  # Existing BAGS-0 direct-container admission, not a donor capacity.
+ # Existing selected owner rulings, reaffirmed by PR2770 ANSWER 6542716086/Q4.
+@@ -32,7 +32,7 @@ def source():
+         raise ValueError('shared storage reward choices changed')
+     leaves = value['leaf_entries']
+     if {row['unique_id'] for row in leaves} != {6013, 6082, 6093, 6112, 6179, 6187,
+-            6196, 6202, 6203, 6214, 6250, 6272, 6296, 6500}:
++            6196, 6202, 6203, 6214, 6250, 6272, 6296, 6500, 6154, 6174}:
+         raise ValueError('once-only leaf source inventory changed')
+     entries = {row['unique_id']: row for row in value['entries'] + choices + leaves}
+     if len(entries) != len(value['entries']) + len(choices) + len(leaves):
+@@ -54,21 +54,28 @@ def item_id(ref):
+ 
+ 
+ def full_charge_leaf(item, pilot_key, position, key, raw_count):
+-    """UID6082 is one already-admitted Item at its exact definition charges.
++    """The closed source leaves produce one Item at its exact definition charges.
+ 
+     Missing native timed state means full definition values; this does not
+     authorize partial source charges or make a held Item materializable.
+     """
+-    if (pilot_key != 'canary:reward-claim/kv/madmageroom3'
+-            or key != 'oteryn:item.tibia.i3081' or raw_count != 5
++    permitted = {
++        'canary:reward-claim/kv/madmageroom3': (6082, 'oteryn:item.tibia.i3081', 5),
++        'canary:reward-claim/kv/silveramulet': (6154, 'oteryn:item.tibia.i3054', 200),
++        'canary:reward-claim/kv/stealhring1': (6174, 'oteryn:item.tibia.i3084', 250),
++    }
++    selected = permitted.get(pilot_key)
++    if (selected is None or (key, raw_count) != selected[1:]
+             or not item or item.get('identity', {}).get('key') != key
+             or not item.get('materializable') or item.get('stack_class') != 'NonStackable'
+             or fact(item, 'charges', 'count') != raw_count):
+         return False
+     _, entries = source()
+-    setting = entries[6082]['setting']
+-    return (setting.get('useKV') is True and setting.get('questName') == 'madmageroom3'
+-            and setting.get('itemPos') == position and setting.get('reward') == [[3081, 5]])
++    setting = entries[selected[0]]['setting']
++    return (setting.get('useKV') is True
++            and setting.get('questName') == pilot_key.rsplit('/', 1)[1]
++            and setting.get('itemPos') == position
++            and setting.get('reward') == [[item_id(item['identity']), raw_count]])
+ 
+ 
+ def derive(definition, items, stack_problem):
+diff --git a/tools/content-schema/reward-claim-authoring/container_native_source.json b/tools/content-schema/reward-claim-authoring/container_native_source.json
+index 1cf4cf92a..ef459c902 100644
+--- a/tools/content-schema/reward-claim-authoring/container_native_source.json
++++ b/tools/content-schema/reward-claim-authoring/container_native_source.json
+@@ -2325,6 +2325,46 @@
+       },
+       "unique_id": 6112
+     },
++    {
++      "line": 1780,
++      "setting": {
++        "itemId": 2469,
++        "itemPos": {
++          "x": 32506,
++          "y": 32269,
++          "z": 9
++        },
++        "questName": "silveramulet",
++        "reward": [
++          [
++            3054,
++            200
++          ]
++        ],
++        "useKV": true
++      },
++      "unique_id": 6154
++    },
++    {
++      "line": 1949,
++      "setting": {
++        "itemId": 1983,
++        "itemPos": {
++          "x": 33315,
++          "y": 32277,
++          "z": 11
++        },
++        "questName": "stealhring1",
++        "reward": [
++          [
++            3084,
++            250
++          ]
++        ],
++        "useKV": true
++      },
++      "unique_id": 6174
++    },
+     {
+       "line": 1985,
+       "setting": {
+diff --git a/tools/content-schema/reward-claim-authoring/reward_claim_authoring.py b/tools/content-schema/reward-claim-authoring/reward_claim_authoring.py
+index 322680188..2ddcd8662 100755
+--- a/tools/content-schema/reward-claim-authoring/reward_claim_authoring.py
++++ b/tools/content-schema/reward-claim-authoring/reward_claim_authoring.py
+@@ -43,6 +43,7 @@ import sys
+ from pathlib import Path
+ 
+ import container_native
++import scripted_chests_rs
+ 
+ HERE = Path(__file__).resolve().parent
+ ROOT = HERE.parents[2]
+@@ -540,13 +541,16 @@ def committed_errors() -> list[str]:
+     records = [
+         row for shard in index["shards"] for row in load_json(ROOT / shard)["records"]
+     ]
+-    source_claims = load_json(ROOT / CLAIMS_REL)["claims"]
++    source_claims = load_json(ROOT / CLAIMS_REL)["claims"] + scripted_chests_rs.source_claims()
+     from reward_claim_variant_authoring import PROFILE, stack_normalization_checks
+     from reward_claim_variant_authoring import validate as validate_variants
+-    plain = [r for r in records if r['definition'].get('definition_profile') != PROFILE]
++    scripted_containers = [r for r in records if r['definition'].get('definition_profile') == scripted_chests_rs.SMALL_SAPPHIRE_PROFILE]
++    plain = [r for r in records if r['definition'].get('definition_profile') not in (PROFILE, scripted_chests_rs.SMALL_SAPPHIRE_PROFILE)]
+     variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
+     items = load_items()
+     errors = validate(plain, items, index["source_checks"], source_claims)
++    if scripted_containers != [scripted_chests_rs.small_sapphire(items)]:
++        errors.append("scripted Small Sapphire recipe differs from its source packet")
+     errors += validate_variants(variants, ROOT, items, stack_problem)
+     if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
+         errors.append('variant legacy UID diagnostics are missing or stale')
+@@ -580,6 +584,9 @@ def generate() -> dict[str, str]:
+     variants = derive(ROOT, items, stack_problem)
+     extend_outputs(ROOT, outputs, variants, compact, CONTENT_DIR)
+     records += variants
++    scripted = scripted_chests_rs.derive(load_json(ROOT / MANIFEST_REL), items, build_records)
++    scripted_chests_rs.extend_outputs(outputs, scripted, compact)
++    records += scripted
+     family_index = json.loads(outputs[INDEX_PATH])
+     family_index['variant_source_checks'] = legacy_uid_checks(records) + stack_normalization_checks()
+     outputs[INDEX_PATH] = compact(family_index)
+diff --git a/tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py b/tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py
+index 681b663f0..bb8fdd2e9 100644
+--- a/tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py
++++ b/tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py
+@@ -102,6 +102,10 @@ def derive_packet(root, evidence):
+     canonical = [r['definition'] for p in index['shards'] for r in read(root, p)['records']]
+     canonical_by_source = {}
+     for c in canonical:
++        # The native wiki recipe is independently authored, not a donor pilot row.
++        # Its complete record is validated by scripted_chests_rs instead.
++        if c.get('definition_profile') == 'scripted_rs_v1':
++            continue
+         key = (c['provenance']['pilot_key'], c['provenance']['pilot_revision'])
+         if key in canonical_by_source:
+             raise ValueError('duplicate canonical RewardClaim source binding')
+diff --git a/tools/content-schema/reward-claim-authoring/scripted_chests_rs.py b/tools/content-schema/reward-claim-authoring/scripted_chests_rs.py
+new file mode 100644
+index 000000000..47ed01a5d
+--- /dev/null
++++ b/tools/content-schema/reward-claim-authoring/scripted_chests_rs.py
+@@ -0,0 +1,124 @@
++"""Exact R–S script rewards omitted by the historical chest-table-only pilot.
++
++Rapier: Crystal201189f data-global/scripts/actions/rookgaard/rapier_quest.lua:4-11
++(SHA256 6420408ad37b8bbbaecffe6ddfc04f445028a330c35109261b46f1a89ff45635).
++The UID and position are independently retained by samples/chests/manifest.json;
++the current chest.lua:3454 supplies appearance2473. Wiki3334/rev1043841 records
++one Rapier and no quest-log entry. These are existing once-claim semantics.
++"""
++import copy
++import json
++
++PATH = 'content/interactions/reward_claims/reward-claims-scripted-rs.json'
++REVISION = 'crystal-201189f-scripted-rs-v1'
++
++
++def source_claims():
++    return [{
++        'identity': {'key': 'canary:reward-claim/kv/rapier', 'revision': REVISION},
++        'quest': {'family': 'Quest', 'key': 'canary:quest/rapier_quest',
++                  'revision': 'canary-04b83b51+crystalserver-9f5a72c6'},
++        'claim': {'per': 'character', 'repeat': {'kind': 'once'}},
++        'placements': [{
++            'position': {'x': 32099, 'y': 32198, 'z': 9},
++            'appearance': {'family': 'Item', 'key': 'crystalserver:item/2473',
++                           'revision': REVISION},
++            'reward': {'items': [{'count': 1, 'item': {
++                'family': 'Item', 'key': 'crystalserver:item/3272', 'revision': REVISION}}]},
++        }],
++    }]
++
++
++def derive(manifest, items, build_records):
++    claims = source_claims()
++    witness = next(row for row in manifest['entries'] if row['position'] == [32099, 32198, 9])
++    if not any(row['source'] == 'crystalserver' and row['uid'] == 14042
++               for row in witness['sources']):
++        raise ValueError('Rapier script UID/position witness changed')
++    entry = copy.deepcopy(witness)
++    entry['destination'] = claims[0]['identity']['key']
++    entry['sources'] = [row for row in entry['sources'] if row['source'] == 'crystalserver']
++    records, checks = build_records(claims, {'entries': [entry]}, items,
++                                    charge_evidence=[], transitions=set())
++    if checks or len(records) != 1 or records[0]['definition']['readiness'] != 'ready':
++        raise ValueError('Rapier reward Item is not admitted')
++    return records + [small_sapphire(items)]
++
++
++def extend_outputs(outputs, records, compact):
++    index_path = 'content/interactions/reward_claims/index.json'
++    index = json.loads(outputs[index_path])
++    existing = [row for path in index['shards'] for row in json.loads(outputs[path])['records']]
++    keys = [row['definition']['identity']['key'] for row in existing + records]
++    positions = [tuple(p['source_binding']['project_position'][axis] for axis in ('x', 'y', 'z'))
++                 for row in existing + records for p in row['definition']['placements']]
++    if len(keys) != len(set(keys)) or len(positions) != len(set(positions)):
++        raise ValueError('scripted R–S claim identity/placement collision')
++    outputs[PATH] = compact({'family': 'RewardClaim', 'schema': 'OTERYN_REWARD_CLAIM_SHARD/v1',
++                            'shard': {'index': 0, 'start': 0, 'end': len(records) - 1,
++                                      'count': len(records)}, 'records': records})
++    index['shards'].append(PATH)
++    index['record_count'] += len(records)
++    index['scripted_rs_record_count'] = len(records)
++    index['readiness']['ready'] += len(records)
++    outputs[index_path] = compact(index)
++
++
++SMALL_SAPPHIRE_PROFILE = 'scripted_rs_v1'
++SMALL_SAPPHIRE_SOURCE_SHA256 = '229eb3979fe64d69d726104122a3d76e2c281902777ef151cc796834c38a4291'
++
++
++def small_sapphire(items):
++    """Personal wiki recipe with a separately declared native import marker."""
++    proof = small_sapphire_source()
++    ref = lambda ident: {'family': 'Item', 'key': f'oteryn:item.tibia.i{ident}',
++                         'revision': 'definition-r1'}
++    root = ref(proof['root'])
++    contents = [{'item': ref(row['item']), 'count': row['count'],
++                 **({'text': row['text']} if 'text' in row else {})}
++                for row in proof['rewards']]
++    for entry in [{'item': root, 'count': 1}, *contents]:
++        item = items.get(entry['item']['key'])
++        if (not item or item['identity'] != entry['item'] or not item['materializable']
++                or item['stack_class'] not in ('StackCapable', 'NonStackable')):
++            raise ValueError('Small Sapphire Item is not admitted: ' + entry['item']['key'])
++    if items[root['key']]['semantics']['container']['value']['capacity']['value'] != proof['capacity']:
++        raise ValueError('Small Sapphire bag capacity changed')
++    binding = proof['map_binding']
++    recipe = {'unique_id': None, 'root': root, 'capacity': proof['capacity'],
++              'contents': contents, 'completion': {'kind': 'quest_kv', 'key': 'smallSapphire'}}
++    return {'definition': {
++        'identity': {'key': 'oteryn:reward-claim.kv.smallsapphire', 'revision': 'reward-claim-r1'},
++        'definition_profile': SMALL_SAPPHIRE_PROFILE,
++        'claim': {'per': 'character', 'repeat': {'kind': 'once'}},
++        'quest': {'family': 'Quest', 'key': 'oteryn:quest.authored.small_sapphire_quest',
++                  'revision': 'authored-r1'},
++        'readiness': 'ready',
++        'provenance': {'source_packet': 'tools/content-schema/reward-claim-authoring/small_sapphire_source.json',
++                       'source_sha256': SMALL_SAPPHIRE_SOURCE_SHA256},
++        'placements': [{'appearance_tibia_id': binding['appearance'],
++                        'source_binding': {'project_position': binding['position'],
++                                           'legacy_unique_ids': binding['legacy_unique_ids']},
++                        'reward': {'container': root, 'items': [
++                            {'item': row['item'], 'count': row['count']} for row in contents]}}],
++        'native_contents': {'schema': 'OTERYN_NATIVE_CONTAINER_REWARD/v1',
++                            'revision': 'tibiawiki-small-sapphire-v1',
++                            'native_unique_id': binding['native_unique_id'],
++                            'source_sha256': SMALL_SAPPHIRE_SOURCE_SHA256,
++                            'placements': [recipe]},
++    }}
++
++
++
++def small_sapphire_source():
++    import hashlib
++    from pathlib import Path
++    raw = Path(__file__).with_name('small_sapphire_source.json').read_bytes()
++    if hashlib.sha256(raw).hexdigest() != SMALL_SAPPHIRE_SOURCE_SHA256:
++        raise ValueError('Small Sapphire source packet changed')
++    return json.loads(raw)
++
++
++def record_count():
++    """A pinned script leaf and one independently authored wiki container recipe."""
++    return len(source_claims()) + 1
+diff --git a/tools/content-schema/reward-claim-authoring/small_sapphire_source.json b/tools/content-schema/reward-claim-authoring/small_sapphire_source.json
+new file mode 100644
+index 000000000..321ca76db
+--- /dev/null
++++ b/tools/content-schema/reward-claim-authoring/small_sapphire_source.json
+@@ -0,0 +1,96 @@
++{
++  "capacity": 8,
++  "certificate_stack_evidence": {
++    "classification": "OTS_HYPOTHESIS_ONLY",
++    "flags_cumulative": false,
++    "loader_rule": "Item stackability is object.flags().cumulative(); omitted protobuf booleans default false, as in build_source_item_profiles.py:70-75.",
++    "object_id": 637,
++    "path": "data/items/appearances.dat",
++    "physical_precedence": "Preserve accepted canonical/TibiaWiki weight200. The donor XML weight150 is a conflicting hypothesis, not authority to alter canonical physical facts.",
++    "repository": "zimbadev/crystalserver",
++    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
++    "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
++  },
++  "classification": "TIBIAWIKI_STRUCTURED",
++  "map_binding": {
++    "appearance": 2472,
++    "decision": "The wiki marker is (32962,32430,7); the sole chest within one tile is at (32962,32429,7) in the committed production map. Its donor UID is absent. Native import assigns marker 64993 (unused in the current map); legacy_unique_ids stays empty. The existing binder then checks the exact position, marker and appearance.",
++    "legacy_unique_ids": [],
++    "native_unique_id": 64993,
++    "position": {
++      "x": 32962,
++      "y": 32429,
++      "z": 7
++    }
++  },
++  "pages": [
++    {
++      "page_id": 29327,
++      "revision": 1010078,
++      "sha256": "539dfa38c5116c22973c71ebd6c3e4ff36838d61b464affd4ae53de7d0fdac02",
++      "timestamp": "2023-07-07T21:24:18Z",
++      "title": "Document (Certificate)"
++    },
++    {
++      "page_id": 14669,
++      "revision": 1102593,
++      "sha256": "da84cc64fb308a92a4e7a529291d554f1a3d12c0caa095be04a3169f89a133d9",
++      "timestamp": "2025-05-09T17:47:03Z",
++      "title": "Map (Brown)"
++    },
++    {
++      "page_id": 77573,
++      "revision": 846043,
++      "sha256": "070008474ca440a5c6e1fb7096a2a6991a0eb057a2d124b8df41d9f93f72a48d",
++      "timestamp": "2021-05-26T22:11:49Z",
++      "title": "Small Sapphire Quest"
++    },
++    {
++      "page_id": 77574,
++      "revision": 749163,
++      "sha256": "ae043f734c40eeea29dd8711a3e09140dad3be431c8ed5b00c975712951988c5",
++      "timestamp": "2018-12-03T20:01:10Z",
++      "title": "Small Sapphire Quest/Spoiler"
++    },
++    {
++      "page_id": 77572,
++      "revision": 1116984,
++      "sha256": "3e93d63386fdf3e84ec144fc420a99ce8986ffe34f81fe07a9c0fe8c640f56c8",
++      "timestamp": "2025-07-26T13:25:08Z",
++      "title": "Travel Expenses (Book)"
++    },
++    {
++      "page_id": 77571,
++      "revision": 1116983,
++      "sha256": "940b36d004038731abb3480864953c9a27666de65c812f9a2afb8cdcfad449e2",
++      "timestamp": "2025-07-26T13:25:06Z",
++      "title": "Women Seduced (Book)"
++    }
++  ],
++  "repeat": {
++    "kind": "once"
++  },
++  "repeat_decision": "Treat the ordinary personal quest chest as once per character; this title does not describe the daily/floor-reset behavior explicitly documented by Small Ruby Quest.",
++  "rewards": [
++    {
++      "count": 1,
++      "item": 3029
++    },
++    {
++      "count": 50,
++      "item": 3031
++    },
++    {
++      "count": 1,
++      "item": 2822,
++      "text": "Polly, barmaid in Port Hope (likes shiny things, doesn't like beer)\nSally, seamstress in Venore (never paid for that coat she made)\nDorothy, shipwrecked in Cormaya (cute, naive, definitely waiting)\nAngelica, Laguna Island (memo: get my cutlass back from her)\nTricia, Liberty Bay (has an angry brother, bring pistol)\nSuzanne, Drefia (tastes of cherry, have to visit again)"
++    },
++    {
++      "count": 1,
++      "item": 637,
++      "text": "To Captain Starbird, Port Hope, Juggling Mermaid's Inn.\n\nRodney, ye hairy ol' walrus, I hope this finds ye in good health and spirits and a fair maiden in each arm, too, I wager.\n As we had to scarper from that last and somewhat heated appointment with the fleet, I took the liberty of deducting my travel expenses from the contents of this here treasure chest. Shiver me timbers, what a blow my ol' Red Ruby took! It's three months' repair at least before venturing out for the next likely booty for us.\nWell, take the rest for a merry round of quaffing with the boys, and we'll meet at the usual place at the usual time.\n\nYohoho,\n\nCaptain Jack Rumgut"
++    }
++  ],
++  "root": 2853,
++  "schema": "OTERYN_SMALL_SAPPHIRE_SOURCE/v1"
++}
+diff --git a/tools/content-schema/reward-claim-authoring/test_container_native.py b/tools/content-schema/reward-claim-authoring/test_container_native.py
+index 77d1bf7ca..616b0f50d 100644
+--- a/tools/content-schema/reward-claim-authoring/test_container_native.py
++++ b/tools/content-schema/reward-claim-authoring/test_container_native.py
+@@ -99,9 +99,9 @@ class ContainerNativeTests(unittest.TestCase):
+             row = recipe['placements'][0]
+             self.assertLessEqual(len(row['contents']), min(row['capacity'], 20))
+         native = [d for d in self.rows if container_native.derive(d, self.items, plain.stack_problem)]
+-        self.assertEqual(len(native), 67)
++        self.assertEqual(len(native), 68)
+         self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
+-                             for d in native), 54)
++                             for d in native), 55)
+ 
+     def test_all_twelve_text_leaves_keep_the_established_lf_normalization(self):
+         evidence, _ = container_native.source()
+@@ -160,6 +160,28 @@ class ContainerNativeTests(unittest.TestCase):
+             self.assertFalse(container_native.full_charge_leaf(changed, claim, point,
+                              item['identity']['key'], raw), mutation)
+ 
++    def test_rs_charged_leaves_require_exact_source_and_definition_charges(self):
++        proof = plain.load_source_charge_evidence()
++        for name, ident, charges, xyz in (
++                ('silveramulet', 3054, 200, (32506, 32269, 9)),
++                ('stealhring1', 3084, 250, (33315, 32277, 11))):
++            item = copy.deepcopy(self.items[f'oteryn:item.tibia.i{ident}'])
++            # Isolate the lowering from the separately qualified Item admission.
++            item['materializable'] = True
++            key = f'canary:reward-claim/kv/{name}'
++            position = dict(zip('xyz', xyz))
++            self.assertEqual(plain.charged_source_reward(item, key, position,
++                             item['identity']['key'], charges, proof), (1, None))
++            for mutation in ('count', 'charges', 'admission', 'position', 'claim'):
++                changed = copy.deepcopy(item); point = dict(position); raw = charges; claim = key
++                if mutation == 'count': raw -= 1
++                elif mutation == 'charges': changed['semantics']['charges']['value']['count']['value'] += 1
++                elif mutation == 'admission': changed['materializable'] = False
++                elif mutation == 'position': point['x'] += 1
++                else: claim += 'forged'
++                self.assertFalse(container_native.full_charge_leaf(changed, claim, point,
++                                 item['identity']['key'], raw), (name, mutation))
++
+     def test_authored_text_is_bound_only_to_the_exact_source_book(self):
+         d = next(d for d in self.rows if d['identity']['key'].endswith('dreamers_challenge.bplong_sword'))
+         recipe = container_native.derive(d, self.items, plain.stack_problem)
+diff --git a/tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py b/tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
+index 557e480f0..bcfe2a1b0 100644
+--- a/tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
++++ b/tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
+@@ -31,12 +31,13 @@ class CanonicalVariantTests(unittest.TestCase):
+                         self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
+                         self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
+ 
+-    def test_plain_231_definition_records_remain_exact_and_readiness_220_11(self):
++    def test_plain_231_definition_records_remain_exact_with_one_scripted_claim(self):
+         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
+         self.assertEqual(index['plain_record_count'], 231)
+-        self.assertEqual(index['record_count'], 336)
+-        self.assertEqual(index['readiness']['ready'], 220)
+-        self.assertEqual(index['readiness']['waiting_item_semantics'], 11)
++        self.assertEqual(index['record_count'], 338)
++        self.assertEqual(index['scripted_rs_record_count'], 2)
++        self.assertEqual(index['readiness']['ready'], 224)
++        self.assertEqual(index['readiness']['waiting_item_semantics'], 9)
+         for path in index['shards'][:3]:
+             self.assertEqual(outputs[path], (self.root / path).read_text())
+         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
+@@ -125,10 +126,11 @@ class CanonicalVariantTests(unittest.TestCase):
+ 
+     def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
+         errors = variants.native_lowering_errors(self.records)
+-        # W15b admits 67 exact container/leaf recipes without rewriting
++        # The Protection Amulet admission also completes the existing Desert bag;
++        # 68 exact container/leaf recipes retain
+         # the immutable source dispositions of the105 original variant records.
+-        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 67)
+-        self.assertEqual(len(errors), 38)
++        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 68)
++        self.assertEqual(len(errors), 37)
+         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
+ 
+     def test_committed_family_reproduces_with_separate_holds(self):
+diff --git a/tools/content-schema/reward-claim-authoring/test_scripted_chests_rs.py b/tools/content-schema/reward-claim-authoring/test_scripted_chests_rs.py
+new file mode 100644
+index 000000000..24763a861
+--- /dev/null
++++ b/tools/content-schema/reward-claim-authoring/test_scripted_chests_rs.py
+@@ -0,0 +1,56 @@
++"""R–S script-owned rewards must survive the canonical authoring boundary."""
++import unittest
++
++import reward_claim_authoring as authoring
++
++
++class ScriptedChestTests(unittest.TestCase):
++    def test_small_sapphire_preserves_all_four_rewards_and_both_book_texts(self):
++        records = authoring.scripted_chests_rs.derive(
++            authoring.load_json(authoring.ROOT / authoring.MANIFEST_REL),
++            authoring.load_items(), authoring.build_records)
++        definition = next(row['definition'] for row in records
++                          if row['definition']['identity']['key'].endswith('.smallsapphire'))
++        self.assertEqual(definition['claim'], {'per': 'character', 'repeat': {'kind': 'once'}})
++        self.assertEqual(definition['placements'][0]['source_binding'], {
++            'project_position': {'x': 32962, 'y': 32429, 'z': 7}, 'legacy_unique_ids': []})
++        recipe = definition['native_contents']['placements'][0]
++        self.assertEqual(recipe['root']['key'], 'oteryn:item.tibia.i2853')
++        self.assertEqual([(row['item']['key'], row['count']) for row in recipe['contents']], [
++            ('oteryn:item.tibia.i3029', 1), ('oteryn:item.tibia.i3031', 50),
++            ('oteryn:item.tibia.i2822', 1), ('oteryn:item.tibia.i637', 1)])
++        self.assertEqual([row['item']['key'] for row in recipe['contents'] if 'text' in row],
++                         ['oteryn:item.tibia.i2822', 'oteryn:item.tibia.i637'])
++
++    def test_small_sapphire_never_drops_an_unadmitted_child(self):
++        import copy
++        items = copy.deepcopy(authoring.load_items())
++        for ident in (3029, 3031, 2822, 637):
++            changed = copy.deepcopy(items)
++            changed[f'oteryn:item.tibia.i{ident}']['materializable'] = False
++            with self.subTest(ident=ident), self.assertRaisesRegex(ValueError, 'Item is not admitted'):
++                authoring.scripted_chests_rs.small_sapphire(changed)
++
++    def test_rapier_is_an_executable_once_claim_at_the_source_position(self):
++        generated = authoring.generate()
++        records = [row['definition']
++                   for path, text in generated.items()
++                   if path.endswith('.json') and '/reward_claims/reward-' in path
++                   for row in authoring.json.loads(text)['records']]
++        rapier = next((r for r in records if r['identity']['key'] ==
++                       'oteryn:reward-claim.kv.rapier'), None)
++        self.assertIsNotNone(rapier, 'the script reward is missing from RewardClaim')
++        self.assertEqual(rapier['readiness'], 'ready')
++        self.assertEqual(rapier['claim'], {'per': 'character', 'repeat': {'kind': 'once'}})
++        self.assertEqual(rapier['placements'], [{
++            'appearance_tibia_id': 2473,
++            'source_binding': {
++                'legacy_unique_ids': [{'server': 'crystalserver', 'unique_id': 14042}],
++                'project_position': {'x': 32099, 'y': 32198, 'z': 9}},
++            'reward': {'items': [{'count': 1, 'item': authoring.item_ref(
++                'oteryn:item.tibia.i3272')}]},
++        }])
++
++
++if __name__ == '__main__':
++    unittest.main()
+diff --git a/tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py b/tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py
+index 790e112ac..4c5de1e7b 100644
+--- a/tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py
++++ b/tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py
+@@ -35,9 +35,9 @@ class VariantStackSerializationTests(unittest.TestCase):
+                 self.assertEqual(d['readiness'], 'waiting_implementation')
+                 self.assertEqual(d['data_holds'], [])
+         self.assertEqual(len(changed), 2)
+-        # W15b implements 67 exact container/leaf recipes, including
++        # 68 exact container/leaf recipes include the admitted Desert bag and
+         # these two selected native stack normalizations (PR2770 Q4/A).
+-        self.assertEqual(len(variants.native_lowering_errors(self.records)), 38)
++        self.assertEqual(len(variants.native_lowering_errors(self.records)), 37)
+ 
+     def test_every_actual_item_total_is_preserved(self):
+         for row, old in zip(self.records, self.old):
+diff --git a/tools/content-schema/world-authoring/convert_world_base.py b/tools/content-schema/world-authoring/convert_world_base.py
+index f3d6336a8..5c4043cc2 100755
+--- a/tools/content-schema/world-authoring/convert_world_base.py
++++ b/tools/content-schema/world-authoring/convert_world_base.py
+@@ -1273,6 +1273,9 @@ def main() -> int:
+                 f"excluded teleports {excluded} differ from the pinned "
+                 f"{PINNED_EXCLUDED_TELEPORTS}"
+             )
++        import quest_chest_bindings_rs
++
++        quest_chest_bindings_rs.overlay_outputs(out)
+     except (ConvertError, otbm_reader.OtbmError, OSError) as error:
+         print(f"FAIL {error}", file=sys.stderr)
+         return 1
+diff --git a/tools/content-schema/world-authoring/quest_chest_bindings_rs.py b/tools/content-schema/world-authoring/quest_chest_bindings_rs.py
+new file mode 100644
+index 000000000..4ef8bae8d
+--- /dev/null
++++ b/tools/content-schema/world-authoring/quest_chest_bindings_rs.py
+@@ -0,0 +1,150 @@
++"""Restore the source startup UIDs of the qualified R–S quest chests.
++
++The donor map omits IDs assigned by its startup loader. Reproduce that loader's
++position/appearance precondition, preserving every other tile and item fact.
++Inputs are the source-bound RewardClaim records; no Lua runs at authoring or boot.
++"""
++import argparse
++import hashlib
++import json
++from pathlib import Path
++
++import world_region_codec as codec
++
++ROOT = Path(__file__).resolve().parents[3]
++INDEX = 'content/world/placements/index.json'
++SUMMARY = 'tools/content-schema/world-authoring/samples/world-base-capture-v1.json'
++CLAIMS = {
++    'kv.bananafree', 'kv.bananapremium', 'kv.honeyflower', 'kv.rapier', 'kv.ringquest1', 'kv.ringquest2',
++    'kv.scalearmor', 'kv.shamantreasure', 'kv.shortswordbook', 'kv.silveramulet',
++    'kv.silverbrooch', 'kv.sixrubies', 'kv.smallsapphire', 'kv.spikesword', 'kv.stealhring1',
++    'kv.stealhring2', 'kv.steelhelmet1',
++    'kv.steelhelmet2', 'kv.steelhelmet3', 'kv.steelhelmet4',
++    'kv.witch_house_quest',
++    'quest.u7_6.explorer_society.skull_of_ratha.bag1',
++    'quest.u7_6.explorer_society.skull_of_ratha.bag2',
++    'quest.u8_1.strong_potions.reward',
++}
++
++
++def canonical(value):
++    return (json.dumps(value, sort_keys=True, separators=(',', ':')) + '\n').encode()
++
++
++def bindings():
++    definitions = {}
++    for path in sorted((ROOT / 'content/interactions/reward_claims').glob('reward-claim*.json')):
++        for row in json.loads(path.read_bytes())['records']:
++            definition = row['definition']
++            key = definition['identity']['key'].removeprefix('oteryn:reward-claim.')
++            if key not in CLAIMS:
++                continue
++            if key in definitions:
++                raise ValueError(f'duplicate R–S claim: {key}')
++            definitions[key] = definition
++    if definitions.keys() != CLAIMS:
++        raise ValueError('R–S source claim inventory changed')
++    result = {}
++    for key, definition in sorted(definitions.items()):
++        for placement in definition['placements']:
++            source = placement['source_binding']
++            position = tuple(source['project_position'][axis] for axis in 'xyz')
++            unique = [row['unique_id'] for row in source['legacy_unique_ids']
++                      if row['server'] == 'crystalserver']
++            if key == 'kv.smallsapphire':
++                if unique or definition.get('definition_profile') != 'scripted_rs_v1':
++                    raise ValueError('Small Sapphire native marker is not a donor UID')
++                marker = definition['native_contents'].get('native_unique_id')
++                if marker != 64993:
++                    raise ValueError('Small Sapphire native import marker changed')
++                unique = [marker]
++            if len(unique) != 1 or position in result:
++                raise ValueError(f'ambiguous R–S chest binding: {key}')
++            result[position] = {'claim': key, 'appearance': placement['appearance_tibia_id'],
++                                'unique': unique[0]}
++    return result, hashlib.sha256(canonical(definitions)).hexdigest()
++
++
++def overlay_region(raw, palette, bindings):
++    z, rx, ry, _ = codec.parse_region(raw)
++    selected = {position: binding for position, binding in bindings.items()
++                if position[2] == z and position[0] // 256 == rx and position[1] // 256 == ry}
++    if not selected:
++        return raw, set(), 0
++    _, _, _, sectors = codec.decode_region(raw)
++    imported, encoded, added = set(), {}, 0
++    changed = False
++    for local, tiles in sectors:
++        for x, y, _, house, _, items in tiles:
++            position = (x, y, z)
++            binding = selected.get(position)
++            if binding is None:
++                continue
++            candidates = [slot for slot, (index, depth, _) in enumerate(items)
++                          if not depth and palette[index]['source_item_id'] == binding['appearance']]
++            if house or len(candidates) != 1:
++                raise ValueError(f'R–S source chest missing or ambiguous at {position}')
++            slot = candidates[0]
++            index, depth, attrs = items[slot]
++            previous = (attrs or {}).get('unique')
++            if previous is not None and previous != binding['unique']:
++                raise ValueError(f'R–S source chest UID conflict at {position}')
++            if previous is None:
++                items[slot] = (index, depth, {**(attrs or {}), 'unique': binding['unique']})
++                added += 1
++                changed = True
++            imported.add(position)
++        sx, sy = rx * 8 + local % 8, ry * 8 + local // 8
++        encoded[local] = codec.encode_sector_tiles(sx, sy, tiles)
++    return (codec.encode_region(z, rx, ry, encoded) if changed else raw), imported, added
++
++
++def overlay_outputs(outputs):
++    selected, digest = bindings()
++    regions = {codec.region_name(z, x // 256, y // 256) for x, y, z in selected}
++    index = json.loads(outputs[INDEX])
++    imported, added, byte_delta = set(), 0, 0
++    for region in index['regions']:
++        path = region['path']
++        if Path(path).name not in regions:
++            continue
++        before = outputs[path]
++        if hashlib.sha256(before).hexdigest() != region['sha256']:
++            raise ValueError(f'R–S chest input region digest mismatch: {path}')
++        after, found, new_ids = overlay_region(before, index['palette'], selected)
++        outputs[path] = after
++        region['sha256'] = hashlib.sha256(after).hexdigest()
++        imported.update(found)
++        added += new_ids
++        byte_delta += len(after) - len(before)
++    if imported != selected.keys():
++        raise ValueError(f'R–S source chest tiles missing: {sorted(selected.keys() - imported)}')
++    index['source']['quest_chests_rs'] = {'claims_sha256': digest, 'imported': len(imported)}
++    outputs[INDEX] = canonical(index)
++    summary = json.loads(outputs[SUMMARY])
++    summary['source'] = index['source']
++    summary['item_attributes']['unique'] = summary['item_attributes'].get('unique', 0) + added
++    summary['bytes_on_disk'] += byte_delta
++    outputs[SUMMARY] = canonical(summary)
++
++
++def apply(check):
++    index = json.loads((ROOT / INDEX).read_bytes())
++    selected, _ = bindings()
++    regions = {codec.region_name(z, x // 256, y // 256) for x, y, z in selected}
++    outputs = {path: (ROOT / path).read_bytes()
++               for path in [INDEX, SUMMARY, *(r['path'] for r in index['regions']
++                                             if Path(r['path']).name in regions)]}
++    overlay_outputs(outputs)
++    changed = [path for path, data in outputs.items() if (ROOT / path).read_bytes() != data]
++    if check and changed:
++        raise ValueError(f'R–S quest chest binding drift: {changed}')
++    for path in changed:
++        (ROOT / path).write_bytes(outputs[path])
++    print(f'R–S quest chest bindings: {len(CLAIMS)} claims; check={check}; changed={len(changed)}')
++
++
++if __name__ == '__main__':
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--check', action='store_true')
++    apply(parser.parse_args().check)
+diff --git a/tools/content-schema/world-authoring/test_quest_chest_bindings_rs.py b/tools/content-schema/world-authoring/test_quest_chest_bindings_rs.py
+new file mode 100644
+index 000000000..ececf6f49
+--- /dev/null
++++ b/tools/content-schema/world-authoring/test_quest_chest_bindings_rs.py
+@@ -0,0 +1,55 @@
++"""R–S startup UID import must preserve the committed source map and fail closed."""
++import json
++import unittest
++
++import quest_chest_bindings_rs as chests
++import world_region_codec as codec
++
++
++class QuestChestBindingsTests(unittest.TestCase):
++    def test_all_committed_rs_chests_have_the_exact_source_uid_and_appearance(self):
++        # Before the overlay this fails on Rapier: its placed chest has no UID.
++        selected, _ = chests.bindings()
++        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
++        regions = {row['path'].split('/')[-1]: row for row in index['regions']}
++        cache = {}
++        for (x, y, z), expected in selected.items():
++            name = codec.region_name(z, x // 256, y // 256)
++            if name not in cache:
++                cache[name] = codec.decode_region((chests.ROOT / regions[name]['path']).read_bytes())[3]
++            matches = [attrs for _, tiles in cache[name]
++                       for tx, ty, _, house, _, entries in tiles if (tx, ty) == (x, y) and not house
++                       for palette, depth, attrs in entries
++                       if not depth and index['palette'][palette]['source_item_id'] == expected['appearance']]
++            self.assertEqual(len(matches), 1, expected['claim'])
++            self.assertEqual((matches[0] or {}).get('unique'), expected['unique'], expected['claim'])
++
++    def fixture(self, items=None, house=0):
++        palette = [{'source_item_id': 2473}, {'source_item_id': 3031}]
++        entries = items if items is not None else [(0, 0, {'text': 'retained'}), (1, 1, {'count': 3})]
++        tiles = [(1, 2, 8, house, (4,), entries), (2, 2, 0, 0, (), [(0, 0, None)])]
++        raw = codec.encode_region(9, 0, 0, {0: codec.encode_sector_tiles(0, 0, tiles)})
++        selected = {(1, 2, 9): {'appearance': 2473, 'unique': 14042}}
++        return raw, palette, selected, tiles
++
++    def test_overlay_preserves_every_other_attribute_nested_item_and_tile(self):
++        raw, palette, selected, tiles = self.fixture()
++        result, imported, added = chests.overlay_region(raw, palette, selected)
++        self.assertEqual(imported, {(1, 2, 9)})
++        self.assertEqual(added, 1)
++        tiles[0][5][0] = (0, 0, {'text': 'retained', 'unique': 14042})
++        self.assertEqual(codec.decode_region(result)[3][0][1], tiles)
++        self.assertEqual(chests.overlay_region(result, palette, selected), (result, imported, 0))
++
++    def test_conflicting_uid_duplicate_appearance_and_house_refuse_whole_region(self):
++        for entries, house in [([(0, 0, {'unique': 7})], 0),
++                               ([(0, 0, None), (0, 0, None)], 0),
++                               ([(1, 0, None)], 0), (None, 1)]:
++            with self.subTest(entries=entries, house=house):
++                raw, palette, selected, _ = self.fixture(entries, house)
++                with self.assertRaises(ValueError):
++                    chests.overlay_region(raw, palette, selected)
++
++
++if __name__ == '__main__':
++    unittest.main()

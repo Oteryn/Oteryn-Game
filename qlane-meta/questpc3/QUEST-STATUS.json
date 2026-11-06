@@ -1,0 +1,1863 @@
+{
+  "task_id": "questpc3",
+  "scope": "R\u2013S; migrations1040\u20131059; no new commands/capabilities",
+  "counts": {
+    "inventory": 56,
+    "qualified": 19,
+    "in_progress": 36,
+    "blocked_scope_exclusion": 1,
+    "external_owner_confirmation_pending": 10
+  },
+  "quests": [
+    {
+      "quest": "Rapier Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_rapier_claim_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.rapier",
+              "duration_ms": 36604,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Rascoohan Outfits Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Canonical outfit/addon catalogue population and per-field admission decisions; preserve existing entitlements and prerequisite quests.",
+      "file_line": "content/cosmetics/outfits/index.json:7; tools/content-schema/cosmetics-authoring/README.md:13; crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs:68",
+      "what_was_tried": "Read this title's captured walkthrough, checked the production outfit index and traced grant mapping validation/resolution. The index is READY_UNPOPULATED and the canonical sex/look/addon/premium/provenance mappings are absent. Numeric donor look IDs and synthetic test packets cannot supply the required admitted production data.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/89/definition/native_lowering",
+          "quest_key": "oteryn:quest.rascoohan_outfits_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "outfit_admission_and_item_handins",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Rathleton Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic voting-point debit/world tally and fortnightly map/spawn selection owner.",
+      "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+      "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/58/definition/native_lowering",
+          "quest_key": "oteryn:quest.hero_of_rathleton_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        },
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/26/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.rathleton_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_change_contributions_and_lifecycle",
+      "owner": "UNCONFIRMED",
+      "candidate_owner": "WORLDCHG",
+      "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation."
+    },
+    {
+      "quest": "Ravenous Madness Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Quest-bound corpse Item/progress and Trollwut encounter/access composition.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97",
+      "what_was_tried": "Read this title's captured walkthrough and searched production NPC/callback owners and the canonical quest packet. Traced state-only QuestState and the four closed Rookgaard barter rules; neither executes the listed physical Item/progress/world effects as a complete quest. No seeded end-state or standalone reward was counted as qualification.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/27/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.ravenous_madness_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "runtime_boundary": {
+        "file_line": "crates/gameplay/quests/src/quest/world_callbacks.rs:78; crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:42",
+        "missing_piece": "Source-bound runtime corpse/special-tool callback with corpse identity, transformation/capture and quest credit. ItemOnTarget currently names only a fixed Item/count/replacement and execute_quest_callback resolves static map entries; an NPC module cannot establish the required live corpse evidence.",
+        "what_was_tried": "Compared this quest source with the ItemOnTarget schema and production map-target resolution. The existing map callback is not a corpse-capture proof; a seeded captured Item would bypass the missing operation."
+      },
+      "mechanism_group": "encounter_portal_and_puzzle_composition",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Realm of Dreams Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Live area-clear, field/switch/lever puzzle and key/book-gated access composition.",
+      "file_line": "content/quests/definitions/quests-00100-00199.json:1; .questpc3/wiki/Realm of Dreams Quest_Spoiler.wiki:18",
+      "what_was_tried": "Compared the Draconia book/key, live-area clear and timed field/switch/lever steps with canonical chayenne_realm native_lowering and the registered world callbacks. No interaction/progress bindings compose the source puzzle; an unconditional final corpse claim would bypass access.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/20/definition/native_lowering",
+          "quest_key": "oteryn:quest.chayenne_realm",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "encounter_portal_and_puzzle_composition",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Research and Development Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic NPC Item/progress and captured-corpse/Spirit Cage composition.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97",
+      "what_was_tried": "Read this title's captured walkthrough and searched production NPC/callback owners and the canonical quest packet. Traced state-only QuestState and the four closed Rookgaard barter rules; neither executes the listed physical Item/progress/world effects as a complete quest. No seeded end-state or standalone reward was counted as qualification.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/8/definition/native_lowering",
+          "quest_key": "oteryn:quest.spirithunters_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "runtime_boundary": {
+        "file_line": "crates/gameplay/quests/src/quest/world_callbacks.rs:78; crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:42",
+        "missing_piece": "Source-bound runtime corpse/special-tool callback with corpse identity, transformation/capture and quest credit. ItemOnTarget currently names only a fixed Item/count/replacement and execute_quest_callback resolves static map entries; an NPC module cannot establish the required live corpse evidence.",
+        "what_was_tried": "Compared this quest source with the ItemOnTarget schema and production map-target resolution. The existing map callback is not a corpse-capture proof; a seeded captured Item would bypass the missing operation."
+      },
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed.",
+      "prior_engine_boundary": {
+        "file_line": "crates/gameplay/durability/src/durability/quest_state/writer.rs:104; crates/gameplay/durability/src/durability/quest_state/writer.rs:232; crates/gameplay/durability/src/durability/quest_world_callback.rs:39",
+        "missing_piece": "Shared CharacterRevision/QuestState plus Item hand-in/hand-out transaction composition for an NPC occurrence. The current Quest writer accepts only the RottenBloodAccessPayment resource bridge; QuestWorldContext accepts Use/Step map occurrences, not NPC_TALK.",
+        "why_not_lane_module": "A standalone NPC/craft module cannot write canonical Quest tracks and their CharacterRevision receipt. It needs a shared Quest writer composition seam, not another selector or a test-only seeded end-state. The authorized NPC routing hook supplies no such seam.",
+        "what_was_tried": "Traced the private commit_quest_inner resource parameter and begin_type2_transaction branch, and the world callback cause gate. Implemented the receipt-derived cumulative Sinatuki path in the lane-owned craft submodule; that path has no existing canonical Quest track to update and does not supply the missing cross-owner primitive for this quest."
+      }
+    },
+    {
+      "quest": "Rest in Hallowed Ground Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic NPC Item/progress and fifteen-grave flask completion path.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97",
+      "what_was_tried": "Read this title's captured walkthrough and searched production NPC/callback owners and the canonical quest packet. Traced state-only QuestState and the four closed Rookgaard barter rules; neither executes the listed physical Item/progress/world effects as a complete quest. No seeded end-state or standalone reward was counted as qualification.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/52/definition/native_lowering",
+          "quest_key": "oteryn:quest.tibia_tales",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed.",
+      "prior_engine_boundary": {
+        "file_line": "crates/gameplay/durability/src/durability/quest_state/writer.rs:104; crates/gameplay/durability/src/durability/quest_state/writer.rs:232; crates/gameplay/durability/src/durability/quest_world_callback.rs:39",
+        "missing_piece": "Shared CharacterRevision/QuestState plus Item hand-in/hand-out transaction composition for an NPC occurrence. The current Quest writer accepts only the RottenBloodAccessPayment resource bridge; QuestWorldContext accepts Use/Step map occurrences, not NPC_TALK.",
+        "why_not_lane_module": "A standalone NPC/craft module cannot write canonical Quest tracks and their CharacterRevision receipt. It needs a shared Quest writer composition seam, not another selector or a test-only seeded end-state. The authorized NPC routing hook supplies no such seam.",
+        "what_was_tried": "Traced the private commit_quest_inner resource parameter and begin_type2_transaction branch, and the world callback cause gate. Implemented the receipt-derived cumulative Sinatuki path in the lane-owned craft submodule; that path has no existing canonical Quest track to update and does not supply the missing cross-owner primitive for this quest."
+      }
+    },
+    {
+      "quest": "Revenant Outfits Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Canonical outfit/addon catalogue population and per-field admission decisions; preserve existing entitlements and prerequisite quests.",
+      "file_line": "content/cosmetics/outfits/index.json:7; tools/content-schema/cosmetics-authoring/README.md:13; crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs:68",
+      "what_was_tried": "Read this title's captured walkthrough, checked the production outfit index and traced grant mapping validation/resolution. The index is READY_UNPOPULATED and the canonical sex/look/addon/premium/provenance mappings are absent. Numeric donor look IDs and synthetic test packets cannot supply the required admitted production data.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/90/definition/native_lowering",
+          "quest_key": "oteryn:quest.revenant_outfits_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "outfit_admission_and_item_handins",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Rift Warrior Outfits Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Canonical outfit/addon catalogue population and per-field admission decisions; preserve existing entitlements and prerequisite quests.",
+      "file_line": "content/cosmetics/outfits/index.json:7; tools/content-schema/cosmetics-authoring/README.md:13; crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs:68",
+      "what_was_tried": "Read this title's captured walkthrough, checked the production outfit index and traced grant mapping validation/resolution. The index is READY_UNPOPULATED and the canonical sex/look/addon/premium/provenance mappings are absent. Numeric donor look IDs and synthetic test packets cannot supply the required admitted production data.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/91/definition/native_lowering",
+          "quest_key": "oteryn:quest.rift_warrior_outfits_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "outfit_admission_and_item_handins",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Ring Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_ring_time_ring_claim_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.ringquest1",
+              "duration_ms": 32015,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "questpc3_ring_sword_ring_claim_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.ringquest2",
+              "duration_ms": 29373,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Rise of Devovorga",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Shared seasonal stage/reset, coordinated encounter and participant-reward owner.",
+      "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+      "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/28/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.rise_of_devovorga",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_change_contributions_and_lifecycle",
+      "owner": "UNCONFIRMED",
+      "candidate_owner": "WORLDCHG",
+      "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation."
+    },
+    {
+      "quest": "River Runs Deep Mini World Change",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Native daily river-layer/fishing/achievement binding.",
+      "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+      "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/29/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.river_runs_deep_mini_world_change",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_change_contributions_and_lifecycle",
+      "owner": "UNCONFIRMED",
+      "candidate_owner": "WORLDCHG",
+      "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation."
+    },
+    {
+      "quest": "Rootwalker Outfits Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Canonical outfit/addon catalogue population and per-field admission decisions; preserve existing entitlements and prerequisite quests.",
+      "file_line": "content/cosmetics/outfits/index.json:7; tools/content-schema/cosmetics-authoring/README.md:13; crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs:68",
+      "what_was_tried": "Read this title's captured walkthrough, checked the production outfit index and traced grant mapping validation/resolution. The index is READY_UNPOPULATED and the canonical sex/look/addon/premium/provenance mappings are absent. Numeric donor look IDs and synthetic test packets cannot supply the required admitted production data.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/30/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.rootwalker_outfits_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "outfit_admission_and_item_handins",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Roshamuul Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Shared contribution-to-world-stage/map/encounter composition.",
+      "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+      "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/92/definition/native_lowering",
+          "quest_key": "oteryn:quest.roshamuul_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_change_contributions_and_lifecycle",
+      "owner": "UNCONFIRMED",
+      "candidate_owner": "WORLDCHG",
+      "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation."
+    },
+    {
+      "quest": "Rotten Blood Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Qualified W02 encounter admission: endgame_entry.rs still returns ContentUnavailable; existing progression/payment owners remain.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/endgame_entry.rs:93",
+      "what_was_tried": "Traced the existing access-payment, taint/death, reward and entitlement owners to the production command178 handoff. The live W02 callback returns ContentUnavailable even with prerequisites satisfied; seeded native deaths do not prove lever-to-instance admission.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/93/definition/native_lowering",
+          "quest_key": "oteryn:quest.rotten_blood_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "encounter_portal_and_puzzle_composition",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Rottin Wood and the Married Men Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Physical ribbon hand-outs/hand-ins, corpse callback and later world composition.",
+      "file_line": "crates/gameplay/quests/src/quest/classic_talk.rs:441; .questpc3/wiki/Rottin Wood and the Married Men Quest_Spoiler.wiki:10",
+      "what_was_tried": "Read the pinned Rottin script and traced classic dialogue. The selector explicitly defers ribbon/net effects; Mission2 acceptance alone omits seven physical ribbons, knife-on-rabbit acquisition and the later missions.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/94/definition/native_lowering",
+          "quest_key": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "runtime_boundary": {
+        "file_line": "crates/gameplay/quests/src/quest/world_callbacks.rs:78; crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:42",
+        "missing_piece": "Source-bound runtime corpse/special-tool callback with corpse identity, transformation/capture and quest credit. ItemOnTarget currently names only a fixed Item/count/replacement and execute_quest_callback resolves static map entries; an NPC module cannot establish the required live corpse evidence.",
+        "what_was_tried": "Compared this quest source with the ItemOnTarget schema and production map-target resolution. The existing map callback is not a corpse-capture proof; a seeded captured Item would bypass the missing operation."
+      },
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Royal Bounacean Advisor Outfits Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Canonical outfit/addon catalogue population and per-field admission decisions; preserve existing entitlements and prerequisite quests.",
+      "file_line": "content/cosmetics/outfits/index.json:7; tools/content-schema/cosmetics-authoring/README.md:13; crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs:68",
+      "what_was_tried": "Read this title's captured walkthrough, checked the production outfit index and traced grant mapping validation/resolution. The index is READY_UNPOPULATED and the canonical sex/look/addon/premium/provenance mappings are absent. Numeric donor look IDs and synthetic test packets cannot supply the required admitted production data.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/31/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.royal_bounacean_advisor_outfits_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "outfit_admission_and_item_handins",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Royal Costume Outfits Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Canonical outfit/addon catalogue population and per-field admission decisions; preserve existing entitlements and prerequisite quests.",
+      "file_line": "content/cosmetics/outfits/index.json:7; tools/content-schema/cosmetics-authoring/README.md:13; crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs:68",
+      "what_was_tried": "Read this title's captured walkthrough, checked the production outfit index and traced grant mapping validation/resolution. The index is READY_UNPOPULATED and the canonical sex/look/addon/premium/provenance mappings are absent. Numeric donor look IDs and synthetic test packets cannot supply the required admitted production data.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/95/definition/native_lowering",
+          "quest_key": "oteryn:quest.royal_costume_outfits_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "outfit_admission_and_item_handins",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Sam's Old Backpack Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic Item/progress, filled-backpack destruction and Kroox quest-door access owner.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97; .questpc3/wiki/Sam's Old Backpack Quest_Spoiler.wiki:9",
+      "what_was_tried": "Read Sam/Kroox walkthrough and native quest tracks; traced carried-item barter and state-only dialogue. Neither composes filled-backpack destruction, Backpack Tourist, Sam/Kroox permission and the quest door in one qualified path.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/96/definition/native_lowering",
+          "quest_key": "oteryn:quest.sam_s_old_backpack_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed.",
+      "prior_engine_boundary": {
+        "file_line": "crates/gameplay/durability/src/durability/quest_state/writer.rs:104; crates/gameplay/durability/src/durability/quest_state/writer.rs:232; crates/gameplay/durability/src/durability/quest_world_callback.rs:39",
+        "missing_piece": "Shared CharacterRevision/QuestState plus Item hand-in/hand-out transaction composition for an NPC occurrence. The current Quest writer accepts only the RottenBloodAccessPayment resource bridge; QuestWorldContext accepts Use/Step map occurrences, not NPC_TALK.",
+        "why_not_lane_module": "A standalone NPC/craft module cannot write canonical Quest tracks and their CharacterRevision receipt. It needs a shared Quest writer composition seam, not another selector or a test-only seeded end-state. The authorized NPC routing hook supplies no such seam.",
+        "what_was_tried": "Traced the private commit_quest_inner resource parameter and begin_type2_transaction branch, and the world callback cause gate. Implemented the receipt-derived cumulative Sinatuki path in the lane-owned craft submodule; that path has no existing canonical Quest track to update and does not supply the missing cross-owner primitive for this quest."
+      }
+    },
+    {
+      "quest": "Sanctuary of the Lizard God Quest",
+      "status": "BLOCKED",
+      "missing_piece": "Dawnport is explicitly excluded by the retained owner scope. No in-scope production quest qualification exists for this title.",
+      "file_line": ".questpc3/OWNER-SCOPE-ALL.md:3; .questpc3/wiki/Sanctuary of the Lizard God Quest_Spoiler.wiki:11",
+      "what_was_tried": "Checked the captured Dawnport location against the retained explicit Dawnport exclusion. No qualification was attempted for this excluded title; it remains outside implementation scope, represented as BLOCKED so every inventory row uses a terminal status.",
+      "scope_exclusion": true,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/97/definition/native_lowering",
+          "quest_key": "oteryn:quest.sanctuary_of_the_lizard_god",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "owner_excluded",
+      "owner": "OWNER_EXCLUDED"
+    },
+    {
+      "quest": "Scale Armor Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_scale_armor_bag_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.scalearmor",
+              "duration_ms": 32335,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Sea of Light Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic NPC Item/progress, timed study and corpse/device completion composition.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97",
+      "what_was_tried": "Read this title's captured walkthrough and searched production NPC/callback owners and the canonical quest packet. Traced state-only QuestState and the four closed Rookgaard barter rules; neither executes the listed physical Item/progress/world effects as a complete quest. No seeded end-state or standalone reward was counted as qualification.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/98/definition/native_lowering",
+          "quest_key": "oteryn:quest.sea_of_light_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "runtime_boundary": {
+        "file_line": "crates/gameplay/quests/src/quest/world_callbacks.rs:78; crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:42",
+        "missing_piece": "Source-bound runtime corpse/special-tool callback with corpse identity, transformation/capture and quest credit. ItemOnTarget currently names only a fixed Item/count/replacement and execute_quest_callback resolves static map entries; an NPC module cannot establish the required live corpse evidence.",
+        "what_was_tried": "Compared this quest source with the ItemOnTarget schema and production map-target resolution. The existing map callback is not a corpse-capture proof; a seeded captured Item would bypass the missing operation."
+      },
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed.",
+      "prior_engine_boundary": {
+        "file_line": "crates/gameplay/durability/src/durability/quest_state/writer.rs:104; crates/gameplay/durability/src/durability/quest_state/writer.rs:232; crates/gameplay/durability/src/durability/quest_world_callback.rs:39",
+        "missing_piece": "Shared CharacterRevision/QuestState plus Item hand-in/hand-out transaction composition for an NPC occurrence. The current Quest writer accepts only the RottenBloodAccessPayment resource bridge; QuestWorldContext accepts Use/Step map occurrences, not NPC_TALK.",
+        "why_not_lane_module": "A standalone NPC/craft module cannot write canonical Quest tracks and their CharacterRevision receipt. It needs a shared Quest writer composition seam, not another selector or a test-only seeded end-state. The authorized NPC routing hook supplies no such seam.",
+        "what_was_tried": "Traced the private commit_quest_inner resource parameter and begin_type2_transaction branch, and the world callback cause gate. Implemented the receipt-derived cumulative Sinatuki path in the lane-owned craft submodule; that path has no existing canonical Quest track to update and does not supply the missing cross-owner primitive for this quest."
+      }
+    },
+    {
+      "quest": "Secret Service Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic quest-bound physical hand-ins/hand-outs and exclusive faction completion.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97",
+      "what_was_tried": "Read this title's captured walkthrough and searched production NPC/callback owners and the canonical quest packet. Traced state-only QuestState and the four closed Rookgaard barter rules; neither executes the listed physical Item/progress/world effects as a complete quest. No seeded end-state or standalone reward was counted as qualification.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/99/definition/native_lowering",
+          "quest_key": "oteryn:quest.secret_service_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed.",
+      "prior_engine_boundary": {
+        "file_line": "crates/gameplay/durability/src/durability/quest_state/writer.rs:104; crates/gameplay/durability/src/durability/quest_state/writer.rs:232; crates/gameplay/durability/src/durability/quest_world_callback.rs:39",
+        "missing_piece": "Shared CharacterRevision/QuestState plus Item hand-in/hand-out transaction composition for an NPC occurrence. The current Quest writer accepts only the RottenBloodAccessPayment resource bridge; QuestWorldContext accepts Use/Step map occurrences, not NPC_TALK.",
+        "why_not_lane_module": "A standalone NPC/craft module cannot write canonical Quest tracks and their CharacterRevision receipt. It needs a shared Quest writer composition seam, not another selector or a test-only seeded end-state. The authorized NPC routing hook supplies no such seam.",
+        "what_was_tried": "Traced the private commit_quest_inner resource parameter and begin_type2_transaction branch, and the world callback cause gate. Implemented the receipt-derived cumulative Sinatuki path in the lane-owned craft submodule; that path has no existing canonical Quest track to update and does not supply the missing cross-owner primitive for this quest."
+      }
+    },
+    {
+      "quest": "Serpentine Tower Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Source requires placing a pot on fire to enable a teleport before its reward. The pot-conditioned world trigger remains missing; do not grant the pearl through an unconditional chest.",
+      "file_line": ".questpc3/wiki/Serpentine Tower Quest_Spoiler.wiki:9; content/quests/world-callbacks.json:1",
+      "what_was_tried": "Traced the source pot-on-fire condition and searched native quest callbacks for its binding. No source-bound pot-conditioned teleporter is registered; the pearl alone would bypass the puzzle.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/0/definition/native_lowering",
+          "quest_key": "oteryn:quest.serpentine_tower_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "encounter_portal_and_puzzle_composition",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Shadows of Yalahar Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic NPC Item/progress and device/world/encounter composition.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; .questpc3/wiki/Shadows of Yalahar Quest_Spoiler.wiki:3",
+      "what_was_tried": "Compared Telas source stages with the Isle of Evil adapter and native callback inventory. The latter is another quest; physical golem parts/devices and the ritual/encounter chain are not composed by state-only dialogue.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/1/definition/native_lowering",
+          "quest_key": "oteryn:quest.shadows_of_yalahar_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed.",
+      "prior_engine_boundary": {
+        "file_line": "crates/gameplay/durability/src/durability/quest_state/writer.rs:104; crates/gameplay/durability/src/durability/quest_state/writer.rs:232; crates/gameplay/durability/src/durability/quest_world_callback.rs:39",
+        "missing_piece": "Shared CharacterRevision/QuestState plus Item hand-in/hand-out transaction composition for an NPC occurrence. The current Quest writer accepts only the RottenBloodAccessPayment resource bridge; QuestWorldContext accepts Use/Step map occurrences, not NPC_TALK.",
+        "why_not_lane_module": "A standalone NPC/craft module cannot write canonical Quest tracks and their CharacterRevision receipt. It needs a shared Quest writer composition seam, not another selector or a test-only seeded end-state. The authorized NPC routing hook supplies no such seam.",
+        "what_was_tried": "Traced the private commit_quest_inner resource parameter and begin_type2_transaction branch, and the world callback cause gate. Implemented the receipt-derived cumulative Sinatuki path in the lane-owned craft submodule; that path has no existing canonical Quest track to update and does not supply the missing cross-owner primitive for this quest."
+      }
+    },
+    {
+      "quest": "Shaman Outfits Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Canonical outfit/addon catalogue population and per-field admission decisions; preserve existing entitlements and prerequisite quests.",
+      "file_line": "content/cosmetics/outfits/index.json:7; tools/content-schema/cosmetics-authoring/README.md:13; crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs:68",
+      "what_was_tried": "Read this title's captured walkthrough, checked the production outfit index and traced grant mapping validation/resolution. The index is READY_UNPOPULATED and the canonical sex/look/addon/premium/provenance mappings are absent. Numeric donor look IDs and synthetic test packets cannot supply the required admitted production data.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/82/definition/native_lowering",
+          "quest_key": "oteryn:quest.outfit_and_addon_quests",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "outfit_admission_and_item_handins",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Shaman Treasure Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_shaman_treasure_bag_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.shamantreasure",
+              "duration_ms": 30473,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Shards of a Broken Moon Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic Item/progress, time-conditioned world callbacks and encounter/access composition.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97",
+      "what_was_tried": "Read this title's captured walkthrough and searched production NPC/callback owners and the canonical quest packet. Traced state-only QuestState and the four closed Rookgaard barter rules; neither executes the listed physical Item/progress/world effects as a complete quest. No seeded end-state or standalone reward was counted as qualification.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/32/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed.",
+      "prior_engine_boundary": {
+        "file_line": "crates/gameplay/durability/src/durability/quest_state/writer.rs:104; crates/gameplay/durability/src/durability/quest_state/writer.rs:232; crates/gameplay/durability/src/durability/quest_world_callback.rs:39",
+        "missing_piece": "Shared CharacterRevision/QuestState plus Item hand-in/hand-out transaction composition for an NPC occurrence. The current Quest writer accepts only the RottenBloodAccessPayment resource bridge; QuestWorldContext accepts Use/Step map occurrences, not NPC_TALK.",
+        "why_not_lane_module": "A standalone NPC/craft module cannot write canonical Quest tracks and their CharacterRevision receipt. It needs a shared Quest writer composition seam, not another selector or a test-only seeded end-state. The authorized NPC routing hook supplies no such seam.",
+        "what_was_tried": "Traced the private commit_quest_inner resource parameter and begin_type2_transaction branch, and the world callback cause gate. Implemented the receipt-derived cumulative Sinatuki path in the lane-owned craft submodule; that path has no existing canonical Quest track to update and does not supply the missing cross-owner primitive for this quest."
+      }
+    },
+    {
+      "quest": "Short Sword Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_short_sword_notebook_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.shortswordbook",
+              "duration_ms": 29980,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "rookgaard_short_sword_amber_exchange_atomic_repeatable_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "npc_exchange",
+              "key": "oteryn:npc.amber",
+              "duration_ms": 64317,
+              "log": "rookgaard-final-pg.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Silver Amulet Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_charged_amulet_cohort_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.silveramulet",
+              "duration_ms": 36632,
+              "log": "current-restart-chests.log"
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.stealhring1",
+              "duration_ms": 29341,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Silver Brooch Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_silver_brooch_full_bag_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.silverbrooch",
+              "duration_ms": 31103,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Sinatuki Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "sinatuki_mixed_fish_then_final_fish_atomic_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "cumulative_fish",
+              "duration_ms": 47473,
+              "log": "sinatuki-final-pg.log"
+            }
+          ]
+        },
+        {
+          "test": "sinatuki_whole_hundred_stack_still_needs_final_fish",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "cumulative_fish",
+              "duration_ms": 57999,
+              "log": "sinatuki-final-pg.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Six Rubies Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_six_rubies_claim_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.sixrubies",
+              "duration_ms": 31950,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Skeleton Decoration Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Reward is inside a world barrel; shared map-container pickup/reset ownership is required. Current personal once-claim owner cannot represent floor-reset custody.",
+      "file_line": "crates/gameplay/content/src/content/project/native_spell_world.rs:446; crates/gameplay/spell/src/spell/source_map_initialization.rs:79",
+      "what_was_tried": "Compared the source barrel with native mutable-placement materialization. Nonzero-depth Items are skipped, and the B3 initializer lacks a source-world proof; a personal once claim would change shared reset custody.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/3/definition/native_lowering",
+          "quest_key": "oteryn:quest.skeleton_decoration_quest",
+          "lowering": null
+        }
+      ],
+      "mechanism_group": "world_item_pickup_and_reset",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Skull of Ratha Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_skull_of_ratha_skull_and_pearl_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
+              "duration_ms": 35038,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "questpc3_skull_of_ratha_chain_and_ring_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
+              "duration_ms": 35418,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "questpc3_skull_of_ratha_witch_house_full_bag_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.witch_house_quest",
+              "duration_ms": 31344,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Small Health Potion Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "rookgaard_small_health_potion_billy_exchange_atomic_repeatable_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "npc_exchange",
+              "key": "oteryn:npc.billy",
+              "duration_ms": 54470,
+              "log": "rookgaard-final-pg.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Small Ruby Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "The production reset finalizer exists. Remaining: committed B3 mutable Item pickup/remint bridge; `NativeMovementCollisionIndex::Bundle` has no `source_world`, required by `CurrentNativeMapInitialization`. Actual reward is Item3030 count1 at (32437,32174,15), beneath Item2123. Preserve shared floor-reset custody; do not substitute a personal claim.",
+      "file_line": "crates/gameplay/content/src/content/native_cell_lookup.rs:75; crates/gameplay/spell/src/spell/source_map_initialization.rs:49",
+      "what_was_tried": "Decoded the committed (32437,32174,15) tile; traced production source_item_cycle initialization and the reset activation finalizer. The reward is present, but Bundle supplies no source-world initialization proof. A source-only seeded fixture does not qualify production B3 pickup/remint.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/33/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.small_ruby_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_item_pickup_and_reset",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Small Sapphire Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_small_sapphire_full_recipe_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.smallsapphire",
+              "duration_ms": 31054,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Soil Guardian Outfits Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Canonical outfit/addon catalogue population and per-field admission decisions; preserve existing entitlements and prerequisite quests.",
+      "file_line": "content/cosmetics/outfits/index.json:7; tools/content-schema/cosmetics-authoring/README.md:13; crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs:68",
+      "what_was_tried": "Read this title's captured walkthrough, checked the production outfit index and traced grant mapping validation/resolution. The index is READY_UNPOPULATED and the canonical sex/look/addon/premium/provenance mappings are absent. Numeric donor look IDs and synthetic test packets cannot supply the required admitted production data.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/5/definition/native_lowering",
+          "quest_key": "oteryn:quest.soil_guardian_outfits_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "outfit_admission_and_item_handins",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Soul War Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Qualified W02 encounter admission: endgame_entry.rs still returns ContentUnavailable; existing progression/reward owners remain.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/endgame_entry.rs:93",
+      "what_was_tried": "Traced Flickering Soul access, taints, native death settlement, the reward chest and Revenant entitlement to command178. The live W02 callback returns ContentUnavailable; no fabricated party admission or captured death counts as a complete quest.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/90/definition/native_lowering",
+          "quest_key": "oteryn:quest.revenant_outfits_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        },
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/6/definition/native_lowering",
+          "quest_key": "oteryn:quest.soul_war_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "encounter_portal_and_puzzle_composition",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Spider Nest Mini World Change",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Daily nest spawn/portal and three-kill-to-entry/achievement binding.",
+      "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+      "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/35/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.spider_nest_mini_world_change",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_change_contributions_and_lifecycle",
+      "owner": "UNCONFIRMED",
+      "candidate_owner": "WORLDCHG",
+      "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation."
+    },
+    {
+      "quest": "Spike Sword Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_spike_sword_claim_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.spikesword",
+              "duration_ms": 31577,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Spike Tasks Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic NPC Item/progress and task-specific world/corpse/cooldown composition.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97",
+      "what_was_tried": "Read this title's captured walkthrough and searched production NPC/callback owners and the canonical quest packet. Traced state-only QuestState and the four closed Rookgaard barter rules; neither executes the listed physical Item/progress/world effects as a complete quest. No seeded end-state or standalone reward was counted as qualification.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/7/definition/native_lowering",
+          "quest_key": "oteryn:quest.spike_task",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "runtime_boundary": {
+        "file_line": "crates/gameplay/quests/src/quest/world_callbacks.rs:78; crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:42",
+        "missing_piece": "Source-bound runtime corpse/special-tool callback with corpse identity, transformation/capture and quest credit. ItemOnTarget currently names only a fixed Item/count/replacement and execute_quest_callback resolves static map entries; an NPC module cannot establish the required live corpse evidence.",
+        "what_was_tried": "Compared this quest source with the ItemOnTarget schema and production map-target resolution. The existing map callback is not a corpse-capture proof; a seeded captured Item would bypass the missing operation."
+      },
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed.",
+      "prior_engine_boundary": {
+        "file_line": "crates/gameplay/durability/src/durability/quest_state/writer.rs:104; crates/gameplay/durability/src/durability/quest_state/writer.rs:232; crates/gameplay/durability/src/durability/quest_world_callback.rs:39",
+        "missing_piece": "Shared CharacterRevision/QuestState plus Item hand-in/hand-out transaction composition for an NPC occurrence. The current Quest writer accepts only the RottenBloodAccessPayment resource bridge; QuestWorldContext accepts Use/Step map occurrences, not NPC_TALK.",
+        "why_not_lane_module": "A standalone NPC/craft module cannot write canonical Quest tracks and their CharacterRevision receipt. It needs a shared Quest writer composition seam, not another selector or a test-only seeded end-state. The authorized NPC routing hook supplies no such seam.",
+        "what_was_tried": "Traced the private commit_quest_inner resource parameter and begin_type2_transaction branch, and the world callback cause gate. Implemented the receipt-derived cumulative Sinatuki path in the lane-owned craft submodule; that path has no existing canonical Quest track to update and does not supply the missing cross-owner primitive for this quest."
+      }
+    },
+    {
+      "quest": "Spirit Grounds Mini World Change",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Native daily portal/layer and independent monster selection binding.",
+      "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+      "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/36/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.spirit_grounds_mini_world_change",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_change_contributions_and_lifecycle",
+      "owner": "UNCONFIRMED",
+      "candidate_owner": "WORLDCHG",
+      "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation."
+    },
+    {
+      "quest": "Spirithunters Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Captured-corpse/Spirit Cage and atomic tiered NPC Item/progress completion.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97",
+      "what_was_tried": "Read this title's captured walkthrough and searched production NPC/callback owners and the canonical quest packet. Traced state-only QuestState and the four closed Rookgaard barter rules; neither executes the listed physical Item/progress/world effects as a complete quest. No seeded end-state or standalone reward was counted as qualification.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/8/definition/native_lowering",
+          "quest_key": "oteryn:quest.spirithunters_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "runtime_boundary": {
+        "file_line": "crates/gameplay/quests/src/quest/world_callbacks.rs:78; crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:42",
+        "missing_piece": "Source-bound runtime corpse/special-tool callback with corpse identity, transformation/capture and quest credit. ItemOnTarget currently names only a fixed Item/count/replacement and execute_quest_callback resolves static map entries; an NPC module cannot establish the required live corpse evidence.",
+        "what_was_tried": "Compared this quest source with the ItemOnTarget schema and production map-target resolution. The existing map callback is not a corpse-capture proof; a seeded captured Item would bypass the missing operation."
+      },
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed.",
+      "prior_engine_boundary": {
+        "file_line": "crates/gameplay/durability/src/durability/quest_state/writer.rs:104; crates/gameplay/durability/src/durability/quest_state/writer.rs:232; crates/gameplay/durability/src/durability/quest_world_callback.rs:39",
+        "missing_piece": "Shared CharacterRevision/QuestState plus Item hand-in/hand-out transaction composition for an NPC occurrence. The current Quest writer accepts only the RottenBloodAccessPayment resource bridge; QuestWorldContext accepts Use/Step map occurrences, not NPC_TALK.",
+        "why_not_lane_module": "A standalone NPC/craft module cannot write canonical Quest tracks and their CharacterRevision receipt. It needs a shared Quest writer composition seam, not another selector or a test-only seeded end-state. The authorized NPC routing hook supplies no such seam.",
+        "what_was_tried": "Traced the private commit_quest_inner resource parameter and begin_type2_transaction branch, and the world callback cause gate. Implemented the receipt-derived cumulative Sinatuki path in the lane-owned craft submodule; that path has no existing canonical Quest track to update and does not supply the missing cross-owner primitive for this quest."
+      }
+    },
+    {
+      "quest": "Spring into Life",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Seasonal activation and native nest/reset/hatching/spawn composition.",
+      "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+      "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00300-00351.json:1",
+          "pointer": "/records/37/definition/native_lowering",
+          "quest_key": "oteryn:quest.authored.spring_into_life",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "canonical_reward_refs": [],
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_change_contributions_and_lifecycle",
+      "owner": "UNCONFIRMED",
+      "candidate_owner": "WORLDCHG",
+      "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation."
+    },
+    {
+      "quest": "Stampede Mini World Change",
+      "status": "QUALIFIED",
+      "missing_piece": null,
+      "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+      "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/9/definition/native_lowering",
+          "quest_key": "oteryn:quest.stampede_mini_world_change",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_change_contributions_and_lifecycle",
+      "owner": "UNCONFIRMED",
+      "candidate_owner": "WORLDCHG",
+      "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation.",
+      "canonical": "oteryn:quest.stampede_mini_world_change",
+      "qualification_round": "L4",
+      "round_L4_evidence": [
+        {
+          "test": "quest_l4_stampede_raid_sixteen_native_elephants_and_spawn_replay",
+          "marker": "POSTGRES_CASE_COMPLETED",
+          "duration_ms": 34988,
+          "log": "l4-stampede-independent-green.log"
+        },
+        {
+          "test": "quest_l4_stampede_native_five_kills_achievement_and_occurrence_replay",
+          "marker": "POSTGRES_CASE_COMPLETED",
+          "duration_ms": 36202,
+          "log": "l4-stampede-independent-green.log"
+        }
+      ]
+    },
+    {
+      "quest": "Steal From Thieves Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic bag hand-in/reward/mission completion and source acquisition/capacity path.",
+      "file_line": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97; .questpc3/wiki/Steal From Thieves Quest_Spoiler.wiki:4",
+      "what_was_tried": "Read Ahmet acquisition-before-mission and 400oz capacity requirements; traced its existing quest track and closed barter writer. No bound atomic bag hand-in/reward/once completion path exists; a repeatable barter would bypass it.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/10/definition/native_lowering",
+          "quest_key": "oteryn:quest.steal_from_thieves_quest",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "npc_atomic_items_and_progress",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed.",
+      "prior_engine_boundary": {
+        "file_line": "crates/gameplay/durability/src/durability/quest_state/writer.rs:104; crates/gameplay/durability/src/durability/quest_state/writer.rs:232; crates/gameplay/durability/src/durability/quest_world_callback.rs:39",
+        "missing_piece": "Shared CharacterRevision/QuestState plus Item hand-in/hand-out transaction composition for an NPC occurrence. The current Quest writer accepts only the RottenBloodAccessPayment resource bridge; QuestWorldContext accepts Use/Step map occurrences, not NPC_TALK.",
+        "why_not_lane_module": "A standalone NPC/craft module cannot write canonical Quest tracks and their CharacterRevision receipt. It needs a shared Quest writer composition seam, not another selector or a test-only seeded end-state. The authorized NPC routing hook supplies no such seam.",
+        "what_was_tried": "Traced the private commit_quest_inner resource parameter and begin_type2_transaction branch, and the world callback cause gate. Implemented the receipt-derived cumulative Sinatuki path in the lane-owned craft submodule; that path has no existing canonical Quest track to update and does not supply the missing cross-owner primitive for this quest."
+      }
+    },
+    {
+      "quest": "Stealth Ring Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_charged_amulet_cohort_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.silveramulet",
+              "duration_ms": 36632,
+              "log": "current-restart-chests.log"
+            },
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.stealhring1",
+              "duration_ms": 29341,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "questpc3_stealth_ring_ring_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.stealhring2",
+              "duration_ms": 31208,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Steamship World Change",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic shared coal contributions, reset and travel composition.",
+      "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+      "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/11/definition/native_lowering",
+          "quest_key": "oteryn:quest.steamship_world_change",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_change_contributions_and_lifecycle",
+      "owner": "UNCONFIRMED",
+      "candidate_owner": "WORLDCHG",
+      "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation."
+    },
+    {
+      "quest": "Steel Helmet Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_steel_helmet_first_coins_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.steelhelmet1",
+              "duration_ms": 29146,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "questpc3_steel_helmet_second_coins_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.steelhelmet2",
+              "duration_ms": 40861,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "questpc3_steel_helmet_helmet_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.steelhelmet3",
+              "duration_ms": 29301,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "questpc3_steel_helmet_letter_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.steelhelmet4",
+              "duration_ms": 40745,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Strong Potions Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_strong_potions_full_bag_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.quest.u8_1.strong_potions.reward",
+              "duration_ms": 33913,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Studded Legs Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_studded_legs_honey_flower_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.honeyflower",
+              "duration_ms": 33823,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "rookgaard_studded_legs_lee_delle_exchange_atomic_repeatable_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "npc_exchange",
+              "key": "oteryn:npc.lee_delle",
+              "duration_ms": 66220,
+              "log": "rookgaard-final-pg.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Studded Shield Quest",
+      "status": "QUALIFIED",
+      "tests": [
+        {
+          "test": "questpc3_studded_shield_free_banana_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.bananafree",
+              "duration_ms": 36568,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "questpc3_studded_shield_premium_banana_once_and_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "claim",
+              "key": "oteryn:reward-claim.kv.bananapremium",
+              "duration_ms": 35934,
+              "log": "current-restart-chests.log"
+            }
+          ]
+        },
+        {
+          "test": "rookgaard_studded_shield_willie_exchange_atomic_repeatable_replay",
+          "completed": [
+            {
+              "marker": "POSTGRES_CASE_COMPLETED",
+              "kind": "npc_exchange",
+              "key": "oteryn:npc.willie",
+              "duration_ms": 68322,
+              "log": "rookgaard-final-pg.log"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "quest": "Summoner Outfits Quest",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Canonical outfit/addon catalogue population and per-field admission decisions; preserve existing entitlements and prerequisite quests.",
+      "file_line": "content/cosmetics/outfits/index.json:7; tools/content-schema/cosmetics-authoring/README.md:13; crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs:68",
+      "what_was_tried": "Read this title's captured walkthrough, checked the production outfit index and traced grant mapping validation/resolution. The index is READY_UNPOPULATED and the canonical sex/look/addon/premium/provenance mappings are absent. Numeric donor look IDs and synthetic test packets cannot supply the required admitted production data.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00100-00199.json:1",
+          "pointer": "/records/82/definition/native_lowering",
+          "quest_key": "oteryn:quest.outfit_and_addon_quests",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "outfit_admission_and_item_handins",
+      "owner": "questpc3",
+      "continuation_note": "Latest owner instruction supersedes prior implementation-boundary deferral. This is unfinished Game work owned by this lane; no new qualification claimed."
+    },
+    {
+      "quest": "Swamp Fever World Change",
+      "status": "IN_PROGRESS",
+      "missing_piece": "Atomic medicine contribution and world daily/spawn binding.",
+      "file_line": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+      "what_was_tried": "Compared this title's pinned walkthrough with the selection candidates and native daily effects. require_w1_bindings returns WorldChangeBindingsUnavailable for the candidates, and the daily owner does not project this title's required geometry/spawn/contribution effects. Existing catalogue entries do not constitute activation.",
+      "scope_exclusion": false,
+      "canonical_packets": [
+        {
+          "file_line": "content/quests/definitions/quests-00200-00299.json:1",
+          "pointer": "/records/12/definition/native_lowering",
+          "quest_key": "oteryn:quest.swamp_fever_world_change",
+          "lowering": {
+            "canonical_interaction_refs": [],
+            "canonical_progress_refs": [],
+            "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+            "state": "WAITING_IMPLEMENTATION"
+          }
+        }
+      ],
+      "mechanism_group": "world_change_contributions_and_lifecycle",
+      "owner": "UNCONFIRMED",
+      "candidate_owner": "WORLDCHG",
+      "owner_confirmation": "Pending owner question: no in-flight WORLDCHG/ITEMHOLD task record was found in this worktree. Do not claim an external-owner blocker without confirmation."
+    }
+  ],
+  "inventory_note": "No 94-record BLOCKED inventory or OWNER-DECISIONS.md exists in this worktree. Preserve all 56 current records; do not invent missing titles.",
+  "round_L4": {
+    "task_id": "questpc3-L4",
+    "phase": "AUTHORING",
+    "entries": [
+      {
+        "canonical": "oteryn:quest.the_beginning_quest",
+        "title": "The Beginning Quest",
+        "mechanism": "occurrence_kill_counters",
+        "status": "UNFINISHED",
+        "blocker": "Santiago's three-cockroach occurrence counter and Zirella's wood hand-in lack native completion/delivery bindings; no scalar dialogue completion may substitute.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.the_first_dragon_quest",
+        "title": "The First Dragon Quest",
+        "mechanism": "occurrence_kill_counters",
+        "status": "UNFINISHED",
+        "blocker": "Tamoril's dragon-kill/treasure conditions and final boss admission/rewards remain unbound; the four admitted exit portals are only the return route.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.the_tainted_soul",
+        "title": "The Tainted Souls Quest",
+        "mechanism": "occurrence_kill_counters",
+        "status": "UNFINISHED",
+        "blocker": "The talisman-on-live-Tainted-Soul operation,100-soul gate and20-hour Ekatrix reset lack native source-qualified creature transformation/cooldown bindings.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.threatened_dreams_quest",
+        "title": "Threatened Dreams Quest",
+        "mechanism": "occurrence_kill_counters",
+        "status": "UNFINISHED",
+        "blocker": "Maelyrra's summed counters and item/final bag reward branches are explicitly held in threatened_dreams.rs; scalar branches and source book/mirror chests do not cover them.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "unresolved:questpc2:pilgrimage_of_ashes_quest",
+        "title": "Pilgrimage of Ashes Quest",
+        "mechanism": "regular_blessing_service_grant",
+        "status": "UNFINISHED",
+        "blocker": "The four free regular blessing Service identities (Spiritual Shielding, Embrace of Tibia, Fire of the Suns, Spark of the Phoenix) are absent from the canonical Service.Blessing family. The ruleset price names are not canonical service declarations. The closed native blessing purchase owner admits premium services only and its fee/receipt guards lack those bindings. A lane-local mission handler cannot grant unadmitted Services; changing the selected recipe to dialogue-only would remove the source blessings.",
+        "from_lanes": [
+          "questpc2"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.authored.rathleton_quest",
+        "title": "Rathleton Quest",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Atomic voting-point debit/world tally and fortnightly map/spawn selection owner.",
+        "from_lanes": [
+          "questpc3"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.authored.river_runs_deep_mini_world_change",
+        "title": "River Runs Deep Mini World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Native daily river-layer/fishing/achievement binding.",
+        "from_lanes": [
+          "questpc3"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.roshamuul_quest",
+        "title": "Roshamuul Quest",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Shared contribution-to-world-stage/map/encounter composition.",
+        "from_lanes": [
+          "questpc3"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.authored.spider_nest_mini_world_change",
+        "title": "Spider Nest Mini World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Daily nest spawn/portal and three-kill-to-entry/achievement binding.",
+        "from_lanes": [
+          "questpc3"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.authored.spirit_grounds_mini_world_change",
+        "title": "Spirit Grounds Mini World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Native daily portal/layer and independent monster selection binding.",
+        "from_lanes": [
+          "questpc3"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.authored.spring_into_life",
+        "title": "Spring into Life",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Seasonal activation and native nest/reset/hatching/spawn composition.",
+        "from_lanes": [
+          "questpc3"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.stampede_mini_world_change",
+        "title": "Stampede Mini World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "QUALIFIED",
+        "blocker": null,
+        "from_lanes": [
+          "questpc3"
+        ],
+        "evidence": [
+          {
+            "test": "quest_l4_stampede_raid_sixteen_native_elephants_and_spawn_replay",
+            "marker": "POSTGRES_CASE_COMPLETED",
+            "duration_ms": 34988,
+            "log": "l4-stampede-independent-green.log"
+          },
+          {
+            "test": "quest_l4_stampede_native_five_kills_achievement_and_occurrence_replay",
+            "marker": "POSTGRES_CASE_COMPLETED",
+            "duration_ms": 36202,
+            "log": "l4-stampede-independent-green.log"
+          }
+        ],
+        "qualification": "native daily activation, occurrence counter and atomic achievement",
+        "validated_behaviour": [
+          "125-permille World/reset draw, stable across check times and Channels",
+          "native sixteen-elephant raid with source announcement, coordinates and replay",
+          "busy legacy raid does not suppress the event; no legacy margin write",
+          "once per reset; personal kills persist across resets",
+          "most-damage captured principal; stale lease and USE refusal",
+          "counter capped at five; fifth increment and achievement atomic",
+          "duplicate capture, drain and retained durable occurrence replay"
+        ],
+        "ordinary_reward_scope": "Existing corpse/ordinary-loot admission remains unchanged; the quest-only fallback does not manufacture ordinary XP or loot."
+      },
+      {
+        "canonical": "oteryn:quest.authored.the_fire_feathered_serpent_world_change",
+        "title": "The Fire-Feathered Serpent World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Renegade Quara kills must change world-owned sea state/travel responses; the retained authored event has no selected native global-state occurrence binding.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.authored.the_great_expedition",
+        "title": "The Great Expedition",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "The expedition requires world donation totals, daily event epochs and shared cargo/generator progress; the selected authored recipe has no exact native global event binding.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.authored.the_lightbearer",
+        "title": "The Lightbearer",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "The world-wide light timers, loss condition and event reward epoch lack a selected native world-event binding; ordinary once-only character claims cannot represent them.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.the_mages_tower_world_change",
+        "title": "The Mage's Tower World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "The250-Yielothax personal condition and500-kill global mage-state transition lack composed native counters/encounter ownership.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.the_mummys_curse_world_change",
+        "title": "The Mummy's Curse World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Breaking the Ornate Canopic Jars must atomically advance the world Horestis release cycle; the selected recipe has no exact native jar/reset occurrence binding.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.their_masters_voice",
+        "title": "Their Master's Voice World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Slime Gobbler fungal cleanup and per-event servant raid totals lack a native world reset/occurrence binding; the selected recipe has no admitted delivery path.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.thornfire_world_change",
+        "title": "Thornfire World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Prepared Bucket use, world fire extinction state and Crystal Wolf transformation lack source-qualified native item/world-event bindings.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.authored.twisted_waters_world_change",
+        "title": "Twisted Waters World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Lake Equivocolao's corpse-fed world state and20-hour Shimmer Swimmer harvest need event-owned state, exact native harvest selectors and character receipts.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.authored.war_against_the_hive_quest",
+        "title": "War Against the Hive Quest",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "Orockle's powder/corpse hand-ins and shared Hive stage transitions lack native item/world-event bindings; the authored access reward is not an executable gate.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      },
+      {
+        "canonical": "oteryn:quest.authored.warpath_mini_world_change",
+        "title": "Warpath Mini World Change",
+        "mechanism": "world_stage_contributions_activation",
+        "status": "UNFINISHED",
+        "blocker": "The Jakundaf orc encampment state and combat-driven event reset have no selected native world occurrence/delivery binding.",
+        "from_lanes": [
+          "questpc4"
+        ]
+      }
+    ],
+    "counts": {
+      "qualified": 1,
+      "unfinished": 21,
+      "blocked": 0
+    },
+    "external_status_reads": {
+      "questpc2": [
+        {
+          "canonical": "unresolved:questpc2:pilgrimage_of_ashes_quest",
+          "status": "NOT_FOUND"
+        }
+      ],
+      "questpc4": [
+        {
+          "canonical": "oteryn:quest.the_beginning_quest",
+          "status": "ACTIONABLE"
+        },
+        {
+          "canonical": "oteryn:quest.the_first_dragon_quest",
+          "status": "ACTIONABLE"
+        },
+        {
+          "canonical": "oteryn:quest.the_tainted_soul",
+          "status": "ACTIONABLE"
+        },
+        {
+          "canonical": "oteryn:quest.threatened_dreams_quest",
+          "status": "ACTIONABLE"
+        },
+        {
+          "canonical": "oteryn:quest.authored.the_fire_feathered_serpent_world_change",
+          "status": "BLOCKED"
+        },
+        {
+          "canonical": "oteryn:quest.authored.the_great_expedition",
+          "status": "BLOCKED"
+        },
+        {
+          "canonical": "oteryn:quest.authored.the_lightbearer",
+          "status": "BLOCKED"
+        },
+        {
+          "canonical": "oteryn:quest.the_mages_tower_world_change",
+          "status": "BLOCKED"
+        },
+        {
+          "canonical": "oteryn:quest.the_mummys_curse_world_change",
+          "status": "BLOCKED"
+        },
+        {
+          "canonical": "oteryn:quest.their_masters_voice",
+          "status": "BLOCKED"
+        },
+        {
+          "canonical": "oteryn:quest.thornfire_world_change",
+          "status": "BLOCKED"
+        },
+        {
+          "canonical": "oteryn:quest.authored.twisted_waters_world_change",
+          "status": "BLOCKED"
+        },
+        {
+          "canonical": "oteryn:quest.authored.war_against_the_hive_quest",
+          "status": "BLOCKED"
+        },
+        {
+          "canonical": "oteryn:quest.authored.warpath_mini_world_change",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    "external_status_read_at": "2026-11-06T20:35:25.452866+00:00",
+    "batch_complete": false,
+    "task_complete": false
+  }
+}

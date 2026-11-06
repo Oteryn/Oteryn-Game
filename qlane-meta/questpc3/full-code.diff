@@ -1,0 +1,145 @@
+diff --git a/crates/gameplay/content/src/content/world_reward_claims.rs b/crates/gameplay/content/src/content/world_reward_claims.rs
+index 5c7071e30..9673904c2 100644
+--- a/crates/gameplay/content/src/content/world_reward_claims.rs
++++ b/crates/gameplay/content/src/content/world_reward_claims.rs
+@@ -41,7 +41,7 @@ pub trait RewardClaimTile {
+ /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
+ /// variant shards. Keys and the exact W15b native container projection are served;
+ /// other source dispositions remain closed.
+-pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
++pub const REWARD_CLAIM_SHARDS: [&str; 6] = [
+     include_str!(
+         "../../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"
+     ),
+@@ -57,6 +57,9 @@ pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
+     include_str!(
+         "../../../../../content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
+     ),
++    include_str!(
++        "../../../../../content/interactions/reward_claims/reward-claims-scripted-rs.json"
++    ),
+ ];
+ 
+ /// Why a placement is not bound (§1.4). Each is exactly one reason.
+diff --git a/tools/content-migration/quest_callback_profiles.py b/tools/content-migration/quest_callback_profiles.py
+index 16dcdfea9..6e6ea388f 100644
+--- a/tools/content-migration/quest_callback_profiles.py
++++ b/tools/content-migration/quest_callback_profiles.py
+@@ -133,6 +133,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
+     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
+     # apply the same pinned source, exact binding and portability checks below.
+     keys.add('oteryn:item.tibia.i32594')
++    # R–S once-only source claims, qualified through literal USE and cold replay.
++    # Crystal201189f Rapier script:4-11 and chest.lua:858-871 (Ring).
++    keys.update(('oteryn:item.tibia.i3272', 'oteryn:item.tibia.i3053',
++                 'oteryn:item.tibia.i3091', 'oteryn:item.tibia.i3587'))
+     for callback in callbacks['callbacks']:
+         item = callback.get('item_on_target')
+         if item:
+diff --git a/tools/content-migration/test_quest_callback_profiles.py b/tools/content-migration/test_quest_callback_profiles.py
+index 1716ee942..624543f8c 100644
+--- a/tools/content-migration/test_quest_callback_profiles.py
++++ b/tools/content-migration/test_quest_callback_profiles.py
+@@ -93,6 +93,24 @@ class QuestCallbackProfiles(unittest.TestCase):
+                          'stack_class': 'NonStackable',
+                          'legal_destinations': ['CharacterInventory', 'Ground']})
+ 
++    def test_rapier_admission_preserves_facts_and_rejects_physical_drift(self):
++        from questpc3_item_admission import apply_admissions
++        key = 'oteryn:item.tibia.i3272'
++        canonical = next(row['definition']
++                         for path in sorted((ROOT / 'content/items/definitions').glob('items-*.json'))
++                         for row in json.loads(path.read_bytes())['records']
++                         if row['definition']['identity']['key'] == key)
++        candidate = copy.deepcopy(canonical)
++        candidate['materializable'] = False
++        candidate['stack_class'] = 'Unknown'
++        apply_admissions([candidate])
++        self.assertEqual(candidate, canonical)
++        apply_admissions([candidate])
++        self.assertEqual(candidate, canonical)
++        candidate['semantics']['physical']['value']['weight']['value'] += 1
++        with self.assertRaisesRegex(ValueError, 'Rapier core facts changed'):
++            apply_admissions([candidate])
++
+     def test_rotten_blood_rust_callback_admits_the_canonical_bloody_tear_once(self):
+         # Rotten Blood's fixed callback is authored in Rust, so the JSON callback
+         # inventory cannot supply this already admitted source Item by itself.
+diff --git a/tools/content-migration/world_project_v2_to_tree.py b/tools/content-migration/world_project_v2_to_tree.py
+index 6e974b6e0..92064a290 100644
+--- a/tools/content-migration/world_project_v2_to_tree.py
++++ b/tools/content-migration/world_project_v2_to_tree.py
+@@ -195,6 +195,8 @@ def main() -> int:
+     apply_container_fact(item_records, ROOT)
+     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
+     apply_enchanting_admissions(item_records)
++    from questpc3_item_admission import apply_admissions as apply_questpc3_admissions
++    apply_questpc3_admissions(item_records)
+     item_shards: list[str] = []
+     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
+         rows = []
+diff --git a/tools/content-schema/reward-claim-authoring/reward_claim_authoring.py b/tools/content-schema/reward-claim-authoring/reward_claim_authoring.py
+index 322680188..55247f56f 100755
+--- a/tools/content-schema/reward-claim-authoring/reward_claim_authoring.py
++++ b/tools/content-schema/reward-claim-authoring/reward_claim_authoring.py
+@@ -43,6 +43,7 @@ import sys
+ from pathlib import Path
+ 
+ import container_native
++import scripted_chests_rs
+ 
+ HERE = Path(__file__).resolve().parent
+ ROOT = HERE.parents[2]
+@@ -540,7 +541,7 @@ def committed_errors() -> list[str]:
+     records = [
+         row for shard in index["shards"] for row in load_json(ROOT / shard)["records"]
+     ]
+-    source_claims = load_json(ROOT / CLAIMS_REL)["claims"]
++    source_claims = load_json(ROOT / CLAIMS_REL)["claims"] + scripted_chests_rs.source_claims()
+     from reward_claim_variant_authoring import PROFILE, stack_normalization_checks
+     from reward_claim_variant_authoring import validate as validate_variants
+     plain = [r for r in records if r['definition'].get('definition_profile') != PROFILE]
+@@ -580,6 +581,9 @@ def generate() -> dict[str, str]:
+     variants = derive(ROOT, items, stack_problem)
+     extend_outputs(ROOT, outputs, variants, compact, CONTENT_DIR)
+     records += variants
++    scripted = scripted_chests_rs.derive(load_json(ROOT / MANIFEST_REL), items, build_records)
++    scripted_chests_rs.extend_outputs(outputs, scripted, compact)
++    records += scripted
+     family_index = json.loads(outputs[INDEX_PATH])
+     family_index['variant_source_checks'] = legacy_uid_checks(records) + stack_normalization_checks()
+     outputs[INDEX_PATH] = compact(family_index)
+diff --git a/tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py b/tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
+index 557e480f0..c04e739aa 100644
+--- a/tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
++++ b/tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
+@@ -31,11 +31,12 @@ class CanonicalVariantTests(unittest.TestCase):
+                         self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
+                         self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
+ 
+-    def test_plain_231_definition_records_remain_exact_and_readiness_220_11(self):
++    def test_plain_231_definition_records_remain_exact_with_one_scripted_claim(self):
+         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
+         self.assertEqual(index['plain_record_count'], 231)
+-        self.assertEqual(index['record_count'], 336)
+-        self.assertEqual(index['readiness']['ready'], 220)
++        self.assertEqual(index['record_count'], 337)
++        self.assertEqual(index['scripted_rs_record_count'], 1)
++        self.assertEqual(index['readiness']['ready'], 221)
+         self.assertEqual(index['readiness']['waiting_item_semantics'], 11)
+         for path in index['shards'][:3]:
+             self.assertEqual(outputs[path], (self.root / path).read_text())
+diff --git a/tools/content-schema/world-authoring/convert_world_base.py b/tools/content-schema/world-authoring/convert_world_base.py
+index f3d6336a8..5c4043cc2 100755
+--- a/tools/content-schema/world-authoring/convert_world_base.py
++++ b/tools/content-schema/world-authoring/convert_world_base.py
+@@ -1273,6 +1273,9 @@ def main() -> int:
+                 f"excluded teleports {excluded} differ from the pinned "
+                 f"{PINNED_EXCLUDED_TELEPORTS}"
+             )
++        import quest_chest_bindings_rs
++
++        quest_chest_bindings_rs.overlay_outputs(out)
+     except (ConvertError, otbm_reader.OtbmError, OSError) as error:
+         print(f"FAIL {error}", file=sys.stderr)
+         return 1

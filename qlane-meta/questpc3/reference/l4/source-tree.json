@@ -1,0 +1,26 @@
+[
+  {
+    "path": "data-global/monster/mammals/terrified_elephant.lua",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "2dc8063e57328e667bbacb22fa33851b7cf64d89",
+    "size": 2652,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/2dc8063e57328e667bbacb22fa33851b7cf64d89"
+  },
+  {
+    "path": "data-global/raids/port_hope/stampede.xml",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "884420e789544c7372759470cd87a2783722ef0d",
+    "size": 352,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/884420e789544c7372759470cd87a2783722ef0d"
+  },
+  {
+    "path": "data/scripts/creaturescripts/monster/terrified_elephant_death.lua",
+    "mode": "100644",
+    "type": "blob",
+    "sha": "5a3b099709e8eebc5af5136c97cceeda89a882ca",
+    "size": 679,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5a3b099709e8eebc5af5136c97cceeda89a882ca"
+  }
+]

@@ -1,0 +1,232 @@
+{
+  "task": "questpc3",
+  "head": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "scope": "uncommitted local worktree; no publication",
+  "environment": {
+    "CARGO_BUILD_JOBS": "4"
+  },
+  "checks": [
+    {
+      "check": "restart prerequisite check",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "log": "continuation-check.log"
+    },
+    {
+      "check": "source mismatch reproduction",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "questpc3_studded_legs_lee_delle_exchange_atomic_repeatable_replay",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 101,
+      "log": "continuation-keywords-red.log"
+    },
+    {
+      "check": "source rule unit test",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-j",
+        "4",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "rookgaard",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "log": "continuation-keywords-unit.log"
+    },
+    {
+      "check": "fixture rate limit reproduction",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-j",
+        "4",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "rookgaard_exchanges",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 101,
+      "log": "continuation-keywords-pg.log"
+    },
+    {
+      "check": "four production NPC exchanges",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-j",
+        "4",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "rookgaard_exchanges",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "log": "continuation-keywords-pg-fixed.log"
+    },
+    {
+      "check": "changed crates clippy",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "clippy",
+        "--locked",
+        "-j",
+        "4",
+        "-p",
+        "oteryn-gameplay-content",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--all-features",
+        "--all-targets",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "continuation-clippy.log"
+    },
+    {
+      "check": "pure unit regression",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-j",
+        "4",
+        "-p",
+        "oteryn-gameplay-content",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "--quiet",
+        "--",
+        "--test-threads=2"
+      ],
+      "exit_code": 0,
+      "log": "continuation-units.log"
+    },
+    {
+      "check": "workspace format",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "continuation-fmt-check.log"
+    },
+    {
+      "check": "auto-mounted PG format",
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/rookgaard_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_reward_chests.rs"
+      ],
+      "exit_code": 0,
+      "log": "continuation-mounted-fmt-check.log"
+    }
+  ],
+  "postgres": {
+    "passed": 4,
+    "failed": 0,
+    "duration_s": 226.61,
+    "completion_markers": [
+      {
+        "npc": "oteryn:npc.amber",
+        "duration_ms": 51729
+      },
+      {
+        "npc": "oteryn:npc.billy",
+        "duration_ms": 66098
+      },
+      {
+        "npc": "oteryn:npc.lee_delle",
+        "duration_ms": 57205
+      },
+      {
+        "npc": "oteryn:npc.willie",
+        "duration_ms": 51573
+      }
+    ]
+  },
+  "source_precedence": {
+    "amber": 60,
+    "billy": 59,
+    "lee_delle": 59,
+    "willie": 46
+  },
+  "remaining_quests": 38,
+  "pure_units": {
+    "packages": [
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-quests"
+    ],
+    "results": [
+      {
+        "passed": 312,
+        "failed": 0,
+        "ignored": 1,
+        "duration_s": 382.98
+      },
+      {
+        "passed": 24,
+        "failed": 0,
+        "ignored": 0,
+        "duration_s": 120.13
+      },
+      {
+        "passed": 251,
+        "failed": 0,
+        "ignored": 0,
+        "duration_s": 9.2
+      }
+    ],
+    "passed": 587,
+    "failed": 0,
+    "ignored_preexisting": 1
+  }
+}

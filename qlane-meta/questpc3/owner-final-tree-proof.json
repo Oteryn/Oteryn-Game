@@ -1,0 +1,13 @@
+{
+  "task_id": "questpc3",
+  "head": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "previous_input_snapshot": "restart-next-inputs.json",
+  "verified_inputs": 86,
+  "all_input_hashes_unchanged": true,
+  "source_test_sql_generated_content_changed_this_continuation": false,
+  "policy": {
+    "version": "3.1.0",
+    "commit": "1bfb5ff98c8aa156e73669a14e083a1d464c29fb"
+  },
+  "pending_owner_questions": []
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "item": "oteryn:item.tibia.i3362",
+    "fields": [
+      "stack_class",
+      "materializable"
+    ]
+  },
+  {
+    "item": "oteryn:item.tibia.i3426",
+    "fields": [
+      "stack_class",
+      "materializable"
+    ]
+  },
+  {
+    "item": "oteryn:item.tibia.i3084",
+    "fields": [
+      "materializable"
+    ]
+  },
+  {
+    "item": "oteryn:item.tibia.i3054",
+    "fields": [
+      "materializable"
+    ]
+  },
+  {
+    "item": "oteryn:item.tibia.i3272",
+    "fields": [
+      "stack_class",
+      "materializable"
+    ]
+  }
+]

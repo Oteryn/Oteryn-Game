@@ -1,0 +1,404 @@
+{
+  "content/content.lock.json": {
+    "changed_paths": [
+      "/family_counts/RewardClaim",
+      "/spell_import/collections/Item/0/record_count",
+      "/spell_import/collections/Item/0/sha256"
+    ]
+  },
+  "content/creatures/prey-slot-values.json": {
+    "changed_paths": [
+      "/model_input_sha256"
+    ]
+  },
+  "content/encounters/raids/catalogue.json": {
+    "changed_paths": [
+      "/records/110/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/123/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/144/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/144/variants/0/waves/1/entries/0/area/regions/0/sha256",
+      "/records/181/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/182/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/210/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/210/variants/0/waves/0/entries/1/area/regions/0/sha256",
+      "/records/210/variants/0/waves/0/entries/2/area/regions/0/sha256",
+      "/records/230/variants/0/waves/0/entries/0/area/regions/1/sha256",
+      "/records/230/variants/0/waves/1/entries/0/area/regions/0/sha256",
+      "/records/234/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/234/variants/0/waves/0/entries/1/area/regions/0/sha256",
+      "/records/234/variants/0/waves/0/entries/2/area/regions/0/sha256",
+      "/records/234/variants/0/waves/0/entries/3/area/regions/0/sha256",
+      "/records/234/variants/0/waves/0/entries/4/area/regions/0/sha256",
+      "/records/235/variants/0/waves/3/entries/0/area/regions/0/sha256",
+      "/records/236/variants/0/waves/0/entries/0/area/regions/0/sha256"
+    ]
+  },
+  "content/encounters/raids/index.json": {
+    "changed_paths": [
+      "/catalogue_sha256"
+    ]
+  },
+  "content/interactions/index.json": {
+    "changed_paths": [
+      "/notes"
+    ]
+  },
+  "content/interactions/reward_claims/index.json": {
+    "changed_paths": [
+      "/native_container_records",
+      "/readiness/ready",
+      "/readiness/waiting_data",
+      "/readiness/waiting_implementation",
+      "/readiness/waiting_item_semantics",
+      "/record_count",
+      "/scripted_rs_record_count (add/remove)",
+      "/shards (length 5->6)",
+      "/source_checks (length 12->10)"
+    ]
+  },
+  "content/interactions/reward_claims/reward-claim-variants-00000-00099.json": {
+    "changed_paths": [
+      "/records/0/definition/native_contents/source_sha256",
+      "/records/1/definition/native_contents/source_sha256",
+      "/records/2/definition/native_contents/source_sha256",
+      "/records/3/definition/data_holds (length 1->0)",
+      "/records/3/definition/native_contents (add/remove)",
+      "/records/3/definition/readiness",
+      "/records/5/definition/native_contents/source_sha256",
+      "/records/6/definition/native_contents/source_sha256",
+      "/records/8/definition/native_contents/source_sha256",
+      "/records/9/definition/native_contents/source_sha256",
+      "/records/11/definition/native_contents/source_sha256",
+      "/records/13/definition/native_contents/source_sha256",
+      "/records/14/definition/native_contents/source_sha256",
+      "/records/15/definition/native_contents/source_sha256",
+      "/records/17/definition/native_contents/source_sha256",
+      "/records/18/definition/native_contents/source_sha256",
+      "/records/19/definition/native_contents/source_sha256",
+      "/records/20/definition/native_contents/source_sha256",
+      "/records/22/definition/native_contents/source_sha256",
+      "/records/23/definition/native_contents/source_sha256",
+      "/records/24/definition/native_contents/source_sha256",
+      "/records/25/definition/native_contents/source_sha256",
+      "/records/26/definition/native_contents/source_sha256",
+      "/records/28/definition/native_contents/source_sha256",
+      "/records/29/definition/native_contents/source_sha256",
+      "/records/32/definition/native_contents/source_sha256",
+      "/records/49/definition/native_contents/source_sha256",
+      "/records/54/definition/native_contents/source_sha256",
+      "/records/55/definition/native_contents/source_sha256",
+      "/records/62/definition/native_contents/source_sha256",
+      "/records/63/definition/native_contents/source_sha256",
+      "/records/64/definition/native_contents/source_sha256",
+      "/records/65/definition/native_contents/source_sha256",
+      "/records/66/definition/native_contents/source_sha256",
+      "/records/67/definition/native_contents/source_sha256",
+      "/records/69/definition/native_contents/source_sha256",
+      "/records/70/definition/native_contents/source_sha256",
+      "/records/71/definition/native_contents/source_sha256",
+      "/records/72/definition/native_contents/source_sha256",
+      "/records/73/definition/native_contents/source_sha256",
+      "/records/75/definition/native_contents/source_sha256",
+      "/records/76/definition/native_contents/source_sha256",
+      "/records/77/definition/native_contents/source_sha256",
+      "/records/78/definition/native_contents/source_sha256",
+      "/records/79/definition/native_contents/source_sha256",
+      "/records/80/definition/native_contents/source_sha256",
+      "/records/81/definition/native_contents/source_sha256",
+      "/records/82/definition/native_contents/source_sha256",
+      "/records/83/definition/native_contents/source_sha256",
+      "/records/84/definition/native_contents/source_sha256",
+      "/records/85/definition/native_contents/source_sha256",
+      "/records/86/definition/native_contents/source_sha256",
+      "/records/87/definition/native_contents/source_sha256",
+      "/records/88/definition/native_contents/source_sha256",
+      "/records/89/definition/native_contents/source_sha256",
+      "/records/90/definition/native_contents/source_sha256",
+      "/records/91/definition/native_contents/source_sha256",
+      "/records/92/definition/native_contents/source_sha256",
+      "/records/93/definition/native_contents/source_sha256",
+      "/records/94/definition/native_contents/source_sha256",
+      "/records/95/definition/native_contents/source_sha256",
+      "/records/96/definition/native_contents/source_sha256",
+      "/records/97/definition/native_contents/source_sha256",
+      "/records/98/definition/native_contents/source_sha256",
+      "/records/99/definition/native_contents/source_sha256"
+    ]
+  },
+  "content/interactions/reward_claims/reward-claim-variants-00100-00104.json": {
+    "changed_paths": [
+      "/records/0/definition/native_contents/source_sha256",
+      "/records/1/definition/native_contents/source_sha256",
+      "/records/2/definition/native_contents/source_sha256",
+      "/records/3/definition/native_contents/source_sha256",
+      "/records/4/definition/native_contents/source_sha256"
+    ]
+  },
+  "content/interactions/reward_claims/reward-claims-00000-00099.json": {
+    "changed_paths": [
+      "/records/91/definition/readiness",
+      "/records/95/definition/readiness"
+    ]
+  },
+  "content/interactions/reward_claims/reward-claims-scripted-rs.json": {
+    "new": true
+  },
+  "content/items/definitions/items-17500-17999.json": {
+    "changed_paths": [
+      "/records/428/definition/materializable"
+    ]
+  },
+  "content/items/definitions/items-18000-18499.json": {
+    "changed_paths": [
+      "/records/170/definition/materializable"
+    ]
+  },
+  "content/items/definitions/items-19500-19999.json": {
+    "changed_paths": [
+      "/records/413/definition/materializable",
+      "/records/413/definition/stack_class"
+    ]
+  },
+  "content/items/definitions/items-20000-20499.json": {
+    "changed_paths": [
+      "/records/463/definition/materializable",
+      "/records/463/definition/stack_class"
+    ]
+  },
+  "content/items/definitions/items-21000-21499.json": {
+    "changed_paths": [
+      "/records/23/definition/materializable",
+      "/records/23/definition/stack_class"
+    ]
+  },
+  "content/items/definitions/items-30000-30499.json": {
+    "changed_paths": [
+      "/records/177/definition/materializable",
+      "/records/177/definition/semantics/stack/state",
+      "/records/177/definition/semantics/stack/value (add/remove)",
+      "/records/177/definition/stack_class"
+    ]
+  },
+  "content/items/definitions/spell-native-profiles.json": {
+    "changed_paths": [
+      "/records (length 3566->3569)"
+    ]
+  },
+  "content/items/index.json": {
+    "changed_paths": [
+      "/spell_imports/0/record_count",
+      "/spell_imports/0/sha256"
+    ]
+  },
+  "content/items/taxonomy/items.json": {
+    "changed_paths": [
+      "/records/1361/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/1362/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/1363/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/1364/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/1366/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/1367/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/2343/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/2486/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/2489/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/2760/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/3460/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/3494/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/4106/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/4402/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/4745/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/4746/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/4801/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/4803/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/5276/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/5890/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/5891/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/6597/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/6638/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/6719/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7281/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7282/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7284/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7352/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7432/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7433/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7456/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7457/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7463/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7464/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7465/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7466/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7493/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7544/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7545/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7651/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7654/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7656/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7657/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7658/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7660/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7661/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7662/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7842/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7844/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7866/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/7885/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8020/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8022/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8039/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8040/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8113/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8114/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8117/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8134/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8153/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8155/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8156/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8157/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8158/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8160/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8161/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8162/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8210/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8211/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8212/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8213/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8246/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8247/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8275/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8366/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8377/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8378/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8383/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8431/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8523/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8535/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8670/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8671/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8677/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8678/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8679/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8680/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/8966/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/9821/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/9977/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/9982/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/9985/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10000/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10100/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10188/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10208/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10235/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10236/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10237/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10238/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10239/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10240/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10241/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10242/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10271/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10343/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10367/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10375/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10376/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10493/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10494/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10496/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10531/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10553/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10555/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10579/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10580/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/10612/source_evidence/source_inputs/canonical_definitions_sha256",
+      "/records/12068/source_evidence/source_inputs/canonical_definitions_sha256"
+    ]
+  },
+  "content/manifest.json": {
+    "changed_paths": [
+      "/families/RewardClaim/records",
+      "/managed_files (length 244->245)",
+      "/spell_import/collections/Item/0/record_count",
+      "/spell_import/collections/Item/0/sha256"
+    ]
+  },
+  "content/spells.manifest.json": {
+    "changed_paths": [
+      "/item_profiles/sha256",
+      "/loot_tables/sha256"
+    ]
+  },
+  "content/world/pins/oteryn.json": {
+    "changed_paths": [
+      "/digest"
+    ]
+  },
+  "content/world/placements/index.json": {
+    "changed_paths": [
+      "/regions/196/sha256",
+      "/regions/277/sha256",
+      "/regions/338/sha256",
+      "/regions/353/sha256",
+      "/regions/448/sha256",
+      "/regions/512/sha256",
+      "/regions/543/sha256",
+      "/regions/637/sha256",
+      "/regions/700/sha256",
+      "/regions/708/sha256",
+      "/regions/709/sha256",
+      "/regions/733/sha256",
+      "/regions/883/sha256",
+      "/regions/900/sha256",
+      "/regions/944/sha256",
+      "/regions/951/sha256",
+      "/regions/1176/sha256",
+      "/source/quest_chests_rs (add/remove)"
+    ]
+  },
+  "docs/repository/QUEST_CALLBACK_COVERAGE.json": {
+    "changed_paths": [
+      "/counts/dispatch_pg_qualified",
+      "/counts/not_playable",
+      "/counts/supported_unqualified",
+      "/quests (length 136->138)"
+    ]
+  },
+  "tools/content-schema/native-gameplay/condition-potion-profiles.json": {
+    "changed_paths": [
+      "/canonical_inputs/0/sha256"
+    ]
+  },
+  "tools/content-schema/native-gameplay/loot-tables.json": {
+    "changed_paths": [
+      "/items/1350/materializable",
+      "/items/1378/materializable",
+      "/items/1553/materializable",
+      "/items/1646/materializable",
+      "/items/1810/materializable"
+    ]
+  },
+  "tools/content-schema/native-gameplay/prey-model-results.json": {
+    "changed_paths": [
+      "/input_sha256"
+    ]
+  },
+  "tools/content-schema/reward-claim-authoring/container_native_source.json": {
+    "changed_paths": [
+      "/leaf_entries (length 14->16)"
+    ]
+  },
+  "tools/content-schema/reward-claim-authoring/samples/migration/reward-claim-variants.json": {
+    "changed_paths": [
+      "/authoring_sources (length 84->85)"
+    ]
+  },
+  "tools/content-schema/reward-claim-authoring/small_sapphire_source.json": {
+    "new": true
+  },
+  "tools/content-schema/world-authoring/samples/world-base-capture-v1.json": {
+    "changed_paths": [
+      "/bytes_on_disk",
+      "/item_attributes/unique (add/remove)",
+      "/source/quest_chests_rs (add/remove)"
+    ]
+  }
+}

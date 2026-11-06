@@ -1,0 +1,207 @@
+.questpc3/ACTIVE-CHANGED-FILES.md
+.questpc3/BOUND-META-POLICY.md
+.questpc3/CHANGED-FILES.md
+.questpc3/CHANGED-FILES.txt
+.questpc3/COMPLETION-REPORT.md
+.questpc3/CONTINUATION-CHECKS.json
+.questpc3/CONTINUATION-REPORT.md
+.questpc3/CONTINUATION-REVIEW.md
+.questpc3/FINAL-BLOCKERS.md
+.questpc3/FINAL-CHANGED-FILES.md
+.questpc3/MECHANISM-BATCHES.json
+.questpc3/NEXT-BATCH-SOURCES.md
+.questpc3/NOTE-browser.md
+.questpc3/NOTE-coordination.md
+.questpc3/NOTE-memory.md
+.questpc3/NOTE-npc.md
+.questpc3/NOTE-wiki.md
+.questpc3/NOTE-zlib.md
+.questpc3/OWNER-DECISIONS.md
+.questpc3/OWNER-SCOPE-ALL.md
+.questpc3/PHASE-BC-BLOCKERS.md
+.questpc3/QUALIFIED.md
+.questpc3/QUEST-STATUS.json
+.questpc3/QUEST-STATUS.md
+.questpc3/RESUME.md
+.questpc3/REVIEW.md
+.questpc3/SHARED-FIXES.md
+.questpc3/active-handwritten.diff
+.questpc3/active-inputs.json
+.questpc3/active-rustfmt-paths.json
+.questpc3/active-terminal-record-check.json
+.questpc3/continuation-checks.json
+.questpc3/coverage-qualification-review.json
+.questpc3/current-restart-checks.json
+.questpc3/current-restart-tree-proof.json
+.questpc3/final-checks.json
+.questpc3/final-json-review.json
+.questpc3/final-map-review.json
+.questpc3/final-pg-evidence.json
+.questpc3/full-code.diff
+.questpc3/json-diff-review.json
+.questpc3/map-diff-review.json
+.questpc3/owner-final-blocker-catalogue.json
+.questpc3/owner-final-blockers.json
+.questpc3/owner-final-checks.json
+.questpc3/owner-final-json-review.json
+.questpc3/owner-final-map-review.json
+.questpc3/owner-final-status.json
+.questpc3/owner-final-tree-proof.json
+.questpc3/pg-evidence.json
+.questpc3/reference/canary/data-otservbr-global/startup/tables/chest.lua
+.questpc3/reference/crystal-baseline/data-global/npc/sinatuki.lua
+.questpc3/reference/crystal-baseline/data-global/scripts/actions/rookgaard/bear_room_quest/bear_room_quest_lever.lua
+.questpc3/reference/crystal-baseline/data-global/scripts/actions/rookgaard/bear_room_quest/bear_room_quest_stone.lua
+.questpc3/reference/crystal-baseline/data-global/scripts/actions/rookgaard/chest.lua
+.questpc3/reference/crystal-baseline/data-global/scripts/actions/rookgaard/goblin_temple_quest.lua
+.questpc3/reference/crystal-baseline/data-global/scripts/actions/rookgaard/katana_quest/katana_quest_door.lua
+.questpc3/reference/crystal-baseline/data-global/scripts/actions/rookgaard/katana_quest/katana_quest_lever.lua
+.questpc3/reference/crystal-baseline/data-global/scripts/actions/rookgaard/rapier_quest.lua
+.questpc3/reference/crystal-baseline/data-global/scripts/actions/rookgaard/sewer_lever.lua
+.questpc3/reference/crystal/data-global/npc/amber.lua
+.questpc3/reference/crystal/data-global/npc/billy.lua
+.questpc3/reference/crystal/data-global/npc/hector_the_mentor.lua
+.questpc3/reference/crystal/data-global/npc/lee_delle.lua
+.questpc3/reference/crystal/data-global/npc/rottin_wood.lua
+.questpc3/reference/crystal/data-global/npc/sinclair.lua
+.questpc3/reference/crystal/data-global/npc/spectulus.lua
+.questpc3/reference/crystal/data-global/npc/willie.lua
+.questpc3/reference/crystal/data-global/scripts/actions/other/others/quest_system1.lua
+.questpc3/reference/crystal/data-global/scripts/actions/other/others/quest_system2.lua
+.questpc3/reference/crystal/data-global/scripts/actions/rookgaard/rapier_quest.lua
+.questpc3/reference/crystal/data-global/startup/tables/chest.lua
+.questpc3/reference/npc-source-witnesses.json
+.questpc3/restart-completion-checks.json
+.questpc3/restart-current-checks.json
+.questpc3/restart-current-json-review.json
+.questpc3/restart-current-map-review.json
+.questpc3/restart-item-craft.diff
+.questpc3/restart-item-review.json
+.questpc3/restart-map-review.json
+.questpc3/restart-next-checks.json
+.questpc3/restart-next-inputs.json
+.questpc3/restart-next-json-review.json
+.questpc3/restart-next-map-review.json
+.questpc3/restart-pg-evidence.json
+.questpc3/wiki/Document (Certificate).wiki
+.questpc3/wiki/Map (Brown).wiki
+.questpc3/wiki/Rapier Quest.wiki
+.questpc3/wiki/Rapier Quest_Spoiler.wiki
+.questpc3/wiki/Rascoohan Outfits Quest.wiki
+.questpc3/wiki/Rascoohan Outfits Quest_Spoiler.wiki
+.questpc3/wiki/Rathleton Quest.wiki
+.questpc3/wiki/Rathleton Quest_Spoiler.wiki
+.questpc3/wiki/Ravenous Madness Quest.wiki
+.questpc3/wiki/Ravenous Madness Quest_Spoiler.wiki
+.questpc3/wiki/Realm of Dreams Quest.wiki
+.questpc3/wiki/Realm of Dreams Quest_Spoiler.wiki
+.questpc3/wiki/Research and Development Quest.wiki
+.questpc3/wiki/Research and Development Quest_Spoiler.wiki
+.questpc3/wiki/Rest in Hallowed Ground Quest.wiki
+.questpc3/wiki/Rest in Hallowed Ground Quest_Spoiler.wiki
+.questpc3/wiki/Revenant Outfits Quest.wiki
+.questpc3/wiki/Revenant Outfits Quest_Spoiler.wiki
+.questpc3/wiki/Rift Warrior Outfits Quest.wiki
+.questpc3/wiki/Rift Warrior Outfits Quest_Spoiler.wiki
+.questpc3/wiki/Ring Quest.wiki
+.questpc3/wiki/Ring Quest_Spoiler.wiki
+.questpc3/wiki/Rise of Devovorga.wiki
+.questpc3/wiki/Rise of Devovorga_Spoiler.wiki
+.questpc3/wiki/River Runs Deep Mini World Change.wiki
+.questpc3/wiki/River Runs Deep Mini World Change_Spoiler.wiki
+.questpc3/wiki/Rootwalker Outfits Quest.wiki
+.questpc3/wiki/Rootwalker Outfits Quest_Spoiler.wiki
+.questpc3/wiki/Roshamuul Quest.wiki
+.questpc3/wiki/Roshamuul Quest_Spoiler.wiki
+.questpc3/wiki/Rotten Blood Quest.wiki
+.questpc3/wiki/Rotten Blood Quest_Spoiler.wiki
+.questpc3/wiki/Rottin Wood and the Married Men Quest.wiki
+.questpc3/wiki/Rottin Wood and the Married Men Quest_Spoiler.wiki
+.questpc3/wiki/Royal Bounacean Advisor Outfits Quest.wiki
+.questpc3/wiki/Royal Bounacean Advisor Outfits Quest_Spoiler.wiki
+.questpc3/wiki/Royal Costume Outfits Quest.wiki
+.questpc3/wiki/Royal Costume Outfits Quest_Spoiler.wiki
+.questpc3/wiki/Sam's Old Backpack Quest.wiki
+.questpc3/wiki/Sam's Old Backpack Quest_Spoiler.wiki
+.questpc3/wiki/Sanctuary of the Lizard God Quest.wiki
+.questpc3/wiki/Sanctuary of the Lizard God Quest_Spoiler.wiki
+.questpc3/wiki/Scale Armor Quest.wiki
+.questpc3/wiki/Scale Armor Quest_Spoiler.wiki
+.questpc3/wiki/Sea of Light Quest.wiki
+.questpc3/wiki/Sea of Light Quest_Spoiler.wiki
+.questpc3/wiki/Secret Service Quest.wiki
+.questpc3/wiki/Secret Service Quest_Spoiler.wiki
+.questpc3/wiki/Serpentine Tower Quest.wiki
+.questpc3/wiki/Serpentine Tower Quest_Spoiler.wiki
+.questpc3/wiki/Shadows of Yalahar Quest.wiki
+.questpc3/wiki/Shadows of Yalahar Quest_Spoiler.wiki
+.questpc3/wiki/Shaman Outfits Quest.wiki
+.questpc3/wiki/Shaman Outfits Quest_Spoiler.wiki
+.questpc3/wiki/Shaman Treasure Quest.wiki
+.questpc3/wiki/Shaman Treasure Quest_Spoiler.wiki
+.questpc3/wiki/Shards of a Broken Moon Quest.wiki
+.questpc3/wiki/Shards of a Broken Moon Quest_Spoiler.wiki
+.questpc3/wiki/Short Sword Quest.wiki
+.questpc3/wiki/Short Sword Quest_Spoiler.wiki
+.questpc3/wiki/Silver Amulet Quest.wiki
+.questpc3/wiki/Silver Amulet Quest_Spoiler.wiki
+.questpc3/wiki/Silver Brooch Quest.wiki
+.questpc3/wiki/Silver Brooch Quest_Spoiler.wiki
+.questpc3/wiki/Sinatuki Quest.wiki
+.questpc3/wiki/Sinatuki Quest_Spoiler.wiki
+.questpc3/wiki/Six Rubies Quest.wiki
+.questpc3/wiki/Six Rubies Quest_Spoiler.wiki
+.questpc3/wiki/Skeleton Decoration Quest.wiki
+.questpc3/wiki/Skeleton Decoration Quest_Spoiler.wiki
+.questpc3/wiki/Skeleton Decoration.wiki
+.questpc3/wiki/Skull of Ratha Quest.wiki
+.questpc3/wiki/Skull of Ratha Quest_Spoiler.wiki
+.questpc3/wiki/Small Health Potion Quest.wiki
+.questpc3/wiki/Small Health Potion Quest_Spoiler.wiki
+.questpc3/wiki/Small Ruby Quest.wiki
+.questpc3/wiki/Small Ruby Quest_Spoiler.wiki
+.questpc3/wiki/Small Sapphire Quest.wiki
+.questpc3/wiki/Small Sapphire Quest_Spoiler.wiki
+.questpc3/wiki/Soil Guardian Outfits Quest.wiki
+.questpc3/wiki/Soil Guardian Outfits Quest_Spoiler.wiki
+.questpc3/wiki/Soul War Quest.wiki
+.questpc3/wiki/Soul War Quest_Spoiler.wiki
+.questpc3/wiki/Spider Nest Mini World Change.wiki
+.questpc3/wiki/Spider Nest Mini World Change_Spoiler.wiki
+.questpc3/wiki/Spike Sword Quest.wiki
+.questpc3/wiki/Spike Sword Quest_Spoiler.wiki
+.questpc3/wiki/Spike Tasks Quest.wiki
+.questpc3/wiki/Spike Tasks Quest_Spoiler.wiki
+.questpc3/wiki/Spirit Grounds Mini World Change.wiki
+.questpc3/wiki/Spirit Grounds Mini World Change_Spoiler.wiki
+.questpc3/wiki/Spirithunters Quest.wiki
+.questpc3/wiki/Spirithunters Quest_Spoiler.wiki
+.questpc3/wiki/Spring into Life.wiki
+.questpc3/wiki/Spring into Life_Spoiler.wiki
+.questpc3/wiki/Stampede Mini World Change.wiki
+.questpc3/wiki/Stampede Mini World Change_Spoiler.wiki
+.questpc3/wiki/Steal From Thieves Quest.wiki
+.questpc3/wiki/Steal From Thieves Quest_Spoiler.wiki
+.questpc3/wiki/Stealth Ring Quest.wiki
+.questpc3/wiki/Stealth Ring Quest_Spoiler.wiki
+.questpc3/wiki/Steamship World Change.wiki
+.questpc3/wiki/Steamship World Change_Spoiler.wiki
+.questpc3/wiki/Steel Helmet Quest.wiki
+.questpc3/wiki/Steel Helmet Quest_Spoiler.wiki
+.questpc3/wiki/Strong Potions Quest.wiki
+.questpc3/wiki/Strong Potions Quest_Spoiler.wiki
+.questpc3/wiki/Studded Legs Quest.wiki
+.questpc3/wiki/Studded Legs Quest_Spoiler.wiki
+.questpc3/wiki/Studded Shield Quest.wiki
+.questpc3/wiki/Studded Shield Quest_Spoiler.wiki
+.questpc3/wiki/Summoner Outfits Quest.wiki
+.questpc3/wiki/Summoner Outfits Quest_Spoiler.wiki
+.questpc3/wiki/Swamp Fever World Change.wiki
+.questpc3/wiki/Swamp Fever World Change_Spoiler.wiki
+.questpc3/wiki/Travel Expenses (Book).wiki
+.questpc3/wiki/Women Seduced (Book).wiki
+.questpc3/wiki/revisions.json
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/multi_stack_handin.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs
+crates/gameplay/durability/src/durability/quest_world_callback.rs

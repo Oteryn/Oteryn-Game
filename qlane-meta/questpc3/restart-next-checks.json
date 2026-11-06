@@ -1,0 +1,258 @@
+{
+  "task_id": "questpc3",
+  "head": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "lifecycle": "local AUTHORING worker; detached supplied worktree; no frozen candidate or PR",
+  "scope": "R\u2013S; migration reservation1040\u20131059; only existing1040 used; no Git writes or external mutations",
+  "production_test_sql_generated_inputs_unchanged": true,
+  "input_snapshot": "restart-next-inputs.json",
+  "checks": [
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "log": "restart-next-check.log",
+      "log_sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      }
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "rookgaard_exchanges",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "log": "restart-next-npc.log",
+      "log_sha256": "f6b978bc4e6bf15742c51a4558cad414dc63ca63c6d8118419d455db1330e18e",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "rust_results": [
+        {
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "duration_seconds": 249.27
+        }
+      ]
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-content",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--all-targets",
+        "--all-features",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "restart-next-clippy.log",
+      "log_sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      }
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-content",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "log": "restart-next-units.log",
+      "log_sha256": "6f2330bfd193698ca73710ca6ef2ccdeab145f5f395b1e4b232f713d69fe86b9",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      },
+      "rust_results": [
+        {
+          "passed": 312,
+          "failed": 0,
+          "ignored": 1,
+          "duration_seconds": 179.88
+        },
+        {
+          "passed": 24,
+          "failed": 0,
+          "ignored": 0,
+          "duration_seconds": 72.03
+        },
+        {
+          "passed": 251,
+          "failed": 0,
+          "ignored": 0,
+          "duration_seconds": 3.88
+        }
+      ]
+    },
+    {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "restart-next-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": {
+        "CARGO_BUILD_JOBS": "4"
+      }
+    },
+    {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/rookgaard_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_reward_chests.rs"
+      ],
+      "exit_code": 0,
+      "log": "restart-next-mounted-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/reward-claim-authoring",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 0,
+      "log": "restart-next-authoring.log",
+      "log_sha256": "6bf74783adebe618606872b2e501c8ade2ca4c42b1094540dbf4a563d3d3e663",
+      "python_result": {
+        "passed": 61,
+        "duration_seconds": 40.678
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/world-authoring",
+        "-p",
+        "test_quest_chest_bindings_rs.py"
+      ],
+      "exit_code": 0,
+      "log": "restart-next-overlay.log",
+      "log_sha256": "a9aa39221bbcc9427ba82b290c562c69de33d552e072789c50b53a32eb92adc4",
+      "python_result": {
+        "passed": 3,
+        "duration_seconds": 0.817
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_quest_callback_profiles.py"
+      ],
+      "exit_code": 0,
+      "log": "restart-next-admissions.log",
+      "log_sha256": "a78ad645ce9cd7fe1a64e959d9b31e6aa6008c8cf6d18dd3a82854ba6b22b5dc",
+      "python_result": {
+        "passed": 14,
+        "duration_seconds": 62.369
+      }
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        ".",
+        ":(exclude).questpc3/wiki/**",
+        ":(exclude).questpc3/full-code.diff"
+      ],
+      "exit_code": 0,
+      "log": "restart-next-diff-check.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "postgres_completed": [
+    {
+      "npc": "oteryn:npc.amber",
+      "duration_ms": 83855
+    },
+    {
+      "npc": "oteryn:npc.billy",
+      "duration_ms": 57638
+    },
+    {
+      "npc": "oteryn:npc.lee_delle",
+      "duration_ms": 54751
+    },
+    {
+      "npc": "oteryn:npc.willie",
+      "duration_ms": 53011
+    }
+  ],
+  "retained_phase_a_evidence": {
+    "manifest": "restart-current-checks.json",
+    "log": "restart-current-chests.log",
+    "tests_passed": 23,
+    "completed_claims": 24,
+    "duration_seconds": 549.11,
+    "rerun_this_continuation": false,
+    "reason": "No production, test, SQL, source or generated input changed. Reused exact-input saved qualification; no additional claim counted."
+  },
+  "quest_totals": {
+    "qualified_paths": 17,
+    "blocked_titles": 38,
+    "excluded_dawnport": 1,
+    "newly_qualified": 0
+  },
+  "unfinished": "All38 source-specific owner gaps are named in PHASE-BC-BLOCKERS.md and QUEST-STATUS.md. Shared engine work remains with its owner. No test failure deferred to CI.",
+  "next_step": "Revisit only when the required owning engine/content path is supplied; preserve existing replay/once/fencing assertions. No further shared engine implementation is authorized by NOTE-coordination.md."
+}

@@ -1,0 +1,133 @@
+{
+  "task": "questpc3",
+  "baseline_head": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "scope": "local mutable worktree; no frozen candidate or PR",
+  "chests": {
+    "log": ".questpc3/final-pg-chests.log",
+    "tests": 23,
+    "completion_markers": 24,
+    "duration_s": 415.61,
+    "cases": [
+      {
+        "claim": "oteryn:reward-claim.kv.silveramulet",
+        "duration_ms": 28684
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.rapier",
+        "duration_ms": 28920
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.stealhring1",
+        "duration_ms": 31174
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.ringquest2",
+        "duration_ms": 31155
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.ringquest1",
+        "duration_ms": 34223
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.scalearmor",
+        "duration_ms": 34557
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.shortswordbook",
+        "duration_ms": 32197
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.shamantreasure",
+        "duration_ms": 32774
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.silverbrooch",
+        "duration_ms": 34986
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.sixrubies",
+        "duration_ms": 35318
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
+        "duration_ms": 39459
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
+        "duration_ms": 40148
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.witch_house_quest",
+        "duration_ms": 49896
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.smallsapphire",
+        "duration_ms": 51141
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.stealhring2",
+        "duration_ms": 47462
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.spikesword",
+        "duration_ms": 50243
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.steelhelmet1",
+        "duration_ms": 35780
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.steelhelmet3",
+        "duration_ms": 35426
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.steelhelmet4",
+        "duration_ms": 26476
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.steelhelmet2",
+        "duration_ms": 26553
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.strong_potions.reward",
+        "duration_ms": 25932
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.honeyflower",
+        "duration_ms": 25796
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.bananafree",
+        "duration_ms": 26037
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.bananapremium",
+        "duration_ms": 26040
+      }
+    ]
+  },
+  "npc_exchanges": {
+    "log": ".questpc3/final-pg-npc.log",
+    "tests": 4,
+    "completion_markers": 4,
+    "duration_s": 176.4,
+    "cases": [
+      {
+        "npc": "oteryn:npc.amber",
+        "duration_ms": 45707
+      },
+      {
+        "npc": "oteryn:npc.billy",
+        "duration_ms": 43652
+      },
+      {
+        "npc": "oteryn:npc.lee_delle",
+        "duration_ms": 43102
+      },
+      {
+        "npc": "oteryn:npc.willie",
+        "duration_ms": 43930
+      }
+    ]
+  }
+}
