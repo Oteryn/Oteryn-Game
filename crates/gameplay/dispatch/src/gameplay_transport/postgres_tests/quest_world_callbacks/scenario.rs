@@ -44,6 +44,8 @@ fn scenario_case(
         "rotten-blood/sacrifice"
     } else if monk {
         "monk-guidance"
+    } else if name == "giant-smithhammer-asymmetric" {
+        "giant-smithhammer"
     } else if target_swap {
         "fish-napping-key"
     } else {
@@ -197,7 +199,15 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if let Some(expected_destination) = stateless_destination {
+        if name == "giant-smithhammer-asymmetric" {
+            super::super::quest_l7_asymmetric::exercise(
+                &owner,
+                &mut admitted,
+                &callback,
+                trigger,
+            )
+            .await?;
+        } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,
                 &mut admitted,

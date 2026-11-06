@@ -118,6 +118,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let [passage] = candidates.as_slice() else {
                 return UseDisposition::Rejected;
             };
+            // Crystal giant_smithhammer/lever.lua:7-12 changes BOTH objects
+            // only for open+rock-present or closed+rock-absent. A mismatched
+            // pair is a handled no-op, including the lever's revision.
+            if callback.key == "oteryn:quest-callback/giant-smithhammer"
+                && map.facts.base_hidden(*passage) != close
+            {
+                return UseDisposition::Committed;
+            }
             if let Some(appearance) = passage_definition.replacement {
                 let Some(facts) = map.facts.quest_callback_replacement(
                     *passage,
