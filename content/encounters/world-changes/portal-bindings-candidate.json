@@ -281,10 +281,14 @@
       "missing_native_bindings": [
         "accepted W1 compilation and immutable variant/layer-set binding",
         "conditional native layer composition and return marker restoration",
-        "current-fenced entry/return callback; source eligibility enforcement",
-        "Furyosa requires_world_change precondition"
+        "current-fenced entry/return callback; source eligibility enforcement"
       ],
-      "selection_source": "content/encounters/world-changes/fury_gates/selection-source.json"
+      "selection_source": "content/encounters/world-changes/fury_gates/selection-source.json",
+      "raid_precondition": {
+        "raid_key": "raid:furyfate.furyosa",
+        "world_change": "fury_gates",
+        "enforcement": "existing raid scheduler; false while HELD"
+      }
     },
     {
       "key": "nightmare_isles",

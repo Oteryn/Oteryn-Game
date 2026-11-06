@@ -17,7 +17,7 @@ fn worldchg_postgres_stampede_daily_gate_reaches_existing_raid_runner() -> fixtu
             let result = exercise(&h).await;
             h.cleanup().await?;
             result?;
-            println!("WORLDCHG-Q PG EXECUTED: Stampede inactive/active epochs, native raid RNG,16-elephant wave,reload; elapsed={:?}", start.elapsed());
+            println!("WORLDCHG-Q PG EXECUTED: Stampede inactive/active epochs, native raid RNG,16-elephant wave,reload,held Furyosa denied; elapsed={:?}", start.elapsed());
             Ok::<(), Box<dyn std::error::Error>>(())
         }).map_err(fixture::debug)
     })?.join().map_err(|_| "stampede PG thread failed")?.map_err(Into::into)
@@ -107,6 +107,27 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             calendar_window: None,
         }],
     };
+    // The accepted Furyosa W6 precondition stays false while its native gates are held.
+    // Its real sourced definition precedes Stampede to catch any ungated schedule mutation.
+    let fury_key = ProductionKey::new("raid:furyfate.furyosa").map_err(fixture::debug)?;
+    let fury = catalogue
+        .get(&fury_key)
+        .ok_or("Furyosa source")?
+        .select([7; 32], fixture::id(89))
+        .map_err(fixture::debug)?;
+    request.candidates.insert(
+        0,
+        RaidScheduleCandidate {
+            key: fury_key.clone(),
+            definition: fury.definition,
+            eligible: true,
+            calendar: None,
+            firing_id: fixture::id(89),
+            global_margin_ms: 21_600_000,
+            lua: None,
+            calendar_window: None,
+        },
+    );
     let seal = h.recovery.seal_current().map_err(fixture::debug)?;
     let authority = h
         .root
@@ -120,8 +141,8 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .firings
             .is_empty()
     );
-    let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_world_raid_schedules WHERE world_id=encode($1,'hex')::uuid AND raid_key=$2")
-        .bind(world.as_bytes().as_slice()).bind(key.as_str()).fetch_one(&h.pool).await?;
+    let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_world_raid_schedules WHERE world_id=encode($1,'hex')::uuid AND raid_key IN($2,$3)")
+        .bind(world.as_bytes().as_slice()).bind(key.as_str()).bind(fury_key.as_str()).fetch_one(&h.pool).await?;
     assert_eq!(
         count, 0,
         "inactive daily change must stop before schedule/RNG mutation"
@@ -146,6 +167,12 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .check_raid_schedules(&authority, &h.node, request.clone())
         .await?;
     assert_eq!(outcome.firings, vec![(fixture::id(88), key)]);
+    let fury_schedules:i64=sqlx::query_scalar("SELECT count(*) FROM game_world_raid_schedules WHERE world_id=encode($1,'hex')::uuid AND raid_key=$2")
+        .bind(world.as_bytes().as_slice()).bind(fury_key.as_str()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        fury_schedules, 0,
+        "held Furyosa must not consume a check or create a schedule"
+    );
     assert!(
         h.root
             .check_raid_schedules(&authority, &h.node, request)

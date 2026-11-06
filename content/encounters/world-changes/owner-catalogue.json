@@ -504,6 +504,10 @@
         {
           "path": "content/encounters/world-changes/portal-bindings-candidate.json",
           "locator": "fury_gates:source pairings and native startup-marker omission; native_admission=false"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W6:Furyosa requires_world_change=fury_gates; existing raid:furyfate.furyosa"
         }
       ],
       "source_refs": [
@@ -524,11 +528,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76236&oldid=887144"
         }
       ],
-      "reason": "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. Native W1 variant/layer-set composition, missing return AID restoration, eligible callback and Furyosa precondition remain unimplemented.",
+      "reason": "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. The Furyosa scheduler precondition is bound and denies new firings while the title is HELD. Native W1 variant/layer-set composition, return AID restoration and eligible callbacks remain unimplemented.",
       "missing_facts": [
-        "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. Native W1 variant/layer-set composition, missing return AID restoration, eligible callback and Furyosa precondition remain unimplemented."
+        "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. The Furyosa scheduler precondition is bound and denies new firings while the title is HELD. Native W1 variant/layer-set composition, return AID restoration and eligible callbacks remain unimplemented."
       ],
-      "hold_kind": "NATIVE_IMPLEMENTATION_GAP; no missing donor fact identified for basic gates"
+      "hold_kind": "NATIVE_IMPLEMENTATION_GAP; no missing donor fact identified for basic gates",
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:furyfate.furyosa"
+      }
     },
     {
       "key": "grimvale",

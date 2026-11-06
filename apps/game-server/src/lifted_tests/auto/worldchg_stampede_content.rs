@@ -68,6 +68,12 @@ fn worldchg_stampede_content_qualifies_native_wave_region_and_achievement()
             .map(String::as_str),
         Some("stampede")
     );
+    assert_eq!(
+        requirements
+            .get("raid:furyfate.furyosa")
+            .map(String::as_str),
+        Some("fury_gates")
+    );
     assert!(!requirements.contains_key("raid:badger"));
     Ok(())
 }
