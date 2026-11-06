@@ -222,6 +222,11 @@ fn scenario_case(
                 rotten_purchase,
             )
             .await?;
+        } else if name == "gravedigger-tears" {
+            super::multi_stack_handin::exercise(
+                &mut owner, &mut admitted, &h, fence, &callback, trigger,
+            )
+            .await?;
         } else if callback.item_on_target.is_some()
             || name == "outlaw-camp-door"
             || name == "travelling-trader-delivery"

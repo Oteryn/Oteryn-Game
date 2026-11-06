@@ -126,36 +126,54 @@ async fn consume_inputs(
     // Resolve and lock every input before any write, including replacement preconditions.
     let mut inputs = Vec::new();
     if let Some(required) = &callback.item_on_target {
-        let row = sqlx::query(
+        let rows = sqlx::query(
             "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
              c.location,c.kind,i.quantity FROM \
              game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
              JOIN game_item_instances i ON i.item_instance_id=c.item \
              WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
              AND i.definition_family='Item' AND i.definition_production_key=$3 \
-             AND i.quantity >= $4 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
+             AND i.quantity > 0 ORDER BY i.item_instance_id LIMIT $4 FOR UPDATE OF i",
         )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(world_id.as_bytes().as_slice())
         .bind(&required.item)
         .bind(i64::from(required.count))
-        .fetch_optional(&mut **tx)
+        .fetch_all(&mut **tx)
         .await?;
-        let Some(row) = row else { return Ok(false) };
-        let input = Input {
-            item: row.try_get("item")?,
-            before: row.try_get("before_item")?,
-            location: row.try_get("location")?,
-            kind: row.try_get("kind")?,
-            quantity: row.try_get("quantity")?,
-            count: required.count,
-            replacement: required.replacement.clone(),
-        };
-        if input.replacement.is_some() && (input.count != 1 || input.quantity != 1) {
+        // Every candidate contributes at least one unit, so at most `count`
+        // rows can be needed. Carried-tree traversal also retains its existing
+        // 500-item bound. Lock in Item order and resolve the full debit before
+        // writing any consumption proof or changing any Item.
+        let mut remaining = required.count;
+        for row in rows {
+            if remaining == 0 {
+                break;
+            }
+            let quantity: i64 = row.try_get("quantity")?;
+            let count = u16::try_from(quantity.min(i64::from(remaining)))
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let input = Input {
+                item: row.try_get("item")?,
+                before: row.try_get("before_item")?,
+                location: row.try_get("location")?,
+                kind: row.try_get("kind")?,
+                quantity,
+                count,
+                replacement: required.replacement.clone(),
+            };
+            if input.replacement.is_some() && (input.count != 1 || input.quantity != 1) {
+                return Ok(false);
+            }
+            lock_location(tx, permit, &input).await?;
+            remaining -= count;
+            inputs.push(input);
+        }
+        if remaining != 0 || inputs.is_empty() {
             return Ok(false);
         }
-        lock_location(tx, permit, &input).await?;
         if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
+            let input = inputs.first().ok_or(DurabilityError::InvalidStoredState)?;
             // Crystal actions_sacrifice.lua:15-18: stage one needs a real
             // carried tear but consumes none. All other stages use the same
             // existing atomic BURN and Quest receipt path below.
@@ -188,7 +206,6 @@ async fn consume_inputs(
                 return Err(DurabilityError::InvalidStoredState);
             }
         }
-        inputs.push(input);
     }
     // Stable tile order and then instance order. One item cannot satisfy two altars.
     let mut offerings = callback.offerings.iter().collect::<Vec<_>>();
