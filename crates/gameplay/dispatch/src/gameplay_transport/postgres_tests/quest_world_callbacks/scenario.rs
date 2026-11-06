@@ -24,23 +24,26 @@ fn scenario_case(
 ) -> TestResult {
     let paired_plate = name == "l5-thais-plate";
     let monk = name.starts_with("monk-guidance");
-    let classic_npc = matches!(
-        name,
-        "catalogue-npc"
-            | "catalogue-npc-father"
-            | "fathers-burden-handins"
-            | "catalogue-npc-hero"
-            | "catalogue-npc-legacy"
-            | "catalogue-npc-scoped"
-            | "classic-quests-npc"
-            | "classic-rottin-disrepair"
-            | "threatened-dreams-npc"
-            | "conditional-quest-greetings"
-    );
+    let qengine_reward = name.starts_with("qengine-rewards-");
+    let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
+    let classic_npc = qengine_reward
+        || matches!(
+            name,
+            "catalogue-npc"
+                | "catalogue-npc-father"
+                | "fathers-burden-handins"
+                | "catalogue-npc-hero"
+                | "catalogue-npc-legacy"
+                | "catalogue-npc-scoped"
+                | "classic-quests-npc"
+                | "classic-rottin-disrepair"
+                | "threatened-dreams-npc"
+                | "conditional-quest-greetings"
+        );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(if paired_plate {
-        "thais-lighthouse-stairs-in"
+        "thais-lighthouse-plate"
     } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
@@ -50,8 +53,16 @@ fn scenario_case(
     } else if target_swap {
         "fish-napping-key"
     } else {
-        name
+        name.strip_suffix("-expiry").unwrap_or(name)
     })?;
+    if name.ends_with("-expiry") {
+        callback
+            .effects
+            .portals
+            .as_mut()
+            .ok_or("portal pair")?
+            .lifetime_us = Some(60_000_000);
+    }
     if target_swap {
         callback
             .item_on_target
@@ -74,15 +85,21 @@ fn scenario_case(
         world(&callback, trigger)?
     };
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
-            .await?;
-        prepare_current_session(&h).await?;
+        let h = if qengine_reward || outfit_world {
+            Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await
+        } else {
+            Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
+        }
+        .map_err(|e| format!("callback harness: {e}"))?;
+        prepare_current_session(&h)
+            .await
+            .map_err(|e| format!("callback session: {e}"))?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
             .open_character_authority(&seal)
             .await
-            .map_err(debug)?;
+            .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
             super::super::death_ml_loss_composed::production_generation_with_pin(
@@ -121,6 +138,8 @@ fn scenario_case(
                 5
             } else if monk {
                 4
+            } else if callback.effects.encounter.is_some() {
+                16
             } else {
                 2
             },
@@ -149,7 +168,7 @@ fn scenario_case(
                 .clone(),
         ));
         if paired_plate {
-            let departure = super::callback("thais-lighthouse-stairs-out")?;
+            let departure = super::callback("thais-lighthouse-plate-out")?;
             assert!(
                 owner
                     .states
@@ -159,7 +178,7 @@ fn scenario_case(
                     .is_ok()
             );
         }
-        if lever_fixture || target_swap {
+        if lever_fixture || target_swap || name.ends_with("-expiry") {
             assert!(
                 owner
                     .states
@@ -192,7 +211,7 @@ fn scenario_case(
                 fresh.operation(),
             )
             .await
-            .map_err(debug)?;
+            .map_err(|e| format!("callback admission equipment: {e:?}"))?;
         let native = generation.native_gameplay().ok_or("native")?;
         let template = crate::durability::starter_grant::StarterTemplate {
             definition: crate::durability::item_mint::TypedDefinitionRef {
@@ -211,7 +230,7 @@ fn scenario_case(
                 &template,
             )
             .await
-            .map_err(debug)?;
+            .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
@@ -221,6 +240,37 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 deps.actor,
+                &callback,
+                trigger,
+            )
+            .await?;
+        } else if outfit_world {
+            super::super::qengine_access::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                trigger,
+            )
+            .await?;
+        } else if qengine_reward {
+            super::super::qengine_rewards::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name,
+            )
+            .await?;
+        } else if callback.effects != Default::default() {
+            super::super::qengine_access::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
                 &callback,
                 trigger,
             )
@@ -683,7 +733,8 @@ fn scenario_case(
                         request.clone(),
                         catalogue.clone(),
                         &permit,
-                        context.clone()
+                        context.clone(),
+                        None,
                     )
                     .await
                     .map_err(debug)?,
@@ -703,7 +754,9 @@ fn scenario_case(
                     ..request
                 };
                 assert!(matches!(slot.commit_world_callback(owner.root, owner.character, owner.holder,
-                    stale, fresh_request, catalogue, &permit, context).await,
+                    stale, fresh_request, catalogue, &permit, context,
+                    None,
+                ).await,
                     Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
                 drop(slot);
                 drop(permit);

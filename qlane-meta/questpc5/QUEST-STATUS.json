@@ -45,6 +45,10 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00000-00099.json",
       "pointer": "/records/62/definition"
+    },
+    "current_item_facts": {
+      "guardian_ring_52732": "Served client appearance exists and matches the canonical portable ring; canonical weight90. Native admission remains to implement.",
+      "scarf_3572": "Existing native custody/equipment overlay is admitted; canonical item remains nonmaterializable. Reconcile the existing source overlay before completing prerequisite item/XP flows."
     }
   },
   {
@@ -61,6 +65,10 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00200-00299.json",
       "pointer": "/records/78/definition"
+    },
+    "current_item_facts": {
+      "guardian_ring_52732": "Served client appearance exists and matches the canonical portable ring; canonical weight90. Native admission remains to implement.",
+      "scarf_3572": "Existing native custody/equipment overlay is admitted; canonical item remains nonmaterializable. Reconcile the existing source overlay before completing prerequisite item/XP flows."
     }
   },
   {
@@ -112,6 +120,19 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00300-00351.json",
       "pointer": "/records/21/definition"
+    },
+    "world_change_ownership": {
+      "scope": "World-change selection, persistence and reset/occurrence mechanics are excluded from this lane by the current owner instruction. Only the L5 item-admission gap remains in this row.",
+      "owner": "world_event::changes; existing WorldReset finalization",
+      "branches": [
+        "claude/happy-davinci-ijz3wy-worldchg",
+        "claude/happy-davinci-ijz3wy-wvar",
+        "claude/happy-davinci-ijz3wy-wcontrib",
+        "claude/happy-davinci-ijz3wy-wevents"
+      ],
+      "evidence": "content/encounters/world-changes/owner-catalogue.json",
+      "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34",
+      "variant_status_elsewhere": "QUALIFIED; nomads variant recipe in wvar"
     }
   },
   {
@@ -128,6 +149,18 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00300-00351.json",
       "pointer": "/records/22/definition"
+    },
+    "world_change_ownership": {
+      "scope": "World-change selection, persistence and reset/occurrence mechanics are excluded from this lane by the current owner instruction. Only the L5 item-admission gap remains in this row.",
+      "owner": "world_event::changes; existing WorldReset finalization",
+      "branches": [
+        "claude/happy-davinci-ijz3wy-worldchg",
+        "claude/happy-davinci-ijz3wy-wvar",
+        "claude/happy-davinci-ijz3wy-wcontrib",
+        "claude/happy-davinci-ijz3wy-wevents"
+      ],
+      "evidence": "content/encounters/world-changes/owner-catalogue.json",
+      "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     }
   },
   {
@@ -204,14 +237,26 @@
     },
     "research_evidence": [
       ".questpc5/l5-reference/research.json"
-    ]
+    ],
+    "world_change_ownership": {
+      "scope": "World-change selection, persistence and reset/occurrence mechanics are excluded from this lane by the current owner instruction. Only the L5 item-admission gap remains in this row.",
+      "owner": "world_event::changes; existing WorldReset finalization",
+      "branches": [
+        "claude/happy-davinci-ijz3wy-worldchg",
+        "claude/happy-davinci-ijz3wy-wvar",
+        "claude/happy-davinci-ijz3wy-wcontrib",
+        "claude/happy-davinci-ijz3wy-wevents"
+      ],
+      "evidence": "content/encounters/world-changes/owner-catalogue.json",
+      "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
+    }
   },
   {
     "canonical": "oteryn:quest.power_ring_quest",
     "title": "Power Ring Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "The canonical bronze-amulet child3056 is not materializable; UID6151 is gold in both numeric donors, and UID6152 still disagrees with the current source recipe. A Power Ring substitution would erase an explicit source conflict.",
+    "blocker": "Remaining source/route reconciliation: UID6151 is gold in both numeric donors and UID6152 disagrees with the selected recipe. Item3056 is now canonically and natively materializable at its exact full source default200 charges; preserve the donor identity and exact charge semantics when composing the route.",
     "from_lanes": [
       "questpc2"
     ],
@@ -227,7 +272,7 @@
     "title": "Present Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "The required source backpack includes Item2882 and2881 with explicit ITEM_SEMANTICS_MISSING holds. Granting just the present would change the exact source reward; the Seymour exchange alone cannot qualify the quest.",
+    "blocker": "Remaining whole-route qualification. The exact UID6113 backpack and all four children are already natively admitted, including Item2882/2881 water subtypes; historical ITEM_SEMANTICS_MISSING holds are resolved. Preserve the exact source reward and verify the access/NPC composition.",
     "from_lanes": [
       "questpc2"
     ],
@@ -410,7 +455,7 @@
     "title": "Thais Lighthouse Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Paired dynamic portals for UID30005 are still absent; pressure-plate transport currently covers player STEP, not every creature relocation/end path. Ladder and all reward claims also require one complete route qualification.",
+    "blocker": "Remaining whole route: global source bindings, ladder and all reward claims, plus creature relocation/end-path plate restoration. Shared source-bound UID30005 portal creation, actual travel, atomic removal and expiry have PostgreSQL proof. Repeated exact-source-coordinate player departure/stale-replay regression passes54.78758511s without quest writes.",
     "from_lanes": [
       "questpc4"
     ],
@@ -427,7 +472,20 @@
         "duration_seconds": 36.382545542,
         "log": ".questpc5/l5-plate-hoist-pg.log",
         "scope": "UID25010 real STEP entry/departure twice; stairs429/7767 and plate431/430 restored; quest state/receipts unchanged."
+      },
+      {
+        "filter": "qengine_thais_ and questpc5_l5_thais_plate_departure_restores_stairs_without_quest_writes",
+        "result": "PASS",
+        "duration_seconds": [
+          86.264846409,
+          105.772596175,
+          107.136902729,
+          54.78758511
+        ],
+        "scope": "Shared plate and paired portal engine only; whole quest remains active.",
+        "proof": "cloud-shared-engine-proof.json"
       }
-    ]
+    ],
+    "shared_engine_evidence": "cloud-shared-engine-proof.json"
   }
 ]

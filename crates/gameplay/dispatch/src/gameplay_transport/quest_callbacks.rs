@@ -4,6 +4,8 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
+mod effects;
+mod encounter;
 mod execute;
 mod rewards;
 mod soul_war_reward;
@@ -184,7 +186,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
             let disposition = match slot.commit_world_callback(self.root, self.character, self.holder, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
-                std::sync::Arc::clone(catalogue), &permit, context).await {
+                std::sync::Arc::clone(catalogue), &permit, context,
+                self.active_generation.and_then(|generation| generation.native_gameplay()),
+            ).await {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
                 Ok(_) | Err(_) => UseDisposition::Rejected,
@@ -629,6 +633,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.has_pending_quest_callback(session) {
             return entered;
         }
+        let entered = self
+            .step_dynamic_quest_portal(permit, actor, session, entered)
+            .await;
         self.movement_quest_callback(permit, actor, session, origin, entered, Trigger::StepIn)
             .await
     }
@@ -818,7 +825,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the exact actor, session, movement snapshots and source trigger"
+    )]
     fn refuse_quest_step(
         &self,
         optional_pvp: Option<bool>,

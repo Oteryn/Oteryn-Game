@@ -12,6 +12,11 @@ pub(super) async fn exercise_plate(
 ) -> TestResult {
     use super::fixture::debug;
     use crate::map::view::MapFacts;
+    assert_eq!(
+        callback.selector.position,
+        Some(trigger),
+        "exact source plate"
+    );
     use oteryn_protocol_oteryn::world_spatial::{
         COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
         encode_step_intent,
@@ -132,7 +137,7 @@ pub(super) async fn exercise_plate(
     }
     let departure = oteryn_gameplay_quests::quest::world_callbacks::load()?
         .into_iter()
-        .find(|callback| callback.key.ends_with("thais-lighthouse-stairs-out"))
+        .find(|callback| callback.key.ends_with("thais-lighthouse-plate-out"))
         .ok_or("departure")?;
     let entered = owner
         .runtime
@@ -188,8 +193,8 @@ fn questpc5_l5_thais_plate_departure_restores_stairs_without_quest_writes() -> T
         super::quest_world_callbacks::scenario(
             "l5-thais-plate",
             Position {
-                x: 32224,
-                y: 32282,
+                x: 32225,
+                y: 32268,
                 floor: -9,
             },
             false,

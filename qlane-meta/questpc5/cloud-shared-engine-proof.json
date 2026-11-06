@@ -1,0 +1,249 @@
+{
+  "schema": 1,
+  "scope": "Shared-engine prerequisite for L5; this evidence does not qualify whole quests.",
+  "reuse": {
+    "branch": "claude/happy-davinci-ijz3wy-qengine2",
+    "source_head": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+    "engine_delta_base": "dc1cd724b",
+    "strategy": "Reuse engine text delta; preserve lane readonly recovery/remote predicates/claim progress. Exclude unrelated newer main changes, source world binary snapshots, lane metadata and L1 NPC placement promotions."
+  },
+  "adaptations": [
+    "Supply existing exact-charge/fluid request fields without introducing charged rewards.",
+    "Reject callback effects on readonly gates.",
+    "One authoritative Thais plate pair; existing repeated departure and stale-state assertions retained.",
+    "Single departure, pending reconciliation, portal, entry sequence.",
+    "Preserve accepted native identity/charge facts; reject known physical conflicts; fill only independently sourced missing facts.",
+    "Reject fluid-bearing instances in ordinary shared hand-ins."
+  ],
+  "tests": {
+    "engine-red": {
+      "log": "/tmp/questpc5-shared-engine-red.log",
+      "sha256": "948fffa6eece38c4ef1f90c8930a5eee953edecf50ff9cb7f316e25b75b4e61d",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 37s",
+        "POSTGRES_CASE_STARTED shared_portal_effect 3.57861555s",
+        "Error: \"unknown field `effects`, expected one of `key`, `quest`, `trigger`, `selector`, `lever`, `reversible`, `passages`, `teleport`, `remote_teleport`, `storage`, `minimum_level`, `experience`, `monk_reward`, `offerings`, `item_on_target`, `return_on_failure`, `failure_message`, `success_message`, `native_rule`, `sources`\"",
+        "test gameplay_transport::monk_save::postgres_tests::questpc5_shared_engine::questpc5_shared_portal_effect_schema_reaches_postgres ... FAILED",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2539 filtered out; finished in 3.59s"
+      ]
+    },
+    "engine-green": {
+      "log": "/tmp/questpc5-shared-engine-green.log",
+      "sha256": "226da2139f3f9f4c021d8b08c3b0ea8a78f4bd5efe812292fc24869f8044d4f2",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 10m 13s",
+        "POSTGRES_CASE_STARTED shared_portal_effect 6.651935301s",
+        "POSTGRES_CASE_COMPLETED shared_portal_effect 7.012978798s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2563 filtered out; finished in 7.01s"
+      ]
+    },
+    "plate-coordinate-red": {
+      "log": "/tmp/questpc5-shared-plate-coordinate-red.log",
+      "sha256": "2eb0e86d2f16bb32966a03ca2b0ea21e18cdf12ccddd63fc834941aedc7f72ce",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 41.91s",
+        "Error: \"composed PostgreSQL scenario thread panicked\"",
+        "test gameplay_transport::monk_save::postgres_tests::questpc5_l5::questpc5_l5_thais_plate_departure_restores_stairs_without_quest_writes ... FAILED",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2563 filtered out; finished in 69.80s"
+      ]
+    },
+    "outfit-pg": {
+      "log": "/tmp/questpc5-shared-outfit-pg.log",
+      "sha256": "0011b326d6d33c8b0f4a54f84f799339b7d6409184ed3c446e8135a1f45140bd",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 33s",
+        "POSTGRES_CASE_COMPLETED qengine-rewards-pirate duration=123.527720154s success=true",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2563 filtered out; finished in 123.53s"
+      ]
+    },
+    "clippy-final": {
+      "log": "/tmp/questpc5-shared-clippy-final.log",
+      "sha256": "64ecacb72ac14e707cab4bd87b747e88f75c27f0e750f26792411eda5f80a959",
+      "evidence": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 45.71s"
+      ]
+    },
+    "thais-pg": {
+      "log": "/tmp/questpc5-shared-thais-pg.log",
+      "sha256": "b6a0a25769f32168126199ac754d0fbe8ecae06c6012f79d45cc36499599fbc8",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 8m 03s",
+        "POSTGRES_CASE_COMPLETED thais-lighthouse-plate duration=86.264846409s success=true",
+        "POSTGRES_CASE_COMPLETED thais-lighthouse-portals duration=105.772596175s success=true",
+        "POSTGRES_CASE_COMPLETED thais-lighthouse-portals-expiry duration=107.136902729s success=true",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2561 filtered out; finished in 107.14s"
+      ]
+    },
+    "reward-pg": {
+      "log": "/tmp/questpc5-shared-reward-pg.log",
+      "sha256": "30abcb66ec69b23be9804431faf06d5423e3b5a541b051c4f02a98cce1801195",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 6m 22s",
+        "POSTGRES_CASE_COMPLETED qengine-rewards-backpack duration=106.297089474s success=true",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2563 filtered out; finished in 106.30s"
+      ]
+    },
+    "plate-regression": {
+      "log": "/tmp/questpc5-shared-plate-regression.log",
+      "sha256": "52714fb2470198e2ab28d5f7cb712539275b4a774818082ae49cf8688a1a2115",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 06s",
+        "POSTGRES_CASE_COMPLETED questpc5_l5_thais_plate_departure_restores_stairs_without_quest_writes duration=54.78758511s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2563 filtered out; finished in 54.79s"
+      ]
+    },
+    "father-regression": {
+      "log": "/tmp/questpc5-shared-father-regression.log",
+      "sha256": "a3c1d867af953fa6c3428de5cf89db979e98a7d410bdfa3acb7a8007970e63df",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 10m 33s",
+        "POSTGRES_CASE_COMPLETED catalogue-npc-father 106.248044645s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2563 filtered out; finished in 106.25s"
+      ]
+    },
+    "instruction-regression": {
+      "log": "/tmp/questpc5-shared-instruction-regression.log",
+      "sha256": "cc55c37f5021aad5df8b7aec66ba2acb89bcceb8a9305e196c1f35d34ffccc1b",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 41.81s",
+        "POSTGRES_CASE_OBSERVED instruction_claim=oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest cold_replay=false access=Some(1) duration=12.711412471s",
+        "POSTGRES_CASE_OBSERVED instruction_claim=oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest cold_replay=true access=Some(1) duration=14.356070402s",
+        "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest (32027, 31104, -11) native_source=true duration=15.594740308s",
+        "POSTGRES_CASE_COMPLETED questpc5_hoist_construction_plan_claim_writes_instruction_and_replays 76.408320477s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2563 filtered out; finished in 76.41s"
+      ]
+    },
+    "callback-units": {
+      "log": "/tmp/questpc5-shared-callback-units.log",
+      "sha256": "d366ece16d6e4d8462a4dad23761cf8b84e2ed0ea664908658702351253ff58c",
+      "evidence": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 10m 01s",
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 2.67s"
+      ]
+    },
+    "clippy": {
+      "log": "/tmp/questpc5-shared-clippy.log",
+      "sha256": "8ce05bc6d646e72e7ecdb7231555e5b81affa4543288fd9bdd47985ad3e0249b",
+      "evidence": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10m 44s"
+      ]
+    },
+    "server-clippy": {
+      "log": "/tmp/questpc5-shared-server-clippy.log",
+      "sha256": "83cfbe3008ffc17c6ff067884871b71904bd1920ae4d7a3676505552e5b0713c",
+      "evidence": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 9m 56s"
+      ]
+    },
+    "check-final": {
+      "log": "/tmp/questpc5-shared-check-final.log",
+      "sha256": "9ea9e4697387e3fd179653017fac13777b41e820333db38715bdaafe48ab5982",
+      "evidence": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 05s"
+      ]
+    },
+    "content-tests": {
+      "log": "/tmp/questpc5-shared-content-tests.log",
+      "sha256": "022d7b6aa3e3378d6dd3f5f294f2c7b3ea5cc5ffb2254766275b4e3c7919e251",
+      "evidence": [
+        "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 4.20s"
+      ]
+    },
+    "world-tests": {
+      "log": "/tmp/questpc5-shared-world-tests.log",
+      "sha256": "074445c1f30b27b7e5604b56c339cb413be6d04bcde7f0aec0a598880e4c47fa",
+      "evidence": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 88.66s"
+      ]
+    },
+    "python": {
+      "log": "/tmp/questpc5-shared-python.log",
+      "sha256": "db4a823138528b835aa585979efa805653c810f5bbba834fece3f78cebd04911",
+      "evidence": [
+        "Ran 15 tests in 5.446s",
+        "OK"
+      ]
+    },
+    "profile-tests": {
+      "log": "/tmp/questpc5-shared-profile-tests.log",
+      "sha256": "e4220a2e61c7848c30598a54066cc183d7413a74ec39ffc87f229cd8510c3440",
+      "evidence": [
+        "Ran 2 tests in 10.122s",
+        "OK"
+      ]
+    },
+    "batch4-python": {
+      "log": "/tmp/questpc5-shared-batch4-python.log",
+      "sha256": "376240fa368f470f4ca85fae19a35788d65d57d0a58c605d05d379daefd62ac9",
+      "evidence": [
+        "Ran 17 tests in 0.539s",
+        "OK"
+      ]
+    },
+    "claim-python": {
+      "log": "/tmp/questpc5-shared-claim-python.log",
+      "sha256": "56e03afda220e7ba78bbcecf9a2e53a0149cfc3e311fa10bbd01b25e8e5ba671",
+      "evidence": [
+        "Ran 4 tests in 0.003s",
+        "OK"
+      ]
+    },
+    "father-profile-python": {
+      "log": "/tmp/questpc5-shared-father-profile-python.log",
+      "sha256": "20e75d8588eb1b1ff3b34bdbcefc14b170f63ba908e989133032540a93952756",
+      "evidence": [
+        "Ran 1 test in 0.123s",
+        "OK"
+      ]
+    },
+    "npc-authoring": {
+      "log": "/tmp/questpc5-shared-npc-authoring.log",
+      "sha256": "49524383875c628cb9c3152e38744c1752c3a91475ec2ea301f7419a41c46d2f",
+      "evidence": [
+        "Ran 9 tests in 0.187s",
+        "OK"
+      ]
+    },
+    "format": {
+      "log": "/tmp/questpc5-shared-format.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence": []
+    },
+    "regenerate": {
+      "log": "/tmp/questpc5-shared-regenerate.log",
+      "sha256": "d572f9a6c09873283d03aed9b2178fad781220e620aeb83f418ccdcec5e98449",
+      "evidence": [
+        "PASS",
+        "PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked",
+        "PASS item_conversion records=129 check=False",
+        "PASS items=34111 creatures=1863 creature_records=28758 creature_profiles=27616 item_shards=69 mounts=252 authoring=700 taxonomy=12252 relation_sources=880 relations=1093 npcs=1282 encounters=108 npc_bindings=2747 dialogues=836 service_trade=324 service_travel=56",
+        "PASS item_conversion records=129 check=False",
+        "PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked",
+        "+ cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh .",
+        "    Finished `release` profile [optimized] target(s) in 0.18s",
+        "     Running `/workspace/oteryn-env/target/release/oteryn-world-bundle-compiler pin-refresh .`",
+        "  \"inputs_digest\": \"6f88733e0dd85259faf333173f6e1232dbea00062d845e36603981fcd0a1abf5\",",
+        "      \"digest\": \"2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968\","
+      ]
+    }
+  },
+  "whole_quest_promotions": [],
+  "qualification": "GREEN prerequisite batch; no whole-quest promotion",
+  "world_digest": "2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+  "final_checks": {
+    "cargo_fmt_and_mounted_rustfmt": 0,
+    "cargo_check_dispatch_server": 0,
+    "clippy_changed_six_engine_crates_all_targets_all_features_D_warnings": 0,
+    "clippy_server_all_targets_all_features_D_warnings": 0,
+    "clippy_dispatch_after_source_fixture_repair": 0,
+    "callback_rust_tests": 11,
+    "qengine_python_tests": 15,
+    "profile_python_tests": 2,
+    "batch4_python_tests": 17,
+    "claim_progress_python_tests": 4,
+    "npc_placement_python_tests": 9,
+    "content_tests": 123,
+    "world_repository_tests": 5,
+    "full_pg_or_nextest_suite": false
+  }
+}

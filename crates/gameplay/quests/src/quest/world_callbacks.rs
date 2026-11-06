@@ -27,6 +27,12 @@ pub enum Trigger {
     StepOut,
 }
 
+mod effects;
+pub use effects::{
+    CallbackEffects, Encounter, EncounterMonster, EncounterPlayer, Facing, ItemCycle, MagicEffect,
+    Portal, PortalPair,
+};
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Selector {
@@ -135,6 +141,8 @@ pub struct Callback {
     pub success_message: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub native_rule: Option<NativeRule>,
+    #[serde(default, skip_serializing_if = "CallbackEffects::is_empty")]
+    pub effects: CallbackEffects,
     pub sources: Vec<String>,
 }
 
@@ -156,11 +164,21 @@ struct Document {
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/shared-access-callbacks.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/shared-outfit-callbacks.json"
+    ))?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     if callbacks.len() >= MAX_CALLBACKS {
-        return Err("callback bounds including Rotten Blood altar".into());
+        return Err("callback bounds including native source callbacks".into());
     }
     callbacks.push(super::rotten_blood::altar_callback());
+    let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
+    if keys.len() != callbacks.len() {
+        return Err("duplicate callback across registries".into());
+    }
     Ok(callbacks)
 }
 
@@ -184,6 +202,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || !effects::valid(callback)
             || callback.remote_teleport.as_ref().is_some_and(|remote| {
                 !valid_pos(remote.position)
                     || !valid_pos(remote.destination)
@@ -207,6 +226,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
+                    || !callback.effects.is_empty()
                     || callback.storage.iter().any(|storage| storage.preserve)))
             || callback.passages.len() > MAX_EFFECTS
             || callback.storage.len() > MAX_EFFECTS
@@ -239,6 +259,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                 source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
+                    || (callback.effects.outfit_reward.is_some()
+                        && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 item.target_replacement == Some(0)
@@ -278,7 +300,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             // Departure restores Channel-local map facts only. It must never
             // introduce another durable transition for the same movement cause.
             || (callback.trigger == Trigger::StepOut
-                && (!callback.reversible
+                && ((!callback.reversible && callback.effects.transform.is_none())
                     || callback.teleport.is_some()
                     || !callback.storage.is_empty()
                     || !callback.offerings.is_empty()
@@ -380,6 +402,57 @@ mod tests {
     use super::*;
 
     #[test]
+    fn qengine_shared_access_rejects_ambiguous_or_unbounded_effects() -> Result<(), String> {
+        let source: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-access-callbacks.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        parse(&source.to_string())?;
+        let callbacks = source["callbacks"].as_array().ok_or("callbacks")?;
+        let index = |name: &str| {
+            callbacks
+                .iter()
+                .position(|c| c["key"].as_str().is_some_and(|k| k.ends_with(name)))
+                .ok_or(name.to_owned())
+        };
+        let portals = index("thais-lighthouse-portals")?;
+        let encounter = index("annihilator-entry")?;
+        let cycle = index("triangle-tower-lever")?;
+        for case in 0..8 {
+            let mut bad = source.clone();
+            match case {
+                0 => {
+                    bad["callbacks"][portals]["effects"]["portals"]["portals"][1]["position"] = bad
+                        ["callbacks"][portals]["effects"]["portals"]["portals"][0]["position"]
+                        .clone()
+                }
+                1 => bad["callbacks"][portals]["effects"]["portals"]["lifetime_us"] = 0.into(),
+                2 => {
+                    bad["callbacks"][encounter]["effects"]["encounter"]["players"] =
+                        serde_json::json!([])
+                }
+                3 => {
+                    bad["callbacks"][encounter]["effects"]["encounter"]["players"][1]["to"] =
+                        bad["callbacks"][encounter]["effects"]["encounter"]["players"][0]["to"]
+                            .clone()
+                }
+                4 => {
+                    bad["callbacks"][encounter]["effects"]["encounter"]["monsters"][0]["position"]
+                        ["floor"] = 1.into()
+                }
+                5 => bad["callbacks"][cycle]["effects"]["item_cycle"]["create"] = 0.into(),
+                6 => bad["callbacks"][cycle]["effects"]["facing"] = "north".into(),
+                _ => bad["callbacks"][cycle]["effects"]["unknown"] = true.into(),
+            }
+            assert!(
+                parse(&bad.to_string()).is_err(),
+                "invalid effect case {case}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn remote_teleport_is_a_bounded_read_only_step() -> Result<(), String> {
         let source: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batches/quests4/formogar_mine_hoist.json")).map_err(|e| e.to_string())?;
         let mut callback = source["callbacks"][0].clone();
@@ -425,12 +498,15 @@ mod tests {
     #[test]
     fn read_only_world_callbacks_reject_mixed_mutations() -> Result<(), String> {
         let held: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json")).map_err(|e| e.to_string())?;
-        for case in 0..4 {
+        for case in 0..5 {
             let mut callback = held["callbacks"][1].clone();
             match case {
                 0 => callback["experience"] = 1.into(),
                 1 => callback["storage"][0]["preserve"] = true.into(),
                 2 => callback["trigger"] = "step_out".into(),
+                3 => {
+                    callback["effects"] = serde_json::json!({"transform": 431, "facing": null, "magic": null, "portals": null, "item_cycle": null, "encounter": null})
+                }
                 _ => callback["teleport"] = serde_json::Value::Null,
             }
             assert!(
@@ -777,6 +853,32 @@ mod tests {
         );
         // MISSING: the Annihilator lever (Crystal `annihilator.lua`, uid 30015).
         assert!(callbacks.iter().all(|c| c.selector.unique != Some(30015)));
+        Ok(())
+    }
+    #[test]
+    fn qengine_l1_world_outfit_sources_are_narrowly_admitted() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/shared-outfit-callbacks.json");
+        assert_eq!(parse(source)?.len(), 2);
+        for edit in 0..3 {
+            let mut value: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            match edit {
+                0 => value["callbacks"][0]["effects"]["outfit_reward"] = serde_json::Value::Null,
+                1 => value["callbacks"][0]["effects"]["outfit_reward"]["addons"] = 4.into(),
+                _ => {
+                    for state in value["callbacks"][0]["storage"]
+                        .as_array_mut()
+                        .ok_or("storage")?
+                    {
+                        state["set"] = state["minimum"].clone();
+                    }
+                }
+            }
+            assert!(
+                parse(&value.to_string()).is_err(),
+                "invalid wardrobe edit {edit}"
+            );
+        }
         Ok(())
     }
 }

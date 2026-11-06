@@ -115,7 +115,18 @@
       ]
     }
   ],
-  "runtime_exclusions": [],
+  "runtime_exclusions": [
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-stairs-in",
+      "reason": "Replaced by the shared-access source binding with the same source UID and trigger; one authoritative registration prevents ambiguous dispatch.",
+      "question": "Resolved: shared-access-callbacks.json owns this trigger."
+    },
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-stairs-out",
+      "reason": "Replaced by the shared-access source binding with the same source UID and trigger; one authoritative registration prevents ambiguous dispatch.",
+      "question": "Resolved: shared-access-callbacks.json owns this trigger."
+    }
+  ],
   "npc_source": {
     "quest": "thais_lighthouse",
     "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
