@@ -144,6 +144,13 @@
       "duration_seconds": 95.635899022,
       "log": ".questpc6/source-red.log",
       "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -222,6 +229,13 @@
         "Minotaur Leather",
         "Lubo"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -260,6 +274,13 @@
       "targets": [
         "Chicken Feather"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -298,6 +319,13 @@
       "targets": [
         "Eye-Embroidered Veil"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -336,6 +364,13 @@
       "targets": [
         "Major Crystalline Token"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -499,6 +534,13 @@
       "duration_seconds": 95.635899022,
       "log": ".questpc6/source-red.log",
       "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -585,6 +627,13 @@
       "targets": [
         "Bakragore"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -805,6 +854,13 @@
       "targets": [
         "Annihilator completion intent"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -1152,6 +1208,13 @@
       "targets": [
         "Heralds Wings"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -1188,7 +1251,7 @@
       "runtime_enabled": false
     },
     "blocker": {
-      "missing_piece": "Atomic NPC Dragon Fetish item exchange/progress (An Old Dragonlord), and a source exit that conditionally consumes the offering/resets DragonFetish before choosing success/failure teleport. Storage-only NPC execution rejects the item effects; qengine2 owns hand-in. The two independent reversible levers and every claim are exercised separately.",
+      "missing_piece": "Active source-route work: compose NPC acquisition and remaining top-floor lever predicate; reuse delivered qengine2 exchange/world effects. No shared-engine dependency is deferred.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/26/definition",
         "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
@@ -1201,7 +1264,7 @@
       ],
       "previous_reserved_engine_owner": "qengine2",
       "owner": "questpc6",
-      "disposition": "Active Game implementation; current owner instruction supersedes historical engine reservation."
+      "disposition": "Active implementation here; owner forbids waiting for a shared engine."
     },
     "first_unqualified_stage": {
       "key": "s1",
@@ -1224,7 +1287,9 @@
       "failure_landing": "Implemented; two real PostgreSQL regressions now pass after RED 2/2, GREEN 2/2. Callback source composition, conditional storage reset and atomic NPC exchange remain active work.",
       "evidence": "qlane-meta/questpc6/cloud-failure-landing-verification.json",
       "conditional_reset": "Implemented and verified: PG RED3/3 (3.85s), GREEN3/3 (5.88s), exact match/absent/later values and receipt replay. Source composition remains active.",
-      "conditional_reset_evidence": "qlane-meta/questpc6/cloud-conditional-reset-verification.json"
+      "conditional_reset_evidence": "qlane-meta/questpc6/cloud-conditional-reset-verification.json",
+      "source_escape": "Native source callback and Item3206 composed: four actual PG cases pass, 57.25s; no full quest qualification. Remaining source route and NPC acquisition are active implementation.",
+      "source_escape_evidence": "qlane-meta/questpc6/cloud-draconia-escape-verification.json"
     }
   },
   {
@@ -1263,6 +1328,13 @@
       "targets": [
         "Dragon"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -1302,6 +1374,13 @@
         "Dream Butterfly",
         "Mend What's Broken"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -1340,6 +1419,13 @@
       "targets": [
         "Pomegranate"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -1445,6 +1531,13 @@
       "duration_seconds": 95.635899022,
       "log": ".questpc6/source-red.log",
       "scope": "complete source reward inventory only; full quest remains blocked by its concrete engine dependency"
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -1483,6 +1576,13 @@
       "targets": [
         "Bear Paw"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {
@@ -1569,6 +1669,13 @@
         "Slime Gobbler",
         "slime fungus"
       ]
+    },
+    "cross_lane_allocation": {
+      "owner": "qengine2",
+      "lane": "L1",
+      "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
+      "source_sha": "5a6de28c1",
+      "source_path": "qlane-meta/qengine2/LANE-L1.json"
     }
   },
   {

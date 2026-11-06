@@ -1,3 +1,35 @@
+## Cloud source composition: Draconia escape and Dragon Fetish
+
+Current verified batch: source uid35012 escape/offering callback and native Item3206.
+RED4cases45.41s (one framed STEP wrong position; three missing native Item setup
+failures), final GREEN4/4 actual PG18.6,57.25s with markers. Tests prove recovery,
+exact consumption, exact1 reset, absent/later preservation, atomic receipt and replay.
+This is a source mechanism slice, not whole quest or map/NPC acquisition qualification.
+
+Pinned source201189f8 raw escape was fetched and verified equal to corpus9f5a72c6
+blob8d9e413024dc127b7b26513127b033ec19bfe615. Six importer source files were hash
+verified under /tmp; no donor bytes committed. Native3206 is the only added native
+profile; no old profile changed/removed. Package/provider, quest provenance, source
+callback proof and world/preproduction pins regenerated only by repository tools.
+Provider --check, quest-tree --check, pin-check pass. Source item/callback units23/23;
+alltarget check31.97s and alltarget/allfeature Clippy-Dwarnings45.45s for dispatch,
+content,quests; content integration123/123, world repository5/5; fmt PASS.
+Own code/data and generated semantic diffs reviewed. Exact proof and assumptions:
+cloud-draconia-escape-verification.json.
+
+OWNER FOLLOW-UP: shared engines are this lane's job; never wait/defer. First check
+and reuse origin/claude/happy-davinci-ijz3wy-qengine2 and other lane implementations.
+Fetched qengine2 at5a6de28c1 and questpc2/5/7. qengine2 delivers generic NPC exchanges,
+item/outfit rewards, world effects/encounters and callback support (migration0999).
+Its L1 packet assigns15 inherited rows elsewhere; those now carry cross-lane skip
+metadata, in addition to12 proven L3/L5 assignments. Reuse its shared implementation
+without implementing a second exchange engine. No new whole quest qualified.
+
+NEXT: commit/push this green source batch, then reconcile qengine2 into this branch,
+preserving this lane's read_only gates, failure_teleport, set_if, sewer and item proofs.
+Expect overlapping generated data and shared callback/quest files. Never replace
+current work wholesale or weaken tests. Continue owned entries to actual qualification.
+
 ## Cloud shared mechanism: exact conditional reset
 
 SET_IF is implemented on the existing quest evaluator/writer. Optional storage.set_if

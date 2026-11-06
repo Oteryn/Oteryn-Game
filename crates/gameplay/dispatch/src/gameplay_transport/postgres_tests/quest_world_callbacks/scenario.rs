@@ -40,19 +40,24 @@ fn scenario_case(
     let target_swap = name == "fish-napping-key-target-swap";
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
-    let mut callback = callback(if classic_npc || sewer {
-        "behemoth"
-    } else if failure_landing {
-        "liquid-black-shortcut"
-    } else if rotten_purchase {
-        "rotten-blood/sacrifice"
-    } else if monk {
-        "monk-guidance"
-    } else if target_swap {
-        "fish-napping-key"
+    let draconia_escape = name.starts_with("draconia-escape-");
+    let mut callback = if draconia_escape {
+        super::super::draconia_escape::authored_callback()?
     } else {
-        name
-    })?;
+        callback(if classic_npc || sewer {
+            "behemoth"
+        } else if failure_landing {
+            "liquid-black-shortcut"
+        } else if rotten_purchase {
+            "rotten-blood/sacrifice"
+        } else if monk {
+            "monk-guidance"
+        } else if target_swap {
+            "fish-napping-key"
+        } else {
+            name
+        })?
+    };
     if failure_landing {
         callback.selector.position = Some(trigger);
         callback.failure_teleport = Some(Position {
@@ -177,6 +182,10 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if draconia_escape {
+            owner.quest_catalogue =
+                Some(super::super::draconia_escape::catalogue(&callback, name)?);
+        }
         if lever_fixture || target_swap || failure_landing {
             assert!(
                 owner
@@ -233,7 +242,18 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if failure_landing {
+        if draconia_escape {
+            super::super::draconia_escape::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                name,
+            )
+            .await?;
+        } else if failure_landing {
             super::super::conditional_callback_failure::exercise(
                 &owner,
                 &mut admitted,

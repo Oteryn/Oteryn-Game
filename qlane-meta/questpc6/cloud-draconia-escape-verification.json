@@ -1,0 +1,77 @@
+{
+  "scope": "Draconia source escape/offering integration; whole quest is not yet qualified",
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/scripts/quests/draconia/movement-escape.lua",
+    "lines": "9-29",
+    "git_blob_sha1": "8d9e413024dc127b7b26513127b033ec19bfe615",
+    "sha256": "53f3313e99fb541c3e016b5ac09a2e372c0ad8a382786ccd79db6bb40a700312",
+    "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/draconia/movement-escape.lua#L9-L29"
+  },
+  "assumptions": [
+    "Fixture approach tile32818/31598/-9 is not donor-map placement evidence.",
+    "Native flag bounds admit unset-1 and all nonnegative i64 values so later values are retained.",
+    "The fixture seeds prior NPC flags via the fenced quest writer; it does not qualify their NPC acquisition."
+  ],
+  "red": {
+    "failed": 4,
+    "execution_seconds": 45.41,
+    "proof": "Missing-offering case produced POSTGRES_CASE_STARTED (18.6), framed STEP then wrong unchanged trigger position. Three offering cases additionally exposed DefinitionNotFound for3206; no success claimed for those setup failures.",
+    "log": "/tmp/questpc6-draconia-red.log"
+  },
+  "green": {
+    "passed": 4,
+    "failed": 0,
+    "execution_seconds": 57.25,
+    "postgres_version": "18.6",
+    "markers": [
+      {
+        "name": "draconia-escape-missing",
+        "duration_seconds": 57.174584794
+      },
+      {
+        "name": "draconia-escape-absent",
+        "duration_seconds": 57.235634185
+      },
+      {
+        "name": "draconia-escape-exact",
+        "duration_seconds": 57.248168004
+      },
+      {
+        "name": "draconia-escape-later",
+        "duration_seconds": 57.252855421
+      }
+    ],
+    "log": "/tmp/questpc6-draconia-final-pg.log"
+  },
+  "native_item": {
+    "added": "oteryn:item.tibia.i3206",
+    "removed": [],
+    "changed_existing_profiles": [],
+    "weight": 490,
+    "stack_class": "NonStackable",
+    "container_charges_temporal": "NOT_APPLICABLE; pinned importer derivation",
+    "raw_donor_files": "/tmp/questpc6-draconia-item-source, not committed"
+  },
+  "checks": {
+    "item_callback_authoring_units": "PASS23/23, 175.775s",
+    "dispatch_content_quests_alltarget_check": "PASS31.97s",
+    "dispatch_content_quests_alltarget_allfeature_clippy_Dwarnings": "PASS45.45s",
+    "content_integration": "PASS123/123, 2.55s",
+    "world_repository": "PASS5/5, 52.72s",
+    "pins": "pin-refresh and pin-check PASS; bundle2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+    "provider_generation_check": "PASS40 generated files; no drift",
+    "quest_tree_check": "PASS4 shards",
+    "cargo_fmt_and_mounted_rustfmt": "PASS"
+  },
+  "generated_review": "Only Native Item3206 added, no old native profile changed/removed. Quest shard leaf changes are only source-fix-receipt provenance hashes (28 leaves). No donor bytes or bundle binaries committed.",
+  "source_hashes": {
+    "content/quests/world-callbacks.json": "9574f4d01169a8a01f9e0dbe351e066ee30c2491762977c032ba02e573c6a009",
+    "content/items/definitions/spell-native-profiles.json": "7f6ff9f1c4d50d10d950740856caa10901d4462559e6da9ca7ecb019c691f845",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/draconia_escape.rs": "e6c5e01170e7381fd69ab2718ad5f5504cd88c2e8acd0383a008ba5de2f0cd68",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs": "eed735a77ff8104673cbfac0ed56308a9ba103412db2b6307217dbf8f029b025",
+    "tools/content-migration/quests_2_emperor_item_profiles.py": "b64a064f14b506cc13f4c241af190f89a90e6180c33281999e844a11276d9c31"
+  },
+  "next": "Reuse qengine2 delivered shared exchange/world effects before further implementation; complete source NPC and remaining source route."
+}
