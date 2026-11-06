@@ -92,24 +92,33 @@ pub fn get(npc: &str) -> Option<&'static Greeting> {
     DATA.as_ref()?.iter().find(|entry| entry.npc == npc)
 }
 
-/// Existing canonical tracks for the two source-owned conditional greetings.
+/// Existing canonical tracks for the source-owned conditional greetings.
 /// zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:
 /// data-global/npc/a_sleeping_dragon.lua:50-53; data-global/npc/jack_springer.lua:64-67.
-pub const CONDITIONAL_QUEST_TRACKS: [&str; 2] = [
+pub const CONDITIONAL_QUEST_TRACKS: [&str; 3] = [
     "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
     "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+    "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
 ];
 
 pub fn uses_quest_progress(npc: &str) -> bool {
     matches!(
         npc,
-        "oteryn:npc.a_sleeping_dragon" | "oteryn:npc.jack_springer"
+        "oteryn:npc.a_restless_soul" | "oteryn:npc.a_sleeping_dragon" | "oteryn:npc.jack_springer"
     )
 }
 
 /// `None` cache is unreadable, not a new character. A readable copy with an
 /// absent track selects the source's default branch; neither guard treats -1 as started.
 pub fn select(npc: &str, tracks: Option<&BTreeMap<String, i64>>) -> Option<&'static str> {
+    // Crystal 201189f, data-global/npc/a_restless_soul.lua:49-62.
+    if npc == "oteryn:npc.a_restless_soul" {
+        return Some(if permits_conversation(npc, tracks?) {
+            "Ahhhh! At last someone that can listen to my {story}!"
+        } else {
+            "Uhhhh..."
+        });
+    }
     let source = get(npc)?;
     let variant = match npc {
         "oteryn:npc.a_sleeping_dragon" => {
@@ -127,6 +136,14 @@ pub fn select(npc: &str, tracks: Option<&BTreeMap<String, i64>>) -> Option<&'sta
         Some(key) => source.variants.get(key)?.text.as_str(),
         None => source.greet.text.as_str(),
     })
+}
+
+/// Spirit language is learned at stage 37. Earlier greetings never acquire focus.
+pub fn permits_conversation(npc: &str, tracks: &BTreeMap<String, i64>) -> bool {
+    npc != "oteryn:npc.a_restless_soul"
+        || tracks
+            .get(CONDITIONAL_QUEST_TRACKS[2])
+            .is_some_and(|stage| *stage >= 37)
 }
 
 /// The source distinguishes an explicit farewell from leaving the talk radius.

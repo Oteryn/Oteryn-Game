@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 mod dark_trails;
 mod isle_of_evil;
+mod state_stories;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
@@ -59,6 +60,9 @@ pub struct NpcTalkEntry {
 }
 
 impl NpcTalkEntry {
+    pub fn greeting(&self) -> &str {
+        &self.greeting_reply
+    }
     pub fn bank(&self) -> bool {
         self.bank
     }
@@ -160,12 +164,13 @@ impl NpcTalkBook {
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}",
+                "{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
                 dark_trails::TEXT,
                 isle_of_evil::revision_material(),
+                state_stories::TEXT,
             )),
             ..Self::default()
         };
@@ -174,6 +179,7 @@ impl NpcTalkBook {
                 .insert(reference.key.clone(), npc.name.clone());
             let dark_messages = dark_trails::messages(&reference.key);
             let isle_messages = isle_of_evil::messages(&reference.key);
+            let state_messages = state_stories::messages(&reference.key);
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
                 &npc.services,
@@ -213,6 +219,28 @@ impl NpcTalkBook {
                     "May your path lead to enlightenment.".into(),
                     Some("Ask me about your pilgrimage or progress on the Three-Fold Path.".into()),
                     Vec::new(),
+                )
+            } else if let Some(messages) = &state_messages {
+                (
+                    messages.greet.clone(),
+                    messages.farewell.clone(),
+                    None,
+                    npc.bank_dialogue
+                        .as_ref()
+                        .map(|dialogue| {
+                            dialogue
+                                .keywords
+                                .iter()
+                                .filter(|keyword| {
+                                    literal_keyword(keyword)
+                                        && keyword.triggers.iter().any(|trigger| {
+                                            matches!(trigger.as_str(), "name" | "job")
+                                        })
+                                })
+                                .cloned()
+                                .collect()
+                        })
+                        .unwrap_or_default(),
                 )
             } else if let Some(greeting) = crate::quest_greetings::get(&reference.key)
                 .filter(|_| reference.key != "oteryn:npc.spectulus")
@@ -381,9 +409,13 @@ impl NpcTalkBook {
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
                     greeting_reply,
                     farewell_reply,
-                    source_name_templates: dark_messages.is_some() || isle_messages.is_some(),
+                    source_name_templates: dark_messages.is_some()
+                        || isle_messages.is_some()
+                        || state_messages.is_some(),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
+                    } else if let Some(messages) = state_messages {
+                        Some(messages.walkaway)
                     } else {
                         isle_messages.map(|messages| messages.walkaway)
                     },

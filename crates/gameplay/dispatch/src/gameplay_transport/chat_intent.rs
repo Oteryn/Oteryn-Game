@@ -938,6 +938,11 @@ fn npc_answer(
             return;
         };
         reply.text = greeting.to_owned();
+        if quest_tracks.is_some_and(|tracks| {
+            !oteryn_gameplay_npc::quest_greetings::permits_conversation(key, tracks)
+        }) {
+            speaking.engaged = prior;
+        }
     }
     let speaker_name = speaking.name.clone();
     if speaking.engaged.is_some_and(|npc| prior != Some(npc))
@@ -2014,6 +2019,8 @@ mod tests {
         const DRAGON_LINE: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline";
         const JACK: &str = "oteryn:npc.jack_springer";
         const JACK_LINE: &str = "oteryn:quest-progress/quest/u12_20/grave_danger/questline";
+        const SOUL: &str = "oteryn:npc.a_restless_soul";
+        const SOUL_LINE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline";
         let catalogue = crate::content::NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
             std::ffi::OsStr::new("world"),
@@ -2023,27 +2030,45 @@ mod tests {
         let book = Arc::new(NpcTalkBook::from_model(
             &catalogue.service_model_for_project().expect("NPC model"),
         ));
-        for (key, track, value, expected) in [
-            (DRAGON, DRAGON_LINE, Some(27), Some("ZzzzZzzZz...chrrr...")),
+        for (key, track, value, expected, focused) in [
+            (
+                DRAGON,
+                DRAGON_LINE,
+                Some(27),
+                Some("ZzzzZzzZz...chrrr..."),
+                true,
+            ),
             (
                 DRAGON,
                 DRAGON_LINE,
                 Some(26),
                 Some("Greetings, {wayfarer}."),
+                true,
             ),
             (
                 JACK,
                 JACK_LINE,
                 Some(1),
                 Some("Welcome, Aela! Is there anything to {report}?"),
+                true,
             ),
             (
                 JACK,
                 JACK_LINE,
                 Some(0),
                 Some("Welcome, Aela! There is much we have to {discuss}."),
+                true,
             ),
-            (JACK, JACK_LINE, None, None),
+            (JACK, JACK_LINE, None, None, false),
+            (SOUL, SOUL_LINE, Some(36), Some("Uhhhh..."), false),
+            (
+                SOUL,
+                SOUL_LINE,
+                Some(37),
+                Some("Ahhhh! At last someone that can listen to my {story}!"),
+                true,
+            ),
+            (SOUL, SOUL_LINE, None, None, false),
         ] {
             let (mut runtime, chat, first, second) = two_players(0);
             let spot = runtime
@@ -2089,7 +2114,11 @@ mod tests {
                 expected,
                 "NPC {key} at {value:?}"
             );
-            assert_eq!(chat.engaged(first.1).is_some(), expected.is_some());
+            assert_eq!(
+                chat.engaged(first.1).is_some(),
+                focused,
+                "focus {key} {value:?}"
+            );
         }
     }
 }

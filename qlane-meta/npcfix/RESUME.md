@@ -1,19 +1,29 @@
 # NPCFIX continuation
 
-AUTHORING on claude/happy-davinci-ijz3wy-npcfix. Recovered the 320-row audit report from 95accb923; head be6bca215 deleted the lane records. Status distinguishes prior authored work from qualified work. No completed implementation will be redone.
+Work directly on `claude/happy-davinci-ijz3wy-npcfix`; inventory and source citations are in QUEST-STATUS.json. Recovered 320 rows from historical report 95accb923 after be6bca215 deleted lane metadata. Preserve prior authored work; authored is not automatically qualified.
 
-Owner now authorizes generic mechanisms, quest/NPC fixes, source research, commit and push after each green batch. Exclude Dawnport, W14, P23, X01-X06 and other lanes’ world changes. Run real PG RED/GREEN, fmt/check/clippy per batch. Single writer; no PR.
+Owner rules: implement missing generic mechanisms here; first inspect/reuse qengine2 and relevant lanes. Exclude Dawnport, OT-only W14, P23, X01-X06 and proven foreign-owned/qualified work. No unproven category-based world exclusions. Commit as blakinio with required trailers; fetch/merge remote movement and fast-forward push each green batch. No force/main/PR, credentials, binaries, donor dumps, workflow or tools/repository edits. Single writer.
 
-Next: shared atomic quest/NPC writer and first source-backed transaction batch. PostgreSQL 18.6 startup and connection succeeded via /workspace/oteryn-env/start.sh. Source env.sh for each build shell; never print its URL. Logs in /tmp/npcfix-evidence.
+Environment: source /workspace/oteryn-env/env.sh for every build/PG shell. PostgreSQL 18.6 is running. Never print connection environment. Use normal prepared profiles/features and one build at a time. Scratch evidence: /tmp/npcfix-evidence/. Full nextest/PG suite prohibited.
 
-## Active prerequisite batch
+## Pushed batch 1
 
-Migration 1096 widens only the quest receipt effect bound from 8 to 16, aligned with the catalogue and NPC source planner. All other shape/deferred/fencing guards stay intact. Owning decision records the owner’s atomic eleven-write amendment.
+`eac78c5b8`: sixteen-effect shared QuestState capacity, migration 1096, atomic eleven-track Father's Burden acceptance infrastructure. Actual PG RED 4.39s TooManyEffects; GREEN 15.01s, three DB cases: one atomic receipt/revision, exact replay, late predicate/arithmetic rollback. Planner22 and quest248 passed; all-target/all-feature check and strict clippy passed. Pushed exact branch fast-forward.
 
-Focused PostgreSQL RED: TooManyEffects, POSTGRES_STARTED marker, 4.39s. GREEN: 1 passed, all three DB cases executed, 15.01s. Verifies eleven writes/one receipt/one revision, exact receipt replay, and no writes or revision change for late stage/arithmetic refusal. Planner 22 passed; affected quest rules 248 passed. Full output in /tmp/npcfix-evidence/{atomic-red,atomic-green,planner-green,quests-green}.log. Initial out-of-range fixture used a statically invalid SET; corrected to runtime ADD overflow so it reaches the durable evaluator. No product assertion weakened.
+## Batch 2: guarded state callers
 
-Session 28398 runs sequential fmt, cargo check and clippy -D warnings for quests/dispatch/game-server, all targets/features. Inspect /tmp/npcfix-evidence/batch1-{check,clippy}.log, then commit/push on success. Recheck migration number with repository script immediately before push. No commit or push yet.
+Bounded source-backed branches compile into existing QuestTransitions; no second writer. Tereban acceptance writes all eleven tracks atomically. Restless Soul language/focus gate and three-track story use existing command and ordinary-chat owners. Strange Chalice has the six-topic lava-access chain and preserves literal name/job replies.
 
-Seven remaining world/event/map entries are SKIPPED_OTHER_LANE under the owner’s world exclusions. No NPC has been newly marked QUALIFIED. Next NPC batch: generic guarded state dialogue on the existing quest_dialogue caller (Father’s Burden acceptance, Restless Soul atomic story, Strange Chalice topic chain). Donor snippets/URL+sha are in /tmp/npcfix-evidence; do not commit source copies.
+Actual initial PostgreSQL RED: three failures, three POSTGRES_STARTED markers, 89.98s. Initial GREEN: three passed, 131.88s. Added Chalice name/job regression RED: marker, 45.02s, missing reply. Fixed literal replies and native static-reply priority. Extended GREEN: three passed, three DB markers, 55.94s. Relevant prior unit proofs: quests248, NPC24, ordinary-chat1; content integration123, repository5, pin-check PASS. Full repository regeneration --resolve --no-stage PASS, derived pin17d0ab2ee581fe2a567efe04f5a87e89af7e0bc6302ce40fcf1313596d6c86b1. Code-only literal fix does not require another full content generation.
 
-Prerequisite batch QUALIFIED: all-target/all-feature cargo check PASS 5m22s; clippy -D warnings PASS 4m36s; fmt/diff checks PASS. Self-review found no issue. Migration 1096 rechecked free on origin/main and open PRs. Commit and push this batch now; then copy /tmp/npcfix-evidence/npcfix_state_dialogue_tests.rs into the mounted PG directory and run npcfix_state_postgres_ RED before adding the caller. The test draft uses existing fixtures and real content; three cases are isolated.
+Final check PASS34.08s; final strict clippy PASS40.23s. Self-review and diff checks PASS. Commit and push this green batch immediately; then continue shared reward reuse. No broad suite reruns needed without new changes.
+
+Whole Strange Chalice NPC is QUALIFIED: real cell (33419,31125,9) is admitted by compiler plus actual PG caller proof. Restless Soul caller component passes, but its actual cell (32257,31101,10) is held SpawnPoint (Cave Rat). Do not mark whole NPC qualified from synthetic-room PG. Resolve physical admission with source-backed generic behavior; compiler also reports other held authored NPCs. Tereban is an extra shared acceptance component, not full Father's Burden quest qualification; it has no scoped placement in this lane.
+
+## Continue immediately after batch 2 push
+
+Reuse qengine2 `5a6de28c142de185594217ce1e5cbc7f4b6e6e4e`: atomic item take/give/present, outfit/achievement grants, exact keyword callbacks, normalized native reward profiles, existing fenced QuestState integration. Wayfarer Outfits including Cranky Lizard Crone already QUALIFIED there; do not redo. Reuse questl2 `e5a4d6e7e46e7bf3a6754b563fd8647900de7680` reward capacity16 changes (its core capacity matches ours). questpc6 `be812420e3c20d9dd8ae6c3c23a9c4acb942ceda` supplies SET_IF and authored failure landing if needed. All named refs fetched explicitly. Refresh before reuse.
+
+Prefer selective source reuse with recorded donor head: qengine2 contains generated world .b3 binaries and older 33-to37 NPC placement output; never overwrite NPCFIX340 placements or commit binaries. Preserve both NPC state stories and reward adapters/loaders/revision material when combining overlap. Generic engine world support can be reused without foreign authored world changes. Do not import questpc6 scratch binaries/donor copies.
+
+Four world lane HEADs fetched and searched. No lane status records or exact NPC-specific implementation found for the seven formerly assumed foreign world NPCs; those remain active scope. Missing engine, world hooks or donor facts are not blockers. Implement conservatively, record assumptions and cite facts. Continue batches until all owned scope is QUALIFIED and pushed.

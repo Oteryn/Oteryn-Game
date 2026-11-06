@@ -8,7 +8,6 @@
       "npc": "A Sweaty Cyclops",
       "town": "Ab'Dendriel",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Placement is repaired. The audit leaves exact retail smithing eligibility/effects unresolved; verified quest exchanges must be routed to the excluded quest owner.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/12",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -17,7 +16,9 @@
         "sha256": "bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
-      }
+      },
+      "historical_note": "Retail placement authored. Placement is repaired. The audit leaves exact retail smithing eligibility/effects unresolved; verified quest exchanges must be routed to the excluded quest owner.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "Alkestios",
@@ -131,8 +132,8 @@
       "work": "Nimmersatt event-conditioned Banor's Eye transport needs an admitted event selector and return route.",
       "evidence": ".npcaudit/research/rascalio.md:1",
       "test": "Source review",
-      "status": "SKIPPED_OTHER_LANE",
-      "ownership": "World/event/map placement changes excluded by owner"
+      "status": "PENDING",
+      "next_action": "Check exact foreign ownership and implemented world/NPC bindings. Reuse existing lane mechanisms; implement any missing shared feature here if this entry remains owned. No engine-support deferral."
     },
     {
       "npc": "Yselda",
@@ -189,7 +190,6 @@
       "npc": "Altar",
       "town": "Darashia",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Crimson Offering/Bakragore eligibility and reward transaction require the excluded quest lane.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/23",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -198,7 +198,9 @@
         "sha256": "aba428a9619d2d0af8afa0b01b82b784e95f210d430576fe68e3a07f1a300c8c",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
-      }
+      },
+      "historical_note": "Retail placement authored. Crimson Offering/Bakragore eligibility and reward transaction require the excluded quest lane.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "Chemar",
@@ -438,8 +440,8 @@
       "work": "Book World scene shares its exact cell with Grovebeast; no admitted mutually exclusive scene selector.",
       "evidence": ".npcaudit/research/emberwing.md:1",
       "test": "Source review",
-      "status": "SKIPPED_OTHER_LANE",
-      "ownership": "World/event/map placement changes excluded by owner"
+      "status": "PENDING",
+      "next_action": "Check exact foreign ownership and implemented world/NPC bindings. Reuse existing lane mechanisms; implement any missing shared feature here if this entry remains owned. No engine-support deferral."
     },
     {
       "npc": "Eremo",
@@ -457,8 +459,8 @@
       "work": "Book World scene shares its exact cell with Emberwing; no admitted mutually exclusive scene selector.",
       "evidence": ".npcaudit/research/grovebeast-npc.md:1",
       "test": "Source review",
-      "status": "SKIPPED_OTHER_LANE",
-      "ownership": "World/event/map placement changes excluded by owner"
+      "status": "PENDING",
+      "next_action": "Check exact foreign ownership and implemented world/NPC bindings. Reuse existing lane mechanisms; implement any missing shared feature here if this entry remains owned. No engine-support deferral."
     },
     {
       "npc": "Gundralph",
@@ -689,7 +691,6 @@
       "npc": "A Fading Memory",
       "town": "Farmine",
       "audit_status": "DIFF",
-      "work": "Ghost's Tear reward is a Blood Brothers quest transaction; excluded quest-lane repair required.",
       "evidence": ".npcaudit/research/a-fading-memory.md:1",
       "test": "Source review",
       "status": "PENDING",
@@ -698,7 +699,9 @@
         "sha256": "52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
-      }
+      },
+      "historical_note": "Ghost's Tear reward is a Blood Brothers quest transaction; excluded quest-lane repair required.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "A Sleeping Dragon",
@@ -713,22 +716,27 @@
       "npc": "A Strange Chalice",
       "town": "Farmine",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Forgotten Knowledge quest topic/actions need the excluded quest lane.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/9",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "test": "npcfix_state_postgres_chalice_requires_each_source_topic",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_strange_chalice.lua",
         "sha256": "7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      },
+      "historical_note": "Retail placement authored. Forgotten Knowledge quest topic/actions need the excluded quest lane.",
+      "work": "Source topic chain and guarded lava-access assignment use the fenced atomic QuestState writer. Existing name/job replies retained.",
+      "qualification": {
+        "postgres": "PASS 3-case batch, 55.94s; POSTGRES_STARTED a_strange_chalice",
+        "placement": "Actual authored cell (33419,31125,9), present in compiler inputs and absent from held placements in state-parity.json",
+        "source": "content/dialogues/quests/npc-state-stories.json: source URL/full donor commit + sha256 per branch"
       }
     },
     {
       "npc": "A Wandering Soul",
       "town": "Farmine",
       "audit_status": "DIFF",
-      "work": "Blood Crystal enchantment is a Blood Brothers quest transaction; excluded quest-lane repair required.",
       "evidence": ".npcaudit/research/a-wandering-soul.md:1",
       "test": "Source review",
       "status": "PENDING",
@@ -737,7 +745,9 @@
         "sha256": "64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
-      }
+      },
+      "historical_note": "Blood Crystal enchantment is a Blood Brothers quest transaction; excluded quest-lane repair required.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "Chartan",
@@ -761,7 +771,6 @@
       "npc": "Cranky Lizard Crone",
       "town": "Farmine",
       "audit_status": "DIFF",
-      "work": "Affirmative cape/hat exchanges require Wayfarer quest transitions; excluded quest-lane repair required.",
       "evidence": ".npcaudit/research/cranky-lizard-crone.md:1",
       "test": "Source review",
       "status": "PENDING",
@@ -770,7 +779,9 @@
         "sha256": "8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
-      }
+      },
+      "historical_note": "Affirmative cape/hat exchanges require Wayfarer quest transitions; excluded quest-lane repair required.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "Esrik",
@@ -911,7 +922,6 @@
       "npc": "Alyxo",
       "town": "Issavi",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Kilmaresh quest dialogue/progression needs the excluded quest lane.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/24",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -920,7 +930,9 @@
         "sha256": "86f3cf5aa793d5ccffd14bdf35bda841bb00f8c3ce3352826b088f4f25c4b008",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
-      }
+      },
+      "historical_note": "Retail placement authored. Kilmaresh quest dialogue/progression needs the excluded quest lane.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "Captain Jack Rat",
@@ -998,7 +1010,6 @@
       "npc": "Gnomission",
       "town": "Kazordoon",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Rank4 Warzone access needs Bigfoot quest predicates and action owner; excluded quest-lane repair required.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/137",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -1007,7 +1018,9 @@
         "sha256": "3114a451c12b4ce3f470f1d3eaa7e7846da6068dfac5718e7423764a9656f341",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
-      }
+      },
+      "historical_note": "Retail placement authored. Rank4 Warzone access needs Bigfoot quest predicates and action owner; excluded quest-lane repair required.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "Gnops Member",
@@ -1760,7 +1773,6 @@
       "npc": "Al Dee",
       "town": "Rookgaard",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Pick Quest affirmative exchange requires the excluded quest lane.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/15",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -1769,7 +1781,9 @@
         "sha256": "f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
-      }
+      },
+      "historical_note": "Retail placement authored. Pick Quest affirmative exchange requires the excluded quest lane.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "Dixi",
@@ -1865,7 +1879,7 @@
       "npc": "A Restless Soul",
       "town": "Svargrond",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Spirit-language greeting and story progression require the Ice Islands quest owner; do not grant speech unconditionally.",
+      "work": "State story and spirit-language greeting/focus gate implemented and PG-proven. Resolve actual SpawnPoint collision at (32257,31101,10); then qualify complete NPC.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/5",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -2105,7 +2119,6 @@
       "npc": "Anna",
       "town": "Thais",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Retail Targuna continuation conflicts with the existing owner-selected landing and needs tutorial/quest transition and destination admission; coordinator required.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/35",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -2114,7 +2127,9 @@
         "sha256": "5ad524861ac070192466d751215e9be859f6cea67a3d8fa2612e43a12b4fdd2e",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
-      }
+      },
+      "historical_note": "Retail placement authored. Retail Targuna continuation conflicts with the existing owner-selected landing and needs tutorial/quest transition and destination admission; coordinator required.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "Benjamin",
@@ -2276,8 +2291,8 @@
       "work": "Conditional Ghost Ship scene has no admitted event selector; unconditional placement would invent availability.",
       "evidence": ".npcaudit/research/ghost-captain.md:1",
       "test": "Source review",
-      "status": "SKIPPED_OTHER_LANE",
-      "ownership": "World/event/map placement changes excluded by owner"
+      "status": "PENDING",
+      "next_action": "Check exact foreign ownership and implemented world/NPC bindings. Reuse existing lane mechanisms; implement any missing shared feature here if this entry remains owned. No engine-support deferral."
     },
     {
       "npc": "Gorn",
@@ -2367,8 +2382,8 @@
       "work": "April event availability has no admitted selector; unconditional placement would invent availability.",
       "evidence": ".npcaudit/research/hoaxette.md:1",
       "test": "Source review",
-      "status": "SKIPPED_OTHER_LANE",
-      "ownership": "World/event/map placement changes excluded by owner"
+      "status": "PENDING",
+      "next_action": "Check exact foreign ownership and implemented world/NPC bindings. Reuse existing lane mechanisms; implement any missing shared feature here if this entry remains owned. No engine-support deferral."
     },
     {
       "npc": "Junkar (Mines)",
@@ -2512,8 +2527,8 @@
       "work": "Add exact displayed identity. Identity added; D17 map-owner conflict remains between Wiki and reviewed map coordinates. Placement is held, not guessed.",
       "evidence": "content/npcs/definitions/npcs-00000-00499.json:1#/records/330",
       "test": "npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "SKIPPED_OTHER_LANE",
-      "ownership": "World/event/map placement changes excluded by owner"
+      "status": "PENDING",
+      "next_action": "Check exact foreign ownership and implemented world/NPC bindings. Reuse existing lane mechanisms; implement any missing shared feature here if this entry remains owned. No engine-support deferral."
     },
     {
       "npc": "Testserver Assistant",
@@ -2528,7 +2543,6 @@
       "npc": "A Behemoth",
       "town": "Venore",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Spike quest-conditioned greetings require the excluded quest lane.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/1",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -2537,7 +2551,9 @@
         "sha256": "fe1a118261b147228c708d85c2d0f4f3417fec10cc616372ea92dfa9526cd334",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
-      }
+      },
+      "historical_note": "Retail placement authored. Spike quest-conditioned greetings require the excluded quest lane.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "A Ghostly Guardian",
@@ -2552,7 +2568,6 @@
       "npc": "A Strange Fellow",
       "town": "Venore",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Postman progression dialogue/actions require the excluded quest lane.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/10",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -2561,13 +2576,14 @@
         "sha256": "a942d86e6ce1066564a14f4976b4af1926b22807b1c7ae7beb338ec2097d8b01",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
-      }
+      },
+      "historical_note": "Retail placement authored. Postman progression dialogue/actions require the excluded quest lane.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "A Weakened Forest Fury",
       "town": "Venore",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Forgotten Knowledge guarded interaction requires the excluded quest lane.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/13",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -2576,7 +2592,9 @@
         "sha256": "0d4e15a43d66332de7ca283d776f6a692d6247c80dacb66517c02f782db266e6",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
-      }
+      },
+      "historical_note": "Retail placement authored. Forgotten Knowledge guarded interaction requires the excluded quest lane.",
+      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
     },
     {
       "npc": "Allen",
@@ -2774,8 +2792,8 @@
       "work": "Bewitched event NPC; no admitted availability selector.",
       "evidence": ".npcaudit/research/minzy.md:1",
       "test": "Source review",
-      "status": "SKIPPED_OTHER_LANE",
-      "ownership": "World/event/map placement changes excluded by owner"
+      "status": "PENDING",
+      "next_action": "Check exact foreign ownership and implemented world/NPC bindings. Reuse existing lane mechanisms; implement any missing shared feature here if this entry remains owned. No engine-support deferral."
     },
     {
       "npc": "Nathaniel",
@@ -3014,7 +3032,7 @@
         "npc_planner": "22 passed including 11/16/17 track cases",
         "quest_rules": "248 passed, 4 unrelated tests filtered"
       },
-      "next": "Finish cargo check and clippy, review, recheck migration number, commit and push. Then source-backed NPC callers.",
+      "next": "Pushed eac78c5b8; proceed to caller and shared reward batches.",
       "source": {
         "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/tereban_functions.lua#L173",
         "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d",
@@ -3026,7 +3044,38 @@
         "clippy": "PASS -D warnings, same packages/targets/features, 4m36s",
         "diff_check": "PASS",
         "self_review": "No findings; migration changes only the bound, preserves all shape/deferred guards; no new runtime public API or fence changes."
-      }
+      },
+      "commit": "eac78c5b8",
+      "push": "PASS origin claude/happy-davinci-ijz3wy-npcfix fast-forward be6bca215..eac78c5b8"
+    },
+    {
+      "name": "guarded NPC state stories",
+      "entries": [
+        "Tereban atomic acceptance",
+        "A Restless Soul",
+        "A Strange Chalice"
+      ],
+      "state": "QUALIFIED",
+      "command": "cargo check then cargo clippy --all-targets --all-features -- -D warnings for quests/npc/dispatch/game-server",
+      "log": "/tmp/npcfix-evidence/state-literal-{green,check,clippy}.log",
+      "red_result": "Initial 3 failed with POSTGRES_STARTED markers (89.98s). Additional Chalice literal-reply regression RED: PostgreSQL marker, assertion 0 != 1, 45.02s.",
+      "first_rerun": "Tereban and Chalice PASS. Restless correctly refused unfocused story; initial test helper incorrectly required Ok. Replaced that call with exact NoConversation assertion and explicit closed-focus/greeting assertions; no existing test weakened.",
+      "implementation": "Bounded state_dialogue branches compile guarded assignments into existing QuestTransitions; guard-only tracks use ADD 0 under the same locks. Existing quest_dialogue owns fenced commits and retained requests. Native greeting admission for three NPCs; Restless language gate also applied to ordinary chat.",
+      "regeneration": "PASS full repository tooling, including world pin-refresh; inspect final generated digest and pins in git diff. Fresh three-case PG currently running.",
+      "green_result": "3 passed, 55.94s; all three POSTGRES_STARTED markers. Extended Chalice name/job regression included.",
+      "checks": {
+        "regeneration": "PASS full regenerate_content.py --resolve --no-stage; generated pin 17d0ab2ee581fe2a567efe04f5a87e89af7e0bc6302ce40fcf1313596d6c86b1",
+        "quest_units": "248 passed, 10.53s",
+        "npc_units": "24 passed, 130.10s",
+        "ordinary_chat": "1 passed, 37.41s",
+        "content_integration": "123 passed, 3.30s",
+        "content_repository": "5 passed, 56.47s",
+        "pin_check": "PASS",
+        "cargo_check": "PASS all targets/features quests/npc/dispatch/game-server, 34.08s after final fix",
+        "clippy": "PASS same packages/targets/features -D warnings, 40.23s after final fix",
+        "self_review": "PASS; source-only guarded branches reuse existing fenced writer, no new durable authority, literal replies preserved; no binary/workflow/repository tooling edits"
+      },
+      "placement_audit": "Compiler parity found Restless Soul held SpawnPoint at (32257,31101,10). State caller component passes but whole NPC qualification requires physical admission. Do not treat synthetic-room PG coverage as compiler admission proof."
     }
   ],
   "owner_constraints": {
@@ -3041,5 +3090,36 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Three source-backed NPC state callers: Tereban, Restless Soul, Strange Chalice"
+  "next_batch": "Reuse qengine2 reward engine and questl2 reward capacity; resolve actual NPC admission and continue remaining entries.",
+  "shared_engine_lookup": {
+    "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
+    "qengine2": {
+      "head": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "found": [
+        "atomic NPC take/give/present callbacks",
+        "outfit and achievement grants",
+        "conversation offers",
+        "native reward item profiles"
+      ],
+      "action": "Merge/reuse after committing the current green caller batch; do not author a second inventory grant engine."
+    },
+    "questl2": {
+      "head": "e5a4d6e7e46e7bf3a6754b563fd8647900de7680",
+      "found": [
+        "16-track shared reward capacity",
+        "PG atomic eleven-track proof"
+      ],
+      "action": "Reuse reward-plan/schema capacity extensions; both implementations use the same core bound."
+    },
+    "questpc6": {
+      "head": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+      "found": [
+        "SET_IF conditional reset",
+        "authored failure landing"
+      ],
+      "action": "Reuse only where an owned NPC entry needs these mechanisms."
+    },
+    "world_lanes": "Fetched worldchg, wvar, wevents and wcontrib. HEAD trees contain no QUEST-STATUS/RESUME. Earlier seven world-NPC ownership assumptions are withdrawn pending exact allocation/binding proof; entries are active again.",
+    "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
+  }
 }
