@@ -1,0 +1,1147 @@
+diff --git a/apps/client/src/features/0097-character-info/tests/play.rs b/apps/client/src/features/0097-character-info/tests/play.rs
+index ba1d70ac9c8b9f246e670eaee12f00a2ca0fcc91..c3570a72ad7cc05ef696492da37d451e46f337cc 100644
+GIT binary patch
+delta 826
+zcmaJ=&rcIU6iyQxi-NR3TYi)>9TME8u!$l~Y(fH54JI6j;YP?Z?oR2*c4jj(MKQ#9
+z@#F=3R}Y*$7!xms#H%+C{sAW3ycszdug*-1M=vvz?|tu^H{W~nhrfN5`fyTTncdb@
+z>78pWj+8v82b$@a21;~gNL3KgP((B!JPITwVLRYNvjZ9=F*ytp!fE{R>(K8Md>OtA
+zpR?cL^{u7rG2{DHpFAZ@!$ql<7767ZT+9`RT0$aDIutREw&7%CVid2cgh|Ht(0Z3^
+z)gc_ix9Q0uZi-GqHRT$uQKGam_fhF$dHjG9Nh7o-Ov+)~Ed9t0+-#e)4rS^R8pro&
+z#6qGC|324}CX#a6?I~sPI+X&6mXji(lOM#Jv3b`XdEQse;w@%M-jd{i#&I7k;7ut)
+z!Bsc5`49J1*SO&Xa`=&W%(xO9HDy-`YSBV!2hQ^|SDm|P*}ff)bLo>81;`DI<r|G=
+zn@AFxvbU`NjmGN6h9hNjnL(d%EdpkOUiA{3^;?Wb-jNeLLT>Y|w_X)3FFTk2aSOiK
+z4}|n^hbd*fc5Do(xp7!2rD0`Z6iU;Xv7QKvysB^RQ`+_gR`U~phOfZsR2fbe4Y}6a
+zgW9aa{mBfxpGJ_N3M7;15gJyuZ_oD&vRXT~p^kc98-{Wj|Btp?F2L@5`pr}t$av9K
+zm!TTDL4%(Qcbv>GKa=huFULxk2%MFjqi{4-skmsM=`-!kxpUPwz0$;V#j_suoC#)%
+nkSrDkA}JEj4y~P0I9sT}yQNP#X9nv117yb?p44x`as9_%aMm3w
+
+delta 32
+ocmbQ!%J@BR!$dRwlA^@S5(Vds)a2~c6q}IA+D<x?KRT`k0Na%fB>(^b
+
+diff --git a/apps/game-server/migrations/0990_srv6_title_sources.sql b/apps/game-server/migrations/0990_srv6_title_sources.sql
+new file mode 100644
+index 0000000000000000000000000000000000000000..6555bbe14a911c8991462f5b652b069e0b161a0e
+GIT binary patch
+literal 537
+zcmb7>L2H9R5QXpg74O&_(hvxRCZ|;wB9XPM+x94f4y{C2SvREl_m!kzDS?{X41Dhm
+zAG25>({E23IQCRo_{!Ies$@G%XOJz?o-Dg9sOxyx4D|;DExB^pustsMtE*c_zH03d
+z>mO$#F;c^bAd&c>hV$Z+92K5jektz}>GTC*sxqTRtjuld3J+l}4%-Q(B8u+noFUxF
+zaF2(paUjjRlnN^d72$b3|Nmy*bIrv?e2USC-={X_Fu`%8e_#0{8)s0jNrF`W{QHLe
+EH{HXyTL1t6
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/actor_invisibility.rs b/crates/gameplay/dispatch/src/gameplay_transport/actor_invisibility.rs
+index 5f6ebba97cbeb5c8a3e80afef9f1e80db8a88294..a417d65a57f974778b960d2baf7f13de92814e5d 100644
+GIT binary patch
+delta 1472
+zcmbVM!EV$r5IrFw)a3;9gcu}Lk}CD8s#HNx4+wEaP{gemZ!+mxBz9zbyIPTIFMI$f
+z5(iEoegOW2Z{WyRU_06ME-iwRL*z`7H*emXnYXvT?!5bQ`<PW&muyCjVnWwanKYeB
+zRpwOJ%y3q||8O)veD-1=<W!)7oEHTu6d6LHWCf4ZOdD2$!$3u{x=wfZ?(OaD?%m%{
+zL7K7sr+cTbfW3ypA!JMlX+VxNsuKjMz%X@;2ABXYPPpcy5*LW@e0;QcxT_rtIN>-2
+zn{}q`=Z0m5c<6dEinxGGF@tG(wy+oq(WBBa&vO*imC!!jc-em6cz9<dWeIOQlw-<^
+z1w#b~2R+4>4Q^a2SgEo7Jh)brmh_>lFp6jb8nxz9*n_bQ;usEWs4R#jD3vDMpo(Hr
+zaFIt%<bw&=-)P*xwtoz1;w1}osch0GKIwyH{4^XbQ8f{US4hTkqLF$q>RCjcvI%VW
+z>|(+-m9L}r)nIe(KOxT8oGyi@%tS&?i8UmOV=@s_#cC>5WYh!$F(;9`nr4xG$*p_Q
+z-Pb5(QsmrNjkHT*D(`yWmO#jRK3El)B+vx72Ev*Ap_2B~;QHJf;wtMEOL|`e2``Yg
+zo>JzF@)9*GZQ;uLZ{6lA()>-h&c#rdm#kOJ_uSIbf7fkpExfRB!SmDZczVUVbCG#d
+zSh$(HygGC@yWUJ;ZQrEnW82GS*8bQS&VL)pbH<5@*_mkyGwkH{Iug5sGOSP-$}I<%
+zAhH9x7;CZ!uD6}DYip}V==>;U#!7mOb{E?9D8(8|2(ROGFrIz43s?6~XvKaZD%*@c
+QS+eN{;vD(E{rq_K7q!INdH?_b
+
+delta 14
+Wcmdm>+af<<@x+S(o8>ts@&N!aIR)PU
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/appearance_change/observation.rs b/crates/gameplay/dispatch/src/gameplay_transport/appearance_change/observation.rs
+index a7d5480836bae592d8b7c6eab9202b41fe6a4424..daf0b805b0e89e54dc4b8bc25880bce5f2c7ccd8 100644
+GIT binary patch
+delta 419
+zcmZ4Man)l34-;ejW*(+$7T#(u1q7Jf#^yMA0w??AQ*4%#PjPZHDO69c=RG?4G<)1+
+zE=9q~7kF4Ezv1GXY|J4$c_NSK<Qiel$x$3KV739b%;qMJIL7+SG=<`l#FErvy@H&?
+z%G9FxjLejj)V%n#qWoM9WZM+fic0fJGILXPP(<^Sic^cqQj1VUwGxv{^3lZdOHzv}
+z^Wuv$b4zm)OEUBG;!{#ftW%3}GxIWwbFHj`Q*#r679@uN?eNV^F3K;qvI4mxJ{Qc<
+z$jdL+MA)JU^z1_p-OW!p-?B@fxCj(LdSLsDCm$3Oo}8^9Hu=6_@Z?SWLYs|+4l)X2
+xsGj^q*c>E1Sw}=m2t!tH@^4|8$;Bd4U=#X8+E_O4luBcq%qOn5IaKBbI{>NFc+vm>
+
+delta 511
+zcmZXP&q~8U5XOm!t@Y1Eq9Pu~OKnl3HDKFlK@p(`!GkwJ;<lOA#dJ6BZd;0oM;~C(
+zn~xv}c>&R95JbVVc=HWRHRhmmnwjs%eBV4(Z>x8s1L4@f+29Z|C3=>=A9nQ1&_)QU
+ztf3Fm^ZF{C%>eN{&ZGk?;Ya$&2$x1aQ{xt?D=wr(6^dM5yA%82<HUoZug#)<GZzd?
+z-<Y$yI5`v6CNBpsmX~2$^rRv_tgaLarE;SLf#8bQx!)u$wCX|NlviyV2=gHDNe{*M
+zu3(q!rGi~vb0Q@JaYg4S>rhE+KE^Z%Y!S*N@R~%?A(65OwYCDTj`2dol#H-C(hdUS
+zz}u=pm6cqj4Zv2QdhU;q?E9wKEGQzHs9cFsQqEwm0&)8n%*FZfv`vEmJ(s3`!|F|#
+zG6VE|E6MK?m1DfCx4=B)U54I2DW6Xq&XTSl%IEw9D$u0@9cMQh9A~Hhz~1*`>j`@f
+T=t~UWXPSn7on8yiXP;AFu^Xb2
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/attack.rs b/crates/gameplay/dispatch/src/gameplay_transport/attack.rs
+index 6f10215e4afd832fa4c9232a74f0ac79faadd352..96ebff543c0a97316188d9b9c3a330cb5996570c 100644
+GIT binary patch
+delta 280
+zcmX?mg!#xR<_!m`y&V+_ic-rm^Gl0!Diw-Tb5fH_Qd1NPauO?3ixiSm6N^)e6-x3I
+zl2R2C6-p9|(o;(m$}>{)6f*P5GK({lGIKIZfck(kCB>63Zq*P@%LAHHQj(Jz4^@$q
+zI=Q-X_hgv_#mTR_tS4{i;bl@&o4m0`gq2GH2qvFNm*)X7^dP2dOx}20c=Cl+ytWX2
+z4ao44)M7n|lj1WnQ&Lj%;?s)qb2W-e^GY&vQ*{&)lS}f8bfE6jQOL_LpL{Sya<WOc
+k=;R$?Dx3FIvl<IvxT<NLCOcTIruF25?!uc7tm`!f09_?*YybcN
+
+delta 19
+bcmX?diuvpj<_!m`Hz(II8gJgQvBwwyW)umu
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs b/crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs
+index b1e22bdf45584c35103f2ba459c3ccd5e01992e1..57acb0659c810f9d42579bdc22bdb6cbe9a34788 100644
+GIT binary patch
+delta 53
+zcmV-50LuUJ%LMVv1hCiK5^!u`d1Z26XlZ0*Wo}<)a&K*uq1+b>bYXI5WppecZf|#!
+L{M|vb&D<qPwRaga
+
+delta 14
+Wcmex(hUL>~mJQeMY!16C?Fj%vwg@l)
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/character_info.rs b/crates/gameplay/dispatch/src/gameplay_transport/character_info.rs
+index 6d2ea2f34505f2897bfae58ec474686dda357e84..28b65103530ab6e1a63870f8ef2c43ba9964732f 100644
+GIT binary patch
+delta 297
+zcmdm4__27yD#6Jy(wxRgrFkhisqwjq1sa-qAhHHX)F`L{Nxl5C)S{fkO1-4S;#8n)
+zacNRwQEFoG<bDn1$qR(oHXjj8=bCIF%`!Pbn$?61gES{Ms)|j%rz!+C<b$gC<eRc!
+d_U1g90#3?I{-9*OnOSW%6S<z;+^?Y}006FQXs-YO
+
+delta 55
+zcmexZyt8n_D#6L8)%Z3u3l(!sUZ5;AIY60Z^L?4QoIsB1<_~JKnLyH$@2c@neyuLJ
+JnMLa@KLChL7D503
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs b/crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs
+index a7723b52facd3a1bc7d4dffbde63de5efbe9d0ce..a843e55a34875ac087fb7f3a32112cc56826265d 100644
+GIT binary patch
+delta 155
+zcmdn5{#J9t0*=YwS@=BT6Z29uYDyA|(o;)n6pBj{OHzyV3UU%FQ;Xt@Qq$ryGE-7g
+z^WxKr@^dxRic0fJGILXP6cUq5@{4p7Alh^k^76|yCtu{1nB2qcz#jrO%P+qqEVDQ>
+yDQEJ2A<@lqIUG5}6H7`Gle6`TQ%g#6QsXo8%E0oelNSjXPL>c9*nCgmArk;ep*s8k
+
+delta 17
+ZcmaE>xnF(50*=jPoOT?Wd4wJ^0RTgA27v$o
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/composed_admission/world_map.rs b/crates/gameplay/dispatch/src/gameplay_transport/composed_admission/world_map.rs
+index 0ad4eff13677be3f38d73c2f0385bdec4ccd1eef..a4e676af3e1a7ff8845461e85e3ed59a5637e8f9 100644
+GIT binary patch
+delta 324
+zcmaE9^vrBS8pq@aVH=a2)Dnff{Bi|bh2qqlG`;-tywsw2pn!&^HJ1VuWTq*Alm+MK
+zrfTGtmMBav;;5G{%S<iTOU*0EEXhnQ)+<UaNzBaCr~wKTRZgDBEh4E{T#{G<lqtwb
+ztOOcal$sWwk(rW`nm2g^xAf#(R;kGjJS@zK$t9Bw*+f9>$?@W%%t5JXlh?C~gZSc^
+zK*d1gE3Fj3rs_fYlNs5-@{_OgX-(e8$}yQoLYx)oVjZr@ay)X(wVKwG4Ot~O|K-@u
+z7?75kQ<7SwQKJ#B12IIiMgh%X5J$zQ73Jq@s1=n0ZOl#8Q2@FtzX+;F56S`Bv3Uj8
+M29C`$gfFrJ08dqJjsO4v
+
+delta 46
+zcmV+}0MY;EHt903W(W*vW*}^3bRbi2ZDlBv)(C%+2M4p+3cLZc@eHI0lV%7!vym0m
+E1+KUfApigX
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs b/crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs
+index 615d0edd11dd8b3e2f09db6100f29686bc39366f..d51074329e5b4c39f17475bc0c52753e06ed6055 100644
+GIT binary patch
+delta 56
+zcmex*jN{sIj)pCabF0M@OG*-xv-OHoOG<K5<1_QhGK({la#E+KRx@f&KV8kJI9-69
+MiDmo3YQ`(e0k7N^%K!iX
+
+delta 27
+jcmcb1oa5^;j)pCabE~I+_{hjI-M@>Gbvt_v<N4(Py&Vi%
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs b/crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
+index d1f610e5e4a5577cc55c2b31d5a372840a0d4548..e88172c730f4ddc4a22b8f096f624e448ac76539 100644
+GIT binary patch
+delta 149
+zcmaF6mHE$3<_)GCLb>@V3K^+I`SJN_@k#lmd5OuBjX5d=auV}W(-W&wi{jHV^AdAX
+uH!tBRDd0m>s90t;c|xH(y70R4P$7i^bQ2~+RSTfYOukqYzFDI3Y9atzlsp*#
+
+delta 23
+fcmeyfllkpd<_)GClRY`gHech&E!eDHeKipPgQyCg
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/npc_command/hero_of_bounac.rs b/crates/gameplay/dispatch/src/gameplay_transport/npc_command/hero_of_bounac.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..c685ced70355f1e9dc6a47b0005c0205133b2f56
+GIT binary patch
+literal 2041
+zcmc&#OK;mS48G@Au$RsrGItxWi~1Ofv;%^z547E`hN>`)S4Z+BxoyzozmF2_*h#bV
+zj21B|@%8Z|eQ>Y`cQXWwvV`yGqy=U46Iv&IVRX=|89MNE2VV;33;h67)Cwm<I;={$
+zkoP6RpBkM9^Q_TkgW4gux<V^N^Yc0~^U64!e6#3gr;~Z%9JwEcU>a2jCB#pMbZsv6
+zWOdm0@t!5)(JplUAm=e`9z!}I;;#@hv?e#x{NB`BDv*wIIvfnD`aX$yq=34f!>z{(
+zUI#$W4NfW9$uJ6Mg)GfOjY;&FPa08(V2}<6s|{CE4HW?(Ehf=gwnYip-(Bs|yL<@z
+zf5H)^^2Q1{f1#Jt@J{*giDDoGbfEA-p*?C(F)k~0C(Flil=;lo+81*S3CtwnTHdhY
+z*Qenig%2liRRyGvLOmx90wwy;1dlHsj$vIy=DhUiGF_>>PY9Q(+FHsWrxPwb;JE+B
+zP|c+0tipMdS*M7VcVbg+7MhzojO56RrZ2$(m(2$0*TaZ-F>N!?KEvKI_gjd|>k%xM
+zu-EXSa5=TfSfA{(lPuJlHs#0U(AQSOrP0WaSJ8byMn1`+j0Ept6HkL-15zh5ahm*H
+zr!S3qOwvv^8xm#c4Ao7<PnNCmvX@|p)#}$yf-*eW15#=K0I-Y6m+AVhXv@}prcAYH
+zuOw+_zDn1a?{%Q?5CzwkF}$TZl0YvZn$c?P7}D**+8ChVW=*4x8oQa&o%fj$Ghxnm
+z7nU@2{O7Gyk8T@Tq7ffNBpcRTjBjtpSC?r3q`*m%X0?8{vdWE3KBjO4U$*)aLvIr)
+zD8s|m^E*HUX&Z{s%oGZDIHlaQE8>RiSqd?_y14#ves`V`0ESxC72L+r#Pi%!{z^o0
+zzr7I__(HUU6QyL!(W=J*cEE~kE~}=~?cPkcHl%b5t$_BVtSHQX*^)b!qzmkf-+*Q*
+zHg~RSPeaspU@pCyLAcv%$p*3E_yjghg)o}xB;`0R<+H-kH;-FK<M5llb2#b2%kEnA
+tk`OEnUc0FZo!ll0gV_xV@PN=NjGxY7yDDSyX(pd#;nz!piMXOh{RP8yWqtqv
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/npc_command/planegazer_finale.rs b/crates/gameplay/dispatch/src/gameplay_transport/npc_command/planegazer_finale.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..2d80e3d7a96abf18edb0791f593deefcfda144cc
+GIT binary patch
+literal 1678
+zcmc&!-%r~x5Pt7paqs}i6w+;vhB2Y8laMxG{F2Z#RmQnC7KxqNPD@Aozwc}Z+Cuj{
+zOI2f^@9w+r&R@U3183aHDZ)j?6<TLxfo9(VK62q;EETVyki6297QrAFC0cMLg3_iY
+zo57~ybADeT{AkJl%5jG<Gt!~Sd#y#VZG(of?(b=!>qc8Fz8bXUNl{B{rB)dTtrQAJ
+z-;CW@q-!--#qw}H#=E%F6nm~l6JCepqu)NUWi0$NMt~Gf_#ZT*fFFTd2)4ss)7~cm
+zNeW{H4WZ`-lOE9G&sZ4jZ3lU@KguBfj<e_^oHh)Go~#r9eTm~}5fMLwRV~pVl|$ty
+z$5|t;dG&A__R(fq<z$T>K*@=Y>M|bOe#m+$92~=W;|V$n#f+ZY!q}C=<`|v=q}R5M
+z8aL{UIm3~MzS?%!R|gUEYTw~p9W1DO4j)|xPB&6yKtwsi#e-dRuzVW7<k)xG-_1Y5
+z&ZpQH#?CGVuvm0H`2=0kHS=<K^5rhg1%<^TN%L0C3~xr-B=1x2|KU}9pTnSQje;|+
+z@Gx-V5B*wh>?(ASsDPR(ZfJ`syda|SY_uwpP*ASg`W{UNdy$IV7m$A5jDDqSjIh^Q
+zGbptbxCJE9qpS?`PK?C#IXx_u5D#7PgY)kf--g%2oU-a9O;?1+dH_89QGm!G<o5^v
+zzTWS{&FKM=Ij2WG9-~1eXxxY}E>-vDt!@n=_FXc%f|)jj1$v4wA;b=FO5>ZstdtdQ
+z(CHyj{8sTPmsL;%OJg+$dSaY>o07tqpa(RQmLvcSr-BX130EMM4~#|rCa9N~Ig67M
+zdD=p!&pt)5^K<u3w@`9YG~`B65-(OxIufWLaX}dJ-HxMQZ?Y``D^jian0(arb&G;A
+zg|j4m>$lmQ<?6;VTGHNfU4FQoE8#_mH&ot#k)SOKWJyU_9KW?8_WIH(Q0H^rIvUz%
+lnqF&8Ea^p1Gaz{+f$?+hMLnZtdlAgQr%Q7_<I)j3e*q@Q0crpM
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat/prepare.rs b/crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat/prepare.rs
+index c50ea22996040c39f9d70dc1a62756f54023f816..f33c7240b0eeed894dca23c03bff2f2e4b8eecd5 100644
+GIT binary patch
+delta 507
+zcmb7>PfG$p7{-ybAnFn-WN7a}O~cj?kV^#N$!o`0#@%;yV0T7lW({FWJoE|X(AAF+
+z>{sZE^Z|+@ItGoq_UGChpPBdfJnu7$m)ysD?x9!Gce1#___bb^tNO9Fmtd)v%Y#vp
+zWm#?M8@r+33j0a17H*zWAEY7*r8No2423hMo`=lw1rJ*yVv2^?0pcnyI^YT<DiTI8
+zu(lrbEBdx^ku2)v1N~g6CiiFI&b-@&bC_^R73B=LfD8<bga|HSj4K$<CPYf`s6bbp
+zC?ZCvU`iz&(txU&1(z%n(c1=d43ijdK;Jh5(nO{~00JcsrU+_`RDh9CcA!p~8$=#u
+zBZ!zpG!a}knh>U>m9osnEq!%#XlD+ow(^MMG@@rw=|~=8tNr(iGKEZ8>!`M^U)z=W
+w?~7&=BnBoMdQMu_&+H2QjdTd}T5-mR|IvFkVXc2*)qU!$pLY96e(-tx1q^eo*#H0l
+
+delta 39
+vcmezRnX&O5;|3ei&5@$1jGGUO6|-+Hk;`S<T%{@|y?L!eF3;v4et)$9OXv_>
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/a4_invisible.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/a4_invisible.rs
+index 602896dd93ca63f9247354cf9e9308ff9744d4ca..0fae1b01deba026a467784e7b60dd8da1a2ed1ee 100644
+GIT binary patch
+delta 822
+zcmY*X&rcIU6i%TnqEh>VLIEYyYP2L}!_pSo1tW+Dxo{A}!OJq;zSc>%vzwhMq&E&G
+z-aPnD>Pi0rF?;f8Jb5G-FKXh=8=k#6yDd@Yurt|w?|a|(zW4cQ<QYbepG4;@%DE#=
+z0bn|wDXG^6X<AfB@Gu$6;c7JFe~F%sV=6b5X!MxfG^IxwXS|IkE7Ngdc6+jjA8ya%
+zr$h>+mcsp9%>SDBIfAD~7C)x8@kd7eoQRI!WJ2^Pw*XIOrZAVjirU>2zReZ<z4WhZ
+zYr7BjR)}-R!6Qx9YJmp|YLFhcSqI3L*B6r7#I<Q3Jk4@lLoe6Li+Z`fQbK)ca+NA0
+zk5%yiLApI5i3b+210dWXj2|$;8aA8*fJ-L(8lGIv`e#d}(MTR=D`&~DPEnoLVzQd`
+z7prmvzpZ8Q^=cMh)$ic_bq$XSQGcY?jNoWx8jtGfag7NRx~}ZwyJW6h_}h`XE>JJ9
+zK9CjA+dw-+I^<v3{-*Ifg0V_AXG5D>eXYTGQ;k~u$Glt!oiJO;Crl`3O>jYdxFk-C
+zgbEg&o@_BmEb7t*vr(@WalcM5U7HO8s#7Vc)fom}bQ%J@1Mo`Z{G~QR2<Gq-SuT-X
+zrwhfwxE55@QvpMa9#SU5B#-MeOCg<MY=-wXmkNE43D*%!Di*_d7;e^%BliX&1ciEm
+zk`7milL5Dy_%L-PJ6KE7=(|(|28V`~jT`uKEP?Tjs{eldMLfvhk`0m!v&Ad5dCcgK
+zQXUBDc+ebBGZ1*BzZn~%{DtM;5zOD3jfagH=CurNOkcqEL>|kP>&Pqf@r8>-9sE8y
+K7k1p=l79fP+a@mn
+
+delta 504
+zcmZ9I!D<vi5Qf>fs7WNzje7|s6az7{uuOK7EKHUq5mZ=%-~)&ZJu{U}Gd<lychAPb
+zivht~E_DhyM125J<^?=>^ymZVO%U}B)XB<vux?d<RsHqV3DrKmsJ(q&Ur!J-6QH!*
+z7QxXW7Z{{U8jCuJwW=h`^ayQvUjH@Q^}?KsIIx;=$>qpnCP;JZwmg*tO1sWPhN<kd
+z_DW~*>kO?n_UGXiHzsE?!Zw{XRw&$d%5ROIE7$Mn!dNC?v(xSRI|n}f?le^&xEyoC
+zLxGS9R-iVZF|BOp;J?_|fNAH1f};VeK-ojo|7Kk!MFCZbYf!m8;1;-nP%xQb-16wv
+zjb@p5+n4C|_K&L?BjjT=^s?8ywr&8Qu*gESoZbxF@=I?x(^N;&3%QJ|CzwZ_$DU9s
+zY18-K8hyUIM8^v^%MX5BqxZL$X|La)eSbK2FU@T6@WPvpVTqp2*N4uOJ=4mnNQn_k
+z(TlRIzq7fu1qNkofJwlM(dpe48<T(ORA^9-QPaD@TKTb`)Cl}ldN5e5499eGWq}H}
+OS3cc6y*x>l@7q5keYIEs
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_info.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_info.rs
+index d70fe06650ec4872ae7f8226ad0b1baa3e7f16cb..6559850890cf74786ef2f8e2c361fc52b67883d7 100644
+GIT binary patch
+delta 72
+zcmbQy&A6(Yal=}BHXQ}O{Jhl38!W6hzp$Uq4C7yrHJZFYgMIT3=O9LenAT(iUXID{
+Pxp^kvQRSE%;OYSY(+U~`
+
+delta 47
+zcmZ40%{Zf*al=~s&718nF;BiAYczR*2K(kC&OwYoj@D!YUXID{xp^kvQRSE{Z0rF5
+D;g%9=
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_title_completion.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_title_completion.rs
+index f88eff39d63492cd47aa6d811912d1fff7403b63..eff1c1d65f90dcf6e60df52968353c758721e2cd 100644
+GIT binary patch
+delta 12
+TcmexgH?@94hwbJfTV5srEOP~T
+
+delta 12
+TcmbPQ|G#cShwbKhw%-{6E+htx
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_title_cosmetics.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_title_cosmetics.rs
+index 8479dce0e6180354e4494f42f74fe66ea3bb7e70..dc0cbec83cff912efdb8a64b4183609defa16abd 100644
+GIT binary patch
+delta 1160
+zcmb7DJ8#oa6jqa}kd(9`B_OeIa9>Vq+=RZM4=Pbq2_)JgGJv8|S<VTuV*483>$a$h
+zDkK<KV7L<!D<cvpVqigKW`L0q@k_YAcAEr{5FV`K^Zd^D9shK`H{Ts5dS>|N#IrMs
+z5txRrXizE5UcI7$c+c~T$)Vh)PfX&{z}~3cY|y|n+}5?^Qo47|+CkpTeCV0w_fC)U
+zkEu)x2Tmpqrlz1=N1%p-utt2xu;GS}l!D=TX!wR}BGe5ERf{sqH5uGx#78jPDm)61
+zGI%I*7}e7t9?@(aEmlWgBmmiUu^Q*wgfze<!Vi=gHpa#NWi-+97<fL}K^l8a;&?VP
+zi?~r+VS^Jes7ZYM<p5+Ov!XQcv9blrz~86x=Od@0TP`DNVNpVgYnIaEeX;4JM~}?c
+z>4_urTUxy(5<sQ6r$Gp}0G10CRjHvM1qIcmnYq$-FgH`sKvmklVqpvR<*bl`c*yPk
+z>j$!lP8!?9SCzF+ZYc?T6P3bBGe+5z^(0_5OK|B0w5~>t+FO8FRU$ebr7(-xs7Hyq
+zR726)(S@$CWW6)|TU3Y|N5wWglbhfdhR*VpQ+fU+JID`HeJ7$h3V)JYZaLYNT+eLl
+zt@0|9VD;8|u|LUw=)I$|sgPr}E>6c}=$Au?3kzk-!Lo1cplzeiH}q9*Pmb};Qt^S<
+zN{iHY!&}p!VYyWeaL+?gUyVdKUMgf*?fMEm-9*svK;vC_?}*kfQz9>aIyt{sXp<C%
+z{@qW?FQ;;ASm%5=&tFVl`rkgC0)@EZKIi!I^vUgRNF4|}Z!1Jg5v%H0U4yZTpe{c3
+ztv@L&=*F&Lv6bjA;CFQ3pGu4Tjh;<~Z6v?^YcW6mx66e6P=)5yzWgnvFnmxOY2BZG
+Gp8N%d%~<gO
+
+delta 77
+zcmV-T0J8tsed2Afzybj?lfeRovxfsT3IkJVc$2>kwE;GhO%)}xnhq5LlLZhVvx5{K
+j5&||Ulba<Rv%e;M4G3XuY#?-Ka%HnUGz$Z>PdkYNKph$K
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_title_sources.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_title_sources.rs
+index 950ec51bbdb5fb4287cf3781c1ca6893d31bcd92..4596750b60da6c073df9b70fafa0c64e5accbb3b 100644
+GIT binary patch
+delta 16
+YcmaD>(NMYJh~Z=hL$S>V43}{M07jt)YXATM
+
+delta 12
+TcmZpud{(jHh~egYhKslWElmb%
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs
+index 1096b0fbc15f193b95dd8e23a0b3472c54a9883d..693bf9187711386b40bb662be219bbaa1ccf0a81 100644
+GIT binary patch
+delta 546
+zcmex#k8#!u#tlc9Lbw#5ATKdDRR_*f%BwKbEl;dWODsw)Qi2PE)Yd2{CFdj-7iT8x
+z7M7+KmlW&f6(pl5nf#tfmIqnSWFBTIQ~@<+1y-<%&2G#NT$4TJc_%NhXJIo1i%q_$
+zpbFwLnQ%>houkTYglyL4WxPuK62(PjX1c}68AbUinR)4{MY@^AIf;2GN|P5zi%*V|
+zXA=Y|h=&Nqmt>aYq)rx4?3nyPMQXBqINM}RRrAUFWxh|AR;-x3UQ2#*pPcYy7P-pF
+z&XIzXA7l#x`I(blI0Yvk&}5ywODPGehHJ8od^VCAF7@2RlH`okVnq#P7b>6zB{0Y)
+zUyv6UKv4n`d@e6<i7p5V-K504;*8YPV%_4@<ovu8AeESd6272Vm@Ka#&jr`53H7%e
+zTYPazYJtY&14?2*ho?=Rt|&42y-MNa7#9A?tEG81|5Iq<1^T*XvVyV^JS6VxMMA~g
+MK|bBwr~kwr00xnl{{R30
+
+delta 379
+zcmZvWu}%U(5QYO3BqV5IVpQZ94ltbF#stt-Oti4G@d1`~4=(KO;qH=?fNx+yGFCo?
+z$-RQD1(luA&dS2X%ErTBjEU7hGx`7dzuVW;`%~)fKD{Gpz+JHA<vxk%$fJrY8zx{g
+zLACZ7xfpV7G?4>l<65SOhnbBuOt4t8;_FO12e1cMz=h`Edk}=O4`XQkoW{_I+e`K`
+zPOUeLU>iTJD%N3?Xbm6X3}@CcK9u{(UN{P<VLh(P^#xKmG=fHi(O^KhG>S^bztK8W
+z>K^Bsc)rqxXif!D+zgep@x@-pT&0w95SptvEoSkwVkI?B&4sNfRN_2QMuq55)_1`u
+zzuV=?g)kX>>ELstfFJo4+-+v(>G-BP$tUDa!3B>e0DscIAv5=E{^waV%s*G-lh*9u
+E3$~<#vH$=8
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/reaudit_title_predicates.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/reaudit_title_predicates.rs
+index b5e50209a49d6c7fa04a9dbacfb7ecdea7684a0b..c452d8dc5673b9030f8d17e8171a9c61e15aa250 100644
+GIT binary patch
+delta 202
+zcmdl!gRyrO;|2u*HXQ}O{Jhl3j=YMK|1gV9e!#*rxq(xDasWH$<OQ7klV=IsgDVk`
+z14}(%VVOLiQ*E*UFW2Umf~y%PPmtx9oaf3nd4es+<_W?aTrke$vtIUKL#!P6H-D6U
+zqBQwDzv$!z9^8}v^D8pyOg`h~0FvHp<#-Qhh%L+HEZ6kSxz7AdAkOA2*By+TW!$B~
+ZJfKwYWF9w{&3imW8DZvcKI@gm2mpjiMw$Qs
+
+delta 127
+zcmeC3#khS2;|2wR&1wP>jGJ2oWtb-aVHTVGfQ4mp1E=fccz(srP9iOwn;*#9Do?iO
+zl$k6bATYT_PzWe1K6wI=EicWtd5_}-#>p~np_{)u^D}Lhaa+bXIY7pGvYr>m<OVO^
+e%@Q6*LDG(s*SNWCuJ96Nocuu6dh;W1ZAJi<c`FD2
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv6_hero_title.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv6_hero_title.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..58858bb5abc1172a9c02510e4b44e00d99a94b58
+GIT binary patch
+literal 8932
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv6_island_title.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv6_island_title.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..0f8db5f731e3d9ba28a015ab3d2de2f4854bc859
+GIT binary patch
+literal 7119
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv6_planegazer.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv6_planegazer.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..8814e197556a1ef3786f2a9bebd7c6773c33e4be
+GIT binary patch
+literal 6033
+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
+ZlA*60;r<Y0?FPqa@HwY;t-JBG@ozfC%y|F+
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv6_title_task_board.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv6_title_task_board.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4b220757edf624341236760a53b411a62e7f2c6c
+GIT binary patch
+literal 11927
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/task_board.rs b/crates/gameplay/dispatch/src/gameplay_transport/task_board.rs
+index a06e95401b0a2a14cd7142836daa9186eef6db7f..300778693e91e8cfdd4810e64c56edb7e4834093 100644
+GIT binary patch
+delta 124
+zcmdlUe=K1`x!mLvaw?O%l?*2Dl9QjTAjC5HrkvyCH8R31nhLgdlP~fsOtzQbJDF3P
+zm#;XrxHvOEFTNzRBqz0a@&+-5&7b5?F|lwdC@5^+qZGmfGfKwF$}_JlF()&{Gq0eu
+PL<gh*4mKyMhH(J^=^7~?
+
+delta 52
+zcmX?>uswc5x!mN5s;-mI%E?ZCC+Enjsi|OVH~AvJ!sImhy_+)>4lr%jQ4V1OstMfu
+IK{bpE04v@T`~Uy|
+
+diff --git a/crates/gameplay/durability/src/durability/character_title.rs b/crates/gameplay/durability/src/durability/character_title.rs
+index 78edbd8047be0d747fe584b93c15b52de7940e68..cc4de1cf5e2e17be223ff4259fa7b2381ce7fe83 100644
+GIT binary patch
+delta 2213
+zcmd5-&u<$=6jss%BvVRNsGU$qMlniuQ+L;{nzSsqkwt^3k~$(u)kY;6Cc9&M<MqsD
+zW;ThTU^w-N#2h&BAAkh-#=YW()C+~4+5-|tPF!JTxBijXT<C>8tajead+&R1zVGc{
+zUyXkK?dW$?WAgEdbJK@mKp7G~B^Ki|+o=Zi0PY#(Yhw?yKs|jn2dstK;q5+~{A0|J
+zWwcPzXFZ?0bRV;3_v9=UYDwS$Wq}8GBH{(uad@<Y7)Fk>iFN{fHJ8%Pa&i23TYvOL
+zcX}Z$L_8>Jm>7Ng^1=8-``mN+(}l!{J=j1Y3^8*t5ugYfNVqjH%W0%6-0FAz`D|I<
+zeC3Q>NmC;RpmU4E1dRT6YltCN;qRH`PwA}u>{RB<O!{PEHDlLyCQ}$WBM`5{9g3I-
+zL+TU39l5qO+Zr&>m`hdz9U6Hv@z%-oV@2eEDfpBb(c&e?xly`p_Hx&#fNtb-pJ3R)
+zBys?w2bN$>SjEDaIliruB)%;jx`r8rw4%^O1i7%{6QnNUScG9`x?yybFhB%X(MOmK
+zk1(*Wy<6Spa<|5)=aZ`P-&ci*V*m#Bk0h^9)<6OD80H-AMVKphm+}S{zRRt_-A?B+
+z9Y!4`M@}wH-05AsF3-~Rf}A$6VK6FUae(unV1jwMo3>AYc_5!m{I=p(zz{-NK2Lm2
+z@Nu_f9d<Z1i=dFtr{q%pb@}7uRI2OoN&DByN8{uBD2T9puyj^#gKJxJiHsagrI=v$
+z0mk*9X(v3JGjn;<ad!NwVjU=LfC0+ozy~Q{Y%H%Xzq6^j77=00o5jLHCqt`L-ZDz-
+z>!q#Ep-#%U(-%TUtGe-aytJb$aKY|pTw<>8+b*T`IR1sXyLXA>2z)5OyX$K=Kot|L
+z1`dWCGaqx~Vy>`g0%Dq=RK5nlo)wpTwW!*yD(DZc*)Dgp)AH}<GjbPPZv6{3mo>RS
+zfr_tYPzPz@BD|Eh)y*ndd5U;S1bPvuIcB4%8gbzh=uyh%VjNFlbWjYFL{8STQwq!J
+zag|MASp#+}t{>KMvv>rXMb*G`RboYY$U~(<oKUxu%%zPmz(P^8J8dAtS{#&s>l>iF
+zwh78NS6Abn49F|K)#cmQHzd!dJKec;1VQiS`qagt&y|!tJ60j~I%wh>cv^bj@kFfh
+zNjBa7VfvSpqe=bWM!o!e{?8Y3J?Hk``K>ovwhdM=4uKmnrpGplM2#|EG;_TfYzx1E
+zfx--Y;^7dh7ZE`dAg|#I)jtsbVHEw6fdDFMa`RYvzUvDsmRI%;3IcjyxPc#rO~p-0
+z)$fA5*o25xBgHbo&F%L6wc^OLmH4te_5SzA%Dgq&PH$d5`9G`my$|1d)>_+Nps|r-
+r#ZHd4zwz$Ryrh^+>)5lxh}VoOZ_3KOPhTB24IMoTbM1%srpNvPI}Za;
+
+delta 217
+zcmV;~04D#PtpfI!0<azglUfATlU)TJlW}V%lkf%Qvm6I75R=^(Zw+*KEMsV4a$#e1
+zWpXT&bQmL(4hR;Lt{4^pDYMWRF#(g-8&Vi9bZBL6UvqD5Whf|eZ**aFX>V>TF)1pO
+zQ5-G-DwBd7*&uRncP?~td0%H`bSNTiVQ^n$X>((5c4cy9WFjd)EDDovlNPfB9>N8)
+z5-8RRlPNRlvmG>9B(n!uI02J@TD`L!G*<$%pItW$lbd!8vvg`H0h7dcIFlA^*s~op
+T83MBsZ^a^$@sV@0i;@xqUA|9L
+
+diff --git a/crates/gameplay/durability/src/durability/character_title/cosmetics.rs b/crates/gameplay/durability/src/durability/character_title/cosmetics.rs
+index e36b1e563aa052c719091877f8bf4b210e1118fc..12107c6f2da9ee72fcefa4b71f362b097b437fce 100644
+GIT binary patch
+delta 905
+zcmah{-)hrP7^mw9X|=_<4QGq`Su`XgWY&cu**YkU!4wf0cvnJ}oVKw^PRu#c7CZU|
+z-ke)+yz)+jT#0Ysl|F+H;1dX*BxULRgSiMfobUHH-}~dYPd{4aJ9=NO0)N8z6b3l*
+zEzfi!M2Pt!MuZx0im{j2<ws><7+C=&$!FoPG~dfGDQ;&6jxrb=rZ8{`SRTPZu;+k`
+zV>)mt(I&oUw0Cv&ey5}C0S>$=&=G=612SR`T;@z~ZS030qAm_NTO8R)gX4grD2xI`
+zxiLC|mo9omI8}t>;V7ddmXE-4e3w$>fNzDN8w|B`YR;Fdngh$G#DHhW-Zu}Ro4Y7H
+zq}eo=tI0~0^{#H-PUmNkzO~$qId%gFx?N~xF<R`qxGie7hXW)ltX8=u<OkMlG+DP&
+zXCH(sixQb%zn<I`AFez|{rE8j-d*fbZX=BFb7WIlBFGzPHs*l?s)Cf+Rbf%6%Dz+^
+zn@aH;id^j5r6%jGZp;n1$Z_658f}qY%B<&I<a>}_o)x^gFYV9G;8vF%YPm6UjHX0Z
+zG%J|a<QYHA;B}_UCYQIfk6e&_s%h+CttO;$lEl7Nwss{xuEGhL7{(Fedx(^@+!O30
+zxvh8F$_4)gZhr~)_;=L30(G|3)|0WE2TOib`{LGL)_%a37$v>+Ms-E+v$f{>KZn?x
+eo2_Jiqh1nK-YQ4^cYIpXnRx4GNlyfLxB3gkZ5SZ{
+
+delta 185
+zcmbOexZHC?A~Tb5?B-TxZ|2EcIRz&FVU*wegH4H%k!!Mpxa#I7oL)@K{@EIn*Q<!?
+zs}-l_r0FH+=ar=9mFRFOAOW?s#N?7<RI$nTl|)sLwdm#Mm*$nkXQx&cYiJ_WYHm*9
+zi{;q-M2w#c<P-%(14hQ!$qI@}lMkpVPTr@;Kl!SXI-~LAze;}@jW_>RUdRFf`V}{#
+
+diff --git a/crates/gameplay/durability/src/durability/character_title/exploration.rs b/crates/gameplay/durability/src/durability/character_title/exploration.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..6633f82e98ecefdae6af2425fda807297f0b5276
+GIT binary patch
+literal 4037
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/durability/src/durability/quest_state.rs b/crates/gameplay/durability/src/durability/quest_state.rs
+index 333fe3f87fed045853be695c7441de8614f0404d..582a91f16d3146bc924e5b2b888b12d799fc540c 100644
+GIT binary patch
+delta 88
+zcmdnAi?M$<;|4)(My|<<W*RJd>8T}??aUP>+h{9Ho?<4rIaa$@Pct_^MIj@#C_g?w
+qEj}r~G%qpPnhPXWkdv5~nx0sdS`?p_nU|Q8I{9Cu*yewcCd>df=O6h1
+
+delta 39
+vcmeC*&A4e7;|4)(ZoQJC#N_N^z4X+Q$pz*LljF1%Huq`w>1}q8@?Zu4CQ=SD
+
+diff --git a/crates/gameplay/durability/src/durability/quest_state/hero_of_bounac.rs b/crates/gameplay/durability/src/durability/quest_state/hero_of_bounac.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..ee74d1f13ab2b1c552a80b199946204bb7dab99c
+GIT binary patch
+literal 3126
+zcmb_eU320#6n*DcD4Cta&KM_Tnog_Tq>~bM!!&_yp!?G4c!art1|zYOoW--`zxPVA
+z!LZ4;&6EcWvUESrJ@@FIo*t0jKr?l$$x>?5)EuTj6fC7OWU81jnwS|7!%YT+i7~n3
+zQp|wiYc2@K*RbN+a4{vHbI^tuJfvA_a9i9sMf+`4Xu~pce%5OJ^z(#_nPJUoCPyqg
+z70dK=Zv7|dBq?Mrrl68BE8;9?^!$fb^Zeo>ZsZz>&X=GlEgv_zVk4e$Q*@M)>g_XI
+zSel|eldyEg;Sm-f45eQi1V7i?r8Y*B$!QLEQqJ>bRDbuu=KlaLubmeInX42!k7zP-
+z2H%57VeIxJ673mNhybVvkxZo;*JDT=s!`+VxtP=HWU^Fpsz7Umk<xaq6#ClO{lFHm
+z%vj;v?%4VIyDdVSAz~46zlXLS+?J!vq;xDXzCt9^(p2KI)Rej>0#zMO=jay85|J4w
+znaD{pLReW!nD!M%dyQp23S4DEG7)5n{9y_L2aWRhQF2sS+zlscgrs>z9zf@rdDmas
+zNZ-{8R4>9+MD_}QMSMm11fh1J$Buw5;baa4Ik@y;B8vU{k9VD6r#xbbpuprxkp4XA
+zNde(o7x9z(MvDgvX3`nxgP^jV)_`>&qgA<BU|$4D7=CLQ$r<cLOlem<vW$-hMk>H>
+zW_BHCU<ejlanR(F?3ZbW7d2`pX+>m85qu4aMlOxDFM`eW=ryJWx7QCh15fhM;Sw*{
+zG6BqMovin(@oa9tcvP#j3QVd@&)Kt~#ZxdrNxbX!ZMXBObKmI=y+gNQ!ZYM+u(l_Q
+zH92t47|X{I!`ePMPvpOYybKFVKadLuUSM3Uq;;^7ShS*5E#R07BZJVxW#ir!rLHS`
+znnP)aDZxf4u%68Jr2Qy(<W2w_U<Ib@|Ho;DY_0ow+Pc(En`qr%O|JGl%()m-a_E`i
+zTfgb_xH;j1Wlet(9Db9RjSe*x)s^G<Pmoe7;L9@+J%wT8X-6NJE<|co0`Cyv*=bg&
+z4vX9n{W)7v>J-c0An%Tos9gPs*OOJmE1&AbDlR48RYt$_p9RQfgUX8{r!kN}E1jy8
+z?=NqsR)0!LojQ7fHW*}G)exBdR;h%`wuK{L&3uS0Qu|9F!~1Vbjjd<}VI^6<$Nq~7
+zZklhsu9A;45J6}a^Su7{pu}dgX7P%-?Z<8Bxiuz=VC{ETMy(vDb8@*+;rs4j(Czog
+z(NXC(9>D~akX&7oi`puipaXmEV(SD${eOeG>GvO=^V#w~zrp;qdTz<>?)}}$R*med
+z=QhN?f8(mV@PMOwjIjEl0$VO-IvEuPbP&cyCXbK?B@ry0Haqd`3xf%zTqN$I^nDhX
+zRrHLXFlJvEH>Fg*G|RZd8>bODa*1rKRvOvR=e0M8R|mW%R1q9@dxOrykaT;)KCv@Q
+zvI!t@v#JiZ3w#{8wa7{i;525ET<}%0&>{JBefLLa5TKgKF$8Z~(eVsc$04P8j>q1d
+zN0UtAjRGsnV-w(DoX*JmhyFdmq1L#m5*;pZ=wgc{_Tx$G?CcDWkN6ZXgODK8+x_1A
+zyKZ|(Zu+FxAKrF*9}a8ij8KDv@7Ea1tuvmY<cG1_&RaiHI#F^Fl$Sb=1xBVaOG+uH
+zwd}=2;+Rs=XJ{vRN^fzP>rZ}lqg>3#XgQ2w1!-;|a9VtFVphBL$Ey;zp`8B>YJmkZ
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/durability/src/durability/quest_state/planegazer_finale.rs b/crates/gameplay/durability/src/durability/quest_state/planegazer_finale.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..b5c76c4025f34dbd4bddbef785ece34739604a19
+GIT binary patch
+literal 1425
+zcmb_cOK;Oa5WeSEOsc9~SH^uDI4n?9(i9@KNl60|Lde=U<75?kH{D&gF>U`lvumdf
+zAaNpx*q+BX^Udq<unUs~LN1jk!0O6m2s0@PJ+CkZg?DH`fD!lb0j-n5)UcFA5yRXF
+z<t#XIcG49H!s$|GqA2R5Q&|LCt<Z4ZJ|501Bc`&DuI?M7O$^yW7?C+N>B{K2L2IQ}
+zocAhYP`Tbl`%#p*DnxyOD#NEY+t3f6E6S-SC|V5ReL_iD=?G|yw_e#gXbMxSblzg6
+zL1#G+PtF@4a?X|%SIr5ILMoh#pOjvx4e_(Efm~Hn7I;M@tyKoO0u)BE4$#l7Iqa2{
+z1AAMnIS)AzQA+CVej2yZYi*q;eHsU!+_U5GPx6hWX^2sX&z|64j2kN|F43@L^?hTu
+z;r1i$MDXeq#%Qa;y=74hfAr=Q9zs$whc;T`o(r2Uv4-xurWVw$(be^3f6{MVJb#0(
+zG73gZ#-iv=KziEXbxYy01==p#AZJ_c3#}wfU6w-4SQ<sa&x1Zb`hoGBk^&Wrd<rMq
+z+HR|UmU*v4QsdbRN{|Uvv&Y7I1M2x@OL+H8YurCO{|0+|ZO~+jxi;txj<=*DC-@+I
+z2|<be-&A^+XM?N$`9H!o-SXVp($j{qKYGgfK;4N#&TbqLp?~4<x8^j%N)v8swlf&s
+z^v4qz3@0P-OOsN$+GP#PZrO`K&f*}8{RZGH6)vrmT&Jat;Op7tm;Mc-;np)`yT|eV
+z0@wQy=T${+yC-p8Xl)p-ef=H7mChD$F&<rk^$C`A2vR3YnsZUEXqpa=kB*MWeJbZt
+zxd=u>=#7RKmxJB}&POmDO+F2VA9r55kxV5GQrNC!JLN>!bXq&KEb_0mkQowwV=j+h
+zbDkSrvi5G!fpR+2McRCGz6GUnO%uB*&%~cX&aa=ZM<Qp08zs2Lta8Z0VK_K&Yl?d>
+Oq<h~iNV6=Rr_L|nbkLIk
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/durability/src/durability/quest_state/writer.rs b/crates/gameplay/durability/src/durability/quest_state/writer.rs
+index 0b65f4b20aaab6bcbe969a3cff6e120418434e61..0eff8dd77bc8f56d4fd600520b85e7bf2debadc1 100644
+GIT binary patch
+delta 464
+zcmY+A%_{_P7{}XTv%AL2dRgo=vp?%?Sy4hP4&Kg$I5GWfKQFar#_Ud_EidIp;d`=(
+za*?Do2RG#+H+ynZdvQTZ{sC)R;<<eKK0VL#efn<Qa(8#!ZhkXwL>Y-18q-6ehO4fc
+z+$_>VKyycs$WG;rstYWj(d7lE#Ol%PtThMu7bni8DRa|vZEK3mtI8asdMv$^IWos|
+zRaR%@Y1L3@I26)!rcs>*YITO&?P5q317>&mIw!cup9<3$ji|E*v%2VYm*KOu0+(fO
+zym|xJ2|6GjxgZK6HiBL}wAgW4REo6;9%F*fqOaPAJ)sWAeLPmTJ(xNvK<9WNlEPl`
+zKd*1wcpM)^1aF>Y+zffai#{a9Yy`y)i{Ug=lXe`6ofaQ6x<G2P^q|ykF)jr$+;2C}
+zq^B$=(b=NGqA?jszn5zyIP()5!M(pKukrVR`Yso2hb1Og^}Lk-KP&VmDj^=Y96zbz
+ieLsLyBFC*osKRFH3e)A8d4)z;X4HY52FXk%F6>`G9-o^4
+
+delta 301
+zcmX?hjH%}!6JKd@szPyTL28kem6kQv1pSS+%G`{$laslFj1}_oQ&M#l(o*x1fmBgy
+zVQFe{iH<^YVo737etIcT%r8F=m7IK!Lr)$m9Gst<s!@<wnVXtdqN&5B00o+xxAFYp
+zoV+`ifAV|<_ss(0+Zi|eNH#J}K53>mSyM)1a-@v<WJO`A$p>WQCkF(`Pv(+UXV%o@
+znye5ZGPy{060<^0&1A*^g~{dO8k4;j@=o3$ZZ&zGoW$f)a`Kbk%2`a-l((4tK%RAS
+zmb@vLULkJ+q|Lx=c?Bad9i^bYxmDpFGY8aH@sl^INHOY6?od&fyi!G(Nz;0Ay}Ib;
+Ow<=G|H!qyKlobG*M`mgO
+
+diff --git a/crates/gameplay/npc/src/npc_talk.rs b/crates/gameplay/npc/src/npc_talk.rs
+index 14c86f96eddc420b1a2fb1fa9acd1b86ed51e992..31510ce37b1c040e032c3e540f115c2dbd5a4d97 100644
+GIT binary patch
+delta 560
+zcmZvZ!Ac`R5Qf2v5ZK!;-j-q(Jed(Zge9{o=w-cVh!WXTsPt5l!nS9u?hZB*@(^?I
+zurIOTv-k-62)p1(D~T(6uusj;UsZp7_2+)$@#n^`r>u46Y=ST)PY)ly{NCC=uc8=g
+z-$b-LW-7s9;2FV~9a;ik6JC)tpNb#Ntf&{~{XwS-bc-geEp4H?lJL)1z_BDB(83jY
+zl%Y-<rYgD#$*{zf+lbx0ubsRFuP>_tNpf9RoBZ994E7J;?$zHM>~Ai<BikJaf-|y~
+zB!|l>1{evui3c49QxbwQE`{}~P_in4ugODnB?;VlrU}gt;bN-0A`2X8N;JS8d>oHy
+zRXh>GU{jvG#htgHnSb0|?CwIJ0<u$LCW?>??F$|;f?ojzE>&6*^%_B&8g!LoqhL;Z
+z$2pt?zvlPWSvz{ViR26|L#)qGXk47>zBtljuv1poR5A{No+eb1z*Ke8FQ#Sgx)$=D
+f%J=cs79IH@8cl}Edqp<u{iim)Z=WCj7SCrdSe?Xt
+
+delta 91
+zcmcaQo9XLxrVT%pM8XXXtrYU}aw-){GE$3E71Huci#9VWKNVMYE~+dpNz5@aFf_EV
+vOjGa+a8^h!N=+@v%u83uO)V}?Oi!K6XC29wnwOHEm^(Sux@hw;TmAq54dfvk
+
+diff --git a/crates/gameplay/quests/src/quest/classic_dialogue.rs b/crates/gameplay/quests/src/quest/classic_dialogue.rs
+index 803aeba4dc2df918041a33a054497e5165f4a39f..c28b644db3f6fe30d5424bbfd1f5b765cad8ad8c 100644
+GIT binary patch
+delta 104
+zcmbR3@WWw)Fn_cH5a=c5rNozHq~>W9mlmWJSy^SI7Ujq1r^P4bm*yoVTUn)6l%(dR
+hXmVjyT#%EPmzthfm0A>^mYJ8BlL}M6S&*Mg5CDeFBz^z@
+
+delta 12
+Tcmez2Fxz2+F#qNPehxtZBBlf}
+
+diff --git a/crates/gameplay/quests/src/quest/hero_of_bounac.rs b/crates/gameplay/quests/src/quest/hero_of_bounac.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..0049dc1a71a68150b0dffcb17448443c558f302a
+GIT binary patch
+literal 2906
+zcmcIm+iu%N5PkPojP+1cfJDVcjJC|Ba2>TVlGsV?rYM3ySdk-%5V@=FE-kCJ|Gj6H
+zq%KiVv=8-zVee(;%$YN1IT#$$8+OVbIhy2J736ZBGFe_2>w9!=SI%Sg<jL{z4?j*Q
+zQ(pC_g&C`2pcm<2E_X+M#-o*~^px!=Q>(bBRC0X!eedMyasTA>G(H$0%~07QXWJxL
+zSTnWkTy8XtxiEU_$Qwc=`m<u^frsyM=W{(JoXx6~ZG2EUCRZ)kCdvH=Id*Q!g|fLb
+zx<_GQIGJz?;9LK^$#vE&TzlpD95obXT5+>@W0iKf2a?BU2M3F4OsUb%)8+f~guZj$
+z(hKSs&vvB~)Es}a=FYRNn;(7~Uf=B94RyuBm9ZI^GLt}DfyAS*w-e*t#r5^Y)nyyy
+zfbi3z2&elkg@d$il4E<zb`UlP)$z&b>65`Xvo&2S^FaSj)>l_oAODw>s+v~P%~58I
+z-AQ?V_3r)K;mxp3`&E^G-JQXVt?8Rde+;RqbP)8~ua&wJ@$CHd#qiVc-SBe12`ZiC
+ze9I+kKM>|;tgOfF(7lPK+>PppQ3-XbDc7*N)PG51V+y(tooGau7784uBM54qB#@0)
+zxpwW<9(BSrb-D+S>ja2itfCO_6Q|Fwy@kYIHeo-9;GxwQ9#|+dnqzuptCD3xjZN7R
+z#)!t&%vlqrM@D9>yf1i?bCJdLhpA|pdky@Yh3$zd3NjN?gqc&GSaZ3O1-W}AVr>6;
+z3rb>&<G9n?K#_pX8-rjHNKK_kA1>FC8eB?eG~;4{tfsP*DjC-$x(326!5}bLl_2~o
+z{srJ7F2GnuC?=&fTAXsYBN&ffqxFLE=g|72x=0m{(#+trRpWvw#Tfr3v`A^7&zq$t
+zZI*i}e_<|YVwuHstWjkXnUo7j7X>Q^=5Hj5Dx9H`;SvNFk`}|VH0btD%0mmR%EYL^
+z`m8P;fItwIQTSOS{XG!B<8DjM5o(e8rN`*gZ4O831&Rx0VaPKhWHt`zOeKk0Iz%Wa
+z66}`1?YUSHnhd@zWw~1zr;5GYXXsTvp(Qv|n&7Ce0@zS{u8~HOc(T~FS1Z|{sf7!G
+zfKfOhSBe;FToaTF^n3WEceyJ>7|U6n&Zv}NIV`G%hg7K9`8{|yGo|MNjqnjl5qry_
+z34p6r&?8YrtJE*C;2z}&7<J=PEh0E~l3)oM;H(>`rYP_<MC~v}VTQYeq31i#I*Zcw
+zVMyxdWB0WPBm0qERru#0<n7tr?$Pcj3+_3u2x9r%czKV+UcWT6E>n&Utdp+iO*Ud^
+zC!I$K(A`~!KWTUZo{;DvoOuwLrSmx0J{`WG@c3+Q)qW*0<;SwGtfry05dfCTA4Z+<
+z{u49>bE$*TJrX~5y4`2%<d5O6`ZqL2Wfk<@Je)2eF|*N2JeBK$q=t4szEuS{LuXRx
+ziZl76?MIzt`|zT2vnX(UvktMv8o(vgJ{zI!QFmikfe3U^-r&7W4xa~rd&}wJ#%+a~
+zkgxuH*vch4@)Jl-sOjWh-1-o~QcT&XXY*;2B)@WWx&^U4U88Bv*Qw=WB}uN??_GG@
+zlqmQA6<pEVf5m#HSG$=c+dm>b{;ISsq+d3nT6Y5Z-s0nHEiJx-z2pqPPv{cjsCOP4
+z@r62fM=eP-FQfJSjo{<~#>0*mT>KN?gx@$58tDQlqm3wAEpBdX>9Jm{M@pP!#2B9k
+V{4(}I{JI{a`>>GwBy)rJ{%@2vowfh~
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/quests/src/quest/mod.rs b/crates/gameplay/quests/src/quest/mod.rs
+index 1dc2d29a05a88eb71df04f92a5858f9bb462ecb1..1c56475ec8cbf7003dd9649c35ae0a1510637aab 100644
+GIT binary patch
+delta 80
+zcmex8nd#INrVUS7`7%<A^5gT<;*;`A^AeLM-)5aISx}m!kei>PP>_?Dmzthfm0A>^
+imYJ8BlRCM8%~T*cqbNTmGcO$|npq4~v3Vw2QZoQK+8|Q^
+
+delta 22
+ecmX>#h3WTXrVUS7C;w&boxGIIc=H#wux0>&(+Z>j
+
+diff --git a/crates/gameplay/quests/src/quest/planegazer_finale.rs b/crates/gameplay/quests/src/quest/planegazer_finale.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..5ba1c8d794241a82c0319dafdd09fd3a78487014
+GIT binary patch
+literal 2645
+zcmbtWS#RSu5PtWsnE0WUT3e1c>$p+k6hYPn7TqHorv-||LSUq^!$u~xBxT1<{NFn~
+ze8p+e!w-TyoO`}+s7~hqK30b3QWacGU{u|q!f!QHQk(WIGp0l^+&&A=N;#=9X>`cw
+z8V%zD3;2nNLQbJ#6Flx6_WGc3#*1#Z-+z7b1C*qrd;Q~fuYb~loK>b)WTcI%bN@Q#
+zf|Z%VIa7sBo$oon=WQ)(m1CQg<x&5r6aMK6bKNFE^1GG-P#Cr7p7g?THfFiWbX`>?
+zPU%c{x*aR(zUuj;hfI|m6^!}h&OoK)M4{H4JSm(~IU3~L)^xi7bBFM?M(xy!I!Bc>
+zYK=hNQKji)1L*h3DqPBG#T2J}T3#?5k1;npe}3ko2!fGe1}~ZM%?!dD#q#^jyU^TF
+zR;|YJv{BW!kV`>{e7L$y;Tvil44^3us)a~Jl_yonsL4k00#!zW=C;wNUxuTbJu_EX
+zA~%E2v>SZp4t5+|4=>*Q_OgTas)L<<Po15t3LGPqUF>+ie0TBo{qW6y@V&xJC6(EA
+z`SJbLyW!37FMJxsLTk4(Zu{DO#uN4js<sQzRu}>hDm!pPh|oAgg53jw3OpoXPR!8>
+zycI+tMRNx(s@f3Lg^&hVF=HafQy`?Fu?!=`8K#VO2-|SVj(Kcxs4FRo$jFN4Db(HL
+z7EB4F#4cY`4DEBrSSijTcYG^l8J~kkWQoRQL=XvPiIEx8Ip<j^=csa~F^W$eeEB%&
+z5}xjOGq|w8R!HO&Fp^V@qHYVutkf6>v!ye(k??`|NMp6pn91+JrM=~+3xjiL3fXKq
+z8|(U&6D?40$&U8bUMI=m_yyI>%0hY{q(JYOcw&7=b{H@itP_h9;<3oItAon*`H{jg
+zJi;L?0jVx}_44nb3(MA)QXDsy4a>mD(LS~l!UuyipnS#P)RTUf)^1AIsO!?4xh1iC
+z+=3C&RZO<0HYLyyKJ$A`-CTQ5yvUa~mJ051K?sA-j+QM59Qv}=b2}JkMSfiD8|!sT
+z!FGz=r1p_;VPq6<#$ylN5}>;5>UdFs3))YtOyO|XaLUELj6I~#-ROl;**JC}uHs~Z
+zCZcTOgljjfj4qYv2_Lw&oOy!pR<Cd{@HX+Yf&wIlN=4KrLgPWyyt0eY5qd>d-<L-U
+zwQR27Y%}qYwr?RJx(iUboK_78Vf`dF6bNGrYelE<E9Pg}`STgB&Yibx#!9+5qBzNA
+zSrUU*grwkW#j4hK(Q1A{x>d6q;AL2Ms~p!P``ZbkyPqi48RiF{*EY6#7th~cTe0kk
+z{kh(x;Gnk`(yIWBm7E4nY;MLh9e$0v&tPUPd@e!X2ex-*nvMt&&kdFv6j|GUlx!f#
+zzfJc-EOvwapJcymT;=q!Km<kVK79g(?d5#aDpefmu1H~PuZ5NCO5NQdX)16Yt*5uy
+z81%6~8_Lip)r{M3n@#XFw&_aPhv1Ih3Wi=7yD-U=RT&b&p6DUf6Re5$=mhDHmQ=Jc
+F{{)ReDTDw3
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/quests/src/quest/schrodinger_island.rs b/crates/gameplay/quests/src/quest/schrodinger_island.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..679439aa1a8abb9b303a5edf3e4bf1b7bef08fde
+GIT binary patch
+literal 2236
+zcmcIlQE%cn5Ps)ZOj+p!rvMAI1zhdD^!m`3)o$S`ovJD_$%I->?9_HBsN%oxI8GoG
+z?sPB512`Ga`13d4d<+H`Fn@TwW{?Vtnx~NB8q?lvHUnW&E@KdKrO}uGlmz>NfE!^f
+zy@Uj1gfYw)cRwKFX}aXmE2wvgy5Aa5-CMmimMV_E4u{iOGMx<L(fDdMSx!e0Po~o(
+zz8(%QuP*s0jxkwI%cPiF-dm+=$<u*}w8*U)WNM8WN?KV=F<07B=tZlTP@p!U2O8GF
+zFkPo1U7(*9oQ-><iHEZw>}z3!rHg?^%Y`KL%kA-{eimr#+;WSwCqg>kUkMVW;Xy5h
+zG{nQLE{wvP60zgNs6s~wH3D$Fl|)jJw?gO=KCLr46bc!=a6%sUTZN(AB1g^GyV7YK
+z);t=<K5i>c1Nfl`woo#FIS~+9rD;Xqe1!olv{(@hyPH-kFP0D~X)OHw>u$ba@SCw3
+zzCl}2Z?}@Yxy$v>aaR)4zG+l=yr17M?*2SqqnB${s^VND24yjfkILPBU)(+XL$UhO
+z1Ebg1y#~CV?<^H^z&eqpwsawpd%1PG(E9^wqTr(i^!fDYUcKU$K?$KRq*a}6Q0{c0
+zk`v|$I|*9PEvrdpY;G~XmxpvyHH7V310RrA{bJvhqz)BQ&?(gek6b6&TxHl9Ud?9H
+zZU8*bk!w!lRBnRZp}td*_NjZw+PyPknIcPgYVfc-=f;pI412_gF^TWZo7U>|XV;n{
+zxEnSeO~<1EwzRk$Uj>k)N@>=cz^=iR@rq+>j4qxk`BApjH218MOU)o;LW-=&SZ^3W
+z#y91fmIf`OpPU>8^}50jyXV6ds>HAy9}ksgxd8(=G%vz=&nH?kC0|30?_9^9A}UEJ
+zMXt{CLdKVcN`{u}6~QZe*5KL}TDow;MOtWNRu>J%tG8iB7D>!|!0o?P0TRhxya_lr
+zwF=0>P{Rvq?6)hT8uv0q6j6~+m2MT;FSkX?oovj-nM6sUHHNw%JsgAgwq$(A+L8BT
+z_Fw&&{U2Uj<F7itYwcRCFHcdj>R9ro?sF?sG5M&mrkdu4MgD$Mw&lx{i$9lZ@&acX
+zVZ$``9vapvGodHKYbx{;7?MYaF%=SyKPAaZynQ%RNYU1w{;gp){(QHA<_xtB@$I7H
+zYxip-==<_y(1!`{{#)Xa;HxyJ`1477VLBAm(e+>-hR6lW^AA&gl<49c27c^MBIK3c
+v2Tmg17oayeitM`k#}m+de&`?fc#uxE9<k}Y=IQHmzx0;?Dub!AoNj&rWdXfq
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/gameplay/quests/src/quest/world_callbacks.rs b/crates/gameplay/quests/src/quest/world_callbacks.rs
+index d1e06d7a0a332970dda9e86caac207eb0f6a1957..2081e51127c172ecf060a16a3d8a0e288b7fd47f 100644
+GIT binary patch
+delta 183
+zcmX?fjB&zo#tn-YJ%dXUOEQxc3QJRqOB9k4OOi8Eixm>{QWQ!uQWcW(Q&M%4N;7jx
+z6pHgpi;{sNi8(n*iOJc;3dI?TMX5klnZ*i8`K5U&o8K{><5N)Zb&QC2cJ%Raa&-0%
+z)+<gdDJ=q8ke41`T$-d|q&fMtfT4IEP^2ss!^p{ef&r721;s>)lQW9)Q-GRMi{dkj
+PbAYa~vfAt`_%#p!qE$nm
+
+delta 134
+zcmbPmobk{x#tn-YeL^x)6>?LH(o<6u3QJRqOB9k4OOi8Eixrad^GXsk^AwDXOcaVs
+z5=%0Z6_OKka*`60vx^l9a!QL8N`P8ZD)SO^fl`S%C5c6wUo)QLW3pA4T;M7(d5)0u
+h<o^QPLP7Z@C8>D|PC5DcDG+6o6$Jw}uMvC_2mnZtG5Y`j
+
+diff --git a/crates/protocol-oteryn/src/character_info.rs b/crates/protocol-oteryn/src/character_info.rs
+index 35078e6a2348bc5a9df83fad20945aaadcda1d33..cd8d9b1716c1dd54b1fa8dd66d36a85d771c082f 100644
+GIT binary patch
+delta 3485
+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
+YuL_GFE)R-5uhoikH#X+$KG?qFKmJjJyZ`_I
+
+delta 516
+zcmcb!fO+*lrVZWvj24@F_`P&DOF3QSnat>~uWlTxV5<-voSKtnWfhcPnV938UtCg}
+zo2sJ#5p&PaNlDGqnOxv6I(fPOjmfKg`8V$in98*IN62(eMx)6S;?4ufgm|0DpKL_L
+z{qjp3Q*tv)N>Wp-tU?ltvjg%o^Gb>*Pma$}$jHwv$W6^GE=es?(osNB8CaTHTr&A%
+zyxrtSi^UaC<q)Q5>ToFlfyQJhdl^wAdwdfM0#b{TQ}aqDt0iPdx}_!-rKTu2<(KA_
+zRAvAPO#3j+RPsnI%2&uw18Yl6#_GV$9SM^dBLi|0^HS3jt1wLk`vT@jrGTRR<ovwi
+z(j1Vfp4r8v1&MiBjfLr$yx&n&0LfdBKoLx`Ru0L`O;rdfN-Rsw$-!amX6K~CjGI5E
+hII%DqZ#K!)VBYMM$7ed(djrqp{=Mv*ZP&=F0036{xCa0L
+
+diff --git a/docs/contracts/protocol-oteryn/v1/character-info-v1.md b/docs/contracts/protocol-oteryn/v1/character-info-v1.md
+index dff9253f86d4ab8c11d3049aa0a6d78e91e4fd6c..dfa251f804e2421de8f8f9a40969bd9d5a5a676f 100644
+GIT binary patch
+delta 1220
+zcmY*Z%WfM-5JYlFfW73HqdV|L0{FBfhZ|iYQ8w(r4g{OXB?#cwOfNam?96&*RyG3x
+z%qc(M9|_=(@PFh>QoSVLm>|dn*;8FrT|J*J|9<h$HxIs=fBg2r&tLDV>fu9r{pz>J
+zR9x{wIrhm&rX%h;33eQV-_rA|OpCLB|N2m$9#_>%w@zGK3^c3j8Oi&C!c1i&cy_tC
+zu%=vM5_`Zj8!@*ih%_HCCbUAWiEYbmu*AVu9dCVPOHE8ImrO}oc7gg}HXPPs&%cC!
+z(=Xl}z#AtX7`Amd1`b*1j(snAQdRc@^LtvUv`o_vKYaK74!;gs7C+KGUF6OsCH$-p
+zCAS<#w2W;hkW}bWIG5~sD``Yeg;mjIMB#RW4@p0L*1O_-i~l%T>Y@V_aiRI+8D1kg
+zd8FT}lTJ@|!}F26@4PdvP<$68L2u{TNULpQ16<>Ki+0*b=@sDT;|bj>`vr(EH=x-H
+z>{cG^JvFW=B7uGp4s`7#B_Zqb21XBT2TERc&_pp9Ie^swyAtaR7xa4)3aBIr(gPMF
+z>O8!#WH`it8c#ZxF|1(f1W5^n*P>#*nnh=`bDRp+X+GHRd(<->`y7p)N!mpfs5Y`0
+zEV=d^WX*r74$RLbsAp5C5s*Y89B}B@>!o@WQ^^O+M~Zm@%#~|}R*CP#d&N-Fi02K$
+z{1!1N^i(tD=_*OibOZfD2yiIpbe$r|=H4r%=eN1<ID7%n^f2}!7^ic&=nbd+(FwiQ
+zfKvmanS$J5gl~KHuGt>wor2k`c;iCGo-9+JqYTLH&J{Iuzh{K=x=8c0x?Ye&){qg*
+zTd9s<DKvfdwytXhuP(r8zn#Dtwl-^Eq${+j38T@;Aj;qjp2I#L$mx)G=r=l8Y-5ON
+znxtT+V#n{?t*em9VY$&CIhF*8x~tt5VQLydH1v8<o+ibd$C^y)QnbB+2{)Ll<>a&k
+yM3R`8G{-Jfzwd9E<^QjlKaM7o>HeMM06uL+m)@B?)f3}E;rMVbO<H?Ass01yIIMC2
+
+delta 14
+VcmZqkIqtN9O`g$cGrPP4696S61OEU3
+
+diff --git a/docs/contracts/protocol-oteryn/v1/world-spatial-entities-v2.md b/docs/contracts/protocol-oteryn/v1/world-spatial-entities-v2.md
+index 017469418981d7c6dc9d2899304eba85f0b00365..78f862d8da9f804e755cc07812d1853182ca0013 100644
+GIT binary patch
+delta 811
+zcmZWoJ8s)R5Ut!0NR<O*IyaIW*?=S4Rbb=-`PCjShvLG^-ObEU5-VOHUG5O1%&7w8
+z78#1PqaYQ5+4;O5zrOhK^5^ff;lumS*O2y+7%FmJe2TY#kOTHs+IwvPo%$Vtk2`xV
+zeel|Y7f7vFr3z|JEhKG-i)l*EfufFG7%RY>2^pg!NTm?(Q0;~+rrkrDj-*b(Va9p=
+z<;Fm9L2cH4X>YYxkS^!Mx`KBHFY4nKPViI|6a~mI8TvqIfNR@rOqg~)brSmG*dJ&n
+zcL#LHgXbPHvCWA!N7|3rpO_md5Nrut$82@*)n8`CmQ1xHn-zSt&RL-61LvmEKAy4$
+zrWSp)OFQ%d%Rs{l-da_yN>wp0XR680Ia)wY;zzwqjVDjy5fH|h6v{rM2vnZQ=~9um
+zq$jf66%7TmKo#91OwV?ljgU#iX5LVe$@Gsk3vdmJl`Ik1;+9tMDNeHn(WVfnuI--8
+zz`<nl43auFler5dqaYR$bH$gVMihDjX;UmyUhcUU#ZU|nm#^3B%}u=lVRzwdyLL=+
+zF-K|su3XNy>#NPxa(#7k{b1o~yldc*D9eAkOECw{^aV{*HfQxLcVj3G+vqJFUghAO
+bW#)eUrZhTVI#aS8olZ53zs9#;XW#z-*pVul
+
+delta 11
+ScmZ1>+{3%!CF^8X&cy&4!~{10
+
+diff --git a/docs/reference/mechanics/SRV6-canonical-owner.patch b/docs/reference/mechanics/SRV6-canonical-owner.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..b5c34bf43a0f6f85f873eb78f254bf6650113bf4
+GIT binary patch
+literal 4441
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/docs/reference/mechanics/SRV6-title-sources.md b/docs/reference/mechanics/SRV6-title-sources.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..05f140eeb768946df050652a7bded91d2eea380f
+GIT binary patch
+literal 6716
+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
+P;<VC62yzfxj9%y8BOPfL
+
+literal 0
+HcmV?d00001
