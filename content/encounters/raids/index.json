@@ -1,7 +1,7 @@
 {
-  "active_count": 135,
+  "active_count": 137,
   "apply_plan_sha256": "968ac099fa52114bcb2c80754d19128d811a8e028a8fdeceba238df4c0b53093",
-  "catalogue_sha256": "cc4346529768b8143c54af6e88ec7aba12f5c1b0fb980908e9f26de535cdd548",
+  "catalogue_sha256": "564f9f268feed0982a4c204c8601e8d869f8c0080e0768c9ffb4cea939ff3e76",
   "evidence_record_count": 122,
   "evidence_shards": [
     "content/encounters/raids/evidence-00000-00121.json"
@@ -9,7 +9,7 @@
   "family": "Encounter.Raid",
   "generator": "tools/content-migration/raid_catalogue.py",
   "population_state": "POPULATED",
-  "record_count": 239,
+  "record_count": 240,
   "schema": "OTERYN_FAMILY_INDEX/v1",
   "shards": [
     "content/encounters/raids/catalogue.json"
@@ -25,8 +25,8 @@
       "total": 86
     },
     "calendar": {
-      "active": 0,
-      "total": 5
+      "active": 2,
+      "total": 6
     },
     "city": {
       "active": 2,

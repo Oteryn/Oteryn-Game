@@ -5,17 +5,50 @@ use serde::{Deserialize, Serialize};
 pub const MINUTE: i64 = 60_000;
 pub const HOUR: i64 = 60 * MINUTE;
 
+/// The failed draw consumes its slot too; Channels and restarts cannot reroll it.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IntervalClock {
+    last_slot: Option<i64>,
+}
+
+impl IntervalClock {
+    pub fn check(
+        &mut self,
+        start: i64,
+        end: i64,
+        now: i64,
+        interval: i64,
+        chance_permille: u16,
+        draw: u64,
+    ) -> Result<bool, &'static str> {
+        if start < 0 || end <= start || interval <= 0 || chance_permille > 1000 {
+            return Err("invalid interval policy");
+        }
+        if now < start || now >= end {
+            return Ok(false);
+        }
+        let slot = (now - start) / interval;
+        if self.last_slot.is_some_and(|last| slot <= last) {
+            return Ok(false);
+        }
+        self.last_slot = Some(slot);
+        Ok(((u128::from(draw) * 1000) >> 64) < u128::from(chance_permille))
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EventKind {
+    Chyllfroest,
     FlowerMonth,
     MummysCurse,
 }
 
 impl EventKind {
-    pub const ALL: [Self; 2] = [Self::FlowerMonth, Self::MummysCurse];
+    pub const ALL: [Self; 3] = [Self::Chyllfroest, Self::FlowerMonth, Self::MummysCurse];
 
     pub fn key(self) -> &'static str {
         match self {
+            Self::Chyllfroest => "chyllfroest",
             Self::FlowerMonth => "flower_month",
             Self::MummysCurse => "mummys_curse",
         }
@@ -24,6 +57,8 @@ impl EventKind {
     /// Annual windows use UTC; daily events use the committed reset timestamp.
     pub fn window(self) -> Option<((u8, u8), (u8, u8))> {
         match self {
+            // movements_prohibit_entry.lua:12 includes May 1, not merely April.
+            Self::Chyllfroest => Some(((4, 1), (5, 2))),
             Self::FlowerMonth => Some(((6, 1), (7, 1))),
             Self::MummysCurse => None,
         }
@@ -53,6 +88,8 @@ pub struct EventState {
     pub objects: u8,
     pub boss_spawns: u8,
     pub wall_opened_ms: Option<i64>,
+    #[serde(default)]
+    pub clock: IntervalClock,
 }
 
 impl EventState {
@@ -66,6 +103,7 @@ impl EventState {
             objects: 0,
             boss_spawns: 0,
             wall_opened_ms: None,
+            clock: IntervalClock::default(),
         }
     }
 
@@ -92,11 +130,13 @@ impl EventState {
             (EventKind::FlowerMonth, Input::Tick) => {
                 let next = u32::try_from((now - self.start_ms) / (15 * MINUTE) + 1)
                     .map_err(|_| "wave overflow")?;
-                let changed = next > self.wave;
+                let changed =
+                    self.clock
+                        .check(self.start_ms, self.end_ms, now, 15 * MINUTE, 1000, draw)?;
                 self.wave = next;
                 Ok(changed)
             }
-            (EventKind::MummysCurse, Input::Tick) => Ok(false),
+            (EventKind::MummysCurse | EventKind::Chyllfroest, Input::Tick) => Ok(false),
             (EventKind::MummysCurse, Input::Jar(aid)) => {
                 if self.phase != Phase::Active || aid != 50006 + u16::from(self.objects) {
                     return Ok(false);
@@ -120,6 +160,10 @@ impl EventState {
     pub fn flower_area(&self) -> Option<usize> {
         (self.wave > 0 && self.phase == Phase::Active)
             .then(|| usize::try_from((self.wave - 1) % 4).unwrap_or(0))
+    }
+
+    pub fn reward_admitted(&self, credited: u64, claimed: bool) -> bool {
+        self.phase == Phase::Victory && credited > 0 && !claimed
     }
 
     /// Donor createWall delay: 61000 + 6*20*1800 = 277000 ms;

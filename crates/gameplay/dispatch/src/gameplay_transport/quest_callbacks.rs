@@ -7,6 +7,7 @@ use super::{
 mod effects;
 mod encounter;
 mod execute;
+mod mummy;
 mod rewards;
 mod soul_war_reward;
 
@@ -49,6 +50,7 @@ pub(super) struct PendingCallbacks {
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     soul_rewards:
         std::sync::Mutex<std::collections::HashMap<GameSessionId, soul_war_reward::Pending>>,
+    mummy: std::sync::Mutex<std::collections::HashMap<GameSessionId, mummy::Pending>>,
     #[cfg(test)]
     pub(super) fixture: OnceLock<Vec<Callback>>,
     #[cfg(test)]
@@ -206,6 +208,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) fn has_pending_quest_callback(&self, session: GameSessionId) -> bool {
+        if self
+            .states
+            .quest_callbacks
+            .mummy
+            .lock()
+            .map_or(true, |pending| pending.contains_key(&session))
+        {
+            return true;
+        }
         if self.states.grizzly_boss.has_pending(session) {
             return true;
         }
@@ -233,6 +244,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
+        if !self.reconcile_mummy_use(session).await {
+            return false;
+        }
         if !self.reconcile_grizzly_boss(session).await {
             return false;
         }
@@ -318,6 +332,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_mummy_jar(actor, command, map, target).await {
+            return Some(outcome);
+        }
         if let Some(outcome) = self.use_soul_war_reward(actor, command, map, target).await {
             return Some(outcome);
         }

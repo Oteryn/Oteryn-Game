@@ -15,6 +15,7 @@ import hashlib
 import json
 import re
 import sys
+import tarfile
 from pathlib import Path
 from xml.parsers import expat
 
@@ -101,7 +102,7 @@ def xml(text: str) -> dict:
 
 
 def citation(source: dict, line: int) -> dict:
-    return {"repository": REPOSITORY, "revision": REVISION, "path": source["path"],
+    return {"repository": source.get("repository", REPOSITORY), "revision": source.get("revision", REVISION), "path": source["path"],
             "line": line, "sha256": source["sha256"], "evidence": "OTS_HYPOTHESIS_ONLY"}
 
 
@@ -374,6 +375,75 @@ def lua_flower(source: dict, placements: dict) -> dict:
             "creature": "oteryn:creature.dryad", "sources": [citation(source, 1), citation(source, 28), citation(source, 49)]}
 
 
+def qualify_flower_cycle(record: dict) -> None:
+    """WEVENTS owner decision: donor indefinite four-area cycle wins over five wiki waves."""
+    cycle = record["donor_cycle"]
+    record["shared_wave_attempt_budget"] = cycle["shared_attempt_budget"]
+    record["source_conflicts"] = ["wiki_five_waves_in_one_hour; owner_selected_donor_indefinite_four_area_cycle"]
+    record["schedule"] = {"kind": "calendar", "interval_ms": 4 * cycle["interval_ms"],
+                          "repeat_persistent": True, "start_immediately": True,
+                          "window": {"start_month": 6, "start_day": 1, "end_month": 6, "end_day": 30}}
+    waves, announcements = [], []
+    for index, row in enumerate(cycle["areas"]):
+        delay = index * cycle["interval_ms"]
+        announcements.append({"delay_ms": delay, "kind": "advance", "text": row["message"], "source": row["source"]})
+        waves.append({"delay_ms": delay, "entries": [{"creature": cycle["creature"], "source_name": "Dryad",
+            "amount": {"min": cycle["requested_per_wave"], "max": cycle["requested_per_wave"]},
+            "area_anchor": area_anchor(row["area"]), "area": copy.deepcopy(row["area"]), "boss": False,
+            "spawn_mode": "area", "source": row["source"]}]})
+    record["variants"] = [{"key": "world-events.flower-four-area-cycle", "announcements": announcements,
+                           "waves": waves, "unresolved": [], "sources": cycle["sources"]}]
+    record["end"] = {"kind": "until_reset", "despawn_after_ms": None}
+    record["inactive_reasons"] = []
+
+
+def retained_mummy_source(root: Path) -> dict:
+    """Read and verify the existing archive; no donor copy is added to the repository."""
+    path = "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua"
+    revision = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    digest = "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a"
+    archive = root / "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
+    with tarfile.open(archive) as retained:
+        manifest = retained.extractfile("corpus-manifest.json")
+        if manifest is None:
+            raise ValueError("WEVENTS_MUMMY_MANIFEST")
+        rows = [row for row in json.load(manifest)["files"] if row["source"] == "crystalserver"
+                and row["revision"] == revision and row["path"] == path]
+        if len(rows) != 1:
+            raise ValueError("WEVENTS_MUMMY_SOURCE_IDENTITY")
+        blob = retained.extractfile(rows[0]["cache_path"])
+        if blob is None:
+            raise ValueError("WEVENTS_MUMMY_BLOB")
+        raw = blob.read()
+    if hashlib.sha256(raw).hexdigest() != digest:
+        raise ValueError("WEVENTS_MUMMY_SHA256")
+    return {"path": path, "revision": revision, "repository": REPOSITORY,
+            "sha256": digest, "text": raw.decode()}
+
+
+def mummy_raid(source: dict, creatures: dict, placements: dict) -> dict:
+    name = re.search(r'local bossName = "([^"]+)"', source["text"])
+    position = re.search(r'local bossPosition = \{ x = (\d+), y = (\d+), z = (\d+) \}', source["text"])
+    if name is None or position is None:
+        raise ValueError("WEVENTS_MUMMY_SPAWN")
+    point = dict(zip(("x", "y", "floor"), map(int, position.groups()), strict=True))
+    area = {"from": point, "to": dict(point)}
+    record = {"key": "raid:world-events.horestis", "name": "The Mummy's Curse", "wiki_area": "Horestis Tomb",
+        "boss_names": [name.group(1)], "wiki_records": [], "wiki_sources": [], "sources": [citation(source, 105)],
+        "variant_group": None, "inactive_reasons": [],
+        "source_conflicts": ["owner_single_boss_admission_omits_duplicate_delayed_summon_at_line_106"],
+        "schedule": {"kind": "calendar", "interval_ms": 86_400_000, "start_immediately": True,
+            "window": {"start_month": 1, "start_day": 1, "end_month": 12, "end_day": 31}},
+        "end": {"kind": "until_reset", "despawn_after_ms": None},
+        "variants": [{"key": "world-events.horestis", "announcements": [], "unresolved": [],
+            "sources": [citation(source, 105)], "waves": [{"delay_ms": 0, "entries": [{
+                "creature": "oteryn:creature.horestis", "source_name": name.group(1), "amount": {"min": 1, "max": 1},
+                "area": area, "area_anchor": area_anchor(area), "spawn_mode": "single", "boss": True,
+                "source": citation(source, 2)}]}]}]}
+    qualify(record, creatures, placements)
+    return record
+
+
 def calendar_schedule(observation: dict) -> dict:
     # Inclusive World reset dates: the source end server-save belongs to the next
     # inactive reset date. Null times/frequency remain unknown, not midnight.
@@ -527,7 +597,7 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
             record["inactive_reasons"].remove("native_wave_area_unknown")
             if any(not entry["area"]["regions"] for entry in record["donor_cycle"]["areas"]):
                 record["inactive_reasons"].append("donor_flower_area_unbound")
-            record["inactive_reasons"].append("dryad_wave_conflict:wiki_five_waves_in_one_hour_vs_donor_indefinite_four_area_cycle")
+            qualify_flower_cycle(record)
         qualify(record, creatures, placements)
         records.append(record)
     sugar = lua_sugar(sources["data-global/scripts/raids/bosses/sugar_mommy.lua"], creatures)
@@ -558,6 +628,8 @@ def outputs(root: Path, *, register: bool = True) -> dict[str, bytes]:
     evidence = json.loads(staged[EVIDENCE])
     records = build_records(sources, evidence, load(root, f"{EVIDENCE_DIR}/raid-source-reconciliation.json"),
                             creature_catalogue(root), load(root, PLACEMENTS))
+    records.append(mummy_raid(retained_mummy_source(root), creature_catalogue(root), load(root, PLACEMENTS)))
+    records.sort(key=lambda record: record["key"])
     totals = {kind: {"total": sum(r["kind"] == kind for r in records),
                      "active": sum(r["kind"] == kind and r["active"] for r in records)}
               for kind in ("city", "area", "boss", "multi_variant", "calendar")}

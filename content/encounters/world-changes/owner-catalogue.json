@@ -184,7 +184,7 @@
       "key": "chyllfroest",
       "title": "Chyllfroest Mini World Change",
       "quest": "oteryn:quest.chyllfroest_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -197,6 +197,12 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "data-global/scripts/quests/tinder_box_quest_chyllfroest/movements_prohibit_entry.lua:1-22",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "72a5b54d8759917fd75072692cef0e01e67beb70305b5839d32e1135f2322f84"
         }
       ],
       "source_refs": [
@@ -217,10 +223,13 @@
           "url": "https://tibia.fandom.com/index.php?curid=76215&oldid=887140"
         }
       ],
-      "reason": "Exact seasonal opening interval and native bridge/closed/open projection with spawn membership are not established.",
-      "missing_facts": [
-        "Exact seasonal opening interval and native bridge/closed/open projection with spawn membership are not established."
-      ]
+      "reason": "April1 through May1 inclusive, AID50000 closed-season bridge return to32063,31091,7 on ordinary player movement. Existing island spawns remain native, as in the donor player-only entry guard.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "owner": "world_event::changes::timed",
+        "event": "chyllfroest"
+      }
     },
     {
       "key": "deeplings",
@@ -462,7 +471,7 @@
     {
       "key": "flower_month",
       "title": "Flower Month",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "crates/gameplay/world-change/src/daily.rs",
@@ -475,13 +484,26 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "data-global/scripts/raids/world_changes/flower_month.lua:1-65",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
         }
       ],
       "source_refs": [],
-      "reason": "June, four native donor rectangles, 25 dryads per wave, 15-minute rotation and 250 attempts are known. Raid catalogue explicitly holds wiki five waves/hour versus donor indefinite four-area cycle; accepted firing/end policy remains unresolved.",
-      "missing_facts": [
-        "June, four native donor rectangles, 25 dryads per wave, 15-minute rotation and 250 attempts are known. Raid catalogue explicitly holds wiki five waves/hour versus donor indefinite four-area cycle; accepted firing/end policy remains unresolved."
-      ]
+      "reason": "June startup/save admission; indefinite four-area cycle, 25 Dryads per wave, 15-minute rotation and shared 250-attempt budget. Existing raid owner retains creatures until reset. Donor wins over wiki five-wave account.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "owner": "world_event::changes::timed",
+        "event": "flower_month"
+      },
+      "binding": {
+        "kind": "raid",
+        "raid_key": "oteryn:raid.raid.dryad_invasion"
+      }
     },
     {
       "key": "fury_gates",
@@ -1725,7 +1747,7 @@
       "key": "the_mummy_s_curse",
       "title": "The Mummy's Curse World Change",
       "quest": "oteryn:quest.the_mummys_curse_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1738,6 +1760,12 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua:18-122",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a"
         }
       ],
       "source_refs": [
@@ -1758,10 +1786,17 @@
           "url": "https://tibia.fandom.com/index.php?curid=55049&oldid=1084983"
         }
       ],
-      "reason": "Jar actionids 50006-50010, chances and boss/wall coordinates exist. Native shared jar/world composition is absent; duplicate boss spawn and conflicting wall timing in retained donor are unresolved.",
-      "missing_facts": [
-        "Jar actionids 50006-50010, chances and boss/wall coordinates exist. Native shared jar/world composition is absent; duplicate boss spawn and conflicting wall timing in retained donor are unresolved."
-      ]
+      "reason": "Shared ordered jars AID50006-50010, per-jar failed-attempt cooldown, one Horestis admission, native item1603 wall at277000ms and item3514 barrier at1200000ms. Owner single-boss decision removes the duplicate delayed summon.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "owner": "world_event::changes::timed",
+        "event": "mummys_curse"
+      },
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:world-events.horestis"
+      }
     },
     {
       "key": "their_masters_voice",

@@ -7,6 +7,8 @@ use sqlx::{Postgres, Row, Transaction};
 pub struct CalendarRaidScheduleCandidate {
     pub window: RaidCalendarWindow,
     pub interval_ms: u32,
+    pub repeat_persistent: bool,
+    pub start_immediately: bool,
 }
 
 pub(super) struct RaidCalendarClock {

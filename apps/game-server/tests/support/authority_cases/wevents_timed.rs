@@ -37,6 +37,10 @@ async fn exercise(admin: String) -> fixture::TestResult {
 
 async fn run(h: &fixture::Harness) -> fixture::TestResult {
     let world = fixture::scope()?.world_id();
+    sqlx::query("INSERT INTO game_durability_fresh_admission_receipts SELECT decode('01'||repeat('00',32),'hex'),game_session_id,account_id,character_id,world_id,runtime_scope_channel_id,character_lease_generation,scope_ownership_generation,1,current_transport_ref,1,'{}',1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid ON CONFLICT DO NOTHING")
+        .bind(fixture::id(fixture::SESSION).as_slice()).execute(&h.pool).await?;
+    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=2,control_loss_epoch=NULL,original_grace_deadline=NULL,predecessor_generation=NULL,fresh_replay_key=decode('01'||repeat('00',32),'hex') WHERE game_session_id=encode($1,'hex')::uuid")
+        .bind(fixture::id(fixture::SESSION).as_slice()).execute(&h.pool).await?;
     let seal = h.recovery.seal_current().map_err(fixture::debug)?;
     let authority = h
         .root

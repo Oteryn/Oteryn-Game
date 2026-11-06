@@ -91,7 +91,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let random = RaidRandom::new(seed, step.identity.firing_id);
                 let mut placement = PlacementContext {
                     random: &random, selected, bundle: index.map(),
-                    remaining_reads: usize::from(MAX_CREATURES) * usize::from(RAID_PLACEMENT_ATTEMPTS),
+                    remaining_reads: selected.shared_wave_attempt_budget.map_or(
+                        usize::from(MAX_CREATURES) * usize::from(RAID_PLACEMENT_ATTEMPTS), usize::from),
                 };
                 let retained: BTreeSet<_> = runtime.raid_creatures(step.identity.firing_id)
                     .map_err(|_| DurabilityError::Unavailable)?.into_iter().map(|row| row.identity).collect();
@@ -216,16 +217,32 @@ impl PlacementContext<'_> {
                     .then_some(area.from))
             }
             CatalogueSpawnMode::Area => {
-                for attempt in 0..RAID_PLACEMENT_ATTEMPTS {
-                    let at = area
-                        .candidate(
+                let attempts = self
+                    .selected
+                    .shared_wave_attempt_budget
+                    .unwrap_or(RAID_PLACEMENT_ATTEMPTS);
+                for attempt in 0..attempts {
+                    if self.remaining_reads == 0 {
+                        break;
+                    }
+                    let candidate = if self.selected.shared_wave_attempt_budget.is_some() {
+                        area.candidate_in_shared_wave(
                             self.random,
                             identity.wave,
                             identity.entry,
                             identity.index,
                             attempt,
                         )
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    } else {
+                        area.candidate(
+                            self.random,
+                            identity.wave,
+                            identity.entry,
+                            identity.index,
+                            attempt,
+                        )
+                    };
+                    let at = candidate.map_err(|_| DurabilityError::InvalidStoredState)?;
                     if self.admits(map, runtime, at).await? {
                         return Ok(Some(at));
                     }

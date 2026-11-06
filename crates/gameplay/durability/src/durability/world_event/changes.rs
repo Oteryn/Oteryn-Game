@@ -55,12 +55,25 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
     let mut probabilities = [None; 3];
     let mut grimvale = false;
     let mut stampede = None;
-    for entry in entries.iter().filter(|entry| entry["status"] == "READY" || entry["status"] == "QUALIFIED") {
+    for entry in entries
+        .iter()
+        .filter(|entry| entry["status"] == "READY" || entry["status"] == "QUALIFIED")
+    {
         let index = match entry["key"].as_str() {
+            Some("flower_month" | "the_mummy_s_curse" | "chyllfroest")
+                if entry["trigger"]["kind"] == "timed"
+                    && entry["trigger"]["owner"] == "world_event::changes::timed" =>
+            {
+                continue;
+            }
             Some("stampede") if stampede.is_none() && entry["trigger"]["kind"] == "at_reset" => {
-                stampede = entry["trigger"]["chance_permille"].as_u64()
-                    .filter(|chance| *chance <= 1000).and_then(|chance| u16::try_from(chance).ok());
-                if stampede.is_none() { return Err(DurabilityError::InvalidStoredState); }
+                stampede = entry["trigger"]["chance_permille"]
+                    .as_u64()
+                    .filter(|chance| *chance <= 1000)
+                    .and_then(|chance| u16::try_from(chance).ok());
+                if stampede.is_none() {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
                 continue;
             }
             Some("thawing") => 0,
@@ -115,18 +128,32 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
 /// Authored W6 preconditions, consumed by the existing raid scheduler before any draw/write.
 /// This adds no firing owner and does not replace a raid's own schedule or eligibility.
 pub fn raid_requirements() -> Result<std::collections::BTreeMap<String, String>, DurabilityError> {
-    let catalogue: serde_json::Value = serde_json::from_str(CATALOGUE_JSON)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let entries = catalogue["entries"].as_array().filter(|entries| entries.len() <= 256)
+    let catalogue: serde_json::Value =
+        serde_json::from_str(CATALOGUE_JSON).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let entries = catalogue["entries"]
+        .as_array()
+        .filter(|entries| entries.len() <= 256)
         .ok_or(DurabilityError::InvalidStoredState)?;
     let mut requirements = std::collections::BTreeMap::new();
     for entry in entries {
-        let Some(binding) = entry.get("binding").filter(|binding| binding["kind"] == "raid") else { continue; };
-        let key = entry["key"].as_str().filter(|key| !key.is_empty() && key.len() <= 64)
+        let Some(binding) = entry
+            .get("binding")
+            .filter(|binding| binding["kind"] == "raid")
+        else {
+            continue;
+        };
+        let key = entry["key"]
+            .as_str()
+            .filter(|key| !key.is_empty() && key.len() <= 64)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        let raid = binding["raid_key"].as_str().filter(|raid| !raid.is_empty() && raid.len() <= 512)
+        let raid = binding["raid_key"]
+            .as_str()
+            .filter(|raid| !raid.is_empty() && raid.len() <= 512)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        if requirements.insert(raid.to_owned(), key.to_owned()).is_some() {
+        if requirements
+            .insert(raid.to_owned(), key.to_owned())
+            .is_some()
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
     }

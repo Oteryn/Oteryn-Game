@@ -38,6 +38,8 @@ pub(super) struct CallbackStates {
     pub(super) movement_effects: std::collections::VecDeque<(u64, TilePos, u16)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    event_items: BTreeMap<(TilePos, u16), super::super::overlay::EntryId>,
+    mummy_projection: Option<(u8, bool, bool)>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
 }
@@ -157,6 +159,163 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    /// Rebuild the donor tomb projection from committed World state after boot or a retry.
+    /// Dynamic walls are named by source position/item, so periodic projection never duplicates them.
+    pub fn project_mummy_objects(
+        &self,
+        base: &super::super::WorldBase,
+        broken: u8,
+        barrier: bool,
+        wall: bool,
+    ) -> bool {
+        if broken > 5 {
+            return false;
+        }
+        let Ok(mut guard) = self.callbacks.lock() else {
+            return false;
+        };
+        if guard.mummy_projection == Some((broken, barrier, wall)) {
+            return true;
+        }
+        if !guard.has_capacity(24) {
+            return false;
+        }
+        // Stage the whole projection so missing facts never leave a partial wall/jar update.
+        let mut staged = (**guard).clone();
+        let states = &mut staged;
+        for &(aid, key) in &self.event_objects {
+            let appearance = if aid - 50006 < u16::from(broken) {
+                12506
+            } else {
+                12511
+            };
+            let Some((pos, _)) = view::placement_of(key) else {
+                return false;
+            };
+            if self.house_tile(pos) {
+                return false;
+            }
+            let Some(mut after) = self.movement_item_facts(appearance) else {
+                return false;
+            };
+            after.bound = true;
+            let existing = states.changed.get(&key);
+            let baseline = self
+                .placements
+                .binary_search_by_key(&key, |(key, _)| *key)
+                .ok()
+                .and_then(|index| self.palette.get(self.placements[index].1.palette as usize));
+            let current = existing
+                .map(|(_, facts)| facts.appearance_id)
+                .or_else(|| baseline.map(|entry| entry.facts.appearance_id));
+            if current == Some(appearance) {
+                continue;
+            }
+            let Some(revision) = existing.map_or(Some(1), |(revision, _)| revision.checked_add(1))
+            else {
+                return false;
+            };
+            states.changed.insert(key, (revision, after));
+        }
+        for x in 32941..=32944 {
+            let pos = TilePos {
+                x,
+                y: 32754,
+                floor: -12,
+            };
+            if self.house_tile(pos) {
+                return false;
+            }
+            let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
+                return false;
+            };
+            let mut ordinal = 0;
+            let mut source_walls = BTreeMap::new();
+            for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
+                if depth != 0 {
+                    continue;
+                }
+                let Some(key) = placement_key(pos, ordinal) else {
+                    return false;
+                };
+                let palette = self
+                    .placements
+                    .binary_search_by_key(&key, |(key, _)| *key)
+                    .ok()
+                    .map(|index| self.placements[index].1.palette)
+                    .or_else(|| self.unique_index(id));
+                if let Some(appearance @ (3514 | 1603)) = palette
+                    .and_then(|index| self.palette.get(index as usize))
+                    .map(|entry| entry.facts.appearance_id)
+                {
+                    source_walls.insert(appearance, key);
+                }
+                ordinal = match ordinal.checked_add(1) {
+                    Some(next) => next,
+                    None => return false,
+                };
+            }
+            for (appearance, present) in [(3514, barrier), (1603, wall)] {
+                if let Some(key) = source_walls.get(&appearance) {
+                    if present {
+                        states.hidden.remove(key);
+                    } else {
+                        states.hidden.insert(*key);
+                    }
+                }
+            }
+            let Some((ground, _)) = tile.ground() else {
+                return false;
+            };
+            let Some(ground) = placement_key(pos, ground) else {
+                return false;
+            };
+            // The collision mask follows both wall types, including an added 1603.
+            if barrier || wall {
+                states.solid_items.insert(pos);
+            } else {
+                states.solid_items.remove(&pos);
+            }
+            states.passable.remove(&ground);
+            for (appearance, present) in [(3514, barrier), (1603, wall)] {
+                let tag = (pos, appearance);
+                if !present || source_walls.contains_key(&appearance) {
+                    if let Some(id) = states.event_items.remove(&tag)
+                        && let Some(entries) = states.movement_items.get_mut(&pos)
+                    {
+                        entries.retain(|entry| entry.source != view::EntrySource::Added(id));
+                    }
+                    continue;
+                }
+                if states.event_items.contains_key(&tag) {
+                    continue;
+                }
+                let Some(facts) = self.movement_item_facts(appearance) else {
+                    return false;
+                };
+                let Some(sequence) = states.movement_sequence.checked_add(1) else {
+                    return false;
+                };
+                let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
+                    return false;
+                };
+                states.movement_sequence = sequence;
+                states.event_items.insert(tag, id);
+                states
+                    .movement_items
+                    .entry(pos)
+                    .or_default()
+                    .push(view::ComposedEntry {
+                        source: view::EntrySource::Added(id),
+                        facts,
+                    });
+            }
+        }
+        staged.mummy_projection = Some((broken, barrier, wall));
+        *guard = Arc::new(staged);
+        true
+    }
+
     /// A transformed/removed callback entry changes floor routing with its visible stack.
     /// Unchanged tiles keep the compact boot-time table and incur no stack scan.
     pub(crate) fn quest_callback_floor_mask(

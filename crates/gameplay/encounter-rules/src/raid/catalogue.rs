@@ -41,6 +41,8 @@ pub struct CatalogueRaid {
     pub variant_group: Option<String>,
     pub variants: Vec<CatalogueVariant>,
     pub end: CatalogueEnd,
+    #[serde(default)]
+    pub shared_wave_attempt_budget: Option<u8>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -67,6 +69,10 @@ pub enum CatalogueSchedule {
     Calendar {
         window: Option<CatalogueWindow>,
         interval_ms: Option<u32>,
+        #[serde(default)]
+        repeat_persistent: bool,
+        #[serde(default)]
+        start_immediately: bool,
     },
     Unknown,
 }
@@ -243,6 +249,7 @@ pub struct SelectedRaid {
     pub boss_entries: BTreeSet<(u16, u16)>,
     pub spawn_modes: BTreeMap<(u16, u16), CatalogueSpawnMode>,
     pub end_policy: RaidEndPolicy,
+    pub shared_wave_attempt_budget: Option<u8>,
 }
 
 impl RaidCatalogue {
@@ -296,6 +303,12 @@ impl CatalogueRaid {
     }
 
     pub fn validate(&self) -> Result<(), RaidError> {
+        if self
+            .shared_wave_attempt_budget
+            .is_some_and(|budget| budget == 0 || budget > 250)
+        {
+            return Err(RaidError::InvalidDefinition);
+        }
         if !self.active || !self.inactive_reasons.is_empty() || self.variants.is_empty() {
             return Err(RaidError::InvalidDefinition);
         }
@@ -330,6 +343,7 @@ impl CatalogueRaid {
             CatalogueSchedule::Calendar {
                 window,
                 interval_ms,
+                ..
             } => {
                 window
                     .ok_or(RaidError::InvalidCalendar)?
@@ -458,6 +472,7 @@ impl CatalogueRaid {
             boss_entries,
             spawn_modes,
             end_policy: self.end.policy()?,
+            shared_wave_attempt_budget: self.shared_wave_attempt_budget,
         })
     }
 }

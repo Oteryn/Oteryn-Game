@@ -51,6 +51,8 @@ pub enum BootRefusal {
     StartNotEnterable,
     /// A palette Item key the §1.6 item index lacks or places at another `id`.
     ItemReference,
+    /// Authored native object selectors failed bounded source validation.
+    ObjectBindings,
     /// The bundle places no door a player can use (MAP-DOOR-1), which a preprod node refuses.
     NoDoors,
     /// MAP-FLOOR-1: a floor-change tile whose successive destinations never end.
@@ -69,6 +71,7 @@ impl fmt::Display for BootRefusal {
             Self::ItemReference => {
                 f.write_str("a world bundle palette item does not match the item index")
             }
+            Self::ObjectBindings => f.write_str("native object bindings failed validation"),
             Self::NoDoors => f.write_str("the world bundle places no usable door"),
             Self::NoFloorChanges => {
                 f.write_str("a world bundle places no tile that changes floors")
@@ -95,6 +98,7 @@ impl From<FactsRefusal> for BootRefusal {
         match refusal {
             FactsRefusal::Load(error) => Self::Load(error),
             FactsRefusal::ItemReference => Self::ItemReference,
+            FactsRefusal::ObjectBindings => Self::ObjectBindings,
         }
     }
 }

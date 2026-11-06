@@ -160,10 +160,12 @@ class RaidCatalogueTest(unittest.TestCase):
         self.assertEqual(orshabaal["variants"][0]["waves"][0]["delay_ms"], 400000)
         self.assertEqual(orshabaal["wiki_records"], ["oteryn:raid.edron_raids.orshabaal_raid_near_edron"])
 
-    def test_inactive_flower_month_retains_all_source_areas_and_shared_budget(self):
+    def test_flower_month_uses_donor_four_area_cycle_and_shared_budget(self):
         rows = json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])["records"]
         flower = next(r for r in rows if r["key"].endswith("dryad_invasion"))
-        self.assertFalse(flower["active"])
+        self.assertTrue(flower["active"])
+        self.assertTrue(flower["schedule"]["repeat_persistent"])
+        self.assertEqual(len(flower["variants"][0]["waves"]), 4)
         cycle = flower["donor_cycle"]
         self.assertEqual(cycle["interval_ms"], 900000)
         self.assertEqual(len(cycle["areas"]), 4)

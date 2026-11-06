@@ -122,10 +122,11 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(RaidSchedulerOutcome::default());
             }
+            let mut timed_events = std::collections::BTreeMap::new();
             for kind in oteryn_gameplay_world_change::timed::EventKind::ALL {
-                crate::durability::world_event::changes::timed::poll(
+                if let Some(state) = crate::durability::world_event::changes::timed::poll(
                     &mut tx, request.world, request.reset_epoch, kind, request.now_ms,
-                ).await?;
+                ).await? { timed_events.insert(kind.key(), state); }
             }
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:raid-world:' || encode($1,'hex'),0))")
                 .bind(request.world.as_bytes().as_slice()).execute(&mut *tx).await?;
@@ -146,9 +147,14 @@ impl DurabilityRoot {
             let mut fired = Vec::new();
             let mut retry_activity = false;
             for candidate in request.candidates {
-                if let Some(required) = requirements.get(candidate.key.as_str())
-                    && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)) {
-                    continue;
+                if let Some(required) = requirements.get(candidate.key.as_str()) {
+                    use oteryn_gameplay_world_change::timed::Phase;
+                    let admitted = match required.as_str() {
+                        "flower_month" => timed_events.get("flower_month").is_some_and(|event| event.phase == Phase::Active),
+                        "the_mummy_s_curse" => timed_events.get("mummys_curse").is_some_and(|event| event.phase == Phase::Victory),
+                        _ => world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)),
+                    };
+                    if !admitted { continue; }
                 }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
                     else if candidate.calendar_window.is_some() { 3 } else { 1 };
@@ -161,7 +167,10 @@ impl DurabilityRoot {
                     .map_err(|_| DurabilityError::InvalidStoredState)? {
                     Some(before) => before,
                     None => {
-                        let initial = RaidSchedule::initial(request.reset_epoch, request.now_ms)
+                        let initial_at = if candidate.calendar_window.as_ref().is_some_and(|window| window.start_immediately) {
+                            request.now_ms.saturating_sub(oteryn_gameplay_encounter_rules::raid::CHECK_INTERVAL_MS)
+                        } else { request.now_ms };
+                        let initial = RaidSchedule::initial(request.reset_epoch, initial_at)
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
                         storage::insert_schedule(&mut tx, request.world, &candidate.key, &initial).await
                             .map_err(|_| DurabilityError::Unavailable)?;
@@ -200,11 +209,13 @@ impl DurabilityRoot {
                     }
                 } else if let Some(window) = &candidate.calendar_window {
                     let clock = calendar::clock(&mut tx, request.world, request.now_ms).await?;
-                    let in_window = window.window.contains(clock.month, clock.month_day)
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let in_window = if candidate.key.as_str()=="oteryn:raid.raid.dryad_invasion" {
+                        timed_events.get("flower_month").is_some_and(|event|event.phase==oteryn_gameplay_world_change::timed::Phase::Active)
+                    } else { window.window.contains(clock.month, clock.month_day)
+                        .map_err(|_| DurabilityError::InvalidStoredState)? };
                     let interval_due = before.last_fired_at_ms.is_none_or(|last|
                         request.now_ms.saturating_sub(last) >= i64::from(window.interval_ms));
-                    let persistent_fired = candidate.definition.despawn_after_ms.is_none()
+                    let persistent_fired = !window.repeat_persistent && candidate.definition.despawn_after_ms.is_none()
                         && before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch);
                     RaidAction::ResolvedCheck {
                         now_ms: request.now_ms, selected: in_window && interval_due && !persistent_fired,

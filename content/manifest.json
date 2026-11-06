@@ -40,7 +40,7 @@
     },
     "Encounter.Raid": {
       "index": "content/encounters/raids/index.json",
-      "records": 239
+      "records": 240
     },
     "Formula": {
       "index": "content/abilities/formulas/index.json",

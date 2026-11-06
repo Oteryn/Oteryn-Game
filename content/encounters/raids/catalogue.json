@@ -1196,7 +1196,7 @@
       ]
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
       "donor_cycle": {
         "areas": [
@@ -1286,7 +1286,7 @@
                 },
                 {
                   "path": "content/world/placements/region-z07-x128-y127.b3",
-                  "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                  "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                 },
                 {
                   "path": "content/world/placements/region-z07-x128-y128.b3",
@@ -1393,24 +1393,17 @@
       },
       "end": {
         "despawn_after_ms": null,
-        "kind": "unknown"
+        "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "calendar_firing_rule_unresolved",
-        "dryad_wave_conflict:wiki_five_waves_in_one_hour_vs_donor_indefinite_four_area_cycle",
-        "message_kind_or_timing_unresolved",
-        "waves_unknown",
-        "wiki_donor_identity_unresolved"
-      ],
+      "inactive_reasons": [],
       "key": "oteryn:raid.raid.dryad_invasion",
       "kind": "calendar",
       "name": "Dryad Invasion",
       "schedule": {
-        "interval_ms": null,
+        "interval_ms": 3600000,
         "kind": "calendar",
-        "observations": {
-          "season": "June"
-        },
+        "repeat_persistent": true,
+        "start_immediately": true,
         "window": {
           "end_day": 30,
           "end_month": 6,
@@ -1418,6 +1411,10 @@
           "start_month": 6
         }
       },
+      "shared_wave_attempt_budget": 250,
+      "source_conflicts": [
+        "wiki_five_waves_in_one_hour; owner_selected_donor_indefinite_four_area_cycle"
+      ],
       "sources": [
         {
           "evidence": "OTS_HYPOTHESIS_ONLY",
@@ -1429,7 +1426,298 @@
         }
       ],
       "variant_group": null,
-      "variants": [],
+      "variants": [
+        {
+          "announcements": [
+            {
+              "delay_ms": 0,
+              "kind": "advance",
+              "source": {
+                "evidence": "OTS_HYPOTHESIS_ONLY",
+                "line": 7,
+                "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+                "repository": "zimbadev/crystalserver",
+                "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+              },
+              "text": "Dryads have returned to protect the forest north of Edron."
+            },
+            {
+              "delay_ms": 900000,
+              "kind": "advance",
+              "source": {
+                "evidence": "OTS_HYPOTHESIS_ONLY",
+                "line": 12,
+                "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+                "repository": "zimbadev/crystalserver",
+                "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+              },
+              "text": "Dryads have returned to protect the northern forests near Ab'Dendriel."
+            },
+            {
+              "delay_ms": 1800000,
+              "kind": "advance",
+              "source": {
+                "evidence": "OTS_HYPOTHESIS_ONLY",
+                "line": 17,
+                "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+                "repository": "zimbadev/crystalserver",
+                "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+              },
+              "text": "Dryads have returned to protect the jungle of Tiquanda."
+            },
+            {
+              "delay_ms": 2700000,
+              "kind": "advance",
+              "source": {
+                "evidence": "OTS_HYPOTHESIS_ONLY",
+                "line": 22,
+                "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+                "repository": "zimbadev/crystalserver",
+                "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+              },
+              "text": "Dryads have returned to protect their tree gardens underneath Cormaya."
+            }
+          ],
+          "key": "world-events.flower-four-area-cycle",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 1,
+              "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+              "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 28,
+              "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+              "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 49,
+              "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+              "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 25,
+                    "min": 25
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 33166,
+                      "y": 31694
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x129-y123.b3",
+                        "sha256": "09d1f548322ea9c618d2fadff59fac78aaa7666b09bfbccd5dd4ac4bccec9b44"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 33241,
+                      "y": 31736
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:33166_31694_7-33241_31736_7",
+                  "boss": false,
+                  "creature": "oteryn:creature.dryad",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 7,
+                    "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                    "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+                  },
+                  "source_name": "Dryad",
+                  "spawn_mode": "area"
+                }
+              ]
+            },
+            {
+              "delay_ms": 900000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 25,
+                    "min": 25
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32414,
+                      "y": 31691
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y123.b3",
+                        "sha256": "b500c8f74c8e476e3e67916c401db60a2e9a0bc6a14847c515915bcff7bbd7da"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32483,
+                      "y": 31736
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32414_31691_7-32483_31736_7",
+                  "boss": false,
+                  "creature": "oteryn:creature.dryad",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 12,
+                    "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                    "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+                  },
+                  "source_name": "Dryad",
+                  "spawn_mode": "area"
+                }
+              ]
+            },
+            {
+              "delay_ms": 1800000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 25,
+                    "min": 25
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32755,
+                      "y": 32739
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x127-y127.b3",
+                        "sha256": "73a839c9ca9f5aa623bd1e6deade1babd23fd656dae8ae5ced8c6192184fc2e8"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x127-y128.b3",
+                        "sha256": "42e0dfbe77975f8fba3454b25ebba90af83c0c908319d5c974712e81c6869a42"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x128-y127.b3",
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
+                      },
+                      {
+                        "path": "content/world/placements/region-z07-x128-y128.b3",
+                        "sha256": "5c6352cc59d92a7e64cf4aaf6454bb11655af000a59bf0403dfdc9ba1d023f5f"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32824,
+                      "y": 32780
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32755_32739_7-32824_32780_7",
+                  "boss": false,
+                  "creature": "oteryn:creature.dryad",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 17,
+                    "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                    "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+                  },
+                  "source_name": "Dryad",
+                  "spawn_mode": "area"
+                }
+              ]
+            },
+            {
+              "delay_ms": 2700000,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 25,
+                    "min": 25
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 11,
+                      "x": 33154,
+                      "y": 31976
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z11-x129-y124.b3",
+                        "sha256": "2e8ca03b436d5bb7f75ea01f209b646d369d4ff1cd0e0bf67a0dc45ef0ff49ce"
+                      },
+                      {
+                        "path": "content/world/placements/region-z11-x129-y125.b3",
+                        "sha256": "31109003eb20c9cd454d2e305d40b216b67f2a2778a82e5520d08b8f79f347ff"
+                      },
+                      {
+                        "path": "content/world/placements/region-z11-x130-y124.b3",
+                        "sha256": "103d0d3d3139e850d78c385f2af9ac7067b33ff4cec663c23da1cb6d8305b12b"
+                      },
+                      {
+                        "path": "content/world/placements/region-z11-x130-y125.b3",
+                        "sha256": "7abf700e75fd91d7326c02db9f63c12a6bdaf19a14dc1377e39bac95be21853c"
+                      }
+                    ],
+                    "to": {
+                      "floor": 11,
+                      "x": 33283,
+                      "y": 32066
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:33154_31976_11-33283_32066_11",
+                  "boss": false,
+                  "creature": "oteryn:creature.dryad",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 22,
+                    "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                    "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
+                  },
+                  "source_name": "Dryad",
+                  "spawn_mode": "area"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "wiki_area": "Raid",
       "wiki_records": [
         "oteryn:raid.raid.dryad_invasion"
@@ -27324,7 +27612,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       }
                     ],
                     "to": {
@@ -27378,7 +27666,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       }
                     ],
                     "to": {
@@ -27432,7 +27720,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       }
                     ],
                     "to": {
@@ -27580,7 +27868,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y128.b3",
@@ -27625,7 +27913,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y128.b3",
@@ -27670,7 +27958,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y128.b3",
@@ -27721,7 +28009,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y128.b3",
@@ -27766,7 +28054,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y128.b3",
@@ -27811,7 +28099,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y128.b3",
@@ -27922,7 +28210,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       }
                     ],
                     "to": {
@@ -28029,7 +28317,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       }
                     ],
                     "to": {
@@ -28136,7 +28424,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       }
                     ],
                     "to": {
@@ -28675,7 +28963,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       }
                     ],
                     "to": {
@@ -29110,7 +29398,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       }
                     ],
                     "to": {
@@ -29217,7 +29505,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y127.b3",
-                        "sha256": "b0c16caca37ec0af46d857ebb830d87142b158694a63847304bcb8cfb139b9c7"
+                        "sha256": "3d0c40e66614cd381926712ac8febd91ee97cd6c3368ed87ac192440207dc071"
                       }
                     ],
                     "to": {
@@ -39414,7 +39702,7 @@
                       },
                       {
                         "path": "content/world/placements/region-z07-x127-y125.b3",
-                        "sha256": "6ca7aa92d56ae6175c091bc8476817e5d8cadfa9ca4bc10af5dc2a8905b6b047"
+                        "sha256": "17e4cc833c4c7da1e33cbbdc22e5c089ce6545a8503ac172695ae6c9efa7be6e"
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y124.b3",
@@ -41498,6 +41786,112 @@
     },
     {
       "active": true,
+      "boss_names": [
+        "Horestis"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.horestis",
+      "kind": "calendar",
+      "name": "The Mummy's Curse",
+      "schedule": {
+        "interval_ms": 86400000,
+        "kind": "calendar",
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "owner_single_boss_admission_omits_duplicate_delayed_summon_at_line_106"
+      ],
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 105,
+          "path": "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.horestis",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 105,
+              "path": "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 12,
+                      "x": 32943,
+                      "y": 32791
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z12-x128-y128.b3",
+                        "sha256": "56366b31995ff5911f050629edc6a80511b7d38ba771e97b8547fd81b7365aa4"
+                      }
+                    ],
+                    "to": {
+                      "floor": 12,
+                      "x": 32943,
+                      "y": 32791
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32943_32791_12-32943_32791_12",
+                  "boss": true,
+                  "creature": "oteryn:creature.horestis",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 2,
+                    "path": "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a"
+                  },
+                  "source_name": "Horestis",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Horestis Tomb",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
       "boss_names": [],
       "end": {
         "despawn_after_ms": null,
@@ -41877,8 +42271,8 @@
       "total": 86
     },
     "calendar": {
-      "active": 0,
-      "total": 5
+      "active": 2,
+      "total": 6
     },
     "city": {
       "active": 2,
