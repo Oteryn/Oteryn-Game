@@ -90,22 +90,24 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .is_some()
         {
             use oteryn_gameplay_encounters::bosses::endgame_entry::EntryRefusal;
-            return match self.endgame_boss_entry(admitted, payload).await {
-                Ok(Err(reason)) => refusal(match reason {
-                    EntryRefusal::InvalidInput => ActivityRefusal::InvalidInput,
-                    EntryRefusal::Level => ActivityRefusal::Level,
-                    EntryRefusal::QuestAccess | EntryRefusal::BossChain => {
-                        ActivityRefusal::AuthorityRejected
-                    }
-                    EntryRefusal::ContentUnavailable => ActivityRefusal::ContentUnavailable,
-                }),
-                Err(CharacterProgressionError::AuthorityRejected) => {
-                    refusal(ActivityRefusal::AuthorityRejected)
+            match self.endgame_boss_entry(admitted, payload).await {
+                Ok(Err(reason)) => {
+                    return refusal(match reason {
+                        EntryRefusal::InvalidInput => ActivityRefusal::InvalidInput,
+                        EntryRefusal::Level => ActivityRefusal::Level,
+                        EntryRefusal::QuestAccess | EntryRefusal::BossChain => {
+                            ActivityRefusal::AuthorityRejected
+                        }
+                        EntryRefusal::ContentUnavailable => ActivityRefusal::ContentUnavailable,
+                    });
                 }
-                // A successful destination must pass the real scope barrier.
-                // The unqualified endgame consumer cannot publish a handoff.
-                Ok(Ok(())) | Err(_) => None,
-            };
+                Err(CharacterProgressionError::AuthorityRejected) => {
+                    return refusal(ActivityRefusal::AuthorityRejected);
+                }
+                Err(_) => return None,
+                // Preview success continues to the one shared owner below.
+                Ok(Ok(())) => {}
+            }
         }
         let owner = ActivityHandoffOwner::new(self.root.clone());
         let Some(definition) = owner

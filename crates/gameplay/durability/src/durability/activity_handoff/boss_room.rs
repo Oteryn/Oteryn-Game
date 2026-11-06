@@ -9,6 +9,8 @@ use oteryn_gameplay_encounter_rules::boss_room::{
     AdmissionRefusal, BossRoomPolicy, ParticipantFact, plan_fresh_room,
 };
 
+mod quest_entry;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BossRoomDefinition {
     pub boss_key: String,
@@ -368,6 +370,18 @@ pub(super) async fn prepare_in_transaction(
         let Some(level) = level else {
             return Ok(Err(ActivityRefusal::AuthorityRejected));
         };
+        if let Some(refusal) = quest_entry::validate(
+            tx,
+            &definition.boss_creature_key,
+            p.source.character_id,
+            level,
+            r.participants.len(),
+            now,
+        )
+        .await?
+        {
+            return Ok(Err(refusal));
+        }
         let cooldown:Option<i64>=sqlx::query_scalar("SELECT available_at FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 FOR UPDATE")
             .bind(p.source.character_id.as_bytes().as_slice()).bind(&r.activity_key).fetch_optional(&mut **tx).await?;
         facts.push(ParticipantFact {

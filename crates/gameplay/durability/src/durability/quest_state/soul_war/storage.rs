@@ -10,7 +10,7 @@ pub(super) async fn database_time(tx: &mut Transaction<'_, Postgres>) -> StoredR
         .fetch_one(&mut **tx).await?)
 }
 
-pub(super) async fn load(tx: &mut Transaction<'_, Postgres>, character: CharacterId) -> StoredResult<SoulWarState> {
+pub(in crate::durability) async fn load(tx: &mut Transaction<'_, Postgres>, character: CharacterId) -> StoredResult<SoulWarState> {
     let row = sqlx::query("SELECT teleport_access, defeated_bosses, first_taint_at, megalomania_completed, final_reward_claimed FROM game_character_soul_war WHERE character_id=encode($1,'hex')::uuid")
         .bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(row) = row else { return Ok(SoulWarState::default()); };

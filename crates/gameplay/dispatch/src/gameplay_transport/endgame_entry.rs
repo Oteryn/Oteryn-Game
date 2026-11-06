@@ -1,8 +1,8 @@
 //! W10/W11 live lever prerequisites and the existing W02 consumer boundary.
 //!
-//! W10/W11 have no qualified native boss Instance. Their command 178 replies REJECTED;
-//! internally the endgame seam returns ContentUnavailable, never a fake handoff.
-//! Other boss activities retain the shared native owner (PR #2784, ANSWER 6547426887).
+//! W11 continues into the shared native activity owner after this preview. That
+//! owner rechecks every participant's Quest predicates under its admission locks.
+//! Source content must still qualify a real destination; W10 remains unavailable.
 
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::character_progression::CharacterProgressionError;
@@ -86,11 +86,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             access,
             chain_ready,
         };
-        // Until W02 is composed this is a principal-only prerequisite preview. It cannot
-        // admit even a solo group. W02 resolves the real lever roster, reloads every current
-        // Quest fact under its admission locks, and calls this same group consumer.
+        // This preview grants no handoff. W02 resolves the actual lever roster
+        // and rechecks every member inside the existing admission transaction.
         Ok(endgame_entry::enter(encounter, &[facts], |_| async {
-            Err(EntryRefusal::ContentUnavailable)
+            if encounter.family() == QuestFamily::PrimalOrdeal {
+                Err(EntryRefusal::ContentUnavailable)
+            } else {
+                Ok(())
+            }
         })
         .await)
     }

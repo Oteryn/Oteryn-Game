@@ -404,7 +404,7 @@ pub(crate) async fn apply_rotten_blood_failed_final_in_transaction(
     Ok(())
 }
 
-async fn read_state(tx: &mut Transaction<'_, Postgres>, character: CharacterId) -> StoredResult<RottenBloodState> {
+pub(in crate::durability) async fn read_state(tx: &mut Transaction<'_, Postgres>, character: CharacterId) -> StoredResult<RottenBloodState> {
     let access: i64 = sqlx::query_scalar(
         "SELECT coalesce((SELECT value FROM game_character_quest_tracks \
          WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),0)",
