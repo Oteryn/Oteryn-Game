@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -273,16 +273,41 @@ def build():
             'topic':0,'next_topic':first,'storage':guard,'reply':['Did you bring samples for me to analyse?']})
         offers.append({'npc':'oteryn:npc.broken_servant_sentry','keywords':['yes'],
             'topic':first,'next_topic':second,'storage':guard,'reply':['Let me analyse the samples.']})
+    annihilator=prefix+'u7_24/the_annihilator/reward'
+    add('l3-demon-base','the_annihilator_quest','avar_tar',['base'],
+        [storage(annihilator,1,2)],outfit=('demon',0),topic=2)
+    for name,quest,track,before,after,bit in [
+        ('shield','demon_helmet_quest',prefix+'u6_4/demon_helmet/rewards/demon_helmet',1,2,1),
+        ('helmet','demon_oak',prefix+'u8_2/the_demon_oak/done',3,4,2)]:
+        add('l3-demon-'+name,quest,'avar_tar',[name],[storage(track,before,after)],
+            outfit=('demon',bit),topic=2,requires=[requirement(annihilator,2)])
+    for word,topic,next_topic in [('outfit',0,1),('yes',1,2)]:
+        offers.append({'npc':'oteryn:npc.avar_tar','keywords':[word],'topic':topic,
+            'next_topic':next_topic,'storage':[],'reply':['Choose the base, shield or helmet.']})
+    dark=prefix+'u10_50/dark_trails/'
+    votes=prefix+'u10_50/oramond_quest/voting_points'
+    glooth=prefix+'u10_50/glooth_engineer_outfits/'
+    add('l3-glooth-engineer-base','dark_trails_quest','ezebeth',['outfit'],
+        [storage(dark+'outfit',-1,1,0)],outfit=('glooth_engineer',0),
+        requires=[requirement(dark+'mission18',1)])
+    for suffix,bit,minimum,maximum,finished_second in [
+        ('second',2,6,2147483647,False),('first-low',1,3,5,False),('first-high',1,6,2147483647,True)]:
+        required=[requirement(dark+'outfit',1),{'track':votes,'minimum':minimum,'maximum':maximum}]
+        if finished_second:required.append(requirement(glooth+'addon2',1))
+        add('l3-glooth-engineer-'+suffix,'glooth_engineer_outfits_quest','ezebeth',['addon'],
+            [storage(glooth+'addon'+str(bit),-1,1,0)],outfit=('glooth_engineer',bit),requires=required)
+    declarations=[{'key':votes,'quest':'oteryn:quest.oramond_quest','initial':-1,'min':-1,'max':2147483647,
+        'sources':[f'crystal:{PIN}:data-global/npc/ezebeth.lua:93-103:sha256:{sha(inputs["data-global/npc/ezebeth.lua"])}']}]
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
-    validate_callbacks({'schema':1,'callbacks':callbacks})
+    validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
     native_cosmetics=cosmetics.build(author, appearance/'manifest.json')
     gameplay['schema']='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6'
     gameplay['cosmetics']={'path':'cosmetics/outfits/native-cosmetics.json','sha256':sha(native_cosmetics)}
     generated = {'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
-            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'callbacks':callbacks}),
+            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
@@ -334,6 +359,15 @@ def build():
 def validate_callbacks(document):
     schema=json.loads((ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_bytes())
     Draft202012Validator(schema).validate(document)
+    declarations=document.get('tracks',[])
+    declared=set()
+    readonly={r['track'] for c in document['callbacks'] for r in c.get('requires',[])}
+    written={r['track'] for c in document['callbacks'] for r in c['storage']}
+    for track in declarations:
+        if (track['key'] in declared or not track['min']<=track['initial']<=track['max']
+            or track['key'] not in readonly or track['key'] in written):
+            raise ValueError('invalid reward prerequisite declaration '+track['key'])
+        declared.add(track['key'])
     keys=set()
     for callback in document['callbacks']:
         storage=callback['storage']

@@ -77,3 +77,18 @@ L2 adds complete Battle Mage, Festive and Elementalist outfit conversations.
 Battle Mage addons retain Secret Library ownership of their prerequisite; Festive
 addons retain First Dragon ownership. Offers use the same prerequisites, while
 the durable writer independently rechecks them under transaction locks.
+
+The optional top-level `tracks` list declares missing read-only parent tracks
+using `{key, quest, initial, min, max, sources}` (maximum256). Every declaration
+must be used by a `requires` predicate and must never be written by a callback.
+Sources are mandatory. Existing declarations must match the admitted original
+owner/default/bounds exactly; conflicting ownership/defaults fail closed.
+This adds catalogue facts only and never writes player progress. Missing donor
+storage uses its declared initial, so a missing positive prerequisite refuses.
+
+L3 composes Avar Tar's Demon base/shield/helmet with the original Annihilator,
+Demon Helmet and Demon Oak owners. Ezebeth shares one Dark Trails/Glooth Engineer
+base grant; six or more Oramond voting points prioritize addon2. The addon1 path
+at six or more points also requires completed addon2, preserving source `elseif`
+ordering without ambiguous eligible reward callbacks. Three to five points can
+earn addon1 first. Oramond voting progress retains its original owner.

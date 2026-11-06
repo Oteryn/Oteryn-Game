@@ -8,7 +8,7 @@ META 3.1.0 resolved at bound immutable commit; required dev/coding/debugging/
 review/verify/waves guidance read. Source env.sh for Cargo/PG commands:
 `source /workspace/oteryn-env/env.sh` (do not print its private URL).
 
-Scope: exactly 66 L1 outfit/addon entries. Counts: 6 QUALIFIED, 60 UNFINISHED,
+Scope: exactly 66 L1 outfit/addon entries. Counts: 9 QUALIFIED, 57 UNFINISHED,
 0 BLOCKED. Original cross-lane evidence and source hashes remain in QUEST-STATUS.
 Preserve exclusions and other-lane/world-change ownership. Parent quest tracks
 retain their original owners; qualify all of an L1 outfit entry's reward paths.
@@ -79,11 +79,44 @@ binaries, donor copies or remaining review findings.
 Owner reuse audit fetched all eight questpc branches and four world lanes; no
 matched currently QUALIFIED entry was redone. Their source NPC executor's sorted
 foreign reads/default pattern is reused; it does not yet compose generic outfit
-value. Do not merge unrelated lane scope. Re-fetch the current own branch before
-push; last comparison was equal at5a6de28c1. Commit L1-02 and push now, then start
-next three-entry batch. Suggested next source review: Demon, Demon Hunter,
-Glooth Engineer reward stories (scratch /tmp/qengine2-avar_tar.lua, henricus.lua,
-ezebeth.lua); verify ownership/qualification/exclusions before selecting.
+value. Do not merge unrelated lane scope. L1-02 committed and pushed as9d3c3869f; clean tree after push.
 
-Potential later source extracts/index are /tmp only. Do not commit donor copies.
-Continue batch after batch without ending at a checkpoint.
+Batch L1-03 QUALIFIED: Demon Outfits, Glooth Engineer Outfits, Dark Trails'
+owned L1 outfit reward. Whole mechanism ownership follows PC-PACKET: other
+lanes retain encounter/exploration/voting objectives. One source Dark Trails/
+Glooth base owner; no duplicate native grants. Demon Hunter is not in LANE-L1.
+
+Generic addition: bounded source-backed read-only parent track declarations,
+matching fetched questpc7 NpcTrackDefinition's DTO/ownership/default-check
+pattern. Each declaration must be referenced by a readonly predicate, cannot be
+written by callbacks, and must match an existing native owner/default/bounds
+exactly. Sources required; no progress rows are created by declarations.
+Oramond voting retains its original owner. Donor absent=-1 and conservative
+signed32-bit maximum are recorded assumptions, not player progress defaults.
+
+Seven source callbacks: Avar Tar base/shield/helmet (original Annihilator,
+Demon Helmet/Demon Oak owners); Ezebeth base and both addon order paths. At
+votes6, source elseif prioritizes addon2; addon1 at6 requires addon2 complete.
+At3..5, addon1 comes first, then live votes6 permits addon2. Full source hashes
+and line citations are in QUEST-STATUS. Two NPCs added at captured placements,
+no held records. No item promotions needed in this batch.
+
+Actual PG RED: three missing callbacks,45.77s, markers44.697200612s,
+45.400996994s,45.766961397s (allfalse). Actual GREEN:3 passed93.80s, markers
+Demon93.716759654s, Glooth93.795295584s, Dark Trails93.803449022s (alltrue).
+Stories preserve readonly parents/owners and atomic source flags; stale parent
+refuses, replay mints nothing, all3 immutable outfit facts and normal final
+appearance selection pass. No internal outfit stages seeded.
+
+Checks: fmt; final check14.99s; strict clippy alltargets/features2m10s;
+2 Rust tests1.15s;14 Python tests5.109s; deterministic callback/placement checks;
+pin-refresh/pin-check;123 content tests2.18s;5 world repository tests46.75s.
+Final world a8729db03de3aff94477f96d700abeb75554cbb710c63d4986d94c88ccc596ac.
+All artifacts generated with repository tooling. Complete diff reviewed; no
+forbidden edits, binaries/donor copies, weakened tests or remaining findings.
+
+Counts9/66 QUALIFIED,57 actionable remaining. Commit/push L1-03 now with required
+author/trailers, then continue batches. Last origin comparison equal9d3c3869f.
+Logs /tmp/qengine2-batch3-{red,green,unit,final-check,clippy,pins,pincheck,
+content-tests,world-tests,authoring-tests}.log. Source scratch files/index only
+in /tmp; never commit donor copies. Continue without ending at a checkpoint.

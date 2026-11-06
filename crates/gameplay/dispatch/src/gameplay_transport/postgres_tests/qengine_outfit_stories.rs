@@ -33,6 +33,25 @@ fn qengine_l2_elementalist_whole_outfit_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l2-elementalist-story")
 }
 
+#[test]
+fn qengine_l3_demon_whole_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l3-demon-story")
+}
+#[test]
+fn qengine_l3_glooth_engineer_high_votes_preserve_source_priority() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l3-glooth-engineer-story")
+}
+#[test]
+fn qengine_l3_dark_trails_base_and_glooth_addons_follow_live_votes() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l3-dark-trails-story")
+}
+
+const ANNIHILATOR: &str = "oteryn:quest-progress/quest/u7_24/the_annihilator/reward";
+const DEMON_HELMET: &str = "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet";
+const DEMON_OAK: &str = "oteryn:quest-progress/quest/u8_2/the_demon_oak/done";
+const DARK: &str = "oteryn:quest-progress/quest/u10_50/dark_trails/";
+const VOTES: &str = "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points";
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 struct Requirement {
@@ -252,12 +271,44 @@ pub(super) async fn exercise(
             ],
             433,
         ),
+        "qengine-rewards-l3-demon-story" => (
+            "demon",
+            &[
+                ("base", None, None, Some(0)),
+                ("shield", None, None, Some(1)),
+                ("helmet", None, None, Some(2)),
+            ],
+            542,
+        ),
+        "qengine-rewards-l3-glooth-engineer-story" => (
+            "glooth-engineer",
+            &[
+                ("base", None, None, Some(0)),
+                ("second", None, None, Some(2)),
+                ("first-high", None, None, Some(1)),
+            ],
+            618,
+        ),
+        "qengine-rewards-l3-dark-trails-story" => (
+            "glooth-engineer",
+            &[
+                ("base", None, None, Some(0)),
+                ("first-low", None, None, Some(1)),
+                ("second", None, None, Some(2)),
+            ],
+            618,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let mut callbacks = Vec::new();
     for (suffix, take, present, addon) in steps {
-        let key = format!("oteryn:quest-reward/l2-{family}-{suffix}");
+        let batch = if name.starts_with("qengine-rewards-l3-") {
+            "l3"
+        } else {
+            "l2"
+        };
+        let key = format!("oteryn:quest-reward/{batch}-{family}-{suffix}");
         let callback = all
             .iter()
             .find(|c| c.key == key)
@@ -292,6 +343,46 @@ pub(super) async fn exercise(
                 minimum: 2,
                 maximum: 2,
             }]
+        } else if family == "demon" && *suffix != "base" {
+            vec![Requirement {
+                track: ANNIHILATOR.into(),
+                minimum: 2,
+                maximum: 2,
+            }]
+        } else if family == "glooth-engineer" {
+            if *suffix == "base" {
+                vec![Requirement {
+                    track: format!("{DARK}mission18"),
+                    minimum: 1,
+                    maximum: 1,
+                }]
+            } else {
+                let mut expected = vec![
+                    Requirement {
+                        track: format!("{DARK}outfit"),
+                        minimum: 1,
+                        maximum: 1,
+                    },
+                    Requirement {
+                        track: VOTES.into(),
+                        minimum: if *suffix == "first-low" { 3 } else { 6 },
+                        maximum: if *suffix == "first-low" {
+                            5
+                        } else {
+                            i64::from(i32::MAX)
+                        },
+                    },
+                ];
+                if *suffix == "first-high" {
+                    expected.push(Requirement {
+                        track: "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2"
+                            .into(),
+                        minimum: 1,
+                        maximum: 1,
+                    });
+                }
+                expected
+            }
         } else {
             vec![]
         };
@@ -346,6 +437,20 @@ pub(super) async fn exercise(
         .collect()
     } else if family == "festive" {
         vec![(FEATHERS.into(), 1)]
+    } else if family == "demon" {
+        vec![
+            (ANNIHILATOR.into(), 1),
+            (DEMON_HELMET.into(), 1),
+            (DEMON_OAK.into(), 3),
+        ]
+    } else if family == "glooth-engineer" {
+        vec![
+            (format!("{DARK}mission18"), 1),
+            (
+                VOTES.into(),
+                if name.contains("dark-trails") { 3 } else { 6 },
+            ),
+        ]
     } else {
         vec![]
     };
@@ -392,6 +497,19 @@ pub(super) async fn exercise(
                 experience: None,
             });
         }
+    }
+    if name == "qengine-rewards-l3-dark-trails-story" {
+        transitions.push(QuestTransition {
+            key: "oteryn:quest-transition/qengine2-story/vote-six".into(),
+            quest: tracks.get(VOTES).ok_or("votes owner")?.quest.clone(),
+            effects: vec![QuestEffect {
+                track: VOTES.into(),
+                from: QuestComparison::Eq(3),
+                effect: QuestEffectKind::Set(6),
+            }],
+            completes: false,
+            experience: None,
+        });
     }
     owner.quest_catalogue = Some(Arc::new(
         QuestStateCatalogue::new(
@@ -495,6 +613,18 @@ pub(super) async fn exercise(
     let mut occurrence = 500;
     for callback in &callbacks {
         let npc = *npcs.get(&callback.npc).ok_or("story NPC actor")?;
+        if name == "qengine-rewards-l3-dark-trails-story" && callback.key.ends_with("-second") {
+            commit_fixture(
+                owner,
+                admitted,
+                "oteryn:quest-transition/qengine2-story/vote-six",
+                9300,
+            )
+            .await?;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
+        }
         let needed: Vec<_> = callback.take.iter().chain(&callback.present).collect();
         let mut missing = false;
         for item in &needed {

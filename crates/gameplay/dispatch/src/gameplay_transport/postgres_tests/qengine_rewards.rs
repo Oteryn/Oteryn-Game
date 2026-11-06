@@ -152,6 +152,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l2-battle-mage-book" | "l2-battle-mage-epaulettes" => &["addon", "yes", "yes"],
         "l2-elementalist-start" | "l2-elementalist-base" => &["slime", "yes"],
         "l2-festive-mask-start" | "l2-festive-feather-start" => &["addons"],
+        "l3-demon-base" | "l3-demon-shield" | "l3-demon-helmet" => &["outfit", "yes"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
         "deepling-helmet" => &[
@@ -602,7 +603,7 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
-    if name.starts_with("qengine-rewards-l2-") {
+    if name.starts_with("qengine-rewards-l2-") || name.starts_with("qengine-rewards-l3-") {
         return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
     }
     if name == "qengine-rewards-l1-legacy-decaying" {

@@ -67,11 +67,35 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises(ValueError,msg=mutation):
                 q.validate_callbacks(bad)
 
+    def test_declared_parent_track_is_readonly_used_and_has_valid_initial(self):
+        for mutation in ('duplicate','inverted','unused','written'):
+            bad=copy.deepcopy(self.callbacks)
+            track=bad['tracks'][0]
+            if mutation=='duplicate': bad['tracks'].append(copy.deepcopy(track))
+            elif mutation=='inverted':track['initial']=track['max']+1
+            elif mutation=='unused':track['key']='oteryn:unused'
+            else:
+                source=next(c for c in bad['callbacks'] if any(r['track']==track['key'] for r in c.get('requires',[])))
+                other=next(c for c in bad['callbacks'] if c['key']!=source['key'] and not c.get('requires'))
+                other['storage'][0]['track']=track['key']
+            with self.assertRaises(ValueError,msg=mutation): q.validate_callbacks(bad)
+
+    def test_glooth_source_elif_awards_second_addon_first_at_six_votes(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        low=callbacks['l3-glooth-engineer-first-low']
+        high=callbacks['l3-glooth-engineer-first-high']
+        second=callbacks['l3-glooth-engineer-second']
+        self.assertEqual((low['requires'][1]['minimum'],low['requires'][1]['maximum']),(3,5))
+        self.assertEqual(high['requires'][-1]['track'].split('/')[-1],'addon2')
+        self.assertEqual((high['requires'][-1]['minimum'],high['requires'][-1]['maximum']),(1,1))
+        self.assertEqual(second['requires'][1]['minimum'],6)
+        self.assertEqual(second['outfit']['addons'],2)
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),20)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),27)
         self.assertEqual(sum(c['outfit'] is None for c in callbacks),6)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))

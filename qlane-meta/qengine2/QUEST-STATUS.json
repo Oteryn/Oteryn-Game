@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 6,
-    "unfinished": 60,
+    "qualified": 9,
+    "unfinished": 57,
     "blocked": 0
   },
   "quests": [
@@ -296,7 +296,7 @@
     {
       "canonical": "oteryn:quest.dark_trails_quest",
       "title": "Dark Trails Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -313,7 +313,11 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-03",
+        "scope": "Whole owned L1 outfit-grant mechanism; Dark Trails and Glooth Engineer share exactly one source base grant and both addon order paths. Encounter/exploration/voting objectives retain other lane ownership.",
+        "evidence": "3 full source outfit stories passed PostgreSQL18.6 in93.80s; exact per-case markers, source file:line/SHA and checks in batches[L1-03]."
+      }
     },
     {
       "canonical": "oteryn:quest.decaying_defender_outfits_quest",
@@ -340,7 +344,7 @@
     {
       "canonical": "oteryn:quest.demon_outfits_quest",
       "title": "Demon Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -357,7 +361,11 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-03",
+        "scope": "Whole owned L1 outfit-grant mechanism; Dark Trails and Glooth Engineer share exactly one source base grant and both addon order paths. Encounter/exploration/voting objectives retain other lane ownership.",
+        "evidence": "3 full source outfit stories passed PostgreSQL18.6 in93.80s; exact per-case markers, source file:line/SHA and checks in batches[L1-03]."
+      }
     },
     {
       "canonical": "oteryn:quest.authored.draccoon_herald_outfits_quest",
@@ -685,7 +693,7 @@
     {
       "canonical": "oteryn:quest.glooth_engineer_outfits_quest",
       "title": "Glooth Engineer Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -702,7 +710,11 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-03",
+        "scope": "Whole owned L1 outfit-grant mechanism; Dark Trails and Glooth Engineer share exactly one source base grant and both addon order paths. Encounter/exploration/voting objectives retain other lane ownership.",
+        "evidence": "3 full source outfit stories passed PostgreSQL18.6 in93.80s; exact per-case markers, source file:line/SHA and checks in batches[L1-03]."
+      }
     },
     {
       "canonical": "oteryn:quest.golden_outfits_quest",
@@ -1485,7 +1497,59 @@
         "integration_world": "5 passed 50.97s",
         "review": "One complete diff self-review; no remaining findings. No tests weakened, unrelated lane features merged, forbidden files, binaries or donor copies."
       },
-      "fixture_corrections": "Actors installed together once and reused throughout stories. Heavy Battle Mage recipe gets ordinary level50 carrying capacity via admitted XP policy/sequenced progression owner; no capacity bypass. All source-stage/custody/replay/client assertions retained."
+      "fixture_corrections": "Actors installed together once and reused throughout stories. Heavy Battle Mage recipe gets ordinary level50 carrying capacity via admitted XP policy/sequenced progression owner; no capacity bypass. All source-stage/custody/replay/client assertions retained.",
+      "commit": "9d3c3869f",
+      "push": "fast-forward confirmed origin/claude/happy-davinci-ijz3wy-qengine2; clean tree"
+    },
+    {
+      "id": "L1-03",
+      "base": "9d3c3869f",
+      "entries": [
+        "oteryn:quest.demon_outfits_quest",
+        "oteryn:quest.glooth_engineer_outfits_quest",
+        "oteryn:quest.dark_trails_quest"
+      ],
+      "scope": "All L1 outfit reward paths; other lanes retain encounter/exploration and voting objective ownership. Dark Trails base and Glooth Engineer share one native base grant, not duplicate owners. No source outfit stages are seeded.",
+      "mechanism": "Bounded source-backed declarations for read-only parent tracks not otherwise in the admitted catalogue; fresh source guard/order composition reused from L1-02.",
+      "source_evidence": [
+        "Crystal9f5a72c:data-global/npc/avar_tar.lua:55-65,70-74,98-126 sha2562262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3",
+        "Crystal9f5a72c:data-global/npc/ezebeth.lua:80-106 sha256280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "test_scope": "Demon entire base/shield/helmet conversations; Dark Trails/Glooth entire base/addons at votes3 then6 and votes6 from start (second-addon priority). Stale parent recheck, original ownership, immutable receipts/replay and normal appearance selection.",
+      "red": {
+        "command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l3_ -- --nocapture",
+        "result": "0 passed; 3 failed; 45.77 seconds; missing l3 callback bindings",
+        "postgres_markers": [
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l3-dark-trails-story duration=44.697200612s success=false",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l3-glooth-engineer-story duration=45.400996994s success=false",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l3-demon-story duration=45.766961397s success=false"
+        ]
+      },
+      "assumptions": [
+        "Missing Oramond VotingPoints catalogue fact uses donor storage absent=-1 and conservative signed32-bit nonnegative progression ceiling2147483647; declaration only, no new player writes or ownership reassignment. Thresholds3/6 and source elseif priority are exact Ezebeth facts."
+      ],
+      "reuse_evidence": "questpc7 npc_rules.rs at fetched96b478e86 defines NpcTrackDefinition key/quest/initial/min/max/sources and merges source declarations. Reuse this DTO/ownership/default-check pattern for a bounded read-only registry; existing native original fact must match exactly. Do not merge unrelated source NPC programs.",
+      "green": {
+        "command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l3_ -- --nocapture",
+        "result": "3 passed; 0 failed; 0 ignored; 93.80seconds",
+        "postgres_markers": [
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l3-demon-story duration=93.716759654s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l3-glooth-engineer-story duration=93.795295584s success=true",
+          "POSTGRES_CASE_COMPLETED qengine-rewards-l3-dark-trails-story duration=93.803449022s success=true"
+        ]
+      },
+      "status": "QUALIFIED",
+      "checks": {
+        "fmt": "cargo fmt --all --check; explicit rustfmt auto-mounted story file",
+        "check": "quests/durability/dispatch all features passed14.99s",
+        "clippy": "same crates all targets/all features -Dwarnings passed2m10s",
+        "rust_unit": "2 prerequisite/declaration tests passed1.15s",
+        "authoring": "14 tests passed5.109s; qengine_rewards.py --check; convert_placements.py --check",
+        "pins": "Repo pin-refresh and pin-check passed; world a8729db03de3aff94477f96d700abeb75554cbb710c63d4986d94c88ccc596ac",
+        "integration_content": "123 passed2.18s",
+        "integration_world": "5 passed46.75s",
+        "review": "Complete diff self-review; no unresolved findings, test weakening, binaries/donor copies, forbidden workflow/repository-tool edits or unrelated lane merges."
+      }
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",

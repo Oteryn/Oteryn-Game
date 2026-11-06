@@ -1,5 +1,17 @@
 {
   "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+      "quest": "oteryn:quest.oramond_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:93-103:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ]
+    }
+  ],
   "callbacks": [
     {
       "key": "oteryn:quest-reward/deepling-helmet",
@@ -966,6 +978,285 @@
         {
           "item": "oteryn:item.tibia.i25088",
           "count": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-demon-base",
+      "quest": "oteryn:quest.the_annihilator_quest",
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "base"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.demon",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-demon-helmet",
+      "quest": "oteryn:quest.demon_oak",
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "helmet"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.demon",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-demon-shield",
+      "quest": "oteryn:quest.demon_helmet_quest",
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "shield"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.demon",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-base",
+      "quest": "oteryn:quest.dark_trails_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.glooth_engineer",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission18",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-first-high",
+      "quest": "oteryn:quest.glooth_engineer_outfits_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.glooth_engineer",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/outfit",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "minimum": 6,
+          "maximum": 2147483647
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-first-low",
+      "quest": "oteryn:quest.glooth_engineer_outfits_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.glooth_engineer",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/outfit",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "minimum": 3,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-second",
+      "quest": "oteryn:quest.glooth_engineer_outfits_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.glooth_engineer",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/outfit",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "minimum": 6,
+          "maximum": 2147483647
         }
       ]
     },

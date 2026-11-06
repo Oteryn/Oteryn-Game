@@ -2,6 +2,30 @@
   "schema": 1,
   "offers": [
     {
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Choose the base, shield or helmet."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Choose the base, shield or helmet."
+      ]
+    },
+    {
       "npc": "oteryn:npc.broken_servant_sentry",
       "keywords": [
         "slime",
