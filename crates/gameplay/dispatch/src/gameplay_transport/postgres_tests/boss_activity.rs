@@ -60,6 +60,9 @@ enum Case {
     CapabilityMismatch,
     OfflineDeathMismatch,
     OfflineDeathDeadline,
+    SoulWarEntry,
+    SoulWarFinalEntry,
+    RottenBloodEntry,
 }
 
 #[test]
@@ -116,6 +119,21 @@ fn boss_activity_postgres_offline_native_death_returns_before_mismatch_release()
 fn boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger() -> TestResult
 {
     run_scenario(Case::OfflineDeathDeadline)
+}
+
+#[test]
+fn l3_endgame_quest_entry_soul_war_child_requires_level() -> TestResult {
+    run_scenario(Case::SoulWarEntry)
+}
+
+#[test]
+fn l3_endgame_quest_entry_soul_war_final_requires_level() -> TestResult {
+    run_scenario(Case::SoulWarFinalEntry)
+}
+
+#[test]
+fn l3_endgame_quest_entry_rotten_blood_requires_level() -> TestResult {
+    run_scenario(Case::RottenBloodEntry)
 }
 
 fn run_scenario(case: Case) -> TestResult {
@@ -184,7 +202,22 @@ fn scenario(case: Case) -> TestResult {
         owner.evidence = &evidence.evidence;
         owner.active_generation = controller.active();
         owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
-        let (boss_key, policy) = if with_rewards {
+        let endgame_creature = match case {
+            Case::SoulWarEntry => Some("oteryn:creature.goshnar_s_spite"),
+            Case::SoulWarFinalEntry => Some("oteryn:creature.goshnar_s_megalomania_purple"),
+            Case::RottenBloodEntry => Some("oteryn:creature.bakragore"),
+            _ => None,
+        };
+        let (boss_key, policy) = if let Some(key) = endgame_creature {
+            let policy = owner.active_generation.ok_or("generation")?
+                .native_gameplay().ok_or("native gameplay")?
+                .policies().policies().iter()
+                .find(|policy| policy.definition_key == key)
+                .ok_or("source endgame creature")?;
+            // The catalogue key is an alias: the durable owner must gate by the
+            // native creature identity as well as the public command's key.
+            (BOSS.to_owned(), policy.as_ref().clone())
+        } else if with_rewards {
             rewards::source_boss(&owner)?
         } else if case == Case::NonRewardDefeat {
             nonreward::source_creature(&owner)?
@@ -442,6 +475,20 @@ fn scenario(case: Case) -> TestResult {
                 ),
                 "the fresh room contains its exact authored living boss before entry"
             );
+        }
+        if let Some(key) = endgame_creature {
+            let started = std::time::Instant::now();
+            let (_, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, false).await?;
+            assert_eq!(reply, BossActivityReply::Refused(BossActivityRefusal::Level));
+            assert!(barrier.is_none());
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_activity_handoff_groups")
+                .fetch_one(&h.pool).await?, 0);
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_boss_cooldowns")
+                .fetch_one(&h.pool).await?, 0);
+            assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor)
+                .map_err(debug)?.position(), source_cell);
+            eprintln!("L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED {key} elapsed_ms={}", started.elapsed().as_millis());
+            return Ok(());
         }
         let attack_continuity = if case == Case::Entry {
             Some(state_continuity::prepare_attack(&owner, admitted).await?)
