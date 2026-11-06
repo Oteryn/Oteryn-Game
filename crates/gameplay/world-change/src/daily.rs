@@ -85,12 +85,13 @@ impl OrientalTraderTown {
 }
 
 /// The draws a day takes, in this order, each its own purpose.
-pub const DRAW_PURPOSES: [&str; 5] = [
+pub const DRAW_PURPOSES: [&str; 6] = [
     "thawing",
     "their-masters-voice",
     "oriental-trader",
     "oriental-trader-town",
     "stampede",
+    "fire-from-the-earth",
 ];
 
 /// Authored daily candidate probabilities. Native effect identities and variant
@@ -101,6 +102,7 @@ pub struct DailyCandidates {
     pub voice_percent: u8,
     pub trader_percent: u8,
     pub stampede_permille: u16,
+    pub fire_earth_permille: u16,
 }
 
 /// The world changes of one day.
@@ -118,6 +120,15 @@ pub struct DailyWorldChanges {
     /// Old immutable decisions stay inactive until their next server save.
     #[serde(default)]
     pub stampede: bool,
+    #[serde(default)]
+    pub fire_from_the_earth: bool,
+    #[serde(default)]
+    pub world_counters: bool,
+    /// Current counter projection, loaded through the owner; not an immutable daily draw.
+    #[serde(skip)]
+    pub counter_stages: [u8; 7],
+    #[serde(skip)]
+    pub counter_generations: [u64; 7],
 }
 
 impl DailyWorldChanges {
@@ -133,6 +144,7 @@ impl DailyWorldChanges {
                 voice_percent: THEIR_MASTERS_VOICE_PERCENT,
                 trader_percent: ORIENTAL_TRADER_PERCENT,
                 stampede_permille: 125,
+                fire_earth_permille: 199,
             },
             draw,
         )
@@ -145,7 +157,7 @@ impl DailyWorldChanges {
         candidates: DailyCandidates,
         mut draw: impl FnMut(&str) -> u64,
     ) -> Self {
-        let [thawing, voice, trader, town, stampede] = DRAW_PURPOSES;
+        let [thawing, voice, trader, town, stampede, fire] = DRAW_PURPOSES;
         let thawing = percent_roll(draw(thawing), u64::from(candidates.thawing_percent));
         let their_masters_voice = percent_roll(draw(voice), u64::from(candidates.voice_percent));
         let oriental_trader = percent_roll(draw(trader), u64::from(candidates.trader_percent))
@@ -154,9 +166,16 @@ impl DailyWorldChanges {
                 1 => OrientalTraderTown::Carlin,
                 _ => OrientalTraderTown::LibertyBay,
             });
+        let stampede =
+            (u128::from(draw(stampede)) * 1000) >> 64 < u128::from(candidates.stampede_permille);
+        let fire_from_the_earth =
+            (u128::from(draw(fire)) * 1000) >> 64 < u128::from(candidates.fire_earth_permille);
         Self {
-            stampede: (u128::from(draw(stampede)) * 1000) >> 64
-                < u128::from(candidates.stampede_permille),
+            stampede,
+            fire_from_the_earth,
+            world_counters: true,
+            counter_stages: [1, 3, u8::from(fire_from_the_earth), 1, 1, 1, 1],
+            counter_generations: [1; 7],
             reset_epoch,
             thawing,
             their_masters_voice,
@@ -208,7 +227,10 @@ mod tests {
         let roll = |draws: [u64; 5], month, day| {
             DailyWorldChanges::roll(9, month, day, |purpose| {
                 let index = DRAW_PURPOSES.iter().position(|p| *p == purpose);
-                draws[index.unwrap_or(0)]
+                index
+                    .and_then(|i| draws.get(i))
+                    .copied()
+                    .unwrap_or(u64::MAX)
             })
         };
         let all = roll([0, 0, 0, at(2, 3), 0], 6, 13);
@@ -222,6 +244,10 @@ mod tests {
                 grimvale_full_moon: true,
                 flower_month: true,
                 stampede: true,
+                fire_from_the_earth: false,
+                world_counters: true,
+                counter_stages: [1, 3, 0, 1, 1, 1, 1],
+                counter_generations: [1; 7],
             }
         );
         let none = roll([u64::MAX; 5], 5, 12);

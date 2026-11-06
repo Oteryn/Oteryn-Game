@@ -113,9 +113,13 @@ fn worldchg_selection_replays_and_snapshot_retains_the_committed_epoch()
     let select = |epoch| DailyWorldChanges::roll(epoch, 6, 13, |_| 0);
     assert_eq!(select(7), select(7));
     let bytes = serde_json::to_vec(&select(7))?;
+    let mut immutable = select(7);
+    immutable.counter_stages = [0; 7];
+    immutable.counter_generations = [0; 7];
+    // The current phase projection is read separately from its durable owner.
     assert_eq!(
         serde_json::from_slice::<DailyWorldChanges>(&bytes)?,
-        select(7)
+        immutable
     );
     assert_ne!(select(7), select(8));
     Ok(())
@@ -133,6 +137,7 @@ fn worldchg_authored_candidate_probabilities_control_selection() {
                 thawing_percent: percent,
                 voice_percent: percent,
                 trader_percent: percent,
+                fire_earth_permille: 199,
                 stampede_permille: u16::from(percent) * 10,
             },
             |_| u64::MAX,
@@ -161,6 +166,7 @@ fn worldchg_stampede_uses_accepted_daily_gate_and_preserves_legacy_snapshots()
                 thawing_percent: 0,
                 voice_percent: 0,
                 trader_percent: 0,
+                fire_earth_permille: 199,
                 stampede_permille: 125,
             },
             |purpose| {

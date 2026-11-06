@@ -241,9 +241,13 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
     let mut tx = transaction(&h.pool).await?;
     let day: serde_json::Value = sqlx::query_scalar("SELECT decision FROM game_world_change_days WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
         .bind(world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+    // The immutable daily fields persist; current counter stages are a separate,
+    // fenced projection and are intentionally omitted from the decision JSON.
+    let mut immutable_next=next;
+    immutable_next.counter_stages=[0;7]; immutable_next.counter_generations=[0;7];
     assert_eq!(
         serde_json::from_value::<oteryn_gameplay_world_change::daily::DailyWorldChanges>(day)?,
-        next
+        immutable_next
     );
     tx.rollback().await?;
     eprintln!(

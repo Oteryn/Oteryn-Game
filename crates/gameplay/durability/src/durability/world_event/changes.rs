@@ -11,6 +11,8 @@ use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
+pub mod counters;
+
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
 pub fn roll(
     world: WorldId,
@@ -54,12 +56,32 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
     let mut probabilities = [None; 3];
     let mut grimvale = false;
     let mut stampede = None;
-    for entry in entries.iter().filter(|entry| entry["status"] == "READY" || entry["status"] == "QUALIFIED") {
+    let mut fire_earth = None;
+    for entry in entries
+        .iter()
+        .filter(|entry| entry["status"] == "READY" || entry["status"] == "QUALIFIED")
+    {
         let index = match entry["key"].as_str() {
             Some("stampede") if stampede.is_none() && entry["trigger"]["kind"] == "at_reset" => {
-                stampede = entry["trigger"]["chance_permille"].as_u64()
-                    .filter(|chance| *chance <= 1000).and_then(|chance| u16::try_from(chance).ok());
-                if stampede.is_none() { return Err(DurabilityError::InvalidStoredState); }
+                stampede = entry["trigger"]["chance_permille"]
+                    .as_u64()
+                    .filter(|chance| *chance <= 1000)
+                    .and_then(|chance| u16::try_from(chance).ok());
+                if stampede.is_none() {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                continue;
+            }
+            Some("fire_from_the_earth")
+                if fire_earth.is_none() && entry["trigger"]["kind"] == "at_reset" =>
+            {
+                fire_earth = entry["trigger"]["chance_permille"]
+                    .as_u64()
+                    .filter(|chance| *chance <= 1000)
+                    .and_then(|chance| u16::try_from(chance).ok());
+                if fire_earth.is_none() {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
                 continue;
             }
             Some("thawing") => 0,
@@ -108,24 +130,40 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
         voice_percent,
         trader_percent,
         stampede_permille: stampede.ok_or(DurabilityError::InvalidStoredState)?,
+        // Held content never enters a production daily draw.
+        fire_earth_permille: fire_earth.unwrap_or(0),
     })
 }
 
 /// Authored W6 preconditions, consumed by the existing raid scheduler before any draw/write.
 /// This adds no firing owner and does not replace a raid's own schedule or eligibility.
 pub fn raid_requirements() -> Result<std::collections::BTreeMap<String, String>, DurabilityError> {
-    let catalogue: serde_json::Value = serde_json::from_str(CATALOGUE_JSON)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let entries = catalogue["entries"].as_array().filter(|entries| entries.len() <= 256)
+    let catalogue: serde_json::Value =
+        serde_json::from_str(CATALOGUE_JSON).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let entries = catalogue["entries"]
+        .as_array()
+        .filter(|entries| entries.len() <= 256)
         .ok_or(DurabilityError::InvalidStoredState)?;
     let mut requirements = std::collections::BTreeMap::new();
     for entry in entries {
-        let Some(binding) = entry.get("binding").filter(|binding| binding["kind"] == "raid") else { continue; };
-        let key = entry["key"].as_str().filter(|key| !key.is_empty() && key.len() <= 64)
+        let Some(binding) = entry
+            .get("binding")
+            .filter(|binding| binding["kind"] == "raid")
+        else {
+            continue;
+        };
+        let key = entry["key"]
+            .as_str()
+            .filter(|key| !key.is_empty() && key.len() <= 64)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        let raid = binding["raid_key"].as_str().filter(|raid| !raid.is_empty() && raid.len() <= 512)
+        let raid = binding["raid_key"]
+            .as_str()
+            .filter(|raid| !raid.is_empty() && raid.len() <= 512)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        if requirements.insert(raid.to_owned(), key.to_owned()).is_some() {
+        if requirements
+            .insert(raid.to_owned(), key.to_owned())
+            .is_some()
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
     }
@@ -163,16 +201,26 @@ pub(super) async fn record(
     let existing: Option<serde_json::Value> = sqlx::query_scalar("SELECT decision FROM game_world_change_days WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_optional(&mut **tx).await?;
     if let Some(existing) = existing {
-        let day: DailyWorldChanges =
+        let mut day: DailyWorldChanges =
             serde_json::from_value(existing).map_err(|_| DurabilityError::InvalidStoredState)?;
         if day.reset_epoch != epoch {
             return Err(DurabilityError::InvalidStoredState);
         }
+        counters::project(tx, world, &mut day).await?;
         return Ok(day);
     }
     let timestamp: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM activated_at)*1000)::bigint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
-    let selected = roll(world, epoch, timestamp)?;
+    let mut selected = roll(world, epoch, timestamp)?;
+    counters::at_reset(
+        tx,
+        world,
+        epoch,
+        selected.fire_from_the_earth,
+        timestamp.max(0) as u64,
+    )
+    .await?;
+    counters::project(tx, world, &mut selected).await?;
     let decision =
         serde_json::to_value(selected).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_world_change_days(world_id,reset_epoch,decision) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3) ON CONFLICT DO NOTHING")
