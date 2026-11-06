@@ -1,5 +1,7 @@
 """Native selectors must exist on exact source Items, not just PG fixture tiles."""
+import hashlib
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -43,10 +45,28 @@ class QuestStartupBindingsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'missing or ambiguous'):
             startup.overlay_outputs(outputs, require_all=True)
 
-    def test_capture_reproduces_the_pinned_donor_values(self):
-        retained = ROOT / '.questpc4/evidence/crystal-201189f'
-        expected = json.loads((ROOT / startup.CAPTURE).read_bytes())
-        self.assertEqual(startup.capture(retained), expected)
+    def test_capture_parses_pinned_source_shapes_and_hashes_inputs(self):
+        # Literal source shapes; CI must not depend on a worker's local donor cache.
+        sources = {
+            'data-global/startup/tables/tile.lua': 'TileAction = {[50022] = {itemId=4634, itemPos={{x=32966,y=32626,z=5}}}}',
+            'data-global/startup/tables/teleport.lua': 'TeleportAction = {[50022] = {{itemId=1720,itemPos={{x=32968,y=32630,z=7}}},{itemId=1949,itemPos={{x=32968,y=32629,z=7},{x=32967,y=32630,z=8}}}}}',
+            'data-global/startup/tables/door_level.lua': 'LevelDoorAction = {[1070] = {itemId=false,itemPos={{x=33190,y=31684,z=14},{x=33195,y=31684,z=14}}}}',
+            'data-global/startup/tables/lever.lua': 'LeverUnique = {[30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}',
+            'data/libs/tables/doors.lua': 'LevelDoorTable = {{closedDoor=5102,openDoor=5103}}',
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for name, text in sources.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(text)
+            capture = startup.capture(root)
+        actual = [(tuple(r['position']), r['item'], r['attribute'], r['action'])
+                  for r in capture['bindings']]
+        self.assertEqual(sorted(actual), sorted(EXPECTED))
+        self.assertEqual(capture['sources'], [
+            {'path': name, 'sha256': hashlib.sha256(text.encode()).hexdigest()}
+            for name, text in sources.items()])
 
     def test_native_startup_selectors_match_exact_source_items(self):
         index = json.loads((ROOT / 'content/world/placements/index.json').read_bytes())
