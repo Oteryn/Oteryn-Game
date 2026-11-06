@@ -220,6 +220,8 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if let Some((greet, farewell, _)) = rookgaard_exchange_messages(&reference.key) {
+                (greet.into(), farewell.into(), None, Vec::new())
             } else if let Some(greeting) = endgame_greeting(&reference.key) {
                 // W11: only these four source NPCs have native stateful Quest
                 // consumers. This admits their greeting, not their Lua/script
@@ -328,11 +330,16 @@ impl NpcTalkBook {
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
                     greeting_reply,
                     farewell_reply,
-                    source_name_templates: dark_messages.is_some() || isle_messages.is_some(),
+                    source_name_templates: dark_messages.is_some()
+                        || isle_messages.is_some()
+                        || rookgaard_exchange_messages(&reference.key).is_some(),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else {
-                        isle_messages.map(|messages| messages.walkaway)
+                        isle_messages.map(|messages| messages.walkaway).or_else(|| {
+                            rookgaard_exchange_messages(&reference.key)
+                                .map(|(_, _, walkaway)| walkaway.into())
+                        })
                     },
                     topic_reply,
                     dialogue_keywords,
@@ -387,6 +394,35 @@ fn endgame_greeting(key: &str) -> Option<&'static str> {
         "oteryn:npc.bloodshade_sacrifice" => {
             "Mortal! If you are on a {quest} to serve the blood god, my master - be greeted!"
         }
+        _ => return None,
+    })
+}
+
+// Crystal201189f amber.lua:426-428, billy.lua:145-148,
+// lee_delle.lua:152-155 and willie.lua:285-288. Dialogue mutations live in dispatch.
+fn rookgaard_exchange_messages(key: &str) -> Option<(&'static str, &'static str, &'static str)> {
+    Some(match key {
+        "oteryn:npc.amber" => (
+            "Oh hello, nice to see you |PLAYERNAME|. Are you here to hear some stories of my {adventures} or do you need {help}?",
+            "See you later, |PLAYERNAME|.",
+            "Yeah, see you later.",
+        ),
+        "oteryn:npc.billy" => (
+            "Howdy |PLAYERNAME|. I'm a farmer and cook, maybe I can interest you in a {trade} with food? You can also ask me for general {hints} about the game.",
+            "Bye.",
+            "HOW RUDE!",
+        ),
+        "oteryn:npc.lee_delle" => (
+            "Nice to see you, |PLAYERNAME|! Ask me for a {trade} if you like to see my exclusive offers.",
+            "Bye, bye, |PLAYERNAME|.",
+            "Bye, bye.",
+        ),
+        "oteryn:npc.sinatuki" => ("Sajoq, jinuma!", "Sajoq!", "Sajoq!"),
+        "oteryn:npc.willie" => (
+            "Hiho |PLAYERNAME|. I hope you're here to {trade}.",
+            "Yeah, bye |PLAYERNAME|.",
+            "Yeah go away!",
+        ),
         _ => return None,
     })
 }

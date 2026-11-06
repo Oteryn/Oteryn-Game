@@ -109,7 +109,10 @@ def test_closed_weapon_metadata_admission():
         else:
             raise AssertionError("forged weapon packet accepted")
     print("ok test_closed_weapon_metadata_admission")
-source_claim_count = len(json.loads((ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
+sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
+from scripted_chests_rs import record_count as scripted_rs_count
+
+source_claim_count = len(json.loads((ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"]) + scripted_rs_count()
 project = json.loads((ROOT / "content/project.json").read_text(encoding="utf-8"))
 manifest = json.loads((ROOT / "content/manifest.json").read_text(encoding="utf-8"))
 lock = json.loads((ROOT / "content/content.lock.json").read_text(encoding="utf-8"))
@@ -177,7 +180,12 @@ assert sum(path.startswith("content/proficiencies/proficiencies-") for path in p
 assert "content/proficiencies/index.json" in paths and "content/proficiencies/bindings.json" in paths
 assert manifest["families"]["RewardClaim"] == {"records": source_claim_count, "index": "content/interactions/reward_claims/index.json"}
 assert "RewardClaim" in project["migrated_families"]
-assert sum(path.startswith("content/interactions/reward_claims/reward-claims-") for path in paths) == 3
+assert {path for path in paths if path.startswith("content/interactions/reward_claims/reward-claims-")} == {
+    "content/interactions/reward_claims/reward-claims-00000-00099.json",
+    "content/interactions/reward_claims/reward-claims-00100-00199.json",
+    "content/interactions/reward_claims/reward-claims-00200-00230.json",
+    "content/interactions/reward_claims/reward-claims-scripted-rs.json",
+}
 assert "content/interactions/reward_claims/index.json" in paths
 assert manifest["families"]["StarterKit"] == {"records": 1, "index": "content/starter/index.json"}
 assert "StarterKit" in project["migrated_families"]

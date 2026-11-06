@@ -35,9 +35,9 @@ class VariantStackSerializationTests(unittest.TestCase):
                 self.assertEqual(d['readiness'], 'waiting_implementation')
                 self.assertEqual(d['data_holds'], [])
         self.assertEqual(len(changed), 2)
-        # W15b implements 67 exact container/leaf recipes, including
+        # 68 exact container/leaf recipes include the admitted Desert bag and
         # these two selected native stack normalizations (PR2770 Q4/A).
-        self.assertEqual(len(variants.native_lowering_errors(self.records)), 38)
+        self.assertEqual(len(variants.native_lowering_errors(self.records)), 37)
 
     def test_every_actual_item_total_is_preserved(self):
         for row, old in zip(self.records, self.old):

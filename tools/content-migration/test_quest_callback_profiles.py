@@ -93,6 +93,26 @@ class QuestCallbackProfiles(unittest.TestCase):
                          'stack_class': 'NonStackable',
                          'legal_destinations': ['CharacterInventory', 'Ground']})
 
+    def test_rapier_admission_preserves_facts_and_rejects_physical_drift(self):
+        from questpc3_item_admission import apply_admissions
+        key = 'oteryn:item.tibia.i3272'
+        selected = {f'oteryn:item.tibia.i{ident}' for ident in (3272, 3362, 3426, 3054, 3084, 637)}
+        canonical_items = [row['definition']
+                           for path in sorted((ROOT / 'content/items/definitions').glob('items-*.json'))
+                           for row in json.loads(path.read_bytes())['records']
+                           if row['definition']['identity']['key'] in selected]
+        candidates = copy.deepcopy(canonical_items)
+        candidate = next(item for item in candidates if item['identity']['key'] == key)
+        candidate['materializable'] = False
+        candidate['stack_class'] = 'Unknown'
+        apply_admissions(candidates)
+        self.assertEqual(candidates, canonical_items)
+        apply_admissions(candidates)
+        self.assertEqual(candidates, canonical_items)
+        candidate['semantics']['physical']['value']['weight']['value'] += 1
+        with self.assertRaisesRegex(ValueError, 'Rapier core facts changed'):
+            apply_admissions(candidates)
+
     def test_rotten_blood_rust_callback_admits_the_canonical_bloody_tear_once(self):
         # Rotten Blood's fixed callback is authored in Rust, so the JSON callback
         # inventory cannot supply this already admitted source Item by itself.
@@ -171,7 +191,7 @@ class QuestCallbackProfiles(unittest.TestCase):
                 for placement in record['definition'].get('native_contents', {}).get('placements', []):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
-        self.assertEqual(len(expected), 130)
+        self.assertEqual(len(expected), 135)
         for key in expected:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)

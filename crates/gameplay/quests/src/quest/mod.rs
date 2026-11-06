@@ -35,6 +35,7 @@ pub mod native_rules;
 #[cfg(test)]
 pub mod npc_rules;
 mod quests_2_focus;
+pub mod rookgaard_exchanges;
 pub mod rotten_blood;
 pub mod soul_war;
 pub mod soul_war_dialogue;

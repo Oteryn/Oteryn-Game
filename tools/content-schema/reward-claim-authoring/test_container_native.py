@@ -99,9 +99,9 @@ class ContainerNativeTests(unittest.TestCase):
             row = recipe['placements'][0]
             self.assertLessEqual(len(row['contents']), min(row['capacity'], 20))
         native = [d for d in self.rows if container_native.derive(d, self.items, plain.stack_problem)]
-        self.assertEqual(len(native), 67)
+        self.assertEqual(len(native), 68)
         self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
-                             for d in native), 54)
+                             for d in native), 55)
 
     def test_all_twelve_text_leaves_keep_the_established_lf_normalization(self):
         evidence, _ = container_native.source()
@@ -159,6 +159,28 @@ class ContainerNativeTests(unittest.TestCase):
             else: claim += 'forged'
             self.assertFalse(container_native.full_charge_leaf(changed, claim, point,
                              item['identity']['key'], raw), mutation)
+
+    def test_rs_charged_leaves_require_exact_source_and_definition_charges(self):
+        proof = plain.load_source_charge_evidence()
+        for name, ident, charges, xyz in (
+                ('silveramulet', 3054, 200, (32506, 32269, 9)),
+                ('stealhring1', 3084, 250, (33315, 32277, 11))):
+            item = copy.deepcopy(self.items[f'oteryn:item.tibia.i{ident}'])
+            # Isolate the lowering from the separately qualified Item admission.
+            item['materializable'] = True
+            key = f'canary:reward-claim/kv/{name}'
+            position = dict(zip('xyz', xyz))
+            self.assertEqual(plain.charged_source_reward(item, key, position,
+                             item['identity']['key'], charges, proof), (1, None))
+            for mutation in ('count', 'charges', 'admission', 'position', 'claim'):
+                changed = copy.deepcopy(item); point = dict(position); raw = charges; claim = key
+                if mutation == 'count': raw -= 1
+                elif mutation == 'charges': changed['semantics']['charges']['value']['count']['value'] += 1
+                elif mutation == 'admission': changed['materializable'] = False
+                elif mutation == 'position': point['x'] += 1
+                else: claim += 'forged'
+                self.assertFalse(container_native.full_charge_leaf(changed, claim, point,
+                                 item['identity']['key'], raw), (name, mutation))
 
     def test_authored_text_is_bound_only_to_the_exact_source_book(self):
         d = next(d for d in self.rows if d['identity']['key'].endswith('dreamers_challenge.bplong_sword'))

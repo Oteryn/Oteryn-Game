@@ -102,6 +102,10 @@ def derive_packet(root, evidence):
     canonical = [r['definition'] for p in index['shards'] for r in read(root, p)['records']]
     canonical_by_source = {}
     for c in canonical:
+        # The native wiki recipe is independently authored, not a donor pilot row.
+        # Its complete record is validated by scripted_chests_rs instead.
+        if c.get('definition_profile') == 'scripted_rs_v1':
+            continue
         key = (c['provenance']['pilot_key'], c['provenance']['pilot_revision'])
         if key in canonical_by_source:
             raise ValueError('duplicate canonical RewardClaim source binding')

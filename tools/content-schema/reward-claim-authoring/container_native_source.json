@@ -2326,6 +2326,46 @@
       "unique_id": 6112
     },
     {
+      "line": 1780,
+      "setting": {
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32506,
+          "y": 32269,
+          "z": 9
+        },
+        "questName": "silveramulet",
+        "reward": [
+          [
+            3054,
+            200
+          ]
+        ],
+        "useKV": true
+      },
+      "unique_id": 6154
+    },
+    {
+      "line": 1949,
+      "setting": {
+        "itemId": 1983,
+        "itemPos": {
+          "x": 33315,
+          "y": 32277,
+          "z": 11
+        },
+        "questName": "stealhring1",
+        "reward": [
+          [
+            3084,
+            250
+          ]
+        ],
+        "useKV": true
+      },
+      "unique_id": 6174
+    },
+    {
       "line": 1985,
       "setting": {
         "itemId": 2472,

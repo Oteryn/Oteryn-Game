@@ -1273,6 +1273,9 @@ def main() -> int:
                 f"excluded teleports {excluded} differ from the pinned "
                 f"{PINNED_EXCLUDED_TELEPORTS}"
             )
+        import quest_chest_bindings_rs
+
+        quest_chest_bindings_rs.overlay_outputs(out)
     except (ConvertError, otbm_reader.OtbmError, OSError) as error:
         print(f"FAIL {error}", file=sys.stderr)
         return 1

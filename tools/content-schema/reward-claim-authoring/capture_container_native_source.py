@@ -38,7 +38,7 @@ def capture(root):
                      'item_id': lua_tables.as_python(f['value'])['itemId'],
                      'text': lua_tables.as_python(f['value'])['text']} for f in attributes]
     leaf_ids = {row['unique_id'] for row in text_entries} - {6195}
-    leaf_ids |= {6093, 6082}
+    leaf_ids |= {6093, 6082, 6154, 6174}
     achievements = lua_tables.assignments(handler, {'achievementTable'})['achievementTable']['fields']
     return {
         'schema': 'OTERYN_CRYSTAL_CONTAINER_REWARD_SOURCE/v1',

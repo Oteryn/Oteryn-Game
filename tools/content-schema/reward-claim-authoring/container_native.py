@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 SOURCE = Path(__file__).with_name('container_native_source.json')
-SOURCE_SHA256 = 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
+SOURCE_SHA256 = '2680c60528637a13eed808085a08acfbd81fe61e884d1be9fa038d4103e49a62'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
 MAX_CONTENTS = 20  # Existing BAGS-0 direct-container admission, not a donor capacity.
 # Existing selected owner rulings, reaffirmed by PR2770 ANSWER 6542716086/Q4.
@@ -32,7 +32,7 @@ def source():
         raise ValueError('shared storage reward choices changed')
     leaves = value['leaf_entries']
     if {row['unique_id'] for row in leaves} != {6013, 6082, 6093, 6112, 6179, 6187,
-            6196, 6202, 6203, 6214, 6250, 6272, 6296, 6500}:
+            6196, 6202, 6203, 6214, 6250, 6272, 6296, 6500, 6154, 6174}:
         raise ValueError('once-only leaf source inventory changed')
     entries = {row['unique_id']: row for row in value['entries'] + choices + leaves}
     if len(entries) != len(value['entries']) + len(choices) + len(leaves):
@@ -54,21 +54,28 @@ def item_id(ref):
 
 
 def full_charge_leaf(item, pilot_key, position, key, raw_count):
-    """UID6082 is one already-admitted Item at its exact definition charges.
+    """The closed source leaves produce one Item at its exact definition charges.
 
     Missing native timed state means full definition values; this does not
     authorize partial source charges or make a held Item materializable.
     """
-    if (pilot_key != 'canary:reward-claim/kv/madmageroom3'
-            or key != 'oteryn:item.tibia.i3081' or raw_count != 5
+    permitted = {
+        'canary:reward-claim/kv/madmageroom3': (6082, 'oteryn:item.tibia.i3081', 5),
+        'canary:reward-claim/kv/silveramulet': (6154, 'oteryn:item.tibia.i3054', 200),
+        'canary:reward-claim/kv/stealhring1': (6174, 'oteryn:item.tibia.i3084', 250),
+    }
+    selected = permitted.get(pilot_key)
+    if (selected is None or (key, raw_count) != selected[1:]
             or not item or item.get('identity', {}).get('key') != key
             or not item.get('materializable') or item.get('stack_class') != 'NonStackable'
             or fact(item, 'charges', 'count') != raw_count):
         return False
     _, entries = source()
-    setting = entries[6082]['setting']
-    return (setting.get('useKV') is True and setting.get('questName') == 'madmageroom3'
-            and setting.get('itemPos') == position and setting.get('reward') == [[3081, 5]])
+    setting = entries[selected[0]]['setting']
+    return (setting.get('useKV') is True
+            and setting.get('questName') == pilot_key.rsplit('/', 1)[1]
+            and setting.get('itemPos') == position
+            and setting.get('reward') == [[item_id(item['identity']), raw_count]])
 
 
 def derive(definition, items, stack_problem):

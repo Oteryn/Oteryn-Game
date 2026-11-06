@@ -34,6 +34,7 @@ pub(super) struct Choice {
 
 #[derive(Default)]
 pub(super) struct State {
+    pub(super) rookgaard_exchange: super::rookgaard_exchanges::State,
     context: Option<Context>,
     topic: Topic,
     pending: Option<Pending>,

@@ -312,6 +312,10 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
     actor: ExactActorRef,
     command: UseCommand,
 ) -> Option<NpcTalkOutcome> {
+    if let Some(outcome) = super::rookgaard_exchanges::resume(admission, actor, command, None).await
+    {
+        return Some(outcome);
+    }
     if let Some(outcome) = super::grizzly::resume(admission, actor, command).await {
         return Some(outcome);
     }

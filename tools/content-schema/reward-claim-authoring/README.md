@@ -49,9 +49,13 @@ Only an exact binding with known NonStackable semantics and positive
 disagreement remains an independent diagnostic. The original pilot stays unchanged;
 `source_checks` preserves the raw argument and the derived canonical quantity.
 
-A default-matching reward stays held as `NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED`:
-current native MINT request/after-state have no charge initialization or persistence.
-This is an implementation gap under covered architecture. Source/default disagreement
+The closed full-charge leaves (Mad Mage Room's Stone Skin Amulet, Silver Amulet,
+and Stealth Ring's Protection Amulet) mint one instance at their exact definition
+charges. TIMED-ITEM-0 opens an absent timed row at revision zero with those full
+values; no partial subtype is invented. Admission requires the exact pinned
+Crystal UID, source position, Item identity, raw argument, materializable
+NonStackable Item and matching definition charges. Other bindings remain held as
+`NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED`. Source/default disagreement
 stays `SOURCE_CHARGE_MISMATCH` (CONFLICT), notably Banshee3081 raw1 versus definition5.
 Unproved source arguments and unknown definition charges remain UNKNOWN without
 normalization. Stackable rune charge definitions retain quantity as piece count.
@@ -110,6 +114,16 @@ then regenerate the source variant packet so its input hashes bind the new shard
 `native_lowering_errors()` provides explicit unsupported-profile diagnostics before
 any consumer attempts the existing plain native model; this is not a runtime implementation.
 
+`scripted_chests_rs.py` adds Rapier's source-script claim in a separate shard,
+without reshuffling the historical pilot or variant shards. The canonical Item
+admission preserves its existing physical and weapon facts. After authoring,
+`python3 tools/content-schema/world-authoring/quest_chest_bindings_rs.py` restores
+the qualified R–S chest startup UIDs onto their exact committed map appearances.
+It rejects missing or ambiguous chests and conflicting UIDs, preserves all other
+map facts, and is idempotent. The normal content regeneration command reapplies
+and checks this overlay; full map authoring reapplies it after source validation.
+Regenerate world pins with the bundle compiler after a placement change.
+
 ```sh
 python tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py
 python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content
@@ -117,3 +131,24 @@ python tools/content-schema/reward-claim-authoring/reward_claim_variant_migratio
 python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content --check
 python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
 ```
+
+## R–S scripted claims
+
+`scripted_chests_rs.py` adds the source Rapier claim and the closed
+`scripted_rs_v1` Small Sapphire recipe to one separate generated shard. The
+Small Sapphire packet pins six wiki revisions, the complete four-item recipe
+and both document texts. The native binder checks its exact position,
+appearance, native marker and source digest; text is checked by Item identity
+and SHA-256. An unadmitted child refuses the whole recipe.
+
+The Small Sapphire donor map has no UID on its chest. Native import assigns
+marker64993 at that exact chest and retains an empty `legacy_unique_ids` list.
+This marker is native binding metadata, not a claimed donor fact or a command
+ID. `quest_chest_bindings_rs.py` reapplies it during World regeneration, just as
+it restores startup UIDs for the other R–S claims. The packet records the
+one-tile difference between the wiki marker and the only adjacent map chest.
+
+Certificate637's existing canonical physical facts, including weight200, stay
+unchanged. Its nonstackable fact comes from the pinned appearance object's
+`cumulative=false` flag. The donor XML weight150 remains a recorded conflict;
+it does not replace the accepted canonical/TibiaWiki weight.

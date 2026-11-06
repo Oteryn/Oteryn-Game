@@ -41,7 +41,7 @@ pub trait RewardClaimTile {
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
 /// variant shards. Keys and the exact W15b native container projection are served;
 /// other source dispositions remain closed.
-pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
+pub const REWARD_CLAIM_SHARDS: [&str; 6] = [
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"
     ),
@@ -56,6 +56,9 @@ pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
     ),
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
+    ),
+    include_str!(
+        "../../../../../content/interactions/reward_claims/reward-claims-scripted-rs.json"
     ),
 ];
 
@@ -319,7 +322,16 @@ fn candidate(
             None => candidate_placement(placement, key_variant)?,
         };
         match parsed_placement {
-            Some(placement) => parsed.push(placement),
+            Some(mut placement) => {
+                if definition.get("definition_profile").and_then(Value::as_str)
+                    == Some("scripted_rs_v1")
+                {
+                    // Native import marker; the source packet retains an empty
+                    // donor UID list. Position and appearance remain mandatory.
+                    placement.crystal_unique_id = Some(64993);
+                }
+                parsed.push(placement);
+            }
             None => all_encoded = false,
         }
     }
@@ -382,6 +394,38 @@ fn key_number(binding: &str) -> Option<u16> {
 /// native projection admits a filled container; missing source or Item facts
 /// still refuse the entire claim (no partial rewards).
 fn native_container_placements(definition: &serde_json::Map<String, Value>) -> Option<&Vec<Value>> {
+    if definition.get("definition_profile")?.as_str()? == "scripted_rs_v1" {
+        let projection = definition.get("native_contents")?;
+        if definition.get("identity")?.get("key")?.as_str()?
+            != "oteryn:reward-claim.kv.smallsapphire"
+            || definition.get("readiness")?.as_str()? != "ready"
+            || !only(
+                projection,
+                &[
+                    "schema",
+                    "revision",
+                    "source_sha256",
+                    "native_unique_id",
+                    "placements",
+                ],
+            )
+            || projection.get("schema")?.as_str()? != "OTERYN_NATIVE_CONTAINER_REWARD/v1"
+            || projection.get("revision")?.as_str()? != "tibiawiki-small-sapphire-v1"
+            || projection.get("native_unique_id")?.as_u64()? != 64993
+            || projection.get("source_sha256")?.as_str()?
+                != "229eb3979fe64d69d726104122a3d76e2c281902777ef151cc796834c38a4291"
+            || definition.get("placements")?.as_array()?.len() != 1
+            || definition["placements"][0]["source_binding"]
+                != serde_json::json!({"project_position":{"x":32962,"y":32429,"z":7},"legacy_unique_ids":[]})
+            || definition["placements"][0]["appearance_tibia_id"] != 2472
+        {
+            return None;
+        }
+        return projection
+            .get("placements")?
+            .as_array()
+            .filter(|rows| rows.len() == 1);
+    }
     if definition.get("definition_profile")?.as_str()? != "authored_variant_v1"
         || definition.get("native_admission")?.as_str()? != "WAITING_IMPLEMENTATION"
         || definition.get("readiness")?.as_str()? != "waiting_implementation"
@@ -402,7 +446,7 @@ fn native_container_placements(definition: &serde_json::Map<String, Value>) -> O
     ) || projection.get("schema")?.as_str()? != "OTERYN_NATIVE_CONTAINER_REWARD/v1"
         || projection.get("revision")?.as_str()? != "201189f871d23597b82caf88fd611454a2ddefb8"
         || projection.get("source_sha256")?.as_str()?
-            != "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
+            != "2680c60528637a13eed808085a08acfbd81fe61e884d1be9fa038d4103e49a62"
     {
         return None;
     }
@@ -614,15 +658,16 @@ fn candidate_container_placement(
                 let Some(body) = body.as_str() else {
                     return Ok(None);
                 };
-                if child.count != 1
-                    || result.crystal_unique_id != Some(6195)
-                    || !authored_text_matches(
+                let original = result.crystal_unique_id == Some(6195)
+                    && authored_text_matches(
                         body,
                         reward.get("written_text"),
                         &row["item"],
                         result.crystal_unique_id,
-                    )
-                {
+                    );
+                let scripted = result.crystal_unique_id.is_none()
+                    && small_sapphire_text_matches(body, &row["item"]);
+                if child.count != 1 || !(original || scripted) {
                     return Ok(None);
                 }
                 Some(body.to_owned())
@@ -635,16 +680,42 @@ fn candidate_container_placement(
             text,
         });
     }
+    let expected_texts = if result.crystal_unique_id.is_none() {
+        // Only the closed Small Sapphire profile has a native import marker
+        // rather than a donor UID; both independently pinned books are required.
+        2
+    } else {
+        usize::from(reward.get("written_text").is_some())
+    };
     if result
         .contents
         .iter()
         .filter(|child| child.text.is_some())
         .count()
-        != usize::from(reward.get("written_text").is_some())
+        != expected_texts
     {
         return Ok(None);
     }
     Ok(Some(result))
+}
+
+fn small_sapphire_text_matches(body: &str, item: &Value) -> bool {
+    let expected = match item.get("key").and_then(Value::as_str) {
+        Some("oteryn:item.tibia.i2822") => {
+            "58ba7fb0e045b40b04857117bb432b74af40b3f9b84770b65bdc4064f4e39c77"
+        }
+        Some("oteryn:item.tibia.i637") => {
+            "32d0b4f84759294ec91f851631d77512dcb89b8d78002ce7b34ab8d0cb017b5e"
+        }
+        _ => return false,
+    };
+    let digest = Sha256::digest(body.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    item.get("family").and_then(Value::as_str) == Some("Item")
+        && item.get("revision").and_then(Value::as_str) == Some("definition-r1")
+        && digest == expected
 }
 
 /// Exact source book identities and normalized text digests. The established
@@ -945,6 +1016,49 @@ mod container_tests {
             }
         }
         None
+    }
+
+    #[test]
+    fn small_sapphire_requires_the_exact_native_binding_and_both_source_texts() {
+        let source = authored("kv.smallsapphire").expect("Small Sapphire source");
+        let decoded = candidate(source.as_object().expect("definition"), &|_| true)
+            .expect("decoded")
+            .expect("native recipe");
+        assert_eq!(decoded.placements[0].contents.len(), 4);
+        assert_eq!(decoded.placements[0].crystal_unique_id, Some(64993));
+        for change in ["source", "position", "marker", "first text", "second text"] {
+            let mut changed = source.clone();
+            match change {
+                "source" => changed["native_contents"]["source_sha256"] = "unproved".into(),
+                "position" => {
+                    changed["placements"][0]["source_binding"]["project_position"]["x"] =
+                        32963.into()
+                }
+                "marker" => changed["native_contents"]["native_unique_id"] = 64994.into(),
+                "first text" => {
+                    changed["native_contents"]["placements"][0]["contents"][2]["text"] =
+                        "changed".into()
+                }
+                _ => {
+                    changed["native_contents"]["placements"][0]["contents"][3]["text"] =
+                        "changed".into()
+                }
+            }
+            assert!(
+                candidate(changed.as_object().expect("definition"), &|_| true)
+                    .expect("decoded")
+                    .is_err(),
+                "{change}"
+            );
+        }
+        assert!(
+            candidate(source.as_object().expect("definition"), &|item| item
+                .key()
+                .as_str()
+                != "oteryn:item.tibia.i637")
+            .expect("decoded")
+            .is_err()
+        );
     }
 
     #[test]

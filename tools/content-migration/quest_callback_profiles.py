@@ -133,6 +133,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
+    # R–S once-only source claims, qualified through literal USE and cold replay.
+    # Crystal201189f Rapier script:4-11 and chest.lua:858-871 (Ring).
+    keys.update(('oteryn:item.tibia.i3272', 'oteryn:item.tibia.i3053',
+                 'oteryn:item.tibia.i3091', 'oteryn:item.tibia.i3587',
+                 'oteryn:item.tibia.i3466'))
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:

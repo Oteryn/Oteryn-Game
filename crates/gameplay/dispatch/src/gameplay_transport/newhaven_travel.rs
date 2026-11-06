@@ -96,9 +96,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
             };
         }
+        if let Some(outcome) =
+            npc_command::rookgaard_exchanges::resume(self, actor, command, Some(&intent)).await
+        {
+            return outcome;
+        }
+        // Opening a conversation consumes the greeting; its remaining words
+        // must not also initiate a focused Rookgaard exchange.
+        let exchange_engaged = self.states.chat.engaged(session).is_some_and(|npc| {
+            npc.placement_identity() == intent.npc_actor.identity
+                && npc.actor_local_generation() == intent.npc_actor.generation
+        });
         let ordinary = npc_command::npc_bank_talk(self, actor, command, intent.clone()).await;
         if ordinary.disposition != NpcIntentDisposition::Ok {
             return ordinary;
+        }
+        if exchange_engaged && !ordinary.unknown && !ordinary.inventory_changed {
+            let step = {
+                let runtime = self.runtime.lock().await;
+                npc_command::rookgaard_exchanges::prepare(self, actor, command, &intent, &runtime)
+            };
+            if let Some(step) = step {
+                return npc_command::rookgaard_exchanges::apply(self, actor, command, intent, step)
+                    .await;
+            }
         }
         let ordinary = self
             .paid_travel_talk(actor, command, &intent, ordinary)

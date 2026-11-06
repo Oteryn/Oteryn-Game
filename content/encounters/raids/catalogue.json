@@ -13185,7 +13185,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y126.b3",
-                        "sha256": "0687dbfcb2501213a1eb89b2ad0ec5f2a67642c2887171b5fe239d3c8646a8fa"
+                        "sha256": "f2651ba5a808a0493784a29c37d7f2e2de1f70e1e5132df5e76aea1f37af35d6"
                       }
                     ],
                     "to": {
@@ -16045,7 +16045,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z09-x129-y124.b3",
-                        "sha256": "54c43306cd0fa522c1edc7a359fcee0723cd83930a915f901dd7a0b831cfb1f1"
+                        "sha256": "5b887802fb6c0986801830c793bb937becc5ff066a0493d124eda319c147e613"
                       }
                     ],
                     "to": {
@@ -20292,7 +20292,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z04-x126-y124.b3",
-                        "sha256": "b180dcf0e4b3a0ade0e1d784ddb2380c901960cc3412750e128789585a4bb145"
+                        "sha256": "ea9f491252a6d27157657a8cdbdd4f5f6a4e4c63720aaf7871552066fa151245"
                       }
                     ],
                     "to": {
@@ -20339,7 +20339,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z04-x126-y124.b3",
-                        "sha256": "b180dcf0e4b3a0ade0e1d784ddb2380c901960cc3412750e128789585a4bb145"
+                        "sha256": "ea9f491252a6d27157657a8cdbdd4f5f6a4e4c63720aaf7871552066fa151245"
                       }
                     ],
                     "to": {
@@ -29707,7 +29707,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z09-x125-y125.b3",
-                        "sha256": "0187c9cb9261c252a340a052a7bab40b1b4c206c6f9f4374cb0930f8493fef16"
+                        "sha256": "aa08add2509ada0eb5fee7d98a5e38631844e375c77320bfa8f866099c2860b3"
                       }
                     ],
                     "to": {
@@ -29820,7 +29820,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x125-y125.b3",
-                        "sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+                        "sha256": "7f47be1ee14e6cbf11bbc2686936035007b738f0139c0bfdb1be383a0fda9143"
                       }
                     ],
                     "to": {
@@ -34687,7 +34687,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z09-x126-y125.b3",
-                        "sha256": "ddf553504bf1fbfd72920058e27387f16d815739e45af686c1bfe10ac924e305"
+                        "sha256": "6a01357c1baab12693256177d80856cb922955fd9ef5ceee3fd19964068675a6"
                       },
                       {
                         "path": "content/world/placements/region-z09-x127-y125.b3",
@@ -34732,7 +34732,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z09-x126-y125.b3",
-                        "sha256": "ddf553504bf1fbfd72920058e27387f16d815739e45af686c1bfe10ac924e305"
+                        "sha256": "6a01357c1baab12693256177d80856cb922955fd9ef5ceee3fd19964068675a6"
                       },
                       {
                         "path": "content/world/placements/region-z09-x127-y125.b3",
@@ -34777,7 +34777,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z09-x126-y125.b3",
-                        "sha256": "ddf553504bf1fbfd72920058e27387f16d815739e45af686c1bfe10ac924e305"
+                        "sha256": "6a01357c1baab12693256177d80856cb922955fd9ef5ceee3fd19964068675a6"
                       },
                       {
                         "path": "content/world/placements/region-z09-x127-y125.b3",
@@ -40077,7 +40077,7 @@
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y126.b3",
-                        "sha256": "0687dbfcb2501213a1eb89b2ad0ec5f2a67642c2887171b5fe239d3c8646a8fa"
+                        "sha256": "f2651ba5a808a0493784a29c37d7f2e2de1f70e1e5132df5e76aea1f37af35d6"
                       }
                     ],
                     "to": {
@@ -40124,7 +40124,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y126.b3",
-                        "sha256": "0687dbfcb2501213a1eb89b2ad0ec5f2a67642c2887171b5fe239d3c8646a8fa"
+                        "sha256": "f2651ba5a808a0493784a29c37d7f2e2de1f70e1e5132df5e76aea1f37af35d6"
                       }
                     ],
                     "to": {
@@ -40600,7 +40600,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y126.b3",
-                        "sha256": "0687dbfcb2501213a1eb89b2ad0ec5f2a67642c2887171b5fe239d3c8646a8fa"
+                        "sha256": "f2651ba5a808a0493784a29c37d7f2e2de1f70e1e5132df5e76aea1f37af35d6"
                       }
                     ],
                     "to": {
@@ -40641,7 +40641,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y126.b3",
-                        "sha256": "0687dbfcb2501213a1eb89b2ad0ec5f2a67642c2887171b5fe239d3c8646a8fa"
+                        "sha256": "f2651ba5a808a0493784a29c37d7f2e2de1f70e1e5132df5e76aea1f37af35d6"
                       }
                     ],
                     "to": {
@@ -40682,7 +40682,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y126.b3",
-                        "sha256": "0687dbfcb2501213a1eb89b2ad0ec5f2a67642c2887171b5fe239d3c8646a8fa"
+                        "sha256": "f2651ba5a808a0493784a29c37d7f2e2de1f70e1e5132df5e76aea1f37af35d6"
                       }
                     ],
                     "to": {
@@ -40723,7 +40723,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y126.b3",
-                        "sha256": "0687dbfcb2501213a1eb89b2ad0ec5f2a67642c2887171b5fe239d3c8646a8fa"
+                        "sha256": "f2651ba5a808a0493784a29c37d7f2e2de1f70e1e5132df5e76aea1f37af35d6"
                       }
                     ],
                     "to": {
@@ -40764,7 +40764,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y126.b3",
-                        "sha256": "0687dbfcb2501213a1eb89b2ad0ec5f2a67642c2887171b5fe239d3c8646a8fa"
+                        "sha256": "f2651ba5a808a0493784a29c37d7f2e2de1f70e1e5132df5e76aea1f37af35d6"
                       }
                     ],
                     "to": {
@@ -41012,7 +41012,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z07-x128-y126.b3",
-                        "sha256": "0687dbfcb2501213a1eb89b2ad0ec5f2a67642c2887171b5fe239d3c8646a8fa"
+                        "sha256": "f2651ba5a808a0493784a29c37d7f2e2de1f70e1e5132df5e76aea1f37af35d6"
                       }
                     ],
                     "to": {
@@ -41354,7 +41354,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z08-x128-y124.b3",
-                        "sha256": "9257fe82a1acfed935706a403828d2b3f65471b07bb9ef4e323b8cbebcda1c7e"
+                        "sha256": "52ca78a04974d03fb47af36d6ab701b0b71af0eba2bc5041e24b810bd1eaac5c"
                       }
                     ],
                     "to": {

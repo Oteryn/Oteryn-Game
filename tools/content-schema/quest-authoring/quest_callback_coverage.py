@@ -14,24 +14,47 @@ import lua_tables
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
 QUALIFIED = {
-    "oteryn:reward-claim.kv.steelhelmet1": "quest_callbacks_source_chest_use_once_replay_and_second_use_refused",
+    "oteryn:reward-claim.kv.bananafree": "questpc3_studded_shield_free_banana_once_and_replay",
+    "oteryn:reward-claim.kv.bananapremium": "questpc3_studded_shield_premium_banana_once_and_replay",
     "oteryn:reward-claim.kv.bear_chest1": "quest_container_chests_bear_bag_once_and_replay",
-    "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies": "quest_container_chests_key_attributes_are_atomic",
-    "oteryn:reward-claim.quest.u7_24.the_annihilator.reward": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
-    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.bplong_sword": "quest_container_chests_authored_book_text_survives_replay",
-    "oteryn:reward-claim.kv.powerbolt2": "quest_container_chests_leaf_text_is_frozen_and_replayed",
-    "oteryn:reward-claim.quest.key.id3002": "quest_container_chests_crystal_key3002_is_minted_once",
+    "oteryn:reward-claim.kv.honeyflower": "questpc3_studded_legs_honey_flower_once_and_replay",
     "oteryn:reward-claim.kv.madmageroom3": "quest_container_chests_full_definition_charges_mint_one_instance",
-    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots": "quest_demon_helmet_chests_steel_boots_once_and_replay",
+    "oteryn:reward-claim.kv.powerbolt2": "quest_container_chests_leaf_text_is_frozen_and_replayed",
+    "oteryn:reward-claim.kv.rapier": "questpc3_rapier_claim_once_and_replay",
+    "oteryn:reward-claim.kv.ringquest1": "questpc3_ring_time_ring_claim_once_and_replay",
+    "oteryn:reward-claim.kv.ringquest2": "questpc3_ring_sword_ring_claim_once_and_replay",
+    "oteryn:reward-claim.kv.scalearmor": "questpc3_scale_armor_bag_once_and_replay",
+    "oteryn:reward-claim.kv.shamantreasure": "questpc3_shaman_treasure_bag_once_and_replay",
+    "oteryn:reward-claim.kv.shortswordbook": "questpc3_short_sword_notebook_once_and_replay",
+    "oteryn:reward-claim.kv.silveramulet": "questpc3_charged_amulet_cohort_once_and_replay",
+    "oteryn:reward-claim.kv.silverbrooch": "questpc3_silver_brooch_full_bag_once_and_replay",
+    "oteryn:reward-claim.kv.sixrubies": "questpc3_six_rubies_claim_once_and_replay",
+    "oteryn:reward-claim.kv.smallsapphire": "questpc3_small_sapphire_full_recipe_once_and_replay",
+    "oteryn:reward-claim.kv.spikesword": "questpc3_spike_sword_claim_once_and_replay",
+    "oteryn:reward-claim.kv.stealhring1": "questpc3_charged_amulet_cohort_once_and_replay",
+    "oteryn:reward-claim.kv.stealhring2": "questpc3_stealth_ring_ring_once_and_replay",
+    "oteryn:reward-claim.kv.steelhelmet1": "quest_callbacks_source_chest_use_once_replay_and_second_use_refused",
+    "oteryn:reward-claim.kv.steelhelmet2": "questpc3_steel_helmet_second_coins_once_and_replay",
+    "oteryn:reward-claim.kv.steelhelmet3": "questpc3_steel_helmet_helmet_once_and_replay",
+    "oteryn:reward-claim.kv.steelhelmet4": "questpc3_steel_helmet_letter_once_and_replay",
+    "oteryn:reward-claim.kv.witch_house_quest": "questpc3_skull_of_ratha_witch_house_full_bag_once_and_replay",
+    "oteryn:reward-claim.quest.key.id3002": "quest_container_chests_crystal_key3002_is_minted_once",
+    "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies": "quest_container_chests_key_attributes_are_atomic",
     "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet": "quest_demon_helmet_chests_demon_helmet_once_and_replay",
     "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield": "quest_demon_helmet_chests_demon_shield_once_and_replay",
+    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots": "quest_demon_helmet_chests_steel_boots_once_and_replay",
+    "oteryn:reward-claim.quest.u7_24.the_annihilator.reward": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1": "questpc3_skull_of_ratha_skull_and_pearl_once_and_replay",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2": "questpc3_skull_of_ratha_chain_and_ring_once_and_replay",
+    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.bplong_sword": "quest_container_chests_authored_book_text_survives_replay",
+    "oteryn:reward-claim.quest.u8_1.strong_potions.reward": "questpc3_strong_potions_full_bag_once_and_replay",
 }
 KEY_LOWERING = "KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED"
 SOURCE_SHA256 = {
     "canary": "2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda",
     "crystalserver": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
 }
-CONTAINER_SOURCE = "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
+CONTAINER_SOURCE = "2680c60528637a13eed808085a08acfbd81fe61e884d1be9fa038d4103e49a62"
 ACCEPTED_OVERRIDES = {
     6078: "PR2770 Q5/A: retain accepted Item12510 over donor3208",
     6218: "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
@@ -114,7 +137,9 @@ def coverage(canary, crystal):
             inventory = {
                 "claim": key, "status": status, "reason": reason, "placements": placements,
             }
-            if native and any(p['reward'].get('written_text') for p in definition['placements']):
+            if native and (any(p['reward'].get('written_text') for p in definition['placements'])
+                           or any(child.get('text') for recipe in native.get('placements', [])
+                                  for child in recipe.get('contents', []))):
                 inventory["qualification_limit"] = (
                     "Reward-grant support includes durable authored book text; "
                     "ordinary carried-book READ/TextWindow transport is not implemented. "

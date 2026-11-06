@@ -43,6 +43,7 @@ import sys
 from pathlib import Path
 
 import container_native
+import scripted_chests_rs
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -540,13 +541,16 @@ def committed_errors() -> list[str]:
     records = [
         row for shard in index["shards"] for row in load_json(ROOT / shard)["records"]
     ]
-    source_claims = load_json(ROOT / CLAIMS_REL)["claims"]
+    source_claims = load_json(ROOT / CLAIMS_REL)["claims"] + scripted_chests_rs.source_claims()
     from reward_claim_variant_authoring import PROFILE, stack_normalization_checks
     from reward_claim_variant_authoring import validate as validate_variants
-    plain = [r for r in records if r['definition'].get('definition_profile') != PROFILE]
+    scripted_containers = [r for r in records if r['definition'].get('definition_profile') == scripted_chests_rs.SMALL_SAPPHIRE_PROFILE]
+    plain = [r for r in records if r['definition'].get('definition_profile') not in (PROFILE, scripted_chests_rs.SMALL_SAPPHIRE_PROFILE)]
     variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
     items = load_items()
     errors = validate(plain, items, index["source_checks"], source_claims)
+    if scripted_containers != [scripted_chests_rs.small_sapphire(items)]:
+        errors.append("scripted Small Sapphire recipe differs from its source packet")
     errors += validate_variants(variants, ROOT, items, stack_problem)
     if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
         errors.append('variant legacy UID diagnostics are missing or stale')
@@ -580,6 +584,9 @@ def generate() -> dict[str, str]:
     variants = derive(ROOT, items, stack_problem)
     extend_outputs(ROOT, outputs, variants, compact, CONTENT_DIR)
     records += variants
+    scripted = scripted_chests_rs.derive(load_json(ROOT / MANIFEST_REL), items, build_records)
+    scripted_chests_rs.extend_outputs(outputs, scripted, compact)
+    records += scripted
     family_index = json.loads(outputs[INDEX_PATH])
     family_index['variant_source_checks'] = legacy_uid_checks(records) + stack_normalization_checks()
     outputs[INDEX_PATH] = compact(family_index)

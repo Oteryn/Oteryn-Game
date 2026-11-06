@@ -102,6 +102,7 @@ CHECKS = (
     ["python3", "tools/content-schema/validate_materialized_game_tree.py"],
     ["python3", "tools/content-census/item_key_references.py"],
     *(["python3", tool, "content", "--check"] for tool in AUTHORING_TOOLS),
+    ["python3", "tools/content-schema/world-authoring/quest_chest_bindings_rs.py", "--check"],
     ["python3", "tools/content-schema/item-authoring/test_engine_items.py"],
     [
         "python3",
@@ -566,6 +567,7 @@ def main() -> int:
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
+    run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings_rs.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

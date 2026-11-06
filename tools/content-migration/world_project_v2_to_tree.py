@@ -195,6 +195,8 @@ def main() -> int:
     apply_container_fact(item_records, ROOT)
     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
     apply_enchanting_admissions(item_records)
+    from questpc3_item_admission import apply_admissions as apply_questpc3_admissions
+    apply_questpc3_admissions(item_records)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []

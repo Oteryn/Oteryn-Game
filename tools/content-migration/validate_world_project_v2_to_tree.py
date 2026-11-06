@@ -39,8 +39,11 @@ CHARM_COUNT = 25
 PROFICIENCY_COUNT = 443
 PROFICIENCY_BINDING_COUNT = 665  # ITEM-ADD-1 plus the admitted appearance-only Snowball
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
+sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
+from scripted_chests_rs import record_count as scripted_rs_count
+
 REWARD_CLAIM_COUNT = len(json.loads(
-    (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
+    (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"]) + scripted_rs_count()
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4}
@@ -743,6 +746,8 @@ def main() -> int:
     # I19: the 72 source-qualified enchanting results now admit stacks/charges in the tree.
     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
     apply_enchanting_admissions(legacy_items)
+    from questpc3_item_admission import apply_admissions as apply_questpc3_admissions
+    apply_questpc3_admissions(legacy_items)
     require(migrated_items == legacy_items and expected_start == 34111, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")

@@ -48,6 +48,7 @@ mod liquid_black;
 mod monk;
 mod premium_purchase;
 mod quest_dialogue;
+pub(super) mod rookgaard_exchanges;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
