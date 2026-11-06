@@ -1,0 +1,200 @@
+{
+  "elvenbane-before": {
+    "log": "qlane-meta/questpc/cloud-elvenbane-before.log",
+    "sha256": "a142517d4a99dd1df8d44e876d09f12fc4892d4089e8609856d7c2a2c558a0a7",
+    "markers": [
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield (32591, 31647, -3) native_source=true duration=6.129365346s",
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star (32590, 31647, -3) native_source=true duration=5.797489861s",
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1 (32588, 31645, -3) native_source=true duration=6.000646149s",
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2 (32588, 31644, -3) native_source=true duration=6.215503882s",
+      "POSTGRES_CASE_COMPLETED elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal duration=63.781833782s"
+    ],
+    "result_lines": [
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2540 filtered out; finished in 63.78s"
+    ]
+  },
+  "elvenbane-red": {
+    "log": "qlane-meta/questpc/cloud-elvenbane-red.log",
+    "sha256": "1cef309c3775819fe32165a386846cbe904bc2967eea97c8008e5a0fa4c05638",
+    "markers": [
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield (32591, 31647, -3) native_source=true duration=5.598268726s"
+    ],
+    "result_lines": [
+      "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2540 filtered out; finished in 49.73s"
+    ],
+    "explanation": "Controlled regression of the inherited binding: temporarily removed only the morning-star source alias. Shield PG case completed, then source namespace assertion failed(false!=true). Restored original file byte-for-byte before final GREEN. This is sensitivity evidence, not a claim of a newly observed pre-implementation failure."
+  },
+  "elvenbane-green": {
+    "log": "qlane-meta/questpc/cloud-elvenbane-green.log",
+    "sha256": "8a2036202354c5843bf96d2456f0e702740885e70ff8a4fe04e3f984028623c8",
+    "markers": [
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield (32591, 31647, -3) native_source=true duration=6.436337461s",
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star (32590, 31647, -3) native_source=true duration=5.926731075s",
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1 (32588, 31645, -3) native_source=true duration=6.012165706s",
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2 (32588, 31644, -3) native_source=true duration=6.4063214s",
+      "POSTGRES_CASE_COMPLETED elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal duration=64.898002158s"
+    ],
+    "result_lines": [
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2540 filtered out; finished in 64.90s"
+    ]
+  },
+  "elvenbane-source": {
+    "log": "qlane-meta/questpc/cloud-elvenbane-source.log",
+    "sha256": "c4720f84a19febb745723c01cd7befa8685df14b111f40d6e5433897740b86f3",
+    "markers": [],
+    "result_lines": [
+      "Ran 2 tests in 1.537s",
+      "OK"
+    ]
+  },
+  "tree-check": {
+    "log": "qlane-meta/questpc/cloud-tree-check.log",
+    "sha256": "4b1a51f1f00f83f5e1ea3ce860719e88e9df6fdbf9c8e82a29016b5982a7a8f2",
+    "markers": [],
+    "result_lines": [
+      "Quest tree: 4 shards; check=True; family registries regenerated"
+    ]
+  },
+  "native-check": {
+    "log": "qlane-meta/questpc/cloud-native-check.log",
+    "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa",
+    "markers": [],
+    "result_lines": [
+      "PASS registered spell import files=40 activation=false"
+    ]
+  },
+  "commands": {
+    "pg": "cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
+    "source": "python3 tools/content-schema/quest-authoring/test_standalone_chests_source.py",
+    "quest_generation": "python3 tools/content-schema/quest-authoring/quest_tree_authoring.py content --check",
+    "native_generation": "python3 tools/content-migration/register_spell_families.py --check",
+    "baseline_pg": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
+    "format": "cargo fmt -p oteryn-gameplay-content -p oteryn-gameplay-dispatch",
+    "check": "cargo check --locked --offline -p oteryn-gameplay-content -p oteryn-gameplay-dispatch --all-features",
+    "clippy": "cargo clippy --locked --offline -p oteryn-gameplay-content -p oteryn-gameplay-dispatch --all-targets --all-features -- -D warnings",
+    "units": "cargo test --locked --offline -p oteryn-gameplay-content --lib standalone_chests::tests -- --nocapture",
+    "pin_refresh": "oteryn-world-bundle-compiler pin-refresh .",
+    "pin_check": "oteryn-world-bundle-compiler pin-check . /tmp/questpc-pin-check"
+  },
+  "cross_lane_checks": [
+    {
+      "ref": "origin/claude/happy-davinci-ijz3wy-questpc2",
+      "head": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+      "qualified_titles": []
+    },
+    {
+      "ref": "origin/claude/happy-davinci-ijz3wy-questpc4",
+      "head": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
+      "qualified_titles": [
+        "Thawing Mini World Change",
+        "The Way of the Monk Quest",
+        "Throwing Star Quest",
+        "Time Ring Quest",
+        "Triangle Tower Quest",
+        "Troll Cave Quest",
+        "Vampire Shield Quest",
+        "Waterfall Quest",
+        "Wedding Ring Quest"
+      ]
+    },
+    {
+      "ref": "origin/claude/happy-davinci-ijz3wy-questpc5",
+      "head": "2d9db9c5abdb62abc8f9883984b5ad5bc22244c8",
+      "qualified_titles": []
+    },
+    {
+      "ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
+      "head": "3bfd856061e5aa89668747ec7405af8c2b8cf7f5",
+      "qualified_titles": [
+        "Deeper Fibula Quest"
+      ]
+    },
+    {
+      "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
+      "head": "96b478e86678c7607a9a2154f72fe6c91d354188",
+      "qualified_titles": []
+    },
+    {
+      "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
+      "head": "4bc2bdb420845626d23c958205fb97bd823ac590",
+      "qualified_titles": [
+        "Lone Medusa Quest",
+        "Triangle Tower Quest",
+        "Waterfall Quest",
+        "Vampire Shield Quest"
+      ]
+    }
+  ],
+  "scope_file_note": "Current questpc branch has no PC-PACKET.md, QSPLIT-PLAN.md or lane JSON. Continue the committed RESUME scope A..M while asking owner for their location. Related lanes checked read-only; no other lane has qualified Elvenbane. Deeper Fibula and Lone Medusa are already qualified here and are skipped.",
+  "initial_setup_note": "First offline invocation could not resolve schemars before compilation. Normal locked Cargo resolved the missing dependency, with Cargo.lock unchanged. The retained baseline, controlled RED and final GREEN all actually executed; no setup failure is treated as RED.",
+  "batch-check": {
+    "log": "qlane-meta/questpc/cloud-batch-check.log",
+    "sha256": "18094f3f65573818fed70998a26ad3cea661b16f76cbb03bf48182b810afd604",
+    "result_lines": [
+      "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 15s"
+    ]
+  },
+  "batch-clippy": {
+    "log": "qlane-meta/questpc/cloud-batch-clippy.log",
+    "sha256": "8bb5008f7e8ebc53525d2af3c62c02b8e103eb30f0b97042685778d00ba98bab",
+    "result_lines": [
+      "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 39s"
+    ]
+  },
+  "batch-units": {
+    "log": "qlane-meta/questpc/cloud-batch-units.log",
+    "sha256": "50f1996392e3eb54b5de76c981bd46924099d130c3c0c39568b428af7bb6da3e",
+    "result_lines": [
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 45.96s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 315 filtered out; finished in 0.13s"
+    ]
+  },
+  "batch-pins": {
+    "log": "qlane-meta/questpc/cloud-batch-pins.log",
+    "sha256": "db7c698da754cb487ebe8749b55c16355fbd960d3c070ba596acd75ddf7ae506"
+  },
+  "batch-pin-check": {
+    "log": "qlane-meta/questpc/cloud-batch-pin-check.log",
+    "sha256": "d4b0e933cc4effdf4101db10f902eb451213ea1c88412d3729b3fcc98891b392"
+  },
+  "world_pin": {
+    "previous": "3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd",
+    "generated": "2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+    "inputs_digest": "1ed5b52a4e33dd301cb28115554a6b745b8c79395510f1ef71c6c9a244c72339",
+    "compiled_bytes": 31101786,
+    "note": "Inherited world pin was stale. Repository pin-refresh regenerated the pin and both deployment-template references. First pin-check invocation lacked its required output directory and exited2 with usage; corrected invocation compiled and verified the generated digest. No binary artifact is committed."
+  },
+  "elvenbane-final": {
+    "log": "qlane-meta/questpc/cloud-elvenbane-final.log",
+    "sha256": "a5efae7deaeca15ad60505a0764d682dfc083cd9e1dcd088b34c36628204e210",
+    "markers": [
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield (32591, 31647, -3) native_source=true duration=6.226744874s",
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star (32590, 31647, -3) native_source=true duration=6.039328095s",
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1 (32588, 31645, -3) native_source=true duration=6.316463964s",
+      "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2 (32588, 31644, -3) native_source=true duration=6.617689434s",
+      "POSTGRES_CASE_COMPLETED elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal duration=65.031774375s"
+    ],
+    "result_lines": [
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.28s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2540 filtered out; finished in 65.03s"
+    ]
+  },
+  "batch-final-check": {
+    "log": "qlane-meta/questpc/cloud-batch-final-check.log",
+    "sha256": "1bb20dbdab05d3a05caeee3bdab9400b7296436d366b9a2eddbed93f89f07c8d",
+    "markers": [],
+    "result_lines": [
+      "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.44s"
+    ]
+  },
+  "batch-final-clippy": {
+    "log": "qlane-meta/questpc/cloud-batch-final-clippy.log",
+    "sha256": "5613ff2dcc84ce21fd23d2b2ea218b87482e89bc15dc8b708cac914e2d60f04a",
+    "markers": [],
+    "result_lines": [
+      "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.35s"
+    ]
+  },
+  "final_result": "All selected validation passed on the regenerated pin tree; no temporary source mutation remains.",
+  "log_normalization": "Terminal empty lines trimmed for git whitespace checks; all command output, failures, assertions and markers retained."
+}

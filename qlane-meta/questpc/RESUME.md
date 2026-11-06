@@ -1,3 +1,50 @@
+# Current Cloud continuation — 2026-11-06
+
+AUTHORING on `claude/happy-davinci-ijz3wy-questpc-pc2`, resumed from `9bf74b42d`.
+Owner authorizes green batch commits and fast-forward pushes with the specified
+identity/trailers. Historical no-publication, `/home/mole` and shared-engine
+ownership restrictions below are superseded by the current owner's rules.
+No frozen integration candidate or new PR.
+
+Merged the earlier `origin/claude/happy-davinci-ijz3wy-questpc` snapshot
+`6c09e0365`, keeping the newer implementation. Incoming-only old NPC shard is
+superseded by the current shard, retaining all 33 older records. Merge audit:
+`cloud-merge-audit.json`. Both histories are retained; no reset/rebase/force.
+
+Elvenbane's four exact native source rewards are now qualified through actual
+USE, exact roots/children, replay and full-backpack refusal. The separate chosen
+authored programme remains explicitly unqualified in its row. Controlled RED
+removed only the morning-star binding: shield PG marker 5.598268726s, then the
+native-binder assertion failed, total 49.73s. Original code restored byte-for-byte.
+Final PG GREEN after pin regeneration: all four placement markers and cohort
+`POSTGRES_CASE_COMPLETED`, 65.031774375s. Fresh source URL/hash and complete
+commands/log hashes: `cloud-elvenbane-validation.json`.
+
+Checks passed: two binder units; two native source tests; quest/native generation
+checks; package fmt; content+dispatch check and all-target/all-feature clippy
+`-D warnings`. Pin refresh corrected the inherited stale world digest to
+`2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968`;
+corrected pin-check compiled/verified the bundle. No binary or donor copy added.
+Counts: **57 QUALIFIED / 102 UNFINISHED / 19 historical BLOCKED**, including one
+excluded Dawnport. These are scoped row statuses, not a whole-lane completion.
+
+Other lane ledgers checked read-only: no Elvenbane qualification elsewhere.
+Deeper Fibula/Lone Medusa already qualified here; skip them. QENGINE2 checked at
+`5a6de28c1`: reusable StepOut/world effects and outfit grant implementations exist.
+Continue remaining source paths and reuse those shared features where needed;
+never wait on a historical shared-engine owner. Father's atomic 11-track write,
+exact charge matches and all owner exclusions remain intact.
+
+This branch lacks the mentioned PC-PACKET.md, QSPLIT-PLAN.md and lane JSON.
+Owner was asked for their location; continue the committed A..M handoff scope
+meanwhile. Common split plans and other lane statuses were inspected via refs.
+Next: verify this green batch is on origin, then continue unresolved source paths
+(Mastermind cache composition and reusable source StepOut bindings among them).
+
+---
+
+Historical continuation notes follow.
+
 # QUESTPC resume, 2026-11-06
 
 Task: QUESTPC / QUEST-FINISH, draft PR #3007. Local HEAD remains

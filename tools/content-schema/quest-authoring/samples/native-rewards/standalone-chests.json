@@ -2,15 +2,19 @@
   "schema": "OTERYN_STANDALONE_NATIVE_CHEST_SOURCE/v1",
   "quests": [
     "oteryn:quest.authored.braindeath_quest",
+    "oteryn:quest.authored.elvenbane_quest",
     "oteryn:quest.giant_smithhammer_quest"
   ],
   "source_claims": [
     "content/interactions/reward_claims/reward-claim-variants-00100-00104.json:BPTheUndeathStare",
-    "content/interactions/reward_claims/reward-claims-00100-00199.json:GiantSmithHammer"
+    "content/interactions/reward_claims/reward-claims-00100-00199.json:GiantSmithHammer",
+    "content/interactions/reward_claims/reward-claims-00100-00199.json:ToBlindTheEnemy.DwarvenShield/MorningStar",
+    "content/interactions/reward_claims/reward-claim-variants-00000-00099.json:ToBlindTheEnemy.BP1/BP2"
   ],
   "source_aliases": {
     "Braindeath Quest": "TheHiddenCityOfBeregar.BPTheUndeathStare; five exact contents in one Red Backpack",
-    "Giant Smithhammer Quest": "ExplorerSociety.GiantSmithHammer; talon, portable hammer and100gold plus source wall lever"
+    "Giant Smithhammer Quest": "ExplorerSociety.GiantSmithHammer; talon, portable hammer and100gold plus source wall lever",
+    "Elvenbane Quest": "ToBlindTheEnemy; two chests and two drawers, each personal once-only; no mandatory dragon kill or NPC gate"
   },
   "accepted_override": "tools/content-schema/quest-authoring/quest_callback_coverage.py:275 PR2770 Q5/A retains accepted Item12510 over donor3208",
   "native_claim_objects": [
@@ -109,6 +113,54 @@
       ],
       "legacy_uid": 6077,
       "native_map_sha256": "76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f"
+    },
+    {
+      "position": [
+        32591,
+        31647,
+        3
+      ],
+      "native_map": "content/world/placements/region-z03-x127-y123.b3",
+      "appearance": 2472,
+      "native_attributes": null,
+      "legacy_uid": 6253,
+      "native_map_sha256": "521b9242b03f5f7f5af3aa79c536ce6e31735134de9bc07a2bc593a2125836f9"
+    },
+    {
+      "position": [
+        32590,
+        31647,
+        3
+      ],
+      "native_map": "content/world/placements/region-z03-x127-y123.b3",
+      "appearance": 2472,
+      "native_attributes": null,
+      "legacy_uid": 6254,
+      "native_map_sha256": "521b9242b03f5f7f5af3aa79c536ce6e31735134de9bc07a2bc593a2125836f9"
+    },
+    {
+      "position": [
+        32588,
+        31645,
+        3
+      ],
+      "native_map": "content/world/placements/region-z03-x127-y123.b3",
+      "appearance": 2434,
+      "native_attributes": null,
+      "legacy_uid": 6255,
+      "native_map_sha256": "521b9242b03f5f7f5af3aa79c536ce6e31735134de9bc07a2bc593a2125836f9"
+    },
+    {
+      "position": [
+        32588,
+        31644,
+        3
+      ],
+      "native_map": "content/world/placements/region-z03-x127-y123.b3",
+      "appearance": 2434,
+      "native_attributes": null,
+      "legacy_uid": 6256,
+      "native_map_sha256": "521b9242b03f5f7f5af3aa79c536ce6e31735134de9bc07a2bc593a2125836f9"
     }
   ],
   "native_lever": {
@@ -131,5 +183,10 @@
     "native_map": "content/world/placements/region-z08-x128-y125.b3",
     "native_map_sha256": "76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f"
   },
-  "boundary": "Only these four exact plain native chest objects and this exact native lever; no legacy UID or action attribute is added to the map. Existing checked reward recipes, source callback and receipt identities remain authoritative."
+  "boundary": "Only these eight exact native chest/drawer objects and the exact smithhammer lever; no legacy UID or action attribute is added to the map. Existing checked reward recipes, source callback and receipt identities remain authoritative.",
+  "elvenbane_source": {
+    "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/chest.lua#L2551-L2581",
+    "sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+    "fresh_read": "2026-11-06"
+  }
 }

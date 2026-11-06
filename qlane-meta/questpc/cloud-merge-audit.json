@@ -1,0 +1,109 @@
+{
+  "incoming_head": "6c09e0365110db6683f938dd08d5d584744cbf37",
+  "retained_head": "9bf74b42d3d73aa9e3b875cfcea94695502fdf54",
+  "resolution": "Retained current newer implementation. All incoming hand-written additions are present or superseded; additive driver duplicate fields were removed by restoring current versions. Older generated inventories, hashes, source reports and tests are superseded by the current generated tree. The sole incoming-only filename is the superseded33-record NPC shard; all its records survive in the newer shard.",
+  "superseded_deltas": [
+    {
+      "path": "apps/game-server/tests/integration_rest/world_reward_claims_binding.rs",
+      "older_line_count": 5
+    },
+    {
+      "path": "apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs",
+      "older_line_count": 10
+    },
+    {
+      "path": "crates/gameplay/content/src/content/world_reward_claims.rs",
+      "older_line_count": 10
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs",
+      "older_line_count": 2
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "older_line_count": 2
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs",
+      "older_line_count": 1
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs",
+      "older_line_count": 2
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/reward_claim_mint.rs",
+      "older_line_count": 6
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs",
+      "older_line_count": 1
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/mod.rs",
+      "older_line_count": 1
+    },
+    {
+      "path": "docs/architecture/reviews/QUEST-FINISH-2026-11-06.md",
+      "older_line_count": 19
+    },
+    {
+      "path": "tools/content-migration/test_quest_callback_profiles.py",
+      "older_line_count": 2
+    },
+    {
+      "path": "tools/content-migration/test_quest_reward_item_semantics.py",
+      "older_line_count": 1
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/check_quest_claim_qualification.py",
+      "older_line_count": 2
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/quest_callback_coverage.py",
+      "older_line_count": 1
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/quest_tree_authoring.py",
+      "older_line_count": 1
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_claim_qualification.py",
+      "older_line_count": 3
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_completion_matrix.py",
+      "older_line_count": 3
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/reward_claim_variant_authoring.py",
+      "older_line_count": 1
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_container_native.py",
+      "older_line_count": 2
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py",
+      "older_line_count": 3
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py",
+      "older_line_count": 2
+    }
+  ],
+  "review_notes": [
+    "Incoming migration0969 is an exact prefix of current0969; current charge initialization/proof extension retained.",
+    "Incoming fluid tests use obsolete subtype6/15; current donor enum wine2 and expanded corrupt-state tests retained.",
+    "Incoming Dawnport vocation-service guard was expressly withdrawn by the newer owner-approved scope correction; current service remains unchanged.",
+    "Incoming 320/309/73 inventory assertions predate current Falcon, partial charges, fluid and native admissions. Current stricter/current totals and source readiness boundaries retained.",
+    "Incoming world binder Medusa-only source_difference guard is superseded by closed explicit native projections. Current profile and source-hash checks retained.",
+    "Incoming architecture report describes historical diskguard and STOPPED states. Its facts already survive in RESUME and source evidence; newer report with source decisions and successful PG evidence retained.",
+    "All33 records from the earlier NPC placement shard survive byte-for-byte as JSON values in the current34-record shard; the obsolete filename is intentionally removed. Both histories are preserved by the merge parent."
+  ],
+  "source_verification": {
+    "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/chest.lua#L2551-L2581",
+    "sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+    "claims": 4
+  }
+}
