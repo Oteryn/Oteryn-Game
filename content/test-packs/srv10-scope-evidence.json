@@ -1,0 +1,219 @@
+{
+  "schema": "OTERYN_SRV10_SCOPE_EVIDENCE/v1",
+  "base": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+  "date": "2026-11-06",
+  "runtime_changes": false,
+  "reference_class": "OTS_HYPOTHESIS_ONLY",
+  "wiki_check": "wiki-pending",
+  "need_fetch": [],
+  "sources": {
+    "crystal": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    "canary": {
+      "repository": "opentibiabr/canary",
+      "commit": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    }
+  },
+  "ownership_check": {
+    "pull_requests": [
+      3011,
+      3015,
+      3007
+    ],
+    "pagination": "All file pages, not the 100-file gh pr view preview. PR3011 has 627 changed files.",
+    "duplicate_branch": "claude/happy-davinci-ijz3wy-srvpkg5",
+    "duplicate_head": "6f598ff25b80611ac40dca445de4fb777a471da4"
+  },
+  "rows": [
+    {
+      "id": "W19b",
+      "status": "BLOCKED",
+      "missing": "An accepted Dryad Garden planting specification: seed/target identities, growth stages and durations, harvest yields, and the main-world trigger. Neither pinned donor defines this mechanic. The cited Dryad Garden effect belongs to a quest teleport, whose scripts are excluded from SRV10.",
+      "base_evidence": [
+        "crates/gameplay/items/src/event_planting.rs:216",
+        "crates/gameplay/dispatch/src/gameplay_transport/item_craft/planting.rs:54",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_seed_planting.rs:32",
+        "crates/gameplay/quests/src/quest/world_callbacks.rs:313"
+      ],
+      "donor_evidence": [
+        "crystal:data-global/scripts/actions/other/dryad_garden.lua:12-20",
+        "canary:data-otservbr-global/scripts/actions/other/dryad_garden.lua:12-20"
+      ],
+      "investigation": "Fetched both exact-revision scripts and inspected existing planting/growth/harvest owners. Both donor scripts only teleport between unique IDs 33331/33332 and emit WATERSPLASH. Existing ice-flower pot planting is a different, already tested mechanic. Asked for an accepted main-world planting specification; none was supplied. No invented planting rules or quest changes."
+    },
+    {
+      "id": "W19c",
+      "status": "DUPLICATE-ON-BRANCH",
+      "pull_request": 3011,
+      "head": "6f598ff25b80611ac40dca445de4fb777a471da4",
+      "branch_evidence": [
+        "crates/gameplay/dispatch/src/gameplay_transport/novelty_item_owner.rs:23",
+        "crates/gameplay/dispatch/src/gameplay_transport/novelty_item_use.rs:251",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:461"
+      ],
+      "donor_evidence": [
+        "crystal:data/scripts/actions/items/fireworks_rocket.lua:4-16",
+        "crystal:data/scripts/actions/items/voodoo_doll.lua:9-17",
+        "crystal:src/utils/utils_definitions.hpp:77-86"
+      ],
+      "investigation": "Exact PR3011 head already publishes committed receipt cues through record_item_effect, with player-target privacy. Receipt consumption, transformations and deadlines are already owned by the common item-use transaction. Skip SRV10 implementation under the explicit duplicate rule; no claim that this open branch is merged or independently validated here. Coloured SOUND magic effects are animations, not audio cue IDs."
+    },
+    {
+      "id": "P01",
+      "status": "DUPLICATE-ON-BRANCH",
+      "pull_request": 3011,
+      "head": "6f598ff25b80611ac40dca445de4fb777a471da4",
+      "base_evidence": [
+        "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs:89",
+        "crates/gameplay/dispatch/src/gameplay_transport/attack/player_block.rs:139"
+      ],
+      "branch_evidence": [
+        "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs:24",
+        "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs:273",
+        "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs:346",
+        "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:885",
+        "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:1015",
+        "crates/gameplay/dispatch/src/gameplay_transport/attack/player_block.rs:166",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx2_charm_consumers.rs:14",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx2_scavenge.rs:14"
+      ],
+      "donor_evidence": [
+        "crystal:src/io/iobestiary.cpp:75-118",
+        "crystal:src/io/iobestiary.cpp:152-190",
+        "crystal:data/scripts/systems/bestiary_charms.lua:140-159",
+        "crystal:src/creatures/players/player.cpp:4078-4088",
+        "crystal:src/game/game.cpp:8682-8699",
+        "crystal:data-global/scripts/actions/tools/skinning.lua:292-302"
+      ],
+      "investigation": "Merged PR3014 did not complete charm consumers. The missing consumers and their production PG tests are already in open PR3011: Carnage, Adrenaline Burst, Numb, Cleanse, Cripple, Fatal Hold, Void Inversion, Bless lethal snapshot/replay and Scavenge production corpse use. Skip under the duplicate rule; no claim that the branch tests were executed in this checkout."
+    },
+    {
+      "id": "S16c",
+      "status": "BLOCKED",
+      "missing": "An accepted non-Dawnport main-world trial rule and trigger, including entitlement/removal of temporary items, outfit and learned spells below level 20. The donors gate trial changes on Dawnport trial tiles; there is no donor-defined main-world trial grant to transplant.",
+      "base_evidence": [
+        "crates/gameplay/dispatch/src/gameplay_transport/dawnport_trial.rs:10",
+        "crates/gameplay/dispatch/src/gameplay_transport/dawnport_trial.rs:24",
+        "crates/gameplay/items/src/starting_loadout.rs:80"
+      ],
+      "donor_evidence": [
+        "crystal:data-global/scripts/movements/others/dawnport_vocation_trial.lua:6-24",
+        "crystal:data-global/scripts/movements/others/dawnport_vocation_trial.lua:26-172",
+        "crystal:data-global/scripts/movements/others/dawnport_vocation_trial.lua:323-355",
+        "canary:data-otservbr-global/scripts/movements/others/dawnport_vocation_trial.lua:284-314"
+      ],
+      "investigation": "Fetched both donor trial scripts, checked existing vocation conversion and starting-loadout owners. The level-20 limit is a Dawnport tile guard, not a global main-world grant. User explicitly excludes Dawnport, assigns starting kits to Newhaven and S17 casting elsewhere, and excludes SRV7 outfit acquisition. Asked for the accepted main-world trial specification; none was supplied. No Dawnport, starting-kit, outfit-acquisition or casting changes."
+    },
+    {
+      "id": "W08",
+      "status": "BLOCKED",
+      "base_evidence": [
+        "crates/gameplay/durability/src/durability/animus_mastery.rs:141",
+        "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2683",
+        "crates/gameplay/combat/src/combat/death_reward.rs:879",
+        "crates/gameplay/dispatch/src/gameplay_transport/soulpit/entry.rs:217",
+        "crates/gameplay/dispatch/src/gameplay_transport/soulpit/entry.rs:236",
+        "crates/gameplay/durability/src/durability/soulpit/progress.rs:201",
+        "docs/contracts/protocol-oteryn/v1/animus-mastery-v1.md:25",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/animus_mastery.rs:13",
+        "crates/gameplay/dispatch/src/gameplay_transport/soulpit/runtime.rs:98",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soulpit_lifecycle/completion_atomicity.rs:31",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soulpit_lifecycle/completion_atomicity.rs:36",
+        "crates/gameplay/dispatch/src/gameplay_transport/soulpit/runtime/tests.rs:117"
+      ],
+      "donor_evidence": [
+        "crystal:src/creatures/players/animus_mastery/animus_mastery.cpp:33-79",
+        "crystal:data-global/scripts/quests/soulpit/soulpit_fight.lua:100-106",
+        "canary:src/creatures/players/animus_mastery/animus_mastery.cpp:27-75",
+        "crystal:data-global/scripts/quests/soulpit/ondroploot_soul_core.lua:13-54",
+        "canary:data-otservbr-global/scripts/quests/soulpit/ondroploot_soul_core.lua:13-54"
+      ],
+      "rules": "Completion is once per species after qualifying Soulpit survival. Mastered species receive 2% raw XP plus 0.1% per ten completed species, capped at 4% total. Ordinary kills consume this bonus; they do not create a separate mastery kill counter. Soul Core use selects/consumes the core through the existing activity owner; item use must not grant mastery before successful completion.",
+      "requested_loot_clarification": "Neither pinned donor Animus owner defines a loot bonus or ordinary-kill mastery accumulation. Follow the existing accepted ANIMUS-1 contract and donor behavior; do not invent a loot multiplier or grant mastery merely for using a core. If a separate loot/progress mechanic is intended, its accepted formula and acquisition rule are missing and that extension is BLOCKED. The Soul Core/Prism loot callbacks in both donors depend on fiendish classification and configured drop chances, not on Animus Mastery.",
+      "already_done_scope": "The requested non-BOSS2 donor-defined owner: per-species mastery persistence, mastered-species kill XP bonus, existing Soul Core item-use admission and the clearly existing Soulpit completion hook. Full activity entry/return availability remains BOSS2 W07 and is not claimed complete.",
+      "missing": "The legitimate BOSS2 destination Instance admission/activity adapter needed to execute the Soulpit completion-to-mastery path. The base supplies SHARED_OWNER_ADMISSION = None, and its completion atomicity cases are explicitly ignored as NOT_RUN. SRV10 must consume the existing hook, not implement BOSS2 entry/return. The requested additional loot bonus/ordinary-kill accumulation also has no rule in either pinned donor; an accepted formula/acquisition rule is needed if this is intended beyond current Tibia Animus behavior.",
+      "investigation": "Inspected the fenced mastery store, existing kill reward XP consumer, Soul Core item-use admission and completion transaction. A repository search for ActivityHandoffOwnerRuntime implementations finds only soulpit/runtime/tests.rs:117. The focused Animus persistence and real query-dispatch PG tests execute successfully; the completion atomicity test is NOT_RUN because the legitimate BOSS2 admission adapter is absent. Implementing activity entry/return here would duplicate the explicitly excluded BOSS2 W07 owner."
+    }
+  ],
+  "validation": {
+    "runtime_red_green": "Not applicable: the delivered change records duplicate implementations and exact blockers; it changes no runtime behavior and makes no red-to-green fix claim.",
+    "animus_mastery": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features animus_mastery -- --nocapture",
+      "passed": 4,
+      "failed": 0,
+      "duration_seconds": 3.94,
+      "postgres_cases_executed": 2
+    },
+    "existing_planting": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features item_seed_planting -- --nocapture",
+      "passed": 4,
+      "failed": 0,
+      "duration_seconds": 49.46,
+      "postgres_cases_executed": 4
+    },
+    "soulpit_completion_hook": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features soulpit_survivor_completion_and_animus_commit_together_postgres -- --nocapture",
+      "passed": 0,
+      "ignored": 1,
+      "duration_seconds": 0.0,
+      "status": "NOT_RUN",
+      "reason": "Requires #2769 legitimate destination Instance admission. No adapter is supplied on this base."
+    },
+    "duplicate_branch_tests": "Inspected source only; not executed or claimed green on the PR3011 head.",
+    "clippy": {
+      "command": "cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-items --all-features --all-targets --quiet -- -D warnings",
+      "exit_code": 0
+    },
+    "directory_scan_regression": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features quest_chat_greetings_use_the_same_source_state_as_npc_commands -- --nocapture (PostgreSQL routing absent)",
+      "red": {
+        "failed": 1,
+        "duration_seconds": 2.73,
+        "reason": "The original new content/mechanics directory exceeded the unchanged NPC directory-entry limit: actual 233, limit 232."
+      },
+      "green": {
+        "passed": 1,
+        "duration_seconds": 36.4
+      },
+      "fix": "Keep the evidence record in the existing content/test-packs directory; no production code, loader limit, assertion, or existing test changed."
+    },
+    "unfiltered_route_less_crate_tests": {
+      "status": "NOT_COMPLETED",
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-items --all-features --quiet (PostgreSQL routing absent)",
+      "reason": "Stopped the optional broad run after it exposed the directory-placement regression. Reproduced and resolved that failure in the focused case above. No Rust crates change in this delivery; no full-crate green claim."
+    },
+    "soulpit_completion_explicit_attempt": {
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features soulpit_survivor_completion_and_animus_commit_together_postgres -- --ignored --nocapture",
+      "failed": 1,
+      "duration_seconds": 0.01,
+      "status": "BLOCKED_BEFORE_POSTGRES",
+      "reason": "#2769 must supply its accepted destination Instance fixture before this ignored case can run."
+    },
+    "architecture": {
+      "command": "oteryn-architecture-check workspace .",
+      "exit_code": 0
+    },
+    "pins": {
+      "commands": [
+        "oteryn-world-bundle-compiler pin-refresh .",
+        "oteryn-world-bundle-compiler pin-check . /tmp/srv10-pin-check"
+      ],
+      "exit_code": 0,
+      "generated_changes": 0
+    },
+    "content_integration_rest": {
+      "command": "cargo test --locked -p oteryn-game-server --test integration_rest content_ --quiet (PostgreSQL routing absent)",
+      "passed": 123,
+      "failed": 0,
+      "duration_seconds": 2.7
+    },
+    "content_project": {
+      "command": "cargo test --locked -p oteryn-game-server --test content_world_project_repository --quiet (PostgreSQL routing absent)",
+      "passed": 5,
+      "failed": 0,
+      "duration_seconds": 55.86
+    }
+  }
+}
