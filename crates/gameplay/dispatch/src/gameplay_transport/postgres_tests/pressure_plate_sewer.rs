@@ -75,6 +75,10 @@ pub(super) async fn exercise(
     trigger: Position,
     name: &str,
 ) -> TestResult {
+    if name.contains("-use") {
+        use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+        admitted.continuity.selected_capabilities = crate::gameplay_transport::capabilities::SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18]).ok_or("map USE capabilities")?;
+    }
     let position = TilePos {
         x: 32482,
         y: 32170,
@@ -160,10 +164,11 @@ pub(super) async fn exercise(
     }
     if name.contains("-use") {
         owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
-        let step = wire(owner, admitted, 5, 1, encode_step_intent(StepDirection::East)).await?;
+        let step_id = if name.ends_with("use-existing") { 1 } else { 5 };
+        let step = wire(owner, admitted, step_id, 1, encode_step_intent(StepDirection::East)).await?;
         assert_eq!(decode_step_result(&step).map_err(debug)?, StepDisposition::Moved);
         assert_eq!(sewers(owner, position)?, 1);
-        let (reply, payload) = use_sewer(owner, admitted, 6, position).await?;
+        let (reply, payload) = use_sewer(owner, admitted, step_id + 1, position).await?;
         let expected = if name.ends_with("blocked") {
             oteryn_protocol_oteryn::world_object::UseDisposition::NotPossible
         } else {
@@ -172,8 +177,9 @@ pub(super) async fn exercise(
         assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?, expected);
         let after = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
         assert_eq!(after.position(), local(if name.ends_with("blocked") { trigger } else { Position { x: position.x, y: position.y, floor: -15 } }));
-        assert_eq!(wire(owner, admitted, 6, 2, payload).await?, reply);
+        assert_eq!(wire(owner, admitted, step_id + 1, 2, payload).await?, reply);
         assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?, after, "USE replay must not descend twice");
+        assert_eq!(sewers(owner, position)?, usize::from(name.ends_with("blocked")), "dropdown must dispatch the committed plate StepOut");
     }
     assert_eq!(
         owner
