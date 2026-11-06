@@ -85,6 +85,7 @@ fn live_names_reach_scene_and_disappear_with_visibility() -> Result<(), BatchErr
         },
     };
     view.set_presentations(vec![oteryn_session::VisibleAppearance {
+        forge_stacks: None,
         light: None,
         entity,
         look: None,
@@ -100,6 +101,7 @@ fn own_identity_draws_once_between_step_and_appearance_publish() -> Result<(), B
     let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
     view.set_own_identity([1; 16]);
     let own = oteryn_session::VisibleAppearance {
+        forge_stacks: None,
         light: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: None,
@@ -172,6 +174,7 @@ fn live_presentations_keep_target_clock_and_light_through_rebuilds() -> Result<(
     let selected = view.scene().target();
     assert!(selected.is_some());
     let appearance = oteryn_session::VisibleAppearance {
+        forge_stacks: None,
         light: None,
         entity,
         look: None,

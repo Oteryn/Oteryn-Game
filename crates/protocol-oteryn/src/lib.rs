@@ -55,6 +55,7 @@ pub mod cyclopedia_tracker;
 pub mod daily_boost;
 pub mod daily_reward;
 pub mod damage_element;
+pub mod death_protection;
 #[cfg(test)]
 mod decoder_fuzz_support;
 pub mod depot;
@@ -92,6 +93,7 @@ pub mod party_skull;
 pub mod player_report;
 pub mod player_trade;
 pub mod player_typing;
+pub mod potion_durations;
 pub mod presentation;
 pub mod prey;
 pub mod pvp_expert;

@@ -89,6 +89,7 @@ impl Application {
                 || play.link.player_report_input(events)
                 || play.link.hireling_input(events)
                 || play.link.hotkey_equip_input(events)
+                || play.link.potion_durations_input(events)
                 || play.link.item_forge_input(events)
                 || play.link.store_input(events)
                 || play.link.vip_input(events)

@@ -13,7 +13,7 @@ pub(super) fn display(p: &WeaponProficiencyPanel) -> String {
             "Ready"
         },
         p.feedback.unwrap_or(""),
-        p.result.as_deref().unwrap_or("")
+        oteryn_client_ui::weapon_proficiency::panel_text(p).replace('\n', "\r\n")
     )
 }
 
@@ -25,6 +25,17 @@ pub(super) fn submit(
 ) -> Option<FeatureCommand> {
     if p.pending || !p.selected {
         return None;
+    }
+    if matches!(id, 109..=111) {
+        p.catalogue_offset = match id {
+            109 => 0,
+            110 => p.catalogue.as_ref().map_or(0, |page| {
+                let next = page.offset.saturating_add(page.entries.len() as u32);
+                if next < page.total { next } else { page.offset }
+            }),
+            _ => p.catalogue_offset.saturating_sub(8),
+        };
+        return request(p, Intent::Catalogue);
     }
     let intent = match id {
         101 => Intent::SelectPerk,
@@ -89,7 +100,7 @@ mod window {
                 let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
                 let id = w & 0xffff;
                 let note = (w >> 16) & 0xffff;
-                if !actions.is_null() && matches!(id, 101..=108) && note == BN_CLICKED as usize {
+                if !actions.is_null() && matches!(id, 101..=111) && note == BN_CLICKED as usize {
                     (*actions).0.push(id);
                 }
                 return 0;
@@ -187,6 +198,9 @@ mod window {
                 "Choose reshape",
                 "Decline offer",
                 "Clear modification",
+                "Refresh weapons",
+                "Next weapons",
+                "Previous weapons",
             ]
             .iter()
             .enumerate()

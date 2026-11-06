@@ -158,6 +158,7 @@ mod adventurer;
 mod commit;
 pub mod items;
 pub mod promotion;
+mod protection;
 mod settlement;
 
 /// P20 consumes the admission's exact respawn in the citizenship/position transaction.

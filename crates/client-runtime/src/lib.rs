@@ -195,9 +195,11 @@ pub use oteryn_session::exiva;
 
 pub use oteryn_session::battle_instinct_status;
 pub use oteryn_session::condition_status;
+pub use oteryn_session::death_protection;
 /// Loyalty skills wire values owned by the admitted session.
 pub use oteryn_session::loyalty_skills;
 pub use oteryn_session::party_effects;
+pub use oteryn_session::potion_durations;
 pub use oteryn_session::rest_status;
 pub use oteryn_session::skill_display;
 pub use oteryn_session::skill_progress;

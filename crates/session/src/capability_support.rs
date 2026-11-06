@@ -78,6 +78,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     property_services::character_info::CAPABILITY_CHARACTER_INFO_V1,
     oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1,
     oteryn_protocol_oteryn::house::CAPABILITY_GUILDHALL_V1,
+    oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1,
     property_services::mail::CAPABILITY_MAIL_V1 as u32,
     oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
     oteryn_protocol_oteryn::inspection::CAPABILITY_INSPECTION_V1,
@@ -96,6 +97,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     // CL26s3: native daily reward wall, query, and claim controls.
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     oteryn_protocol_oteryn::daily_reward::CAPABILITY_DAILY_REWARD_V2,
+    oteryn_protocol_oteryn::weapon_proficiency::CAPABILITY_WEAPON_PROFICIENCY_V1,
     oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
     // CL26s4: personal boss reward commands.
     oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
@@ -121,6 +123,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
+    potion_durations::CAPABILITY_POTION_DURATIONS_V1,
+    death_protection::CAPABILITY_DEATH_PROTECTION_V1,
+    party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -205,6 +210,9 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
+    potion_durations::CAPABILITY_POTION_DURATIONS_V1,
+    death_protection::CAPABILITY_DEATH_PROTECTION_V1,
+    party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

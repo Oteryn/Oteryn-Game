@@ -105,6 +105,8 @@ pub mod daily_boost;
 pub mod depot;
 #[path = "features/0153-depot-search/mod.rs"]
 pub mod depot_search;
+#[path = "features/0104-forge-creature/mod.rs"]
+pub mod forge_creature;
 /// Live server highscores panel.
 #[path = "features/0009-highscores/mod.rs"]
 pub mod highscores;
@@ -264,8 +266,14 @@ pub mod chat_public_channels;
 pub mod battle_instinct_status;
 #[path = "features/0276-condition-status/mod.rs"]
 pub mod condition_status;
+#[path = "features/0382-death-protection/mod.rs"]
+pub mod death_protection;
 #[path = "features/0280-party-effects/mod.rs"]
 pub mod party_effects;
+#[path = "features/0383-party-member-effects/mod.rs"]
+pub mod party_member_effects;
+#[path = "features/0381-potion-durations/mod.rs"]
+pub mod potion_durations;
 #[path = "features/0277-rest-status/mod.rs"]
 pub mod rest_status;
 #[path = "features/0370-skill-display/mod.rs"]

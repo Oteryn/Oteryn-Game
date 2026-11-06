@@ -92,3 +92,34 @@ fn native_controls_submit_and_restore() {
     assert!(native::enabled(&panel));
     assert!(native::presentation(&panel).contains("refused"));
 }
+
+#[test]
+fn nx8_current_dust_is_displayed_without_history() {
+    use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
+    let (link, _, outbox) = play_channel();
+    outbox.item_forge_initialize(true);
+    outbox.item_forge_result(&ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: br#"{"current_dust":73,"dust_limit":125}"#.to_vec(),
+    });
+    let text = oteryn_client_ui::item_forge::panel_text(&link.item_forge_panel());
+    assert!(text.contains("Current dust: 73 / 125"), "{text}");
+}
+
+#[test]
+#[allow(clippy::panic)] // A missing command is the behaviour this play test diagnoses.
+fn nx8_native_current_dust_control_uses_query_without_mutation_fields() {
+    let (link, mut rx, outbox) = play_channel();
+    outbox.item_forge_initialize(true);
+    let mut inputs = native::Inputs::default();
+    inputs.0[0] = "8".into();
+    inputs.0[3] = "not a mutation occurrence".into();
+    native::submit(&link, &inputs);
+    let Ok(crate::combat_input::PlayCommand::ServerMechanic(command)) = rx.try_recv() else {
+        panic!("missing current dust command");
+    };
+    assert_eq!(command.command_type, 668);
+    assert!(command.payload.is_empty());
+}

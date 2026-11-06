@@ -52,6 +52,8 @@ pub async fn run_session<T: Stepper>(
     outbox.skill_progress_initialize(session.feature_selected(279));
     outbox.skill_display_initialize(session.feature_selected(370));
     outbox.party_effects_initialize(session.feature_selected(280));
+    outbox.potion_durations_initialize(session.feature_selected(381));
+    outbox.death_protection_initialize(session.feature_selected(382));
     outbox.quest_initialize(session.quest_state());
     outbox.task_board_initialize(session.task_board_selected());
     outbox.stash_initialize(session.stash_selected());
@@ -136,6 +138,8 @@ pub async fn run_session<T: Stepper>(
                         278 => outbox.battle_instinct_status_result(&result),
                         279 | 370 => outbox.skill_progress_result(&result),
                         280 => outbox.party_effects_result(&result),
+                        381 => outbox.potion_durations_result(&result),
+                        382 => outbox.death_protection_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
