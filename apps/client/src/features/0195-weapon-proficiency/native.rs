@@ -2,6 +2,10 @@
 use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::weapon_proficiency::{Intent, WeaponProficiencyPanel, request};
 
+pub(in crate::play) fn action_clicked(id: usize, notification: usize) -> bool {
+    matches!(id, 101..=111) && notification == 0 // Win32 BN_CLICKED
+}
+
 pub(in crate::play) fn display(p: &WeaponProficiencyPanel) -> String {
     format!(
         "{}\r\n{}\r\n{}",
@@ -13,7 +17,7 @@ pub(in crate::play) fn display(p: &WeaponProficiencyPanel) -> String {
             "Ready"
         },
         p.feedback.unwrap_or(""),
-        p.result.as_deref().unwrap_or("")
+        oteryn_client_ui::weapon_proficiency::panel_text(p)
     )
 }
 
@@ -25,6 +29,14 @@ pub(in crate::play) fn submit(
 ) -> Option<FeatureCommand> {
     if p.pending || !p.selected {
         return None;
+    }
+    if let Some(intent) = match id {
+        109 => Some(Intent::Browse),
+        110 => Some(Intent::PreviousPage),
+        111 => Some(Intent::NextPage),
+        _ => None,
+    } {
+        return request(p, intent);
     }
     let intent = match id {
         101 => Intent::SelectPerk,
@@ -89,7 +101,7 @@ mod window {
                 let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
                 let id = w & 0xffff;
                 let note = (w >> 16) & 0xffff;
-                if !actions.is_null() && matches!(id, 101..=108) && note == BN_CLICKED as usize {
+                if !actions.is_null() && action_clicked(id, note) {
                     (*actions).0.push(id);
                 }
                 return 0;
@@ -205,6 +217,21 @@ mod window {
                     WS_TABSTOP,
                 );
             }
+            for (id, label) in [
+                (109, "Refresh weapons"),
+                (110, "Previous page"),
+                (111, "Next page"),
+            ] {
+                control(
+                    hwnd,
+                    "BUTTON",
+                    label,
+                    id,
+                    [10 + (id as i32 - 109) * 175, 310, 165, 28],
+                    WS_TABSTOP,
+                );
+            }
+            actions.0.push(109);
             let output = control(
                 hwnd,
                 "EDIT",

@@ -36,7 +36,8 @@ impl PlayLink {
         }
         true
     }
-    pub fn mechanics_status_panel(
+    #[cfg(test)]
+    pub(in crate::play) fn mechanics_status_panel(
         &self,
     ) -> oteryn_client_ui::mechanics_status::MechanicsStatusPanel {
         lock(&self.mailbox).mechanics_status.clone()

@@ -325,6 +325,109 @@ impl ModificationReply {
     }
 }
 
+/// CL7: paged, read-only view of every admitted weapon and current session XP.
+pub const COMMAND_TYPE_PROFICIENCY_BROWSE: u32 = 641;
+pub const PROFICIENCY_PAGE_SIZE: usize = 20;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProficiencyRow {
+    pub definition: NonZeroU32,
+    pub name: String,
+    pub experience: u32,
+    pub level: u8,
+    pub selections: Vec<Option<u8>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProficiencyPage {
+    pub offset: u32,
+    pub total: u32,
+    pub rows: Vec<ProficiencyRow>,
+}
+impl ProficiencyPage {
+    pub fn encode(&self) -> Option<Vec<u8>> {
+        if self.rows.len() > PROFICIENCY_PAGE_SIZE
+            || self.offset > self.total
+            || self
+                .offset
+                .checked_add(u32::try_from(self.rows.len()).ok()?)?
+                > self.total
+        {
+            return None;
+        }
+        let mut bytes = self.offset.to_be_bytes().to_vec();
+        bytes.extend(self.total.to_be_bytes());
+        bytes.push(u8::try_from(self.rows.len()).ok()?);
+        for row in &self.rows {
+            if row.name.is_empty()
+                || row.name.len() > 128
+                || row.level > 9
+                || row.selections.len() > MAX_LEVELS
+            {
+                return None;
+            }
+            bytes.extend(row.definition.get().to_be_bytes());
+            bytes.push(u8::try_from(row.name.len()).ok()?);
+            bytes.extend(row.name.as_bytes());
+            bytes.extend(row.experience.to_be_bytes());
+            bytes.push(row.level);
+            bytes.push(u8::try_from(row.selections.len()).ok()?);
+            bytes.extend(row.selections.iter().map(|v| v.unwrap_or(CLEAR_PERK)));
+        }
+        Some(bytes)
+    }
+    pub fn decode(mut bytes: &[u8]) -> Option<Self> {
+        fn take<'a>(bytes: &mut &'a [u8], count: usize) -> Option<&'a [u8]> {
+            let (head, tail) = bytes.split_at_checked(count)?;
+            *bytes = tail;
+            Some(head)
+        }
+        fn number(bytes: &mut &[u8]) -> Option<u32> {
+            Some(u32::from_be_bytes(take(bytes, 4)?.try_into().ok()?))
+        }
+        let offset = number(&mut bytes)?;
+        let total = number(&mut bytes)?;
+        let count = usize::from(*take(&mut bytes, 1)?.first()?);
+        if count > PROFICIENCY_PAGE_SIZE {
+            return None;
+        }
+        let mut rows = Vec::with_capacity(count);
+        for _ in 0..count {
+            let definition = NonZeroU32::new(number(&mut bytes)?)?;
+            let length = usize::from(*take(&mut bytes, 1)?.first()?);
+            let name = std::str::from_utf8(take(&mut bytes, length)?)
+                .ok()?
+                .to_owned();
+            let experience = number(&mut bytes)?;
+            let level = *take(&mut bytes, 1)?.first()?;
+            let length = usize::from(*take(&mut bytes, 1)?.first()?);
+            if length > MAX_LEVELS {
+                return None;
+            }
+            let selections = take(&mut bytes, length)?
+                .iter()
+                .map(|v| (*v != CLEAR_PERK).then_some(*v))
+                .collect();
+            rows.push(ProficiencyRow {
+                definition,
+                name,
+                experience,
+                level,
+                selections,
+            });
+        }
+        let page = Self {
+            offset,
+            total,
+            rows,
+        };
+        if !bytes.is_empty() || page.encode().is_none() {
+            return None;
+        }
+        Some(page)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

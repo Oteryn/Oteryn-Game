@@ -85,3 +85,98 @@ fn native_proficiency_rejects_invalid_fields_and_clears_perks() {
         native_controls::submit(&mut p, 101, ["258", "2", "1", "1", "9", "2"], false).is_none()
     );
 }
+
+#[test]
+fn native_proficiency_browse_decodes_experience_and_pages_the_complete_list()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::play_channel;
+    use oteryn_client_runtime::weapon_proficiency::{ProficiencyPage, ProficiencyRow};
+    for id in 109..=111 {
+        assert!(native_controls::action_clicked(id, 0));
+        assert!(!native_controls::action_clicked(id, 1));
+    }
+    assert!(!native_controls::action_clicked(112, 0));
+    let (link, mut commands, outbox) = play_channel();
+    outbox.weapon_proficiency_initialize(true);
+    link.weapon_proficiency_request(Intent::Browse);
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("missing catalogue query".into());
+    };
+    assert_eq!(
+        (command.capability, command.kind, command.payload),
+        (195, 641, vec![0, 0, 0, 0])
+    );
+    let page = ProficiencyPage {
+        offset: 0,
+        total: 2,
+        rows: vec![ProficiencyRow {
+            definition: 258.try_into()?,
+            name: "Sword".into(),
+            experience: 12345,
+            level: 2,
+            selections: vec![Some(1), None],
+        }],
+    };
+    outbox.weapon_proficiency_result(&GatedCommandResult {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: page.encode().ok_or("encode")?,
+    });
+    let panel = link.weapon_proficiency_panel();
+    let text = native_controls::display(&panel);
+    assert!(text.contains("12345 XP"));
+    assert!(text.contains("Sword"));
+    assert!(text.contains("1 / 2"));
+    link.weapon_proficiency_request(Intent::NextPage);
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("missing next page".into());
+    };
+    assert_eq!(command.payload, 1u32.to_be_bytes());
+    outbox.weapon_proficiency_result(&GatedCommandResult {
+        command_id: 2,
+        status: CommandStatus::Accepted,
+        server_sequence: 2,
+        payload: vec![0],
+    });
+    assert!(link.weapon_proficiency_panel().feedback.is_some());
+    assert!(native_controls::display(&link.weapon_proficiency_panel()).contains("12345 XP"));
+    Ok(())
+}
+
+#[test]
+fn proficiency_page_rejects_truncation_trailing_and_oversized_rows()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::weapon_proficiency::{ProficiencyPage, ProficiencyRow};
+    let mut page = ProficiencyPage {
+        offset: 0,
+        total: 1,
+        rows: vec![ProficiencyRow {
+            definition: 1.try_into()?,
+            name: "Weapon".into(),
+            experience: u32::MAX,
+            level: 9,
+            selections: vec![None; 7],
+        }],
+    };
+    let bytes = page.encode().ok_or("encode")?;
+    assert_eq!(ProficiencyPage::decode(&bytes), Some(page.clone()));
+    for end in 0..bytes.len() {
+        assert!(ProficiencyPage::decode(&bytes[..end]).is_none());
+    }
+    let mut trailing = bytes;
+    trailing.push(0);
+    assert!(ProficiencyPage::decode(&trailing).is_none());
+    page.rows[0].level = 10;
+    assert!(page.encode().is_none());
+    page.rows[0].level = 9;
+    page.rows[0].name = "x".repeat(129);
+    assert!(page.encode().is_none());
+    page.rows[0].name = "weapon".into();
+    page.rows[0].selections.push(None);
+    assert!(page.encode().is_none());
+    page.rows[0].selections.clear();
+    page.offset = u32::MAX;
+    assert!(page.encode().is_none());
+    Ok(())
+}
