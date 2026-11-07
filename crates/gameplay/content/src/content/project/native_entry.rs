@@ -538,6 +538,7 @@ impl NativeEntryProject {
             self.house_tiles.as_ref(),
         )?;
         Ok(NativeEntryMovementCells {
+            source_map_projection: None,
             house_tiles,
             index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Entry(index),
             scope,
@@ -673,13 +674,57 @@ pub struct QualifiedNativeEntryRoom {
 /// cells"). The index grants no active status; the Channel's pin supplies the current scope.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NativeEntryMovementCells {
+    source_map_projection: Option<QualifiedSourceMapProjection>,
     spell_tiles: QualifiedSpellTiles,
     house_tiles: super::QualifiedHouseTiles,
     index: crate::content::native_cell_lookup::NativeMovementCollisionIndex,
     scope: crate::content::static_cell_engine::EngineeringStaticCellScope,
 }
 
+/// A read-only presentation port retained from the actual qualified Bundle.
+/// Only the closed Rakesh projection constructs it; it grants no Base-item use.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QualifiedSourceMapProjection {
+    bundle: crate::content::native_cell_lookup::BundleCollisionIndex,
+    scope: crate::content::static_cell_engine::EngineeringStaticCellScope,
+    native_bounds: [i32; 6],
+    known_cells: std::collections::BTreeSet<(i32, i32, i32)>,
+    client_artifact_digest: [u8; 32],
+    frame_binding_digest: [u8; 32],
+    map_revision_digest: [u8; 32],
+}
+impl QualifiedSourceMapProjection {
+    pub fn matches_pin(
+        &self,
+        pin: &crate::content::channel_content_pin::ChannelContentPin,
+    ) -> bool {
+        pin.world_id() == self.scope.world_id
+            && pin.server_artifact_digest() == self.scope.generation_digest
+            && pin.client_artifact_digest() == self.client_artifact_digest
+            && pin.frame_binding_digest() == self.frame_binding_digest
+            && pin.map_revision_digest() == self.map_revision_digest
+    }
+    pub fn bundle(&self) -> &crate::content::native_cell_lookup::BundleCollisionIndex {
+        &self.bundle
+    }
+    pub fn matches_scope(
+        &self,
+        scope: &crate::content::static_cell_engine::EngineeringStaticCellScope,
+    ) -> bool {
+        scope == &self.scope
+    }
+    pub fn contains_native(&self, x: i32, y: i32, floor: i16) -> bool {
+        self.known_cells.contains(&(x, y, i32::from(floor)))
+    }
+    pub const fn native_bounds(&self) -> [i32; 6] {
+        self.native_bounds
+    }
+}
+
 impl NativeEntryMovementCells {
+    pub fn source_map_projection(&self) -> Option<&QualifiedSourceMapProjection> {
+        self.source_map_projection.as_ref()
+    }
     pub const fn house_tiles(&self) -> &super::QualifiedHouseTiles {
         &self.house_tiles
     }
@@ -708,6 +753,7 @@ impl NativeEntryMovementCells {
         spell_tiles: std::sync::Arc<crate::content::bundle_spell_tiles::BundleSpellTiles>,
     ) -> Self {
         Self {
+            source_map_projection: None,
             spell_tiles: QualifiedSpellTiles::from_bundle(scope.clone(), spell_tiles),
             house_tiles: entry.house_tiles.clone(),
             index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index),
@@ -747,6 +793,7 @@ impl QualifiedNativeEntryRoom {
         let mut view = self.clone();
         view.entry_start = start;
         view.movement_cells = NativeEntryMovementCells {
+            source_map_projection: None,
             spell_tiles: source.spell_tiles(),
             house_tiles: self.movement_cells.house_tiles.clone(),
             scope: self.movement_cells.scope.clone(),
@@ -784,6 +831,18 @@ impl QualifiedNativeEntryRoom {
         {
             return None;
         }
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(bundle) =
+            self.movement_cells.index()
+        else {
+            return None;
+        };
+        if scope.coordinate_frame.as_str() != "oteryn:frame/srv7-rakesh-source-portal-r1"
+            || source.native_bounds() != [33034, 32983, 33051, 33000, -8, -8]
+            || !source.pending_mutable_placements().is_empty()
+            || !source.source_identity_bindings().is_empty()
+        {
+            return None;
+        }
         let mut view = self.clone();
         view.entry_start = start;
         view.frame_binding.frame.coordinate_frame = scope.coordinate_frame.as_str().into();
@@ -798,7 +857,21 @@ impl QualifiedNativeEntryRoom {
         basis.extend_from_slice(&source_map_digest);
         basis.extend_from_slice(&view.frame_binding.digest);
         view.map_revision_digest = crate::content::digest::sha256(&basis);
+        let projection = QualifiedSourceMapProjection {
+            client_artifact_digest: self.compiled.client_digest(),
+            frame_binding_digest: view.frame_binding.digest,
+            map_revision_digest: view.map_revision_digest,
+            bundle: bundle.clone(),
+            scope: scope.clone(),
+            native_bounds: source.native_bounds(),
+            known_cells: source
+                .qualified_cells()
+                .iter()
+                .filter_map(|(cell, tile)| tile.as_ref().map(|_| (cell.x, cell.y, cell.z)))
+                .collect(),
+        };
         view.movement_cells = NativeEntryMovementCells {
+            source_map_projection: Some(projection),
             spell_tiles: source.spell_tiles(),
             house_tiles: self.movement_cells.house_tiles.clone(),
             scope: scope.clone(),
@@ -2578,6 +2651,7 @@ pub fn qualify_native_source_spell_world_with_gameplay(
             super::native_spell_world::SOURCE_WORLD_MAP.as_bytes(),
         ),
         movement_cells: NativeEntryMovementCells {
+            source_map_projection: None,
             scope,
             index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(map),
             spell_tiles,

@@ -299,7 +299,7 @@ impl ActivityHandoffOwner {
                 FROM game_summer_portal_rooms room JOIN game_activity_handoff_groups g ON g.handoff_id=room.admission \
                 JOIN game_boss_room_activities activity ON activity.admission=g.handoff_id \
                 JOIN game_runtime_scope_assignments ownership ON ownership.scope_key='\\x03'::bytea||uuid_send(room.world_id)||uuid_send(room.instance_id) \
-                JOIN game_durability_admission_runtime_guards guard ON guard.scope_key=ownership.scope_key \
+                JOIN game_durability_admission_runtime_guards guard ON guard.scope_key='\\x02'::bytea||uuid_send(room.world_id)||uuid_send(room.instance_id) \
                 WHERE room.world_id=encode($1,'hex')::uuid AND room.source_channel_id=encode($2,'hex')::uuid AND room.boss_key=$3 \
                 AND room.group_kind=$4 AND room.group_id=encode($5,'hex')::uuid AND room.membership_sha256=$6 \
                 AND g.state=2 AND activity.state=1 AND activity.deadline>floor(extract(epoch FROM clock_timestamp())*1000)::bigint \

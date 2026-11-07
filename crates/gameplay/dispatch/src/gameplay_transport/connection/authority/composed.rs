@@ -535,7 +535,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// `required_capabilities` against this same offer; a bundle World's floor holds 18, so
     /// admission requires it through the authenticated check in `admit`, not here.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
-        store::with_store_offer(
+        let base = store::with_store_offer(
             loop_training::offer(
                 self,
                 world_required_capabilities::offered_for_scope(
@@ -544,7 +544,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 ),
             ),
             self.store.is_some(),
-        )
+        );
+        source_map_projection::offered(base, self.movement_cells.source_map_projection().is_some())
     }
 
     /// MAP-CUTOVER-1b: domain 17 of a bundle World at the actor's current position. The position

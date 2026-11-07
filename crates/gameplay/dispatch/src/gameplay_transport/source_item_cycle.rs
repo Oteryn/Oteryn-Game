@@ -168,6 +168,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return false;
         }
+        // The sealed activity projection has no mutable source placements or
+        // identity bindings. Its actual Instance Ground is still read by the
+        // ordinary field ingress owner on each step; this skips only the
+        // Channel source-Item materializer, without marking it initialized.
+        if let Some(projection) = room.movement_cells().source_map_projection() {
+            return matches!(
+                runtime.binding().runtime_scope(),
+                crate::foundation::RuntimeScopeRefV1::Instance { .. }
+            ) && projection.matches_scope(room.movement_cells().scope())
+                && projection.matches_pin(runtime.content_pin());
+        }
         let binding = match crate::spell::source_map_initialization::CurrentNativeMapInitialization::qualify_current_binding(
             &runtime, room, source,
         ) {

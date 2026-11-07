@@ -132,15 +132,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| super::super::operator_event("summer_source_catalogue_read_refused"))?
             .ok_or_else(|| super::super::operator_event("summer_source_catalogue_missing"))?;
-        self.ensure_activity_template_runtime(&definition)
-            .await
-            .map_err(|_| {
-                super::super::operator_event("summer_source_runtime_qualification_refused")
-            })?;
         let existing = owner
             .existing_summer_portal_room(self.character, self.holder, fence)
             .await
             .map_err(|_| super::super::operator_event("summer_source_current_room_read_refused"))?;
+        self.ensure_activity_template_runtime_with_source_room(&definition, existing.as_ref())
+            .await
+            .map_err(|_| {
+                super::super::operator_event("summer_source_runtime_qualification_refused")
+            })?;
         let mut after = None;
         let mut selected = None;
         if let Some(existing) = existing {

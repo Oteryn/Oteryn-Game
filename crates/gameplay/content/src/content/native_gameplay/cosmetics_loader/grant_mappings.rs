@@ -230,6 +230,74 @@ pub(super) fn resolve_for_sex(
     }
 }
 
+fn compatibility(mapping: &GrantMapping, provenance: &str) -> UnlockFact {
+    if mapping
+        .compatible_provenance
+        .iter()
+        .any(|p| p == provenance)
+    {
+        UnlockFact::Compatible
+    } else {
+        UnlockFact::Incompatible
+    }
+}
+pub(super) fn resolve_source_look(
+    mapping: Option<&GrantMapping>,
+    provenance: &str,
+    look: u32,
+    addon: u8,
+    outfits: &[Outfit],
+) -> UnlockFact {
+    let Some(mapping) = mapping else {
+        return UnlockFact::Absent;
+    };
+    if let Some(sex) = mapping.sex {
+        let outfit_key = match &mapping.target {
+            Target::Outfit { outfit_key }
+            | Target::Addon { outfit_key, .. }
+            | Target::LookAddon { outfit_key, .. } => outfit_key,
+            Target::Mount { .. } => return UnlockFact::Absent,
+        };
+        if !outfits.iter().any(|outfit| {
+            outfit.key == *outfit_key
+                && (match sex {
+                    GrantSex::Female => outfit.female.id,
+                    GrantSex::Male => outfit.male.id,
+                }) == look
+        }) {
+            return UnlockFact::Absent;
+        }
+    }
+    let matches = match &mapping.target {
+        Target::LookAddon {
+            look_type,
+            addon: bit,
+            ..
+        } => *look_type == look && (addon == 0 || *bit == addon),
+        Target::Outfit { outfit_key } => {
+            addon == 0
+                && outfits
+                    .iter()
+                    .any(|o| o.key == *outfit_key && (o.female.id == look || o.male.id == look))
+        }
+        Target::Addon {
+            outfit_key,
+            addon: bit,
+        } => {
+            (addon == 0 || *bit == addon)
+                && outfits
+                    .iter()
+                    .any(|o| o.key == *outfit_key && (o.female.id == look || o.male.id == look))
+        }
+        Target::Mount { .. } => false,
+    };
+    if matches {
+        compatibility(mapping, provenance)
+    } else {
+        UnlockFact::Absent
+    }
+}
+
 #[cfg(test)]
 mod sex_qualified_tests {
     use super::*;
@@ -355,73 +423,5 @@ mod sex_qualified_tests {
             UnlockFact::Compatible
         );
         Ok(())
-    }
-}
-
-fn compatibility(mapping: &GrantMapping, provenance: &str) -> UnlockFact {
-    if mapping
-        .compatible_provenance
-        .iter()
-        .any(|p| p == provenance)
-    {
-        UnlockFact::Compatible
-    } else {
-        UnlockFact::Incompatible
-    }
-}
-pub(super) fn resolve_source_look(
-    mapping: Option<&GrantMapping>,
-    provenance: &str,
-    look: u32,
-    addon: u8,
-    outfits: &[Outfit],
-) -> UnlockFact {
-    let Some(mapping) = mapping else {
-        return UnlockFact::Absent;
-    };
-    if let Some(sex) = mapping.sex {
-        let outfit_key = match &mapping.target {
-            Target::Outfit { outfit_key }
-            | Target::Addon { outfit_key, .. }
-            | Target::LookAddon { outfit_key, .. } => outfit_key,
-            Target::Mount { .. } => return UnlockFact::Absent,
-        };
-        if !outfits.iter().any(|outfit| {
-            outfit.key == *outfit_key
-                && (match sex {
-                    GrantSex::Female => outfit.female.id,
-                    GrantSex::Male => outfit.male.id,
-                }) == look
-        }) {
-            return UnlockFact::Absent;
-        }
-    }
-    let matches = match &mapping.target {
-        Target::LookAddon {
-            look_type,
-            addon: bit,
-            ..
-        } => *look_type == look && (addon == 0 || *bit == addon),
-        Target::Outfit { outfit_key } => {
-            addon == 0
-                && outfits
-                    .iter()
-                    .any(|o| o.key == *outfit_key && (o.female.id == look || o.male.id == look))
-        }
-        Target::Addon {
-            outfit_key,
-            addon: bit,
-        } => {
-            (addon == 0 || *bit == addon)
-                && outfits
-                    .iter()
-                    .any(|o| o.key == *outfit_key && (o.female.id == look || o.male.id == look))
-        }
-        Target::Mount { .. } => false,
-    };
-    if matches {
-        compatibility(mapping, provenance)
-    } else {
-        UnlockFact::Absent
     }
 }

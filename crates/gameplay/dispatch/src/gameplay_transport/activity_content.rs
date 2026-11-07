@@ -10,6 +10,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         &self,
         definition: &BossRoomDefinition,
     ) -> Result<(), ActivityRefusal> {
+        self.ensure_activity_template_runtime_with_source_room(definition, None)
+            .await
+    }
+
+    pub(super) async fn ensure_activity_template_runtime_with_source_room(
+        &self,
+        definition: &BossRoomDefinition,
+        existing_source: Option<&crate::durability::activity_handoff::ExistingSourcePortalRoom>,
+    ) -> Result<(), ActivityRefusal> {
         let _transition = self.activity_runtimes.transitions.lock().await;
         let Some(template) = self
             .activity_runtimes
@@ -109,6 +118,46 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             || issued.frame_binding_digest != template.origin_frame_digest()
         {
             return Err(ActivityRefusal::ContentChanged);
+        }
+        // A current source-room discovery is already occupied. It must pass
+        // the same template/origin/activation checks above, then prove its
+        // exact registered owner; it cannot be found among ready allocations.
+        if let Some(existing) = existing_source {
+            if !template.source_portal()
+                || definition.boss_key != "oteryn:boss.rakesh_moonfang"
+                || existing.allocation.scope.world_id() != world_id
+            {
+                return Err(ActivityRefusal::AuthorityRejected);
+            }
+            let registered = self
+                .activity_runtimes
+                .get(
+                    existing.allocation.scope,
+                    existing.allocation.generation.get(),
+                )
+                .ok_or(ActivityRefusal::ContentUnavailable)?;
+            if registered.assignment_source_revision != existing.allocation.source_revision
+                || registered.template.as_ref().is_none_or(|key| {
+                    key.key != definition.room_template_key
+                        || key.revision != definition.template_revision
+                })
+            {
+                return Err(ActivityRefusal::ContentChanged);
+            }
+            let expected_pin = template
+                .issue_runtime_pin(active)
+                .map_err(|_| ActivityRefusal::ContentUnavailable)?;
+            let runtime = registered.runtime.lock().await;
+            if runtime.owner_fence().is_err()
+                || runtime.binding().runtime_scope() != existing.allocation.scope
+                || runtime.binding().scope_generation() != existing.allocation.generation
+                || runtime.binding().source_revision() != existing.allocation.source_revision
+                || runtime.content_pin() != &expected_pin
+                || !super::native_activity::boss_room_entry_native_ready(&runtime, definition)
+            {
+                return Err(ActivityRefusal::ContentChanged);
+            }
+            return Ok(());
         }
         let owner = ActivityHandoffOwner::new(self.root.clone());
         let mut after = None;

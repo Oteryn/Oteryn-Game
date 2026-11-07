@@ -131,6 +131,7 @@ struct PlannedTile {
 /// The whole window of one actor position, ready for the handle table.
 #[derive(Debug, Clone)]
 pub struct MapPlan {
+    read_only: bool,
     header: MapViewHeader,
     /// The non-empty tiles in wire order `(floor, y, x)`.
     tiles: Vec<PlannedTile>,
@@ -184,11 +185,11 @@ impl MapPlan {
                         ordinal,
                         placement_key,
                         movable: false,
-                    } => MapOrigin::BaseOrdinal {
+                    } if !self.read_only => MapOrigin::BaseOrdinal {
                         ordinal,
                         object_revision: source.facts.object_revision(placement_key),
                     },
-                    _ if entry.in_budget => {
+                    _ if entry.in_budget && !self.read_only => {
                         let key = source.item_key(entry.source.key());
                         let handle = table
                             .handle(&key)
@@ -276,7 +277,7 @@ fn plan_with<F: MapFacts>(
     actor: ActorPosition,
     buffers: PlanBuffers,
 ) -> Result<MapPlan, MapViewError> {
-    plan_with_house(source, actor, buffers, None)
+    plan_with_house(source, actor, buffers, None, None)
 }
 
 fn plan_with_house<F: MapFacts>(
@@ -284,6 +285,7 @@ fn plan_with_house<F: MapFacts>(
     actor: ActorPosition,
     buffers: PlanBuffers,
     house: Option<&[HouseMapEntry]>,
+    projection: Option<&crate::content::QualifiedSourceMapProjection>,
 ) -> Result<MapPlan, MapViewError> {
     let mut house_tiles = std::collections::BTreeMap::<TilePos, Vec<&HouseMapEntry>>::new();
     let mut unique = std::collections::BTreeSet::new();
@@ -341,6 +343,11 @@ fn plan_with_house<F: MapFacts>(
         let Some(pos) = layout.pos_of(index) else {
             continue;
         };
+        if projection.is_some_and(|projection| {
+            !projection.contains_native(i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor))
+        }) {
+            continue;
+        }
         let overlay = overlays.as_ref().and_then(|tiles| tiles[index]);
         let start = pool.len();
         let stored =
@@ -359,6 +366,15 @@ fn plan_with_house<F: MapFacts>(
     let mut scratch = Vec::new();
     for pos in view::roof_positions(at) {
         if layout.slot_of(pos).is_none() {
+            if projection.is_some_and(|projection| {
+                !projection.contains_native(
+                    i32::from(pos.x),
+                    i32::from(pos.y),
+                    i16::from(pos.floor),
+                )
+            }) {
+                continue;
+            }
             scratch.clear();
             view::compose_into(
                 source.overlay.base(),
@@ -398,7 +414,7 @@ fn plan_with_house<F: MapFacts>(
         let start = entries.len();
         for stack_index in kept {
             let entry = &stack[stack_index];
-            if entry.source.handle_bearing() {
+            if projection.is_none() && entry.source.handle_bearing() {
                 ranked.push((view::budget_key(at, pos, stack_index), entries.len()));
             }
             entries.push(PlannedEntry {
@@ -429,6 +445,7 @@ fn plan_with_house<F: MapFacts>(
         keys.push(source.item_key(entry.source.key()));
     }
     Ok(MapPlan {
+        read_only: projection.is_some(),
         header: MapViewHeader {
             content_generation: source.content_generation,
             bundle_digest: source.digest(),
@@ -526,8 +543,31 @@ impl SessionMapView {
             actor,
             std::mem::take(&mut self.buffers),
             Some(house),
+            None,
         )?;
         self.update_plan(items, &source, plan)
+    }
+
+    /// Only a sealed Source-room projection can display this immutable Bundle
+    /// subset. Unknown physics stays unknown and no Base ordinal/handle is issued.
+    pub(super) fn update_source_room<F: MapFacts>(
+        &mut self,
+        items: &mut SessionItemView,
+        source: &MapViewSource<'_, F>,
+        actor: ActorPosition,
+        projection: &crate::content::QualifiedSourceMapProjection,
+    ) -> Result<Option<MapUpdate>, MapViewError> {
+        if !projection.contains_native(actor.x, actor.y, actor.floor) {
+            return Err(MapViewError::Position);
+        }
+        let plan = plan_with_house(
+            source,
+            actor,
+            std::mem::take(&mut self.buffers),
+            Some(&[]),
+            Some(projection),
+        )?;
+        self.update_plan(items, source, plan)
     }
 
     fn update_plan<F: MapFacts>(

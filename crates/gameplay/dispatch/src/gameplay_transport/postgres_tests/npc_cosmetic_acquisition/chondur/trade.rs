@@ -1,6 +1,7 @@
 //! Final real NPC composition after original-source Stampor deaths and actual TAKE.
 //! No material fixtures, task flags or appearance unlocks may be seeded.
 use super::*;
+use oteryn_gameplay_domain::domain::appearance::AppearanceContent;
 const SOURCE: &str = "oteryn:npc-cosmetic/chondur/stampor-spirit";
 const GRANT: &str = "oteryn:appearance-grant/npc/chondur/stampor/mount";
 fn lines(frames: &[Vec<u8>]) -> TestResult<Vec<String>> {
@@ -76,6 +77,64 @@ pub(super) async fn trade_with_provenance(
     let actor = admitted
         .runtime_actor
         .ok_or("Chondur prewire current actor")?;
+    let (_, content) = owner
+        .appearance_context()
+        .ok_or("Chondur native cosmetics context unavailable")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("Chondur current appearance gameplay fence unavailable")?;
+    owner
+        .root
+        .read_current_character_appearance_state(
+            owner.character,
+            owner.holder,
+            fence,
+            content.earned_grant_keys(),
+        )
+        .await
+        .map_err(|error| format!("Chondur actual appearance durable owner: {error:?}"))?;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.content_pin().server_artifact_digest(),
+            content.source_digest(),
+            "actual source runtime/native pin"
+        );
+        assert_eq!(
+            runtime.binding().runtime_scope(),
+            fence.runtime_scope,
+            "actual source scope"
+        );
+        assert_eq!(
+            runtime.binding().scope_generation(),
+            fence.scope_ownership_generation,
+            "actual source ownership generation"
+        );
+        let lease = runtime
+            .bound_attacker_lease(actor, admitted.game_session_id)
+            .map_err(debug)?;
+        assert_eq!(
+            lease.character_id().as_bytes(),
+            fence.character_id.as_bytes(),
+            "actual appearance character lease"
+        );
+        assert_eq!(
+            lease.generation(),
+            fence.character_lease_generation,
+            "actual appearance lease generation"
+        );
+        assert!(
+            runtime
+                .player_control_facts(actor, admitted.game_session_id)
+                .map_err(debug)?
+                .control_loss
+                .is_none(),
+            "actual appearance live controller"
+        );
+        runtime.positioned_melee_census().map_err(debug)?;
+    }
     owner
         .appearance_observation(actor, admitted.game_session_id, Vec::new())
         .await
