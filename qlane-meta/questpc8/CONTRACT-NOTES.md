@@ -83,6 +83,38 @@ This conservative authored admission completes the selected kill requirement;
 it does not assert a missing historical source spawn coordinate. Kill credit
 still comes exclusively from the existing native death/progress owner.
 
+Kormarak restoration: retained native dead human32342,32125,z10 has top-level
+appearance4240 at ordinal2, above1854; it has no UID. The historical body beside
+a wooden coffin was not uniquely recoverable from the retained source. The
+chosen restoration therefore uses this real dead-human cache and two western
+approach thresholds32340,32125 and32341,32125,z10 for the ordered temple-route
+and inner-room exploration milestones. These are explicit conservative authored
+bindings, not claimed historical ladder/coffin coordinates. One native Demon
+Skeleton guardian at32342,32126,z10 is armed only after both milestones; its
+bounds32338..32344,32123..32127 retain native ground. It uses the shared guardian
+and native death owners. Free account, no level gate, one completion. Exact four
+backpack outputs: Brass Armor3359x1, Brass Helmet3354x1, Hatchet3276x1, Throwing
+Stars3287x13. This conserves the pinned selected rewards without an extra bag.
+Chosen source: https://tibia.fandom.com/index.php?curid=38407&oldid=884223
+Identity: https://tibia.fandom.com/index.php?curid=56856&oldid=899526
+The prior Fandom API402 and WikiBrasil403 were not retried or bypassed. Native
+B3 and existing admitted profiles supply exact binding/custody evidence.
+
+Next Voodoo binding evidence: retained native boxes32757,31953,z9 and
+32757,31957,z9 each appearance2473 ordinal1, no UID. Retained native Witch
+spawn points32747,31948,z9;32751,31948,z9;32752,31953,z9 match the nearby eastern
+room. Use those existing world populations, not an additional authored guardian.
+Pinned Canary XML identifies3209 as the doll that 'looks like a little king';
+3002 is a different generic doll. Select unlit Magic Light Wand3046, not lit3047.
+XML3046 has stopduration but no explicit initial duration/charges; do not infer
+a charged state from its name. Existing native3046 custody is already admitted.
+XML: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml
+Chosen: https://tibia.fandom.com/index.php?curid=5235&oldid=749496
+Native Mastermind candidate box32216,31168,z11 appearance2473 ordinal1 has no
+UID. The second cache was not identified in the bounded scan; choose/document
+a conservative native cache when implementing that entry, rather than prolonging
+this investigation. Chosen: https://tibia.fandom.com/index.php?curid=18595&oldid=289008
+
 Chosen retrieval batch (Voodoo Doll, Mastermind Potion, Kormarak): all three
 retain their original canonical recipes and source records. New callbacks are
 explicit Oteryn bindings, not fabricated donor UIDs. Where historical landmarks
@@ -114,25 +146,18 @@ atomic backpack outputs give no unselected bag. Source recipe:
 https://tibia.fandom.com/wiki/Mastermind_Potion_Quest/Spoiler (normal access
 returned402; the pinned recipe and committed geometry remain the evidence).
 
-Kormarak's historical wooden-coffin landmark was not located. Restore the
-chosen encounter at the existing Ancient Temple body32342,32125,z10,
-appearance4240 ordinal2 (1854 is before it). The ladder1948 approach at
-32354,32138 and the walkable chamber32340,32124 provide the two milestones.
-One ordinary native Demon Skeleton at the existing free351 cell32341,32124
-is an explicit authored restoration, with a chosen90-second world respawn.
-It is not attributed to donor spawn XML or a held boss. The bounded authored
-spawn supplement reuses the native world source/clock/compiler; existing source
-records are unchanged and the net addition is one source/point. Chamber death
-credit still requires the current chosen phase and captured present principal.
-Only after that death does the body give3359x1/3354x1/3276x1/3287x13 through one
-atomic multi-output occurrence and complete the quest. Sources:
-https://tibia.fandom.com/index.php?curid=38407&oldid=884223 and the same pinned
-Crystal items.xml (4240 is a dead human). No coffin, source spawn or extra bag
-is invented. These counterparts implement the selected Oteryn programme;
-full historical geography and unselected source branches are not certified.
+Kormarak's historical wooden-coffin landmark was not located. The current
+chosen restoration uses the native body32342,32125,z10, appearance4240 ordinal2
+(1854 precedes it), and two thresholds32340/32341,32125,z10. The shared
+conditional guardian owner activates the Demon Skeleton at32342,32126,z10
+only after both milestones. It replaces the earlier ordinary static spawn
+supplement, which is removed. Current-phase captured native death gates the
+same atomic3359x1/3354x1/3276x1/3287x13 completion. No bag is added. Source:
+https://tibia.fandom.com/index.php?curid=38407&oldid=884223 and pinned Crystal
+items.xml. These documented Oteryn counterparts do not certify historical geography.
 
 The PG retrieval harness keeps the approved native selectors/ordinals and
 provides neutral connecting floor for real STEP dispatch. It proves the quest
 and value path, not that its straight test corridors reproduce native terrain.
 Actual counterpart cells are checked against the committed map, and the native
-world compiler independently admits the added guardian placement.
+guardian owner independently admits the conditional native encounter.

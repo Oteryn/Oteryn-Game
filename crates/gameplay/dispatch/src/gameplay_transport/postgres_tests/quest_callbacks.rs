@@ -38,6 +38,18 @@ pub(super) fn source_world_rectangle(
     appearance: u16,
     height: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_rectangle_with_prefix(chest, choices, appearance, height, 2, &[])
+}
+
+/// Preserve native top-level scenery preceding a reward object in its tile stack.
+pub(super) fn source_world_rectangle_with_prefix(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -54,6 +66,18 @@ pub(super) fn source_world_rectangle(
             ground_speed: None,
         }),
     });
+    for appearance in prefix {
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{appearance}"),
+            family: bundle::Family::Terrain,
+            id: u32::try_from(data.manifest.palette.len()).map_err(debug)?,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+    }
     let ground = || sector::Item {
         palette: 0,
         depth: 0,
@@ -64,7 +88,7 @@ pub(super) fn source_world_rectangle(
         .map(|(x, _)| *x)
         .min()
         .ok_or("source choices")?
-        .min(chest.0 - 2);
+        .min(chest.0 - west);
     let max_x = choices
         .iter()
         .map(|(x, _)| *x)
@@ -90,17 +114,21 @@ pub(super) fn source_world_rectangle(
                     .iter()
                     .find(|(placed, _)| *placed == x && y == chest.1)
                 {
-                    vec![
-                        ground(),
-                        sector::Item {
+                    std::iter::once(ground())
+                        .chain(prefix.iter().enumerate().map(|(index, _)| sector::Item {
+                            palette: u32::try_from(index + 2).expect("bounded fixture prefix"),
+                            depth: 0,
+                            attrs: sector::Attrs::default(),
+                        }))
+                        .chain(std::iter::once(sector::Item {
                             palette: 1,
                             depth: 0,
                             attrs: sector::Attrs {
                                 unique: (*unique != 0).then_some(*unique),
                                 ..Default::default()
                             },
-                        },
-                    ]
+                        }))
+                        .collect()
                 } else {
                     vec![ground()]
                 },

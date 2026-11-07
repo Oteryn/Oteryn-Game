@@ -640,17 +640,17 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:kormarak:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "oteryn-authored:chosen-recipe:kingdom-of-kormarak:quest-r1",
         "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
-        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "Conservative chosen restoration: actual native body32342,32125,z10 appearance4240 ordinal2; ordered western approach thresholds; see qlane-meta/questpc8/CONTRACT-NOTES.md."
       ],
       "key": "oteryn:quest-callback/authored-kormarak",
       "trigger": "step_in",
       "selector": {
         "position": {
-          "x": 32354,
-          "y": 32138,
+          "x": 32340,
+          "y": 32125,
           "floor": -10
         },
         "unique": null,
@@ -664,51 +664,6 @@
           "minimum": -1,
           "maximum": -1,
           "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/chosen/kormarak/kills",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "premium_required": false,
-      "success_message": "Follow the northern ladder route to the old human remains. Defeat the demon skeleton guardian before searching the body."
-    },
-    {
-      "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
-      "lever": null,
-      "reversible": false,
-      "passages": [],
-      "teleport": null,
-      "offerings": [],
-      "return_on_failure": false,
-      "failure_message": null,
-      "sources": [
-        "oteryn-authored:chosen-recipe:kormarak:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
-        "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
-        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
-      ],
-      "key": "oteryn:quest-callback/authored-kormarak-ghoul-route",
-      "trigger": "step_in",
-      "selector": {
-        "position": {
-          "x": 32340,
-          "y": 32124,
-          "floor": -10
-        },
-        "unique": null,
-        "action": null,
-        "appearance": null,
-        "ordinal": 0
-      },
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen/kormarak/stage",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
         }
       ],
       "premium_required": false
@@ -723,12 +678,56 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:kormarak:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "oteryn-authored:chosen-recipe:kingdom-of-kormarak:quest-r1",
         "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
-        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "Conservative chosen restoration: actual native body32342,32125,z10 appearance4240 ordinal2; ordered western approach thresholds; see qlane-meta/questpc8/CONTRACT-NOTES.md."
       ],
-      "key": "oteryn:quest-callback/authored-kormarak-body",
+      "key": "oteryn:quest-callback/authored-kormarak-inner",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32341,
+          "y": 32125,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false
+    },
+    {
+      "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:kingdom-of-kormarak:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
+        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "Conservative chosen restoration: actual native body32342,32125,z10 appearance4240 ordinal2; ordered western approach thresholds; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-kormarak-reward",
       "trigger": "use",
       "selector": {
         "position": {
@@ -746,7 +745,7 @@
           "track": "oteryn:quest-progress/chosen/kormarak/stage",
           "minimum": 2,
           "maximum": 2,
-          "set": 4
+          "set": 3
         },
         {
           "track": "oteryn:quest-progress/chosen/kormarak/kills",
@@ -757,6 +756,7 @@
         }
       ],
       "premium_required": false,
+      "completes": true,
       "effects": {
         "item_reward": {
           "item": "oteryn:item.tibia.i3359",
@@ -777,8 +777,7 @@
             }
           ]
         }
-      },
-      "completes": true
+      }
     }
   ]
 }

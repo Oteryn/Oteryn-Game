@@ -22,8 +22,6 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-import authored_quest_spawns
-
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "content/world/spawns"
 CREATURES = ROOT / "content/creatures/definitions"
@@ -32,7 +30,6 @@ XML = IMPORT / "raw/data-global/world/world-monster.xml"
 HELD = IMPORT / "map-content-linking/spawns/held-groups.json"
 HELD_SHA256 = "8a666c3d409edda5ac5996d6dec64cce24b30d5f43c75aa9a1175f1d07297c57"
 BOSSES = Path(__file__).with_name("boss-spawns.json")
-AUTHORED = Path(__file__).with_name("authored-quest-spawns.json")
 BOSS_CHANCES = Path(__file__).with_name("held-boss-chances.json")
 FRAME = "global-target-2026-09-27"
 SHARD_SIZE = 2000
@@ -206,15 +203,7 @@ def convert(xml: bytes) -> dict[str, str]:
     boss_name = "spawns-boss-spawn1.json"
     files[boss_name] = dump(bosses)
     shards.append(f"content/world/spawns/{boss_name}")
-    authored_bytes = AUTHORED.read_bytes()
-    occupied = {(point["cell"]["x"], point["cell"]["y"], point["cell"]["floor"])
-                for record in records + bosses["records"]
-                for point in record["declaration"]["points"]}
-    authored = authored_quest_spawns.parse(authored_bytes, known, boss_keys | encounter_bound, occupied)
-    authored_name = "spawns-authored-quests.json"
-    files[authored_name] = dump({"family": "Spawn.Source", "coordinate_frame": FRAME, "records": authored})
-    shards.append(f"content/world/spawns/{authored_name}")
-    all_records = records + bosses["records"] + authored
+    all_records = records + bosses["records"]
     files["index.json"] = dump(
         {
             "coordinate_frame": FRAME,
@@ -241,10 +230,7 @@ def convert(xml: bytes) -> dict[str, str]:
                                     "record_count": len(bosses["records"])},
                                    {"path": "tools/world-bundle-compiler/held-boss-chances.json",
                                     "sha256": hashlib.sha256(chances_bytes).hexdigest(),
-                                    "record_count": len(chances)},
-                                   {"path": "tools/world-bundle-compiler/authored-quest-spawns.json",
-                                    "sha256": hashlib.sha256(authored_bytes).hexdigest(),
-                                    "record_count": len(authored)}],
+                                    "record_count": len(chances)}],
         }
     )
     return {name: text + "\n" for name, text in files.items()}

@@ -1,11 +1,20 @@
+# Current Kormarak consolidation
+
+Incoming3b315d18d Kormarak callbacks and conditional guardian retained alongside
+Voodoo/Mastermind. Redundant ordinary spawn/tooling removed. Both retained real
+PG regressions pass26.280744943s/25.648903113s with cold quest-session refusal,
+actual native spawn and exact rewards. Pins regenerated to2cabea56;9 spawn units
+and40-file generated-content check pass. All-feature check50.21s, strict Clippy125s, fmt and compiled pin-check pass.
+This green consolidation is committed and pushed before the next batch. See kormarak-consolidation-validation.json.
+
 # Current merged checkpoint
 
 Conditional native guardian activation and the three retrieval routes are merged
 and green. PG Kormarak43.174407045s, Mastermind168.597165252s,
 Voodoo39.883104658s, actual-spawn smith26.047108047s;17 world units, all-feature
 check, strict Clippy and fmt pass. See guardian-retrieval-merge-validation.json.
-Preserve both guardian models: Smith is conditional; Kormarak uses the ordinary
-world source already verified in the compiled artifact. World inputs unchanged.
+Historical checkpoint superseded below: both Smith and Kormarak now use the
+shared conditional guardian owner; the ordinary Kormarak supplement is removed.
 
 URGENT next native integration: the compiled bundle contains29 NPCs and no
 Grizzly Adams. Startup places bundle NPCs plus only timed/daily actors; hunting

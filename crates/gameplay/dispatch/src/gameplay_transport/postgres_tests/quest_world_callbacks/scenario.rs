@@ -42,7 +42,9 @@ fn scenario_case(
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
         if name == "mintwallin-cyclops-scene" {
-            eprintln!("POSTGRES_CASE_STARTED mintwallin-cyclops-scene after PostgreSQL fixture initialization");
+            eprintln!(
+                "POSTGRES_CASE_STARTED mintwallin-cyclops-scene after PostgreSQL fixture initialization"
+            );
         }
         if name.starts_with("authored-") {
             eprintln!("POSTGRES_CASE_STARTED {name} after PostgreSQL fixture initialization");
@@ -80,6 +82,15 @@ fn scenario_case(
             super::super::questpc8_retrieval_routes::world(route)?
         } else if name == "authored-braindeath" {
             super::super::quest_callbacks::source_world((32546, 31522, -11), 0, 1983, 0)?
+        } else if name == "authored-kormarak" {
+            super::super::quest_callbacks::source_world_rectangle_with_prefix(
+                (32342, 32125, -10),
+                &[(32342, 0)],
+                4240,
+                2,
+                4,
+                &[1854],
+            )?
         } else if name == "authored-smith-cache" {
             super::super::quest_callbacks::source_world_rectangle(
                 (32776, 32253, -8),
@@ -248,7 +259,8 @@ fn scenario_case(
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
         if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
-            super::super::questpc8_retrieval_routes::exercise(route, &mut owner, &mut admitted, &h).await?;
+            super::super::questpc8_retrieval_routes::exercise(route, &mut owner, &mut admitted, &h)
+                .await?;
         } else if name == "authored-braindeath" {
             super::super::questpc8_authored_programmes::exercise_braindeath(
                 &mut owner,
@@ -256,6 +268,8 @@ fn scenario_case(
                 &h,
             )
             .await?;
+        } else if name == "authored-kormarak" {
+            super::super::questpc8_kormarak::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-smith-cache" {
             super::super::questpc8_smith_cache::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-tinder-box" {
@@ -266,7 +280,8 @@ fn scenario_case(
             )
             .await?;
         } else if name == "mintwallin-cyclops-scene" {
-            super::super::questpc8_native_scenes::exercise(&mut owner, &mut admitted, &world).await?;
+            super::super::questpc8_native_scenes::exercise(&mut owner, &mut admitted, &world)
+                .await?;
         } else if name == "giant-smithhammer-asymmetric" {
             super::super::quest_l7_asymmetric::exercise(
                 &mut owner,

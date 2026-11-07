@@ -81,7 +81,7 @@
       ]
     },
     {
-      "key": "oteryn:quest-death/authored-kormarak",
+      "key": "oteryn:quest-death/authored-kormarak-guardian",
       "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
       "creature": "oteryn:creature.demon_skeleton",
       "stage": "oteryn:quest-progress/chosen/kormarak/stage",
@@ -89,8 +89,8 @@
       "counter": "oteryn:quest-progress/chosen/kormarak/kills",
       "required": 1,
       "minimum": {
-        "x": 32334,
-        "y": 32122,
+        "x": 32338,
+        "y": 32123,
         "floor": -10
       },
       "maximum": {
@@ -99,10 +99,19 @@
         "floor": -10
       },
       "sources": [
-        "oteryn-authored:chosen-recipe:kormarak:authored-r1",
+        "oteryn-authored:chosen-recipe:kingdom-of-kormarak:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
         "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
-        "Conservative native chamber bounds in CONTRACT-NOTES.md; actual frozen native death and present principal only."
-      ]
+        "Conservative chosen restoration: actual native body32342,32125,z10 appearance4240 ordinal2; ordered western approach thresholds; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "guardian": {
+        "position": {
+          "x": 32342,
+          "y": 32126,
+          "floor": -10
+        },
+        "respawn_ms": 90000
+      }
     }
   ]
 }

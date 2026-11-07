@@ -21,5 +21,6 @@
     "questpc8-guardian-merge-check.log": "e8d537136de77923ab4a83bce25646fad3b1d7080f328196377af15603187f77",
     "questpc8-guardian-merge-clippy.log": "e62a538a3552f7b8cb1cfac8119fbf1f0df32681d6c6fbf97f67e981dffceba6",
     "questpc8-guardian-merge-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-  }
+  },
+  "superseded_kormarak_model": "Historical ordinary static spawn replaced by conditional guardian in kormarak-consolidation-validation.json; other recorded cases remain historical evidence."
 }

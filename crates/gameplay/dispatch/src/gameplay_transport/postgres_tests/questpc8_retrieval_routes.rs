@@ -43,8 +43,8 @@ impl Route {
                 floor: -11,
             },
             Self::Kormarak => Position {
-                x: 32354,
-                y: 32138,
+                x: 32340,
+                y: 32125,
                 floor: -10,
             },
         }
@@ -114,9 +114,11 @@ pub(super) async fn exercise(
         step(owner, admitted, command, StepDirection::West).await?;
         command += 1;
     }
-    step(owner, admitted, command, StepDirection::East).await?;
-    command += 1;
-    assert_eq!(progress(h, route, "stage").await?, 1);
+    if !matches!(route, Route::Kormarak) {
+        step(owner, admitted, command, StepDirection::East).await?;
+        command += 1;
+        assert_eq!(progress(h, route, "stage").await?, 1);
+    }
     match route {
         Route::Voodoo => {
             walk(owner, admitted, &mut command, 32755, 31954).await?;
@@ -186,36 +188,7 @@ pub(super) async fn exercise(
             }
         }
         Route::Kormarak => {
-            walk(owner, admitted, &mut command, 32340, 32124).await?;
-            assert_eq!(progress(h, route, "stage").await?, 2);
-            let body = TilePos {
-                x: 32342,
-                y: 32125,
-                floor: -10,
-            };
-            walk(owner, admitted, &mut command, 32341, 32124).await?;
-            assert_eq!(
-                claim(owner, admitted, &mut command, body, 2).await?,
-                UseDisposition::Rejected
-            );
-            walk(owner, admitted, &mut command, 32340, 32124).await?;
-            hunt(
-                owner,
-                admitted,
-                "oteryn:creature.demon_skeleton",
-                1,
-                command,
-            )
-            .await?;
-            assert_eq!(progress(h, route, "kills").await?, 1);
-            walk(owner, admitted, &mut command, 32341, 32124).await?;
-            finish(owner, admitted, h, &mut command, body, 2).await?;
-            for (item, count) in [(3359, 1), (3354, 1), (3276, 1), (3287, 13)] {
-                assert_eq!(
-                    quantity(h, &format!("oteryn:item.tibia.i{item}")).await?,
-                    count
-                );
-            }
+            return super::questpc8_kormarak::exercise(owner, admitted, h).await;
         }
     }
     assert_eq!(progress(h, route, "stage").await?, 4);

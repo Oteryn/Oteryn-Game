@@ -77,5 +77,6 @@
     "questpc8-retrieval-check-final.log": "a326298e075a5f9cca6fd2b77e471ae5c6c1caa9039b4b7a5f63fa170dd12bbe",
     "questpc8-retrieval-clippy-final.log": "579e2ef0b13206effdfcde1aee8197ce90ac585e9ed569b9edd79af74fccc696",
     "questpc8-retrieval-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-  }
+  },
+  "superseded_kormarak_model": "Historical ordinary static spawn replaced by conditional guardian in kormarak-consolidation-validation.json; other recorded cases remain historical evidence."
 }

@@ -440,18 +440,33 @@
     "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "disposition": "qualified-current-lane",
+    "blocker": null,
+    "disposition": "qualified-here",
     "qualified_elsewhere": [],
-    "mechanism": "native chosen stage graph, current-owner events and existing atomic reward owner",
+    "mechanism": "ordered exploration, actual shared guardian, native ordinal body cache and atomic four-item backpack outputs",
     "round": "L7",
-    "qualification_scope": "Complete selected once-only Oteryn programme at the documented native counterparts; canonical Source remains unchanged.",
+    "proof": "kormarak-consolidation-validation.json",
+    "qualification_scope": "Complete chosen Oteryn recipe only; conservative native route/body restoration documented in CONTRACT-NOTES.md.",
     "qualified_components": [
       {
-        "scope": "Both native counterpart waypoints, actual native Demon Skeleton death, premature body refusal, exact3359x1/3354x1/3276x1/3287x13 atomic outputs, completion, replay and cold quest copy.",
-        "test": "questpc8_retrieval_kormarak_native_guardian_body_outputs_once",
-        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_kormarak",
-        "duration_seconds": 42.999984035,
-        "proof": "retrieval-routes-validation.json"
+        "scope": "Complete chosen exploration, captured native death, cache grant, completion and replay programme",
+        "test": "questpc8_kormarak_native_guardian_body_and_four_outputs",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_kormarak_native_guardian_body_and_four_outputs",
+        "duration_seconds": 36.476644642,
+        "red_duration_seconds": 2.52,
+        "proof": "cloud-kormarak-proof.json"
+      },
+      {
+        "scope": "Merged conditional guardian and cold quest-session repeat refusal",
+        "tests": [
+          "questpc8_kormarak_native_guardian_body_and_four_outputs",
+          "questpc8_retrieval_kormarak_native_guardian_body_outputs_once"
+        ],
+        "case_seconds": [
+          26.280744943,
+          25.648903113
+        ],
+        "proof": "kormarak-consolidation-validation.json"
       }
     ]
   },
