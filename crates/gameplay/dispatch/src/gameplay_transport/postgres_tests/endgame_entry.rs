@@ -153,7 +153,14 @@ fn qualified_catalogue_scenario(require_primal: bool) -> TestResult {
             let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
             let owner = deps.owner(&h, &authority);
             deps.initialize(&owner).await;
-            let (controller, pin) = crate::content::native_gameplay::test_support::activated_loop_monster(deps.admitted.world_id, false);
+            let source_bundle = serde_json::to_vec(&serde_json::json!({
+                "schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1",
+                "channel": include_str!("../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"),
+                "primal": include_str!("../../../../../../tools/content-schema/native-gameplay/crystal-primal-region.json"),
+            }))?;
+            let (controller, pin) = crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                deps.admitted.world_id, Some(&source_bundle),
+            );
             let candidates = crate::content::bosses::activity_template::captured_boss_levers().map_err(debug)?;
             let (templates, diagnostics) = controller.qualify_initial_activity_template(pin.qualified_room(), "content-1", &candidates);
             let publisher = crate::durability::activity_handoff::ActivityHandoffOwner::new(h.root.clone());

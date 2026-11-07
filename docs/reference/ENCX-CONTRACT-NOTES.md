@@ -767,3 +767,21 @@ Focused baselines on the preceding source-facts checkpoint: Soul War
 `soul_war_postgres_native_taints_xp_reset_and_replay` passed in 79.92s; Summer
 `summer_population_npc_placements_greeting_lore_and_stale_actor_on_postgres`
 passed in 42.36s. Neither proves the full W11/W16 encounter-chain requirement.
+
+### Production map provider checkpoint
+
+`encounter_source_regions.apply_native` is part of the existing native provider
+registration tool. It packages the unchanged pinned channel source with the
+verified Primal document and regenerates the production manifest's source-world
+pin. The Primal PG fixture now activates this packaged source rather than the
+Thalom-only fixture. Native provider regeneration and `--check` passed; world
+pin-refresh completed without tracked pin changes. Content/dispatch clippy passed
+with warnings denied (1m35s), fmt and architecture passed.
+
+The unchanged Primal catalogue assertion ran against PostgreSQL for 71.88s and
+remains red. Its exact qualification refusal advanced from `OutsideQualifiedMap`
+to `SourceHookUnavailable`. Crystal `monster/quests/primal_ordeal_quest/
+the_primal_menace.lua:66-69` requires `ThePrimalMenaceDeath` and
+`ThePrimeOrdealBossDeath`; `:339-347` invokes custom `onThink` behavior. Those
+callbacks must be composed before the room can be published. No callback is
+marked available solely to get a row into the catalogue.
