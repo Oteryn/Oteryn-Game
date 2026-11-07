@@ -1,3 +1,35 @@
+# Corpse repair compiling; required prey-model regeneration running
+
+Actual PG RED109.475249632s: ordinary corym settlement still read old loot
+facts after item-profile-only regeneration. The real loot section is now
+regenerated (only17449 materializable/capacity5 changed). Eleven focused
+importer tests PASS. Registration then correctly refused PREY_MODEL_STALE;
+prey_difficulty.py --simulate is running before provider registration and
+full native PG. Defaultcheck/strictClippy/fmt pass. This is an explicit WIP,
+not qualification:19of23remain. Push next green slice immediately and continue.
+
+# Final ordinary kill rewards: regenerated both providers
+
+The first data rerun remained RED109.475249632s: runtime read current native
+profiles, but ordinary settlement uses the separately generated loot facts.
+Refreshed with build_full_spell_artifact.py --refresh-loot-tables: exact
+corpse17449 is now materializable with capacity5. Eleven focused importer
+tests PASS, including published corpse-fact consistency. Register/pin refresh
+and full native rerun follow. Default check1m25s, strict dispatch Clippy3m15s,
+fmt and41-file native drift checks PASS. No assertion was relaxed.
+19of23still qualified until final PG passes. Continue remaining3afterward.
+
+# Corym ordinary kill reward regression and importer repair
+
+Pushed compiling regression7c5c2fc76. Actual initialized PostgreSQL RED
+110.410557464s fails at first corym: quest advances but ordinary XP cannot
+commit because source corpse17449 is inadmissible. Importer now explicitly
+joins the authored objective to native Creature/corpse, admitting only source
+17449/17450 with exact capacity5 and300s/60s decay. Ten focused Python tests
+PASS; regeneration/pins/strict test-delta checks/full native rerun pending.
+19of23remain qualified until that rerun. Continue Colours,Winterlight,Wrath
+after Venore; push every15minutes.
+
 # Full native Venore PG GREEN116.777669567s
 
 The complete receipt-backed native circuit, exact1000XP/1000gold report,

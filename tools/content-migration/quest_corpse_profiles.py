@@ -1,4 +1,4 @@
-"""Source-qualified corpses needed by active authored death-loot rules.
+"""Source-qualified corpses needed by active authored deaths and death-loot rules.
 
 Existing native Item, temporal decay, corpse MINT and loot-table owners remain
 unchanged. Select the finite rule/objective/Creature corpse join, then qualify its
@@ -20,6 +20,7 @@ XML = 'imports/canary/items-xml/items.xml'
 XML_SHA = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
 OBJECTIVES = 'content/quests/authored-death-objectives.json'
 RULES = 'content/quests/authored-death-loot.json'
+REQUIREMENTS = 'tools/content-schema/native-gameplay/quest-corpse-objectives.json'
 CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
 GROUPS = ('physical', 'stack', 'container', 'temporal')
 MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 8, 128
@@ -37,7 +38,7 @@ def item_id(reference):
 
 
 def required(root=ROOT, creatures=None):
-    """Only a joined active death-loot rule requests corpse admission, never a name guess."""
+    """Only joined active rule/objective requests admit a corpse, never a name guess."""
     rules = json.loads((root / RULES).read_bytes())
     objectives = json.loads((root / OBJECTIVES).read_bytes())
     if rules.get('schema') != 1 or objectives.get('schema') != 1 or len(rules['rules']) > MAX_ROOTS:
@@ -49,6 +50,15 @@ def required(root=ROOT, creatures=None):
     by_creature = {row['profile']['target']['key']: row['profile'] for row in creatures['records']}
     if len(by_creature) != len(creatures['records']):
         raise ValueError('QUEST_CORPSE_DUPLICATE_CREATURE')
+    ordinary = json.loads((root / REQUIREMENTS).read_bytes())
+    if (set(ordinary) != {'schema', 'objectives', 'sources'} or ordinary.get('schema') != 1
+            or not isinstance(ordinary['objectives'], list) or len(ordinary['objectives']) > MAX_ROOTS
+            or any(not isinstance(key, str) or not key.startswith('oteryn:quest-death/') for key in ordinary['objectives'])
+            or len(set(ordinary['objectives'])) != len(ordinary['objectives'])
+            or not isinstance(ordinary['sources'], list)
+            or (ordinary['objectives'] and not ordinary['sources'])
+            or any(not isinstance(source, str) or not 1 <= len(source) <= 1024 for source in ordinary['sources'])):
+        raise ValueError('QUEST_CORPSE_ORDINARY_REQUIREMENTS')
     roots, seen = set(), set()
     for rule in rules['rules']:
         key = rule['objective']
@@ -59,6 +69,17 @@ def required(root=ROOT, creatures=None):
         profile = by_creature.get(objective['creature'])
         if profile is None or profile['target'] != {'family': 'Creature', 'key': objective['creature'], 'revision': 'definition-r1'}:
             raise ValueError('QUEST_CORPSE_RULE_CREATURE_BINDING')
+        corpse = profile['data']['profile']['details'].get('corpse_item')
+        if corpse is None:
+            raise ValueError('QUEST_CORPSE_REQUIRED_SOURCE_ABSENT')
+        roots.add(item_id(corpse))
+    for key in ordinary['objectives']:
+        if key not in by_objective:
+            raise ValueError('QUEST_CORPSE_ORDINARY_OBJECTIVE_BINDING')
+        objective = by_objective[key]
+        profile = by_creature.get(objective['creature'])
+        if profile is None or profile['target'] != {'family': 'Creature', 'key': objective['creature'], 'revision': 'definition-r1'}:
+            raise ValueError('QUEST_CORPSE_ORDINARY_CREATURE_BINDING')
         corpse = profile['data']['profile']['details'].get('corpse_item')
         if corpse is None:
             raise ValueError('QUEST_CORPSE_REQUIRED_SOURCE_ABSENT')

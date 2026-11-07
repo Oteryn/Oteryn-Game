@@ -653,3 +653,12 @@ After each source20-hour aggregate cooldown, Norman supplies one fresh can,
 kit and grind stone with held rope/shovel. This explicit Oteryn refresh rule
 avoids a permanently lost-can dependency; retained earlier cans have no
 invented charges or expiry and no authored monetary resale value.
+
+Venore ordinary death rewards use the native corym profile's exact corpse17449,
+not an invented quest-loot output. Its pinned XML decay closure is17449 (capacity5,
+300seconds) to17450 (60seconds, then removal). Explicit objective requests now
+reuse the existing corpse qualification importer independently of quest-loot
+rules. The full native test requires ordinary XP to increase on every one of
+five captured deaths. Source: https://tibia.fandom.com/wiki/Little_Corym_Charlatan
+and imports/canary/items-xml/items.xml#17449-17450 (SHA256
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2).

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "objectives": [
+    "oteryn:quest-death/authored-venore-coryms"
+  ],
+  "sources": [
+    "content/creatures/definitions/spell-native-profiles.json#oteryn:creature.little_corym_charlatan",
+    "https://tibia.fandom.com/wiki/Little_Corym_Charlatan",
+    "imports/canary/items-xml/items.xml#17449-17450"
+  ]
+}

@@ -31,9 +31,26 @@ class CorpseQualification(unittest.TestCase):
                               self.xml[number], appearance or self.appearances[number], self.policies[number],
                               bindings or self.bindings, fresh)
 
-    def test_exact_four_source_capacities_and_complete_decay_chains(self):
-        self.assertEqual(self.plan.roots, {5960, 5962, 5968, 5975})
-        self.assertEqual(len(self.plan.records), 16)
+    def test_native_corym_corpse_keeps_exact_source_decay_and_capacity(self):
+        root = self.plan.records['oteryn:item.tibia.i17449']
+        terminal = self.plan.records['oteryn:item.tibia.i17450']
+        self.assertEqual(root['semantics']['container'], corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(5)}))
+        self.assertEqual(root['semantics']['temporal']['value']['duration'], corpse.grizzly.source.K(300000))
+        self.assertEqual(terminal['semantics']['temporal']['value']['duration'], corpse.grizzly.source.K(60000))
+        self.assertEqual(root['admission']['legal_destinations'], ['Ground'])
+
+    def test_published_loot_admission_matches_requested_corpse_roots(self):
+        section = json.loads((corpse.ROOT / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
+        facts = {row['item']['key']: row for row in section['items']}
+        for number in self.plan.roots:
+            key = f'oteryn:item.tibia.i{number}'
+            expected = self.plan.records[key]['semantics']['container']['value']['capacity']['value']
+            self.assertTrue(facts[key]['materializable'], key)
+            self.assertEqual(facts[key]['container_capacity'], expected, key)
+
+    def test_exact_source_capacities_and_complete_decay_chains(self):
+        self.assertEqual(self.plan.roots, {5960, 5962, 5968, 5975, 17449})
+        self.assertEqual(len(self.plan.records), 18)
         for number, capacity, target in [(5960, 7, 3987), (5962, 30, 3989),
                                          (5968, 5, 4007), (5975, 20, 4291)]:
             row = self.plan.records[f'oteryn:item.tibia.i{number}']
@@ -184,6 +201,8 @@ class SelectionBounds(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / 'content/quests').mkdir(parents=True)
+            (root / corpse.REQUIREMENTS).parent.mkdir(parents=True)
+            (root / corpse.REQUIREMENTS).write_text(json.dumps({'schema': 1, 'objectives': [], 'sources': []}))
             objectives = {'schema': 1, 'objectives': [{'key': 'oteryn:quest-death/animal',
                                                      'creature': 'oteryn:creature.troll'}]}
             rules = {'schema': 1, 'rules': [{'objective': 'oteryn:quest-death/animal'}]}
@@ -194,6 +213,17 @@ class SelectionBounds(unittest.TestCase):
                           'key': 'oteryn:item.tibia.i5960', 'revision': 'definition-r1'}}}}}}]}
             (root / corpse.RULES).write_text(json.dumps(rules))
             self.assertEqual(corpse.required(root, creatures), {5960})
+            # Ordinary native rewards request the same exact objective/Creature/corpse
+            # without inventing a quest-loot rule or changing its rewards.
+            (root / corpse.RULES).write_text(json.dumps({'schema': 1, 'rules': []}))
+            request = {'schema': 1, 'objectives': ['oteryn:quest-death/animal'], 'sources': ['fixture:bound-source']}
+            (root / corpse.REQUIREMENTS).write_text(json.dumps(request))
+            self.assertEqual(corpse.required(root, creatures), {5960})
+            request['objectives'] = ['oteryn:quest-death/foreign']
+            (root / corpse.REQUIREMENTS).write_text(json.dumps(request))
+            with self.assertRaisesRegex(ValueError, 'ORDINARY_OBJECTIVE_BINDING'):
+                corpse.required(root, creatures)
+            (root / corpse.REQUIREMENTS).write_text(json.dumps({'schema': 1, 'objectives': [], 'sources': []}))
             rules['rules'].append(rules['rules'][0])
             (root / corpse.RULES).write_text(json.dumps(rules))
             with self.assertRaisesRegex(ValueError, 'OBJECTIVE_BINDING'):

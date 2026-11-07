@@ -1,5 +1,5 @@
 {
-  "shared_qengine2_head": "e71a5d916",
+  "shared_qengine2_head": "233e6aaa689a7cc2f86aee824018ad5852f77a73",
   "shared_migrations": [
     {
       "path": "apps/game-server/migrations/0999_quest_reward_callbacks.sql",
