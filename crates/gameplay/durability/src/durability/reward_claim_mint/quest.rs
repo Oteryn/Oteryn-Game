@@ -107,6 +107,24 @@ pub(crate) async fn apply(
     {
         return Ok(false);
     }
+    // The Quest writer already holds the Character root. Progression and earned
+    // claim receipts belong to their existing owners; dialogue supplies no facts.
+    if callback.minimum_level > 0 {
+        let level: Option<i64> = sqlx::query_scalar("SELECT level::bigint FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        if level.is_none_or(|level| level < i64::from(callback.minimum_level)) {
+            return Ok(false);
+        }
+    }
+    if !callback.required_claims.is_empty() {
+        let earned: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claims c JOIN game_reward_claim_mint_receipts r ON r.transaction_id=c.claimed_transaction_id WHERE c.character_id=encode($1,'hex')::uuid AND c.claim_family='RewardClaim' AND c.claim_production_key=ANY($2::text[]) AND r.character_id=c.character_id AND r.claim_family=c.claim_family AND r.claim_production_key=c.claim_production_key")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(&callback.required_claims).fetch_one(&mut **tx).await?;
+        if earned != i64::try_from(callback.required_claims.len())
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+        {
+            return Ok(false);
+        }
+    }
     if let Some(fee) = &callback.fee {
         use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeBurnError, burn_quest_reward_fee_in_transaction};
         let Some(payment) = admission.fee_payment else { return Ok(false); };
@@ -244,7 +262,15 @@ async fn mint(
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
-            production_key: callback.key.clone(),
+            // Repeatable paid sales retain once-only MINT semantics per command.
+            // The atomic source proof binds this exact derived claim identity.
+            production_key: if callback.repeatable {
+                let session: String = command.game_session_id().as_bytes().iter()
+                    .map(|byte| format!("{byte:02x}")).collect();
+                format!("{}:command:{session}:{}", callback.key, command.command_id().get())
+            } else {
+                callback.key.clone()
+            },
             revision_ref: content_revision.clone(),
         },
         source_placement: callback.key.clone(),

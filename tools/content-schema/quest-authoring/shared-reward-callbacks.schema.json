@@ -261,6 +261,24 @@
         },
         "repeatable": {
           "type": "boolean"
+        },
+        "completes": {
+          "type": "boolean"
+        },
+        "minimum_level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "required_claims": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 256,
+            "pattern": "^oteryn:reward-claim\\.[a-z0-9._/:-]+$"
+          }
         }
       }
     },

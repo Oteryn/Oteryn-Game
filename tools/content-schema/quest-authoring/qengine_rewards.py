@@ -292,7 +292,7 @@ def validate_callbacks(document):
             or (all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage)
                 and not callback.get('repeatable',False))
             or (callback.get('repeatable',False) and (not callback.get('fee') or not callback.get('give')
-                or callback.get('outfit') or callback.get('achievement')
+                or callback.get('outfit') or callback.get('achievement') or callback.get('completes',False)
                 or any(not s.get('preserve',False) for s in storage)))
             or (callback.get('fee') and any(i['item'] in ('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043') for i in callback['take']))
             or ((callback.get('give') or {}).get('key_number') is not None

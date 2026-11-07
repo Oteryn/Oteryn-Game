@@ -23,10 +23,18 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            Position {
-                x: 33294,
-                y: 31677,
-                floor: -15,
+            if name.starts_with("qengine-rewards-fibula-completion") {
+                Position {
+                    x: 32219,
+                    y: 32401,
+                    floor: -10,
+                }
+            } else {
+                Position {
+                    x: 33294,
+                    y: 31677,
+                    floor: -15,
+                }
             },
             false,
         )
@@ -144,6 +152,7 @@ async fn talk(
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
         "fibula-key-first" | "fibula-key-repeat" => &["key"],
+        "fibula-complete" => &["expedition"],
         "knight-sword" => &["forge"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
@@ -595,6 +604,9 @@ pub(super) async fn exercise(
         .await?;
     println!("POSTGRES_CASE_STARTED {name} server_version={version}");
 
+    if name.starts_with("qengine-rewards-fibula-completion") {
+        return super::questpc6_fibula_completion::exercise(owner, admitted, h, name).await;
+    }
     if name == "qengine-rewards-fibula-native-goals" {
         return super::questpc6_native_goals::exercise(owner, admitted, h).await;
     }

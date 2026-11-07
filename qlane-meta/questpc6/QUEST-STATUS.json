@@ -739,23 +739,13 @@
     "authored_supplement": {
       "status": "IN_PROGRESS",
       "scope": "separate chosen Oteryn recipe, not the original source contract",
-      "first_unqualified_stage": {
-        "key": "s2",
-        "kind": "use",
-        "objective": "Choose the right expertise teleport in the main cavern.",
-        "targets": [
-          "Gate of Expertise",
-          "expertise teleport"
-        ]
-      },
-      "missing_piece": "Active implementation: native expertise portal StepIn and terminal completion after level50, eight credited deaths and earned source claims. Native origin-bound death goals are qualified with PostgreSQL replay/refusal/cap proof.",
+      "missing_piece": "All authored runtime stages have real PostgreSQL qualification. Only required independent review of the stable checked code candidate remains.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/20/definition",
         ".questpc6/NOTE-coordination.md:16"
       ],
       "remaining_work": [
-        "Prove the native expertise portal StepIn and earned Key3980 in the composed authored path; source Key3980 acquisition and exact level50 gate retain green PostgreSQL regression.",
-        "Compose terminal completion using native minimum level50, eight credited deaths and all six exact earned source claim receipts; prove the full authored path and obtain required exact-head independent review."
+        "Obtain independent exact-head read-only review; repair any material findings and qualify/push final lane metadata."
       ],
       "keyed_access": {
         "status": "QUALIFIED_MECHANISM",
@@ -765,7 +755,8 @@
       "key_purchase": {
         "status": "QUALIFIED_MECHANISM",
         "evidence": "cloud-fibula-purchase-verification.json",
-        "scope": "Source repeated 2000 gold sale, exact native key number and source Dermot placement."
+        "scope": "Source repeated 2000 gold sale, exact native key number and source Dermot placement.",
+        "latest_regression": "cloud-fibula-completion-verification.json"
       },
       "route_mechanisms": {
         "status": "QUALIFIED_MECHANISM",
@@ -776,6 +767,11 @@
         "status": "QUALIFIED_MECHANISM",
         "evidence": "cloud-fibula-native-goals-verification.json",
         "scope": "Eight native-origin personal deaths, capped once, with exact most-damage lease, pre-activation/origin/species/encounter/command refusal and queue cancellation/replay proof."
+      },
+      "terminal_completion": {
+        "status": "QUALIFIED_MECHANISM",
+        "evidence": "cloud-fibula-completion-verification.json",
+        "scope": "Native portal, source Key3980 and six cache claims, level50/eight-death terminal completion, replay, repeated paid keys after completion; five actual PG18.6 cases green."
       }
     },
     "qualification": {
@@ -787,10 +783,8 @@
       "dispatch": "literal framed USE through serve_admitted, source callback and every native source chest placement; stale well target, replay, unchanged quest state, exact items and refusal"
     },
     "latest_lane_verification": {
-      "code_commit": "2123b7871",
-      "evidence": "cloud-engine-reuse-verification.json",
-      "repository_checks": "5 passed,53.50s",
-      "scope": "Shared repository gate only; inherited quest qualification unchanged."
+      "evidence": "cloud-fibula-completion-verification.json",
+      "scope": "Whole authored runtime path and generic terminal/repeat-sale support; independent review pending."
     },
     "source_contract_status": "QUALIFIED",
     "historical_continuation_scope_review": {

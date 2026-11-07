@@ -64,7 +64,7 @@ class QuestRewards(unittest.TestCase):
 
     def test_fibula_source_sales_keep_exact_paid_keys_and_repeat_guard(self):
         sales={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']
-               if c['key'].split('/')[-1].startswith('fibula-')}
+               if c['key'].split('/')[-1].startswith('fibula-key-')}
         self.assertEqual(set(sales), {'fibula-key-first', 'fibula-key-repeat'})
         for name, sale in sales.items():
             self.assertEqual(sale['fee'], {'gold':2000, 'include_bank':True})
@@ -83,6 +83,18 @@ class QuestRewards(unittest.TestCase):
                 target[field]=value
             with self.assertRaises(ValueError):
                 q.validate_callbacks(bad)
+
+    def test_fibula_terminal_requires_original_receipts_and_native_level_without_duplicate_loot(self):
+        terminal,=[c for c in self.callbacks['callbacks'] if c['key'].endswith('/fibula-complete')]
+        self.assertTrue(terminal['completes'])
+        self.assertEqual(terminal['minimum_level'],50)
+        self.assertEqual(set(terminal['required_claims']),
+                         {f'oteryn:reward-claim.kv.deeperfibula{i}' for i in range(1,6)}
+                         | {'oteryn:reward-claim.quest.key.id3980'})
+        self.assertIsNone(terminal['give'])
+        self.assertNotIn('fee',terminal)
+        self.assertTrue(any(s['track'].endswith('/cavern_kills') and s['minimum']==s['maximum']==8
+                            and s['preserve'] for s in terminal['storage']))
 
     def test_l1_handins_preserve_source_crest_identity_and_exclusive_sides(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}

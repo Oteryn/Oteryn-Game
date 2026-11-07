@@ -95,4 +95,16 @@ Corruptor migration1000.
 number. It cannot be attached to a different Item classification.
 `repeatable: true` is available only for a positive-fee item sale with preserved
 guards, no outfit and no achievement; each new command pays, while replay
-returns the existing receipt.
+returns the existing receipt. Each paid repeatable MINT claim includes the exact
+GameSession/command identity; its deferred source proof requires that same
+identity and a positive same-transaction payment. Ordinary unpaid claims retain
+their canonical once-only identity.
+
+`completes: true` commits the owning Quest completion flag with the transition.
+It is unavailable on repeatable sales. `minimum_level` optionally requires the
+Character owner's durable level, checked under the same character lock before
+any payment or item consumption. `required_claims` optionally names up to eight
+unique canonical RewardClaim keys; each must have an immutable earned receipt
+for this character. These predicates never mint the claimed rewards again.
+Fibula uses this terminal participant for the chosen level-50 adaptation after
+eight native cavern kills and all six original source cache claims.

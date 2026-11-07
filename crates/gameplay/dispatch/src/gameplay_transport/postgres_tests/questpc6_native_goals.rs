@@ -172,6 +172,38 @@ pub(super) async fn exercise(
     h: &Harness,
 ) -> TestResult {
     let started = std::time::Instant::now();
+    prepare(owner, admitted).await?;
+    let origin = MovementLocalPosition {
+        x: 32236,
+        y: 32474,
+        floor: 10,
+    };
+    let target = capture(owner, admitted, "oteryn:creature.dragon", origin, 1000).await?;
+    drain(owner, admitted, target).await?;
+    assert_eq!(
+        value(owner).await?,
+        0,
+        "pre-activation native death grants no progress"
+    );
+    super::questpc6_fibula_purchase::exercise(
+        owner,
+        admitted,
+        h,
+        "qengine-rewards-fibula-key-coins",
+    )
+    .await?;
+    active_goals(owner, admitted).await?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED fibula_native_goals duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+pub(super) async fn prepare(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -199,25 +231,18 @@ pub(super) async fn exercise(
             )
             .map_err(debug)?;
     }
+    Ok(())
+}
+
+pub(super) async fn active_goals(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
     let origin = MovementLocalPosition {
         x: 32236,
         y: 32474,
         floor: 10,
     };
-    let target = capture(owner, admitted, "oteryn:creature.dragon", origin, 1000).await?;
-    drain(owner, admitted, target).await?;
-    assert_eq!(
-        value(owner).await?,
-        0,
-        "pre-activation native death grants no progress"
-    );
-    super::questpc6_fibula_purchase::exercise(
-        owner,
-        admitted,
-        h,
-        "qengine-rewards-fibula-key-coins",
-    )
-    .await?;
     for (serial, creature, position) in [
         (
             1001,
@@ -308,9 +333,5 @@ pub(super) async fn exercise(
             "replay never increments twice"
         );
     }
-    eprintln!(
-        "POSTGRES_CASE_COMPLETED fibula_native_goals duration={:?}",
-        started.elapsed()
-    );
     Ok(())
 }

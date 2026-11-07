@@ -183,7 +183,7 @@ pub(super) async fn exercise(
             .await?;
         assert_eq!(balance, 8000);
     } else {
-        for (index, callback) in [first, repeat].into_iter().enumerate() {
+        for (index, callback) in [first, repeat, repeat].into_iter().enumerate() {
             let (result, _, command) =
                 super::qengine_rewards::wire_grant(owner, admitted, npc, callback).await?;
             assert_eq!(result, NpcIntentDisposition::Ok);
@@ -221,7 +221,7 @@ pub(super) async fn exercise(
             .fetch_one(&h.pool).await?;
         assert_eq!(
             paid,
-            (2, 4000, if name.ends_with("bank") { 4000 } else { 0 })
+            (3, 6000, if name.ends_with("bank") { 6000 } else { 0 })
         );
     }
     println!(

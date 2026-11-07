@@ -116,6 +116,66 @@
     {
       "npc": "oteryn:npc.dermot",
       "keywords": [
+        "expedition"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Buy the dungeon key first. The deeper expedition is for adventurers of level 50 or higher."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "expedition"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Defeat eight Dragons or Dragon Lords in the final cavern and recover every equipment cache. Are you ready to report your expedition?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "expedition"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Your expedition is complete. You can still buy another dungeon key."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
         "key"
       ],
       "topic": 0,

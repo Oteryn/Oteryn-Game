@@ -935,6 +935,34 @@ pub(super) async fn assert_charges(
 pub(super) fn catalogue_source_world(
     chest: &CatalogueChest,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    catalogue_source_worlds(std::slice::from_ref(chest), &[], &[], false)
+}
+
+pub(super) fn fibula_cases() -> TestResult<Vec<CatalogueChest>> {
+    let selected: Vec<_> = cases()?
+        .into_iter()
+        .filter(|c| {
+            c.claim.starts_with("oteryn:reward-claim.kv.deeperfibula")
+                || c.claim == "oteryn:reward-claim.quest.key.id3980"
+        })
+        .collect();
+    assert_eq!(selected.len(), 6);
+    Ok(selected)
+}
+
+/// Combine exact source selectors for one continuous qualification path. Extra
+/// props retain raw source attributes; teleport z is lowered to the native signed floor byte.
+pub(super) fn catalogue_source_worlds(
+    chests: &[CatalogueChest],
+    props: &[(
+        oteryn_gameplay_quests::quest::world_callbacks::Position,
+        u16,
+        oteryn_world_bundle::sector::Attrs,
+    )],
+    cells: &[oteryn_gameplay_quests::quest::world_callbacks::Position],
+    corridors: bool,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let chest = chests.first().ok_or("source chest cohort")?;
     use oteryn_world_bundle::{bundle, sector};
     use std::collections::BTreeMap;
     let mut placements = Vec::new();
@@ -942,7 +970,10 @@ pub(super) fn catalogue_source_world(
         let shard: Value = serde_json::from_str(shard)?;
         for row in shard["records"].as_array().ok_or("claim records")? {
             let definition = &row["definition"];
-            if definition["identity"]["key"] != chest.claim {
+            if !chests
+                .iter()
+                .any(|c| definition["identity"]["key"] == c.claim)
+            {
                 continue;
             }
             for source in definition["placements"]
@@ -1027,6 +1058,78 @@ pub(super) fn catalogue_source_world(
                 },
             });
     }
+    let ground = |p: oteryn_gameplay_quests::quest::world_callbacks::Position| sector::Tile {
+        x: p.x,
+        y: p.y,
+        flags: 0,
+        house: 0,
+        zones: Vec::new(),
+        items: vec![sector::Item {
+            palette: 0,
+            depth: 0,
+            attrs: Default::default(),
+        }],
+    };
+    for p in cells {
+        tiles
+            .entry((p.floor, p.y, p.x))
+            .or_insert_with(|| ground(*p));
+    }
+    for (p, appearance, attrs) in props {
+        let palette = if let Some(index) = appearances.get(appearance) {
+            *index
+        } else {
+            let index = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: bundle::Family::Terrain,
+                id: index,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+            appearances.insert(*appearance, index);
+            index
+        };
+        tiles
+            .entry((p.floor, p.y, p.x))
+            .or_insert_with(|| ground(*p))
+            .items
+            .push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: attrs.clone(),
+            });
+    }
+    if corridors {
+        let mut bounds = BTreeMap::<i8, (u16, u16, u16, u16)>::new();
+        for &(floor, y, x) in tiles.keys() {
+            bounds
+                .entry(floor)
+                .and_modify(|b| {
+                    b.0 = b.0.min(x);
+                    b.1 = b.1.min(y);
+                    b.2 = b.2.max(x);
+                    b.3 = b.3.max(y);
+                })
+                .or_insert((x, y, x, y));
+        }
+        for (floor, (min_x, min_y, max_x, max_y)) in bounds {
+            for y in min_y..=max_y {
+                for x in min_x..=max_x {
+                    tiles.entry((floor, y, x)).or_insert_with(|| {
+                        ground(oteryn_gameplay_quests::quest::world_callbacks::Position {
+                            x,
+                            y,
+                            floor,
+                        })
+                    });
+                }
+            }
+        }
+    }
     let coordinates: Vec<_> = tiles.keys().copied().collect();
     data.manifest.world = bundle::Extent {
         min_x: coordinates
@@ -1058,16 +1161,27 @@ pub(super) fn catalogue_source_world(
             .into_iter()
             .collect(),
     };
+    for tile in tiles.values_mut() {
+        for item in &mut tile.items {
+            if let Some((_, _, z)) = &mut item.attrs.teleport {
+                let floor = -i8::try_from(*z)?;
+                if !data.manifest.world.floors.contains(&floor) {
+                    return Err("source teleport floor".into());
+                }
+                *z = floor.to_ne_bytes()[0];
+            }
+        }
+    }
     let mut grouped = BTreeMap::<(i8, u16, u16), Vec<sector::Tile>>::new();
     for ((floor, y, x), tile) in tiles {
         grouped
-            .entry((floor, x / 32, y / 32))
+            .entry((floor, y / 32, x / 32))
             .or_default()
             .push(tile);
     }
     let sectors: Vec<_> = grouped
         .into_iter()
-        .map(|((floor, sx, sy), tiles)| bundle::Sector {
+        .map(|((floor, sy, sx), tiles)| bundle::Sector {
             floor,
             sx,
             sy,

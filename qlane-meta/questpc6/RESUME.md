@@ -1,49 +1,39 @@
-# Active questpc6 continuation — authored Fibula obligation
+# Active questpc6 continuation — final independent review pending
 
-One owned entry remains IN_PROGRESS: the authored Fibula supplement. Original
-well/six-claim contract remains QUALIFIED;31 verified foreign titles and excluded
-Dawnport remain skipped. Do not stop on source-only or mechanism qualification.
+AUTHORING checkpoint: all authored Fibula runtime stages now have real PostgreSQL
+qualification. Overall ledger remains IN_PROGRESS only for the required independent
+review of the stable checked candidate. No implementation is deferred.
 
-Completed mechanisms: source3940/3980 doors, Dermot source placement/repeatable
-atomic paid key sale, both raw wells and native level50 gate. Their proofs are
-cloud-fibula-keys/purchase/route-verification.json. The latest native goal batch
-is cloud-fibula-native-goals-verification.json: PostgreSQL18.6 RED46.44s dropped
-unrecognized Dragon deaths; final GREEN100.33s (goal marker42.59693677s,
-outer100.330559135s) proves pre-activation/origin/species/encounter-copy refusal,
-command bypass refusal, native lethal capture/cancellation/replay, eight-death
-cap and ninth-death refusal.268 quest units,9 Grizzly capture regressions,
-normalization unit, four-crate all-target check and strict all-target/all-feature
-Clippy3m04s passed. Only then_some construction changed after the first green;
-the final PG rerun includes it. An inherited Dawnport exclusion test expected
-only one of the three already-loaded callback registries; exact-set coverage now
-includes shared-access/shared-outfit while retaining the exclusion assertion.
+Final proof: cloud-fibula-completion-verification.json. PG18.6 RED2/59.12s proved
+missing terminal binding. Initial full run completed/replayed, then exposed a real
+second-repeat sale MINT refusal357.11s. Reused once-only MINT claims now bind exact
+GameSession/command for paid repeats, with forward migration1097 requiring the exact
+same-transaction source/payment/MINT. Main max1095/open-PR numbers checked; local1096
+retained. qengine2a585529d7 does not provide these terminal fields or repeat fix.
 
-Runtime goals reuse the ordinary retained lethal queue, exact most-damage lease,
-Character revision/CreatureDeath receipts, and a checked native retained-death
-spawn-origin accessor. Config uses21 exact native final-cavern origins; no private
-instance or invented rectangle. Loaded rules cannot reset the phase or set kills.
-The fixture supplies actual tiles and retires actors only after native corpse-pin
-release; production ceilings and ordinary loot/XP admission are unchanged.
+Final GREEN2/388.97s: raw native portal StepIn/replay, earned Key3980, eight personal
+origin-bound native deaths, all six original caches, below50 refusal, missing-cache
+refusal at50, completion/replay with no extra loot/fee, and another paid key afterward.
+GREEN3/185.51s: three cash/bank purchases and literal replay, full-backpack bank rollback.
+268 quest units15.00s, Python13/9.221s, authoring/tree reproduction, all-target/all-feature
+three-crate check4m18s and strict Clippy7m39s, package/mounted formatting and pin-refresh/
+pin-check passed. World77d515155be0a03af5dc4fb6abfbfaec9795660aa15e512efdad033f2908c5b0 unchanged.
+No full nextest or full PG suite ran. No tests were skipped or weakened.
 
-NEXT: prove the physical expertise portal StepIn and compose terminal completion
-from native level50, eight credited deaths and six exact earned source claims.
-A final Dermot expedition confirmation records completion without duplicating
-source cache loot. Add reusable bounded minimum-level/earned-claim/completes
-callback support; qengine2 latest a585529d7 was fetched/inspected and offers
-track participants but none of these three guards/completion fields. Reuse existing
-QuestState completed flags and immutable source reward receipts, not fake flags.
-No new SQL table should be needed. Preserve source sale repeatability after phase1.
-Then obtain required independent exact-head review, repair verified findings and
-continue until the whole owned supplement is QUALIFIED and pushed. No PR.
+Decision: final Dermot expedition confirmation is an explicit chosen Oteryn adaptation;
+it consumes no extra payment and grants no duplicate source cache loot. Generic bounded
+minimum-level/earned-claim/completes guards read existing Character owners under the
+Quest transaction lock. All original source claims remain once-only and unchanged.
+Source keys/wells/native level gate and native-origin deaths retain their prior proofs.
 
-Fresh source Character is vocationless: source level fixture commits native XP
-and rebuilds admission projection from coherent Character-owned facts for49/50.
-Source well callbacks remain stateless. World digest77d515155be0a03af5dc4fb6abfbfaec9795660aa15e512efdad033f2908c5b0 unchanged.
+NEXT: commit/push this green batch; obtain one required independent read-only review of
+the exact stable code head against2e42d08fa. Live branch PR readback is empty; do not
+create a PR. Freeze candidate during review. Repair real material findings, otherwise
+return to AUTHORING for evidence-only final QUALIFIED status and push.31 verified foreign
+entries and Dawnport remain skipped. Do not end while the review/qualification remains.
 
-Keep green batch commits/pushes. Fetch task ref before every push; compare
-FETCH_HEAD because remote.origin.fetch maps only main and the task tracking ref
-can be stale. Read-only explore_fibula_engine made no writes. All engine work
-remains owned here; never defer missing shared support.
+Fetch task ref before every push; compare FETCH_HEAD because remote.origin.fetch maps
+only main. Merge if moved, never force. Retain all old commits and exact owner trailers.
 
 ---
 Historical continuation records below do not describe the active queue.

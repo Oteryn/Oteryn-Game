@@ -52,6 +52,12 @@ pub struct RewardCallback {
     pub topic: u16,
     pub next_topic: u16,
     pub storage: Vec<Storage>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_claims: Vec<String>,
+    #[serde(default, skip_serializing_if = "no_minimum_level")]
+    pub minimum_level: u16,
     pub take: Vec<ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fee: Option<MonetaryFee>,
@@ -66,6 +72,10 @@ pub struct RewardCallback {
     pub achievement: Option<String>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+fn no_minimum_level(value: &u16) -> bool {
+    *value == 0
 }
 
 fn is_false(value: &bool) -> bool {
@@ -130,6 +140,12 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     || c.outfit.is_some()
                     || c.achievement.is_some()
                     || c.storage.iter().any(|s| !s.preserve)))
+            || c.required_claims.len() > 8
+            || c.required_claims.iter().collect::<BTreeSet<_>>().len() != c.required_claims.len()
+            || c.required_claims
+                .iter()
+                .any(|key| !slug(key, "oteryn:reward-claim.", b"._/:-", 256))
+            || (c.repeatable && c.completes)
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
@@ -223,7 +239,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     },
                 })
                 .collect(),
-            completes: false,
+            completes: callback.completes,
             experience: None,
         });
     }
@@ -332,6 +348,17 @@ mod tests {
             let mut invalid: serde_json::Value =
                 serde_json::from_str(source).map_err(|e| e.to_string())?;
             invalid["callbacks"][0]["present"] = present;
+            assert!(parse(&invalid.to_string()).is_err());
+        }
+        for claims in [
+            serde_json::json!(["oteryn:reward-claim.a", "oteryn:reward-claim.a"]),
+            serde_json::json!(["oteryn:item.wrong-family"]),
+            serde_json::json!(["oteryn:reward-claim.UPPERCASE"]),
+            serde_json::json!(vec!["oteryn:reward-claim.a"; 9]),
+        ] {
+            let mut invalid: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            invalid["callbacks"][0]["required_claims"] = claims;
             assert!(parse(&invalid.to_string()).is_err());
         }
         super::super::loader::load_embedded_quest_state("content-1")
