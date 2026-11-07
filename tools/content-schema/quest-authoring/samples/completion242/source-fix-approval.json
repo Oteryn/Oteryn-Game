@@ -364,7 +364,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree.schema.json",
-      "sha256": "fa6765c57fe18ff40b935821d3b13f58041c19ae6760af6220e436d2b9adcbf0"
+      "sha256": "d67629a2a840ce69dfb743b2f08f081918f47f00a69842588aae16e8e044c34c"
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree_authoring.py",
