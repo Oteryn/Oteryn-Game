@@ -162,6 +162,9 @@ impl DurabilityRoot {
                     } else {
                         request.pvp_contributors.as_slice()
                     };
+                    // Freeze all historical killer names before any public
+                    // revision/head lock is acquired by progression/root triggers.
+                    let public_players=public_cause::prepare_names(&mut tx,contributors,request.public_cause).await?;
                     let adventurer_applied = adventurer::applies(
                         &mut tx, &durability, fence, level, !contributors.is_empty(),
                     ).await?;
@@ -378,7 +381,7 @@ impl DurabilityRoot {
                     }
                     public_cause::capture(
                         &mut tx, request.occurrence,
-                        contributors, request.public_cause,
+                        !contributors.is_empty(), request.public_cause, public_players,
                     ).await?;
                     super::super::guild_war::attribute_guild_war_frag_in_transaction(
                         &mut tx,

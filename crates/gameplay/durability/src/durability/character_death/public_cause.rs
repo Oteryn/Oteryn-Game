@@ -8,11 +8,17 @@ use super::*;
 /// A GameSessionId is private provenance only; its persisted CharacterId is what
 /// is captured. Unknown/environment sources remain None, never guessed creatures.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "bounded Copy provenance retained in existing native lethal work; no allocation at the HP owner"
+)]
 pub enum PublicDeathCause {
     /// Known native provenance which the accepted public schema cannot encode.
     /// Its digest remains part of occurrence identity; publication fails closed.
     Unpublishable {
         source_digest: [u8; 32],
+        creature_key: [u8; 255],
+        key_len: u8,
     },
     Player {
         character_id: [u8; 16],
@@ -36,13 +42,12 @@ impl PublicDeathCause {
             hash.update(key.as_bytes());
             hash.update((name.len() as u64).to_be_bytes());
             hash.update(name.as_bytes());
-            Self::Unpublishable {
-                source_digest: hash.finalize().into(),
-            }
+            Self::unpublishable(hash.finalize().into(), Some(key))
         })
     }
     pub fn creature(key: &str, name: &str) -> Option<Self> {
-        if key.is_empty()
+        if matches!(key, "player" | "unknown")
+            || key.is_empty()
             || key.len() > 128
             || !key
                 .bytes()
@@ -61,6 +66,87 @@ impl PublicDeathCause {
             name: stored_name,
             name_len: u8::try_from(name.len()).ok()?,
         })
+    }
+    fn unpublishable(source_digest: [u8; 32], key: Option<&str>) -> Self {
+        let mut creature_key = [0; 255];
+        let mut key_len = 0;
+        if let Some(key) = key.filter(|key| {
+            !matches!(*key, "player" | "unknown")
+                && !key.is_empty()
+                && key.len() <= 255
+                && key
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b":._/-".contains(&b))
+        }) {
+            creature_key[..key.len()].copy_from_slice(key.as_bytes());
+            key_len = key.len() as u8;
+        }
+        Self::Unpublishable {
+            source_digest,
+            creature_key,
+            key_len,
+        }
+    }
+    fn unpublishable_key(&self) -> Option<&str> {
+        let Self::Unpublishable {
+            creature_key,
+            key_len,
+            ..
+        } = self
+        else {
+            return None;
+        };
+        if *key_len == 0 {
+            return None;
+        }
+        let (key, tail) = creature_key.split_at_checked(usize::from(*key_len))?;
+        if tail.iter().any(|b| *b != 0) {
+            return None;
+        }
+        std::str::from_utf8(key).ok()
+    }
+    /// ADMINAN reads this private dimension with receipt World/time facts.
+    /// Invalid known native sources stay quarantined, never relabelled unknown.
+    pub fn killer_key(&self) -> Option<&str> {
+        match self {
+            Self::Player { .. } | Self::PlayerSession { .. } => Some("player"),
+            Self::Creature { .. } => self.creature_parts().map(|(key, _)| key),
+            Self::Unpublishable { .. } => self.unpublishable_key(),
+        }
+    }
+    pub fn historical_source(
+        &self,
+    ) -> Option<oteryn_gameplay_foundation::foundation::condition::ConditionHistoricalSource> {
+        use oteryn_gameplay_foundation::foundation::condition::ConditionHistoricalSource as H;
+        match self {
+            Self::Player { .. } => None, // player fields already retain their accepted lineage.
+            Self::PlayerSession { game_session_id } => Some(H::PlayerSession {
+                game_session_id: *game_session_id,
+            }),
+            Self::Creature { .. } => self.creature_parts().map(|(key, name)| H::Creature {
+                key: key.into(),
+                name: name.into(),
+            }),
+            Self::Unpublishable { source_digest, .. } => Some(H::Unpublishable {
+                source_digest: *source_digest,
+                creature_key: self.unpublishable_key().map(str::to_owned),
+            }),
+        }
+    }
+    pub fn from_historical_source(
+        source: &oteryn_gameplay_foundation::foundation::condition::ConditionHistoricalSource,
+    ) -> Self {
+        use oteryn_gameplay_foundation::foundation::condition::ConditionHistoricalSource as H;
+        match source {
+            H::PlayerSession { game_session_id } => Self::PlayerSession {
+                game_session_id: *game_session_id,
+            },
+            H::Creature { key, name } => Self::native_creature(key, name),
+            H::Unpublishable {
+                source_digest,
+                creature_key,
+            } => Self::unpublishable(*source_digest, creature_key.as_deref()),
+        }
     }
     fn creature_parts(&self) -> Option<(&str, &str)> {
         let Self::Creature {
@@ -85,9 +171,13 @@ impl PublicDeathCause {
     pub(super) fn bind(&self, semantic: &mut Vec<u8>) -> Result<()> {
         semantic.extend_from_slice(b"oteryn:death-public-cause:v1");
         match self {
-            Self::Unpublishable { source_digest } => {
+            Self::Unpublishable { source_digest, .. } => {
+                if Self::unpublishable(*source_digest, self.unpublishable_key()) != *self {
+                    return Err(CharacterProgressionError::InvalidInput);
+                }
                 semantic.push(4);
                 semantic.extend_from_slice(source_digest);
+                push_bytes(semantic, self.unpublishable_key().unwrap_or("").as_bytes())?;
             }
             Self::Player { character_id } => {
                 CharacterId::from_bytes(*character_id)
@@ -117,12 +207,13 @@ impl PublicDeathCause {
     }
 }
 
-pub(super) async fn capture(
+pub(super) type PreparedPlayers = Vec<(u8, String, CharacterId)>;
+
+pub(super) async fn prepare_names(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    occurrence: PlayerDeathOccurrence,
     contributors: &[PvpDeathContributor],
     cause: Option<PublicDeathCause>,
-) -> std::result::Result<(), DurabilityError> {
+) -> std::result::Result<PreparedPlayers, DurabilityError> {
     let final_player = match cause {
         Some(PublicDeathCause::Player { character_id }) => Some(character_id),
         Some(PublicDeathCause::PlayerSession { game_session_id }) => {
@@ -134,11 +225,14 @@ pub(super) async fn capture(
         _ => None,
     };
     let mut players = Vec::with_capacity(contributors.len());
-    for contributor in contributors {
-        // The death already locks the contributor cohort in CharacterId order;
-        // this read neither reacquires authority nor resolves a historical name.
+    let mut cohort = contributors.to_vec();
+    cohort.sort_by_key(|c| *c.character_id.as_bytes());
+    for contributor in &cohort {
+        // Lock names before the first root/progression mutation can take a
+        // public head. Shared root locks persist until the death transaction ends;
+        // they are historical-name stability, never combat authority.
         let name: String = sqlx::query_scalar(
-            "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+            "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR SHARE",
         )
         .bind(contributor.character_id.as_bytes().as_slice())
         .fetch_one(&mut **tx)
@@ -159,6 +253,16 @@ pub(super) async fn capture(
     players.sort_by(|a, b| {
         (a.0, a.1.as_bytes(), a.2.as_bytes()).cmp(&(b.0, b.1.as_bytes(), b.2.as_bytes()))
     });
+    Ok(players)
+}
+
+pub(super) async fn capture(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    occurrence: PlayerDeathOccurrence,
+    pvp: bool,
+    cause: Option<PublicDeathCause>,
+    players: PreparedPlayers,
+) -> std::result::Result<(), DurabilityError> {
     let mut ordinal: i16 = 0;
     // A native creature final blow is independent of any earlier player damage.
     if let Some(cause @ PublicDeathCause::Creature { .. }) = cause {
@@ -174,8 +278,8 @@ pub(super) async fn capture(
             .bind(occurrence.as_bytes().as_slice()).bind(ordinal).bind(character.as_bytes().as_slice()).bind(name).execute(&mut **tx).await?;
         ordinal += 1;
     }
-    sqlx::query("INSERT INTO game_public_death_classifications(death_occurrence_id,pvp,publishable) VALUES(encode($1,'hex')::uuid,$2,$3)")
-        .bind(occurrence.as_bytes().as_slice()).bind(!contributors.is_empty()).bind(!matches!(cause,Some(PublicDeathCause::Unpublishable {..}))).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_public_death_classifications(death_occurrence_id,pvp,publishable,killer_key) VALUES(encode($1,'hex')::uuid,$2,$3,$4)")
+        .bind(occurrence.as_bytes().as_slice()).bind(pvp).bind(!matches!(cause,Some(PublicDeathCause::Unpublishable {..}))).bind(cause.as_ref().map_or(Some("unknown"),PublicDeathCause::killer_key)).execute(&mut **tx).await?;
     Ok(())
 }
 
@@ -194,6 +298,34 @@ mod tests {
             Some(("oteryn:creature.dragon", "Dragon"))
         );
         assert!(PublicDeathCause::creature("Dragon", "Dragon").is_none());
+        for reserved in ["player", "unknown"] {
+            assert!(PublicDeathCause::creature(reserved, "Dragon").is_none());
+            let native = PublicDeathCause::native_creature(reserved, "Dragon");
+            assert!(matches!(native, PublicDeathCause::Unpublishable { .. }));
+            assert_eq!(
+                native.killer_key(),
+                None,
+                "reserved creature keys quarantine rather than alias a valid analytics bucket"
+            );
+        }
+        assert_eq!(
+            PublicDeathCause::Player {
+                character_id: [0; 16]
+            }
+            .killer_key(),
+            Some("player")
+        );
+        let long_key = format!("oteryn:creature.{}", "a".repeat(150));
+        let native = PublicDeathCause::native_creature(&long_key, "Dragon");
+        assert!(matches!(native, PublicDeathCause::Unpublishable { .. }));
+        assert_eq!(
+            native.killer_key(),
+            Some(long_key.as_str()),
+            "valid native identity survives a narrower public bound"
+        );
+        let retained = native.historical_source().unwrap();
+        assert_eq!(PublicDeathCause::from_historical_source(&retained), native);
+
         let unknown = PublicDeathCause::native_creature("Dragon", "Dragon");
         assert!(matches!(unknown, PublicDeathCause::Unpublishable { .. }));
         let mut unknown_binding = Vec::new();

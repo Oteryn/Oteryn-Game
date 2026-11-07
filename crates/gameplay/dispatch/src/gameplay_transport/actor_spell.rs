@@ -2207,6 +2207,7 @@ impl ChannelSpellStates {
         let ticks = next.source_take_due(now.get(), facts);
         let mut analyser_facts = Vec::new();
         let mut damage = 0u32;
+        let mut public_cause = None;
         for tick in &ticks {
             if next.vitals().health == 0 {
                 break;
@@ -2309,6 +2310,11 @@ impl ChannelSpellStates {
                     }
                 }
             }
+            if next.vitals().health == 0 {
+                public_cause = tick.provenance.historical_source.as_ref().map(
+                    crate::durability::character_death::PublicDeathCause::from_historical_source,
+                );
+            }
         }
         let changed = next != *before;
         let revision = if changed {
@@ -2321,7 +2327,7 @@ impl ChannelSpellStates {
             let cell = runtime.read_actor_position(target).ok()?.position();
             self.deaths.try_reserve(1).ok()?;
             Some(PlayerDeath {
-                public_cause: None,
+                public_cause,
                 occurrence: (self.mint_death)()?,
                 cell,
             })
@@ -2381,8 +2387,15 @@ impl ChannelSpellStates {
                 .map(|byte| format!("{byte:02x}"))
                 .collect::<String>()
         );
-        let Some(next) = before.stage_source_player_conditions(source, definitions, &[], facts)
-        else {
+        let historical =
+            native_public_death_cause(runtime, caster).and_then(|cause| cause.historical_source());
+        let Some(next) = before.stage_source_player_conditions_with_history(
+            source,
+            definitions,
+            &[],
+            facts,
+            historical.as_ref(),
+        ) else {
             return false;
         };
         self.commit(runtime, target, session, next)

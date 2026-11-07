@@ -3,8 +3,14 @@
 CREATE TABLE game_public_death_classifications (
  death_occurrence_id UUID PRIMARY KEY REFERENCES game_character_death_receipts(death_occurrence_id),
  pvp BOOLEAN NOT NULL,
- publishable BOOLEAN NOT NULL DEFAULT true
+ publishable BOOLEAN NOT NULL DEFAULT true,
+ -- Retained for future world x primary-killer x UTC-day admin analytics.
+ -- Never infer this from damage/assist contributors. NULL is invalid-source
+ -- quarantine; an actually unattributed final blow is the literal unknown.
+ killer_key TEXT CHECK(killer_key ~ '^[A-Za-z0-9:._/-]{1,255}$'),
+ CHECK(killer_key IS NOT NULL OR NOT publishable)
 );
+CREATE INDEX game_public_death_classification_killer ON game_public_death_classifications(killer_key);
 REVOKE ALL ON game_public_death_classifications FROM PUBLIC;
 GRANT SELECT ON game_public_death_classifications TO oteryn_game_runtime,oteryn_game_control;
 GRANT INSERT ON game_public_death_classifications TO oteryn_game_runtime;

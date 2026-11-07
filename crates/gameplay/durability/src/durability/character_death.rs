@@ -2218,6 +2218,12 @@ mod death_build_postgres {
                 .fetch_one(&h.pool)
                 .await?;
                 assert!(count > 0);
+                let killer_key: String =
+                    sqlx::query_scalar("SELECT killer_key FROM game_public_death_classifications")
+                        .fetch_one(&h.pool)
+                        .await?;
+                assert_eq!(killer_key, "oteryn:creature.dragon");
+
                 assert!(matches!(
                     h.root
                         .commit_character_death(&authority, &h.node, fence(1)?, death.clone())
@@ -2273,6 +2279,15 @@ mod death_build_postgres {
                     .commit_character_death(&authority, &h.node, fence(1)?, request(93)?)
                     .await
                     .map_err(debug)?;
+
+                let killer_key: String =
+                    sqlx::query_scalar("SELECT killer_key FROM game_public_death_classifications")
+                        .fetch_one(&h.pool)
+                        .await?;
+                assert_eq!(
+                    killer_key, "unknown",
+                    "no actual final source is not the first damage contributor"
+                );
                 // Model genuine pre-installation history: a valid fenced receipt exists,
                 // but no durable classifier/killer evidence ever existed for that death.
                 // Replication is fixture setup only; production guards stay installed.
