@@ -82,8 +82,13 @@ def capture(root, path, profiles, defaults):
     area = table(config or "", r"\bspecPos")
     blockers = []
     if not config: blockers.append("nonliteral_or_multiple_configuration")
-    for hook in ["createFunction", "onUseExtra", "encounter", "exitTeleporter", "disableCooldown"]:
+    for hook in ["createFunction", "onUseExtra", "encounter", "exitTeleporter"]:
         if re.search(r"\b"+hook+r"\s*=", config or ""): blockers.append("config."+hook)
+    # Crystal 201189f actions/bosses_levers/the_primal_manace.lua:19 explicitly
+    # retains the default cooldown. Only that literal is a qualified no-op.
+    disabled = re.search(r"\bdisableCooldown\s*=\s*([^,\n}]+)", config or "")
+    if disabled and disabled.group(1).strip() != "false":
+        blockers.append("config.disableCooldown")
     if table(config or "", r"\bmonsters") not in [None,"{}"]: blockers.append("extra_monster_closure")
     if "zone:addArea" in clean: blockers.append("additional_zone_closure")
     if len(re.findall(r"\bBossLever\s*\(",clean)) != 1: blockers.append("multiple_lever_constructors")
