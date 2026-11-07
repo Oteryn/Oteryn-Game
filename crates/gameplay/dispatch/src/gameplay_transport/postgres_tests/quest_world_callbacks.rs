@@ -214,7 +214,14 @@ pub(super) fn world(
     world_ordinal(
         callback,
         trigger,
-        callback.selector.appearance.unwrap_or(100),
+        callback
+            .selector
+            .appearance
+            .unwrap_or(if callback.key.ends_with("deeper-fibula-well") {
+                if trigger.x == 32171 { 1930 } else { 1931 }
+            } else {
+                100
+            }),
         1,
     )
 }
@@ -329,7 +336,11 @@ fn world_ordinal(
                 } else {
                     callback.selector.unique
                 },
-                action: callback.selector.action,
+                action: if callback.key.ends_with("deeper-fibula-well") {
+                    None
+                } else {
+                    callback.selector.action
+                },
                 ..Default::default()
             },
         });

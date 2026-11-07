@@ -1,25 +1,41 @@
 # Active questpc6 continuation — authored Fibula obligation
 
 One owned entry remains IN_PROGRESS: the authored Fibula supplement. Original
-well/six-claim evidence remains QUALIFIED, 31 foreign titles and excluded Dawnport
-remain skipped. Do not stop on the source-only qualification.
+well/six-claim contract remains QUALIFIED;31 verified foreign titles and excluded
+Dawnport remain skipped. Do not stop on source-only or mechanism qualification.
 
-Completed mechanism batches: source Key3940/3980 doors (cloud-fibula-keys-verification.json)
-and Dermot source placement plus repeatable 2000-gold exact Key3940 sale
-(cloud-fibula-purchase-verification.json). Native fee participant reused from
-qengine2 commit33b640335; migration renamed1096 after main/open-PR number claim.
-Actual PostgreSQL18.6 RED3/142.02s then final GREEN3/295.10s proves cash, V2 bank,
-full-backpack rollback, exact key custody, repeat purchase and command replay.
-Neither source sales nor their payment grants are made once-only.
+Completed batches: exact source Key3940/3980 doors (cloud-fibula-keys-verification.json),
+source Dermot placement/repeatable atomic paid key sale (cloud-fibula-purchase-verification.json),
+and both raw well startup selectors/native level50 expertise gate
+(cloud-fibula-route-verification.json). The latest PostgreSQL18.6 RED failures
+were NothingToUse48.75s and missing ItemReference48.31s. GREEN level gate48.01s
+(marker44.074331965s); both wells plus six original source claims167.11s
+(marker167.058484999s), including earned native Key3980. No raw action is seeded
+for either well or either source key/level door. Existing item profiles unchanged;
+only missing source1648/1649 were added. World digest77d515155be0a03af5dc4fb6abfbfaec9795660aa15e512efdad033f2908c5b0 unchanged.
 
-NEXT: verify raw well and expertise native map selectors (well1931 at32172,32439,7
-has no raw action; level door1648 at32212,32435,10 source action1050), earn Key3980,
-then generic native-death goal capped at eight and terminal completion. Use existing
-native cavern and most-damage kill principal: the literal chosen recipe requires
-eight Dragon/Dragon Lord kills there and does not require a new private instance.
-Preserve original source rewards/access. No shared engine dependency is deferred.
-No PR; keep batch commits/pushes. Fetch task branch before each push and compare
-FETCH_HEAD (remote.origin.fetch only maps main, so task tracking ref can be stale).
+Level fixture decision: fresh source Character is vocationless; commit XP through
+the native owner and rebuild the admission projection from coherent Character-owned
+facts for49/50. The classed live-refresh hook does not install vocationless facts.
+No invented level/vocation or quest flags. Reward/native generators now share the
+canonical manifest serializer so ordered regeneration remains deterministic.
+
+NEXT: implement/prove reusable personal native-death goals capped at eight, using
+exact native spawn origins for the final cavern, not an invented room rectangle
+or private instance. Latest qengine2 head8d3145a1d was checked and has no such goal.
+Reuse existing grizzly capture/settlement on the ordinary kill queue; freeze
+eligibility at death. Runtime creature_spawn_cell requires live actors; its existing
+private locate_spawn_cell supports retained deaths and can provide a checked
+read-only accessor with companion_snapshot_including_dead generation validation.
+21 Dragon/Dragon Lord source points are in content/world/spawns/spawns-34000-35999.json.
+Read-only navigation reports are available from explore_fibula_engine (no writes).
+A draft PG test is in /tmp/questpc6-next-native-goals.rs; apply/review after this push.
+Then prove the physical expertise portal StepIn, compose earned six claims and
+terminal quest completion, obtain required independent exact-head review, and
+continue until the whole owned supplement is QUALIFIED and pushed. No PR.
+
+Keep batch commits/pushes. Fetch task ref before every push; compare FETCH_HEAD
+because remote.origin.fetch only maps main and the task tracking ref can be stale.
 
 ---
 Historical continuation records below do not describe the active queue.

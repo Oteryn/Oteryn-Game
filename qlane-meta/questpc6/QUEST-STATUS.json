@@ -740,21 +740,21 @@
       "status": "IN_PROGRESS",
       "scope": "separate chosen Oteryn recipe, not the original source contract",
       "first_unqualified_stage": {
-        "key": "s1",
+        "key": "s2",
         "kind": "use",
-        "objective": "Open the Fibula well door with Key 3940.",
+        "objective": "Choose the right expertise teleport in the main cavern.",
         "targets": [
-          "Fibula well",
-          "Key 3940"
+          "Gate of Expertise",
+          "expertise teleport"
         ]
       },
-      "missing_piece": "Active implementation: prove expertise/key3980 route, eight credited native cavern deaths and final completion using reusable owners.",
+      "missing_piece": "Active implementation: native expertise portal composition, generic personal one-shot goals for eight native cavern deaths, and terminal completion after earned source claims.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/20/definition",
         ".questpc6/NOTE-coordination.md:16"
       ],
       "remaining_work": [
-        "Prove the expertise route and earned Key3980 acquisition alongside the restored exact keyed access.",
+        "Prove the native expertise portal StepIn and earned Key3980 in the composed authored path; source Key3980 acquisition and exact level50 gate retain green PostgreSQL regression.",
         "Implement reusable one-shot participant-bound kill goals on the existing lethal queue, including pre-activation refusal and replay.",
         "Compose the eight-death goal and terminal source reward path into authored supplement completion with PostgreSQL proof."
       ],
@@ -767,6 +767,11 @@
         "status": "QUALIFIED_MECHANISM",
         "evidence": "cloud-fibula-purchase-verification.json",
         "scope": "Source repeated 2000 gold sale, exact native key number and source Dermot placement."
+      },
+      "route_mechanisms": {
+        "status": "QUALIFIED_MECHANISM",
+        "evidence": "cloud-fibula-route-verification.json",
+        "scope": "Both raw source wells; exact native expertise door1050 refuses49/admit50/replay. Native portal StepIn and whole authored completion remain active."
       }
     },
     "qualification": {

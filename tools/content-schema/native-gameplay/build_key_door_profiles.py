@@ -12,7 +12,7 @@ from build_tool_item_profiles import build as source_profiles
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/key-door-item-profiles.json'
-IDS = {1628, 1631, 1646, 1647, 2967, 2968}
+IDS = {1628, 1631, 1646, 1647, 1648, 1649, 2967, 2968}
 
 
 def build(directory):

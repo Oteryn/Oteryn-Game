@@ -56,3 +56,28 @@ existing native cavern and present most-damage principal, retain death-time
 eligibility on the existing kill retry queue, and never infer credited deaths
 from NPC flags. Original six source claim access remains unchanged. This decision
 is implementation scope, not a claim that the remaining authored path is done.
+
+## Exact well and expertise startup restoration
+
+The raw map has two Fibula well halves without action attributes:1930 at
+32171/32439/7 and1931 at32172/32439/7. Crystal9f5a72c
+ data-global/startup/tables/teleport_item.lua:43-50 (SHA256
+976f198758fa88d337a1f7fb06a9740cc2a4f57920ae09a8cac00b6a3c5a5006)
+assigns action15005 to both. The existing source callback is retained unchanged.
+Native1931 without a fixture action returned NothingToUse on actual PostgreSQL
+18.6 RED48.75s. The exact startup projection fixes the real missing binding.
+
+The native expertise door1648 at32212/32435/10 likewise has no action.
+Crystal9f5a72c data-global/startup/tables/door_level.lua:116-123 (SHA256
+d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc)
+assigns1050 (level50). PG RED48.31s failed ItemReference before the importer
+added source profiles1648/1649; every prior native profile remains identical.
+Source projection preserves conflicts and excludes House and wrong-item tiles.
+Binary map data is unchanged. The expertise teleport itself and kill/completion
+composition are separate remaining checks; these mechanisms do not certify them.
+
+The latest qengine2 head8d3145a1d was fetched and inspected before further generic
+kill implementation. Its newer changes qualify foreign outfits and do not supply
+the required native-origin one-shot kill goal. Existing native spawn-origin lookup
+is reusable but currently requires a live creature; the retained-death accessor
+will use the same exact actor/source ownership rather than an invented cavern box.

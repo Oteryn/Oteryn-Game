@@ -64,19 +64,22 @@ fn questpc6_deeper_fibula_well_literal_use_preserves_quest_state() -> TestResult
         return Ok(());
     }
     super::kill_reward_e2e::scenario_thread::run("questpc6-fibula-well", || {
-        stateless_callback(
-            "deeper-fibula-well",
-            Position {
-                x: 32172,
-                y: 32439,
-                floor: -7,
-            },
-            Position {
-                x: 32172,
-                y: 32439,
-                floor: -8,
-            },
-        )
+        for x in [32171, 32172] {
+            stateless_callback(
+                "deeper-fibula-well",
+                Position {
+                    x,
+                    y: 32439,
+                    floor: -7,
+                },
+                Position {
+                    x: 32172,
+                    y: 32439,
+                    floor: -8,
+                },
+            )?;
+        }
+        Ok(())
     })
 }
 
@@ -109,6 +112,10 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "questpc6_fibula_well", false, false)
             .await?;
+        let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
+            .fetch_one(&h.pool)
+            .await?;
+        eprintln!("POSTGRES_CASE_STARTED {name} server_version={version}");
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h

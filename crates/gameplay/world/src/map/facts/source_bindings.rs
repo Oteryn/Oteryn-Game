@@ -57,16 +57,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn source_key_doors_bind_only_the_exact_locked_native_item() {
-        for (x, y, floor, action) in [(32190, 32432, -8, 3940), (32277, 32420, -10, 3980)] {
+    fn source_routes_bind_only_the_exact_native_item() {
+        for (x, y, floor, appearance, action) in [
+            (32190, 32432, -8, 1631, 3940),
+            (32277, 32420, -10, 1631, 3980),
+            (32171, 32439, -7, 1930, 15005),
+            (32172, 32439, -7, 1931, 15005),
+            (32212, 32435, -10, 1648, 1050),
+        ] {
             let pos = TilePos { x, y, floor };
             let mut attrs = Attrs::default();
-            apply(pos, 1631, 0, &mut attrs);
+            apply(pos, appearance, 0, &mut attrs);
             assert_eq!(attrs.action, Some(action));
             for (position, appearance, house) in [
-                (TilePos { x: x + 1, ..pos }, 1631, 0),
-                (pos, 1632, 0),
-                (pos, 1631, 1),
+                (TilePos { y: y + 1, ..pos }, appearance, 0),
+                (pos, appearance + 1, 0),
+                (pos, appearance, 1),
             ] {
                 let mut untouched = Attrs::default();
                 apply(position, appearance, house, &mut untouched);
@@ -76,7 +82,7 @@ mod tests {
                 action: Some(42),
                 ..Attrs::default()
             };
-            apply(pos, 1631, 0, &mut conflicting);
+            apply(pos, appearance, 0, &mut conflicting);
             assert_eq!(conflicting.action, Some(42));
         }
     }

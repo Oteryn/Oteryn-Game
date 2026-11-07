@@ -1,4 +1,4 @@
-"""Capture selected pinned key-door startup bindings without rewriting binary maps."""
+"""Capture selected pinned quest-route startup bindings without rewriting binary maps."""
 import argparse
 import hashlib
 import json
@@ -37,6 +37,29 @@ def document():
                             ('repository', 'revision', 'path', 'sha256', 'git_blob_sha1')})
             return raw.decode()
 
+        routes = []
+        for path, group, action, selected in [
+            ('data-global/startup/tables/teleport_item.lua', 'TeleportItemAction', 15005,
+             {(32171, 32439, 7): 1930, (32172, 32439, 7): 1931}),
+            ('data-global/startup/tables/door_level.lua', 'LevelDoorAction', 1050,
+             {(32212, 32435, 10): 1648}),
+        ]:
+            fields = lua_tables.assignments(source(path), {group})[group]['fields']
+            field, = [f for f in fields if f['key'] == action]
+            values = lua_tables.as_python(field['value'])
+            values = values if isinstance(values, list) else [values]
+            found = set()
+            for value in values:
+                positions = value['itemPos']
+                for position in positions if isinstance(positions, list) else [positions]:
+                    xyz = tuple(position[k] for k in 'xyz')
+                    if xyz in selected:
+                        routes.append(dict(position=list(xyz), item=selected[xyz],
+                                           attribute='action', value=action,
+                                           source_path=path, source_line=field['line']))
+                        found.add(xyz)
+            if found != set(selected):
+                raise ValueError('quest route source selector drift')
         table = lua_tables.assignments(source(TABLE), {'KeyDoorAction'})['KeyDoorAction']
         storage = lua_tables.assignments(source(STORAGES), {'Storage'})['Storage']
     for key in ('Quest', 'Key'):
@@ -74,6 +97,21 @@ def document():
                                  map_sha256=region['sha256']))
     if len(bindings) != len(SELECTED):
         raise ValueError('key door capture incomplete')
+    for binding in routes:
+        x, y, z = binding['position']
+        region, = [r for r in index['regions'] if
+                   r['path'].endswith(codec.region_name(z, x // 256, y // 256))]
+        raw = (ROOT / region['path']).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != region['sha256']:
+            raise ValueError('quest route map digest mismatch')
+        tile, = [tile for _, tiles in codec.decode_region(raw)[3] for tile in tiles
+                 if tile[:2] == (x, y)]
+        matches = [attrs for palette, depth, attrs in tile[-1] if depth == 0
+                   and index['palette'][palette]['source_item_id'] == binding['item']]
+        if tile[3] != 0 or len(matches) != 1:
+            raise ValueError('quest route native item or House drift')
+        binding.update(map_path=region['path'], map_sha256=region['sha256'])
+        bindings.append(binding)
     return dict(schema=1, classification='OTS_HYPOTHESIS_ONLY', sources=sources,
                 bindings=sorted(bindings, key=lambda row: row['position']))
 

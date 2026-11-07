@@ -33,7 +33,9 @@ pub(super) fn source_key_door(x: u16, y: u16, floor: i8, action: u16) -> TestRes
 
 fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
     run(async |admin| {
-        let harness = Harness::create_with_admission_seed(admin, "m06_keys", true, false).await?;
+        let level_gate = source.is_some_and(|(_, _, _, action)| action == 1050);
+        let harness =
+            Harness::create_with_admission_seed(admin, "m06_keys", !level_gate, false).await?;
         let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
             .fetch_one(&harness.pool)
             .await?;
@@ -48,16 +50,28 @@ fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) =
+        let (controller, pin) = if level_gate {
+            super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?
+        } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
                 deps.admitted.world_id,
                 None,
-            );
+            )
+        };
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
         let (door_x, door_y, door_floor, key_action) = source.unwrap_or((6, 0, -7, 4321));
-        let door_appearance = if source.is_some() { 1631 } else { 1628 };
+        let door_appearance = if level_gate {
+            1648
+        } else if source.is_some() {
+            1631
+        } else {
+            1628
+        };
         let door_key = format!("oteryn:item.tibia.i{door_appearance}");
         let door = door_key.as_str();
         let station_pos = crate::map::overlay::TilePos {
@@ -222,20 +236,25 @@ fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         .await?
         .0;
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("fence")?;
-        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
+        if !level_gate {
+            sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
+        }
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look::seed_main_backpack(&harness, &[(key_item, 1), (wrong_key, 1)]).await?;
-        // Fixture-only immutable key custody rows; production reads run as runtime role.
-        let mut tx = harness.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        for (item, number) in [(71, i32::from(key_action)), (72, i32::from(key_action) + 1)] {
-            sqlx::query("INSERT INTO game_item_keys(item_instance_id,key_number,minted_transaction_id) SELECT item_instance_id,$2,game_character_uuid_v7() FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+        if !level_gate {
+            super::item_look::seed_main_backpack(&harness, &[(key_item, 1), (wrong_key, 1)])
+                .await?;
+            // Fixture-only immutable key custody rows; production reads run as runtime role.
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            for (item, number) in [(71, i32::from(key_action)), (72, i32::from(key_action) + 1)] {
+                sqlx::query("INSERT INTO game_item_keys(item_instance_id,key_number,minted_transaction_id) SELECT item_instance_id,$2,game_character_uuid_v7() FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(id(item).as_slice()).bind(number).execute(&mut *tx).await?;
+            }
+            tx.commit().await?;
         }
-        tx.commit().await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -253,6 +272,72 @@ fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             placement,
             expected_revision: 0,
         };
+
+        if level_gate {
+            let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+            harness
+                .root
+                .initialize_admission_equipment(
+                    &authority,
+                    &harness.node,
+                    &fence,
+                    active.identity().server_artifact_digest(),
+                    fresh.operation(),
+                )
+                .await
+                .map_err(debug)?;
+            owner
+                .runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    deps.actor,
+                    admitted.game_session_id,
+                    crate::foundation::CharacterLease::new(
+                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                            .map_err(debug)?,
+                        fence.character_lease_generation,
+                    )
+                    .map_err(debug)?,
+                )
+                .map_err(debug)?;
+            owner.admit_progression_session(&mut admitted).await;
+            for (level, expected) in [
+                (49, UseDisposition::Locked),
+                (50, UseDisposition::Committed),
+            ] {
+                super::questpc6_fibula_route::level(&owner, &mut admitted, level).await?;
+                let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&station)
+                    .map_err(debug)?;
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(2))
+                    .ok_or("clock")?;
+                let command = admitted.continuity.next_command_id;
+                let (next, result, replay) =
+                    super::item_craft::exchange(&owner, admitted, command, &payload, None).await?;
+                assert_eq!(result, expected, "source level50 gate at level{level}");
+                admitted = next;
+                assert_eq!(map.enterable(station_pos), level == 50);
+                if level == 50 {
+                    assert_eq!(map.facts().doors().revision(placement_key), 1);
+                    let (next, result, _) =
+                        super::item_craft::exchange(&owner, admitted, command, &replay, None)
+                            .await?;
+                    admitted = next;
+                    assert_eq!(result, UseDisposition::Committed);
+                    assert_eq!(map.facts().doors().revision(placement_key), 1);
+                }
+            }
+            eprintln!(
+                "POSTGRES_CASE_COMPLETED fibula_source_level50_gate duration={:?}",
+                started.elapsed()
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
 
         let intent = |station: WorldObjectTarget| UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::MIN),
