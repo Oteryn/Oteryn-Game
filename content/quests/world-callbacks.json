@@ -9135,6 +9135,366 @@
       "success_message": "A ray of sunlight comes down from the heaven and hits the crystal. Wow. That probably means Fasuon is supporting."
     },
     {
+      "key": "oteryn:quest-transition/questpc3/first-dragon-lava/enter",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33047,
+          "y": 32712,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25160
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31994,
+        "y": 32391,
+        "floor": -9
+      },
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/access_cave",
+          "minimum": 4,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": null,
+      "effects": {},
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/the_first_dragon/actions_lair_entrance.lua canonical quest-state declaration",
+        "data-global/scripts/quests/the_first_dragon/actions_lair_entrance.lua:3-21 git-blob=c26663826161ee397f0290fafe62a65306c4b85a sha256=a423081416594a06acd1fe2c72f85a5dd962041c8ea5cc51667247907721b80e"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/first-dragon-lava/return",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 31994,
+          "y": 32390,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25160
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33047,
+        "y": 32713,
+        "floor": -3
+      },
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/access_cave",
+          "minimum": 4,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": null,
+      "effects": {},
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/the_first_dragon/actions_lair_entrance.lua canonical quest-state declaration",
+        "data-global/scripts/quests/the_first_dragon/actions_lair_entrance.lua:3-21 git-blob=c26663826161ee397f0290fafe62a65306c4b85a sha256=a423081416594a06acd1fe2c72f85a5dd962041c8ea5cc51667247907721b80e"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/first-dragon-lava/sacrifice-bones",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "use_carried_on_target",
+      "selector": {
+        "position": {
+          "x": 33047,
+          "y": 32712,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25160
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/bones",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/access_cave",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i24942",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You're plunging the trophy into the lava.",
+      "effects": {},
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/the_first_dragon/actions_sacrifice_items.lua canonical quest-state declaration",
+        "data-global/scripts/quests/the_first_dragon/actions_sacrifice_items.lua:1-47 git-blob=0a9cd03ccaf771390c2c43b5470333229d403fd7 sha256=cc37c76856a23734d61c7d98b4c7f757378f7a99c2c0f1b8d9662f20c7b0b61e"
+      ],
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 33046,
+            "y": 32711,
+            "floor": -3
+          },
+          "maximum": {
+            "x": 33048,
+            "y": 32713,
+            "floor": -3
+          }
+        },
+        "time_window": {
+          "from_minute": 0,
+          "to_minute": 1440
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/first-dragon-lava/sacrifice-horn",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "use_carried_on_target",
+      "selector": {
+        "position": {
+          "x": 33047,
+          "y": 32712,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25160
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/horn",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/access_cave",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i24941",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You're plunging the trophy into the lava.",
+      "effects": {},
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/the_first_dragon/actions_sacrifice_items.lua canonical quest-state declaration",
+        "data-global/scripts/quests/the_first_dragon/actions_sacrifice_items.lua:1-47 git-blob=0a9cd03ccaf771390c2c43b5470333229d403fd7 sha256=cc37c76856a23734d61c7d98b4c7f757378f7a99c2c0f1b8d9662f20c7b0b61e"
+      ],
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 33046,
+            "y": 32711,
+            "floor": -3
+          },
+          "maximum": {
+            "x": 33048,
+            "y": 32713,
+            "floor": -3
+          }
+        },
+        "time_window": {
+          "from_minute": 0,
+          "to_minute": 1440
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/first-dragon-lava/sacrifice-scale",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "use_carried_on_target",
+      "selector": {
+        "position": {
+          "x": 33047,
+          "y": 32712,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25160
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/scale",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/access_cave",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i24939",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You're plunging the trophy into the lava.",
+      "effects": {},
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/the_first_dragon/actions_sacrifice_items.lua canonical quest-state declaration",
+        "data-global/scripts/quests/the_first_dragon/actions_sacrifice_items.lua:1-47 git-blob=0a9cd03ccaf771390c2c43b5470333229d403fd7 sha256=cc37c76856a23734d61c7d98b4c7f757378f7a99c2c0f1b8d9662f20c7b0b61e"
+      ],
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 33046,
+            "y": 32711,
+            "floor": -3
+          },
+          "maximum": {
+            "x": 33048,
+            "y": 32713,
+            "floor": -3
+          }
+        },
+        "time_window": {
+          "from_minute": 0,
+          "to_minute": 1440
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/first-dragon-lava/sacrifice-tooth",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "use_carried_on_target",
+      "selector": {
+        "position": {
+          "x": 33047,
+          "y": 32712,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25160
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/tooth",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/access_cave",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i24940",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You're plunging the trophy into the lava.",
+      "effects": {},
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/the_first_dragon/actions_sacrifice_items.lua canonical quest-state declaration",
+        "data-global/scripts/quests/the_first_dragon/actions_sacrifice_items.lua:1-47 git-blob=0a9cd03ccaf771390c2c43b5470333229d403fd7 sha256=cc37c76856a23734d61c7d98b4c7f757378f7a99c2c0f1b8d9662f20c7b0b61e"
+      ],
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 33046,
+            "y": 32711,
+            "floor": -3
+          },
+          "maximum": {
+            "x": 33048,
+            "y": 32713,
+            "floor": -3
+          }
+        },
+        "time_window": {
+          "from_minute": 0,
+          "to_minute": 1440
+        }
+      }
+    },
+    {
       "key": "oteryn:quest-transition/questpc3/threatened-acquisition/poacher-notes",
       "quest": "oteryn:quest.threatened_dreams_quest",
       "trigger": "use",

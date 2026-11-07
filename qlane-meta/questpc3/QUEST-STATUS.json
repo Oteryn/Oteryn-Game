@@ -5180,48 +5180,42 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
-      "batch": "beginning_world_18",
-      "phase": "GREEN and pushed6a2333cb1; source-backed engine requests recorded for remaining owned quests",
+      "batch": "first_dragon_lava_19",
+      "phase": "WIP compiling checkpoint: six callbacks and strict four-item admissions authored; focused PG GREEN pending",
       "entries": [
-        "missing owned coat produces source3562 replacement without greeting advance",
-        "owned coat prevents duplicate and exact source reply replays",
-        "physical loss through item owner earns another replacement"
+        "sacrifice24939 Scale once",
+        "sacrifice24940 Tooth once",
+        "sacrifice24941 Horn once",
+        "sacrifice24942 Bones once",
+        "outer lava entrance requires AccessCave4",
+        "inner lava return requires AccessCave4"
       ],
-      "requirements": "Retain all qualified Santiago/Zirella/Carlos/coat chest/equipment/health/food sale/report work. Implement actual world interactions and lost-coat replacement, then full native Beginning journey to whole-quest QUALIFIED. Missing reusable mechanisms remain our job.",
-      "previous_qualified": "threatened_feathers_17",
-      "active_slice": "Santiago missing-coat replacement before remaining bridge/tree/cart world flow",
-      "source": {
-        "file": "data-global/npc/santiago.lua:145-160",
-        "blob": "c55210f3b5ccaa5437f8f22148c91b5134f52880",
-        "sha256": "e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd"
+      "engine_expansion": false,
+      "reuse_checked": {
+        "qengine2": "e5850715e",
+        "questpc4": "8bf3338ec"
       },
-      "latest_checks": {
-        "status": "QUALIFIED_MECHANISM",
-        "whole_quest": "IN_PROGRESS; ground tree/cart engine request remains",
-        "postgres": {
-          "version": "18.6",
-          "duration_ms": 120264,
-          "completed": 3,
-          "coats": 2,
-          "receipts": 2,
-          "log": "/tmp/questpc3-owner-lost-coat-readback-final-pg.log",
-          "red_log": "/tmp/questpc3-lost-coat-red.log",
-          "red_duration_ms": 101208
-        },
-        "regressions_ms": {
-          "beginning_equipment": 110912,
-          "threatened_feathers": 73304,
-          "threatened_presents": 53166
-        },
-        "workspace_check": "PASS all-targets 1m06s /tmp/questpc3-owner-speed-workspace-check.log",
-        "fmt": "PASS /tmp/questpc3-owner-speed-fmt.log",
-        "generated": "PASS repo tooling + pin-refresh; no content changes after regeneration",
-        "duplicate_migrations": "CLEAR; canonical main0999-1008 exact; no1200-1205 copies; own1220-1229",
-        "clippy": "Original two test lints fixed; final extra rerun stopped/superseded by latest owner SPEED direction after environmental disk failures; CI owns remaining verification",
-        "readback": "30-line test-only helper reuses existing bounded retry; only RootUnavailable retries; permanent refusals fail; no assertions removed"
+      "decisions": [
+        "Reuse canonical AccessCave initial0, equivalent to source unset normalization before+1",
+        "Four source distinct flags start-1; one selected Item BURN, flag write and counter increment are atomic",
+        "Both source positions and lava appearance25160 bind targets; unrelated equal-appearance tile is in range but must reject",
+        "Pinned retained item observations prove all four trophies stackable and exact existing weights; preserve other canonical facts"
+      ],
+      "red_log": "/tmp/questpc3-first-dragon-lava-red.log",
+      "red": {
+        "postgres": "18.6",
+        "duration_seconds": 61.65,
+        "result": "unearned native lava USE returned NothingToUse, expected source Rejected; source callback absent",
+        "log": "/tmp/questpc3-first-dragon-lava-red.log"
       },
-      "migration_range_request": "No extra range used: new guard consolidated into last branch-only draft1229, renamed quest_reward_occurrence_guards; main SQL unchanged",
-      "next": "Continue owned quests using existing engine; route new shared mechanisms to qengine2"
+      "checks": {
+        "workspace_all_targets": "PASS2m12s /tmp/questpc3-first-dragon-lava-check-retry.log",
+        "fmt": "PASS /tmp/questpc3-first-dragon-lava-fmt-retry.log",
+        "authoring": "PASS --check; Item admissions --check changed0",
+        "native_profiles": "PASS registered spell import files43",
+        "pins": "PASS repository world-bundle-compiler pin-refresh /tmp/questpc3-first-dragon-lava-pins.log",
+        "postgres_green": "NOT_RUN_YET; immediately after checkpoint push"
+      }
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -9817,7 +9811,7 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T19:54:59.496921+00:00",
+    "updated_at": "2026-11-07T20:35:20.468113+00:00",
     "standing_validation_rule": {
       "owner_override": "Latest HARD RULE: push compiling state after cargo check --workspace --all-targets and fmt; CI owns full suites; push at least every30minutes",
       "before_each_push": [

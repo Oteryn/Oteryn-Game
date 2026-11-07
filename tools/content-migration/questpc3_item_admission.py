@@ -160,6 +160,14 @@ def apply_admissions(definitions):
         item['stack_class'] = target_class
 
 
+    # Four source lava trophies reuse the same canonical admission seam.
+    spec = importlib.util.spec_from_file_location(
+        'questpc3_first_dragon_items', Path(__file__).with_name('questpc3_first_dragon_items.py'))
+    trophies = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(trophies)
+    trophies.apply_admissions(definitions)
+
+
 def refresh_tree(root, check=False):
     """Apply strict admissions to existing canonical shards without rebuilding World."""
     index = json.loads((root / 'content/items/index.json').read_text())

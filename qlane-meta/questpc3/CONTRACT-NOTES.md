@@ -146,3 +146,11 @@ fenced run committed both physical coats and both replacement receipts; its
 last current-fence read raced live transport root work. Preserve the final
 durable greeting assertion after joining the completed wire session, while
 retaining the intermediate durable stage checks and exact reply replay.
+
+## First Dragon four sacrifices and lava route
+
+Continue existing-engine portions while central requests are pending. Inspected QENGINE2e5850715e and QUESTPC48bf3338ec: both retain only the four older First Dragon exit callbacks; no duplicate sacrifice/lava binding exists. Source actions_sacrifice_items.lua:1-47, git-blob0a9cd03ccaf771390c2c43b5470333229d403fd7, SHA256cc37c76856a23734d61c7d98b4c7f757378f7a99c2c0f1b8d9662f20c7b0b61e; actions_lair_entrance.lua:3-21, blobc26663826161ee397f0290fafe62a65306c4b85a, SHA256a423081416594a06acd1fe2c72f85a5dd962041c8ea5cc51667247907721b80e. Both are retained crystalserver9f5a72c6 corpus files.
+
+Bind four exact carried24939-24942 Items to lava33047,32712,-3/appearance25160. Each distinct source flag permits one BURN and AccessCave+1; duplicates/wrong targets charge nothing. Source normalizes negative access to0 before increment; reuse the existing canonical AccessCave initial0, not a new counter or repair. Four flags retain source unset-1 and then1. Both lava directions require AccessCave>=4: outer33047,32712,-3 goes31994,32391,-9; inner31994,32390,-9 goes33047,32713,-3. No global completion or seasonal/achievement shortcut.
+
+Four retained imports/tibiawiki/facts/items-stats.json observations prove stackable=yes and weights5.00/3.50/6.50/8.00. Exact content SHA256s, respectively:7687cb8bebcbe3f41b890c2452b2098c6151b16ad225b79852f2c7692d3a0345;97c15a1555162f9cd97aef80d73e6cd950e94d09622089b91eff7cbf2f604234;2dc38e34d66754ac8e6e8334df4c7e5c61d591e67697895d8e6ee9d69c2facdd;52bfe281bcc40adc210ee1efdeb4537c87433b495b4874060e7b172080aab8db. Existing native profiles already carry those stack facts; canonical admission must retain them rather than guess nonstackability. Fixture seeds two separate one-unit input instances per type; no output/progress seeded.

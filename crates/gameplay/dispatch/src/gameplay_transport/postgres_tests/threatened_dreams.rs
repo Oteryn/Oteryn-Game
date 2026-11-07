@@ -20,7 +20,7 @@ mod rakes;
 #[path = "threatened_dreams/animals.rs"]
 mod animals;
 #[path = "threatened_dreams/barriers.rs"]
-mod barriers;
+pub(super) mod barriers;
 #[path = "threatened_dreams/final_reward.rs"]
 mod final_reward;
 #[path = "threatened_dreams/inventory.rs"]
