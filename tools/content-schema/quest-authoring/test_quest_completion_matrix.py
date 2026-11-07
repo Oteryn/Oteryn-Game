@@ -16,6 +16,23 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(373, len(self.result["records"]))
         self.assertTrue(all(row["canonical"] for row in self.result["records"]))
 
+    def test_qready2_every_owned_claim_has_runtime_proof(self):
+        import json
+        packet = json.loads((self.root / "tools/content-schema/quest-authoring/samples/completion-matrix/qready2-cases.json").read_text())
+        titles = {case["wiki_title"] for case in packet["cases"]}
+        self.assertEqual(17, len(titles))
+        self.assertEqual(21, len(packet["cases"]))
+        from quest_reward_use_proofs import load
+        qualified = load(self.root, matrix.load_reward_claims(self.root))
+        self.assertEqual(6, sum(row["wiki_title"] in titles and row["implementation_state"] == "REWARD_CLAIM_USE_VERIFIED"
+                                for row in self.result["records"]))
+        for row in self.result["records"]:
+            if row["wiki_title"] in titles and set(row["reward_claim_owner"]["claim_keys"]) <= qualified:
+                self.assertEqual("REWARD_CLAIM_USE_VERIFIED", row["implementation_state"])
+                self.assertTrue(all(d["runtime_enabled"] for d in row["canonical"]))
+                self.assertEqual(set(row["reward_claim_owner"]["claim_keys"]),
+                                 {c["claim_key"] for c in packet["cases"] if c["wiki_title"] == row["wiki_title"]})
+
     def test_matrix_never_claims_playability(self):
         self.assertEqual(0, self.result["summary"]["playable_verified"])
         self.assertTrue(all(row["playable_verification"] == "NOT_ASSESSED"
@@ -61,7 +78,9 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             row for row in self.result["records"]
             if row["work_state"] == "REWARD_CLAIM_USE_PENDING"
         ]
-        self.assertEqual(42, len(reward_only))
+        verified = [r for r in self.result["records"]
+                    if r["work_state"] == "REWARD_CLAIM_USE_VERIFIED"]
+        self.assertEqual(42, len(reward_only) + len(verified))
         self.assertTrue(
             all(
                 {definition["kind"] for definition in row["canonical"]} == {"reward_only"}
@@ -71,7 +90,8 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(
             {
                 "NATIVE_BINDINGS_PENDING": 331,
-                "REWARD_CLAIM_USE_PENDING": 42,
+                "REWARD_CLAIM_USE_PENDING": len(reward_only),
+                **({"REWARD_CLAIM_USE_VERIFIED": len(verified)} if verified else {}),
             },
             self.result["summary"]["implementation_state"],
         )
@@ -82,7 +102,8 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             {
                 "REWARD_CLAIM_DATA_PENDING": 13,
                 "REWARD_CLAIM_IMPLEMENTATION_PENDING": 42,
-                "REWARD_CLAIM_USE_PENDING": 50,
+                "REWARD_CLAIM_USE_PENDING": 50 - len(verified),
+                **({"REWARD_CLAIM_USE_VERIFIED": len(verified)} if verified else {}),
             },
             self.result["summary"]["reward_claim_owner_state"],
         )

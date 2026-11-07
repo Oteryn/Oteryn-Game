@@ -55,7 +55,7 @@ def load_reward_claims(root: Path):
     return {record["identity"]["key"]: record for record in records}
 
 
-def reward_claim_owner(definitions, reward_claims):
+def reward_claim_owner(definitions, reward_claims, use_proofs=frozenset()):
     if not definitions or any(definition.get("kind") != "reward_only" for definition in definitions):
         return None
     refs = [
@@ -85,7 +85,8 @@ def reward_claim_owner(definitions, reward_claims):
         if claim is not None and claim.get("readiness") == "waiting_implementation"
     ]
     if len(ready) == len(refs):
-        state = "REWARD_CLAIM_USE_PENDING"
+        state = ("REWARD_CLAIM_USE_VERIFIED" if set(refs) <= use_proofs
+                 else "REWARD_CLAIM_USE_PENDING")
     elif len(ready) + len(implementation_pending) == len(refs):
         # Complete source data; only native lowering/implementation is outstanding.
         state = "REWARD_CLAIM_IMPLEMENTATION_PENDING"
@@ -225,6 +226,8 @@ def expected(root: Path):
     completion_receipt = read(root, COMPLETION_RECEIPT)
     index, definitions = load_definitions(root)
     reward_claims = load_reward_claims(root)
+    from quest_reward_use_proofs import PROOFS, load as load_use_proofs
+    use_proofs = load_use_proofs(root, reward_claims)
 
     catalogue = catalogue_obj["quests"]
     coverage = {q["title"]: q for q in coverage_obj["quests"]}
@@ -272,7 +275,10 @@ def expected(root: Path):
                     "counts": source.get("counts") if source else None,
                 },
             })
-        reward_owner = reward_claim_owner(defs, reward_claims)
+        reward_owner = reward_claim_owner(defs, reward_claims, use_proofs)
+        if reward_owner and reward_owner["state"] == "REWARD_CLAIM_USE_VERIFIED":
+            for definition in canonical:
+                definition["runtime_enabled"] = True
         source_state, progress_state, implementation_state = states(
             defs, mapping_state, candidate_states, held_keys, reward_owner
         )
@@ -327,6 +333,7 @@ def expected(root: Path):
             "crosswalk": CROSSWALK,
             "definitions": DEFINITIONS,
             "reward_claims": REWARD_CLAIMS,
+            "reward_use_proofs": [str(path.relative_to(root)) for path in sorted((root / PROOFS).glob("*.json"))],
             "completion_candidate": COMPLETION_CANDIDATE,
             "completion_receipt": COMPLETION_RECEIPT,
         },
