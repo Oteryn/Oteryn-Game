@@ -798,3 +798,20 @@ policy routing gap without admitting an unqualified template.
 
 Production map checkpoint pin-check passed in 2m31.825s. The dependent server
 crate passed check (1m39s) and clippy with warnings denied (24.12s).
+
+### Pinned Primal hook discovery
+
+The lever importer now discovers Primal's direct source requirements from three
+exact Git blobs: monster `76adae125dd1f8eb099878b6fa5f8b96f91445e8`, hazard
+handler `3cafb041e31f9f068b2ec118af2b5575aee6d2bc`, and quest death handler
+`cb0c34b64010470546b125959f2a63690bedb64b`. Missing or substituted source stays
+unknown. Generated requirements are `ThePrimalMenaceDeath`,
+`ThePrimeOrdealBossDeath`, and `mType.onThink`. `callbacks_known` describes
+source discovery only; native qualification still rejects these unsupported
+requirements with `SourceHookUnavailable`.
+
+Five Python provenance/parser tests pass (0.004s), including red-before-green
+hook discovery, missing-source refusal and source substitution rejection. All
+four activity-template tests pass (68.04s), preserving map bounds and physical
+corpse gates. Content check passed (11.51s), clippy with warnings denied passed
+(6.10s). This is not native hook composition or a completed W10 encounter.

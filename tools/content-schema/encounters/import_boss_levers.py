@@ -63,6 +63,38 @@ def policy(config, name, default):
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
+# Crystal 201189f the_primal_menace.lua:66-69,339-347 and the two
+# death handlers: the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua:1-3,21
+# and primal_ordeal_quest/bosses_killed.lua:6-7,18. These are source facts, not native support.
+PRIMAL_HOOK_BLOBS = {
+    "data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua": "76adae125dd1f8eb099878b6fa5f8b96f91445e8",
+    "data-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua": "3cafb041e31f9f068b2ec118af2b5575aee6d2bc",
+    "data-global/scripts/quests/primal_ordeal_quest/bosses_killed.lua": "cb0c34b64010470546b125959f2a63690bedb64b",
+}
+
+
+def capture_primal_hooks(root):
+    sources = []
+    for name, expected in PRIMAL_HOOK_BLOBS.items():
+        path = root / name
+        if not path.is_file():
+            return [], False
+        raw = path.read_bytes()
+        actual = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+        if actual != expected:
+            return [], False
+        clean = re.sub(r"--\[\[.*?\]\]", "", raw.decode(), flags=re.S)
+        sources.append(re.sub(r"--[^\n]*", "", clean))
+    monsters = [text for text in sources if table(text, r"\bmonster\.events") is not None]
+    if len(monsters) != 1:
+        return [], False
+    events = re.findall(r'"([^"\n]+)"', table(monsters[0], r"\bmonster\.events"))
+    declared = {name for text in sources for name in re.findall(r'CreatureEvent\("([^"\n]+)"\)', text)}
+    think = re.search(r"\bmType\.onThink\s*=\s*function", monsters[0]) is not None
+    hooks = sorted(set(events) | ({"mType.onThink"} if think else set()))
+    return hooks, bool(events) and set(events).issubset(declared) and think
+
+
 def capture(root, path, profiles, defaults):
     raw = path.read_bytes()
     text = raw.decode()
@@ -100,6 +132,8 @@ def capture(root, path, profiles, defaults):
             events = table(monster.read_text(), r"\bmonster\.events") or ""
             hooks = sorted(set(re.findall(r'"([^"\n]+)"',events)+re.findall(r'(?:CreatureEvent|registerEvent)\("([^"\n]+)"\)',callbacks.read_text())))
             callbacks_known = True
+    if key == "oteryn:creature.the_primal_menace":
+        hooks, callbacks_known = capture_primal_hooks(root)
     row = {
         "path":path.relative_to(root).as_posix(),"sha256":sha(raw),
         "line":text.count("\n",0,text.find("local config"))+1,
