@@ -3,42 +3,34 @@
     "title": "Exchange Quests",
     "canonical": "oteryn:quest.friends_and_traders",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/47/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s2",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s2",
-      "kind": "collect",
-      "objective": "Collect three Bast Skirts for the cyclops' partner.",
-      "targets": [
-        "Bast Skirt"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Compose the exact Friends and Traders NPC programs with the implemented fenced carried-input/output/progress owner; author missing source NPC bindings and qualify the complete route with PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/47/definition",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
-        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230"
-      ],
-      "attempts": [
-        "Traced plan_storage and the Father-only plan_father_items exception; neither can commit Bast Skirts, Honeycombs or the Blessed Wooden Stake exchange.",
-        "Implemented the reusable ordered carried exchange owner with exact split-stack debits, output minting, response replay and rollback. Hot Cuisine recipe mechanism PG proof exists; Friends and Traders source programs and whole-route proof remain this lane's work."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "source_recipe_requirement": "The Sweaty Cyclops/Marina/Quentin exchanges require consumption of the exact carried inputs, output minting and quest progress under one receipt and Character fence."
-    },
-    "implementation_progress": {
-      "state": "selected route and counted service mechanisms implemented; final validation running",
+    "qualification": {
+      "kind": "complete selected Friends and Traders native route",
       "proof": "qlane-meta/questpc7/FRIENDS-PG-PROOF.json",
-      "remaining": "Finish final checksum-bound PG case and strict/content/world/pin checks; no ownership or missing-engine deferral"
+      "test": "questpc7_friends_full_route_and_repeatable_unlocked_services",
+      "postgres": "18.6",
+      "red_seconds": 74.691341078,
+      "green_seconds": 76.609885521,
+      "scope": [
+        "fresh selected programme; no quest-state seeds",
+        "exact3 Bast Skirts and50 Honeycombs consumed",
+        "two royal-steel trades and two yarn trades with distinct bounded counters",
+        "exact5000 Gamon fee, change and wooden-stake delivery",
+        "wrong priest order: no receipt, progress or inventory effect",
+        "all10 named priests in selected order with retained stake",
+        "single blessed-stake exchange and duplicate request without any effect",
+        "once-only programme completion",
+        "earned crafting service usable after completion"
+      ],
+      "bindings": [
+        "content/quests/shared-reward-callbacks.json",
+        "content/dialogues/quests/shared-reward-greetings.json",
+        "content/world/npc-placements/index.json"
+      ],
+      "generic_owner": "bounded Add(1), original fenced input/MINT/fee owners and exact command-scoped claim proof; original one-shot MINT keys retained"
     }
   },
   {

@@ -263,6 +263,9 @@
         },
         "fee": {
           "$ref": "#/$defs/monetaryFee"
+        },
+        "counter": {
+          "$ref": "#/$defs/rewardCounter"
         }
       }
     },
@@ -324,6 +327,26 @@
         },
         "include_bank": {
           "type": "boolean"
+        }
+      }
+    },
+    "rewardCounter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "track",
+        "maximum"
+      ],
+      "properties": {
+        "track": {
+          "type": "string",
+          "pattern": "^oteryn:quest-progress/[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "maximum": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000
         }
       }
     }

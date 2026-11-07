@@ -104,8 +104,14 @@ pub(super) async fn install<const N: usize>(
             Ok(NpcPlacements {
                 key: key.into(),
                 placements: vec![NpcPlacement {
-                    x: u16::try_from(at.x + i32::try_from(i)?)?,
-                    y: u16::try_from(at.y + 1)?,
+                    x: u16::try_from(
+                        at.x + if N > 5 {
+                            i32::try_from(i % 5)? - 2
+                        } else {
+                            i32::try_from(i)?
+                        },
+                    )?,
+                    y: u16::try_from(at.y + if N > 5 { 1 + i32::try_from(i / 5)? } else { 1 })?,
                     floor: -i8::try_from(at.floor)?,
                     direction: MovementFacing::South,
                 }],

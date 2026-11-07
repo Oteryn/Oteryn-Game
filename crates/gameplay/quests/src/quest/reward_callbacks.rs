@@ -40,6 +40,14 @@ pub struct MonetaryFee {
     pub include_bank: bool,
 }
 
+/// A bounded, monotone receipt counter for an unlocked repeatable exchange.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RewardCounter {
+    pub track: String,
+    pub maximum: i64,
+}
+
 /// A read-only prerequisite: its original quest retains ownership and writes.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -76,6 +84,8 @@ pub struct RewardCallback {
     pub fee: Option<MonetaryFee>,
     #[serde(default)]
     pub completes: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub counter: Option<RewardCounter>,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
@@ -138,9 +148,17 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.storage
                 .iter()
                 .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
-            || c.storage
-                .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || (c.counter.is_none()
+                && c.storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
+            || c.counter.as_ref().is_some_and(|counter| {
+                !slug(&counter.track, "oteryn:quest-progress/", b"._/:-", 256)
+                    || !(1..=1_000_000_000_000).contains(&counter.maximum)
+                    || c.completes
+                    || tracks.contains(&counter.track)
+                    || requires.contains(&counter.track)
+            })
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
@@ -196,11 +214,17 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
 }
 
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+    extend_callbacks(catalogue, &load()?)
+}
+
+fn extend_callbacks(
+    catalogue: QuestStateCatalogue,
+    callbacks: &[RewardCallback],
+) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    let callbacks = load()?;
     let requires: Vec<_> = callbacks.iter().flat_map(|c| &c.requires).collect();
-    for callback in &callbacks {
+    for callback in callbacks {
         for s in &callback.storage {
             if let Some(track) = tracks.iter_mut().find(|t| t.key == s.track) {
                 if track.quest != callback.quest {
@@ -218,22 +242,50 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 });
             }
         }
+        let mut effects: Vec<_> = callback
+            .storage
+            .iter()
+            .map(|s| QuestEffect {
+                track: s.track.clone(),
+                from: QuestComparison::Between(s.minimum, s.maximum),
+                effect: if s.preserve {
+                    QuestEffectKind::Add(0)
+                } else {
+                    QuestEffectKind::Set(s.set)
+                },
+            })
+            .collect();
+        if let Some(counter) = &callback.counter {
+            if !(1..=1_000_000_000_000).contains(&counter.maximum) {
+                return Err(format!("invalid reward counter {}", counter.track));
+            }
+            if let Some(track) = tracks.iter().find(|t| t.key == counter.track) {
+                if track.quest != callback.quest
+                    || track.initial != 0
+                    || track.min != 0
+                    || track.max != counter.maximum
+                {
+                    return Err(format!("foreign reward counter {}", counter.track));
+                }
+            } else {
+                tracks.push(QuestTrack {
+                    key: counter.track.clone(),
+                    quest: callback.quest.clone(),
+                    initial: 0,
+                    min: 0,
+                    max: counter.maximum,
+                });
+            }
+            effects.push(QuestEffect {
+                track: counter.track.clone(),
+                from: QuestComparison::Between(0, counter.maximum - 1),
+                effect: QuestEffectKind::Add(1),
+            });
+        }
         transitions.push(QuestTransition {
             key: callback.key.clone(),
             quest: callback.quest.clone(),
-            effects: callback
-                .storage
-                .iter()
-                .map(|s| QuestEffect {
-                    track: s.track.clone(),
-                    from: QuestComparison::Between(s.minimum, s.maximum),
-                    effect: if s.preserve {
-                        QuestEffectKind::Add(0)
-                    } else {
-                        QuestEffectKind::Set(s.set)
-                    },
-                })
-                .collect(),
+            effects,
             completes: callback.completes,
             experience: None,
         });
@@ -251,6 +303,57 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn service_counter_uses_real_add_owner_and_refuses_at_its_bound() -> Result<(), String> {
+        let mut callback = load()?
+            .into_iter()
+            .find(|c| c.key.ends_with("questpc7-friends-royal-steel"))
+            .ok_or("service")?;
+        callback.counter.as_mut().ok_or("counter")?.maximum = 2;
+        let counter = callback.counter.as_ref().ok_or("counter")?.track.clone();
+        let parent = callback.storage[0].track.clone();
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::new("counter-test", vec![], vec![])
+                .map_err(|e| format!("{e:?}"))?,
+            std::slice::from_ref(&callback),
+        )?;
+        let transition = catalogue.transition(&callback.key).ok_or("transition")?;
+        let mut stored = BTreeMap::from([(parent.clone(), 1)]);
+        for value in 1..=2 {
+            let changes = catalogue
+                .evaluate(transition, &stored, 0)
+                .map_err(|e| format!("{e:?}"))?;
+            let change = changes
+                .iter()
+                .find(|c| c.track == counter)
+                .ok_or("missing counted receipt")?;
+            assert_eq!((change.before, change.after), (value - 1, value));
+            assert!(
+                changes
+                    .iter()
+                    .any(|c| c.track == parent && c.before == 1 && c.after == 1)
+            );
+            stored.insert(counter.clone(), value);
+        }
+        assert!(
+            catalogue.evaluate(transition, &stored, 0).is_err(),
+            "exhausted counter cannot overflow or consume another input"
+        );
+        for maximum in [0, 1_000_000_000_001] {
+            let mut invalid = callback.clone();
+            invalid.counter.as_mut().ok_or("counter")?.maximum = maximum;
+            assert!(
+                parse(&serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string()).is_err()
+            );
+        }
+        callback.counter.as_mut().ok_or("counter")?.track = parent;
+        assert!(
+            parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()).is_err(),
+            "counter cannot take over its prerequisite track"
+        );
+        Ok(())
+    }
+
     #[test]
     fn readonly_prerequisite_uses_declared_initial_and_fresh_stored_value() -> Result<(), String> {
         let catalogue = QuestStateCatalogue::new(

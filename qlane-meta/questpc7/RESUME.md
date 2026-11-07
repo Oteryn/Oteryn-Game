@@ -1,3 +1,39 @@
+# Friends and Traders QUALIFIED — 2026-11-07
+
+The whole selected Exchange Quests / Friends and Traders route is QUALIFIED.
+FRIENDS-PG-PROOF.json records PG18.6 RED74.691s and final GREEN76.610s,
+including exact migration1100 SHA384 equality. All ten selected priests,
+three skirts/fifty honeycombs,5000-gold Gamon stake/change, retained evidence,
+blessed-stake exchange, completion and repeated unlocked services pass.
+Unavailable-stage chat is checked for no receipt/progress/inventory effect.
+The ordinary Sam MINT path remains GREEN75.707s on the final migration.
+
+The reusable service adapter uses the existing bounded Add(1) and fenced
+quest/item/MINT/fee owners. Only counted services receive command-scoped MINT
+claim identities; exact SQL source proof binds the command and counter receipt.
+All prior one-shot MINT identities and proof predicates remain unchanged.
+Three physical items are qualified through repo tooling; thirteen source NPCs
+are placed with exact donor greeting facts. No reference dump or binary added.
+
+All final checks pass:14 authoring tests;3 counter units; strict Clippy on
+quests/durability/dispatch all targets/features; Cargo check;123 content and5
+world checks; source regeneration/registration; pin refresh/check; fmt.
+World/deployment digest ac00a4cedc85a1b5f1b1ada2e1781382f73c9c4da757bc84a0959049de3ec062.
+Disk recovery removed inactive compiler caches only. Keep cache growth below
+free disk; no need to repeat successful checks without source changes/failures.
+
+Scope is21 ACTIVE. Continue generic level/premium/read-only prerequisite
+eligibility and remaining outfit routes (Hunter, Illuminated Warrior, Formal
+Dress), then the owned world/pickup and encounter routes. Inspect exact selected
+recipes before deciding each composition; do not ask ownership questions.
+Refetched qengine2 head412fba411, questl2 head87e3642ba and questpc8 head9bfdafcfc.
+No additional exact ACTIVE-row qualification was found on qengine2/questpc8.
+New qengine2 atomic foreign-quest participants are available for selective reuse;
+questl2 also has conditional source effect integration. Do not merge unrelated
+world changes/protected tooling. Current source is ready for immediate push.
+
+## Earlier checkpoints
+
 # Friends validation checkpoint — 2026-11-07
 
 Golden remains QUALIFIED and pushed in4fe93b0cf plus pin companionff6ed7aeb.

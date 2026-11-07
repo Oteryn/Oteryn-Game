@@ -32,7 +32,8 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus', 'a_sweaty_cyclops', 'marina', 'gamon', 'quentin', 'tibra', 'maealil',
+        'yberius', 'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -275,6 +276,7 @@ def build():
             'topic':first,'next_topic':second,'storage':guard,'reply':['Let me analyse the samples.']})
     selected = load_module('questpc7_selected_rewards', 'tools/content-schema/quest-authoring/questpc7_selected_rewards.py')
     selected.append_golden(ROOT, callbacks, offers, inputs, PIN)
+    selected.append_friends(ROOT, callbacks, offers, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -340,16 +342,18 @@ def validate_callbacks(document):
     for callback in document['callbacks']:
         storage=callback['storage']
         requires=callback.get('requires',[])
+        counter=callback.get('counter')
         if (callback['key'] in keys
             or len({s['track'] for s in storage})!=len(storage)
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
             or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
             or (callback.get('fee') and any(i['item'] in ('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043') for i in callback['take']))
+            or (counter and (counter['track'] in {s['track'] for s in storage} | {r['track'] for r in requires} or callback.get('completes',False)))
             or len({r['track'] for r in requires})!=len(requires)
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
-            or all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage)
+            or (not callback.get('counter') and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'])
             or any(len(source.encode('utf-8'))>1024 for source in callback['sources'])):

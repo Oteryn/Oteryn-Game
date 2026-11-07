@@ -218,11 +218,17 @@ async fn mint(
             .map(|b| format!("{b:02x}"))
             .collect::<String>()
     );
+    // The existing MINT once-claim is scoped to this exact command only for
+    // counted services. Ordinary one-shot quest grants keep their original key.
+    let claim_key = if callback.counter.is_some() {
+        let session = command.game_session_id().as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+        format!("{}/occurrence/{session}/{}", callback.key, command.command_id().get())
+    } else { callback.key.clone() };
     let request = RewardClaimMintRequest {
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
-            production_key: callback.key.clone(),
+            production_key: claim_key,
             revision_ref: content_revision.clone(),
         },
         source_placement: callback.key.clone(),

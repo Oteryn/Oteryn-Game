@@ -46,3 +46,36 @@
   tag18 and its own codec fixture. Added both, retaining every pre-existing
   golden byte and exact inventory assertion. The imported qengine commit
   did not include this checkout-specific fixture update.
+
+- Friends and Traders follows the chosen canonical linear programme at
+  content/quests/definitions/quests-00100-00199.json:1#/records/47/definition.
+  It retains all ten named priests in the exact selected order and folds
+  collect stages into exact carried-item handins; no quest-state seeds are used.
+  The recipe does not replace Gamon's price: retained Crystal9f5a72c
+  data-global/npc/gamon.lua:64-68 (SHA256466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83)
+  charges5000 via carried+Bank before giving Item5941. The same exact fee owner
+  is reused. Sweaty Cyclops source:109-137 (SHAbc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a)
+  consumes3 Item3560 and unlocks3381->5887; Marina:105-116
+  (SHA8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682)
+  consumes50 Item5902 and unlocks10 Item5879->1 Item5886.
+  Source citations for every prayer are embedded with exact file lines and SHAs.
+- Repeatable unlocked services use a separate bounded monotone receipt counter,
+  preserving the finite programme track and its completed revision. Maximum1e12
+  is the documented engine bound; every exchange must produce one fenced Add(1)
+  receipt and cannot advance past its bound. Existing QuestEffectKind::Add owns
+  the arithmetic and overflow checks. No alternative item/fee writer is added.
+
+- The first counted-service PG attempt proved counter1 but the second legitimate
+  exchange hit the shared MINT owner's once-only claim key. Reuse the ordered
+  NPC exchange pattern: counted callbacks receive a deterministic claim identity
+  scoped to callback/session/command; ordinary callbacks keep their existing
+  once-only key. Migration1100 retains the exact native MINT proof and binds the
+  command-scoped key plus an exact same-transaction bounded Add(1) quest receipt.
+  No global claim policy, prior receipt, input predicate or constraint is removed.
+
+- Unavailable-stage prayer and repeat-blessing words can receive ordinary NPC
+  chat acknowledgement (NpcIntentDisposition::Ok) without a quest action.
+  The PG contract checks zero new quest receipts, unchanged programme progress
+  and unchanged stake quantities; reply category alone is not a grant proof.
+  The fixture allocates14 actor slots for13 selected NPCs plus its player,
+  using the existing bounded constructor; production carrier checks stay intact.

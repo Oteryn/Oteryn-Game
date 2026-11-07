@@ -1039,6 +1039,652 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-friends-blessing",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "finish prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i5942",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The ten-part prayer has blessed your wooden stake."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-complete",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "complete friendships"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 15
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your Friends and Traders programme is complete."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-honey",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.marina",
+      "keywords": [
+        "deliver honey"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5902",
+          "count": 50
+        }
+      ],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I can now spin ten spider silks into one spool of yarn."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/marina.lua:1-136:sha256:8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-intro",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "forging friendship"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring three bast skirts for my partner."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-prayer-amanda",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.amanda",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your stake has received this line of the prayer."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amanda.lua:1-207:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-prayer-brewster",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.brewster",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your stake has received this line of the prayer."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/brewster.lua:1-194:sha256:87af89081d39013a27efa93e35bb1006cf46ff19e051d865151e847a1b0e8bc4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-prayer-isimov",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.isimov",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your stake has received this line of the prayer."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:1-176:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-prayer-kasmir",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.kasmir",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your stake has received this line of the prayer."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kasmir.lua:1-177:sha256:9ed3bb0bed0fc1b7e573b3a0e60e40bebb43eb270db997f97e5a6c5225721f62"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-prayer-maealil",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.maealil",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your stake has received this line of the prayer."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:1-232:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-prayer-quentin",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your stake has received this line of the prayer."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-prayer-rahkem",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.rahkem",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your stake has received this line of the prayer."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rahkem.lua:1-452:sha256:5a3cbb6ed0041da27bbfc8b15b5ef0f203a256e0cde50c584fb1d64a17956174"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-prayer-tibra",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.tibra",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your stake has received this line of the prayer."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tibra.lua:1-143:sha256:ac4aa101390c470c2fb3881d2a1aedb1916620676d9abed2f4ea82412398c30f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-prayer-tyrias",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.tyrias",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your stake has received this line of the prayer."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:1-180:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-prayer-yberius",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.yberius",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i5941",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your stake has received this line of the prayer."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:1-176:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-royal-steel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "forge royal steel"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3381",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i5887",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/questpc7/friends/steel-uses",
+        "maximum": 1000000000000
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-skirts",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "deliver skirts"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3560",
+          "count": 3
+        }
+      ],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Now I can forge royal steel for you."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-stake",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.gamon",
+      "keywords": [
+        "buy wooden stake"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i5941",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your wooden stake."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gamon.lua:1-191:sha256:466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83"
+      ],
+      "fee": {
+        "gold": 5000,
+        "include_bank": true
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-friends-yarn",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.marina",
+      "keywords": [
+        "spin yarn"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 2,
+          "maximum": 15,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5879",
+          "count": 10
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i5886",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your spool of yarn."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/marina.lua:1-136:sha256:8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682"
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/questpc7/friends/yarn-uses",
+        "maximum": 1000000000000
+      }
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-golden-base",
       "quest": "oteryn:quest.golden_outfits_quest",
       "npc": "oteryn:npc.king_tibianus",

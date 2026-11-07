@@ -67,6 +67,23 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises(ValueError,msg=mutation):
                 q.validate_callbacks(bad)
 
+    def test_friends_services_preserve_programme_and_have_bounded_distinct_counters(self):
+        from jsonschema import ValidationError
+        selected=[c for c in self.callbacks['callbacks'] if c['key'].split('/')[-1].startswith('questpc7-friends-')]
+        self.assertEqual(len(selected),18)
+        services=[c for c in selected if c.get('counter')]
+        self.assertEqual(len(services),2)
+        self.assertEqual(len({c['counter']['track'] for c in services}),2)
+        self.assertTrue(all(c['counter']['maximum']==1000000000000 and all(s['preserve'] for s in c['storage']) for c in services))
+        self.assertEqual(sum(c.get('completes',False) for c in selected),1)
+        for mutation in ('zero','collision','completion'):
+            bad=copy.deepcopy(self.callbacks)
+            callback=next(c for c in bad['callbacks'] if c['key']==services[0]['key'])
+            if mutation=='zero':callback['counter']['maximum']=0
+            elif mutation=='collision':callback['counter']['track']=callback['storage'][0]['track']
+            else:callback['completes']=True
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+
     def test_golden_selected_prices_and_fee_conservation(self):
         from jsonschema import ValidationError
         selected=[c for c in self.callbacks['callbacks'] if c['key'].split('/')[-1].startswith('questpc7-golden-')]

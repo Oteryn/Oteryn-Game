@@ -23,21 +23,24 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let shared_rewards = name.starts_with("qengine-rewards-") || name == "questpc7-golden";
-    let classic_npc = shared_rewards || matches!(
-        name,
-        "catalogue-npc"
-            | "catalogue-npc-father"
-            | "fathers-burden-handins"
-            | "catalogue-npc-hero"
-            | "catalogue-npc-legacy"
-            | "catalogue-npc-scoped"
-            | "classic-quests-npc"
-            | "classic-rottin-disrepair"
-            | "threatened-dreams-npc"
-            | "conditional-quest-greetings"
-            | "npc-item-exchanges"
-    );
+    let shared_rewards = name.starts_with("qengine-rewards-")
+        || name == "questpc7-golden"
+        || name == "questpc7-friends";
+    let classic_npc = shared_rewards
+        || matches!(
+            name,
+            "catalogue-npc"
+                | "catalogue-npc-father"
+                | "fathers-burden-handins"
+                | "catalogue-npc-hero"
+                | "catalogue-npc-legacy"
+                | "catalogue-npc-scoped"
+                | "classic-quests-npc"
+                | "classic-rottin-disrepair"
+                | "threatened-dreams-npc"
+                | "conditional-quest-greetings"
+                | "npc-item-exchanges"
+        );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(if classic_npc {
@@ -72,7 +75,8 @@ fn scenario_case(
         let h = if shared_rewards {
             Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await?
         } else {
-            Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await?
+            Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
+                .await?
         };
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -113,7 +117,10 @@ fn scenario_case(
             1,
             "runtime-scope-assignment:1",
             // These two cases keep five source NPCs and one player alive.
-            if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
+            if name == "questpc7-friends" {
+                // Thirteen selected vendors/priests and one player; charge every actor slot.
+                14
+            } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
                 6
             } else if classic_npc {
                 5
@@ -205,10 +212,21 @@ fn scenario_case(
         if name == "npc-item-exchanges" {
             super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if name == "questpc7-friends" {
+            super::super::questpc7_friends::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name == "questpc7-golden" {
-            super::super::questpc7_golden::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+            super::super::questpc7_golden::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if shared_rewards {
-            super::super::qengine_rewards::exercise(&mut owner, &mut admitted, &h, &authority, name).await?;
+            super::super::qengine_rewards::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name,
+            )
+            .await?;
         } else if name.starts_with("formogar-hoist-") {
             super::super::questpc7_hoist::exercise(
                 &mut owner,
