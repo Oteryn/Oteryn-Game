@@ -122,6 +122,7 @@ pub struct PendingKillSettlement {
     /// Nonreward Instance death metadata captured before releasing the lethal turn.
     pub(super) activity_death: Option<CapturedActivityDeath>,
     pub(super) grizzly: Option<Arc<super::grizzly_kills::FrozenGrizzlyDeath>>,
+    pub(super) source_death: Option<Arc<super::source_quest_death::FrozenSourceDeath>>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
@@ -197,6 +198,7 @@ impl PendingKillSettlement {
             boss_reward: None,
             activity_death: None,
             grizzly: None,
+            source_death: None,
             no_progression_logged: false,
         }
     }
@@ -371,6 +373,7 @@ pub enum TakeOutcome {
 pub struct KillSettlementQueue(
     Arc<Mutex<KillQueueState>>,
     pub(super) Arc<Mutex<super::grizzly_kills::GrizzlyCaptureCache>>,
+    pub(super) Arc<Mutex<super::source_quest_death::CaptureCache>>,
 );
 
 #[derive(Debug, Clone)]
@@ -1446,6 +1449,7 @@ pub fn record_creature_kill(
             // invents an XP amount, loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
             if boss.is_none()
+                && !oteryn_gameplay_quests::quest::creature_death::tracks_creature(&creature)
                 && (top.present().is_none() || !super::grizzly_kills::tracks_creature(&creature))
             {
                 refuse(reason.as_str(), &creature);
@@ -1478,6 +1482,7 @@ pub fn record_creature_kill(
                             boss_reward: None,
                             activity_death: None,
                             grizzly: None,
+                            source_death: None,
                             no_progression_logged: false,
                         },
                     );
@@ -1507,6 +1512,7 @@ pub fn record_creature_kill(
             entry.activity_death = activity_death;
             refuse(reason.as_str(), &creature);
             entry.prey_checkpoint = prey_checkpoint;
+            entry.damage_shares = damage_shares;
             accept_kill(runtime, sink.queue, entry);
             return;
         }
@@ -1800,6 +1806,7 @@ pub fn record_creature_kill(
         task_board_recipients: Arc::default(),
         talisman: Arc::default(),
         grizzly: None,
+        source_death: None,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
@@ -1826,6 +1833,7 @@ fn accept_kill(
     mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
     super::grizzly_kills::capture(runtime, queue, &mut entry);
+    super::source_quest_death::capture(runtime, queue, &mut entry);
     if entry.creature == "oteryn:creature.the_corruptor" {
         entry.tutorial_loot = queue.freeze_tutorial_loot(runtime, entry.target);
     }
@@ -2405,7 +2413,11 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
         let report = super::grizzly_kills::settle(
             self.admission,
             entry,
-            Box::pin(self.settle_durably(entry, inflight_before)),
+            Box::pin(super::source_quest_death::settle(
+                self.admission,
+                entry,
+                Box::pin(self.settle_durably(entry, inflight_before)),
+            )),
         )
         .await;
         // Row-less Grizzly/Bosstiary work never binds a corpse Item, but its final

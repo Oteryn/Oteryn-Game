@@ -23,6 +23,7 @@ pub mod batch3_a;
 mod catalogue_history;
 pub mod classic_dialogue;
 pub mod classic_talk;
+pub mod creature_death;
 pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod falcon;

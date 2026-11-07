@@ -33,6 +33,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
         )
         .await
     }
@@ -60,6 +61,7 @@ impl DurabilityRoot {
             None,
             None,
             &grizzly::NoGrizzlyPremium,
+            None,
             None,
             None,
             None,
@@ -91,6 +93,7 @@ impl DurabilityRoot {
             &grizzly::NoGrizzlyPremium,
             None,
             Some(payment),
+            None,
             None,
         )
         .await
@@ -124,6 +127,7 @@ impl DurabilityRoot {
             None,
             None,
             Some(admission),
+            None,
         )
         .await
     }
@@ -150,7 +154,19 @@ impl DurabilityRoot {
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
+        source_death: Option<creature_death::CreatureDeathContext>,
     ) -> Result<QuestTransitionOutcome> {
+        let death_rule = oteryn_gameplay_quests::quest::creature_death::CALLBACKS
+            .iter()
+            .position(|rule| rule.transition == request.transition_key);
+        if death_rule != source_death.map(|context| context.callback)
+            || source_death.is_some_and(|context| {
+                context.observed_revision == 0
+                    || !matches!(request.cause, QuestCause::CreatureDeath(_))
+            })
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()
@@ -263,6 +279,15 @@ impl DurabilityRoot {
             || request_binding(fence.character_id, &request),
             |payment| payment.binding(fence.character_id),
         );
+        if let Some(context) = source_death {
+            let digest = Sha256::new()
+                .chain_update(binding)
+                .chain_update(b"source-creature-death-v1")
+                .chain_update((context.callback as u64).to_be_bytes())
+                .chain_update(context.observed_revision.to_be_bytes())
+                .finalize();
+            binding[1..].copy_from_slice(&digest);
+        }
         if let Some(action) = &grizzly_action {
             grizzly::bind_action(&mut binding, action);
         }
@@ -492,7 +517,7 @@ impl DurabilityRoot {
                     keys.extend(final_flags.iter().map(String::as_str));
                     keys.sort_unstable(); keys.dedup();
                     let rows = sqlx::query(
-                        "SELECT track_key, quest_key, value FROM game_character_quest_tracks \
+                        "SELECT track_key, quest_key, value, committed_character_revision::text AS source_track_revision FROM game_character_quest_tracks \
                           WHERE character_id = encode($1,'hex')::uuid \
                             AND track_key = ANY($2::text[]) \
                           ORDER BY track_key FOR UPDATE",
@@ -512,6 +537,15 @@ impl DurabilityRoot {
                         (!final_flags.is_empty() && oteryn_gameplay_quests::quest::monk_shrines::completed_count(&stored) != 10)
                             .then_some(QuestRefusal::StageMismatch)
                     });
+                    let refusal = if let Some(context) = source_death {
+                        let rule = &oteryn_gameplay_quests::quest::creature_death::CALLBACKS[context.callback];
+                        let predecessor = rows.iter().find(|row| row.try_get::<String,_>("track_key").is_ok_and(|key| key == rule.track));
+                        let valid = if let Some(row) = predecessor {
+                            let revision = row.try_get::<String,_>("source_track_revision")?.parse::<u64>().map_err(|_|DurabilityError::InvalidStoredState)?;
+                            row.try_get::<i64,_>("value")? == rule.expected && revision <= context.observed_revision
+                        } else { false };
+                        refusal.or_else(||(!valid).then_some(QuestRefusal::StageMismatch))
+                    } else { refusal };
                     let mut grizzly_plan = None;
                     let refusal = if let (None, Some(action)) = (refusal, &grizzly_action) {
                         match grizzly::evaluate(&mut tx, character, &stored, &state, action,

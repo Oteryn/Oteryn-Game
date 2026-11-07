@@ -171,6 +171,7 @@ pub use soulpit::{
 };
 mod source_item_cycle;
 mod source_pvp_expiry;
+mod source_quest_death;
 pub mod spectate_session;
 mod spell_access_facts;
 mod spell_catalog;

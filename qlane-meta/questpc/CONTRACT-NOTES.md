@@ -525,3 +525,18 @@ onDeathForDamagingPlayers and changes explicit QuestDoor0 to1. Conservative
 absence rule: no stored flag means inactive, matching Lua absent storage -1;
 do not infer eligibility from the lowered catalogue initial0. This slice does
 not establish NPC-start or timed crystal-reset qualification.
+
+#### Ordinary creature callback implementation boundary
+The existing QUEST-STATE-0 writer, Character revision lane, native damage ledger,
+kill retry queue and corpse pins remain the owners. A closed source binding selects
+a damaging-player callback; party membership and ordinary XP principal do not select
+its recipients. Capture freezes explicit stored flag eligibility with actor/session/
+lease and observed quest revision. The same locked writer requires that flag value
+and committed track revision not newer than the capture. Generic calls without the
+source context refuse. Existing cause occurrence receipts provide replay identity.
+This adds no tables, migrations, protocol fields, monetary grants or separate queue.
+The native global monster event registration is blob157b75d352a131c57f7dabda0bc2f9699d5d9b66;
+the alternate crystal monster blob3c48000b8d76d9b93df9d1457be15e630b5ada2c has
+no event. The explicit global quest-source binding is authoritative for this slice.
+Full An Uneasy Alliance qualification still requires native Curos start, all damaging
+players coverage and the later crystal transformation/reversion source route.

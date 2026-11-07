@@ -1,3 +1,15 @@
+## Generic source-death implementation compiling WIP — 2026-11-07
+Runtime capture and existing locked writer now connected. cargoCheck1m29s PASS;
+strictClippy3changedcrates/alltargets/allfeatures PASS8m02s includingwait. Pins
+refresh unchanged174f/ed2. No newSQL/protocol/queue. Source4blobs verified.
+IntermediatePG3negativePASS: inactive99.630442953s, late-start83.913249152s,
+restarted75.829241871s. Replay97.725504838s RED because row-less fallback dropped
+damage shares; one-line native-share copy now added. Active98.942916184s stopped
+at invalid synthetic occurrence before bypass assertion; validfixtureID now used.
+Final5PG nowbuilding. WIP compiles, NOT qualified; no whole-title promotion.
+NEXT final5PG, Father11-track atomic regression, publishGREEN; then realmulti-
+contributor coverage, CurosnativeNPCstart and timedcrystalroute. Push<=15min.
+
 ## Source death actual PostgreSQL RED / compiled WIP — 2026-11-07
 PG18.6: active47.168323876s and replay47.245271437s RED, explicit
 QuestDoorSome(0) remains0 instead of1 after real native lethal damage.

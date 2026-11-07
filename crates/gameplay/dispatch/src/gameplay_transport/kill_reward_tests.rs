@@ -146,6 +146,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         boss_reward: None,
         activity_death: None,
         grizzly: None,
+        source_death: None,
         damage_shares: Vec::new(),
         prey_checkpoint: None,
         activity_observed_at: None,

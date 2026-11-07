@@ -24,6 +24,14 @@ fn source_quest_death_renegade_replay() -> TestResult {
 fn source_quest_death_renegade_inactive() -> TestResult {
     scenario("inactive")
 }
+#[test]
+fn source_quest_death_renegade_late_start() -> TestResult {
+    scenario("late-start")
+}
+#[test]
+fn source_quest_death_renegade_restarted() -> TestResult {
+    scenario("restarted")
+}
 fn scenario(case: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -71,36 +79,8 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
-    if !name.ends_with("inactive") {
-        let fence = owner
-            .current_quest_fence(session)
-            .await
-            .map_err(|()| "fence")?
-            .ok_or("fence")?;
-        let outcome = owner
-            .revision_sequencer
-            .acquire(fence.character_id)
-            .await
-            .commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                QuestTransitionRequest {
-                    transition_key: format!("{PREFIX}npc_1"),
-                    cause: QuestCause::Command(CommandRef::new(
-                        session,
-                        CommandId::new(7000).map_err(debug)?,
-                    )),
-                },
-                owner.quest_catalogue.clone().ok_or("catalogue")?,
-            )
-            .await
-            .map_err(debug)?;
-        assert!(
-            matches!(outcome, QuestTransitionOutcome::Committed(_)),
-            "explicit source quest start: {outcome:?}"
-        );
+    if !name.ends_with("inactive") && !name.ends_with("late-start") {
+        start_quest(owner, session, 7000).await?;
     }
     let fence = owner
         .current_quest_fence(session)
@@ -122,6 +102,10 @@ pub(super) async fn exercise(
             .map_err(debug)?,
         )
         .map_err(debug)?;
+    if name.ends_with("-active") {
+        let outcome=owner.revision_sequencer.acquire(fence.character_id).await.commit_quest_transition(owner.root,owner.character,owner.holder,fence,QuestTransitionRequest{transition_key:format!("{PREFIX}creature_event_1"),cause:QuestCause::CreatureDeath(crate::durability::character_progression::ExperienceRewardOccurrence::from_bytes([251;16]).map_err(debug)?)},owner.quest_catalogue.clone().ok_or("catalogue")?).await;
+        assert!(matches!(outcome,Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)),"generic writer must not bypass captured source eligibility: {outcome:?}");
+    }
     owner.refresh_quest_session(session, false).await;
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
@@ -187,6 +171,10 @@ pub(super) async fn exercise(
         }
         target
     };
+    if name.ends_with("late-start") || name.ends_with("restarted") {
+        start_quest(owner, session, 7002).await?;
+        owner.refresh_quest_session(session, false).await;
+    }
     assert_eq!(
         owner.drain_kill_rewards(session).await,
         crate::gameplay_transport::kill_reward::DrainOutcome::Drained
@@ -202,11 +190,60 @@ pub(super) async fn exercise(
         stored,
         if name.ends_with("inactive") {
             None
+        } else if name.ends_with("late-start") || name.ends_with("restarted") {
+            Some(0)
         } else {
             Some(1)
         },
         "native damaging-player source callback"
     );
+    let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND transition_key=$2").bind(admitted.item_fence.ok_or("item fence")?.character_id.as_bytes().as_slice()).bind(format!("{PREFIX}creature_event_1")).fetch_one(&h.pool).await?;
+    assert_eq!(
+        receipts,
+        if name.ends_with("-active") || name.ends_with("-replay") {
+            1
+        } else {
+            0
+        },
+        "one source receipt per qualifying death, no delayed eligibility"
+    );
     assert!(!owner.runtime.lock().await.corpse_projection_pinned(target));
+    Ok(())
+}
+
+async fn start_quest(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+    command: u64,
+) -> TestResult {
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let outcome = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_quest_transition(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            QuestTransitionRequest {
+                transition_key: format!("{PREFIX}npc_1"),
+                cause: QuestCause::Command(CommandRef::new(
+                    session,
+                    CommandId::new(command).map_err(debug)?,
+                )),
+            },
+            owner.quest_catalogue.clone().ok_or("catalogue")?,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(outcome, QuestTransitionOutcome::Committed(_)),
+        "explicit source quest start: {outcome:?}"
+    );
     Ok(())
 }

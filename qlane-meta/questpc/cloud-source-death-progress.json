@@ -1,5 +1,5 @@
 {
-  "status": "WIP_COMPILES_FOCUSED_PG_RED",
+  "status": "WIP_IMPLEMENTATION_COMPILES_STRICT_PASS_FINAL_PG_PENDING",
   "baseline_head": "6bca9213a",
   "postgres": "PostgreSQL 18.6",
   "command": "source /workspace/oteryn-env/env.sh; CARGO_INCREMENTAL=0 cargo test -p oteryn-gameplay-dispatch --lib source_quest_death_renegade -- --nocapture --test-threads=3",
@@ -20,7 +20,7 @@
     }
   },
   "excluded_fixture_run": "First run reached PG but lacked native attacker lease; SupersededAttackerSession is not callback RED proof.",
-  "runtime_implementation": "Not yet applied. No whole-quest qualification.",
+  "runtime_implementation": "Published WIP, compiles and passes strict Clippy; NOT yet qualified.",
   "cloud-source-death-red.log": {
     "raw_sha256": "af9e8ef349ed5e90726dc689c625e35e3c0660a8014f99d669b7eb550c734afa",
     "stored_sha256": "af9e8ef349ed5e90726dc689c625e35e3c0660a8014f99d669b7eb550c734afa"
@@ -28,5 +28,30 @@
   "cloud-source-death-fixture-lease.log": {
     "raw_sha256": "2f69b942ffa9b7c4dfabecbbfbef4a589a44053b743789c9823e0744075ee686",
     "stored_sha256": "2f69b942ffa9b7c4dfabecbbfbef4a589a44053b743789c9823e0744075ee686"
+  },
+  "implementation": {
+    "existing_owners": [
+      "native damage shares",
+      "kill settlement queue and corpse pins",
+      "Character revision sequencer",
+      "quest receipt writer"
+    ],
+    "no_new_migration": true,
+    "check": "PASS 1m29s",
+    "clippy": "PASS three changed crates all-targets/all-features -D warnings; 8m02s including lock wait",
+    "world_pin": "174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
+    "intermediate": "Three refusal cases pass; replay still flag0 because row-less fallback omitted damage shares; active stopped on invalid synthetic occurrence. Both corrections applied; final PG pending."
+  },
+  "intermediate_log": {
+    "raw_sha256": "39400b8d2e032d2058ce9b11b8ccbf5d1abdca3806bba0687dedf7c1309c3f68",
+    "stored_sha256": "39400b8d2e032d2058ce9b11b8ccbf5d1abdca3806bba0687dedf7c1309c3f68",
+    "positive_callback_proof": false,
+    "negative_cases_seconds": {
+      "inactive": 99.630442953,
+      "late-start": 83.913249152,
+      "restarted": 75.829241871
+    },
+    "replay_red_seconds": 97.725504838,
+    "active_fixture_failure_seconds": 98.942916184
   }
 }

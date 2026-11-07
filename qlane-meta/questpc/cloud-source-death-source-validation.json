@@ -1,0 +1,37 @@
+{
+  "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+  "repository": "https://github.com/zimbadev/crystalserver",
+  "status": "SOURCE_VERIFIED",
+  "files": [
+    {
+      "path": "data-global/monster/bosses/renegade_orc.lua",
+      "git_blob_sha1": "157b75d352a131c57f7dabda0bc2f9699d5d9b66",
+      "sha256": "9f6cd10f44ff5270377d1cb80006ffd1175a74d3a75ca8fcf5bc263b02bfbfad",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/monster/bosses/renegade_orc.lua"
+    },
+    {
+      "path": "data-crystal/monster/bosses/renegade_orc.lua",
+      "git_blob_sha1": "3c48000b8d76d9b93df9d1457be15e630b5ada2c",
+      "sha256": "10a50769f1ba55b7304b2aacd8f71f9077f5b49d5785b06223037784c3ec7f30",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-crystal/monster/bosses/renegade_orc.lua"
+    },
+    {
+      "path": "data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua",
+      "git_blob_sha1": "8d1ecd7810b863df6f44e9e4aead98264fe50395",
+      "sha256": "cfbb7215d0d987b18e8c3e53dabf2954c4b523527121cd8185739745f73c5c99",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua"
+    },
+    {
+      "path": "data/libs/functions/functions.lua",
+      "git_blob_sha1": "6aeb1fdb7891a45b3bb344b3728ebb0268c91e52",
+      "sha256": "6a6f06d48a5b541c52ea3db6bcc68c934c1771e63a3db612e0e93df229ff110a",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data/libs/functions/functions.lua"
+    }
+  ],
+  "rules": [
+    "Closed global-monster event membership, not display-name inference.",
+    "Each damage-map entry resolving to Player; no party/top-damage filter.",
+    "Explicit QuestDoor0 becomes1; absent Lua storage remains inactive.",
+    "Runtime freezes eligible live session/lease at native death; existing writer rejects newer rewritten track."
+  ]
+}

@@ -416,6 +416,36 @@ impl RevisionSlot {
         .await
     }
 
+    /// Commit an ordinary source-bound creature callback on the Character revision lane.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_creature_death(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        predecessor: super::quest_state::creature_death::CreatureDeathContext,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_creature_death(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    predecessor,
+                )
+            },
+        )
+        .await
+    }
+
     /// One quest transition at the cursor (QUEST-STATE-0 §5.2). Its binding excludes the
     /// revision, so a mismatch reloads the cursor and retries once (replay or one commit); a
     /// refusal writes nothing.
