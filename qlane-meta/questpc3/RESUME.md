@@ -1,3 +1,5 @@
+FAIRIES15 supporting checks GREEN: 4-crate all-features lib strictClippy3m02s; counter+timer boundary units; native41 --check; pin-refresh unchangedworld1865. Final focused PG build /tmp/questpc3-fairies-green.log running; no quest GREEN claimed. Source15 initial realRED72151ms remains baseline.
+
 FAIRIES15 production WIP implemented: bounded world-storage increment; frozen optional projection timestamp; reuse existing decay/channel timer with appearance predicate, preserving original movement revision guard. Five exact AID callbacks authored, counter<5 and per-fairy once. Four-crate check PASS2m29s;8 domain tests PASS1.89s; new temporal boundary unit currently building. Final PG/pin refresh/strict lint pending; no GREEN claimed. Current source script tools/content-schema/quest-authoring/questpc3_threatened_fairies.py.
 
 FAIRIES15 real PG RED complete72151ms on PostgreSQL18.6: entries0/flags0/counter0/scheduled0/restored0. Test and multi-AID fixture compile; publish baseline then implement relative world-storage increment and existing channel decay/timed transform reuse. Production15 not yet changed. Log /tmp/questpc3-fairies-red-retry.log.

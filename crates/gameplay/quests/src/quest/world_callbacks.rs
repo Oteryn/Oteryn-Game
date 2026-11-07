@@ -509,6 +509,107 @@ mod tests {
     use super::*;
 
     #[test]
+    fn relative_world_counter_is_locked_bounded_and_requires_a_distinct_once_flag()
+    -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.effects.temporary_transform.is_some())
+            .ok_or("timed source callback")?;
+        let tracks = callback
+            .storage
+            .iter()
+            .map(|s| QuestTrack {
+                key: s.track.clone(),
+                quest: callback.quest.clone(),
+                initial: 0,
+                min: -1,
+                max: s.maximum.max(s.set),
+            })
+            .collect();
+        let base = QuestStateCatalogue::new("fixture", tracks, Vec::new())
+            .map_err(|e| format!("{e:?}"))?;
+        let catalogue = extend_callbacks(base, std::slice::from_ref(&callback))?;
+        let transition = catalogue.transition(&callback.key).ok_or("transition")?;
+        let mut stored = std::collections::BTreeMap::new();
+        for storage in &callback.storage {
+            stored.insert(storage.track.clone(), storage.minimum.max(0));
+        }
+        let counter = callback
+            .storage
+            .iter()
+            .find(|s| s.increment.is_some())
+            .ok_or("counter")?;
+        stored.insert(counter.track.clone(), 4);
+        let changes = catalogue
+            .evaluate(transition, &stored, 0)
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            changes
+                .iter()
+                .find(|c| c.track == counter.track)
+                .ok_or("counter change")?
+                .after,
+            5
+        );
+        stored.insert(counter.track.clone(), 5);
+        assert!(
+            catalogue.evaluate(transition, &stored, 0).is_err(),
+            "the sixth release cannot pass the locked source counter gate"
+        );
+        stored.insert(counter.track.clone(), 0);
+        let once = callback
+            .storage
+            .iter()
+            .find(|s| !s.preserve && s.increment.is_none())
+            .ok_or("once flag")?;
+        stored.insert(once.track.clone(), 1);
+        assert!(
+            catalogue.evaluate(transition, &stored, 0).is_err(),
+            "the same fairy cannot increment twice"
+        );
+        for mutation in 0..4 {
+            let mut bad = callback.clone();
+            match mutation {
+                0 => {
+                    bad.effects
+                        .temporary_transform
+                        .as_mut()
+                        .ok_or("effect")?
+                        .lifetime_us = 0
+                }
+                1 => {
+                    bad.storage
+                        .iter_mut()
+                        .find(|s| s.increment.is_some())
+                        .ok_or("counter")?
+                        .increment = Some(0)
+                }
+                2 => {
+                    bad.storage
+                        .iter_mut()
+                        .find(|s| s.increment.is_some())
+                        .ok_or("counter")?
+                        .preserve = true
+                }
+                _ => {
+                    let c = bad
+                        .storage
+                        .iter_mut()
+                        .find(|s| s.increment.is_some())
+                        .ok_or("counter")?;
+                    c.minimum = i64::MAX;
+                    c.maximum = i64::MAX;
+                }
+            }
+            assert!(
+                parse(&serde_json::json!({"schema":1,"callbacks":[bad]}).to_string()).is_err(),
+                "invalid relative/timer mutation {mutation}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn repeatable_world_gifts_require_an_earned_state_cycle() -> Result<(), String> {
         let callback = load()?
             .into_iter()

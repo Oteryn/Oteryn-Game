@@ -1063,26 +1063,49 @@ mod tests {
         let mut source = oteryn_world_bundle::bundle::read(&bytes).expect("fixture");
         for appearance in [25796, 25797] {
             source.manifest.palette.push(PaletteEntry {
-                key: format!("oteryn:terrain.tibia.i{appearance}"), family: Family::Terrain,
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: Family::Terrain,
                 id: u32::try_from(source.manifest.palette.len()).expect("palette id"),
-                terrain: Some(Terrain { kind: TerrainKind::Common, walkable: None, ground_speed: None }),
+                terrain: Some(Terrain {
+                    kind: TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
             });
         }
         let facts = BundleFacts::palette(&source.manifest, fixture::items).expect("facts");
-        let pos = TilePos { x: 100, y: 100, floor: -7 };
+        let pos = TilePos {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
         let key = crate::map::view::placement_key(pos, 1).expect("key");
         let restore = facts.movement_item_facts(25796).expect("closed");
         assert!(facts.start_quest_callback_decay(key, 0, restore, 25797, 10, 30_000_000));
-        assert!(!facts.start_quest_callback_decay(key, 0, restore, 25797, 11, 30_000_000), "stale source revision must refuse");
+        assert!(
+            !facts.start_quest_callback_decay(key, 0, restore, 25797, 11, 30_000_000),
+            "stale source revision must refuse"
+        );
         assert!(facts.start_quest_callback_decay(key, 1, restore, 25797, 20, 30_000_000));
         assert_eq!(facts.expire_movement_items(30_000_009), 0);
-        assert_eq!(facts.expire_movement_items(30_000_010), 1, "later same-appearance use cannot postpone the first source timer");
-        assert_eq!(facts.base_entry(pos, 1, 0).expect("restored").appearance_id, 25796);
+        assert_eq!(
+            facts.expire_movement_items(30_000_010),
+            1,
+            "later same-appearance use cannot postpone the first source timer"
+        );
+        assert_eq!(
+            facts.base_entry(pos, 1, 0).expect("restored").appearance_id,
+            25796
+        );
         assert_eq!(facts.object_revision(key), 3);
         assert_eq!(facts.expire_movement_items(30_000_020), 0);
         assert!(facts.start_movement_decay(key, restore, 25797, 40_000_000, 10));
         assert!(facts.transform_movement_item(key, 25797));
-        assert_eq!(facts.expire_movement_items(40_000_010), 0, "legacy movement timers still require their exact revision");
+        assert_eq!(
+            facts.expire_movement_items(40_000_010),
+            0,
+            "legacy movement timers still require their exact revision"
+        );
     }
 
     #[test]

@@ -51,7 +51,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         let temporary_restore = if let Some(effect) = &callback.effects.temporary_transform {
-            let Some(restore) = map.facts.quest_callback_replacement(key, effect.restore) else {
+            if map.facts.house_tile(pos) {
+                return UseDisposition::Rejected;
+            }
+            let Some(restore) = map
+                .facts
+                .quest_callback_replacement(key, effect.restore)
+                .or_else(|| map.facts.movement_item_facts(effect.restore))
+            else {
                 return UseDisposition::Rejected;
             };
             if map.facts.movement_item_facts(effect.appearance).is_none()

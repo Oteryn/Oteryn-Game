@@ -4374,7 +4374,7 @@
     },
     "current_batch": {
       "batch": "threatened_fairies_15",
-      "phase": "Compiling WIP: reusable bounded relative world updates, frozen projection clock, appearance-guarded existing decay engine and five source callbacks implemented. Four-crate check PASS2m29s; 8 world callback domain tests PASS1.89s. Dedicated temporal boundary unit building; final focused PG/pins/lint next. No GREEN claimed beyond existing RED72151ms.",
+      "phase": "Five fairy callbacks and generic counter/timer mechanisms compiled; 4-crate strict all-features lib Clippy PASS3m02s; relative-counter and exact timer boundary units PASS; native41 drift check and repo pin-refresh PASS unchanged world. Focused PG GREEN run now building; no whole batch GREEN yet.",
       "entries": [
         "AID40016 Fairy01",
         "AID40017 Fairy02",
@@ -4414,6 +4414,14 @@
         "appearance_admission": "25796/25797 declared served states, no portable inventory admission",
         "authoring": "questpc3_threatened_fairies.py; AID selectors, 5 once flags, shared counter<5,30sec transform/restore",
         "checks": "4-crate check2m29s,8 domain tests1.89s; dedicated decay unit running"
+      },
+      "latest_checks": {
+        "clippy": "PASS4 changed crates all-features --lib -Dwarnings3m02s",
+        "counter_unit": "PASS locked cap5/distinct flag/overflow/zero delta and lifetime guards",
+        "decay_unit": "PASS earlier same-appearance deadline/stale revision/legacy exact revision semantics",
+        "native": "PASS41 --check no inventory profile changes",
+        "pins": "PASS unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
+        "postgres": "building /tmp/questpc3-fairies-green.log"
       }
     },
     "diagnosis": {

@@ -99,7 +99,10 @@ impl BundleFacts {
         now: u64,
         delay_us: u64,
     ) -> bool {
-        if expected_revision.checked_add(2).is_none() || delay_us == 0 {
+        if expected_revision.checked_add(2).is_none()
+            || delay_us == 0
+            || view::placement_of(key).is_none_or(|(pos, _)| self.house_tile(pos))
+        {
             return false;
         }
         self.start_transform_decay(
