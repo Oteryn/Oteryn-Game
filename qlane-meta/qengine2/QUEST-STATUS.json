@@ -2319,5 +2319,24 @@
     "phase": "ReadpinnedsourceandpreparePGREDbefore implementinggenericsex-specific/multi-target grants. PreserveoriginalscopeURIs;do notinfercanonicals.",
     "source_facts": "Hunter Elane grantsmale129addon1/female137addon2,Legolamale2/female1. Mage/Summoner sourcegrantscrossdifferentfamilies andsexes,Lynda10wand/rod types atomic;Zoltanexactly1FerumbrasHat5903. DreamWardenEruaran requiresCurrentpremium and20276mask/20275claw;source duplicate577male grantbug must conservativelynormalizecanonicalfemale578 anddocument. Genericgrant support isours,neverdefer.",
     "reuse_plan": "Reuse existing accountappearance owner/immutablefacts/nativegeneration mappings;add additive source target sex and bounded multi-target support,withlegacyneutral grants remaining compatible. No classname-specificbit patches;normalwardrobe projectionmustunderstand sex-qualifiedfacts."
+  },
+  "active_batch_progress": {
+    "batch": "L1-08",
+    "entries": [
+      "Hunter Outfits Quest",
+      "Mage Outfits Quest",
+      "Dream Warden Outfits Quest"
+    ],
+    "postgres_red_log": "/tmp/qengine2-batch8-red.log",
+    "postgres_red_seconds": [
+      43.299245271,
+      43.70156591,
+      43.65990467,
+      43.486180811,
+      44.152170484
+    ],
+    "checks": "All five changed crates check passed (15.43s). Quest callback unit tests passed; sex-qualified content unit passed. Quest authoring 23 tests passed (8.948s), cosmetics authoring 23 tests passed (1.965s), fmt/check and both source reproducers passed. Repo pin-refresh passed, digest unchanged 24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25. Clippy first run found one collapsible-if, corrected; final clippy and five PG cases are running/queued. Source bindings include four native importer profiles (20275,20276,5903,5947). No new qualified entries.",
+    "postgres_progress": "Dream Warden complete real PG GREEN (87.943021664s), including same-transaction grant checks and unauthored zero-effect SQL rejection. Hunter first run failed the strict intermediate catalogue mask after grants; wire helper closed early for target-set grants. Fixed helper to wait for every target applicable to immutable character sex. Five-case rerun queued in /tmp/qengine2-batch8-green2.log. No new qualified entries until batch checks close.",
+    "latest_verification": "Clippy all targets/all features five changed crates passed (8m17s including build-lock wait). Dream Warden PG passed 87.943021664s. First Hunter tests failed early-close catalogue harness assertion; corrected same-sex target-set refresh wait. First Mage cases refused carrier capacity during legal ingredient funding; fixtures now earn level 200 through real progression owner, preserving native capacity checks, and report ingredient context. Full corrected five-case run compiling /tmp/qengine2-batch8-green2.log. Legacy Druid Rook PG running /tmp/qengine2-batch8-legacy-regression.log. Final current-source check/clippy queued. Remote fetch confirms no divergence. Scope remains 21 QUALIFIED/45 UNFINISHED until GREEN closes."
   }
 }

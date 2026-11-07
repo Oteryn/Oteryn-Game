@@ -541,3 +541,9 @@ These are genericmechanismsOURS;no HELDsharedfeaturestates. PreparefullPGRED
 profilesfirst,thenmechanism+sourcebatch. No productionL8codeyet. Diskstrategy
 clearinactiveincrementalcaches beforeheavytestbuild(retainfocuseddispatchtest
 0clhrjm82foyu);15GBfreeafterL7,neverdeletebinaries/source/evidence.
+
+L1-08 continuation: five real PG RED cases failed on missing callbacks (log /tmp/qengine2-batch8-red.log, 131.11s total). Generic sex-qualified multi-family targets, exact carried quantity, and genuinely one-shot value-only rewards implemented; five changed crates cargo check passed. Source callbacks now authored; generator and PG GREEN still pending. Counts remain 21/45. Remote fetch/push confirmed latest green HEAD 36927f208 already on origin.
+
+L1-08 source bindings and profiles generated. Pin-refresh passed (24ab unchanged); both reproducers pass; authoring 23+23 tests pass, Rust sex-qualified mapping unit pass. PG five-case run /tmp/qengine2-batch8-green1.log session29061 compiling; legacy Rook regression session58947 queued, final clippy session16037 queued. Cargo PG process219170 was briefly paused for pin compiler memory and has been RESUMED. No process remains intentionally paused. Exact hat excess, 9-of-10 wands, source target vectors, intermediate UI masks and unauthored value-only SQL rejection now covered by focused scenarios.
+
+L1-08 truthful push checkpoint: first GREEN attempt yielded Dream Warden PG success87.943021664s, Hunter catalogue harness failures and Mage native carrier refusal. Corrected helper now waits for sex-matching multi-target UI; Mage fixtures legally earn level200 (no capacity bypass). Clippy all changed crates/all targets passed8m17s. Corrected five-case PG session40172 /tmp/qengine2-batch8-green2.log compiling; legacy session58947 running; final check/clippy session69784 queued. Production changes remain uncommitted until PG GREEN. Continue immediately.
