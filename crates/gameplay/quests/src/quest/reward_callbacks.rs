@@ -67,6 +67,9 @@ pub struct RewardCallback {
     /// Current locked progression must satisfy this source requirement.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
+    /// Source health loss, staged and installed by the existing live vitals owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub health_loss: Option<u32>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes: bool,
     pub reply: Vec<String>,
@@ -115,6 +118,10 @@ fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
             serde_json::to_vec(&(&callback.equipped_slots, callback.repeatable_check))
                 .map_err(|error| error.to_string())?,
         );
+    }
+    if let Some(amount) = callback.health_loss {
+        digest.update(b"\0quest-reward-health-loss-v1\0");
+        digest.update(amount.to_be_bytes());
     }
     Ok(digest.finalize().into())
 }
@@ -174,6 +181,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     || c.achievement.is_some()
                     || c.blessing.is_some()
                     || c.experience.is_some()
+                    || c.health_loss.is_some()
                     || c.completes))
             || (c.repeatable_check
                 && c.storage
@@ -185,6 +193,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                 .iter()
                 .any(|slot| !(1..=10).contains(slot) || *slot == 9)
             || c.minimum_level == Some(0)
+            || c.health_loss == Some(0)
             || c.experience
                 .is_some_and(|value| !(1..=super::QUESTGATE0_RL_05).contains(&value))
             || c.present.len() > 8
@@ -305,6 +314,32 @@ mod tests {
                 189, 203, 104, 136, 202, 26, 238, 6, 117, 167, 127, 82, 231, 202
             ]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn health_loss_is_positive_once_only_and_content_bound() -> Result<(), String> {
+        let mut callback = load()?
+            .into_iter()
+            .find(|callback| callback.health_loss.is_some())
+            .ok_or("health callback")?;
+        let original = reward_binding(&callback)?;
+        callback.health_loss = Some(21);
+        assert_ne!(reward_binding(&callback)?, original);
+        let document = |callback: &RewardCallback| {
+            serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string()
+        };
+        callback.health_loss = Some(0);
+        assert!(parse(&document(&callback)).is_err());
+        callback.health_loss = Some(20);
+        callback.repeatable_check = true;
+        for storage in &mut callback.storage {
+            storage.maximum = storage.minimum;
+            storage.set = storage.minimum;
+        }
+        assert!(parse(&document(&callback)).is_err());
+        callback.health_loss = None;
+        assert!(parse(&document(&callback)).is_ok());
         Ok(())
     }
 

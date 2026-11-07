@@ -21,7 +21,7 @@ def storage(track, low, high, value):
 
 def callback(name, keywords, topic, next_topic, before, after, old_log, new_log, line, reply,
              *, npc="oteryn:npc.santiago", greet=GREET, log=LOG, source=SOURCE,
-             experience=None, take=(), give=None):
+             experience=None, take=(), give=None, health_loss=None):
     result = {
         "key": "oteryn:quest-reward/questpc3/beginning/" + name,
         "quest": "oteryn:quest.the_beginning_quest", "npc": npc,
@@ -32,6 +32,8 @@ def callback(name, keywords, topic, next_topic, before, after, old_log, new_log,
     }
     if experience is not None:
         result["experience"] = experience
+    if health_loss is not None:
+        result["health_loss"] = health_loss
     return result
 
 
@@ -45,6 +47,8 @@ def documents():
                  "Advancing improves your health, carrying capacity and speed. Did the cockroaches hurt you?"),
         callback("hurt-explained", ["yes", "right", "ok"], 5, 6, (8, 8), 9, (6, 6), 7, 183,
                  "There are more dangerous monsters beyond this tutorial. May I demonstrate why you should watch your health?"),
+        callback("damage-lesson", ["yes", "right", "ok"], 6, 7, (9, 9), 10, (7, 7), 8, 185,
+                 "Watch your health bar. Shall I show you how food helps you recover?", health_loss=20),
         callback("food-explained", ["yes", "right", "ok"], 8, 9, (11, 11), 12, (9, 9), 10, 210,
                  "You can find food on creatures in the forest. Have you seen Zirella nearby?"),
         callback("refer-zirella", ["yes", "right", "ok"], 9, 0, (12, 12), 13, (10, 10), 11, 216,

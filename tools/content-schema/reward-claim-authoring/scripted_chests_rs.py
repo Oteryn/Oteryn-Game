@@ -26,22 +26,59 @@ def source_claims():
             'reward': {'items': [{'count': 1, 'item': {
                 'family': 'Item', 'key': 'crystalserver:item/3272', 'revision': REVISION}}]},
         }],
-    }]
+    }] + [beginning_source_claim()]
+
+
+def beginning_source_claim():
+    """One conservative coat: source NPC expects3562, map table names UID50080.
+
+    Crystal201189f startup/tables/chest.lua:3540-3543 binds7757at32032/32276/5
+    (SHA2567c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4).
+    quest_system1.lua:166-171 sets SantiagoGreet3, never the journal. The pilot
+    omitted the chest because its table has no explicit reward; source map
+    children are not retained there. Author exactly one coat, no extra assets.
+    """
+    return {
+        'identity': {'key': 'canary:reward-claim/kv/beginning_coat', 'revision': REVISION},
+        'quest': {'family': 'Quest', 'key': 'canary:quest/the_beginning_quest',
+                  'revision': 'canary-04b83b51+crystalserver-9f5a72c6'},
+        'claim': {'per': 'character', 'repeat': {'kind': 'once'}},
+        'placements': [{
+            'position': {'x': 32032, 'y': 32276, 'z': 5},
+            'appearance': {'family': 'Item', 'key': 'crystalserver:item/7757', 'revision': REVISION},
+            'reward': {'items': [{'count': 1, 'item': {
+                'family': 'Item', 'key': 'crystalserver:item/3562', 'revision': REVISION}}]},
+        }],
+    }
+
+
+def native_chest_transitions():
+    """Closed counterparts of the source chest bindings in the native catalogue."""
+    return {'oteryn:quest-transition/kv/beginning_coat/chest'}
 
 
 def derive(manifest, items, build_records):
     claims = source_claims()
-    witness = next(row for row in manifest['entries'] if row['position'] == [32099, 32198, 9])
-    if not any(row['source'] == 'crystalserver' and row['uid'] == 14042
-               for row in witness['sources']):
-        raise ValueError('Rapier script UID/position witness changed')
-    entry = copy.deepcopy(witness)
-    entry['destination'] = claims[0]['identity']['key']
-    entry['sources'] = [row for row in entry['sources'] if row['source'] == 'crystalserver']
-    records, checks = build_records(claims, {'entries': [entry]}, items,
-                                    charge_evidence=[], transitions=set())
-    if checks or len(records) != 1 or records[0]['definition']['readiness'] != 'ready':
-        raise ValueError('Rapier reward Item is not admitted')
+    unique = {'canary:reward-claim/kv/rapier': 14042,
+              'canary:reward-claim/kv/beginning_coat': 50080}
+    entries = []
+    for claim in claims:
+        position = claim['placements'][0]['position']
+        xyz = [position[axis] for axis in ('x', 'y', 'z')]
+        witnesses = [row for row in manifest['entries'] if row.get('position') == xyz]
+        if len(witnesses) != 1 or not any(
+                row['source'] == 'crystalserver' and row['uid'] == unique[claim['identity']['key']]
+                for row in witnesses[0]['sources']):
+            raise ValueError('script chest UID/position witness changed')
+        entry = copy.deepcopy(witnesses[0])
+        entry['destination'] = claim['identity']['key']
+        entry['sources'] = [row for row in entry['sources'] if row['source'] == 'crystalserver']
+        entries.append(entry)
+    records, checks = build_records(claims, {'entries': entries}, items,
+                                    charge_evidence=[], transitions=native_chest_transitions())
+    if checks or len(records) != len(claims) or any(
+            row['definition']['readiness'] != 'ready' for row in records):
+        raise ValueError('script reward Item is not admitted')
     return records + [small_sapphire(items)]
 
 
@@ -120,5 +157,5 @@ def small_sapphire_source():
 
 
 def record_count():
-    """A pinned script leaf and one independently authored wiki container recipe."""
+    """Pinned script leaves and one independently authored wiki container recipe."""
     return len(source_claims()) + 1

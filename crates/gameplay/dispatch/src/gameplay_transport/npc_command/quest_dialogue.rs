@@ -338,14 +338,39 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
-    let value_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+    let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
         .ok()
-        .is_some_and(|callbacks| callbacks.iter().any(|c| c.key == request.transition_key));
+        .and_then(|callbacks| {
+            callbacks
+                .into_iter()
+                .find(|c| c.key == request.transition_key)
+        });
+    let value_callback = callback.is_some();
+    let effect_request = request.clone();
+    if let Some(amount) = callback.and_then(|callback| callback.health_loss) {
+        let runtime = admission.runtime.lock().await;
+        let mut states = admission.states.spell_states.lock().await;
+        if states
+            .prepare_quest_health(
+                &runtime,
+                actor,
+                item_fence,
+                &request,
+                amount,
+                admission.owner_now().get(),
+            )
+            .is_err()
+        {
+            finish(admission, command.game_session_id, false);
+            return rejected();
+        }
+    }
     let outcome = if value_callback {
         let Some(native) = admission
             .active_generation
             .and_then(|g| g.native_gameplay())
         else {
+            settle_health(admission, actor, &effect_request, false).await;
             finish(admission, command.game_session_id, false);
             return rejected();
         };
@@ -400,6 +425,9 @@ pub(super) async fn apply(
     }
     match outcome {
         Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {
+            if !settle_health(admission, actor, &effect_request, true).await {
+                return unknown();
+            }
             #[cfg(test)]
             if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
                 && let Some(state) = sessions.get_mut(&command.game_session_id)
@@ -434,10 +462,27 @@ pub(super) async fn apply(
             _,
         )) => unknown(),
         _ => {
+            settle_health(admission, actor, &effect_request, false).await;
             finish(admission, command.game_session_id, false);
             rejected()
         }
     }
+}
+
+async fn settle_health(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    request: &QuestTransitionRequest,
+    committed: bool,
+) -> bool {
+    let runtime = admission.runtime.lock().await;
+    admission
+        .states
+        .spell_states
+        .lock()
+        .await
+        .settle_quest_health(&runtime, actor, request, committed)
+        .is_ok()
 }
 
 pub(in crate::gameplay_transport) async fn resume(
@@ -469,11 +514,24 @@ pub(in crate::gameplay_transport) async fn resume(
         .reconcile_character_quest_transition(
             admission.character,
             pending.character,
-            pending.request,
+            pending.request.clone(),
         )
         .await
     {
         Ok(receipt) => {
+            if !settle_health(
+                admission,
+                pending.actor,
+                &pending.request,
+                receipt.is_some(),
+            )
+            .await
+            {
+                return Some(NpcTalkOutcome {
+                    unknown: true,
+                    ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                });
+            }
             finish(admission, command.game_session_id, receipt.is_some());
             if receipt.is_some() {
                 admission

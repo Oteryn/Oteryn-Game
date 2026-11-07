@@ -76,7 +76,7 @@
     },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
-      "records": 338
+      "records": 339
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",

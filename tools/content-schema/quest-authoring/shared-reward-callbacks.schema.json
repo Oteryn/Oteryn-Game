@@ -294,6 +294,11 @@
         "repeatable_check": {
           "type": "boolean"
         },
+        "health_loss": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 4294967295
+        },
         "minimum_level": {
           "type": [
             "integer",
