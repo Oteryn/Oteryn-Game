@@ -1769,6 +1769,97 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "reviewed-passive-cells-28",
+      "before_commit": "ce893d6b19fe4305a1f9d94778365e62977b156e",
+      "source": "Existing audited canonical cells unchanged. Current native provider lacks reviewed passive item profiles1855/1867/5593/14117/14783/15854/17396. Pinned XML1cf2992c... and appearance2dfa943b... plus canonical custody constraints; original cells remain the actual RED baseline.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.a_starving_dog",
+          "name": "A Starving Dog",
+          "expected": {
+            "x": 32119,
+            "y": 31094,
+            "floor": -5
+          },
+          "before": {
+            "x": 32119,
+            "y": 31094,
+            "floor": -5
+          }
+        },
+        {
+          "npc": "oteryn:npc.eirik",
+          "name": "Eirik",
+          "expected": {
+            "x": 32223,
+            "y": 31146,
+            "floor": -7
+          },
+          "before": {
+            "x": 32223,
+            "y": 31146,
+            "floor": -7
+          }
+        },
+        {
+          "npc": "oteryn:npc.emiliana",
+          "name": "Emiliana",
+          "expected": {
+            "x": 32412,
+            "y": 32687,
+            "floor": -12
+          },
+          "before": {
+            "x": 32412,
+            "y": 32687,
+            "floor": -12
+          }
+        },
+        {
+          "npc": "oteryn:npc.fayla",
+          "name": "Fayla",
+          "expected": {
+            "x": 33640,
+            "y": 31898,
+            "floor": -4
+          },
+          "before": {
+            "x": 33640,
+            "y": 31898,
+            "floor": -4
+          }
+        },
+        {
+          "npc": "oteryn:npc.gnommander",
+          "name": "Gnommander",
+          "expected": {
+            "x": 32248,
+            "y": 32604,
+            "floor": -8
+          },
+          "before": {
+            "x": 32248,
+            "y": 32604,
+            "floor": -8
+          }
+        },
+        {
+          "npc": "oteryn:npc.jessica",
+          "name": "Jessica",
+          "expected": {
+            "x": 32299,
+            "y": 31136,
+            "floor": -7
+          },
+          "before": {
+            "x": 32299,
+            "y": 31136,
+            "floor": -7
+          }
+        }
+      ]
     }
   ]
 }
