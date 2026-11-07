@@ -936,3 +936,30 @@ or boss mechanisms. Source NPC identities: flickering_soul.lua:1-6 SHA256
 67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405;
 bloodshade_rotten.lua:1-6 SHA256
 153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c.
+
+## QENGPR merge validation (2026-11-07)
+
+Material merge: c3211f597e600054eb9496f804d6a0638dd90ccf; parents QENGINE2
+ e7867e061 and main 9668e0a04. Lane bookkeeping is removed; its notes remain above.
+
+Conflict resolutions preserve both sources: sequencer creation fixtures plus starter
+bindings; monk cosmetics rebinding plus main's activation helper; both native Item
+admissions; both quest callback hooks (daily gates remain step-in only); both
+quest-authoring documentation additions. NX-5's maintained authoring is retained
+byte-for-byte as a generator input, with its outfits, mounts and grants combined
+with QENGINE2. Eleven shared mappings explicitly retain both outfit keys through
+source-validated aliases. Repository tools regenerated the cosmetics descriptor,
+Item profiles/index, callbacks, lock, manifests, world pin and deployment digest.
+
+Passed on the material merge tree:
+- fmt --check: 25.771s.
+- cargo check, all targets/features of the ten changed crates: 468.083s.
+- clippy -D warnings, all targets/features of those crates: 393.305s.
+- Quest-authoring: 1,084 tests exercised; the two stale generated-output modules
+  passed after regeneration (28 QENGINE2 tests: 56.153s; Grizzly: 6.000s).
+- Cosmetics authoring: 27 tests, 5.809s including process startup.
+- QENGINE2 generator reproducibility: 19.607s; native provider freshness: 43 files.
+- pin-refresh: 201.293s; pin-check: 200.637s, digest
+  d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95.
+
+Content integration and focused real-PostgreSQL execution are still running.
