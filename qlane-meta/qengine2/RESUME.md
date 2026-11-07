@@ -648,3 +648,13 @@ protocol first_entry marker: runtime already positioned, new variant now aligns
 admitted marker/actor/fence. Parent variants use existing creation-sex-bound
 quest reward harness and normal starter bag initialization; no disabled guards.
 Current three-entry final qualification still active, counts36/30/0 unchanged.
+
+Restart recovery: restored exact remote e7867e061 on the authorized qengine2
+branch; qengpr is separately owned and untouched. Startup confirms a real PG18.6
+connection. Fresh other-lane audit at questpc7 1f47892721766f4317426ee8445fea5e3f125818
+qualifies Fiend Slayer, Formal Dress and Hand of the Inquisition elsewhere.
+Per owner skip rule these are recorded QUALIFIED with exact source status SHA,
+proof path and PG RED/GREEN durations; no duplicate implementation imported.
+Counts39/66 QUALIFIED,27 UNFINISHED. Local L13 remains AUTHORING: new parent-flow
+variants and Rift RED fixture only; no production L13 changes or qualification.
+Focused RED log /tmp/qengine2-restart13-red2.log; compile in progress.
