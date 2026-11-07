@@ -195,24 +195,18 @@ async fn activated_dependencies(
 )> {
     use crate::content::{
         ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
-        activate_native_entry_room_with_gameplay, native_gameplay::NativeGameplayInput,
+        activate_native_entry_room_with_gameplay,
     };
     use sha2::Digest;
     assert!(matches!((sequence, repack), (2, true) | (3, false)));
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let channel = crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?;
-    let manifest = std::path::Path::new(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/spells.manifest.json"
-    ));
-    let mut supplied = NativeGameplayInput::from_manifest(manifest).map_err(debug)?;
-    // Match the original fixture helper's native entry room and interpretation.
-    supplied.source_world = None;
-    supplied
-        .build_training
-        .as_mut()
-        .ok_or("training input")?
-        .content_revision = "content-1".into();
+    // Use the original fixture's complete revision binding, including cosmetics;
+    // only the explicit presentation repack below may change artifact identity.
+    let mut supplied = super::super::death_ml_loss_composed::production_input_with_source(
+        "content-1",
+        None,
+    )?;
     if repack {
         let before: Value = serde_json::from_slice(&supplied.presentation_profiles.bytes)?;
         supplied.presentation_profiles.bytes.push(b'\n');

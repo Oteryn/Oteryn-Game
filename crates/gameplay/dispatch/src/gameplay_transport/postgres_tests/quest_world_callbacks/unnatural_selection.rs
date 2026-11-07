@@ -199,6 +199,7 @@ pub(super) async fn exercise(
                     catalogue.clone(),
                     &permit,
                     setup_context.clone(),
+                    None,
                 )
                 .await
                 .map_err(debug)?;
@@ -256,6 +257,7 @@ pub(super) async fn exercise(
                 catalogue.clone(),
                 &permit,
                 setup_context.clone(),
+                None,
             )
             .await;
         assert!(
@@ -348,6 +350,7 @@ pub(super) async fn exercise(
                 catalogue,
                 &permit,
                 replay_context,
+                None,
             )
             .await
             .map_err(debug)?;
