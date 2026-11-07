@@ -52,6 +52,9 @@ pub struct RewardCallback {
     /// Native USE must select this exact carried definition; NPC text cannot invoke it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    /// Positive carried costs permit a fresh command occurrence of this exchange.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub repeatable: bool,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -177,6 +180,9 @@ fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
         digest.update(b"\0quest-reward-carried-use-v1\0");
         digest.update(item.as_bytes());
     }
+    if callback.repeatable {
+        digest.update(b"\0quest-reward-repeatable-v1\0");
+    }
     Ok(digest.finalize().into())
 }
 
@@ -231,9 +237,21 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                 .iter()
                 .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
             || (!c.repeatable_check
+                && !c.repeatable
                 && c.storage
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
+            || (c.repeatable
+                && (c.take.is_empty()
+                    || c.give.is_none()
+                    || c.fee.is_some()
+                    || c.outfit.is_some()
+                    || c.achievement.is_some()
+                    || c.blessing.is_some()
+                    || c.experience.is_some()
+                    || c.health_loss.is_some()
+                    || c.completes
+                    || c.repeatable_check))
             || (c.repeatable_check
                 && (!c.take.is_empty()
                     || c.fee.is_some()
@@ -375,6 +393,46 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn carried_exchanges_bind_selection_and_refuse_free_or_unselected_inputs() -> Result<(), String>
+    {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.carried_item.is_some())
+            .ok_or("carried exchange")?;
+        let document =
+            |c: &RewardCallback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+        assert!(parse(&document(&callback)).is_ok());
+        let mut other = callback.clone();
+        other.carried_item = callback
+            .take
+            .iter()
+            .find(|take| Some(&take.item) != callback.carried_item.as_ref())
+            .map(|take| take.item.clone());
+        assert!(other.carried_item.is_some());
+        assert!(parse(&document(&other)).is_ok());
+        assert_ne!(reward_binding(&callback)?, reward_binding(&other)?);
+        for mutation in 0..5 {
+            let mut invalid = callback.clone();
+            match mutation {
+                0 => invalid.take.clear(),
+                1 => invalid.give = None,
+                2 => invalid.carried_item = Some("oteryn:item.tibia.i3270".into()),
+                3 => invalid.take.iter_mut().for_each(|take| take.count = 2),
+                _ => {
+                    invalid.fee = Some(MonetaryFee {
+                        gold: 1,
+                        include_bank: false,
+                    })
+                }
+            }
+            assert!(
+                parse(&document(&invalid)).is_err(),
+                "carried exchange mutation {mutation}"
+            );
+        }
+        Ok(())
+    }
     #[test]
     fn legacy_callbacks_keep_their_existing_reward_binding() -> Result<(), String> {
         // Frozen before equipment/repeatable-check fields existed. Empty defaults

@@ -199,7 +199,7 @@ pub(crate) async fn apply(
     }
     let minted = if let Some(reward) = &callback.give {
         let Some(transaction) =
-            mint(tx, tuple, node, fence, command, &callback.key, reward, admission).await?
+            mint(tx, tuple, node, fence, command, &callback.key, callback.repeatable, reward, admission).await?
         else {
             return Ok(false);
         };
@@ -235,10 +235,10 @@ pub(crate) async fn give_world(
 ) -> std::result::Result<bool, DurabilityError> {
     let (super::super::quest_state::QuestCause::Use(command), Some(reward)) = (request.cause, callback.effects.item_reward.as_ref()) else { return Ok(false); };
     if admission.weights.generation_digest() != admission.native.source_digest() { return Ok(false); }
-    let Some(transaction) = mint(tx,tuple,node,fence,command,&callback.key,reward,admission).await? else { return Ok(false); };
+    let Some(transaction) = mint(tx,tuple,node,fence,command,&callback.key,callback.repeatable_reward,reward,admission).await? else { return Ok(false); };
     let plan = serde_json::json!({"key":callback.key,"quest":callback.quest,
         "storage":callback.storage,"take":[],"present":[],"give":reward,
-        "outfit":null,"world_callback":callback});
+        "outfit":null,"world_callback":callback,"repeatable":callback.repeatable_reward});
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,encode($6,'hex')::uuid,ARRAY[]::text[])")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
         .bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan)
@@ -257,6 +257,7 @@ async fn mint(
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
     source_key: &str,
+    repeatable: bool,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
@@ -294,12 +295,24 @@ async fn mint(
             .map(|b| format!("{b:02x}"))
             .collect::<String>()
     );
+    // Same fixed-width identity and colon-delimited ordinal as QENGINE2 1004.
+    let claim_key = if repeatable {
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:quest-exchange:v1\0")
+            .chain_update(fence.character_id.as_bytes())
+            .chain_update(command.game_session_id().as_bytes())
+            .chain_update(format!("{}:{source_key}", command.command_id().get()).as_bytes())
+            .finalize();
+        format!("oteryn:quest-exchange/{}", digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>())
+    } else {
+        source_key.to_owned()
+    };
     let request = RewardClaimMintRequest {
         backpack_outputs: !reward.backpack_outputs.is_empty(),
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
-            production_key: source_key.into(),
+            production_key: claim_key,
             revision_ref: content_revision.clone(),
         },
         source_placement: source_key.into(),

@@ -286,6 +286,9 @@
           "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
           "maxLength": 256
         },
+        "repeatable": {
+          "type": "boolean"
+        },
         "premium": {
           "type": "boolean"
         },

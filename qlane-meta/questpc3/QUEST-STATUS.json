@@ -4022,7 +4022,7 @@
     },
     "current_batch": {
       "batch": "threatened_treasure_14",
-      "phase": "Compiling WIP 9936a44dd: native carried USE and selected-instance multi-input proof implemented; three-crate cargo check PASS 1m58s. Six treasure entries remain RED pending repeatable/state-gated producers and data. New canonical 1005 and lane 1226 await PostgreSQL proof.",
+      "phase": "Compiling WIP: all six callbacks and repeat occurrence support authored; 16 focused domain/boundary tests PASS, check PASS 40.48s, strict Clippy PASS 3m28s, Native generation 41 PASS, pin-refresh PASS unchanged world digest. Focused six-entry PostgreSQL journey building; prior real RED remains 0/6 until runtime proof.",
       "previous_published": "6146ee945",
       "entries": [
         "agaric25385 -> fourth map24946",
@@ -4073,6 +4073,22 @@
         "pg_log": "/tmp/questpc3-treasure-bulk-pg.log",
         "clippy_log": "/tmp/questpc3-treasure-bulk-clippy.log",
         "next_push_deadline": "15minutes after9293e3d9b; publish compiled WIP if still qualifying"
+      },
+      "source_reuse": {
+        "carried_use": "questl2 d668338bede78c8966d5e2a6f732cf55178df197",
+        "canonical_migrations": "QENGINE2 e71a5d916: 1004 and 1005 consumed unchanged",
+        "lane_extensions": [
+          "1226_quest_carried_exchange_inputs.sql",
+          "1227_quest_earned_repeat_occurrences.sql"
+        ]
+      },
+      "latest_checks": {
+        "check": "PASS 40.48s",
+        "clippy": "PASS --lib -D warnings 3m28s, three changed crates",
+        "domain": "14 existing + 2 new boundary tests PASS",
+        "native": "repo tooling PASS 41 import files; 3596 existing profiles unchanged, 2 added",
+        "pins": "repo tooling PASS, unchanged world digest 1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
+        "postgres": "Focused native six-entry journey compiling; no GREEN claimed yet"
       }
     },
     "diagnosis": {
@@ -9491,7 +9507,9 @@
       "1222_quest_blessing_grants.sql",
       "1223_npc_trade_quest_obligations.sql",
       "1224_quest_reward_backpack_outputs.sql",
-      "1225_quest_world_reward_participants.sql"
+      "1225_quest_world_reward_participants.sql",
+      "1226_quest_carried_exchange_inputs.sql",
+      "1227_quest_earned_repeat_occurrences.sql"
     ],
     "status": "QUALIFIED: renames preserve SQL, post-rename PostgreSQL proof, repository pin refresh, duplicate check, fmt, five-crate check and strict Clippy all passed",
     "red_point": "Treasure six-entry qualification remains RED pending native producers; registry and peer-output mechanism are qualified. Supplemental focused integration-test Clippy still running; not part of claimed pass.",
@@ -9509,6 +9527,10 @@
       "clippy": "five changed crates --lib --bins -- -D warnings PASS 5m00s",
       "duplicates": "repository dup-migrations.sh HEAD: no output; staged tree also no output",
       "pins": "repository world-bundle-compiler pin-refresh . PASS; world digest unchanged 1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
-    }
+    },
+    "new_migration_verification_pending": [
+      "1226_quest_carried_exchange_inputs.sql",
+      "1227_quest_earned_repeat_occurrences.sql"
+    ]
   }
 }

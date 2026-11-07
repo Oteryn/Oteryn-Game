@@ -2850,6 +2850,218 @@
         "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
         "data-global/npc/valindara.lua:75-90 git-blob=572697b6e855387cefc8e6336ea55dd6ee304678 sha256=8cd64f9b2e7d678e91a07485789f4b08c168b7f52d1c741ecb77cfca3fbeb4fa"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-map/compose-1",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.grumpy_stone",
+      "carried_item": "oteryn:item.tibia.i24943",
+      "repeatable": true,
+      "keywords": [
+        "use"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/grumpy_stone",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i24943",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24944",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24945",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24946",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i24947",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The old map is artfully drawn. It tells you to search for a stone sun mosaic in the very south of Thais."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_map.lua:3-23 git-blob=d7302f806c60734dcd84642e80f756d7b7404094 sha256=4814b16c6fcd3e6e755495fd130a81740865723d8f14b655eb4c0c9ad0c655ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-map/compose-2",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.grumpy_stone",
+      "carried_item": "oteryn:item.tibia.i24944",
+      "repeatable": true,
+      "keywords": [
+        "use"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/grumpy_stone",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i24943",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24944",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24945",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24946",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i24947",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The old map is artfully drawn. It tells you to search for a stone sun mosaic in the very south of Thais."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_map.lua:3-23 git-blob=d7302f806c60734dcd84642e80f756d7b7404094 sha256=4814b16c6fcd3e6e755495fd130a81740865723d8f14b655eb4c0c9ad0c655ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-map/compose-3",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.grumpy_stone",
+      "carried_item": "oteryn:item.tibia.i24945",
+      "repeatable": true,
+      "keywords": [
+        "use"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/grumpy_stone",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i24943",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24944",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24945",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24946",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i24947",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The old map is artfully drawn. It tells you to search for a stone sun mosaic in the very south of Thais."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_map.lua:3-23 git-blob=d7302f806c60734dcd84642e80f756d7b7404094 sha256=4814b16c6fcd3e6e755495fd130a81740865723d8f14b655eb4c0c9ad0c655ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-map/compose-4",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.grumpy_stone",
+      "carried_item": "oteryn:item.tibia.i24946",
+      "repeatable": true,
+      "keywords": [
+        "use"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/grumpy_stone",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i24943",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24944",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24945",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i24946",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i24947",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The old map is artfully drawn. It tells you to search for a stone sun mosaic in the very south of Thais."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_map.lua:3-23 git-blob=d7302f806c60734dcd84642e80f756d7b7404094 sha256=4814b16c6fcd3e6e755495fd130a81740865723d8f14b655eb4c0c9ad0c655ca"
+      ]
     }
   ]
 }

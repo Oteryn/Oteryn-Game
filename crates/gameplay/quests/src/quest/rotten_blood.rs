@@ -31,6 +31,7 @@ pub const CLEANSE_COOLDOWN_SECONDS: u64 = 68 * 60 * 60;
 pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
     Callback {
+        repeatable_reward: false,
         effects: Default::default(),
         carried_use: None,
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,

@@ -122,6 +122,9 @@ impl CallbackEffects {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
+    /// Each earned state cycle gets an independent native MINT claim.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub repeatable_reward: bool,
     #[serde(default, skip_serializing_if = "CallbackEffects::is_empty")]
     pub effects: CallbackEffects,
     pub key: String,
@@ -230,9 +233,15 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none()
-                && (callback.trigger != Trigger::UseCarriedOnTarget
+                && (!matches!(callback.trigger, Trigger::Use | Trigger::UseCarriedOnTarget)
                     || selector.appearance.is_none_or(|appearance| appearance == 0)))
             || !valid_carried(callback)
+            || (callback.repeatable_reward
+                && (callback.effects.item_reward.is_none()
+                    || !callback
+                        .storage
+                        .iter()
+                        .any(|s| !s.preserve && !(s.minimum..=s.maximum).contains(&s.set))))
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
             || unique_offerings.len() != callback.offerings.len()
@@ -434,6 +443,37 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn repeatable_world_gifts_require_an_earned_state_cycle() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.repeatable_reward)
+            .ok_or("repeatable world gift")?;
+        let document = |c: &Callback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+        assert!(parse(&document(&callback)).is_ok());
+        let mut free = callback.clone();
+        for storage in &mut free.storage {
+            storage.set = storage.minimum;
+        }
+        assert!(
+            parse(&document(&free)).is_err(),
+            "a repeat must leave its eligible state range"
+        );
+        let mut valueless = callback.clone();
+        valueless.effects = Default::default();
+        assert!(parse(&document(&valueless)).is_err());
+        let mut empty_selector = callback;
+        empty_selector.selector.position = None;
+        empty_selector.selector.unique = None;
+        empty_selector.selector.action = None;
+        empty_selector.selector.appearance = Some(0);
+        assert!(
+            parse(&document(&empty_selector)).is_err(),
+            "appearance-only USE needs a positive source item"
+        );
+        Ok(())
+    }
 
     #[test]
     fn world_item_rewards_are_bounded_and_cannot_enter_carried_or_unfenced_modes()
