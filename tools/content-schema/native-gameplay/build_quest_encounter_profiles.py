@@ -11,6 +11,7 @@ from build_spell_item_identities import bind_profiles, binding_index, BINDINGS, 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = ROOT / 'tools/content-schema/native-gameplay/quest-encounter-item-profiles.json'
 IDS = {
+    3277, 3336, 3355, 3987, 3991, 3992, 5960, 9689,
     3060, 3061, 3063, 3071, 3275, 3306, 3322, 3359, 3364, 3366, 3413, 3414, 3416,
     4013, 4025, 4026, 4027, 4057, 4058, 4097, 4098, 4099, 5877, 5920, 5954,
     5973, 5983, 5995, 7368, 7382, 7393, 7401, 7430, 11457, 11472, 11482, 44158,

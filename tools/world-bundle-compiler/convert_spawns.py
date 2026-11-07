@@ -203,7 +203,15 @@ def convert(xml: bytes) -> dict[str, str]:
     boss_name = "spawns-boss-spawn1.json"
     files[boss_name] = dump(bosses)
     shards.append(f"content/world/spawns/{boss_name}")
-    all_records = records + bosses["records"]
+    import quest_training_spawns
+    training = quest_training_spawns.document()
+    for row in training['records']:
+        if any(p['creature'] not in known for p in row['declaration']['points']):
+            sys.exit('training spawn creature is not admitted')
+    training_name = 'spawns-quest-training.json'
+    files[training_name] = dump(training)
+    shards.append(f'content/world/spawns/{training_name}')
+    all_records = records + bosses["records"] + training['records']
     files["index.json"] = dump(
         {
             "coordinate_frame": FRAME,
@@ -230,7 +238,10 @@ def convert(xml: bytes) -> dict[str, str]:
                                     "record_count": len(bosses["records"])},
                                    {"path": "tools/world-bundle-compiler/held-boss-chances.json",
                                     "sha256": hashlib.sha256(chances_bytes).hexdigest(),
-                                    "record_count": len(chances)}],
+                                    "record_count": len(chances)},
+                                   {"path": "tools/world-bundle-compiler/quest_training_spawns.py",
+                                    "sha256": hashlib.sha256(Path(quest_training_spawns.__file__).read_bytes()).hexdigest(),
+                                    "record_count": len(training['records'])}],
         }
     )
     return {name: text + "\n" for name, text in files.items()}

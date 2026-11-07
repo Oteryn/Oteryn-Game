@@ -1,8 +1,10 @@
-//! Grizzly death capture on the existing kill queue. The most-damage principal and
+//! Grizzly and personal native-goal capture on the existing kill queue. The most-damage principal and
 //! the task runs observed at death never change while a delayed settlement is retried.
 //! Crystal 201189f `creaturescripts_monster_kill.lua:18-56`, `party.lua:129-139`.
 
 use std::sync::Arc;
+
+mod native_goals;
 
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction};
 
@@ -25,6 +27,7 @@ struct TaskSnapshot {
     lease_generation: u64,
     observed_revision: u64,
     active_tasks: Vec<u8>,
+    active_goals: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,12 +39,13 @@ struct Recipient {
     actions: Vec<GrizzlyAction>,
 }
 
-/// At most the native PartySnapshot bound (50) recipients, each with at most the
-/// source active-task bound (3) plus one boss action. This belongs to the queued death.
+/// At most 50 source-party recipients with three tasks and one boss action each,
+/// plus one personal native principal with at most 16 goals. Retained by the queued death.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct FrozenGrizzlyDeath {
     source: Option<PartySnapshot>,
     recipients: Vec<Recipient>,
+    native_goals: Option<native_goals::Recipient>,
 }
 
 /// Capture memory only; there is no independently drained queue here. Sessions are
@@ -155,21 +159,23 @@ fn freeze(
     FrozenGrizzlyDeath {
         source: Some(source),
         recipients,
+        native_goals: None,
     }
 }
 
-/// Membership in the pinned Grizzly catalogue permits capture only, never a reward
+/// Membership in either bounded quest catalogue permits capture only, never a reward
 /// amount or a recipient. The native lethal facts and frozen live task runs still
 /// decide eligibility, and the fenced quest writer remains the sole value owner.
 pub(super) fn tracks_creature(creature: &str) -> bool {
-    quest::catalogue().is_ok_and(|catalogue| {
-        catalogue.bosses.iter().any(|boss| {
-            boss.creature_key == creature || boss.creature_name.eq_ignore_ascii_case(creature)
-        }) || catalogue
-            .tasks
-            .iter()
-            .any(|task| task.creatures.iter().any(|member| member.matches(creature)))
-    })
+    native_goals::tracks_creature(creature)
+        || quest::catalogue().is_ok_and(|catalogue| {
+            catalogue.bosses.iter().any(|boss| {
+                boss.creature_key == creature || boss.creature_name.eq_ignore_ascii_case(creature)
+            }) || catalogue
+                .tasks
+                .iter()
+                .any(|task| task.creatures.iter().any(|member| member.matches(creature)))
+        })
 }
 
 /// Runs synchronously under the lethal turn's runtime and attack guards. The existing
@@ -235,13 +241,15 @@ pub(super) fn capture(
                 })
                 .cloned()
                 .collect();
-            freeze(
+            let mut frozen = freeze(
                 source,
                 *principal.character.as_bytes(),
                 principal_present,
                 &entry.creature,
                 &live,
-            )
+            );
+            frozen.native_goals = native_goals::freeze(runtime, entry, principal_present, &live);
+            frozen
         }),
     );
 }
@@ -278,6 +286,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         lease_generation: lease.generation(),
                         observed_revision: revision,
                         active_tasks,
+                        active_goals: native_goals::active(copy.tracks()),
                     })
                 })
         };
@@ -389,7 +398,8 @@ pub(super) async fn settle(
     entry: &PendingKillSettlement,
     ordinary: impl std::future::Future<Output = SettleReport>,
 ) -> SettleReport {
-    if !admission.credit_grizzly_death(entry).await {
+    if !native_goals::settle(admission, entry).await || !admission.credit_grizzly_death(entry).await
+    {
         return SettleReport {
             verdict: SettleVerdict::Retry,
             no_progression: false,

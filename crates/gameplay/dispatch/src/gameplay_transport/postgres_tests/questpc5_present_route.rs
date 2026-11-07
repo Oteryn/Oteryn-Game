@@ -96,19 +96,9 @@ pub(super) async fn exercise(
         .await
         .map_err(debug)?;
     assert_ne!(state.tracks().get(TRACK), Some(&1));
-    let source: serde_json::Value = serde_json::from_str(include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/world/npc-placements/placements-00000-00033.json"
-    )))?;
-    let seymour: Vec<_> = source["records"]
-        .as_array()
-        .ok_or("NPC placements")?
-        .iter()
-        .filter(|r| r["declaration"]["npc"] == "oteryn:npc.seymour")
-        .collect();
-    assert_eq!(seymour.len(), 1);
+    let seymour = super::source_npc_placements::declaration("oteryn:npc.seymour")?;
     assert_eq!(
-        seymour[0]["declaration"]["cell"],
+        seymour["cell"],
         serde_json::json!({"x":32104,"y":32189,"floor":7})
     );
     super::quest_catalogue_chests::relocate_source_actor(

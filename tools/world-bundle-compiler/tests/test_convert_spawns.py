@@ -26,10 +26,24 @@ class ConvertSpawnsTest(unittest.TestCase):
         cls.held = json.loads(cs.HELD.read_text())["records"]
 
     def test_counts(self):
-        self.assertEqual(len(self.records), 54684)
-        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87812)
-        self.assertEqual(self.index["record_count"], 54684)
-        self.assertEqual(self.index["point_count"], 87812)
+        self.assertEqual(len(self.records), 54685)
+        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87822)
+        self.assertEqual(self.index["record_count"], 54685)
+        self.assertEqual(self.index["point_count"], 87822)
+
+    def test_training_is_exactly_one_additive_source_with_ten_native_trolls(self):
+        import quest_training_spawns as training
+        authored=[r for r in self.records if r['declaration']['identity']['key']==training.KEY]
+        self.assertEqual(len(authored),1)
+        self.assertEqual(authored,training.document()['records'])
+        points=authored[0]['declaration']['points']
+        self.assertEqual(len(points),10)
+        self.assertTrue(all(p['creature']=='oteryn:creature.troll' and p['respawn_ms']==90000 for p in points))
+        self.assertEqual(len({tuple(p['cell'].values()) for p in points}),10)
+        original=[r for r in self.records if r not in authored]
+        self.assertEqual(len(original),54684)
+        self.assertEqual(sum(len(r['declaration']['points']) for r in original),87812)
+        self.assertEqual(len(authored[0]['declaration']['provenance']['approaches']),10)
 
     def test_provenance_is_crystalserver(self):
         self.assertEqual(self.index["source"]["source_key"], "oteryn:source.crystalserver")

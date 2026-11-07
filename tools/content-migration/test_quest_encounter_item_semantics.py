@@ -51,6 +51,27 @@ class EncounterItemTests(unittest.TestCase):
             self.assertEqual(len(loot['entries']),count)
             self.assertTrue(all(definitions[e['item']['key']]['materializable'] for e in loot['entries']))
 
+    def test_troll_chain_loot_and_exact_preservation_of_prior_encounters(self):
+        import hashlib
+        definitions={d['identity']['key']:d for d in self.definitions()}
+        for item,capacity,duration,target in [(5960,7,10000,3987),(3987,10,300000,3991),
+                                              (3991,10,300000,3992),(3992,None,60000,None)]:
+            d=definitions[f'oteryn:item.tibia.i{item}']
+            self.assertTrue(d['materializable'])
+            self.assertEqual(d['semantics']['container'],{'state':'KNOWN','value':{'capacity':{'state':'KNOWN','value':capacity}}} if capacity else {'state':'NOT_APPLICABLE'})
+            self.assertEqual(d['semantics']['temporal']['value']['duration']['value'],duration)
+            self.assertEqual(d['semantics']['temporal']['value']['decay_target'],{'state':'KNOWN','value':{'key':f'oteryn:item.tibia.i{target}','revision':'definition-r1'}} if target else {'state':'NOT_APPLICABLE'})
+        loot=next(r['definition'] for p in (encounter.ROOT/'content/loot').glob('*.json')
+                  for r in json.loads(p.read_bytes()).get('records',[])
+                  if r.get('definition',{}).get('identity',{}).get('key')=='oteryn:loot.creature.troll')
+        self.assertEqual(len(loot['entries']),12)
+        self.assertTrue(all(definitions[e['item']['key']]['materializable'] for e in loot['entries']))
+        capture=json.loads((encounter.ROOT/encounter.PATH).read_bytes())['records']
+        added={3277,3336,3355,3987,3991,3992,5960,9689}
+        prior=[r for r in capture if int(r['production_binding']['external_id']) not in added]
+        self.assertEqual(len(prior),37)
+        self.assertEqual(hashlib.sha256(json.dumps(prior,sort_keys=True,separators=(',',':')).encode()).hexdigest(),'8e335341e591aa3b6f752f9738768c0bd166f7a63532a51b99e0ef38517b07b5')
+
     def test_canonical_projection_is_idempotent_and_preserves_unrelated_items(self):
         definitions = self.definitions()
         before = copy.deepcopy(definitions)

@@ -79,7 +79,9 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if paired_plate {
+    let world = if name == "qengine-rewards-newhaven-native-goal" {
+        super::super::questpc5_newhaven_native_goal::source_world()?
+    } else if paired_plate {
         super::world_ordinal(&callback, trigger, 431, 1)?
     } else {
         world(&callback, trigger)?
@@ -91,7 +93,7 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
-        if name == "qengine-rewards-newhaven-xp" {
+        if name.starts_with("qengine-rewards-newhaven-") {
             let version: String = sqlx::query_scalar("SHOW server_version")
                 .fetch_one(&h.pool)
                 .await?;

@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "scope": "Reusable bounded native personal goal plus source Gustavo placement and authored ten-Troll training population; component qualification only",
+  "whole_recipe_qualified": false,
+  "reuse_commit": "390e024503a7c02b9e15d67e680cec0ac711fd5b",
+  "postgres": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "filter": "questpc5_newhaven_native_troll_goal_is_bound_to_the_selected_activation",
+    "red": {
+      "duration_seconds": 4.95,
+      "failure": "missing native ten-Troll death transition",
+      "marker": "POSTGRES_CASE_STARTED newhaven_native_goal server_version=18.6",
+      "log": "/tmp/questpc5-newhaven-native-goal-red.log"
+    },
+    "runtime_red": {
+      "duration_seconds": 92.09868704,
+      "failure": "kill_reward_refused reason=corpse_item_inadmissible creature=oteryn:creature.troll"
+    },
+    "green": {
+      "duration_seconds": 99.747282116,
+      "component_marker_seconds": 45.512742567,
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-newhaven-native-goal success=true",
+      "log": "/tmp/questpc5-newhaven-native-goal-final-green.log",
+      "assertions": [
+        "Five actual native Troll deaths before activation give no quest credit; ordinary20 baseXP plus existing100percent low-level bonus yields200XP",
+        "Exact source Gustavo32560/32488/7 north declaration",
+        "Actual welcome and mission commands activate the once-only run",
+        "A command cannot manufacture a native death transition",
+        "Wrong origin, wrong species and non-native encounter copies cannot earn credit",
+        "Ten exact native spawn origins increment once each despite duplicate capture and replay",
+        "Counter remains capped at ten",
+        "Earned Guardian Ring is delivered only after ten native deaths",
+        "Terminal run cannot reopen"
+      ]
+    }
+  },
+  "content": {
+    "training_sources_added": 1,
+    "training_points_added": 10,
+    "existing_population_unchanged": {
+      "sources": 54684,
+      "points": 87812
+    },
+    "item_capture_count": 45,
+    "previous_capture_rows_unchanged": 37,
+    "troll_corpse_chain": [
+      5960,
+      3987,
+      3991,
+      3992
+    ],
+    "additional_held_loot_closed": [
+      3277,
+      3336,
+      3355,
+      9689
+    ],
+    "loot_probabilities_and_quantities": "UNCHANGED",
+    "charged_life_ring3054": "UNCHANGED exact200 charges",
+    "source_generator": "tools/world-bundle-compiler/quest_training_spawns.py",
+    "npc_generator": "tools/content-schema/npc-authoring/convert_placements.py",
+    "spawn_generator": "tools/world-bundle-compiler/convert_spawns.py",
+    "loot_sha256": "577cec929c36c7c6985c8f4ffb6a57f3f8594ac800e7fa1bf3e98f6c1ed265b9"
+  },
+  "checks": {
+    "native_goal_rust_units": 2,
+    "grizzly_party_credit_units": 9,
+    "spawn_units": 10,
+    "npc_placement_units": 9,
+    "item_admission_units": 9,
+    "input_pin_units": 3,
+    "prey_simulation": "PASS15cases776creatures",
+    "native_generation": "PASS41files",
+    "canonical_generator_reproduction": "PASS",
+    "world_tree": "PASS34111Items337claims including Imbuement and craft",
+    "fmt": "PASS",
+    "cargo_check": "PASS104s content/quests/entities/durability/dispatch",
+    "clippy": "PASS all-targets/all-features -D warnings content/quests/entities/durability/dispatch129s",
+    "world_pins": {
+      "refresh": "PASS",
+      "check": "PASS",
+      "inputs_digest": "c8f016e2d59b05d1b969246989c4816c8b6ba577e52f69545a6af921a1cd6b14",
+      "pins": [
+        {
+          "digest": "07127a12e4dd254b9cb51d00db6543f2f4d93580213fe6b9f62fa57b54698354",
+          "previous": "3fe4f02d9c01f2933270d2871b6f20095341a22c5a180dabbf93dfc27e5523f9",
+          "world": "oteryn"
+        }
+      ]
+    }
+  },
+  "assumptions": [
+    "Chosen training spawns use ordinary90-second respawn and verified empty, unprotected source cells, with adjacent walkable approaches",
+    "Only school/supply component predicates are deliberately seeded here; this does not qualify full exploration or the whole quest"
+  ],
+  "hunting_bonus_evidence": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs:424; existing Global low-level100percent bonus, implemented by the hunting XP owner",
+  "notes": "Viola and Present retain exact source coordinate assertions while using the generated family index instead of a shard filename that changes as the NPC scope grows."
+}

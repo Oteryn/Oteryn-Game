@@ -220,6 +220,8 @@ pub fn load_embedded_quest_state(
     lowered.catalogue =
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::native_kill_goals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
@@ -231,6 +233,7 @@ pub fn load_embedded_quest_state(
     );
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Preserve source captures and their counts; only the production catalogue
     // and its executable bindings are filtered by the owner's target scope.
     let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);
@@ -429,6 +432,28 @@ mod tests {
                     .ok_or("callback key")
             })
             .collect::<Result<_, _>>()?;
+        // The runtime admits all three explicit registries, not only the original
+        // source capture. Keep exact-set coverage and exclude Dawnport in each.
+        for raw in [
+            include_str!("../../../../../content/quests/shared-access-callbacks.json"),
+            include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
+        ] {
+            let registry: serde_json::Value =
+                serde_json::from_str(raw).map_err(|e| e.to_string())?;
+            for callback in registry["callbacks"]
+                .as_array()
+                .ok_or("shared callback registry")?
+            {
+                if callback["quest"] != "oteryn:quest.dawnport_quest" {
+                    expected.insert(
+                        callback["key"]
+                            .as_str()
+                            .ok_or("shared callback key")?
+                            .to_owned(),
+                    );
+                }
+            }
+        }
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
         assert_eq!(
             callbacks

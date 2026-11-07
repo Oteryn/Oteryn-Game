@@ -130,3 +130,29 @@ in batches/quests4/newhaven.json and its exact content SHA, not a synthetic repl
 The whole selected Legion recipe has requirements.prerequisites=[] and requires
 both conversations. The old status text requiring full completion of both
 separate source missions was stronger than that chosen recipe and is superseded.
+
+
+Newhaven native goal reuses questpc6 commit390e024503a7c02b9e15d67e680cec0ac711fd5b,
+with only this lane's selected Newhaven origins installed. Ten authored ordinary
+Troll spawns use existing canonical Troll50HP/20XP and existing map cells. The
+producer proves current-client ground flags, no protection/house/zone flags,
+spacing from the existing population and an empty walkable adjacent approach.
+Ordinary90-second respawn is the explicit conservative training rule; personal
+quest eligibility still starts once and caps at ten. No source population or
+map tile is replaced. ActualPGRED4.95s proved the absent death transition;
+expanded actual deaths then reproduced corpse_item_inadmissible92.10s. Close
+5960→3987→3991→3992→0 with source capacities7/10/10/none and durations
+10/300/300/60seconds, plus held possible Troll loot3277/3336/3355/9689.
+All prior37 encounter capture rows are checked unchanged. Wrong-species
+refusal uses the already-qualified native Dragon closure, retaining the exact
+negative property without requiring unrelated Rat corpse admission.
+The selected tour flags are deliberately seeded only in this bounded native
+goal component proof; whole Newhaven still requires actual exploration bindings.
+
+Troll Item source: opentibiabr/canary@99902524e052f37574194466c2949c576e4ab269
+data/items/items.xml SHA256 bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85,
+lines11894,11920,11926,16108 select3987/3991/3992/5960. Immutable URL:
+https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/data/items/items.xml
+The same existing pinned importer admits these eight Item facts; loot quantities,
+probabilities, the charged-life-ring3054 exact200 charges and all previous
+37 encounter capture records stay unchanged.

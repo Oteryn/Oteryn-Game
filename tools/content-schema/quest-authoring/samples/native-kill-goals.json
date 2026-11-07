@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "goals": [
+    {
+      "key": "oteryn:quest-transition/native-kill/newhaven-trolls",
+      "quest": "oteryn:quest.newhaven_quest",
+      "phase": "oteryn:quest-progress/newhaven/native_run",
+      "counter": "oteryn:quest-progress/newhaven/troll_kills",
+      "activation": "oteryn:quest-reward/newhaven-training-ready",
+      "count": 10,
+      "origins": [
+        {
+          "creature": "oteryn:creature.troll",
+          "x": 32602,
+          "y": 32455,
+          "floor": 7,
+          "source_pointer": "/records/0/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.troll",
+          "x": 32583,
+          "y": 32457,
+          "floor": 7,
+          "source_pointer": "/records/0/declaration/points/1"
+        },
+        {
+          "creature": "oteryn:creature.troll",
+          "x": 32594,
+          "y": 32457,
+          "floor": 7,
+          "source_pointer": "/records/0/declaration/points/2"
+        },
+        {
+          "creature": "oteryn:creature.troll",
+          "x": 32587,
+          "y": 32458,
+          "floor": 7,
+          "source_pointer": "/records/0/declaration/points/3"
+        },
+        {
+          "creature": "oteryn:creature.troll",
+          "x": 32600,
+          "y": 32458,
+          "floor": 7,
+          "source_pointer": "/records/0/declaration/points/4"
+        },
+        {
+          "creature": "oteryn:creature.troll",
+          "x": 32592,
+          "y": 32460,
+          "floor": 7,
+          "source_pointer": "/records/0/declaration/points/5"
+        },
+        {
+          "creature": "oteryn:creature.troll",
+          "x": 32584,
+          "y": 32461,
+          "floor": 7,
+          "source_pointer": "/records/0/declaration/points/6"
+        },
+        {
+          "creature": "oteryn:creature.troll",
+          "x": 32598,
+          "y": 32461,
+          "floor": 7,
+          "source_pointer": "/records/0/declaration/points/7"
+        },
+        {
+          "creature": "oteryn:creature.troll",
+          "x": 32601,
+          "y": 32464,
+          "floor": 7,
+          "source_pointer": "/records/0/declaration/points/8"
+        },
+        {
+          "creature": "oteryn:creature.troll",
+          "x": 32582,
+          "y": 32468,
+          "floor": 7,
+          "source_pointer": "/records/0/declaration/points/9"
+        }
+      ],
+      "sources": [
+        {
+          "path": "content/world/spawns/spawns-quest-training.json",
+          "sha256": "df09d150c06796d651150832187ac84220b547c5691c5a6d33e75372c7d2900c"
+        }
+      ]
+    }
+  ]
+}

@@ -59,7 +59,7 @@
     },
     {
       "path": "content/items/definitions/items-29500-29999.json",
-      "sha256": "b2471f3ff8e389e0d4b39f223e47d7265b43009e39098eb7a6569fd4cc538c5e"
+      "sha256": "fc87944398f73215395a6aeb53c2d7a5f57752f84130028c74f54c4fdacc171a"
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",
@@ -67,7 +67,7 @@
     },
     {
       "path": "content/items/definitions/items-33500-33999.json",
-      "sha256": "9fcdc84d1be95e28089ce649b4966ac3f460c28f1f35caa7f7df943be1c5ffcf"
+      "sha256": "03504fb9acffc4b487bea4b66a60049673e15b71890053695397e67294dbab03"
     }
   ],
   "records": [

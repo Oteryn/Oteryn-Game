@@ -23,10 +23,18 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            Position {
-                x: 33294,
-                y: 31677,
-                floor: -15,
+            if name == "qengine-rewards-newhaven-native-goal" {
+                Position {
+                    x: 32560,
+                    y: 32488,
+                    floor: -7,
+                }
+            } else {
+                Position {
+                    x: 33294,
+                    y: 31677,
+                    floor: -15,
+                }
             },
             false,
         )
@@ -590,6 +598,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-newhaven-native-goal" {
+        return Box::pin(super::questpc5_newhaven_native_goal::exercise(
+            owner, admitted, h,
+        ))
+        .await;
+    }
     if name == "qengine-rewards-newhaven-xp" {
         return super::questpc5_newhaven_rewards::exercise(owner, admitted, h, authority).await;
     }

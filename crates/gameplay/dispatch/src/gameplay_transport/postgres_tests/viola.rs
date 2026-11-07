@@ -477,19 +477,7 @@ async fn install_source(
         owner.owner_now(),
     );
     owner.states.chat.set_npc_service(admitted.game_session_id);
-    let document: serde_json::Value = serde_json::from_slice(&std::fs::read(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/world/npc-placements/placements-00000-00033.json"
-    ))?)?;
-    let declaration = document["records"]
-        .as_array()
-        .ok_or("placements")?
-        .iter()
-        .find_map(|row| {
-            let d = &row["declaration"];
-            (d["npc"].as_str() == Some("oteryn:npc.viola")).then_some(d)
-        })
-        .ok_or("authored Viola placement")?;
+    let declaration = super::source_npc_placements::declaration("oteryn:npc.viola")?;
     assert_eq!(
         declaration["cell"],
         serde_json::json!({"x":32571,"y":32507,"floor":7})

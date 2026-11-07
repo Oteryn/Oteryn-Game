@@ -67,7 +67,7 @@
     "title": "Newhaven Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Active next slice: real tutor welcome, school/supply exploration, native ten-Troll goal, actual Book acquisition and complete source route. Shared item/XP/completion reward support is implemented and PostgreSQL-qualified.",
+    "blocker": "Active next slice: actual school/supply STEP objectives, source Book USE and the complete chosen tutor/ten-Troll/book/reward route. Native goal, ordinary Troll corpse/loot admission, source Gustavo placement and shared item/XP/completion rewards now have positive PostgreSQL proof.",
     "from_lanes": [
       "questpc2"
     ],
@@ -97,6 +97,12 @@
       "postgres_red_seconds": 52.6,
       "postgres_green_seconds": 96.41216229,
       "scope": "Shared level gate, item plus XP milestone, Book consumption and terminal callback; component predicates are deliberately seeded; full native route pending"
+    },
+    "native_goal_progress": {
+      "proof": "cloud-newhaven-native-goal-proof.json",
+      "postgres_green_seconds": 99.747282116,
+      "component_marker_seconds": 45.512742567,
+      "scope": "Actual native Troll death capture/replay/refusals/cap and earned ring; tour flags deliberately seeded only for this component case; whole route pending"
     }
   },
   {
