@@ -4374,7 +4374,7 @@
     },
     "current_batch": {
       "batch": "threatened_fairies_15",
-      "phase": "Active: author focused five-entry PG RED before implementing reusable timed transform/counter effects",
+      "phase": "Five-entry PG RED test building locally after fixture API fixes; production15 remains untouched. Publish independently compiling shared multi-AID world fixture support now; test/mount remain local until full test build confirmed.",
       "entries": [
         "AID40016 Fairy01",
         "AID40017 Fairy02",
@@ -4385,7 +4385,13 @@
       "source": "/tmp/questpc3-donor/action_fairies_release.lua; retained archive index and exact blob/SHA to cite in next authoring batch",
       "requirements": "NightmareIntruders3; distinct once flags; counter capped5 with absent/-1->1; transform25796->25797, restore after30s",
       "reuse": "qualified questl2 0c74b25cc temporary world objects; implement missing reusable pieces here",
-      "previous_qualified": "threatened_treasure_14"
+      "previous_qualified": "threatened_treasure_14",
+      "red_test": {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/threatened_dreams/fairies.rs",
+        "log": "/tmp/questpc3-fairies-red-retry.log",
+        "state": "building, no PostgreSQL RED marker accepted yet",
+        "fixture_compile_fixes": "BundleWorld.facts() method; poll_fn rather than unavailable Tokio join macro; normal native capability offer"
+      }
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",

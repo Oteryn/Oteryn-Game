@@ -211,6 +211,15 @@ pub(super) fn world(
     callback: &Callback,
     trigger: Position,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_with_triggers(callback, trigger, &[])
+}
+
+/// Multiple source AIDs share one Channel fixture without inventing callback effects.
+pub(super) fn world_with_triggers(
+    callback: &Callback,
+    trigger: Position,
+    additional: &[Callback],
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -271,6 +280,22 @@ pub(super) fn world(
                 ..Default::default()
             },
         });
+    for extra in additional {
+        let position = extra.selector.position.ok_or("additional source position")?;
+        if extra.selector.appearance != callback.selector.appearance {
+            return Err("additional source appearance must share the fixture palette".into());
+        }
+        for x in position.x - 1..=position.x + 1 {
+            for y in position.y - 1..=position.y + 1 {
+                cells.entry((position.floor, x, y)).or_default();
+            }
+        }
+        cells.entry((position.floor, position.x, position.y)).or_default().push(sector::Item {
+            palette: 1,
+            depth: 0,
+            attrs: sector::Attrs { unique: extra.selector.unique, action: extra.selector.action, ..Default::default() },
+        });
+    }
     if callback.key == "oteryn:quest-callback/monk-guidance" {
         for shrine in oteryn_gameplay_quests::quest::world_callbacks::load()?
             .into_iter()

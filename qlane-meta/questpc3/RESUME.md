@@ -1,3 +1,5 @@
+BATCH15 ACTIVE: production untouched; five-fairy PG RED test/mount local, build /tmp/questpc3-fairies-red-retry.log. Multi-AID source world fixture helper typechecks and is published separately; no PG RED accepted until actual marker/result. Fixture uses existing world callback/timer APIs and all five source AIDs in one Channel.
+
 # questpc3 current handoff
 
 Branch claude/happy-davinci-ijz3wy-questpc3. Fetch this exact branch before every push, merge remote movement, never force/rebase/main/PR. Commit as blakinio with required Claude trailers. Push every green step and at least every15minutes.
