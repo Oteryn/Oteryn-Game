@@ -54,7 +54,10 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    owner.premium_coordinator = None;
+    assert!(
+        owner.premium_coordinator.is_some(),
+        "Winterlight uses the native Premium purchase fixture"
+    );
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -232,6 +235,26 @@ pub(super) async fn exercise(
         1,
         "four fires activate the native thawed Queen"
     );
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "Queen attacker fence")?
+        .ok_or("Queen attacker fence")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            admitted.runtime_actor.ok_or("Queen attacker")?,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
     let before_xp = experience(h).await?;
     super::grizzly_npc::questpc8_campaign::lethal(
         owner,

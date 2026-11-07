@@ -775,5 +775,3 @@ CREATE CONSTRAINT TRIGGER game_father_cape_values AFTER INSERT ON game_reward_cl
 DO $$ BEGIN EXECUTE format('ALTER FUNCTION game_father_values_proven() SET search_path=pg_catalog,%I,pg_temp',current_schema()); END $$;
 REVOKE ALL ON FUNCTION game_father_values_proven() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_father_values_proven() TO oteryn_game_runtime;
-
-

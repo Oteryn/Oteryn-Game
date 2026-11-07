@@ -1,6 +1,6 @@
 {
   "main_head": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
-  "state": "workspace check and focused units green; generation, strict Clippy and actual native PG gate pending",
+  "state": "PASS: all five native PG mechanics green; latest workspace all-target check and fmt green; generated providers and refreshed pins ready for immediate push",
   "canonical_main_migrations": [
     "0999_quest_reward_callbacks.sql",
     "1000_quest_reward_payments.sql",
@@ -18,7 +18,9 @@
     "1301_questpc8_reward_backpack_outputs.sql",
     "1302_questpc8_world_reward_receipts.sql",
     "1303_questpc8_state_operation_validation.sql",
-    "1304_questpc8_occurrence_reward_mint.sql"
+    "1304_questpc8_occurrence_reward_mint.sql",
+    "1305_questpc8_forge_profile_admission.sql",
+    "1306_questpc8_father_reward_amount.sql"
   ],
   "old_1200_1205_files_removed": true,
   "distinct_lane_prerequisites": "fluid/charge MINT proofs, source corpse policy, atomic eleven-track NPC receipt width, Viola and Father value proofs are absent from main SQL and occur once in lane migration1300; main0999-1008 remain byte-identical",
@@ -67,5 +69,66 @@
       "green_passed": 11,
       "green_seconds": 7.454
     }
-  }
+  },
+  "focused_pg_latest": {
+    "log": "/tmp/questpc8-3020-focused-native-pg2.log",
+    "passed": {
+      "father_atomic_tracks_seconds": 89.008,
+      "father_legacy_seconds": 71.071
+    },
+    "red": {
+      "father_handins": "DefinitionNotFound; 70.973s",
+      "venore": "final construction report rejected;119.478s",
+      "winterlight": "first reward rejected;70.281s"
+    }
+  },
+  "focused_pg_diagnostics": {
+    "log": "/tmp/questpc8-3020-focused-native-pg3.log",
+    "father": "Missing profiles fixed; first native hand-in2704 now Rejected,75.671s; source-program result diagnostics added",
+    "venore": "137.031412931s final report StageMismatch; writer diagnostics added",
+    "winterlight": "95.687067337s first bonfire StageMismatch; fixture discarded Premium coordinator, corrected to preserve actual purchased authority",
+    "next": "/tmp/questpc8-3020-focused-native-pg4.log; build proceeds, runner paused until generated manifest inputs settle"
+  },
+  "npc_custody_tests": {
+    "result": "PASS",
+    "cases": 2,
+    "duration_seconds": 36.828,
+    "log": "/tmp/questpc8-3020-npc-custody-tests.log"
+  },
+  "diagnosed_repairs": {
+    "father": "PG column reference amount ambiguous; forward migration1306 retains all exact proof predicates and disambiguates variable",
+    "winterlight": "native Premium fixture restored; five non-stackable branches mint separately;38-line local resolver feeds existing atomic BURN",
+    "venore": "immutable first report receipt command32 successful; repeated report command34 rightly rejected by main exact-keyword owner; test strengthened to require rejection and retain all no-duplicate assertions",
+    "catalogue_unit": "PASS1 case1.70s; report stage12+kills5 preserves kills and sets clock",
+    "native_red_durations_seconds": {
+      "father": 72.585,
+      "winterlight": 72.996,
+      "venore": 113.271
+    }
+  },
+  "green_native_pg": {
+    "father_handins_seconds": 128.112434858,
+    "father_atomic_acceptance_seconds": 104.11998833,
+    "father_legacy_restart_seconds": 92.551864037,
+    "venore_full_route_seconds": 147.862120072,
+    "winterlight_full_route_seconds": 88.598050216
+  },
+  "current_owner_push_gate": "Latest HARD RULE: cargo check --workspace --all-targets and cargo fmt --check; push compiling work immediately, full suites on CI; no further Clippy or extra verification",
+  "winterlight_proof": "winterlight-route-validation.json",
+  "final_workspace_check": {
+    "result": "PASS",
+    "duration": "3m58s",
+    "log_sha256": "e61b25772193403162a9330ad77f687fbe37124422279ca9755faf01e106c13d"
+  },
+  "final_fmt": {
+    "result": "PASS",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "final_pin_generation": {
+    "result": "PASS",
+    "digest": "25c580be19940724badfea7e9ac681e8ee0f8bebe7fc1306d6f4b72b9bbbd300",
+    "pin_check": "Not repeated under latest owner HARD RULE; CI owns remaining verification"
+  },
+  "native_provider_check": "PASS45 generated outputs",
+  "native_cases_total": 5
 }

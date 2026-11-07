@@ -23,7 +23,6 @@
     "Document": 1609,
     "Effect": 5797,
     "Encounter": 108,
-    "Encounter.Raid": 239,
     "Formula": 6126,
     "Item": 34111,
     "Loot": 1290,
@@ -234,7 +233,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3792,
+          "record_count": 3800,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +241,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "d17b3bfc27d2848c306293196f5f1f8bc1b1d7762253febe2f7646d816ced5f7"
+          "sha256": "bb3ad888398e4ff48dcdf046aca7f421f1d53da7163c3bb7fdb6e004b4d604b4"
         },
         {
           "creates_canonical_identities": false,

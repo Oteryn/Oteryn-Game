@@ -684,3 +684,45 @@ Item digest and exact conflicting XML value; it only retains the accepted
 weight400. Other physical facts, intrinsic systems and accepted holds still
 use the original strict qualifier. Two regression tests cover actual custody
 and refusal on either changed canonical data or changed XML.
+
+- Father hand-in custody is admitted from the exact pinned first-party NPC
+  authoring document, not by enabling a reference packet. The reusable importer
+  derives all recipe input/reward identities, preserves existing native rows,
+  and source-qualifies each missing physical profile through the established
+  Canary XML/client binding checks. Changed authoring pins reject the whole
+  generated update. Source authoring remains
+  tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json.
+- Integration validation follows the owner's latest speed rule: focused native
+  mechanics and PostgreSQL cases, workspace all-target compilation, changed
+  crate Clippy, formatting, duplicate migration guard, generated files and pins.
+  Earlier full reverse-dependency nextest plans are superseded; CI owns them.
+- Winterlight's native scenario retains the real purchased Premium coordinator.
+  Clearing it in the fixture contradicted the chosen Premium requirement and
+  correctly made the first bonfire fail. No runtime Premium check or route
+  assertion is relaxed; the corrected fixture explicitly requires that native
+  authority to exist before the route.
+- Regenerating the merged NPC scope yields79 placements. Both obsolete56/57-row
+  shards are removed by convert_placements.py; the index names only the current
+  generated shard. Downstream tree/provider generation must finish before the
+  next focused runtime cases read their manifest inputs.
+- Ownership refresh: packet LANE-L7.json contains exactly23 quests; no outside
+  quest is started. Checked remote QENGINE2 5c01deabb, QWORLD943fddf34,
+  QNPCFX a3ebe0bcf and this lane's older WIP4bc2bdb42. Latest QENGINE2 adds
+  Glider/component acquisition and additional chest outputs, not a fenced
+  player-colour pairing predicate. Existing canonical QENGINE2 reward/state
+  owners remain reused. The older own WIP has only the already reused Wrath
+  Sleeping Dragon programme, with no retained full Colours/Wrath implementation.
+- Venore regression traced with read-only live PG snapshots and immutable quest
+  receipts: the first report at command32 committed stage13,1000XP and10platinum;
+  command34 was a repeated report. Canonical main's exact-keyword exchange owner
+  now rejects an ineligible report rather than accepting ordinary conversation.
+  The native test now requires that stronger rejection, retaining every existing
+  state, value, receipt, cooldown, cold-reload and exact-boundary assertion.
+- Winterlight source branches retain their admitted non-stackable custody. Each
+  pickup mints five separate instances using existing backpack outputs. A38-line
+  local carried resolver collects the exact required quantity before any write;
+  the existing fenced BURN/audit owner applies it atomically. No synthetic stack
+  class or count reduction is used; the torch remains reusable.
+- Father's exact deferred receipt/XP proof is unchanged except its ambiguous
+  PL/pgSQL variable name, fixed forward in1306. Actual PG cast check confirms
+  xid8-to-xid is supported; no cast workaround or proof relaxation is needed.

@@ -275,6 +275,7 @@ pub(super) async fn exercise(
         },
     )
     .await?;
+    assert_eq!(progress(h, "stage").await?, 12, "native corym deaths preserve the completed circuit stage");
     let before_xp = experience(h).await?;
     let gold = quantity(h, 3035).await?;
     say(
@@ -309,16 +310,9 @@ pub(super) async fn exercise(
     let report_stamp = progress(h, "last-report").await?;
     let report_receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/chosen/venore-daily/report'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     let quest_revision:String=sqlx::query_scalar("SELECT committed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.venore_daily_tasks_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-    // With no eligible report transition, the NPC accepts ordinary conversation;
-    // it must produce no new quest/value receipt or state mutation.
-    say(
-        owner,
-        admitted,
-        norman,
-        &mut command,
-        &["hi", "construction report"],
-    )
-    .await?;
+    // The exact exchange keyword stays owned after completion. The locked writer
+    // rejects it and produces no new quest/value receipt or state mutation.
+    say_refused(owner, admitted, norman, &mut command, "construction report").await?;
     say_refused(owner, admitted, norman, &mut command, "construction jobs").await?;
     assert_eq!(
         progress(h, "stage").await?,

@@ -1,3 +1,151 @@
+# Ready for immediate push19:58UTC
+
+Main1ae39c7f merged in b3ec5f491; canonical0999-1008 byte-identical. Lane1300-1306.
+All five own native PG gates GREEN: Father8hand-ins/cape/XP128.112s; Fatheratomic
+11-track acceptance104.120s; Fatherlegacy/restart92.552s; Venorecomplete/repeat/
+cooldown147.862s; Winterlightfullroute88.598s. Winterlight is now QUALIFIED,
+21/23 packet entries qualified including3 elsewhere; Colours/Wrath not started
+as complete native programmes. Colours engine request sent; ownership coordinator
+may move these two to new lanes. Do not duplicate another lane's work.
+
+Latest HARD RULE: push any compiling state after workspacealltargets+fmt, then
+at least every30minutes. No full suite or extra verification before this push.
+Final workspace check PASS3m58s and fmt PASS. Prior Clippy32 PASS6m54s before final
+small repairs; not repeated under owner speed override. Nativeprovider drift45
+files PASS, NPC custody2tests PASS1.164s, placement/materialized/Forge checks PASS.
+Pins generated to25c580be19940724badfea7e9ac681e8ee0f8bebe7fc1306d6f4b72b9bbbd300;
+no extra pin-check run. All changes staged after metadata refresh; commit required
+identity/trailers, fetchownbranch+mergeifmoved, pushfastforward immediately.
+
+Winterlight final red90.578s was fixture-only missing bound attackerlease. It now
+binds the current real Character lease before native Queen damage, with every
+route and reward assertion retained. Source proof in winterlight-route-validation.
+All previous temporary diagnostics removed. No paused runners remain. Session
+14320 finalcheck+fmt completedgreen; session78843 Winterlightcompletedgreen;
+session77538 pin generation completedgreen. Old session23582 parent intentionally
+stopped/killed after its cargo child completed exit0, preventing extra Clippy.
+
+# Live19:37UTC: all three red points diagnosed and repaired; own PG rebuilding
+
+Local HEADb3ec5f491 merges main1ae39c7f; published e70393b99. No new push yet.
+Owner latest: shared engine belongs QENGINE2, only small new-file helpers locally;
+push green batches to own branch for wpkg collector; no PR. Generated outputs
+last, once per batch. Packet23; OWNED response listed17 qualified-here +Winterlight,
+excluding3 qualified elsewhere and2 not-started Colours/Wrath. Do not start any
+outside quest. Coordinator may transfer those2 not-started entries; await notice.
+ENGINE-REQUEST already sent for Colours carried USE output + fenced live peer
+quest-state predicate. Remote qengine2/qworld/qnpcfx and own WIP checked; no such
+peer feature exists; old WIP only has reused Sleeping Dragon programme.
+
+Root causes: Father hand-ins first lacked8 native profiles (admitted via pinned
+NPC recipe closure;2 Python tests PASS36.828s), then PG failed with ambiguous SQL
+amount. Forward1306 disambiguates variable, retaining all proof predicates.
+Fresh all-migration PG diagnostic including1306 PASS3s, marker+duration in
+/tmp/questpc8-3020-migration-pg3.log (script hardcodespg2; copied latest to pg3).
+Winterlight fixture incorrectly discarded Premium: fixed to retain real purchased
+authority. Next RED72.960s at branches: five non-stackables cannot be one stack.
+Pickup now gives5 separate instances. New carried_batch.rs helper38lines resolves
+exact bounded quantity before existing atomic BURN; parent changes small.
+Venore was NOT a failed first report: live PG+immutable receipts show command32
+committed stage13/1000XP/10platinum, then command34 repeated report rejected. Main
+now owns exact keyword and refuses stale stages. Test now REQUIRES rejection,
+retaining all no-duplicate state/value/receipt/cooldown/cold-boundary assertions.
+Unit actual catalogue report stage12/kills5 ->stage13/clock PASS1.70s.
+All temporary refusal logs removed from5 files by restoring their b3 versions;
+no unrelated edits lost. Proofs remain in /tmp logs and integration validation.
+
+ACTIVE focused PG session98260, /tmp/questpc8-3020-focused-native-pg6.log; build
+started19:35. Filter includes4 cases (father hand-ins, legacy, Venore, Winterlight).
+IMPORTANT fresh Father acceptance name was not matched by father_atomic filter:
+run catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction explicitly
+on the NEW built test binary after this run, retaining real PG marker/duration.
+No test is skipped; previously that acceptance passed89.008s, legacy71.071s.
+The paused runner194918 was canceled BEFORE runtime; newer waiting runner197320
+also canceled before runtime. Direct existing-binary diagnostics ran3PG cases,
+recorded in /tmp/questpc8-3020-focused-native-direct-pg.json; all RED with real
+72.585/72.996/113.271 durations. Do not resume those old PIDs.
+
+Prior prepush workspace check PASS6m22s, Clippy32 PASS6m54s,fmt PASS beforelatest
+repairs. ACTIVE repaired workspace+Clippy32+fmt session23582, logs repaired-*.log.
+Fresh native profile/tree generation completed (NPC scope79 current shard, both
+obsolete shards removed). After own PG green, final generator check/pins/dupguard,
+update metadata, commit with identity/trailers, fetch own branch+merge if moved,
+pushfast-forward. Main0999-1008 byte-identical; own1300-1306. Never full nextest.
+
+# Owner update19:17UTC
+
+Shared engine is now QENGINE2-owned; do not build large generic lane features.
+ENGINE-REQUEST sent: carried USE item replacement/reward plus fenced live-player
+quest-state predicate, needed by The Colours of Magic, in quests/dispatch/durability.
+Move to Wrath after current repairs; reuse existing Sleeping Dragon source owner.
+Generated outputs only once right before a green batch push, not per quest.
+Current generation was already in flight when this rule arrived; finish it.
+
+Own diagnostic build is complete and parent nextest PID194918 remains paused.
+After provider generation session40821 completes, restart only the same three
+cases with /tmp/questpc8-focused-nextest.toml profilequestpc8_focus, three workers.
+Their PostgreSQL databases are isolated; all assertions remain. Old runner has
+not executed any test. Workspace check plus Clippy32/fmt session27496 running.
+
+# Live19:14UTC checkpoint
+
+QCOUNT from exact23-entry LANE-L7 packet and published status:20 qualified
+(including3 elsewhere-owned exclusions), Winterlight in progress, Colours and
+Wrath not yet started as complete native programmes. No outside packet work.
+Remote own head remains e70393b99; local merged head b3ec5f491.
+
+Tree regeneration finished after NPC scope repair: canonical79-row placement
+shard replaces both obsolete shards. Native provider regeneration now running
+session40821, /tmp/questpc8-3020-final-profile-regeneration.log. Own PG diagnostic
+build session17022, /tmp/questpc8-3020-focused-native-pg4.log, still compiles.
+IMPORTANT nextest parent PID194918 is SIGSTOP-paused to prevent runtime cases
+reading partially regenerated content. Child cargo/rustc continues. After
+session40821 completes and manifest is consistent, kill -CONT194918; do not
+forget this explicit pause. No full reverse suite is running.
+
+Winterlight first refusal diagnosed: its fixture cleared the actual Premium
+coordinator. Now retains native purchased Premium and asserts it exists; every
+route assertion and runtime Premium gate retained. Father profiles now present;
+new RED75.671s at first actual delivery2704, not DefinitionNotFound. NPC source
+programme and writer refusal diagnostics added. Venore nativeRED137.031s final
+report StageMismatch; diagnostic rerun identifies exact check. Gather all three
+results, fix together, then rerun own cases and required speed-rule gates.
+
+Canonical main0999-1008 remain byte-identical; own migrations1300-1305.
+Latest branch ownership/shared-source checks recorded in CONTRACT-NOTES.md.
+No push while focused own PG remains red. Do not end the lane unfinished.
+
+# Current gate at18:53UTC: main merged; three focused PG failures under repair
+
+Local HEAD b3ec5f491 merges main1ae39c7f; published head remains e70393b99.
+Latest owner speed rule applies: own PG/mechanic cases only, workspace all-target
+check, changed-crate Clippy, fmt, generated files/pins and duplicate migrations.
+Do not launch the superseded reverse-dependency suite.
+
+Focused five-case PG run completed: Father atomic11-track PASS89.008s;
+Father legacy defaults/restart PASS71.071s; Father eight hand-ins FAIL70.973s
+DefinitionNotFound; Venore full route FAIL119.478s at final construction report;
+Winterlight FAIL70.281s at first western bonfire reward. Initial stage0 now passes.
+Log: /tmp/questpc8-3020-focused-native-pg2.log. No additional qualification.
+
+Father diagnosis: all eight source materials lack native profiles. New bounded,
+pinned authored_npc_item_profiles adapter derives the exact input/reward closure
+from existing authored NPC JSON and reuses source-qualified custody; diagnostic
+qualification succeeded for all nine refs. Generation and tests running. Reward
+outcome diagnostics added for Winterlight/Venore; focused five-case rerun running
+at /tmp/questpc8-3020-focused-native-pg3.log. Fix all failures before push.
+
+Own migrations1300-1305; 1305 is forward Forge profile admission, retaining all
+158 prior profiles and adding only source-qualified6101. Main0999-1008 unchanged;
+1200-1205 removed. Fresh PostgreSQL migration diagnostic PASS3s including1305.
+Workspace all-target check PASS13m54s; strict Clippy32 crates PASS5m53s before
+latest diagnostics. Reward units21/21 and admission units9/9 pass. Repeat required
+checks after fixes; pins refreshed to d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95
+before new NPC provider generation, so refresh again after generation settles.
+
+20/23 active entries qualified. Complete Winterlight, Colours and Wrath after
+restoring the regression gate; preserve atomic Father11-track acceptance.
+
 # Current gates at18:10UTC: focused tests green, generation and Clippy running
 
 NEW OWNER RULE: no full reverse-dependent nextest. Only own mechanic tests

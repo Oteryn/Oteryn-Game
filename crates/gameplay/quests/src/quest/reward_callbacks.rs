@@ -1670,3 +1670,7 @@ mod world_track_owner_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "reward_callbacks/venore_tests.rs"]
+mod venore_tests;

@@ -3679,9 +3679,26 @@
       "effects": {
         "item_reward": {
           "item": "oteryn:item.tibia.i30226",
-          "count": 5,
+          "count": 1,
           "contents": [],
-          "backpack_outputs": []
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            }
+          ]
         }
       },
       "completes": false,
@@ -3803,9 +3820,26 @@
       "effects": {
         "item_reward": {
           "item": "oteryn:item.tibia.i30226",
-          "count": 5,
+          "count": 1,
           "contents": [],
-          "backpack_outputs": []
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            }
+          ]
         }
       },
       "completes": false,
@@ -3927,9 +3961,26 @@
       "effects": {
         "item_reward": {
           "item": "oteryn:item.tibia.i30226",
-          "count": 5,
+          "count": 1,
           "contents": [],
-          "backpack_outputs": []
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            }
+          ]
         }
       },
       "completes": false,
@@ -4051,9 +4102,26 @@
       "effects": {
         "item_reward": {
           "item": "oteryn:item.tibia.i30226",
-          "count": 5,
+          "count": 1,
           "contents": [],
-          "backpack_outputs": []
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            }
+          ]
         }
       },
       "completes": false,

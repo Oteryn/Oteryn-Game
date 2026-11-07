@@ -1548,26 +1548,28 @@
   {
     "canonical": "oteryn:quest.winterlight_solstice",
     "title": "Winterlight Solstice",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
-    "qualified_elsewhere": [],
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
     "mechanism": "calendar_repeatable_random_rewards",
-    "blocker": {
-      "kind": "active_implementation",
-      "owner": "questpc8",
-      "missing_piece": "Active native rerun:21source Item profiles added with3722prior profiles unchanged; full ordinary Queen loot cohort qualifies without changing51source entries/chances/counts.12corpse+6loot+3weight/timed tests pass. Latest native84.571s first bonfire rejection traced to missing fixture admission copy; real admission reader/stage0assertion added, testcheck2m41sPASS, rerun queued. Prey model/final strict/drift/pin checks continue.",
-      "evidence": [
-        "qlane-meta/questpc8/RESUME.md",
-        "qlane-meta/questpc8/continuation-validation.json"
-      ]
-    },
+    "blocker": null,
     "round": "L7",
     "active_validation": {
-      "main_merge": "1ae39c7f integration all-target check PASS4m00s; generation running",
-      "known_red_fixed": "prior native PG84.828575874s initial-stage absence; virtual initial read view now preserves durable-only door proof",
-      "full_reverse_dependency_gate": "recompute after generation; prior44-package run was interrupted before runtime for owner-mandated new main merge",
-      "proof": "main-3020-integration-validation.json"
-    }
+      "main_merge": "1ae39c7f",
+      "native_pg": "PASS88.598050216s",
+      "workspace_all_targets": "PASS3m58s",
+      "fmt": "PASS",
+      "pin_digest": "25c580be19940724badfea7e9ac681e8ee0f8bebe7fc1306d6f4b72b9bbbd300",
+      "proof": "winterlight-route-validation.json"
+    },
+    "qualification_scope": "Complete chosen finite Premium recipe over native source geometry, physical components, disguise/cold, four fires, captured Queen death and once-only base Percht Raider outfit.",
+    "qualified_components": [
+      {
+        "scope": "Complete chosen finite Premium recipe over native source geometry, physical components, disguise/cold, four fires, captured Queen death and once-only base Percht Raider outfit.",
+        "proof": "winterlight-route-validation.json",
+        "duration_seconds": 88.598050216
+      }
+    ]
   },
   {
     "canonical": "oteryn:quest.authored.torch_quest",
