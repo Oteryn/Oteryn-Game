@@ -1768,6 +1768,40 @@
             "result": "PASS"
           }
         }
+      },
+      {
+        "batch": "threatened_irmana_trade_integration_12",
+        "result": "GREEN",
+        "published": "4785fb242",
+        "integration": {
+          "incoming": "58c59720d0641892c79db561c8d0c8416335c646",
+          "local_implementation": "88e38f3cc",
+          "code_conflicts": false,
+          "metadata_conflicts": "preserved both sets of evidence via three-way merge",
+          "combined_checks": {
+            "fmt": {
+              "log": "/tmp/questpc3-irmana-merge-fmt.log",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "result": "PASS"
+            },
+            "check": {
+              "log": "/tmp/questpc3-irmana-merge-check.log",
+              "sha256": "724a8c7745b4f47e75010202e875213b6abc1439de56e2ddca75cf59f756392a",
+              "result": "PASS"
+            },
+            "clippy": {
+              "log": "/tmp/questpc3-irmana-merge-clippy.log",
+              "sha256": "c8937e9f16559a1d05f6d918c500e0661973ec32aa0ad98aa883676c13638527",
+              "result": "PASS"
+            },
+            "authoring": {
+              "log": "/tmp/questpc3-irmana-merge-authoring.log",
+              "sha256": "464e0ee629edf74de09ef21e4232fbcedc26588ff7cc23c470f47fe2da88c255",
+              "result": "PASS"
+            }
+          },
+          "postgres": "Irmana RED96779ms/GREEN102325ms before merge; upstream trade and delivery integration PostgreSQL proofs preserved in completed_mechanism_batches. Do not claim a new combined runtime run."
+        }
       }
     ],
     "completed_mechanism_batches": {
@@ -3784,116 +3818,40 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
-      "generated_world_pin": {
-        "tool": "oteryn-world-bundle-compiler pin-refresh .",
-        "exit_code": 0,
-        "digest": "1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
-        "deploy_mirror_included": true
-      },
-      "id": "sale-paid-fur-doc-merge",
-      "incoming": "758e9b3b038264502f10fa527c9e54853d233163",
-      "incoming_scope": "Only source-contract/status/resume checkpoint for still-unpublished paid-fur work; no runtime/data/test difference, no new tests/re-review justified",
-      "local_green": "818071f02196dc5675c524a113d74b7eb1d3db53",
-      "material_review": {
-        "head": "52d2e4629da9abe7029dde539cb8ba5425ee431a",
-        "base_review": "8f89676bb6738a6c2ef99c6a48d5f5b50cd2099c",
-        "result": "No material findings on both full and material delta reviews",
-        "unchanged_material": "git diff52d2e4629 excluding qlane-meta/questpc3 is empty",
-        "proofs": "completed_mechanism_batches/sale-delivery-integration and earlier records"
-      },
-      "next_prepared_not_applied": [
-        "/tmp/questpc3-next-carlos-report-test.py",
-        "/tmp/questpc3-carlos-report-authoring.py"
+      "batch": "threatened_acquisition_13",
+      "phase": "All3 real PG RED confirmed; production core/source callback/chest links now APPLIED locally. Native41, authoring2 and initial core check PASS; units/final checks/pins/PGGREEN pending. No runtime publication.",
+      "previous_published": "4785fb242",
+      "entries": [
+        "poacher chest actual item plus source storage flag",
+        "dark moon mirror actual item plus source storage flag",
+        "AID20002 physical notes plus exact source conditions and once flag"
       ],
-      "phase": "GREEN; independently qualified fee/trade components merged; combined fmt/check/strictClippy and incoming authoring tests PASS; publish immediately",
-      "postgres_green": {
-        "duration_ms": 102325,
-        "fur": 1,
-        "held_gold": 0,
-        "stage": 8,
-        "fees": 1,
-        "exact_consent_insufficient_funds_and_replay": true
+      "test_filter": "threatened_acquisition_ --nocapture --test-threads=1",
+      "log": "/tmp/questpc3-acquisition-red.log",
+      "source": "chest.lua:1346-1360 blob ea2ef1963395a479ed927481bc3a14065b125a3f SHA2560ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca; action_poacher_notes.lua:1-14 blob2814b532928717adb6630c84d384923f3d199328 SHA2569e8b533913ce6e8df365c1ccf9ea9b280f28a2189408c95b849ffaf703736626",
+      "reuse": "Both source chest physical claims and source tracks already admitted; add native chest obligations after RED, do not duplicate Items/claims. Reuse questl2 c9cdfd5ae native world reward participant, adapted to local callback/fee bindings, for notes. Canonical notes25242 already materializable NonStackable weight200; preserve.",
+      "test_priors": "Only empty backpack and Animals6 then7 seeded; no notes/chest outputs, success flags or reward receipts seeded.",
+      "partial_red": {
+        "mirror_ms": 67928,
+        "poacher_chest_ms": 58675,
+        "evidence": "both existing physical claims mint1, source flagNone"
       },
-      "proofs": {
-        "pg_red": {
-          "log": "/tmp/questpc3-irmana-red.log",
-          "sha256": "1fe8614d412ec3228808d784b3db6bbe8323be0caa8403d19049616df2d229e6",
-          "result": "expected RED"
-        },
-        "pg_green": {
-          "log": "/tmp/questpc3-irmana-green.log",
-          "sha256": "71ac3fcca971f130a1a10830940118d03facdb65ccdf065e8c33594eb23c6d95",
-          "result": "PASS"
-        },
-        "fmt": {
-          "log": "/tmp/questpc3-irmana-fmt.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "result": "PASS"
-        },
-        "cargo_check": {
-          "log": "/tmp/questpc3-irmana-check.log",
-          "sha256": "2a1a34ee11b87394a0c56896c7b999dd0ffd3103fe520fb3d00c9bdd7903a190",
-          "result": "PASS"
-        },
-        "clippy": {
-          "log": "/tmp/questpc3-irmana-clippy.log",
-          "sha256": "98127deebb8b838ffff988e66a0b6258d24dd36bb7dbf03b5821dea01723bc2d",
-          "result": "PASS"
-        },
-        "reward_units": {
-          "log": "/tmp/questpc3-irmana-units.log",
-          "sha256": "f090cb6d3da666dcfc3d555d271f149aac8fb682d44a8ba54f735a947f060c47",
-          "result": "PASS"
-        },
-        "authoring": {
-          "log": "/tmp/questpc3-irmana-authoring.log",
-          "sha256": "cbe4b84d897ac017db0552ccb3a31855ff0fb172bc344c967c4c4c92eb19e624",
-          "result": "PASS"
-        },
-        "native_profiles": {
-          "log": "/tmp/questpc3-irmana-native-check.log",
-          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
-          "result": "PASS"
-        },
-        "pins": {
-          "log": "/tmp/questpc3-irmana-pins.log",
-          "sha256": "88692f49250789009449289dfdcb16b7faa9fc8dc1b321b947f8580e8db2124a",
-          "result": "PASS"
-        }
+      "prepared_reuse_patch": "/tmp/questpc3-acquisition-world-reward-reuse.patch (migration1146/sequencer/dispatch only; unapplied; manually adapt writer/MINT/effects after full RED)",
+      "postgres_red": {
+        "mirror_ms": 67928,
+        "poacher_chest_ms": 58675,
+        "notes_ms": 60549,
+        "chests": "physical1/flagNone each",
+        "notes": "NothingToUse/physical0/flag0/Animals7/receipts0",
+        "sha256": "2898c95f5b9dc1a0a022d955146e512d623d485c6c83fc39bb7b9d9087395a35"
       },
-      "publication": "Implementation GREEN; source checkpoint758e9b3b0 already published. Fee core, program, placement and focused proofs now ready for implementation commit.",
-      "reused_implementation": "Selective reusable core applied from qengine2 commit33b640335067df5d5582460bf06ce818d39b9d4d; existing local health/premium and callback binding behavior preserved.",
-      "scope": "Metadata-only incoming paid-fur source/reuse checkpoint; preserve final reviewed trade/delivery material tree and all green qualifications",
-      "whole_entry_status": "Four whole quests still IN_PROGRESS; immediately continue after push, no final summary.",
-      "integration": {
-        "incoming": "58c59720d0641892c79db561c8d0c8416335c646",
-        "local_implementation": "88e38f3cc",
-        "code_conflicts": false,
-        "metadata_conflicts": "preserved both sets of evidence via three-way merge",
-        "combined_checks": {
-          "fmt": {
-            "log": "/tmp/questpc3-irmana-merge-fmt.log",
-            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "result": "PASS"
-          },
-          "check": {
-            "log": "/tmp/questpc3-irmana-merge-check.log",
-            "sha256": "724a8c7745b4f47e75010202e875213b6abc1439de56e2ddca75cf59f756392a",
-            "result": "PASS"
-          },
-          "clippy": {
-            "log": "/tmp/questpc3-irmana-merge-clippy.log",
-            "sha256": "c8937e9f16559a1d05f6d918c500e0661973ec32aa0ad98aa883676c13638527",
-            "result": "PASS"
-          },
-          "authoring": {
-            "log": "/tmp/questpc3-irmana-merge-authoring.log",
-            "sha256": "464e0ee629edf74de09ef21e4232fbcedc26588ff7cc23c470f47fe2da88c255",
-            "result": "PASS"
-          }
-        },
-        "postgres": "Irmana RED96779ms/GREEN102325ms before merge; upstream trade and delivery integration PostgreSQL proofs preserved in completed_mechanism_batches. Do not claim a new combined runtime run."
-      }
+      "local_changes": "Reused c9cdfd5ae migration1146/sequencer/dispatch, adapted own2tuple world context with optional native MINT admission; same-type2 receipt+item, no new writer. Existing native chest obligations link2 existing claims to source flags. Generic effects ItemReward bounded to pure world USE. NPC fee/health/premium/capacity preserved.",
+      "initial_checks": {
+        "native_generator": "PASS41; exactly notes25242 profile added, ALL old profiles unchanged",
+        "authoring": "PASS2/0.027s",
+        "core_check": "PASS2m58s before final units/source updates"
+      },
+      "publication": "DOC-ONLY source/RED checkpoint; all production/data/tests remain LOCAL UNPUBLISHED pending GREEN."
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
