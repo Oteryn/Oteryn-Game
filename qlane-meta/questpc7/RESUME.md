@@ -1,3 +1,34 @@
+# Migration registry compiling checkpoint — 2026-11-07
+
+Pushing numbered SQL now under the owner-authorized compiling WIP rule.
+Friends PG18.6 GREEN79.821667304s verifies migration1282 source checksum;
+Grave PG18.6 GREEN56.906081085s exercises reordered world/quest migrations.
+No SQL body changed. Duplicate registry check and fmt pass. Father PG,
+strict checks and pin refresh/check remain in the running validation57184.
+Finish those gates and push a separate complete registry proof immediately.
+
+# Coordinator migration registry reconciliation — 2026-11-07
+
+Grave Danger is QUALIFIED and pushed at e0ba989a5; seven ACTIVE entries remain.
+Owner migration numbering overrides the ongoing Grimvale contact slice.
+All thirteen SQL files were renamed with git mv, preserving every byte.
+QBASE1200–1205 match peer70a0d92af byte-for-byte. QENGINE2 callbacks/payments
+are consumed unchanged as0999/1000, matching origin/qengine2; no local variant.
+Lane additions use1280 NPC item exchange,1281 Father XP variable-name repair,
+1282 repeatable exchanges,1283 world item rewards,1284 backpack outputs.
+Father's Burden eleven-track atomic write is unchanged.
+References, including the PG1282 checksum assertion, follow the new filenames.
+Pending: focused Friends/Grave/Father PG, strict checks, generated pins and
+repository duplicate-number check, then commit/push immediately.
+
+Grimvale drafts are preserved in /tmp/questpc7-grimvale-pending; source scenario
+patch is there too. The initial contact test had a compile-only failure from
+passing Harness to the shared value helper (expects owner, admitted, track).
+It is not PG RED evidence. Fix that call before restarting the contact test.
+Peer authored placement tests had the expected missing-function RED; reuse
+apply_authored_placements from70a0d92af, with copy/re imports and provenance hook.
+Continue the whole chosen Grimvale route after this migration-only batch.
+
 # Fiend Slayer and Hand of the Inquisition QUALIFIED — 2026-11-07
 
 Both complete selected routes are QUALIFIED. OUTFIT-ITEMS-PG-PROOF.json records

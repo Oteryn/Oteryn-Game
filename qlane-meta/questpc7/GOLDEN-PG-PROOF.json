@@ -11,7 +11,7 @@
     "branch": "claude/happy-davinci-ijz3wy-qengine2",
     "commit": "33b640335",
     "head": "e06058c74",
-    "migration": "1099_quest_reward_payments.sql"
+    "migration": "1000_quest_reward_payments.sql"
   },
   "author_tests": {
     "cases": 13,

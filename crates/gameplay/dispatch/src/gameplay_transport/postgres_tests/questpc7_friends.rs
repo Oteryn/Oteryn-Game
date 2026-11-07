@@ -84,12 +84,12 @@ pub(super) async fn exercise(
         .await?;
     eprintln!("QUESTPC7_FRIENDS POSTGRES_STARTED version={version}");
     let applied: Vec<u8> =
-        sqlx::query_scalar("SELECT checksum FROM _sqlx_migrations WHERE version=1100 AND success")
+        sqlx::query_scalar("SELECT checksum FROM _sqlx_migrations WHERE version=1282 AND success")
             .fetch_one(&h.pool)
             .await?;
     let source = std::fs::read(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../../apps/game-server/migrations/1100_quest_repeatable_exchanges.sql"
+        "/../../../apps/game-server/migrations/1282_quest_repeatable_exchanges.sql"
     ))?;
     let expected = Sha384::digest(source);
     assert_eq!(
@@ -97,7 +97,7 @@ pub(super) async fn exercise(
         &expected[..],
         "PG must execute the final migration bytes, including the exact counter-source proof"
     );
-    eprintln!("QUESTPC7_FRIENDS MIGRATION_1100_SOURCE_MATCHED");
+    eprintln!("QUESTPC7_FRIENDS MIGRATION_1282_SOURCE_MATCHED");
 
     let mut selected = admitted
         .continuity

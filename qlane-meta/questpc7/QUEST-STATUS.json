@@ -1067,6 +1067,13 @@
         "Checked the Liquid Silver Trap, Feroxa, four named bosses and ritual stages against the current fixed teleport and frozen kill-entry interfaces."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "current_batch": {
+      "kind": "coordinator migration registry reconciliation",
+      "state": "compiling checkpoint: Friends and Grave PG green; final checks and pins running",
+      "proof": "qlane-meta/questpc7/MIGRATION-REGISTRY-PROOF.json",
+      "scope_unchanged": true,
+      "next": "Resume native Grimvale contacts after numbered SQL is pushed."
     }
   },
   {
