@@ -178,3 +178,53 @@ pub(super) async fn capture(
         event("event=public_projections family=house source=catalogue result=unavailable");
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn public_house_catalogue_all_995_records_parse_with_source_identity_and_tiles()
+    -> Result<(), serde_json::Error> {
+        let mut keys = BTreeSet::new();
+        let mut ids = BTreeSet::new();
+        let mut count = 0;
+        for raw in SHARDS {
+            // This is the production parser/type, not a permissive JSON-only reader.
+            let shard: Shard = serde_json::from_str(raw)?;
+            for house in shard.houses {
+                count += 1;
+                assert_eq!(house.provenance.engine_house.engine, "crystalserver");
+                assert_eq!(
+                    house.provenance.engine_house.revision,
+                    "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+                );
+                assert!(house.provenance.engine_house.house_id > 0);
+                assert!(ids.insert(house.provenance.engine_house.house_id));
+                assert!(keys.insert(house.identity.key.clone()));
+                assert!(house.identity.key.starts_with("oteryn:content.house."));
+                assert!(house.identity.key.len() <= 128);
+                assert!(house.town.key.starts_with("oteryn:content.area.city."));
+                assert!(matches!(
+                    house.kind.as_str(),
+                    "private_house" | "shop" | "guildhall"
+                ));
+                assert!(
+                    crate::native_admission_source::public_projections::projection_name_valid(
+                        &house.name
+                    )
+                );
+                assert!(
+                    house.size_sqm > 0 && house.rent_gold > 0 && house.rent_gold <= i64::MAX as u64
+                );
+                assert!(!house.tiles.is_empty());
+                assert!(house.tiles.iter().all(|[_, _, z]| *z <= 15));
+                let tiles = house.tiles.iter().copied().collect::<BTreeSet<_>>();
+                assert_eq!(tiles.len(), house.tiles.len());
+            }
+        }
+        assert_eq!(count, 995);
+        assert_eq!(keys.len(), 995);
+        assert_eq!(ids.len(), 995);
+        Ok(())
+    }
+}

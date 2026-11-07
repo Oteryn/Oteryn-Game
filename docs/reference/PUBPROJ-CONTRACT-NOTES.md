@@ -110,3 +110,11 @@ The two previously red Guild/house PG cases now pass:2 passed,0 failed,0 ignored
 `PUBPROJ_GUILD_HOUSE_PG_EXECUTED` with elapsed_ms=10797. Old ACK versus newer source
 revision, explicit catalogue withdrawal, unknown-source freshness and operator
 resync were exercised. Other B validation and C/D implementation remain pending.
+
+### B historical-window recovery checkpoint
+
+An indexed32-subject maintenance pass rechecks unavailable death snapshots only
+after the actual source window changes; it cannot invent old PvE classification.
+Known/hidden subjects clear their pending deadline. Resource10093 is allocated.
+The production house metadata parser now has a995-record source-shape test.
+The combined server check passed (2m54s); the new expiry PG proof remains pending.

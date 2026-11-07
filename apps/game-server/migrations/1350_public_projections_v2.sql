@@ -73,20 +73,30 @@ LANGUAGE sql STABLE SECURITY DEFINER AS $$
  AND coalesce(p.level,1)>=1)
 $$;
 CREATE FUNCTION game_public_v2_deaths(c UUID) RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE p JSONB;
+DECLARE p JSONB; recheck_at BIGINT; cut_s BIGINT;
 BEGIN
  PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
  PERFORM pg_advisory_xact_lock(hashtextextended('pubproj-v2:deaths:' || c::text,0));
- -- Missing immutable historical classification is unknown, never PvE/empty.
- IF game_public_v2_character_visible(c) AND EXISTS(
-  SELECT 1 FROM (SELECT death_occurrence_id FROM game_character_death_receipts
-   WHERE character_id=c AND committed_at/1000 >= floor(extract(epoch FROM clock_timestamp()))::bigint-2592000
+ cut_s:=floor(extract(epoch FROM clock_timestamp()))::bigint;
+ -- Missing/unpublishable latest20 historical classification remains unknown
+ -- until the actual window expires. Its indexed deadline requests a future
+ -- source recapture; it never changes or guesses the immutable receipt facts.
+ IF game_public_v2_character_visible(c) THEN
+  SELECT min(recent.committed_at/1000+2592001) INTO recheck_at
+  FROM (SELECT death_occurrence_id,committed_at FROM game_character_death_receipts
+   WHERE character_id=c AND committed_at/1000 >= cut_s-2592000
    ORDER BY committed_at/1000 DESC,death_occurrence_id DESC LIMIT 20) recent
   LEFT JOIN game_public_death_classifications classification USING(death_occurrence_id)
-  WHERE classification.death_occurrence_id IS NULL OR NOT classification.publishable) THEN
-  PERFORM game_public_v2_touch('character_deaths','',c::text,'null'::jsonb);
-  RETURN;
+  WHERE classification.death_occurrence_id IS NULL OR NOT classification.publishable;
+  IF recheck_at IS NOT NULL THEN
+   INSERT INTO game_public_death_rechecks VALUES(c,recheck_at) ON CONFLICT(character_id)
+   DO UPDATE SET due_at_seconds=EXCLUDED.due_at_seconds;
+   PERFORM game_public_v2_touch('character_deaths','',c::text,'null'::jsonb);
+   RETURN;
+  END IF;
  END IF;
+ -- Hidden subjects suppress safely even while their historical cause is unknown.
+ DELETE FROM game_public_death_rechecks WHERE character_id=c;
  SELECT coalesce(jsonb_agg(x.body ORDER BY x.occurred_at DESC,x.death_occurrence_id DESC),'[]'::jsonb) INTO p
  FROM (SELECT d.committed_at/1000 AS occurred_at,d.death_occurrence_id,
  jsonb_build_object('death_occurrence_id',d.death_occurrence_id::text,
@@ -97,7 +107,7 @@ BEGIN
  ELSE jsonb_build_object('kind','creature','creature_key',k.creature_key,'name',k.name) END ORDER BY k.ordinal)
  FROM game_public_death_killers k WHERE k.death_occurrence_id=d.death_occurrence_id
  AND (k.kind='creature' OR game_public_v2_character_visible(k.character_id))),'[]'::jsonb)) AS body
- FROM game_character_death_receipts d JOIN game_public_death_classifications classification USING(death_occurrence_id) WHERE d.character_id=c AND d.committed_at/1000 >= floor(extract(epoch FROM clock_timestamp()))::bigint-2592000 AND game_public_v2_character_visible(c)
+ FROM game_character_death_receipts d JOIN game_public_death_classifications classification USING(death_occurrence_id) WHERE d.character_id=c AND d.committed_at/1000 >= cut_s-2592000 AND game_public_v2_character_visible(c)
  ORDER BY d.committed_at/1000 DESC,d.death_occurrence_id DESC LIMIT 20) x;
  PERFORM game_public_v2_touch('character_deaths','',c::text,p);
 END $$;
