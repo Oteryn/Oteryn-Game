@@ -1010,3 +1010,10 @@ Pending after publication: re-merge currentmain(e1ca3e00), remove unpublished125
 21:21UTC: final full donor-source replay PASS(/tmp/questpc4-final-donor-green.log); all1099authoring tests across98modules also PASS. Previous summary-packet witness failure is resolved with strict producer replay and parent descriptor regeneration, without relaxing Source validation.
 
 21:23UTC emergency publication gatesGREEN: cargo check --workspace --all-targets PASS3m14s; cargo fmt --all --check PASS. Publish immediately under owner exception, then re-merge main and finish the explicit PREPUSH-2 pending list.
+
+## Stag source sword custody slice (2026-11-07 23:33 UTC)
+
+PostgreSQL18.6 l6_stag_source_sword_has_native_custody_and_exact_replay RED42.109s missing native policy; GREEN45.59743029s with real SQL version marker, identity-preserving drop and exact command replay. /tmp/questpc4-stag-item-pg-green.log
+Scoped neutral armor/ammo qualification and capture generated via repository tooling. Eight strict qualification controls pass. Raw profiles3682→3683, exactly52824 added and all prior records unchanged; equipment assembled3721. Whole Stag remains IN_PROGRESS; reuse main99-rule NPC program. Workspace/clippy/pin refresh and dispatch unit run underway before publication.
+
+Stag slice publication gates: focusedRust5/5PASS53.864s, realPG18.6 body45.59743029s, workspace/alltargetsPASS3m53s, fmtPASS, three-crateclippyPASS3m41s. Native regeneration/equipment3721/authoring freshness/worldpinrefreshPASS; worldpin b2400c60 unchanged, duplicate migrations0. Dispatch2810-case unit run continues at publication under PREPUSH-2 step3 cadence allowance; pending is explicit, no whole-quest promotion.

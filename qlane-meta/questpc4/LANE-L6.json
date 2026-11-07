@@ -92,7 +92,8 @@
         "canonical_json_pointer": "/records/80/definition",
         "native_evidence": [
           "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS.",
-          "PostgreSQL18.6 catalogue_npc_source_acceptance_is_atomic_and_replay_bound PASS212.004999259s /tmp/questpc4-f641-integration-pg.log"
+          "PostgreSQL18.6 catalogue_npc_source_acceptance_is_atomic_and_replay_bound PASS212.004999259s /tmp/questpc4-f641-integration-pg.log",
+          "PostgreSQL18.6 l6_stag_source_sword_has_native_custody_and_exact_replay RED42.109s missing native policy; GREEN45.59743029s with real SQL version marker, identity-preserving drop and exact command replay. /tmp/questpc4-stag-item-pg-green.log"
         ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Order of the Stag Quest_Spoiler.wiki:18; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/80/definition).",

@@ -10700,5 +10700,23 @@
       "altar_marker": "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED literal_altar possession_only_phase atomic_item_burn replay"
     },
     "clippy": "PASS4m15s changed3crates/alltargets/-Dwarnings /tmp/questpc4-main3032-clippy.log"
+  },
+  "stag_item_custody_batch": {
+    "scope": "Physical custody of source sword52824 only; whole Stag quest remains IN_PROGRESS.",
+    "source": "Crystal201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:88464-88471; sha2568a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+    "decision": "Neutral armor0 and ordinary ammo-slot moveevent use existing native equipment semantics. Scope qualifier47lines; custom scripts/nonzero armor/wrong slot rejected. Reuse main QNPCFX NPC program.",
+    "proof": "PostgreSQL18.6 l6_stag_source_sword_has_native_custody_and_exact_replay RED42.109s missing native policy; GREEN45.59743029s with real SQL version marker, identity-preserving drop and exact command replay. /tmp/questpc4-stag-item-pg-green.log",
+    "tool_controls": "8/8 passed; prior3682 profiles unchanged, one new52824, assembled equipment3721.",
+    "remaining": "NPC outfit-addon/achievement delivery and whole story/battle composition remain unqualified; engine request already sent.",
+    "validation": {
+      "focused_rust": "5/5 PASS53.864s; Stag realPG18.6 body45.59743029s",
+      "workspace_check": "PASS3m53s",
+      "fmt": "PASS",
+      "clippy": "PASS3m41s, dispatch/quests/durability all-targets -Dwarnings",
+      "authoring": "freshness checks PASS;8 new qualifier controls,5 equipment pin controls,12 regeneration controls PASS",
+      "pin_refresh": "PASS; world pin unchanged b2400c60f3a08b751ce3edee7a1ea7979c0fcc94a9cb2fefcab9d6a558d125e6",
+      "duplicate_migrations": 0,
+      "dispatch_units": "2810-case dispatch unit run still running at publication; PREPUSH-2 cadence exception for step3. No PG success claimed from guarded unit cases."
+    }
   }
 }
