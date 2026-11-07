@@ -53,10 +53,10 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Complete native NPC Item/progress exchanges, summed nightmare counters and Kroazur report, light/barrier USE bindings and atomic final bag reward. Reuse delivered engine code and extend it here."
+      "next_actions": "Kill sum and Kroazur report implemented with PG proof. Complete the remaining NPC Item/progress exchanges, light/barrier USE bindings and atomic final bag reward; reuse delivered engine code and implement remaining mechanisms here."
     },
     {
-      "canonical": "unresolved:questpc2:pilgrimage_of_ashes_quest",
+      "canonical": "oteryn:quest.pilgrimage_of_ashes",
       "title": "Pilgrimage of Ashes Quest",
       "mechanism": "regular_blessing_service_grant",
       "from_lanes": [
@@ -64,7 +64,10 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Admit the regular blessing Services and implement the ordered journey, exact quotes/debits, held blessings/progress and guide rewards through reusable fenced Service/Quest composition."
+      "next_actions": "Admit the regular blessing Services and implement the ordered journey, exact quotes/debits, held blessings/progress and guide rewards through reusable fenced Service/Quest composition.",
+      "lane_inventory_key": "unresolved:questpc2:pilgrimage_of_ashes_quest",
+      "original_identity": "unresolved:questpc2:pilgrimage_of_ashes_quest",
+      "identity_evidence": "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/identity @ 5e72a3f0b0e16803bc5cd999298e4ec83f05eed9"
     },
     {
       "canonical": "oteryn:quest.authored.rathleton_quest",
@@ -857,7 +860,8 @@
       "publication": {
         "mode": "commit and fast-forward push immediately after metadata update",
         "parent": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
-        "branch": "claude/happy-davinci-ijz3wy-questpc3"
+        "branch": "claude/happy-davinci-ijz3wy-questpc3",
+        "local_commit": "a4f1f4a21"
       },
       "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
     },
@@ -1185,6 +1189,107 @@
           "tools/content-schema/quest-authoring/shared-reward-callbacks.md": "f383da19adef6c7675ae88c8f7c6f99e4aa872e97d820523c683921b5325d228",
           "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json": "ae149a7eb9d3737b8cff2eabffee032a4200d4716f37dd257ed79e1baf89d78f"
         }
+      },
+      "sum_guards_01": {
+        "red": {
+          "log": "/tmp/questpc3-sum-red-fixture.log",
+          "sha256": "b1a339ad61fd98cc25c69f28cf07d3327acfb7959055bf9aa0a56dec51206549",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 15s",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=69020",
+            "  left: Refused(NotSupported)",
+            " right: Refused(StageMismatch)",
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 69.18s"
+          ]
+        },
+        "postgres_green": {
+          "log": "/tmp/questpc3-sum-green.log",
+          "sha256": "b3ed5119fb7a9ff94dd1bbc050a5fd5676befae4345e3b434e948b46ffa37ad2",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 55s",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=75422",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=75462",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=75607",
+            "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=75874 success=true",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 75.88s"
+          ]
+        },
+        "sum_units": {
+          "log": "/tmp/questpc3-sum-units.log",
+          "sha256": "e1f4d887f0fd6b69ca7c859ece7f581e349e43227d95b0178fc5070a131d17bc",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.73s",
+            "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 0.00s"
+          ]
+        },
+        "selector": {
+          "log": "/tmp/questpc3-sum-selector.log",
+          "sha256": "4f3f801307e2d138b9030eee34f941bace15eb7f1f5c318fa8e230094074ff45",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 255 filtered out; finished in 1.15s"
+          ]
+        },
+        "cargo_check": {
+          "log": "/tmp/questpc3-sum-check.log",
+          "sha256": "0816c5768e5ca62bb30038365b16b02f02c5973b7c2fb8ac59f21d27bd9eaf38",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 19s"
+          ]
+        },
+        "clippy": {
+          "status": "RUNNING",
+          "log": "/tmp/questpc3-sum-clippy.log",
+          "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings"
+        },
+        "fmt": "cargo fmt --all and cargo fmt --all -- --check passed; auto-mounted test formatted explicitly with rustfmt --edition 2024",
+        "invalid_red_attempts": "Connection refused before local PostgreSQL startup, then MissingProgressionState before fixture generation admission; neither counted as RED. Valid RED reached SQL after 69020ms and returned NotSupported rather than StageMismatch.",
+        "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY"
+      },
+      "npc_sum_integration": {
+        "logs": {
+          "check": {
+            "path": "/tmp/questpc3-merge-check.log",
+            "sha256": "0748f18ffe98a11a6dca6f3cfa918385c6afbef7b521c7d2c8fb6b1d7271238d"
+          },
+          "clippy": {
+            "path": "/tmp/questpc3-merge-clippy.log",
+            "sha256": "fd34bae90be8336140895aaa9ca9e25c96a092f77ad6ca294769b6f6fd1af967"
+          },
+          "sum_units": {
+            "path": "/tmp/questpc3-merge-sum-units.log",
+            "sha256": "f297c32361fb070bc32428580be57eecd18a187a98ffd14c27684bc970ea6d43"
+          },
+          "selector": {
+            "path": "/tmp/questpc3-merge-selector.log",
+            "sha256": "cbcbdc0cea5e971f2b4e6fe130fd078cc39b4bb910000939ed01faf5a6ae496e"
+          },
+          "sum_pg": {
+            "path": "/tmp/questpc3-merge-sum-pg.log",
+            "sha256": "a858e8e7f0e6acfdac3fc4372fbb73c9f08bca0b10b9bb66fdb744da763b2dc9"
+          },
+          "npc_pg": {
+            "path": "/tmp/questpc3-merge-npc-pg.log",
+            "sha256": "ad8d66211188f33265b2654e2e4ed61330455fbef90561bdc50014e5003d584b"
+          }
+        },
+        "results": {
+          "check": "PASS four crates/all features",
+          "clippy": "PASS four crates/all features/all targets -D warnings",
+          "sum_units": 2,
+          "selector": 1,
+          "sum_pg_seconds": 52.26,
+          "sum_pg_complete_ms": 52259,
+          "npc_pg_seconds": 149.87,
+          "npc_pg_complete_ms": 149868,
+          "postgres": "18.6; no skipped selected PG tests"
+        },
+        "source_sha256": {
+          "crates/gameplay/quests/src/quest/mod.rs": "d0f61a34a10d2a7e7b302e1739972d6dbcd4ab117a63f0a5815eb0f0334ab4dd",
+          "crates/gameplay/quests/src/quest/threatened_dreams.rs": "083c0af61fc4f16516b4f565ad6689dcc941e8df1d2429856144425b6a70c2c1",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_sum.rs": "6e18451e6a76582748cb24ea40a3767d16f4d1bcd71e21763256b35a35c6acb8",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_npc_programs.rs": "5316fa4183a42dc51f850fc60f0dcc424de350e367f6b3efd1a5515c58cda883"
+        }
       }
     },
     "source_corrections": [
@@ -1212,7 +1317,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-06T23:59:38.943618+00:00",
+    "updated_at": "2026-11-07T00:13:04.902970+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -1291,6 +1396,81 @@
       ],
       "id": "native-counters-01",
       "whole_entry_qualifications": 0
+    },
+    "previous_publication": {
+      "batch": "native-counters-01",
+      "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
+      "remote_verified": true
+    },
+    "integrating_remote_batch": {
+      "commit": "73a106fc5035885a844c81e8618900f80c028116",
+      "batch": {
+        "id": "sum-guards-01",
+        "status": "PG and cargo check GREEN; publishing immediately under current owner instruction; Clippy still running",
+        "entries": [
+          "oteryn:quest.threatened_dreams_quest"
+        ],
+        "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
+        "whole_entry_qualifications": 0
+      },
+      "proof": {
+        "red": {
+          "log": "/tmp/questpc3-sum-red-fixture.log",
+          "sha256": "b1a339ad61fd98cc25c69f28cf07d3327acfb7959055bf9aa0a56dec51206549",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 15s",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=69020",
+            "  left: Refused(NotSupported)",
+            " right: Refused(StageMismatch)",
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 69.18s"
+          ]
+        },
+        "postgres_green": {
+          "log": "/tmp/questpc3-sum-green.log",
+          "sha256": "b3ed5119fb7a9ff94dd1bbc050a5fd5676befae4345e3b434e948b46ffa37ad2",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 55s",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=75422",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=75462",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=75607",
+            "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=75874 success=true",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 75.88s"
+          ]
+        },
+        "sum_units": {
+          "log": "/tmp/questpc3-sum-units.log",
+          "sha256": "e1f4d887f0fd6b69ca7c859ece7f581e349e43227d95b0178fc5070a131d17bc",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.73s",
+            "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 0.00s"
+          ]
+        },
+        "selector": {
+          "log": "/tmp/questpc3-sum-selector.log",
+          "sha256": "4f3f801307e2d138b9030eee34f941bace15eb7f1f5c318fa8e230094074ff45",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 255 filtered out; finished in 1.15s"
+          ]
+        },
+        "cargo_check": {
+          "log": "/tmp/questpc3-sum-check.log",
+          "sha256": "0816c5768e5ca62bb30038365b16b02f02c5973b7c2fb8ac59f21d27bd9eaf38",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 19s"
+          ]
+        },
+        "clippy": {
+          "status": "RUNNING",
+          "log": "/tmp/questpc3-sum-clippy.log",
+          "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings"
+        },
+        "fmt": "cargo fmt --all and cargo fmt --all -- --check passed; auto-mounted test formatted explicitly with rustfmt --edition 2024",
+        "invalid_red_attempts": "Connection refused before local PostgreSQL startup, then MissingProgressionState before fixture generation admission; neither counted as RED. Valid RED reached SQL after 69020ms and returned NotSupported rather than StageMismatch.",
+        "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY"
+      },
+      "status": "GREEN combined validation; strict Clippy confirmed here, superseding remote pending-Clippy note.",
+      "combined_proof": "checks.npc_sum_integration"
     }
   }
 }

@@ -170,6 +170,13 @@ pub enum QuestEffectKind {
     Computed,
     /// A source-specific bounded rule over its complete locked snapshot.
     Native(native_rules::NativeRule),
+    /// Preserve this track only when its value plus another effect's original
+    /// track value reaches the threshold. `other_effect` is a zero-based index
+    /// into this transition, so both inputs belong to its locked quest snapshot.
+    RequireSumAtLeast {
+        other_effect: u8,
+        minimum: i64,
+    },
 }
 
 impl QuestEffectKind {
@@ -188,6 +195,13 @@ impl QuestEffectKind {
             Self::Native(rule) => {
                 out.push(5);
                 rule.encode(out);
+            }
+            Self::RequireSumAtLeast {
+                other_effect,
+                minimum,
+            } => {
+                out.extend_from_slice(&[6, other_effect]);
+                out.extend_from_slice(&minimum.to_be_bytes());
             }
         }
     }
@@ -329,7 +343,7 @@ impl QuestStateCatalogue {
                 return Err(E::InvalidEffect(transition.key));
             }
             let mut seen = BTreeSet::new();
-            for effect in &transition.effects {
+            for (index, effect) in transition.effects.iter().enumerate() {
                 let Some(track) = track_map.get(&effect.track) else {
                     return Err(E::UnknownTrack(effect.track.clone()));
                 };
@@ -346,6 +360,10 @@ impl QuestStateCatalogue {
                 };
                 let effect_ok = match effect.effect {
                     QuestEffectKind::Set(value) => (track.min..=track.max).contains(&value),
+                    QuestEffectKind::RequireSumAtLeast { other_effect, .. } => {
+                        usize::from(other_effect) < transition.effects.len()
+                            && usize::from(other_effect) != index
+                    }
                     _ => true,
                 };
                 if !comparison_ok || !effect_ok {
@@ -459,6 +477,21 @@ impl QuestStateCatalogue {
             }
             current.push((track, value));
         }
+        for (index, (effect, (_, value))) in transition.effects.iter().zip(&current).enumerate() {
+            if let QuestEffectKind::RequireSumAtLeast {
+                other_effect,
+                minimum,
+            } = effect.effect
+            {
+                let (_, other) = current
+                    .get(usize::from(other_effect))
+                    .filter(|_| usize::from(other_effect) != index)
+                    .ok_or(QuestRefusal::NotSupported)?;
+                if i128::from(*value) + i128::from(*other) < i128::from(minimum) {
+                    return Err(QuestRefusal::StageMismatch);
+                }
+            }
+        }
         let native = transition
             .effects
             .iter()
@@ -491,6 +524,7 @@ impl QuestStateCatalogue {
                     QuestEffectKind::Native(_) => native_after
                         .as_ref()
                         .and_then(|after| after.get(&effect.track).copied()),
+                    QuestEffectKind::RequireSumAtLeast { .. } => Some(before),
                 }
                 .filter(|after| (track.min..=track.max).contains(after))
                 .ok_or(QuestRefusal::OutOfRange)?;
@@ -622,6 +656,74 @@ mod tests {
             .collect();
         let transition = catalogue.transition(key).expect("transition");
         catalogue.evaluate(transition, &stored, now)
+    }
+
+    #[test]
+    fn sum_guards_use_original_locked_values_without_overflow() {
+        let key = "oteryn:quest-transition/test.sum";
+        let c = catalogue(vec![transition(
+            key,
+            vec![
+                effect(
+                    STAGE,
+                    QuestComparison::Any,
+                    QuestEffectKind::RequireSumAtLeast {
+                        other_effect: 1,
+                        minimum: 10,
+                    },
+                ),
+                effect(TIMER, QuestComparison::Any, QuestEffectKind::Set(0)),
+            ],
+            false,
+        )]);
+        let changes = run(&c, key, &[(STAGE, 3), (TIMER, 7)], 0)
+            .expect("sum reaches threshold before resetting other track");
+        assert_eq!(changes[0].after, 3);
+        assert_eq!(changes[1].after, 0);
+        assert_eq!(
+            run(&c, key, &[(STAGE, 3), (TIMER, 6)], 0),
+            Err(QuestRefusal::StageMismatch)
+        );
+        assert!(run(&c, key, &[(STAGE, 10), (TIMER, i64::MAX)], 0).is_ok());
+        assert_eq!(
+            run(&c, key, &[(STAGE, -1), (TIMER, 0)], 0),
+            Err(QuestRefusal::StageMismatch)
+        );
+    }
+
+    #[test]
+    fn sum_guards_reject_invalid_references_and_hash_the_threshold() {
+        let key = "oteryn:quest-transition/test.sum";
+        let make = |other_effect, minimum| {
+            transition(
+                key,
+                vec![
+                    effect(
+                        STAGE,
+                        QuestComparison::Any,
+                        QuestEffectKind::RequireSumAtLeast {
+                            other_effect,
+                            minimum,
+                        },
+                    ),
+                    effect(TIMER, QuestComparison::Any, QuestEffectKind::Add(0)),
+                ],
+                false,
+            )
+        };
+        let c = catalogue(vec![make(1, 10)]);
+        let changed = catalogue(vec![make(1, 11)]);
+        assert_ne!(c.definition_hash(QUEST), changed.definition_hash(QUEST));
+        for other_effect in [0, 2, u8::MAX] {
+            assert!(matches!(
+                QuestStateCatalogue::new(
+                    "content-1",
+                    vec![track(STAGE, -1, -1, 10), track(TIMER, 0, 0, i64::MAX)],
+                    vec![make(other_effect, 10)]
+                ),
+                Err(QuestCatalogueError::InvalidEffect(_))
+            ));
+        }
     }
 
     #[test]
