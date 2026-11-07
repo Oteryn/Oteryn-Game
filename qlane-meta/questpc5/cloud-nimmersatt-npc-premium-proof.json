@@ -1,7 +1,7 @@
 {
   "slice": "Generic Premium NPC exchange and Rascalio personal source placement",
   "whole_recipe_qualified": false,
-  "status": "COMPILES_PG_RERUN_ACTIVE",
+  "status": "PASS_NPC_PREMIUM_COMPONENT",
   "initial_red": {
     "seconds": 52.895945826,
     "failure": "missing Rascalio Premium passage callback",
@@ -22,7 +22,22 @@
     "counter_rust_units": 1,
     "nimmersatt_python_units": 4,
     "npc_placement_python_units": 10,
-    "pin_check": "pending"
+    "pin_check": "PASS5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b"
   },
-  "next": "Actual passage PG then source-qualified native44179 admission, world Premium gates and whole once-reward qualification."
+  "next": "Actual passage PG then source-qualified native44179 admission, world Premium gates and whole once-reward qualification.",
+  "green": {
+    "seconds": 93.165087303,
+    "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "log": "/tmp/questpc5-nimmersatt-passage-green3.log"
+  },
+  "coverage": [
+    "Actual source-cell Rascalio hi+passage protocol",
+    "Missing Premium registration refuses without quest state",
+    "Registered Premium accepts passage with exact-1\u21920 stage",
+    "Fresh repeated passage leaves one acceptance receipt and zero snowballs",
+    "Legacy reward serialization remains unchanged"
+  ],
+  "world_digest": "5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b",
+  "previous_world_digest": "3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b",
+  "world_pin_change": "Materialized Rascalio personal source placement; compiler pin-refresh then independent pin-check."
 }
