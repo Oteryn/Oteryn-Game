@@ -123,6 +123,10 @@ def append(callbacks, offers, inputs, pin):
         else:
             callbacks.append(row)
             existing[row['key']] = row
+    for key, topic in workshop.get('refusal_topics', {}).items():
+        if key not in existing:
+            raise ValueError('NPCFIX_UNKNOWN_REFUSAL_CALLBACK:' + key)
+        existing[key]['refusal_topic'] = topic
     offers.extend(workshop['offers'])
     greetings.update({row['npc']: row for row in fading['npcs']})
     # Explicit conservative defaults for uncustomized farewells, with source provenance.

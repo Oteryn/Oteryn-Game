@@ -406,6 +406,11 @@
         },
         "bulk": {
           "$ref": "#/$defs/bulk"
+        },
+        "refusal_topic": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
         }
       }
     },

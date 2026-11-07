@@ -10,7 +10,7 @@
       "audit_status": "DIFF",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/13",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua",
         "sha256": "bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
@@ -18,7 +18,12 @@
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
       },
       "historical_note": "Retail placement authored. Placement is repaired. The audit leaves exact retail smithing eligibility/effects unresolved; verified quest exchanges must be routed to the excluded quest owner.",
-      "work": "Paid delayed Koshei amulet validated. Existing L2 friendship and six fixed exchanges reused and PG-validated here with exact costs/repeat/10h decay. Continue generic all-carried soul-orb random reward and source refusal replies/topic resets immediately; no shared-engine deferral."
+      "work": "Source-backed real NPC path qualified: exact costs and acceptance, known-failure topic cancellation, atomic refusal/replay and physical actor. Sweaty additionally retains friendship, fixed and bulk smithing and delayed Koshei completion. See batch evidence; no other-lane whole quest is claimed.",
+      "qualification": {
+        "batch": "known-refusal cancellation across six source reward callbacks",
+        "scope": "Owned source NPC interactions and native actor; independent review availability tracked separately.",
+        "postgres": "Focused RED98.638s, GREEN110.458s, compatibility10/478.66s and final paid/clock regression markers retained."
+      }
     },
     {
       "npc": "Alkestios",
@@ -236,7 +241,7 @@
       "audit_status": "DIFF",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/25",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/altar.lua",
         "sha256": "aba428a9619d2d0af8afa0b01b82b784e95f210d430576fe68e3a07f1a300c8c",
@@ -244,7 +249,12 @@
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
       },
       "historical_note": "Retail placement authored. Crimson Offering/Bakragore eligibility and reward transaction require the excluded quest lane.",
-      "work": "Source paid repeated five-plus-five heart exchange for50000000 and one bag, exact confirmation, atomic refusals and actual native actor validated. Independent exact-head workshop review attempted but unavailable:401 Unauthorized/token refresh error. Continue unaffected scope; no credentials inspected."
+      "work": "Source-backed real NPC path qualified: exact costs and acceptance, known-failure topic cancellation, atomic refusal/replay and physical actor. Sweaty additionally retains friendship, fixed and bulk smithing and delayed Koshei completion. See batch evidence; no other-lane whole quest is claimed.",
+      "qualification": {
+        "batch": "known-refusal cancellation across six source reward callbacks",
+        "scope": "Owned source NPC interactions and native actor; independent review availability tracked separately.",
+        "postgres": "Focused RED98.638s, GREEN110.458s, compatibility10/478.66s and final paid/clock regression markers retained."
+      }
     },
     {
       "npc": "Chemar",
@@ -4687,6 +4697,64 @@
       "cumulative_cases": 107,
       "checks": "fmt PASS. No Rust or production content in this component commit; reuse source-equivalent prior check/clippy proof. Physical fixture and production inputs unchanged.",
       "postal_continuation": "New five-case test RED505.72s at Nelly: price-only fixture lookup selected other same-price merchandise. Strengthen selectors to exact item, side and price; keep every rank/replay assertion and rerun all five. Uncommitted Rust test stays out of this green physical component."
+    },
+    {
+      "name": "known-refusal cancellation across six source reward callbacks",
+      "state": "QUALIFIED",
+      "bindings": [
+        "altar-bag",
+        "koshei-submit",
+        "exchange-cyclops-skirts",
+        "exchange-cyclops-gold-melt",
+        "exchange-cyclops-gear-wheel",
+        "exchange-cyclops-soul-orbs"
+      ],
+      "red": {
+        "log": "refusal-topics-red.log",
+        "duration_seconds": 98.638031603,
+        "proof": "Real PostgreSQL; stale failed melt consumed a newly acquired input."
+      },
+      "green": {
+        "state": "QUALIFIED",
+        "test": "npcfix_workshop_postgres_failed_costs_clear_source_confirmation_topics",
+        "goal": "Reject stale confirmation after known cost refusal. Once the user obtains missing items/funds, a fresh source offer must precede the next exact yes.",
+        "source_paths": [
+          "Gold melt/gear wheel and soul-orb failure reset0 (a_sweaty_cyclops.lua:230,246,215; sha256bc694bf...)",
+          "Koshei failure reset0 (same source:337)",
+          "Altar resets0 before checking any cost (altar.lua:60; sha256aba428...)"
+        ],
+        "reuse": "Inspected current qengine2 and L2 conclusion/failure handling. They provide contextual refusal replies and closing, but no source failure-topic reset. Reuse existing topic/context and pending reconciliation ownership.",
+        "constraints": "A known refusal may reset only the unchanged NPC context/topic. Unknown commit outcomes retain pending recovery; confirmed rollback after reconciliation can apply the reset. No new value/fee/custody writer.",
+        "next": "Await refusal-topics-green.log/session25405 cargo171615. Then adapt existing workshop retry fixtures to re-offer after each source failure without removing assertions. Run current workshop cases + preserved Fading clock PG,263 quest units, fmt/check/clippy changed crates, native tooling, commit+merge+FFpush. Continue remaining scope; do not end turn.",
+        "red": "Actual PostgreSQL98.638031603s with markers: after failed melt, stale yes consumed new ingot (0 instead of1 retained).",
+        "implementation": "Step and Pending retain optional refusal target plus original topic; apply wraps existing unchanged writer, resets only known Rejected and unchanged current NPC/context/topic with no pending write. Unknown outcomes preserve recovery; confirmed no receipt can reset after reconcile. Source delivery-only maps configure Altar/Koshei/melt/gear/orbs0, skirts3. No new value writer.",
+        "green": {
+          "log": "/tmp/npcfix-evidence/refusal-topics-green.log",
+          "duration_seconds": 110.458170134,
+          "result": "1 passed; real PostgreSQL start/completion markers; melt and paid Koshei stale confirmations retain inputs/funds; fresh offer succeeds"
+        },
+        "remaining": "Focused existing workshop compatibility, latest paid stale-confirmation assertion, fmt/check/clippy and generated-content checks before commit and fast-forward push.",
+        "compatibility": {
+          "log": "/tmp/npcfix-evidence/refusal-compat-green.log",
+          "passed": 10,
+          "duration_seconds": 478.66,
+          "markers": "Seven source workshop + three physical NPC PostgreSQL start/completion markers; each nonzero duration"
+        },
+        "checks": {
+          "check": "PASS changed quests and dispatch, all targets/features, 10m40s",
+          "python": "PASS 9 tests/22.996s",
+          "native": "PASS42 outputs and check",
+          "canonical_authoring": "PASS --check",
+          "pin": "PASS 568fe0d9753bba3d73f38b4ae884063d2d543b866e337a6f0aab6fd9cc72ec9a;32012042bytes",
+          "fmt": "PASS cargo fmt --all -- --check; explicit mounted rustfmt",
+          "clippy": "PASS all targets/features changed dispatch and quests, -D warnings",
+          "latest_paid_stale_and_preserved_clock": "PASS; test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2568 filtered out; finished in 173.44s",
+          "quest_units": "PASS263/21.74s",
+          "publication_context_units": "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2567 filtered out; finished in 105.52s"
+        },
+        "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
+      },
+      "review": "Independent review remains unavailable due previously recorded HTTP401; no independent review claimed. Task-branch publication only."
     }
   ],
   "owner_constraints": {
@@ -4701,7 +4769,7 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Continue owned state/reward/access NPC entries using delivered core and any newer lane work; Fading Memory needs the existing SetNow/ElapsedAtLeast timer composed into shared rewards. Do not redo now-qualified physical entries.",
+  "next_batch": "Four audited retail actor placements with explicit L2/Tutorial quest-path ownership; then remaining owned fluid/travel/conditional NPC mechanisms.",
   "shared_engine_lookup": {
     "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
@@ -5302,16 +5370,16 @@
     }
   },
   "counts": {
-    "PENDING": 16,
-    "QUALIFIED": 113,
+    "QUALIFIED": 115,
     "AUTHORED; QUALIFICATION PENDING": 164,
+    "PENDING": 14,
     "EXCLUDED": 24,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
-  "last_publication": "Merge latest green placement qualifications with canonical L2 fixed smithing integration; fast-forward push in progress.",
+  "last_publication": "Source refusal-topic batch fully green; committing then fetching/merging concurrent qualified placements for fast-forward push.",
   "active_bulk_batch": {
-    "state": "GREEN; commit and fast-forward publication",
+    "state": "GREEN and PUSHED4d34d0efd; do not redo",
     "red": "PostgreSQL case npcfix-reward-workshop-soul-orbs FAILED95.56852851s; exact yes left2 orbs instead of0. POSTGRES_STARTED and POSTGRES_CASE_COMPLETED retained in soul-orbs-red-retry.log. Prior No space left build did not execute tests and is not RED proof.",
     "reuse": "Latest L2 fef3715a8 qualifies complete Exchange Quests, normal and1% bonus outcomes PG94.770336667s. Reuse96d03398f backpack outputs (originalPC8 eb196696c) and fef3715a8 bulk resolver/retained draws; no second random or value owner.",
     "compatibility": "Forward1146/1147 because published1144/1145 already own cooldown/workshop clocks here. Preserve local required SpellLanePermit, native generation weights, fee+clock proof, full absolute deadlines, original effect16 bound/Father11 atomicity. Unrepresented upstream fluid/charge/experience fields are not imported as partial mechanisms.",
@@ -5395,5 +5463,45 @@
       "log": "/tmp/npcfix-evidence/retail-09-smithing-merged-green.log",
       "scope": "Freshly compiled exact merged source; all54 physical/native assertions passed."
     }
+  },
+  "active_refusal_batch": {
+    "state": "QUALIFIED",
+    "test": "npcfix_workshop_postgres_failed_costs_clear_source_confirmation_topics",
+    "goal": "Reject stale confirmation after known cost refusal. Once the user obtains missing items/funds, a fresh source offer must precede the next exact yes.",
+    "source_paths": [
+      "Gold melt/gear wheel and soul-orb failure reset0 (a_sweaty_cyclops.lua:230,246,215; sha256bc694bf...)",
+      "Koshei failure reset0 (same source:337)",
+      "Altar resets0 before checking any cost (altar.lua:60; sha256aba428...)"
+    ],
+    "reuse": "Inspected current qengine2 and L2 conclusion/failure handling. They provide contextual refusal replies and closing, but no source failure-topic reset. Reuse existing topic/context and pending reconciliation ownership.",
+    "constraints": "A known refusal may reset only the unchanged NPC context/topic. Unknown commit outcomes retain pending recovery; confirmed rollback after reconciliation can apply the reset. No new value/fee/custody writer.",
+    "next": "Await refusal-topics-green.log/session25405 cargo171615. Then adapt existing workshop retry fixtures to re-offer after each source failure without removing assertions. Run current workshop cases + preserved Fading clock PG,263 quest units, fmt/check/clippy changed crates, native tooling, commit+merge+FFpush. Continue remaining scope; do not end turn.",
+    "red": "Actual PostgreSQL98.638031603s with markers: after failed melt, stale yes consumed new ingot (0 instead of1 retained).",
+    "implementation": "Step and Pending retain optional refusal target plus original topic; apply wraps existing unchanged writer, resets only known Rejected and unchanged current NPC/context/topic with no pending write. Unknown outcomes preserve recovery; confirmed no receipt can reset after reconcile. Source delivery-only maps configure Altar/Koshei/melt/gear/orbs0, skirts3. No new value writer.",
+    "green": {
+      "log": "/tmp/npcfix-evidence/refusal-topics-green.log",
+      "duration_seconds": 110.458170134,
+      "result": "1 passed; real PostgreSQL start/completion markers; melt and paid Koshei stale confirmations retain inputs/funds; fresh offer succeeds"
+    },
+    "remaining": "Focused existing workshop compatibility, latest paid stale-confirmation assertion, fmt/check/clippy and generated-content checks before commit and fast-forward push.",
+    "compatibility": {
+      "log": "/tmp/npcfix-evidence/refusal-compat-green.log",
+      "passed": 10,
+      "duration_seconds": 478.66,
+      "markers": "Seven source workshop + three physical NPC PostgreSQL start/completion markers; each nonzero duration"
+    },
+    "checks": {
+      "check": "PASS changed quests and dispatch, all targets/features, 10m40s",
+      "python": "PASS 9 tests/22.996s",
+      "native": "PASS42 outputs and check",
+      "canonical_authoring": "PASS --check",
+      "pin": "PASS 568fe0d9753bba3d73f38b4ae884063d2d543b866e337a6f0aab6fd9cc72ec9a;32012042bytes",
+      "fmt": "PASS cargo fmt --all -- --check; explicit mounted rustfmt",
+      "clippy": "PASS all targets/features changed dispatch and quests, -D warnings",
+      "latest_paid_stale_and_preserved_clock": "PASS; test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2568 filtered out; finished in 173.44s",
+      "quest_units": "PASS263/21.74s",
+      "publication_context_units": "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2567 filtered out; finished in 105.52s"
+    },
+    "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   }
 }

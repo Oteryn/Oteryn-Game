@@ -65,6 +65,11 @@ fn npcfix_workshop_postgres_soul_orbs_trade_all_carried_inputs() -> TestResult {
     scenario("npcfix-reward-workshop-soul-orbs")
 }
 
+#[test]
+fn npcfix_workshop_postgres_failed_costs_clear_source_confirmation_topics() -> TestResult {
+    scenario("npcfix-reward-workshop-refusal-topics")
+}
+
 const READY: &str = "oteryn:quest-transition/npcfix-workshop-fixture-ready";
 const ELAPSED: &str = "oteryn:quest-transition/npcfix-workshop-fixture-elapsed";
 
@@ -207,6 +212,96 @@ pub(super) async fn exercise(
         .collect();
     assert!(!callbacks.is_empty());
     let [actor] = install(owner, admitted, [npc]).await?;
+    if name.ends_with("refusal-topics") {
+        talk(owner, admitted, actor, 100, "hi").await?;
+        talk(owner, admitted, actor, 101, "melt").await?;
+        declined(owner, admitted, actor, 102, "yes").await?;
+        let position = Position {
+            x: 33293,
+            y: 31677,
+            floor: -15,
+        };
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        super::quest_world_callbacks::input_item(
+            owner,
+            fence.item_fence(),
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position,
+                item: "oteryn:item.tibia.i9058".into(),
+                count: 1,
+            },
+            200,
+            true,
+        )
+        .await?;
+        super::qengine_rewards::talk(owner, admitted, actor, 103, "yes").await?;
+        assert_eq!(
+            count(h, 9058).await?,
+            1,
+            "failed melt must cancel its old confirmation"
+        );
+        assert_eq!(count(h, 12804).await?, 0);
+        talk(owner, admitted, actor, 104, "melt").await?;
+        talk(owner, admitted, actor, 105, "yes").await?;
+        assert_eq!(count(h, 9058).await?, 0);
+        assert_eq!(count(h, 12804).await?, 1);
+        talk(owner, admitted, actor, 106, "amulet").await?;
+        declined(owner, admitted, actor, 107, "yes").await?;
+        let callback = callbacks.iter().find(|c| c.fee.is_some()).ok_or("fee")?;
+        for (i, input) in callback.take.iter().enumerate() {
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|_| "fence")?
+                .ok_or("fence")?;
+            super::quest_world_callbacks::input_item(
+                owner,
+                fence.item_fence(),
+                &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                    position,
+                    item: input.item.clone(),
+                    count: input.count,
+                },
+                300 + u64::try_from(i)?,
+                true,
+            )
+            .await?;
+        }
+        super::guild_bank::bank_seed::balance(
+            h,
+            super::fixture::id(40),
+            super::fixture::id(41),
+            5000,
+            150,
+        )
+        .await?;
+        sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
+            .execute(&h.pool)
+            .await?;
+        super::qengine_rewards::talk(owner, admitted, actor, 108, "yes").await?;
+        assert_eq!(
+            bank(h).await?,
+            5000,
+            "failed craft must cancel its old payment confirmation"
+        );
+        for input in &callback.take {
+            let quantity:i64=sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1").bind(&input.item).fetch_one(&h.pool).await?;
+            assert_eq!(quantity, 1);
+        }
+        talk(owner, admitted, actor, 109, "amulet").await?;
+        talk(owner, admitted, actor, 110, "yes").await?;
+        assert_eq!(bank(h).await?, 0);
+        assert_eq!(
+            count(h, 7532).await?,
+            0,
+            "reconfirmed craft still retains its24h wait"
+        );
+        return Ok(());
+    }
     if name.ends_with("smithing") || name.ends_with("soul-orbs") {
         talk(owner, admitted, actor, 100, "hi").await?;
         for (i, word) in ["uth'lokr", "yes", "yes"].iter().enumerate() {
@@ -313,6 +408,7 @@ pub(super) async fn exercise(
                 true,
             )
             .await?;
+            talk(owner, admitted, actor, ordinal + 5, word).await?;
             super::qengine_rewards::talk(owner, admitted, actor, ordinal + 3, "yes please").await?;
             assert_eq!(count(h, input).await?, 1, "inexact acceptance keeps input");
             assert_eq!(count(h, output).await?, i64::try_from(i / 6)?);
@@ -364,6 +460,7 @@ pub(super) async fn exercise(
                 true,
             )
             .await?;
+            talk(owner, admitted, actor, 120 + u64::try_from(i)?, "amulet").await?;
             declined(owner, admitted, actor, 110 + u64::try_from(i)?, "yes").await?;
             assert_eq!(
                 bank(h).await?,
@@ -479,6 +576,9 @@ pub(super) async fn exercise(
         )
         .await?;
     }
+    for (i, word) in words.iter().enumerate() {
+        talk(owner, admitted, actor, 300 + u64::try_from(i)?, word).await?;
+    }
     declined(owner, admitted, actor, 111, "yes").await?;
     let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources")
         .fetch_one(&h.pool)
@@ -496,6 +596,9 @@ pub(super) async fn exercise(
         150,
     )
     .await?;
+    for (i, word) in words.iter().enumerate() {
+        talk(owner, admitted, actor, 310 + u64::try_from(i)?, word).await?;
+    }
     declined(owner, admitted, actor, 112, "yes").await?;
     assert_eq!(
         bank(h).await?,
@@ -505,6 +608,19 @@ pub(super) async fn exercise(
     sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
         .execute(&h.pool)
         .await?;
+    talk(owner, admitted, actor, 319, "yes").await?;
+    assert_eq!(
+        bank(h).await?,
+        fee,
+        "a failed offer needs a fresh confirmation topic"
+    );
+    assert_eq!(
+        count(h, if name.ends_with("altar") { 43895 } else { 7532 }).await?,
+        0
+    );
+    for (i, word) in words.iter().enumerate() {
+        talk(owner, admitted, actor, 320 + u64::try_from(i)?, word).await?;
+    }
     super::qengine_rewards::talk(owner, admitted, actor, 113, "yes please").await?;
     assert_eq!(bank(h).await?, fee, "exact confirmation required");
     talk(owner, admitted, actor, 114, "yes").await?;

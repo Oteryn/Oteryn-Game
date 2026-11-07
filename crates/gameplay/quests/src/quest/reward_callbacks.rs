@@ -140,6 +140,9 @@ pub struct RewardCallback {
     pub reply: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub cooldown_reply: Vec<String>,
+    /// Known refusal cancels or redirects only the same conversation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refusal_topic: Option<u16>,
     pub sources: Vec<String>,
 }
 

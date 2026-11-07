@@ -1235,7 +1235,8 @@
         "gold": 50000000,
         "include_bank": true
       },
-      "repeatable": true
+      "repeatable": true,
+      "refusal_topic": 0
     },
     {
       "key": "oteryn:quest-reward/npcfix/koshei-submit",
@@ -1291,7 +1292,8 @@
           "elapsed_seconds": null,
           "set_now": true
         }
-      ]
+      ],
+      "refusal_topic": 0
     },
     {
       "key": "oteryn:quest-reward/npcfix/koshei-claim",
@@ -1449,7 +1451,8 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:242:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
       ],
-      "repeatable": true
+      "repeatable": true,
+      "refusal_topic": 0
     },
     {
       "key": "oteryn:quest-reward/exchange-cyclops-gold-melt",
@@ -1492,7 +1495,8 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:225:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
       ],
-      "repeatable": true
+      "repeatable": true,
+      "refusal_topic": 0
     },
     {
       "key": "oteryn:quest-reward/exchange-cyclops-hell-steel",
@@ -1603,7 +1607,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
-      ]
+      ],
+      "refusal_topic": 3
     },
     {
       "key": "oteryn:quest-reward/exchange-cyclops-start",
@@ -1683,7 +1688,8 @@
         "base": 100,
         "bonus": 100,
         "chance_percent": 1
-      }
+      },
+      "refusal_topic": 0
     },
     {
       "key": "oteryn:quest-reward/npcfix-ghost-tear",
