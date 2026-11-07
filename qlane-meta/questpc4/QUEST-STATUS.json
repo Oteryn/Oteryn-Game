@@ -10680,14 +10680,25 @@
   },
   "main3032_merge": {
     "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
-    "state": "CONFLICT_RESOLVED_VALIDATING",
+    "state": "ALL_PREPUSH2_GATES_GREEN_READY_TO_PUBLISH",
     "decision": "Keep main apply_input_rows; remove temporary input_rows.rs; preserve existing lane reusable/alternative item behavior and NPC ground guard. All world/carried callers retain the checked apply_input wrapper.",
-    "pending": [
-      "Durability crate unit tests with PG absent (standard guards)",
-      "Own actual PG NPC hand-in, carried key, reusable tools and Rotten altar cases with durations",
-      "Native/item/equipment/binding checks and pin refresh",
-      "cargo check --workspace --all-targets and fmt",
-      "Current clippy on changed durability crate"
-    ]
+    "pending": [],
+    "helper": "Only main apply_input_rows, byte-identical SHA2566f157200ed3aea9108998232fe01e6eb43db5837cf5e74e706cc02036117c161",
+    "workspace_check": "PASS3m14s /tmp/questpc4-main3032-workspace-check.log",
+    "fmt": "PASS /tmp/questpc4-main3032-fmt-check.log",
+    "regeneration": "Native43files/equipment3720/binding6628 pointers PASS; pin-refreshPASS unchangedb2400c60",
+    "units": "709/709PASS151.313s /tmp/questpc4-main3032-durability-units.log; PGabsent for unit run",
+    "pg": {
+      "passed": 5,
+      "total_seconds": 182.43,
+      "postgres": "18.6",
+      "log": "/tmp/questpc4-main3032-own-pg.log",
+      "npc_seconds": 103.020870435,
+      "carried_seconds": 79.407757268,
+      "reusable_seconds": 64.31239212,
+      "multitool_seconds": 58.524390092,
+      "altar_marker": "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED literal_altar possession_only_phase atomic_item_burn replay"
+    },
+    "clippy": "PASS4m15s changed3crates/alltargets/-Dwarnings /tmp/questpc4-main3032-clippy.log"
   }
 }

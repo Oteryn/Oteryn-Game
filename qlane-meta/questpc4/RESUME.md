@@ -1,3 +1,9 @@
+## Main3032 integration ALL GREEN (2026-11-07 23:10 UTC)
+
+Merge5cf66604c includesmain47db34f09d760b2f435860c2f8d4ddf12a893e05; exactlyone mainapply_input_rows byte-identicalSHA2566f157200ed3aea9108998232fe01e6eb43db5837cf5e74e706cc02036117c161, temporaryinput_rows.rsdeleted. Checkedworldwrapper andexistinglane alternatives/reusable semantics/NPCgroundguard retained; no behaviorchange.
+
+Currentmandatoryall-targetcheck3m14sPASS,fmtPASS,clippy3cratesalltargets-Dwarnings4m15sPASS. Durabilityunit709/709GREEN151.313s (standard noPGguards). OwnactualPG18.6 fivecasesGREEN182.43s overall: multitool58.524390092s,carried79.407757268s,reusable64.31239212s,NPCacceptance103.020870435s,Rottenaltar explicitcompletedmarker. /tmp/questpc4-main3032-{workspace-check,fmt-check,clippy,durability-units,own-pg}.log. Native43files/equipment3720/binding6628exactpointersPASS;pinrefreshPASSunchangedb2400c60. Freshmain/ownfetch23:09:0behindboth. Commitproofnotes,duplicate-migrationcheck,freshfetch+FFpush immediately; replymax5linesnewSHAanddurations. Continueownedquestlane thereafter, counts4/17/2unchanged.
+
 ## Main3032 canonical helper merge (2026-11-07 22:56 UTC)
 
 Merged origin/main47db34f09d760b2f435860c2f8d4ddf12a893e05; onlyconflict quest_world_callback.rs resolved. Keep main apply_input_rows exactly, delete temporary input_rows.rs/mod. Preserve lane reusable/alternatives behavior, carried/shared module declarations, existing NPC ground guard, checked apply_input wrapper and all caller signatures. No behavior change. Commit this merge before15minute limit; validate/prepush before publication.
