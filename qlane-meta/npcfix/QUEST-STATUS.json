@@ -8538,6 +8538,7 @@
           "world": "oteryn"
         }
       ]
-    }
+    },
+    "remaining_gates": "Only final post-canonical-order strict Clippy and four atomicity tests remain active. Full regeneration/repository5 tests125.91s, corrected catalogue55.83s, final check, fmt, duplicate migrations and independent pin PASS; PG111.62s and source delta retained."
   }
 }
