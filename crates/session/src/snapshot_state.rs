@@ -179,6 +179,13 @@ impl SnapshotState {
                 // Unselected is a server violation; an unregistered domain is ignored.
                 (domain_id, snapshot_type) => match capability_of_domain(domain_id) {
                     Some(capability) if selected_capabilities.contains(&capability) => {
+                        if domain_id == cast::STATE_DOMAIN_CAST_CASTER_CHAT {
+                            cast_chat::validate_snapshot(
+                                snapshot_type,
+                                domain.revision,
+                                domain.payload,
+                            )?;
+                        }
                         if domain_id == analyser_transport::STATE_DOMAIN_ACTOR_ANALYSER {
                             analyser_transport::validate_snapshot(
                                 &GatedSnapshot {
@@ -275,6 +282,7 @@ impl SnapshotState {
                 spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG,
             ));
         }
+        cast_chat::validate_join(selected_capabilities, &state.gated_snapshots)?;
         analyser_transport::validate_join(selected_capabilities, &state.gated_snapshots)?;
         weather::validate_join(selected_capabilities, &state.gated_snapshots)?;
         quest_log_transport::validate_join(selected_capabilities, &state.gated_snapshots)?;

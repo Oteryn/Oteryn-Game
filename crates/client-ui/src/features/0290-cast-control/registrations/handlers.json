@@ -1,18 +1,12 @@
 {
   "mechanic": "0290-cast-control",
   "kind": "handlers",
-  "id": "0290-cast-control-unsupported",
-  "status": "unsupported",
-  "reason": "S17-A is server phase 1; native client is a later task.",
+  "id": "0290-cast-control-moderate",
+  "status": "supported",
   "commands": [
-    502,
     505
   ],
-  "not_applicable": {
-    "state": "Native cast UI is a later task.",
-    "protocol": "Native cast UI is a later task.",
-    "view": "Native cast UI is a later task.",
-    "input": "Native cast UI is a later task.",
-    "settings": "Native cast UI is a later task."
-  }
+  "direction": "client_to_server",
+  "capability": 290,
+  "entry": "mod.rs::moderate"
 }
