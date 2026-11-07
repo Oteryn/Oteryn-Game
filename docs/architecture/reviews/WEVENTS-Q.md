@@ -521,3 +521,13 @@ game-server and quests; workspace fmt check, explicit mounted-source rustfmt and
 staged whitespace check. Logs: `wevents-insect-check-final.log`,
 `wevents-insect-clippy.log`, `wevents-insect-quests-clippy-final.log` and
 `wevents-insect-fmt-final.log`.
+
+The native USE run exposed the old donor-prefix-only callback validator before
+World mutation (`wevents-insect-native-pg.log`). Authored World bindings now
+require an exact verified native selector from `native-object-bindings.json`,
+the object-policy provenance, a valid closed World binding and an explicit
+contract-note source. A focused loader regression passes and rejects action-ID
+substitution and removal of the World binding. Quests locked check and strict
+all-feature library clippy pass (`wevents-insect-authored-*-final.log`). The
+restoration callbacks preserve a transaction-only track accepting the existing
+-1/0 initial values; all progression and reset authority stays in World state.

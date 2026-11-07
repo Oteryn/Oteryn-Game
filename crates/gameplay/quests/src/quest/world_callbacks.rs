@@ -27,6 +27,7 @@ pub enum Trigger {
     StepOut,
 }
 
+mod authored;
 mod effects;
 pub use effects::{
     CallbackEffects, Encounter, EncounterMonster, EncounterPlayer, Facing, ItemCycle, MagicEffect,
@@ -218,6 +219,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || ((callback.effects.outfit_reward.is_some()
                         || callback.effects.world_event.is_some())
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
+                    || (source.starts_with("oteryn-policy:CONTRACT-NOTES.md#")
+                        && authored::valid(callback))
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 item.target_replacement == Some(0)

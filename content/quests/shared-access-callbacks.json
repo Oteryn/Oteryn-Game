@@ -621,8 +621,8 @@
         {
           "track": "oteryn:quest-progress/insectoid-invasion/restoration",
           "minimum": -1,
-          "maximum": -1,
-          "set": -1,
+          "maximum": 0,
+          "set": 0,
           "preserve": true
         }
       ],
@@ -639,7 +639,7 @@
         }
       },
       "sources": [
-        "oteryn-policy:CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+        "oteryn-policy:CONTRACT-NOTES.md#wevents-greenshore-restoration-policy"
       ]
     },
     {
@@ -664,8 +664,8 @@
         {
           "track": "oteryn:quest-progress/insectoid-invasion/restoration",
           "minimum": -1,
-          "maximum": -1,
-          "set": -1,
+          "maximum": 0,
+          "set": 0,
           "preserve": true
         }
       ],
@@ -682,7 +682,7 @@
         }
       },
       "sources": [
-        "oteryn-policy:CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+        "oteryn-policy:CONTRACT-NOTES.md#wevents-greenshore-restoration-policy"
       ]
     },
     {
@@ -707,8 +707,8 @@
         {
           "track": "oteryn:quest-progress/insectoid-invasion/restoration",
           "minimum": -1,
-          "maximum": -1,
-          "set": -1,
+          "maximum": 0,
+          "set": 0,
           "preserve": true
         }
       ],
@@ -725,7 +725,7 @@
         }
       },
       "sources": [
-        "oteryn-policy:CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+        "oteryn-policy:CONTRACT-NOTES.md#wevents-greenshore-restoration-policy"
       ]
     },
     {
@@ -750,8 +750,8 @@
         {
           "track": "oteryn:quest-progress/insectoid-invasion/restoration",
           "minimum": -1,
-          "maximum": -1,
-          "set": -1,
+          "maximum": 0,
+          "set": 0,
           "preserve": true
         }
       ],
@@ -768,7 +768,7 @@
         }
       },
       "sources": [
-        "oteryn-policy:CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+        "oteryn-policy:CONTRACT-NOTES.md#wevents-greenshore-restoration-policy"
       ]
     }
   ]
