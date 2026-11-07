@@ -65,6 +65,8 @@ pub(super) async fn white_raven(
         ["oteryn:npc.dalbrect", "oteryn:npc.costello"],
         [Position {x:32247,y:31865,floor:-8}, Position {x:32190,y:31956,floor:-6}]).await?;
     let callbacks=oteryn_gameplay_quests::quest::reward_callbacks::load()?;
+    assert!(owner.states.chat.npc_talk().ok_or("NPC book")?.get("oteryn:npc.dalbrect").ok_or("Dalbrect")?
+        .travel_routes.iter().any(|route|route.keyword=="passage" && route.route.price==10 && !route.held));
     let find=|key:&str|callbacks.iter().find(|c|c.key.ends_with(key)).ok_or("White Raven callback");
     let brooch=find("/l2-white-raven-brooch")?;
     assert_eq!(wire_reward(owner,admitted,dalbrect,brooch,false).await?.0,NpcIntentDisposition::Rejected);
@@ -74,7 +76,8 @@ pub(super) async fn white_raven(
     let source=Position{x:32248,y:31866,floor:-8};
     use_at(owner,admitted,source,UseDisposition::Committed).await?;
     assert_eq!(quantity(h,3205).await?,1,"real source chest issues the Family Brooch");
-    use_at(owner,admitted,source,UseDisposition::Rejected).await?;
+    use_at(owner,admitted,source,UseDisposition::NothingToUse).await?;
+    assert_eq!(quantity(h,3205).await?,1,"once-claim refusal preserves the one actual Brooch");
     assert_eq!(wire_reward(owner,admitted,dalbrect,brooch,false).await?.0,NpcIntentDisposition::Ok);
     assert_eq!(quantity(h,3205).await?,0);
     assert_eq!(white_track(h,"passage").await?,2);

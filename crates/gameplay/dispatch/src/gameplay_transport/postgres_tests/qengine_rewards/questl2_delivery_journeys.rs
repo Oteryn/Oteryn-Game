@@ -252,7 +252,7 @@ pub(crate) fn world(
     }
     if name.ends_with("white-raven") {
         cells.get_mut(&(-8,32248,31866)).ok_or("brooch source cell")?
-            .push(sector::Item { palette:3, depth:0, attrs:Default::default() });
+            .push(sector::Item { palette:3, depth:0, attrs:sector::Attrs { unique:Some(6055), ..Default::default() } });
     }
     if name.ends_with("alliance") {
         for (x, y, palette, action) in [(33154, 31297, 3, None), (33154, 31298, 4, Some(40030))] {

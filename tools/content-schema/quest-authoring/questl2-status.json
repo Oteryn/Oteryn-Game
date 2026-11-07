@@ -1489,6 +1489,19 @@
         "duration_seconds": 4.569859183,
         "result": "Required source hand-in bindings absent",
         "log": "/tmp/l2-passages-initial-red-pg2.log"
+      },
+      "engine_request": {
+        "owner": "qengine2",
+        "feature": "Targeted carried quest-tool USE_WITH_MAP_ITEM plus map-item placement and timed removal",
+        "source": {
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "file": "data-global/scripts/quests/the_thieves_guild_quest/actions_note.lua",
+          "lines": "12-21",
+          "sha256": "7315b2915231fd38c0fae764e927d3504ec40668c7feda31b9f49dca783b98cf",
+          "item": 7873,
+          "target_action_id": 12509,
+          "cleanup_seconds": 300
+        }
       }
     },
     {
@@ -1503,12 +1516,17 @@
       },
       "native_red": {
         "postgres_version": "18.6",
-        "duration_seconds": 86.141785805,
-        "nextest_duration_seconds": 91.801,
-        "actual": "NothingToUse",
-        "expected": "Committed",
-        "point": "Native Family Brooch chest USE at32248,31866,-8; source appearance2476 is present but its claim needs the startup binding",
-        "log": "/tmp/l2-white-raven-native-pg1.log"
+        "duration_seconds": 82.407561355,
+        "point": "Brooch acquired from source chest, consumed by Dalbrect; Passage2 and QuestLog1 pass. Native ten-gold quote appears, but yes is rejected before paid travel can commit.",
+        "log": "/tmp/l2-white-raven-travel-diagnostic-pg.log",
+        "actual_travel_receipts": 0,
+        "expected_travel_receipts": 1
+      },
+      "engine_request": {
+        "owner": "qengine2",
+        "feature": "Pending paid-travel confirmation must retain ownership over generic reward unhandled_confirmation fallback for the same NPC/context/fence",
+        "where": "npc_command.rs:881 and newhaven_travel.rs:99",
+        "source_proof": "Real PG quote: Do you seek a passage to passage for 10 gold?; yes is intercepted by unhandled_confirmation before paid_travel_talk."
       }
     },
     {
@@ -3150,7 +3168,11 @@
       "fresh_postgres_green_seconds": 286.804990407
     },
     "latest_qengine2_inspected": "e5850715e",
-    "latest_questpc3_inspected": "06d1bda324884db38eb4f46f1812274a159c7775"
+    "latest_questpc3_inspected": "06d1bda324884db38eb4f46f1812274a159c7775",
+    "qready1_reuse": {
+      "commit": "c4266e5a68101db8fdf1cfdfcbcd39a4ff0fb3f5",
+      "scope": "Reuse startup source-selector overlay pattern and existing quest_access_bindings.overlay_region; bind only L2 Family Brooch UID6055."
+    }
   },
   "next_batch": {
     "entries": [
@@ -3358,7 +3380,7 @@
       "postgres_version": "18.6",
       "log": "/tmp/l2-passages-initial-red-pg2.log"
     },
-    "current": "WIP: White Raven source callbacks and ten-gold route authored; full native journey RED at source Brooch chest NothingToUse. Other four journeys RED at missing bindings.",
+    "current": "Source Brooch startup binding and real Brooch hand-in proved on PG. White Raven travel needs qengine2 confirmation routing fix; continue Thieves Guild while owner implements shared fix.",
     "authoring_tests": {
       "result": "PASS",
       "tests": 23,
@@ -3378,6 +3400,25 @@
       "result": "PASS",
       "log": "/tmp/l2-passages-independent-fmt.log"
     },
-    "pin_refresh": "Running official tool; publish compiling WIP immediately under owner hard rule, refresh result follows separately."
+    "pin_refresh": "Running official tool; publish compiling WIP immediately under owner hard rule, refresh result follows separately.",
+    "source_overlay_tests": {
+      "passed": 3,
+      "duration_seconds": 1.203,
+      "log": "/tmp/l2-white-raven-chest-source-tests.log"
+    },
+    "world_converter_tests": {
+      "passed": 59,
+      "duration_seconds": 0.416,
+      "log": "/tmp/l2-brooch-world-converter-tests.log"
+    },
+    "source_overlay_checks": {
+      "workspace_all_targets": "PASS /tmp/l2-brooch-generated-workspace.log (12.34s after pins)",
+      "clippy": "PASS /tmp/l2-brooch-binding-clippy2.log",
+      "fmt": "PASS /tmp/l2-brooch-generated-fmt.log",
+      "source_tests": "3 passed /tmp/l2-white-raven-chest-source-tests.log",
+      "converter_tests": "59 passed /tmp/l2-brooch-world-converter-tests.log",
+      "pin_refresh": "PASS /tmp/l2-brooch-pin-refresh.log",
+      "world_digest": "32e2b19f9a6d36638e64952ee8e28c825ae5b927c75d876e3012f1344b1b1a9c"
+    }
   }
 }
