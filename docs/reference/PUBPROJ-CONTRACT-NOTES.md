@@ -220,3 +220,32 @@ retry regressed a proven same-millisecond cut after acknowledgement. The fixture
 now satisfies native Content admission; quiesced retries retain the last proven
 cut while the existing unsafe-clock checks remain unchanged. No assertion or
 source deadline is removed or relaxed.
+
+The legacy resync negative probe used Guild as an unknown family. Guild is now
+owner-accepted, so the probe uses an explicitly unsupported family instead;
+the SQLSTATE 22023 assertion remains intact. Dedicated Guild PG coverage still
+requires successful resync and its revision/outbox behavior. The large resync
+case passed with stock PostgreSQL lock settings after tuple serialization.
+
+### Focused green execution evidence
+
+The retained PUBPROJ unit selection passed 78/78 in 19.279 seconds, including
+wire goldens, stable player/creature/PvP-hidden identities, reserved-key admission,
+condition provenance, joined-owner final cuts and config negatives. Its two
+Character-death PostgreSQL cases emitted execution markers at 9382 ms and
+7264 ms. The dedicated 11-case PostgreSQL selection passed 11/11 in 94.583
+seconds, including the 10,000-Character resync regression, null/unknown-family
+rejections, G-4 revision/outbox/ACK/resync, online retention/ownership/1000-interval
+resync, and physical-death deduplication/final replay. No assertions or deadlines
+were weakened and no sleeps were introduced for timing evidence.
+
+Final allocation remains migrations 1350–1352 and 1354–1355, resources
+10069–10076 and 10083–10093. Migration 1353 and resources 10077–10082 stay free
+in PUBPROJ. No command IDs or capability bits were allocated.
+
+Final workspace all-target check passed in 9m43s; changed-crate all-target
+clippy with warnings denied passed in 8m01s. Formatting, duplicate migrations
+and architecture checks passed. Repository fixture generators ran; World
+pin-refresh and pin-check passed after G-12 removal, with their inputs unchanged
+by the subsequent SQL/runtime/test repairs. Full-suite results are delegated
+to CI under the owner's replacement speed rule.
