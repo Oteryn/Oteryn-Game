@@ -362,18 +362,19 @@ async fn run_inner(
     if eligible.next().is_some() {
         return Err(UseDisposition::Rejected);
     }
-    let replacement = callback
+    if let Some(replacement) = callback
         .item_on_target
         .as_ref()
         .and_then(|item| item.replacement.as_ref())
-        .ok_or(UseDisposition::Rejected)?;
-    weights
-        .weight_of(&TypedDefinitionRef {
-            family: "Item".into(),
-            production_key: replacement.clone(),
-            revision_ref: "definition-r1".into(),
-        })
-        .map_err(|_| UseDisposition::NotPossible)?;
+    {
+        weights
+            .weight_of(&TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: replacement.clone(),
+                revision_ref: "definition-r1".into(),
+            })
+            .map_err(|_| UseDisposition::NotPossible)?;
+    }
     let runtime = admission.runtime.lock().await;
     let expected = runtime
         .read_actor_position(actor)

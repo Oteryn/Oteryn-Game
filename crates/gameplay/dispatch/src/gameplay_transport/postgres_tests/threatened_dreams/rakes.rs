@@ -367,7 +367,7 @@ fn scenario() -> TestResult {
         Ok(())
     })
 }
-async fn seed(
+pub(super) async fn seed(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     key: &str,

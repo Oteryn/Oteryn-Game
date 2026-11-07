@@ -1643,6 +1643,64 @@
             "result": "PASS"
           }
         }
+      },
+      {
+        "batch": "threatened_delivery_11",
+        "result": "GREEN",
+        "pg_red_ms": 57053,
+        "pg_green_ms": 60098,
+        "entries": [
+          "Book on pallet12648",
+          "Book on pallet12649",
+          "Whelp fur on stone25237"
+        ],
+        "proofs": {
+          "pg_red": {
+            "sha256": "5ee6c71fbfe51efa1dd87b3add8823c553561ff04948a7e3cd19f5c6f1923585",
+            "log": "/tmp/questpc3-delivery-red.log",
+            "result": "expected RED"
+          },
+          "pg_green": {
+            "sha256": "c58e0ec200b92a976963b22ae7c4b43d4a4112703ebba71f5c0964b88cc2665b",
+            "log": "/tmp/questpc3-delivery-green.log",
+            "result": "PASS"
+          },
+          "clippy": {
+            "sha256": "0b937782c1df50c89aca6a293f44431f77ff2197efa0a726c88527ee8ab78702",
+            "log": "/tmp/questpc3-delivery-clippy.log",
+            "result": "PASS"
+          },
+          "cargo_check": {
+            "sha256": "1461657a7d7f09b53270a618b579b78319833a4ead8a020fe7d404eb3a93082b",
+            "log": "/tmp/questpc3-delivery-check.log",
+            "result": "PASS"
+          },
+          "authoring": {
+            "sha256": "455a234a903f02c7d36882c9b036acc1ee7cca1176404082cfe9897ae40211f7",
+            "log": "/tmp/questpc3-delivery-authoring.log",
+            "result": "PASS"
+          },
+          "native_generation": {
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "log": "/tmp/questpc3-delivery-native.log",
+            "result": "PASS"
+          },
+          "pins": {
+            "sha256": "710990ca0f2053bba73128aa2a99d3ef9d6d343072182d665829d178d63d4062",
+            "log": "/tmp/questpc3-delivery-pins.log",
+            "result": "PASS"
+          },
+          "carried_units": {
+            "sha256": "f2296ff01a518ec052f42317d0eea5db80e67f6047747a3b6be2ff7c09154c34",
+            "log": "/tmp/questpc3-delivery-units.log",
+            "result": "PASS"
+          },
+          "fmt": {
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "log": "/tmp/questpc3-delivery-fmt.log",
+            "result": "PASS"
+          }
+        }
       }
     ],
     "completed_mechanism_batches": {
@@ -3198,7 +3256,7 @@
         "Existing tent32950",
         "Existing tent32951"
       ],
-      "phase": "DOC-ONLY checkpoint; delivery tests/code remain local and unpublished. Corrected test-only RED compiling /tmp/questpc3-delivery-red.log; production unchanged.",
+      "phase": "GREEN; ready to commit and fast-forward publish",
       "previous_published": "009f5f9e1",
       "missing_generic_support": [
         "allow a selected carried source to burn with replacement=None on world-target USE only",
@@ -3218,7 +3276,88 @@
         "Manually placed fixture must set FirstEntryOutcome::Positioned and fresh item fence, as existing world-callback scenario does.",
         "Wire frames must use admitted sequential command ids1/2/3; original32301 produced exact protocol_error next_command_id=1. No fixture error counted as missing-mechanism RED."
       ],
-      "next_steps": "Await genuine RED burns0/tents3. Then target-only optional replacement(None burn), target-only appearance selector and plain-base appearance fallback; author3 rows, reuse native policy generator for2missing native profiles (canonical Items already admitted), fmt/check/Clippy/PGGREEN, repin only when declared compiler inputs change, commit+FFpush."
+      "next_steps": "Await genuine RED burns0/tents3. Then target-only optional replacement(None burn), target-only appearance selector and plain-base appearance fallback; author3 rows, reuse native policy generator for2missing native profiles (canonical Items already admitted), fmt/check/Clippy/PGGREEN, repin only when declared compiler inputs change, commit+FFpush.",
+      "pg_red": {
+        "duration_ms": 57053,
+        "evidence": "burns=0 receipts=0 tent_steps=3",
+        "marker": "THREATENED_DELIVERY POSTGRES_CASE_COMPLETED",
+        "sha256": "5ee6c71fbfe51efa1dd87b3add8823c553561ff04948a7e3cd19f5c6f1923585"
+      },
+      "native_inputs": "Book25235 and fur25238 are canonically admitted but absent from existing native provider; regenerate through quest_callback_profiles closure. No canonical Item mutation.",
+      "checks": {
+        "carried_units": "PASS6 tests0.02s including target-only burn bounds and legacy binding compatibility",
+        "authoring": "PASS2 tests0.007s",
+        "fmt": "PASS",
+        "cargo_check": "PASS1m18s",
+        "strict_clippy": "PASS2m01s, quests/durability/dispatch allfeatures/alltargets -Dwarnings",
+        "native_generation": "PASS41 files; native25235/25238 added without canonical Item mutation",
+        "pin_refresh": {
+          "inputs_digest": "0351a4b09a3a2a30c8363c18f74446d76e9eaed72b5e36a16b1275056fbd3d7d",
+          "pins": [
+            {
+              "digest": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
+              "previous": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
+              "world": "oteryn"
+            }
+          ]
+        }
+      },
+      "next_acquisition_source": "Retained irmana.lua:247-253 gives25238 for1000 held gold and setsAnimals8; blob76f53aa5ae2e04daabf1a8cca74b63f3ad13e751 SHA25608e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03. Inspect full source offer/topic and reuse qengine2 monetary fee owner, no independent wallet writer.",
+      "postgres_green": {
+        "duration_ms": 60098,
+        "burns": 3,
+        "receipts": 3,
+        "tent_steps": 3,
+        "spare_instances_and_replay": true
+      },
+      "proofs": {
+        "pg_red": {
+          "sha256": "5ee6c71fbfe51efa1dd87b3add8823c553561ff04948a7e3cd19f5c6f1923585",
+          "log": "/tmp/questpc3-delivery-red.log",
+          "result": "expected RED"
+        },
+        "pg_green": {
+          "sha256": "c58e0ec200b92a976963b22ae7c4b43d4a4112703ebba71f5c0964b88cc2665b",
+          "log": "/tmp/questpc3-delivery-green.log",
+          "result": "PASS"
+        },
+        "clippy": {
+          "sha256": "0b937782c1df50c89aca6a293f44431f77ff2197efa0a726c88527ee8ab78702",
+          "log": "/tmp/questpc3-delivery-clippy.log",
+          "result": "PASS"
+        },
+        "cargo_check": {
+          "sha256": "1461657a7d7f09b53270a618b579b78319833a4ead8a020fe7d404eb3a93082b",
+          "log": "/tmp/questpc3-delivery-check.log",
+          "result": "PASS"
+        },
+        "authoring": {
+          "sha256": "455a234a903f02c7d36882c9b036acc1ee7cca1176404082cfe9897ae40211f7",
+          "log": "/tmp/questpc3-delivery-authoring.log",
+          "result": "PASS"
+        },
+        "native_generation": {
+          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+          "log": "/tmp/questpc3-delivery-native.log",
+          "result": "PASS"
+        },
+        "pins": {
+          "sha256": "710990ca0f2053bba73128aa2a99d3ef9d6d343072182d665829d178d63d4062",
+          "log": "/tmp/questpc3-delivery-pins.log",
+          "result": "PASS"
+        },
+        "carried_units": {
+          "sha256": "f2296ff01a518ec052f42317d0eea5db80e67f6047747a3b6be2ff7c09154c34",
+          "log": "/tmp/questpc3-delivery-units.log",
+          "result": "PASS"
+        },
+        "fmt": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "log": "/tmp/questpc3-delivery-fmt.log",
+          "result": "PASS"
+        }
+      },
+      "review": "Exactly3 new delivery callbacks and2 native profiles. All prior callbacks/profiles and canonical Item definitions unchanged. Existing tent3 steps pass over literal sequential wire commands. Wrong stage/source/target cannot debit; selected burns, dead-source receipt replay, changed-source conflict and spare preservation pass. Target decay is an exact documented no-op. Ordinary/self-use restrictions and published bindings preserved. No new SQL owner or whole-quest completion claimed."
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",

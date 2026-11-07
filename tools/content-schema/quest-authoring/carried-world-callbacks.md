@@ -81,3 +81,12 @@ must grant no additional progress or value.
 `questpc3_threatened_rakes.py` uses identity replacement with an all-day
 window for five once-only scratching flags. The source instance UUID and
 quantity stay unchanged; the existing transaction owner records the interaction.
+
+A carried-target selector may instead name one positive appearance, with no
+fixed position. Resolve it through the selected authoritative base stack,
+including placements absent from the sparse action/unique attribute index.
+An absent replacement burns exactly one unit of the selected carried source
+through the existing locked input owner. Ordinary world USE and carried self-use
+retain their earlier selector and replacement restrictions. The delivery producer
+uses this for two pallet orientations and the weeping stone; their donor item
+types have no configured decay, so no world mutation is authored.

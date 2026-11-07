@@ -14685,6 +14685,177 @@
       ]
     },
     {
+      "key": "oteryn:quest-transition/questpc3/threatened-burn/book-pallet12648",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried_on_target",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 12648
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3,
+          "preserve": false
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25235",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You are placing the book on the table, hopefully the poachers will discover it soon.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 0,
+            "y": 0,
+            "floor": -15
+          },
+          "maximum": {
+            "x": 65535,
+            "y": 65535,
+            "floor": 0
+          }
+        },
+        "time_window": {
+          "from_minute": 0,
+          "to_minute": 1440
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_poacher_book.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_poacher_book.lua:3-19 git-blob=5c4c7528ef06f2bc5606a6522e89853fcc84c753 sha256=60af5675128e222eeac4b1195e82207a66f59d362819651fb10790e76410eb7b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-burn/book-pallet12649",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried_on_target",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 12649
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3,
+          "preserve": false
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25235",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You are placing the book on the table, hopefully the poachers will discover it soon.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 0,
+            "y": 0,
+            "floor": -15
+          },
+          "maximum": {
+            "x": 65535,
+            "y": 65535,
+            "floor": 0
+          }
+        },
+        "time_window": {
+          "from_minute": 0,
+          "to_minute": 1440
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_poacher_book.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_poacher_book.lua:3-19 git-blob=5c4c7528ef06f2bc5606a6522e89853fcc84c753 sha256=60af5675128e222eeac4b1195e82207a66f59d362819651fb10790e76410eb7b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-burn/whelp-fur",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried_on_target",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 25237
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9,
+          "preserve": false
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25238",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You place the whelp fur in the stone's mouth and thus lay it to rest.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 0,
+            "y": 0,
+            "floor": -15
+          },
+          "maximum": {
+            "x": 65535,
+            "y": 65535,
+            "floor": 0
+          }
+        },
+        "time_window": {
+          "from_minute": 0,
+          "to_minute": 1440
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_whelp_fur.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_whelp_fur.lua:3-19 git-blob=bf1b254088733b31ebfffc8fc0957aa9d6f75f30 sha256=1b95adb2f1dcb2c722a850a3aff4c889806896b40201abe112ffbda61b7365ad"
+      ]
+    },
+    {
       "key": "oteryn:quest-transition/questpc3/threatened-light/moon-cosmetic",
       "quest": "oteryn:quest.threatened_dreams_quest",
       "trigger": "use_carried",
