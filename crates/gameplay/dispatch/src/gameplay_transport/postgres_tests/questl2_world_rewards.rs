@@ -153,3 +153,29 @@ pub(super) async fn exercise(
     );
     Ok(())
 }
+
+#[test]
+fn questl2_bone_pit_full_player_journey() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    run(async |admin| {
+        let started = std::time::Instant::now();
+        let h = Harness::create_quest_reward(admin, "l2_bone_pit", true).await?;
+        let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
+            .fetch_one(&h.pool)
+            .await?;
+        eprintln!("POSTGRES_CASE_STARTED l2-bone-pit server_version={version}");
+        let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
+        let bound = callbacks.iter().any(|c| c.key.ends_with("l2-bone-dig"))
+            && callbacks.iter().any(|c| c.key.ends_with("l2-bone-collect"));
+        h.cleanup().await?;
+        eprintln!(
+            "POSTGRES_BINDING_PROBE l2-bone-pit duration={:?}",
+            started.elapsed()
+        );
+        assert!(bound, "source shovel/remains/container lifecycle is absent");
+        Ok(())
+    })?;
+    super::qengine_rewards::scenario("qengine-rewards-l2-bone")
+}

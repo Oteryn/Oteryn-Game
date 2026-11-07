@@ -844,8 +844,39 @@
     },
     {
       "title": "Into The Bone Pit",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-bone",
+          "duration_seconds": 75.015421206,
+          "postgresql": "18.6",
+          "passed": true,
+          "log": "/tmp/l2-bone-green5.log",
+          "red_log": "/tmp/l2-bone-red.log",
+          "red_duration_seconds": 2.863603091
+        }
+      ],
+      "journey": "Fresh quest tracks; actual Muriel level refusal then real durable XP leveling to 35; NPC issues empty container; pit refuses missing shovel; carried shovel is retained; source-bound remains expire at 60 seconds; a second dig produces a new identity; literal USE transforms the same container to sample 131 and removes remains; Muriel consumes sample and grants Death Ring plus one-time completion XP atomically; command replay and repeat dig refusal.",
+      "source_contract": {
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "witnesses": [
+          "data-global/npc/muriel.lua:61-85,133-141 sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+          "data-global/scripts/lib/register_actions.lua:502-512 sha256:4a9c9f217f034d69372170a50bdfbbad3427453fc98fb233e0bd29c8779cf069",
+          "data-global/scripts/quests/others/actions_ectoplasm_container.lua:4-12 sha256:584ec08275530b23bfc4222e6294acfaf84d9a1235d1d0738f77a04306666e28"
+        ],
+        "production_pit": {
+          "position": [
+            32408,
+            32107,
+            10
+          ],
+          "appearance": 103,
+          "ordinal": 0,
+          "startup_witness": "data-global/startup/tables/item.lua:449-452 sha256:677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd",
+          "served_region_sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda"
+        },
+        "xp_note": "1000 completion XP is an owner-authorized lane restoration documented in CONTRACT-NOTES.md; pinned donor grants only Death Ring."
+      }
     },
     {
       "title": "Kilmaresh",
@@ -1629,6 +1660,26 @@
       "clippy_log": "/tmp/l2-samfox-clippy-final.log",
       "formatting_exit_code": 0,
       "pin_check_log": "/tmp/l2-samfox-pin-check.log",
+      "world_pin_digest": "053a2a27bb7fd93fe044456f533b738b90a765bc0d83e5ce5a55550657b18b68"
+    },
+    "bone_pit_slice": {
+      "postgres_passed": 3,
+      "postgres_log": "/tmp/l2-bone-green5.log",
+      "regression_postgres_log": "/tmp/l2-bone-green5.log",
+      "regressions": [
+        "Sam full journey",
+        "Outfox full journey"
+      ],
+      "authoring_passed": 58,
+      "authoring_log": "/tmp/l2-bone-authoring-final.log",
+      "lane_authoring_passed": 16,
+      "lane_authoring_log": "/tmp/l2-bone-l2-authoring-final.log",
+      "effects_authoring_passed": 22,
+      "effects_authoring_log": "/tmp/l2-bone-effects-authoring.log",
+      "clippy_exit_code": 0,
+      "clippy_log": "/tmp/l2-bone-clippy-cache.log",
+      "formatting_exit_code": 0,
+      "pin_check_log": "/tmp/l2-bone-pin-check-final.log",
       "world_pin_digest": "053a2a27bb7fd93fe044456f533b738b90a765bc0d83e5ce5a55550657b18b68"
     }
   },

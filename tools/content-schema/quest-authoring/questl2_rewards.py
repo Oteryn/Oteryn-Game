@@ -12,7 +12,7 @@ NPC_FILES = {'oteryn:npc.an_old_dragonlord': 'an_old_dragon_lord'}
 def source_path(npc):
     return 'data-global/npc/' + NPC_FILES.get(npc, npc.removeprefix('oteryn:npc.')) + '.lua'
 ITEMS = {
-    227, 5941, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
+    131, 4852, 227, 5941, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
     7935, 7936, 19083, 19150, 19151, 19152, 19153, 19154, 19155,
     19156, 22026, 22027, 22028, 23676, 23677, 23678, 23679, 23680,
     23681, 23682, 23683, 25979, 25980, 25981, 25982, 28894, 28895,
@@ -135,6 +135,17 @@ def append(callbacks, offers, inputs, pin):
         "I knew you have the guts for that task! We presume the hideout of The Horned Fox somewhere in the south-west near the coast. Good luck!",
         topic=1,source_text='player:setStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline, 1)',
         offer=(['mission','quest'],"It belonged to my father and before that to my grandfather. That helmet is at least 600 years old! I need it back. Are you willing to help me?"))
+    bone = 'u8_1/tibia_tales/into_the_bone_pit'
+    add('l2-bone-start', 'tibia_tales', 'muriel', ['yes'], [state(bone,-1,1,0)],
+        "Great! Here is the container for the bone. Once, I used it to collect ectoplasma of ghosts, but it will work here as well. ...",
+        topic=1,give=(4852,1),source_text='player:addItem(4852, 1)',
+        offer=(['mission'],"Find that pit, dig for a well-preserved human skeleton and conserve a sample in a special container which you receive from me. Are you going to help me?"))
+    callbacks[-1]['minimum_level'] = 35
+    add('l2-bone-return','tibia_tales','muriel',['mission'],[state(bone,2,3)],
+        "Excellent! Now I can try to put my theoretical thoughts into practice and find a cure for the symptoms of undead. Here, take this for your efforts.",
+        take=[(131,1)],give=(6299,1),source_text='player:addItem(6299, 1)')
+    callbacks[-1].update(minimum_level=35,experience=1000)
+
     sam = 'u7_5/sams_old_backpack/'
     add('sam-kroox', 'sam_s_old_backpack_quest', 'kroox',
         ['sam sent me', 'sam send me'],

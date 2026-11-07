@@ -30,7 +30,7 @@ pub enum Trigger {
 mod effects;
 pub use effects::{
     CallbackEffects, Encounter, EncounterMonster, EncounterPlayer, Facing, ItemCycle, MagicEffect,
-    Portal, PortalPair,
+    Portal, PortalPair, TemporaryItem,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

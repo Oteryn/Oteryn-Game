@@ -15,6 +15,34 @@ class LaneL2Rewards(unittest.TestCase):
             for c in json.loads(cls.outputs['content/quests/shared-reward-callbacks.json'])['callbacks']
         }
 
+    def test_bone_pit_selector_resolves_the_served_source_ground(self):
+        import sys
+        sys.path.insert(0,str(q.ROOT/'tools/content-schema/world-authoring'))
+        from world_region_codec import decode_region
+        callbacks=json.loads((q.ROOT/'content/quests/world-callbacks.json').read_bytes())['callbacks']
+        dig=next(c for c in callbacks if c['key'].endswith('/l2-bone-dig'))
+        self.assertEqual(dig['selector'],{'position':{'x':32408,'y':32107,'floor':-10},'unique':None,'action':None,'appearance':103})
+        region=q.ROOT/'content/world/placements/region-z10-x126-y125.b3'
+        tiles=[t for _,sector in decode_region(region.read_bytes())[3] for t in sector if t[:2]==(32408,32107)]
+        self.assertEqual(len(tiles),1)
+        self.assertEqual(tiles[0][3],0)
+        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
+        self.assertEqual([(palette[i]['source_item_id'],depth,attrs) for i,depth,attrs in tiles[0][-1]],[(103,0,None)])
+        self.assertEqual(dig['effects']['temporary_item'],{'appearance':3133,'action':4206,'lifetime_us':60000000})
+        self.assertEqual(dig['effects']['present'],[{'item':'oteryn:item.tibia.i3457','count':1}])
+
+    def test_bone_pit_issues_container_and_atomic_completion(self):
+        start = self.callbacks['l2-bone-start']
+        finish = self.callbacks['l2-bone-return']
+        self.assertEqual(start['give']['item'], 'oteryn:item.tibia.i4852')
+        self.assertEqual(start['minimum_level'], 35)
+        self.assertEqual((start['storage'][0]['minimum'],start['storage'][0]['maximum']),(-1,0))
+        self.assertEqual(finish['minimum_level'], 35)
+        self.assertEqual(finish['take'], [{'item':'oteryn:item.tibia.i131','count':1}])
+        self.assertEqual(finish['give']['item'], 'oteryn:item.tibia.i6299')
+        self.assertEqual(finish['experience'], 1000)
+        self.assertEqual((start['storage'][0]['set'],finish['storage'][0]['minimum'],finish['storage'][0]['set']), (1,2,3))
+
     def test_draconia_greeting_matches_exact_source_payment_and_releases_focus(self):
         donor = q.donor_inputs()['data-global/npc/an_old_dragon_lord.lua'].decode()
         self.assertIn('player:removeItem(3723, 1)', donor)

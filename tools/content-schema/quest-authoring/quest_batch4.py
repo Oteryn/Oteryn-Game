@@ -232,8 +232,26 @@ def validate_native(callback, context):
 def validate_effects(callback, context):
     """The optional Channel effects share the Rust world_callbacks closed shape."""
     effects = callback.get('effects', {})
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'item_reward'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'item_reward', 'present', 'temporary_item', 'remove_target'}
     fields(effects, set(), allowed, context + ': effects')
+    present = effects.get('present', [])
+    require(isinstance(present,list) and len(present)<=8, context+': carried evidence bound')
+    seen = set()
+    for item in present:
+        fields(item, {'item','count'}, {'item','count'}, context+': carried evidence')
+        require(valid_key(item['item']) and item['item'] not in seen and integer(item['count'],1,100), context+': carried evidence')
+        seen.add(item['item'])
+    temporary = effects.get('temporary_item')
+    remove = effects.get('remove_target',False)
+    require(type(remove) is bool, context+': remove target')
+    if temporary is not None:
+        fields(temporary, {'appearance','lifetime_us'}, {'appearance','action','lifetime_us'}, context+': temporary item')
+        require(integer(temporary['appearance'],1,65535) and integer(temporary['lifetime_us'],1,86400000000)
+                and (temporary.get('action') is None or integer(temporary['action'],1,65535)), context+': temporary item')
+    if present or temporary is not None or remove:
+        require(callback['trigger']=='use' and callback['storage'] and not any(s.get('read_only') for s in callback['storage']), context+': world object requires a durable use')
+    if temporary is not None or remove:
+        require(not any(effects.get(k) for k in ('portals','item_cycle','encounter','transform','item_reward')) and not callback.get('lever'), context+': mixed object projection')
     item_reward = effects.get('item_reward')
     if item_reward is not None:
         from jsonschema import Draft202012Validator

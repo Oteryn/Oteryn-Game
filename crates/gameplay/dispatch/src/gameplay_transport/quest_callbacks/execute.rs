@@ -32,23 +32,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
-            return UseDisposition::Rejected;
-        };
-        let Some(base) = map.overlay.base().tile(pos.x, pos.y, pos.floor) else {
-            return UseDisposition::Rejected;
-        };
-        let Some(id) = base
-            .ids()
-            .iter()
-            .zip(base.depths())
-            .filter(|(_, d)| **d == 0)
-            .nth(usize::from(ordinal))
-            .map(|(id, _)| *id)
-        else {
-            return UseDisposition::Rejected;
-        };
-        let Some(mut after) = map.facts.base_entry(pos, ordinal, id) else {
+        let Some((pos, mut after)) = map.facts.quest_callback_entry(map.overlay.base(), key) else {
             return UseDisposition::Rejected;
         };
         if map.facts.object_revision(key) != expected_revision {
@@ -70,10 +54,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             after = replacement;
         }
-        let projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
-            Ok(projection) => projection,
-            Err(result) => return result,
-        };
+        let projection =
+            match self.prepare_quest_projection(map, callback, key, pos, close, &mut after) {
+                Ok(projection) => projection,
+                Err(result) => return result,
+            };
         if let Some(appearance) = callback
             .item_on_target
             .as_ref()
@@ -342,13 +327,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return UseDisposition::Rejected;
                     }
                     self.states.loop_ground.invalidate();
-                    // Shrine bonuses must see the committed flag before the next swing;
-                    // the cadence still reloads the durable copy for recovery and XP.
-                    if callback.quest == "oteryn:quest.the_way_of_the_monk_quest"
-                        && let Ok(mut sessions) = self.states.quest_sessions.lock()
+                    // NPC hand-ins, doors and combat must see a committed world stage
+                    // before the next command. Cadence still reloads recovery and XP.
+                    if let Ok(mut sessions) = self.states.quest_sessions.lock()
                         && let Some(entry) = sessions.get_mut(&session)
                     {
                         entry.copy = entry.copy.take().and_then(|mut copy| {
+                            // An old recovered receipt cannot overwrite a newer copy.
+                            if !fresh && copy.character_revision() != Some(committed.original_character_revision) {
+                                return Some(copy);
+                            }
                             let next = entry.version.checked_add(1)?;
                             if !copy.apply(committed) { return None; }
                             entry.version = next;
@@ -400,11 +388,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return UseDisposition::Rejected;
         }
-        if callback
-            .effects
-            .portals
-            .as_ref()
-            .is_some_and(|pair| pair.lifetime_us.is_some())
+        if callback.effects.temporary_item.is_some()
+            || callback
+                .effects
+                .portals
+                .as_ref()
+                .is_some_and(|pair| pair.lifetime_us.is_some())
         {
             states.owner_wake.notify_one();
         }

@@ -89,3 +89,43 @@ The full source-world fixture exposed a routing guard before qualified bundle
 owners, preventing native door/chest USE. Apply that guard only to the legacy
 fallback without a bundle. Qualified bundle handlers retain their digest,
 revision, actor/session, reach, storage, custody and MINT checks.
+
+L2 Into the Bone Pit source contract (Crystal
+9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d):
+`data-global/npc/muriel.lua:61-85,133-141`, SHA256
+`7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc`,
+requires level 35, issues 4852, and returns a death ring 6299 for sample 131.
+`data-global/scripts/lib/register_actions.lua:502-512`, SHA256
+`4a9c9f217f034d69372170a50bdfbbad3427453fc98fb233e0bd29c8779cf069`,
+uses a carried shovel on appearance 103/action 4205 and adds remains 3133/action
+4206 for 60 seconds without replacing the pit.
+`data-global/scripts/quests/others/actions_ectoplasm_container.lua:4-12`,
+SHA256 `584ec08275530b23bfc4222e6294acfaf84d9a1235d1d0738f77a04306666e28`,
+transforms the existing container to 131 and removes those remains. Both new
+world effects use the existing Channel callback projection and lifetime owner;
+carried tool evidence is locked inside the fenced quest transaction.
+The pinned Muriel script contains no experience grant. The owner explicitly
+requests an XP reward and authorizes a documented likely behaviour when facts
+are missing; this lane restores a one-time 1000 XP completion reward. That
+amount is a lane contract choice, not a claim about the donor script. Item,
+progress, and the XP completion obligation share the existing atomic NPC reward
+transaction; the existing refresh settles that obligation before the NPC reply.
+Bone Pit's imported canonical track has initial/minimum 0 in
+`content/quests/missions/quest-state.json`; the donor's absent-storage sentinel
+is -1. Mission issuance admits both unstarted representations (-1..0), matching
+other lane issuance contracts, and advances them to source stage 1.
+The Bone Pit startup binding is literal
+`data-global/startup/tables/item.lua:449-452`, SHA256
+`677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd`:
+appearance 103 at (32408,32107,10). The served B3 tile retains that appearance
+without the startup action attribute. As with Sam's untagged chest, the quest
+callback restores the exact source position/appearance selector; it does not
+invent a world action attribute. The full PG fixture uses that source cell and
+an untagged pit too.
+The full Bone Pit PG run also exposed a shared projection gap: world callbacks
+scheduled a quest-copy refresh but applied committed changes immediately only
+for Monk shrines. This left a completed container action invisible to the next
+NPC command. All world callback commits now update the admitted quest copy
+through its existing `apply` owner before publication. Recovered older receipts
+cannot overwrite a copy that no longer has their original revision; the ordinary
+refresh still reconciles recovery and XP obligations.

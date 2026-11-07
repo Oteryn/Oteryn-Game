@@ -14,13 +14,47 @@ pub(super) fn facing(direction: Facing) -> crate::foundation::MovementFacing {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn prepare_quest_projection(
         &self,
         map: &BundleMap,
         callback: &Callback,
+        key: u64,
+        position: TilePos,
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
+        if callback.effects.temporary_item.is_some() || callback.effects.remove_target {
+            if map.facts.house_tile(position) {
+                return Err(UseDisposition::Rejected);
+            }
+            let create = callback
+                .effects
+                .temporary_item
+                .as_ref()
+                .map(|item| {
+                    let mut facts = map
+                        .facts
+                        .movement_item_facts(item.appearance)
+                        .ok_or(UseDisposition::Rejected)?;
+                    if facts.pickupable {
+                        return Err(UseDisposition::Rejected);
+                    }
+                    facts.bound = item.action.is_some();
+                    let due = self
+                        .owner_now()
+                        .get()
+                        .checked_add(item.lifetime_us)
+                        .ok_or(UseDisposition::Exhausted)?;
+                    Ok((facts, item.action, due))
+                })
+                .transpose()?;
+            return Ok(Some(QuestCallbackProjection::Objects {
+                position,
+                create,
+                remove: callback.effects.remove_target.then_some(key),
+            }));
+        }
         if let Some(pair) = &callback.effects.portals {
             let facts = map
                 .facts

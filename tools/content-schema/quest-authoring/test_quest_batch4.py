@@ -44,6 +44,26 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_temporary_objects_require_durable_use_and_bounded_lifetime(self):
+        c = callback('tibia_tales', 'temporary')
+        c.update(trigger='use', teleport=None,
+                 storage=[{'track':'oteryn:quest-progress/fixture','minimum':1,'maximum':1,'set':1,'preserve':True}])
+        c['effects'] = {'temporary_item': {'appearance':3133,'action':4206,'lifetime_us':60000000},
+                        'present':[{'item':'oteryn:item.tibia.i3457','count':1}]}
+        tool.validate_effects(c, 'temporary')
+        for field,value in [('appearance',0),('action',0),('lifetime_us',0),('lifetime_us',86400000001)]:
+            bad=copy.deepcopy(c);bad['effects']['temporary_item'][field]=value
+            with self.assertRaises(ValueError):tool.validate_effects(bad,'temporary')
+        for mutation in ('readonly','missing-state','step','duplicate-tool','zero-tool','mixed-projection'):
+            bad=copy.deepcopy(c)
+            if mutation=='readonly':bad['storage'][0]['read_only']=True
+            elif mutation=='missing-state':bad['storage']=[]
+            elif mutation=='step':bad['trigger']='step_in'
+            elif mutation=='duplicate-tool':bad['effects']['present']*=2
+            elif mutation=='zero-tool':bad['effects']['present'][0]['count']=0
+            else:bad['effects']['item_cycle']={'position':{'x':100,'y':200,'floor':-7},'remove':103,'create':3133}
+            with self.assertRaises(ValueError,msg=mutation):tool.validate_effects(bad,'temporary')
+
     def test_failure_teleport_requires_valid_native_position_and_returning_step(self):
         row = callback('cults_of_tibia', 'failure-landing')
         row['return_on_failure'] = True

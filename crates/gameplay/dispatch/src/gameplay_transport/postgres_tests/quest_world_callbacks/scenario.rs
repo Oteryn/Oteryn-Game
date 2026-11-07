@@ -101,7 +101,7 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if matches!(name,"qengine-rewards-l2-sam"|"qengine-rewards-l2-outfox") { None } else { Some(if draconia && !draconia_journey {
+    let world = if matches!(name,"qengine-rewards-l2-sam"|"qengine-rewards-l2-outfox"|"qengine-rewards-l2-bone") { None } else { Some(if draconia && !draconia_journey {
         super::world_remote(&callback, trigger, 431, 0, Some(2772))?
     } else if paired_plate {
         super::world_ordinal(&callback, trigger, 431, 1)?

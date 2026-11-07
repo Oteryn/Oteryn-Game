@@ -1801,6 +1801,78 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-bone-return",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i131",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i6299",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Excellent! Now I can try to put my theoretical thoughts into practice and find a cure for the symptoms of undead. Here, take this for your efforts."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:83:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+      ],
+      "minimum_level": 35,
+      "experience": 1000
+    },
+    {
+      "key": "oteryn:quest-reward/l2-bone-start",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4852",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great! Here is the container for the bone. Once, I used it to collect ectoplasma of ghosts, but it will work here as well. ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:138:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+      ],
+      "minimum_level": 35
+    },
+    {
       "key": "oteryn:quest-reward/l2-elementalist-base",
       "quest": "oteryn:quest.elementalist_outfits_quest",
       "npc": "oteryn:npc.broken_servant_sentry",

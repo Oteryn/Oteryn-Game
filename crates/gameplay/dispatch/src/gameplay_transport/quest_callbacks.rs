@@ -88,9 +88,10 @@ fn native(p: MovementLocalPosition) -> Option<TilePos> {
     })
 }
 fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
-    let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
+    let Some((pos, facts)) = map.facts.quest_callback_entry(map.overlay.base(), key) else {
         return false;
     };
+    let ordinal = crate::map::view::placement_of(key).map_or(0, |(_, ordinal)| ordinal);
     let selector = &callback.selector;
     // A position-registered USE acts on the resolved object the player clicked;
     // its native placement may be above ground. STEP still selects the floor.
@@ -114,18 +115,7 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                     // The Crystal plate callback is registered by item appearance. Plain
                     // placements are omitted from the sparse attribute index. Resolve
                     // their palette through the selected base stack, never a client item id.
-                    map.overlay
-                        .base()
-                        .tile(pos.x, pos.y, pos.floor)
-                        .and_then(|tile| {
-                            tile.ids()
-                                .iter()
-                                .zip(tile.depths())
-                                .filter(|(_, depth)| **depth == 0)
-                                .nth(usize::from(ordinal))
-                        })
-                        .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
-                        .is_some_and(|facts| facts.appearance_id == appearance)
+                    facts.appearance_id == appearance
                 })))
 }
 

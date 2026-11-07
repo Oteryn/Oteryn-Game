@@ -24,6 +24,7 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let source_position = match name {
         "qengine-rewards-l2-sam" => Some(Position{x:32455,y:31967,floor:-14}),
         "qengine-rewards-l2-outfox" => Some(Position{x:32467,y:31969,floor:-5}),
+        "qengine-rewards-l2-bone" => Some(Position{x:32408,y:32107,floor:-10}),
         _=>None,
     };
     let outcome = super::kill_reward_e2e::scenario_thread::run(name, move || {
@@ -258,6 +259,7 @@ async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
+        "l2-bone-start" => &["mission"],
         "outfox-start" => &["mission"],
         "exchange-cyclops-start" => &["uth'lokr", "yes"],
         "exchange-cyclops-skirts" | "exchange-cyclops-draconian-steel" => &["uth'lokr"],
@@ -762,8 +764,8 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
-    if matches!(name,"qengine-rewards-l2-sam"|"qengine-rewards-l2-outfox") {
-        return questl2_journeys::exercise(owner,admitted,h,name).await;
+    if matches!(name,"qengine-rewards-l2-sam"|"qengine-rewards-l2-outfox"|"qengine-rewards-l2-bone") {
+        return questl2_journeys::exercise(owner,admitted,h,authority,name).await;
     }
     if name.starts_with("qengine-rewards-l2-father-") {
         return super::questl2_world_rewards::exercise(owner, admitted, h, name).await;
