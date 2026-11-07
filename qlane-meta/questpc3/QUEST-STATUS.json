@@ -852,7 +852,7 @@
     ],
     "current_batch": {
       "id": "sale-source-doc-merge",
-      "phase": "GREEN material candidate; metadata-only incoming merge, independent exact-head review next",
+      "phase": "GREEN and independently reviewed; metadata-only record, FF push now",
       "local_green": "8ba7eafe826c4a2984791a43d1853192e150447f",
       "incoming": "12265d0b76b856f010a90c45536fc73cd2335697",
       "scope": "Retain final GREEN trade/rake material candidate while preserving incoming delivery source witnesses and unpublished-work checkpoint; metadata-only integration",
@@ -864,7 +864,25 @@
       "next_prepared_not_applied": [
         "/tmp/questpc3-next-carlos-report-test.py",
         "/tmp/questpc3-carlos-report-authoring.py"
-      ]
+      ],
+      "independent_review": {
+        "candidate": "8f89676bb6738a6c2ef99c6a48d5f5b50cd2099c",
+        "base": "c40fd4fb69bd355ecbf1a2d875a2399aaed45dde",
+        "reviewer": "required independent platform reviewer",
+        "authority": "Read-only; no implementation, tests, mutations or further reviewers",
+        "result": "No material findings.",
+        "log": "/tmp/questpc3-sale-platform-review.txt",
+        "sha256": "f6f3da950a44d7c49d4917751e966a3fb2aead0bccf7b1ebfabab7d7d1a735de",
+        "scope": "Whole material diff, SQL/authority/provenance/value/recovery plus source/content/authoring/generated and PG proof audit",
+        "dispositions": "No findings requiring disposition",
+        "metadata_only_followup": "Only qlane-meta files change after reviewed candidate; assert material tree identity before push."
+      },
+      "review_execution_note": {
+        "standing_authorization": "Verified protected main owner-funded required-review policy equals local, sha256 e4ad5199cdaf64f57444070a2041902f1d338544bde24c7e2843213b5595630c. Initial automatic approval rejection resolved by this protected-policy authorization check; narrow runtime setup then approved.",
+        "cli_error": "Terminal HTTP401 Unauthorized; access token could not be refreshed because logged out or signed into another account. No CLI reviewer output; no running duplicate review.",
+        "fallback": "Required independent platform review completed successfully; no review requirement waived. No credentials inspected or changed manually.",
+        "scratch_audit": "/tmp/questpc3-review-capability-audit.json"
+      }
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -2457,7 +2475,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T09:05:10.864549+00:00",
+    "updated_at": "2026-11-07T09:22:07.793248+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -4368,7 +4386,8 @@
         "migration_number": "1097: current main max1095; open PRs do not claim1097; checkout already owns1096 blessing grants. Initial duplicate1096 fixture error corrected by renaming only new file before successful PG migrations.",
         "next": "Continue Carlos source report toGreet8/log7, real bridge/log8, lost-coat replacement and five ground wood/cart occurrences, then remaining FirstDragon/TaintedSoul/ThreatenedDreams. Four whole quests remain.",
         "final_migration": 1109,
-        "final_combined_proof": "sale-rake-integration"
+        "final_combined_proof": "sale-rake-integration",
+        "independent_review_candidate": "8f89676bb6738a6c2ef99c6a48d5f5b50cd2099c"
       },
       "sale-barriers-animals-merge": {
         "id": "sale-barriers-animals-merge",
@@ -4574,7 +4593,7 @@
       },
       "sale-source-doc-merge": {
         "id": "sale-source-doc-merge",
-        "phase": "GREEN material candidate; metadata-only incoming merge, independent exact-head review next",
+        "phase": "GREEN and independently reviewed; metadata-only record, FF push now",
         "local_green": "8ba7eafe826c4a2984791a43d1853192e150447f",
         "incoming": "12265d0b76b856f010a90c45536fc73cd2335697",
         "scope": "Retain final GREEN trade/rake material candidate while preserving incoming delivery source witnesses and unpublished-work checkpoint; metadata-only integration",
@@ -4586,7 +4605,25 @@
         "next_prepared_not_applied": [
           "/tmp/questpc3-next-carlos-report-test.py",
           "/tmp/questpc3-carlos-report-authoring.py"
-        ]
+        ],
+        "independent_review": {
+          "candidate": "8f89676bb6738a6c2ef99c6a48d5f5b50cd2099c",
+          "base": "c40fd4fb69bd355ecbf1a2d875a2399aaed45dde",
+          "reviewer": "required independent platform reviewer",
+          "authority": "Read-only; no implementation, tests, mutations or further reviewers",
+          "result": "No material findings.",
+          "log": "/tmp/questpc3-sale-platform-review.txt",
+          "sha256": "f6f3da950a44d7c49d4917751e966a3fb2aead0bccf7b1ebfabab7d7d1a735de",
+          "scope": "Whole material diff, SQL/authority/provenance/value/recovery plus source/content/authoring/generated and PG proof audit",
+          "dispositions": "No findings requiring disposition",
+          "metadata_only_followup": "Only qlane-meta files change after reviewed candidate; assert material tree identity before push."
+        },
+        "review_execution_note": {
+          "standing_authorization": "Verified protected main owner-funded required-review policy equals local, sha256 e4ad5199cdaf64f57444070a2041902f1d338544bde24c7e2843213b5595630c. Initial automatic approval rejection resolved by this protected-policy authorization check; narrow runtime setup then approved.",
+          "cli_error": "Terminal HTTP401 Unauthorized; access token could not be refreshed because logged out or signed into another account. No CLI reviewer output; no running duplicate review.",
+          "fallback": "Required independent platform review completed successfully; no review requirement waived. No credentials inspected or changed manually.",
+          "scratch_audit": "/tmp/questpc3-review-capability-audit.json"
+        }
       }
     },
     "completed_batches": [
