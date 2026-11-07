@@ -1604,6 +1604,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     QuestRewardAdmission {
                         native,
                         weights: &weights,
+                        fee_payment: None,
                     },
                     &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
                 )
@@ -1660,6 +1661,7 @@ fn scenario(mode: Scenario) -> TestResult {
                 QuestRewardAdmission {
                     native,
                     weights: &weights,
+                    fee_payment: None,
                 },
                 &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
             )

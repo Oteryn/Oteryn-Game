@@ -4,6 +4,8 @@ import argparse
 import json
 from pathlib import Path
 
+from shared_reward_offers import replace_npc_offers
+
 ROOT = Path(__file__).resolve().parents[3]
 PREFIX = "oteryn:quest-reward/questpc3/beginning-carlos/"
 NPC = "oteryn:npc.carlos"
@@ -85,8 +87,11 @@ def documents():
         ("content/dialogues/quests/shared-reward-greetings.json", "npcs", greetings),
     ]:
         document = json.loads((ROOT / path).read_text())
-        document[field] = [row for row in document[field]
-                           if (not row["key"].startswith(PREFIX) if field == "callbacks" else row["npc"] != NPC)] + own
+        if field == "offers":
+            document[field] = replace_npc_offers(document[field], NPC, own)
+        else:
+            document[field] = [row for row in document[field]
+                               if (not row["key"].startswith(PREFIX) if field == "callbacks" else row["npc"] != NPC)] + own
         if field in ("callbacks", "npcs"):
             document[field].sort(key=lambda row: row["key"] if field == "callbacks" else row["npc"])
         result[path] = document

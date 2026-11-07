@@ -813,7 +813,7 @@
     "note": "Other original R\u2013S mechanisms belong to other split lanes. Do not reopen finished entries."
   },
   "cloud_continuation": {
-    "phase": "AUTHORING",
+    "phase": "OWNER STOP; r2 is sole continuing writer",
     "base": "968f6812010e719d91316f92eedb5732841283fd",
     "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R\u2013S entries assigned to other split lanes are scope evidence only",
     "metadata_recovery": "Latest head removed qlane-meta; recovered the five handoff records from c5cdcd6ae without reference dumps.",
@@ -851,80 +851,26 @@
       }
     ],
     "current_batch": {
-      "id": "beginning-carlos-report-01",
-      "phase": "GREEN; commit and FF push three source report/return entries",
-      "scope": [
-        "Carlos ready after actual eligible source food sale",
-        "Carlos return greeting after actual source sale",
-        "Post-report bridge instruction return greeting without repeat receipt/value"
-      ],
-      "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L114-L123 and#L205-L218",
-      "required_successor": "Greet7/log6 ->Greet8/log7; no grant/XP/completion; bridge/log8 remains separate",
-      "test_script": "/tmp/questpc3-next-carlos-report-test.py",
-      "whole_entry_status": "Four whole quests remain IN_PROGRESS; continue batch after batch.",
-      "red_proof": {
-        "log": "/tmp/questpc3-carlos-report-red.log",
-        "sha256": "ebac9d228a67587a84f2192bb0a91b7df3e5e8170fef159785430a87f927bb8c",
-        "ready_duration_ms": 97343,
-        "return_greeting_duration_ms": 92525,
-        "proof": "Both actual intro+food+real committed sale routes reachGreet7 then real ready orbye/hi leaves7 vsrequired8. Production report rows absent; no fixture/setup failure."
-      },
-      "authoring_script_applied_once": "/tmp/questpc3-carlos-report-authoring.py; DO NOT REAPPLY",
+      "id": "carlos-report-paid-fur-merge",
+      "phase": "Forward1110 guard namespace/ACL hardening applied after actualPG RED; GREEN/regressions and deterministic gates running",
+      "local_green": "e83882154481c795845451ccf3e4904121a46c3e",
+      "incoming": "4785fb242a204f7496997ac71d5dd0c5948259f4",
+      "scope": "Preserve qualified Carlos post-sale report branches and reuse incoming exact native quest-fee/paid-fur implementation; validate compatibility and new durable-value delta",
+      "whole_entry_status": "Retain all qualifications; four owned whole quests still active unless durable quest rows show further remote qualification.",
+      "self_review_gap": "New published migration1000 createsgame_quest_reward_fee_complete without schema-bound search_path or PUBLIC execute revocation. Add actualinstalled-PG assertion afterrealpaidfur success, then fixforwardnewmigration only; never editpublished1000.",
+      "prior_green_report": "Own Carlo report batche83882154 realPG2GREEN/fullgates; preserved while integratingnativefees",
       "sessions": {
-        "green_and_checks": 85269,
-        "native_check_pin_scope": 54094
+        "new_green_and_regressions": "launching"
       },
-      "source_mapping": "Native actual sale leaves dialogue topic6; committed Greet7 is authoritative post-sale guard. ready/yes/ok at6 or cold hi at0 writesGreet8/log7; source returnGreet8 only instructs bridge, no value/XP/completion.",
-      "checks": {
-        "green": {
-          "log": "/tmp/questpc3-carlos-report-green.log",
-          "sha256": "950e0def6d2224236edabc709899c48d7d7b1f02427ee7e229fce7a1623a4293",
-          "tail": "los_npc_greet_storage actual=8 expected=8 duration_ms=113972\nQUESTPC3_CARLOS_REPORT POSTGRES_ASSERTION_REACHED track=carlos_quest_log actual=7 expected=7 duration_ms=113984\nQUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=114582\nQUESTPC3_CARLOS_REPORT_ready POSTGRES_CASE_COMPLETED duration_ms=114582 success=true\nok\ntest gameplay_transport::monk_save::postgres_tests::questpc3_beginning_rewards::questpc3_beginning_carlos_report_return_greeting_follows_real_sale ... QUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=1 actual_greet=1 actual_log=1 duration_ms=94189\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=2 actual_greet=2 actual_log=2 duration_ms=94327\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=3 actual_greet=3 actual_log=3 duration_ms=94425\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=4 actual_greet=4 actual_log=4 duration_ms=94516\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=5 actual_greet=5 actual_log=5 duration_ms=94610\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=0 greet=5 log=5 trade=0 duration_ms=94729\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=1 greet=5 log=5 trade=0 duration_ms=94809\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=2 greet=6 log=6 trade=1 duration_ms=94910\nQUESTPC3_CARLOS_SALE POSTGRES_ASSERTION_REACHED committed_ham_sale=true gold_delta=2 greet=7 duration_ms=95140\nQUESTPC3_CARLOS_REPORT POSTGRES_ASSERTION_REACHED track=carlos_npc_greet_storage actual=8 expected=8 duration_ms=95245\nQUESTPC3_CARLOS_REPORT POSTGRES_ASSERTION_REACHED track=carlos_quest_log actual=7 expected=7 duration_ms=95251\nQUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=95890\nQUESTPC3_CARLOS_REPORT_return_greeting POSTGRES_CASE_COMPLETED duration_ms=95890 success=true\nok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2578 filtered out; finished in 210.49s\n\n",
-          "postgres_duration_ms": [
-            114582,
-            95890
-          ]
-        },
-        "authoring": {
-          "log": "/tmp/questpc3-carlos-report-authoring.log",
-          "sha256": "7317725d7c31a42c7cb7189e2d09043a35e7c12340893a130cda1274352dace1",
-          "tail": ".........................\n----------------------------------------------------------------------\nRan 25 tests in 15.115s\n\nOK\n"
-        },
-        "fmt": {
-          "log": "/tmp/questpc3-carlos-report-fmt.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "tail": ""
-        },
-        "check": {
-          "log": "/tmp/questpc3-carlos-report-check.log",
-          "sha256": "f1998d04f4b60a1cea74fea9cc7ebf2783e049850eac09fc20323fba1400fa8a",
-          "tail": ":sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Checking oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)\n    Checking oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n    Checking oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 57s\n"
-        },
-        "clippy": {
-          "log": "/tmp/questpc3-carlos-report-clippy.log",
-          "sha256": "e957620ed4b260ba3cbe7dad2544e7926484a947a59b72250f8f6d5b7c3eeb43",
-          "tail": "d 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo clippy --fix --lib -p sqlx-core -- -D warnings` to apply 1 suggestion)\n   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Checking oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 37s\n"
-        },
-        "content": {
-          "log": "/tmp/questpc3-carlos-report-content.log",
-          "sha256": "a8e04efcd099a60fdd8f69556692a54f7dbfa55df872989ed34246e4bd6bbff7",
-          "tail": "warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32\n    |\n208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n    |                                ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 123 tests\n....................................................................................... 87/123\n....................................\ntest result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 3.18s\n\n"
-        },
-        "native": {
-          "log": "/tmp/questpc3-carlos-report-native.log",
-          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
-          "tail": "PASS registered spell import files=41 activation=false\n"
-        },
-        "pin-scope": {
-          "log": "/tmp/questpc3-carlos-report-pin-scope.log",
-          "sha256": "74557793592adc1d7b5a140a61317e823adfb34fe8df5d5fe12bc6505ccdb7ad",
-          "tail": "PIN-SCOPE-1: PASS; no changed/untracked World compiler input paths; retain published58c59720d generated world/input proof\n"
-        }
+      "authoring_fix": "CLI RED proved alternating-owned-offer order drift. Reusable replace_npc_offers now updates each NPC in place; bothCarlo/Irmana --check PASS and27strictauthoringtests PASS23.774s. No runtime/data terms changed by ordering fix.",
+      "guard_number": "Next selected forward migration1110, above checkout1109; live-main/open-PR check and known dependency-lane111x scan show no claim. Not applied before actualPG RED.",
+      "guard_red": {
+        "log": "/tmp/questpc3-carlos-fee-scope-red.log",
+        "sha256": "705899e5f38cf6373e1474e516cb7d0e1a272333a8112ab8fad53cdeb062435b",
+        "duration_ms": 100162,
+        "proof": "Realpaidfur1/exactheldgold1000/mission8/fee1 succeed, installed schema+ACL guard count0vsrequired1"
       },
-      "qualification": "Both real5lesson+food+sale routes advanceGreet7/log6 to8/log7; ready114582ms andreturngreeting95890ms. Final return saysbridge, exactly1reportreceipt, no extraGold, food staysconsumed. Existing5intro assertions intact, two new report declarations no items/XP/completion,7offers includeall oldstates1..6 andnew8.",
-      "review": "Read all seven changed files, source pinnedCarlos114-123/205-218 and existing callback owner. Source-only no-value progress callbacks/returnoffer plus tests; no new authority, persistence mechanism, public protocol or native World input. Deterministic self-review sufficient under bound default; no speculative paid review selected.",
-      "resolved_build_failure": "Content build first failedtempdirNoSpace; pruned onlyobsoleteunlocked/inactive build snapshots, retained current cache, reran same123content target successfully3.18s. Failed log preserved /tmp/questpc3-carlos-report-content-disk-full.log; no gate waived.",
-      "next": "Implement source bridge completion, lost-coat replacement and five ground wood/cart deliveries; reuse existing gate/world owners and latest lane engines. Fourwholequests remain."
+      "guard_fix": "New1110 only: schema-bound pg_catalog/current_schema/pg_temp searchpath and PUBLIC execute revoke. Published1000 unchanged."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -2517,7 +2463,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T10:13:38.658129+00:00",
+    "updated_at": "2026-11-07T10:37:34.819561+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -2624,24 +2570,80 @@
       }
     },
     "previous_batch": {
-      "id": "sale-paid-fur-doc-merge",
-      "phase": "GREEN; metadata-only merge, unchanged independently reviewed material, FF push now",
-      "local_green": "818071f02196dc5675c524a113d74b7eb1d3db53",
-      "incoming": "758e9b3b038264502f10fa527c9e54853d233163",
-      "scope": "Metadata-only incoming paid-fur source/reuse checkpoint; preserve final reviewed trade/delivery material tree and all green qualifications",
-      "whole_entry_status": "Four whole quests still IN_PROGRESS; immediately continue after push, no final summary.",
-      "material_review": {
-        "head": "52d2e4629da9abe7029dde539cb8ba5425ee431a",
-        "base_review": "8f89676bb6738a6c2ef99c6a48d5f5b50cd2099c",
-        "result": "No material findings on both full and material delta reviews",
-        "unchanged_material": "git diff52d2e4629 excluding qlane-meta/questpc3 is empty",
-        "proofs": "completed_mechanism_batches/sale-delivery-integration and earlier records"
+      "id": "beginning-carlos-report-01",
+      "phase": "GREEN; commit and FF push three source report/return entries",
+      "scope": [
+        "Carlos ready after actual eligible source food sale",
+        "Carlos return greeting after actual source sale",
+        "Post-report bridge instruction return greeting without repeat receipt/value"
+      ],
+      "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L114-L123 and#L205-L218",
+      "required_successor": "Greet7/log6 ->Greet8/log7; no grant/XP/completion; bridge/log8 remains separate",
+      "test_script": "/tmp/questpc3-next-carlos-report-test.py",
+      "whole_entry_status": "Four whole quests remain IN_PROGRESS; continue batch after batch.",
+      "red_proof": {
+        "log": "/tmp/questpc3-carlos-report-red.log",
+        "sha256": "ebac9d228a67587a84f2192bb0a91b7df3e5e8170fef159785430a87f927bb8c",
+        "ready_duration_ms": 97343,
+        "return_greeting_duration_ms": 92525,
+        "proof": "Both actual intro+food+real committed sale routes reachGreet7 then real ready orbye/hi leaves7 vsrequired8. Production report rows absent; no fixture/setup failure."
       },
-      "incoming_scope": "Only source-contract/status/resume checkpoint for still-unpublished paid-fur work; no runtime/data/test difference, no new tests/re-review justified",
-      "next_prepared_not_applied": [
-        "/tmp/questpc3-next-carlos-report-test.py",
-        "/tmp/questpc3-carlos-report-authoring.py"
-      ]
+      "authoring_script_applied_once": "/tmp/questpc3-carlos-report-authoring.py; DO NOT REAPPLY",
+      "sessions": {
+        "green_and_checks": 85269,
+        "native_check_pin_scope": 54094
+      },
+      "source_mapping": "Native actual sale leaves dialogue topic6; committed Greet7 is authoritative post-sale guard. ready/yes/ok at6 or cold hi at0 writesGreet8/log7; source returnGreet8 only instructs bridge, no value/XP/completion.",
+      "checks": {
+        "green": {
+          "log": "/tmp/questpc3-carlos-report-green.log",
+          "sha256": "950e0def6d2224236edabc709899c48d7d7b1f02427ee7e229fce7a1623a4293",
+          "tail": "los_npc_greet_storage actual=8 expected=8 duration_ms=113972\nQUESTPC3_CARLOS_REPORT POSTGRES_ASSERTION_REACHED track=carlos_quest_log actual=7 expected=7 duration_ms=113984\nQUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=114582\nQUESTPC3_CARLOS_REPORT_ready POSTGRES_CASE_COMPLETED duration_ms=114582 success=true\nok\ntest gameplay_transport::monk_save::postgres_tests::questpc3_beginning_rewards::questpc3_beginning_carlos_report_return_greeting_follows_real_sale ... QUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=1 actual_greet=1 actual_log=1 duration_ms=94189\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=2 actual_greet=2 actual_log=2 duration_ms=94327\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=3 actual_greet=3 actual_log=3 duration_ms=94425\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=4 actual_greet=4 actual_log=4 duration_ms=94516\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=5 actual_greet=5 actual_log=5 duration_ms=94610\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=0 greet=5 log=5 trade=0 duration_ms=94729\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=1 greet=5 log=5 trade=0 duration_ms=94809\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=2 greet=6 log=6 trade=1 duration_ms=94910\nQUESTPC3_CARLOS_SALE POSTGRES_ASSERTION_REACHED committed_ham_sale=true gold_delta=2 greet=7 duration_ms=95140\nQUESTPC3_CARLOS_REPORT POSTGRES_ASSERTION_REACHED track=carlos_npc_greet_storage actual=8 expected=8 duration_ms=95245\nQUESTPC3_CARLOS_REPORT POSTGRES_ASSERTION_REACHED track=carlos_quest_log actual=7 expected=7 duration_ms=95251\nQUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=95890\nQUESTPC3_CARLOS_REPORT_return_greeting POSTGRES_CASE_COMPLETED duration_ms=95890 success=true\nok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2578 filtered out; finished in 210.49s\n\n",
+          "postgres_duration_ms": [
+            114582,
+            95890
+          ]
+        },
+        "authoring": {
+          "log": "/tmp/questpc3-carlos-report-authoring.log",
+          "sha256": "7317725d7c31a42c7cb7189e2d09043a35e7c12340893a130cda1274352dace1",
+          "tail": ".........................\n----------------------------------------------------------------------\nRan 25 tests in 15.115s\n\nOK\n"
+        },
+        "fmt": {
+          "log": "/tmp/questpc3-carlos-report-fmt.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "tail": ""
+        },
+        "check": {
+          "log": "/tmp/questpc3-carlos-report-check.log",
+          "sha256": "f1998d04f4b60a1cea74fea9cc7ebf2783e049850eac09fc20323fba1400fa8a",
+          "tail": ":sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Checking oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)\n    Checking oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n    Checking oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 57s\n"
+        },
+        "clippy": {
+          "log": "/tmp/questpc3-carlos-report-clippy.log",
+          "sha256": "e957620ed4b260ba3cbe7dad2544e7926484a947a59b72250f8f6d5b7c3eeb43",
+          "tail": "d 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo clippy --fix --lib -p sqlx-core -- -D warnings` to apply 1 suggestion)\n   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Checking oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 37s\n"
+        },
+        "content": {
+          "log": "/tmp/questpc3-carlos-report-content.log",
+          "sha256": "a8e04efcd099a60fdd8f69556692a54f7dbfa55df872989ed34246e4bd6bbff7",
+          "tail": "warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32\n    |\n208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n    |                                ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 123 tests\n....................................................................................... 87/123\n....................................\ntest result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 3.18s\n\n"
+        },
+        "native": {
+          "log": "/tmp/questpc3-carlos-report-native.log",
+          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+          "tail": "PASS registered spell import files=41 activation=false\n"
+        },
+        "pin-scope": {
+          "log": "/tmp/questpc3-carlos-report-pin-scope.log",
+          "sha256": "74557793592adc1d7b5a140a61317e823adfb34fe8df5d5fe12bc6505ccdb7ad",
+          "tail": "PIN-SCOPE-1: PASS; no changed/untracked World compiler input paths; retain published58c59720d generated world/input proof\n"
+        }
+      },
+      "qualification": "Both real5lesson+food+sale routes advanceGreet7/log6 to8/log7; ready114582ms andreturngreeting95890ms. Final return saysbridge, exactly1reportreceipt, no extraGold, food staysconsumed. Existing5intro assertions intact, two new report declarations no items/XP/completion,7offers includeall oldstates1..6 andnew8.",
+      "review": "Read all seven changed files, source pinnedCarlos114-123/205-218 and existing callback owner. Source-only no-value progress callbacks/returnoffer plus tests; no new authority, persistence mechanism, public protocol or native World input. Deterministic self-review sufficient under bound default; no speculative paid review selected.",
+      "resolved_build_failure": "Content build first failedtempdirNoSpace; pruned onlyobsoleteunlocked/inactive build snapshots, retained current cache, reran same123content target successfully3.18s. Failed log preserved /tmp/questpc3-carlos-report-content-disk-full.log; no gate waived.",
+      "next": "Implement source bridge completion, lost-coat replacement and five ground wood/cart deliveries; reuse existing gate/world owners and latest lane engines. Fourwholequests remain."
     },
     "previous_publication": {
       "head": "58c59720d0641892c79db561c8d0c8416335c646",
@@ -5024,6 +5026,64 @@
           "fmt": {
             "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "log": "/tmp/questpc3-delivery-fmt.log",
+            "result": "PASS"
+          }
+        }
+      },
+      {
+        "batch": "threatened_irmana_12",
+        "result": "GREEN",
+        "pg_red_ms": 96779,
+        "pg_green_ms": 102325,
+        "entries": [
+          "source offer/prerequisites",
+          "exact1000 held-gold atomic exchange",
+          "nonmatching/insufficient/repeated refusal"
+        ],
+        "proofs": {
+          "pg_red": {
+            "log": "/tmp/questpc3-irmana-red.log",
+            "sha256": "1fe8614d412ec3228808d784b3db6bbe8323be0caa8403d19049616df2d229e6",
+            "result": "expected RED"
+          },
+          "pg_green": {
+            "log": "/tmp/questpc3-irmana-green.log",
+            "sha256": "71ac3fcca971f130a1a10830940118d03facdb65ccdf065e8c33594eb23c6d95",
+            "result": "PASS"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-irmana-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "cargo_check": {
+            "log": "/tmp/questpc3-irmana-check.log",
+            "sha256": "2a1a34ee11b87394a0c56896c7b999dd0ffd3103fe520fb3d00c9bdd7903a190",
+            "result": "PASS"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-irmana-clippy.log",
+            "sha256": "98127deebb8b838ffff988e66a0b6258d24dd36bb7dbf03b5821dea01723bc2d",
+            "result": "PASS"
+          },
+          "reward_units": {
+            "log": "/tmp/questpc3-irmana-units.log",
+            "sha256": "f090cb6d3da666dcfc3d555d271f149aac8fb682d44a8ba54f735a947f060c47",
+            "result": "PASS"
+          },
+          "authoring": {
+            "log": "/tmp/questpc3-irmana-authoring.log",
+            "sha256": "cbe4b84d897ac017db0552ccb3a31855ff0fb172bc344c967c4c4c92eb19e624",
+            "result": "PASS"
+          },
+          "native_profiles": {
+            "log": "/tmp/questpc3-irmana-native-check.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "result": "PASS"
+          },
+          "pins": {
+            "log": "/tmp/questpc3-irmana-pins.log",
+            "sha256": "88692f49250789009449289dfdcb16b7faa9fc8dc1b321b947f8580e8db2124a",
             "result": "PASS"
           }
         }
@@ -8131,6 +8191,404 @@
             "publication": "DOC checkpoint only; fee core/Irmana implementation and test are local staged WIP, not published or qualified. Await real PGGREEN before implementation commit."
           }
         }
+      },
+      "58c59720d0641892c79db561c8d0c8416335c646": {
+        "preserved_incoming_conflicting_metadata": {
+          "/cloud_continuation/current_batch/phase": "GREEN; metadata-only merge, unchanged independently reviewed material, FF push now"
+        }
+      },
+      "4785fb242a204f7496997ac71d5dd0c5948259f4": {
+        "source_head": "4785fb242a204f7496997ac71d5dd0c5948259f4",
+        "scope": "Preserve qualified Carlos post-sale report branches and reuse incoming exact native quest-fee/paid-fur implementation; validate compatibility and new durable-value delta",
+        "metadata_delta": {
+          "current_batch": {
+            "phase": "GREEN; independently qualified fee/trade components merged; combined fmt/check/strictClippy and incoming authoring tests PASS; publish immediately",
+            "generated_world_pin": {
+              "tool": "oteryn-world-bundle-compiler pin-refresh .",
+              "exit_code": 0,
+              "digest": "1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
+              "deploy_mirror_included": true
+            },
+            "postgres_green": {
+              "duration_ms": 102325,
+              "fur": 1,
+              "held_gold": 0,
+              "stage": 8,
+              "fees": 1,
+              "exact_consent_insufficient_funds_and_replay": true
+            },
+            "proofs": {
+              "pg_red": {
+                "log": "/tmp/questpc3-irmana-red.log",
+                "sha256": "1fe8614d412ec3228808d784b3db6bbe8323be0caa8403d19049616df2d229e6",
+                "result": "expected RED"
+              },
+              "pg_green": {
+                "log": "/tmp/questpc3-irmana-green.log",
+                "sha256": "71ac3fcca971f130a1a10830940118d03facdb65ccdf065e8c33594eb23c6d95",
+                "result": "PASS"
+              },
+              "fmt": {
+                "log": "/tmp/questpc3-irmana-fmt.log",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "result": "PASS"
+              },
+              "cargo_check": {
+                "log": "/tmp/questpc3-irmana-check.log",
+                "sha256": "2a1a34ee11b87394a0c56896c7b999dd0ffd3103fe520fb3d00c9bdd7903a190",
+                "result": "PASS"
+              },
+              "clippy": {
+                "log": "/tmp/questpc3-irmana-clippy.log",
+                "sha256": "98127deebb8b838ffff988e66a0b6258d24dd36bb7dbf03b5821dea01723bc2d",
+                "result": "PASS"
+              },
+              "reward_units": {
+                "log": "/tmp/questpc3-irmana-units.log",
+                "sha256": "f090cb6d3da666dcfc3d555d271f149aac8fb682d44a8ba54f735a947f060c47",
+                "result": "PASS"
+              },
+              "authoring": {
+                "log": "/tmp/questpc3-irmana-authoring.log",
+                "sha256": "cbe4b84d897ac017db0552ccb3a31855ff0fb172bc344c967c4c4c92eb19e624",
+                "result": "PASS"
+              },
+              "native_profiles": {
+                "log": "/tmp/questpc3-irmana-native-check.log",
+                "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+                "result": "PASS"
+              },
+              "pins": {
+                "log": "/tmp/questpc3-irmana-pins.log",
+                "sha256": "88692f49250789009449289dfdcb16b7faa9fc8dc1b321b947f8580e8db2124a",
+                "result": "PASS"
+              }
+            },
+            "publication": "Implementation GREEN; source checkpoint758e9b3b0 already published. Fee core, program, placement and focused proofs now ready for implementation commit.",
+            "reused_implementation": "Selective reusable core applied from qengine2 commit33b640335067df5d5582460bf06ce818d39b9d4d; existing local health/premium and callback binding behavior preserved.",
+            "integration": {
+              "incoming": "58c59720d0641892c79db561c8d0c8416335c646",
+              "local_implementation": "88e38f3cc",
+              "code_conflicts": false,
+              "metadata_conflicts": "preserved both sets of evidence via three-way merge",
+              "combined_checks": {
+                "fmt": {
+                  "log": "/tmp/questpc3-irmana-merge-fmt.log",
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "result": "PASS"
+                },
+                "check": {
+                  "log": "/tmp/questpc3-irmana-merge-check.log",
+                  "sha256": "724a8c7745b4f47e75010202e875213b6abc1439de56e2ddca75cf59f756392a",
+                  "result": "PASS"
+                },
+                "clippy": {
+                  "log": "/tmp/questpc3-irmana-merge-clippy.log",
+                  "sha256": "c8937e9f16559a1d05f6d918c500e0661973ec32aa0ad98aa883676c13638527",
+                  "result": "PASS"
+                },
+                "authoring": {
+                  "log": "/tmp/questpc3-irmana-merge-authoring.log",
+                  "sha256": "464e0ee629edf74de09ef21e4232fbcedc26588ff7cc23c470f47fe2da88c255",
+                  "result": "PASS"
+                }
+              },
+              "postgres": "Irmana RED96779ms/GREEN102325ms before merge; upstream trade and delivery integration PostgreSQL proofs preserved in completed_mechanism_batches. Do not claim a new combined runtime run."
+            }
+          },
+          "completed_batches": [
+            {
+              "id": "sum-guards-01",
+              "status": "PUBLISHED at 73a106fc5035885a844c81e8618900f80c028116; all selected verification completed",
+              "entries": [
+                "oteryn:quest.threatened_dreams_quest"
+              ],
+              "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
+              "whole_entry_qualifications": 0,
+              "publication": {
+                "commit": "73a106fc5035885a844c81e8618900f80c028116",
+                "remote_verified": true
+              }
+            },
+            {
+              "id": "npc-programs-01",
+              "phase": "GREEN",
+              "scope": "Selectively reused qengine2 NPC reward engine; six Santiago source callbacks and return greetings. Whole Beginning remains in progress.",
+              "red": {
+                "path": "/tmp/questpc3-npc-greet-red-positioned.log",
+                "failure": "NoConversation versus Ok",
+                "postgres_marker_ms": 86938,
+                "duration_seconds": 87.08
+              },
+              "first_green": {
+                "path": "/tmp/questpc3-npc-greet-green.log",
+                "scope": "Initial atomic source greeting and regreet only",
+                "postgres_marker_ms": 90144,
+                "completed_ms": 90482
+              },
+              "fixture_correction": "Expanded scenario initially installed prerequisite transitions after initial receipt; definition-hash pin correctly refused. Install fixture catalogue before first receipt; retain immutable definition guard. This fixture failure is not missing-mechanism RED evidence.",
+              "reuse_source": "origin/claude/happy-davinci-ijz3wy-qengine2 be6db5edd^..5a6de28c1; NPC-only composition. Existing multi-stack world inputs, Rookgaard messages and native counters retained. No unrelated outfit/world data or world binaries imported.",
+              "proof": "checks.npc_programs_01",
+              "publication": {
+                "mode": "commit and fast-forward push immediately after metadata update",
+                "parent": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
+                "branch": "claude/happy-davinci-ijz3wy-questpc3",
+                "local_commit": "a4f1f4a21"
+              },
+              "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
+            },
+            {
+              "batch": "threatened_barriers_08",
+              "commit": "651071c21",
+              "published_merge": "aefdf542d",
+              "postgres_red_ms": 104046,
+              "postgres_green_ms": 89087,
+              "self_use_regression_ms": 190131,
+              "result": "GREEN; pushed"
+            },
+            {
+              "batch": "threatened_animals_09",
+              "result": "GREEN",
+              "pg_red_ms": 109688,
+              "pg_green_ms": 111630,
+              "entries": [
+                "Ikassis talisman",
+                "A Swan five feathers",
+                "Grumpy Stone map"
+              ],
+              "proofs": {
+                "pg_red": {
+                  "sha256": "4a40e497a0d3bd11fbf1e6c9d480b632ffeab0a650efa559b66812c918a10ab7",
+                  "log": "/tmp/questpc3-animals-red.log",
+                  "result": "expected RED"
+                },
+                "pg_green": {
+                  "sha256": "34ffb7d3bcc94bdd4448d47b7eed32c5baad7d117ecc295cec39e4ac6a13252a",
+                  "log": "/tmp/questpc3-animals-green.log",
+                  "result": "PASS"
+                },
+                "clippy": {
+                  "sha256": "d870144065736f0da63ff107d550b182c3205dca3f3632e761c02e23b0a5d330",
+                  "log": "/tmp/questpc3-animals-clippy.log",
+                  "result": "PASS"
+                },
+                "cargo_check": {
+                  "sha256": "fe1d9cbfb9bcaf73b419095bff14b6a428170ea6b13d5fb6795d09ca33314fa4",
+                  "log": "/tmp/questpc3-animals-check.log",
+                  "result": "PASS"
+                },
+                "authoring": {
+                  "sha256": "c806509c2c244f151bef2cc65e328c4ea48d3440930dff1162c0528db8ae294c",
+                  "log": "/tmp/questpc3-animals-authoring.log",
+                  "result": "PASS"
+                },
+                "native_generation": {
+                  "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+                  "log": "/tmp/questpc3-animals-native.log",
+                  "result": "PASS"
+                },
+                "native_check": {
+                  "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+                  "log": "/tmp/questpc3-animals-native-check.log",
+                  "result": "PASS"
+                },
+                "pins": {
+                  "sha256": "999b8f3cc6a5132306b6a8ea00040986e4f15c6151605d9717cb87f6d6a23228",
+                  "log": "/tmp/questpc3-animals-pins.log",
+                  "result": "PASS"
+                }
+              }
+            },
+            {
+              "batch": "threatened_rakes_10",
+              "result": "GREEN",
+              "pg_red_ms": 60730,
+              "pg_green_ms": 62373,
+              "entries": [
+                "Stone1 rake interaction",
+                "Stone2 rake interaction",
+                "Stone3 rake interaction",
+                "Stone4 rake interaction",
+                "Stone5 rake interaction"
+              ],
+              "proofs": {
+                "pg_red": {
+                  "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c",
+                  "log": "/tmp/questpc3-rakes-red.log",
+                  "result": "expected RED"
+                },
+                "pg_green": {
+                  "sha256": "b30913812dce6d6254cbcd804c86d6dd6b887e214d1f05d5c9cc5f3c71f2b7e1",
+                  "log": "/tmp/questpc3-rakes-green.log",
+                  "result": "PASS"
+                },
+                "clippy": {
+                  "sha256": "5af1aebcb7f79d1e28ac88e84acbeefc87cf90a8ec86a84f47b23bc3db3bd510",
+                  "log": "/tmp/questpc3-rakes-clippy.log",
+                  "result": "PASS"
+                },
+                "cargo_check": {
+                  "sha256": "dbf6d62665f0f9f01d54f066822bdb4551d7116b4db2fd931606c618f67a0984",
+                  "log": "/tmp/questpc3-rakes-check.log",
+                  "result": "PASS"
+                },
+                "authoring": {
+                  "sha256": "9381d3f87ea1a360432764430e1aeead7e6c7a68cf81c911bce32aaef405f320",
+                  "log": "/tmp/questpc3-rakes-authoring.log",
+                  "result": "PASS"
+                },
+                "native_generation": {
+                  "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+                  "log": "/tmp/questpc3-rakes-native.log",
+                  "result": "PASS"
+                },
+                "pins": {
+                  "sha256": "e5ef1768d888224ee07095b8bc7f22423e3a21857983e2dee06bee1e4a847f68",
+                  "log": "/tmp/questpc3-rakes-pins.log",
+                  "result": "PASS"
+                },
+                "carried_units": {
+                  "sha256": "0a531a1092ce9968a009348b83cb42b6e0a8b4964a4554e34b982a0863f3c178",
+                  "log": "/tmp/questpc3-rakes-units.log",
+                  "result": "PASS"
+                },
+                "fmt": {
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "log": "/tmp/questpc3-rakes-fmt.log",
+                  "result": "PASS"
+                },
+                "potion_witness": {
+                  "sha256": "a276230f382009f5516def6a0aaf9e7857f8bc096a3b9192dc49292939561f98",
+                  "log": "/tmp/questpc3-rakes-potion-witness.log",
+                  "result": "PASS"
+                }
+              }
+            },
+            {
+              "batch": "threatened_delivery_11",
+              "result": "GREEN",
+              "pg_red_ms": 57053,
+              "pg_green_ms": 60098,
+              "entries": [
+                "Book on pallet12648",
+                "Book on pallet12649",
+                "Whelp fur on stone25237"
+              ],
+              "proofs": {
+                "pg_red": {
+                  "sha256": "5ee6c71fbfe51efa1dd87b3add8823c553561ff04948a7e3cd19f5c6f1923585",
+                  "log": "/tmp/questpc3-delivery-red.log",
+                  "result": "expected RED"
+                },
+                "pg_green": {
+                  "sha256": "c58e0ec200b92a976963b22ae7c4b43d4a4112703ebba71f5c0964b88cc2665b",
+                  "log": "/tmp/questpc3-delivery-green.log",
+                  "result": "PASS"
+                },
+                "clippy": {
+                  "sha256": "0b937782c1df50c89aca6a293f44431f77ff2197efa0a726c88527ee8ab78702",
+                  "log": "/tmp/questpc3-delivery-clippy.log",
+                  "result": "PASS"
+                },
+                "cargo_check": {
+                  "sha256": "1461657a7d7f09b53270a618b579b78319833a4ead8a020fe7d404eb3a93082b",
+                  "log": "/tmp/questpc3-delivery-check.log",
+                  "result": "PASS"
+                },
+                "authoring": {
+                  "sha256": "455a234a903f02c7d36882c9b036acc1ee7cca1176404082cfe9897ae40211f7",
+                  "log": "/tmp/questpc3-delivery-authoring.log",
+                  "result": "PASS"
+                },
+                "native_generation": {
+                  "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+                  "log": "/tmp/questpc3-delivery-native.log",
+                  "result": "PASS"
+                },
+                "pins": {
+                  "sha256": "710990ca0f2053bba73128aa2a99d3ef9d6d343072182d665829d178d63d4062",
+                  "log": "/tmp/questpc3-delivery-pins.log",
+                  "result": "PASS"
+                },
+                "carried_units": {
+                  "sha256": "f2296ff01a518ec052f42317d0eea5db80e67f6047747a3b6be2ff7c09154c34",
+                  "log": "/tmp/questpc3-delivery-units.log",
+                  "result": "PASS"
+                },
+                "fmt": {
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "log": "/tmp/questpc3-delivery-fmt.log",
+                  "result": "PASS"
+                }
+              }
+            },
+            {
+              "batch": "threatened_irmana_12",
+              "result": "GREEN",
+              "pg_red_ms": 96779,
+              "pg_green_ms": 102325,
+              "entries": [
+                "source offer/prerequisites",
+                "exact1000 held-gold atomic exchange",
+                "nonmatching/insufficient/repeated refusal"
+              ],
+              "proofs": {
+                "pg_red": {
+                  "log": "/tmp/questpc3-irmana-red.log",
+                  "sha256": "1fe8614d412ec3228808d784b3db6bbe8323be0caa8403d19049616df2d229e6",
+                  "result": "expected RED"
+                },
+                "pg_green": {
+                  "log": "/tmp/questpc3-irmana-green.log",
+                  "sha256": "71ac3fcca971f130a1a10830940118d03facdb65ccdf065e8c33594eb23c6d95",
+                  "result": "PASS"
+                },
+                "fmt": {
+                  "log": "/tmp/questpc3-irmana-fmt.log",
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "result": "PASS"
+                },
+                "cargo_check": {
+                  "log": "/tmp/questpc3-irmana-check.log",
+                  "sha256": "2a1a34ee11b87394a0c56896c7b999dd0ffd3103fe520fb3d00c9bdd7903a190",
+                  "result": "PASS"
+                },
+                "clippy": {
+                  "log": "/tmp/questpc3-irmana-clippy.log",
+                  "sha256": "98127deebb8b838ffff988e66a0b6258d24dd36bb7dbf03b5821dea01723bc2d",
+                  "result": "PASS"
+                },
+                "reward_units": {
+                  "log": "/tmp/questpc3-irmana-units.log",
+                  "sha256": "f090cb6d3da666dcfc3d555d271f149aac8fb682d44a8ba54f735a947f060c47",
+                  "result": "PASS"
+                },
+                "authoring": {
+                  "log": "/tmp/questpc3-irmana-authoring.log",
+                  "sha256": "cbe4b84d897ac017db0552ccb3a31855ff0fb172bc344c967c4c4c92eb19e624",
+                  "result": "PASS"
+                },
+                "native_profiles": {
+                  "log": "/tmp/questpc3-irmana-native-check.log",
+                  "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+                  "result": "PASS"
+                },
+                "pins": {
+                  "log": "/tmp/questpc3-irmana-pins.log",
+                  "sha256": "88692f49250789009449289dfdcb16b7faa9fc8dc1b321b947f8580e8db2124a",
+                  "result": "PASS"
+                }
+              }
+            }
+          ],
+          "remote_integrations": {
+            "58c59720d0641892c79db561c8d0c8416335c646": {
+              "preserved_incoming_conflicting_metadata": {
+                "/cloud_continuation/current_batch/phase": "GREEN; metadata-only merge, unchanged independently reviewed material, FF push now"
+              }
+            }
+          }
+        }
       }
     },
     "remote_metadata_proofs": {
@@ -8499,6 +8957,24 @@
       "git_blob_sha1": "fb46a6ad2ad8b1836e3719339150afd36347c449",
       "sha256": "a4c2510252527b26b81f570cbc7652c3f9ea3f2e73d4dba2774c4f0e27c40ee3",
       "fact": "Registeredstepinappearance7888 sendsactorx,y-3,z+1 andmessage no business anymore. Questcatalogue definesCarlosLog8 passedbridge; authorconservative actualboundary completion afternative map-position verification, no missingfact deferral."
+    },
+    "owner_stop_handoff_r2": {
+      "instruction": "Owner STOP: replacement r2 owns branch; publish completed green work then cease all activity.",
+      "completed_green_local_commit": "e83882154 Carlos post-sale reports, actualPG114582/95890ms,25authoring/fmt/check/strictClippy/content123/native41/pinscopePASS",
+      "completed_green_tooling": "Reusable in-place NPC offer replacement; Carlos+Irmana producer --check PASS,27authoringPASS23.774s; helper and bothproducerchanges included.",
+      "incoming_preserved": "Published4785fb242 nativepaidfur/fee implementation merged; original published gameplay/test code retained. Combined full qualification not completed before owner STOP.",
+      "unverified_NOT_pushed": [
+        "Local9-linePGguard assertion in threatened_dreams/irmana.rs",
+        "Local1110_quest_fee_guard_scope.sql"
+      ],
+      "unverified_evidence": "Added livePGassertion fails: actualpaidfur/gold/stage/fee positive; schema+ACLguard0vs1. RED100162ms; attemptedafternew1110 still0vs1 at115954ms, cachedtestbuild0.45s. Confirmnewmigrationembedding/discovery/rebuild before qualification. No GREEN claimed for hardening.",
+      "local_scratch": [
+        "/tmp/questpc3-r2-unverified-guard.patch",
+        "/tmp/questpc3-r2-unverified-1110.sql",
+        "/tmp/questpc3-carlos-fee-scope-red.log",
+        "/tmp/questpc3-carlos-fee-scope-green.log"
+      ],
+      "remaining_scope": "Four wholequestsIN_PROGRESS. Bridge/log8, coat replacement, fiveGROUNDwood/cart; otherquest remainingcomponents per status. No further work by this thread."
     }
   }
 }

@@ -122,6 +122,12 @@
       "walkaway": "How rude!"
     },
     {
+      "npc": "oteryn:npc.irmana",
+      "greet": "Welcome to the house of fashion, |PLAYERNAME|!",
+      "farewell": "Good bye, |PLAYERNAME|!",
+      "walkaway": "How rude!"
+    },
+    {
       "npc": "oteryn:npc.kawill",
       "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
       "farewell": "Safe travels, |PLAYERNAME|.",

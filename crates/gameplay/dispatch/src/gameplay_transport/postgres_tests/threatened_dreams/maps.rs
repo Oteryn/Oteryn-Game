@@ -254,7 +254,7 @@ async fn quantity(h: &Harness, key: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1").bind(key).fetch_one(&h.pool).await?)
 }
 
-async fn append_fixture_input(h: &Harness, key: &str, nonce: u8, ordinal: i32) -> TestResult {
+pub(super) async fn append_fixture_input(h: &Harness, key: &str, nonce: u8, ordinal: i32) -> TestResult {
     // Fixture inventory only, after proving real refusal. No quest receipt,
     // exchange success, output or progression is seeded.
     let mut tx = h.pool.begin().await?;
@@ -269,7 +269,7 @@ async fn append_fixture_input(h: &Harness, key: &str, nonce: u8, ordinal: i32) -
     Ok(())
 }
 
-async fn say(
+pub(super) async fn say(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     npc: EntityRef,

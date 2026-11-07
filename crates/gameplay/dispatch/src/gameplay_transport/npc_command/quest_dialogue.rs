@@ -379,6 +379,20 @@ pub(super) async fn apply(
                 .find(|c| c.key == request.transition_key)
         });
     let value_callback = callback.is_some();
+    let fee_payment = if callback
+        .as_ref()
+        .is_some_and(|callback| callback.fee.is_some())
+    {
+        match super::endgame::prepare_reward_fee(admission, command, fence).await {
+            Ok(payment) => Some(payment),
+            Err(outcome) => {
+                finish(admission, command.game_session_id, false);
+                return *outcome;
+            }
+        }
+    } else {
+        None
+    };
     let effect_request = request.clone();
     if let Some(amount) = callback.and_then(|callback| callback.health_loss) {
         let runtime = admission.runtime.lock().await;
@@ -420,6 +434,7 @@ pub(super) async fn apply(
                 crate::durability::reward_claim_mint::QuestRewardAdmission {
                     native,
                     weights: &weights,
+                    fee_payment: fee_payment.as_ref(),
                 },
                 gate,
             )
@@ -435,6 +450,7 @@ pub(super) async fn apply(
                 crate::durability::reward_claim_mint::QuestRewardAdmission {
                     native,
                     weights: &weights,
+                    fee_payment: fee_payment.as_ref(),
                 },
                 &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
             )
