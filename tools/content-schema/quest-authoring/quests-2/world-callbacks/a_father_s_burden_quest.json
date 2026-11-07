@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/l2-father-scale",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 11589
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/corpse/scale",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You acquired Glitterscale's scale.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i11550",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/fathers_burden/actions_corpse.lua:2:sha256:ab1477d63aba338744198875b5746abc4c7092d90318331af3a2bad4732fa9a1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-father-sinew",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 11590
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/corpse/sinew",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You acquired Heoni's sinew",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i11548",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/fathers_burden/actions_corpse.lua:3:sha256:ab1477d63aba338744198875b5746abc4c7092d90318331af3a2bad4732fa9a1"
+      ]
+    }
+  ]
+}

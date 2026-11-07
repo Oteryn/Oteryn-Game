@@ -753,6 +753,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-l2-father-") {
+        return super::questl2_world_rewards::exercise(owner, admitted, h, name).await;
+    }
     if name == "qengine-rewards-exchange-fixed" {
         return exchange_fixed::exercise(owner, admitted, h).await;
     }

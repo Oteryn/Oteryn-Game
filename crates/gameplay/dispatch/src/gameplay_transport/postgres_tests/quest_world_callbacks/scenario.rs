@@ -46,7 +46,11 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if draconia_journey {
+    let mut callback = callback(if name == "qengine-rewards-l2-father-scale" {
+        "l2-father-scale"
+    } else if name == "qengine-rewards-l2-father-sinew" {
+        "l2-father-sinew"
+    } else if draconia_journey {
         "draconia-escape-35012"
     } else if draconia {
         "draconia-exit-35011"

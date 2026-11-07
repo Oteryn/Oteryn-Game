@@ -151,3 +151,10 @@ in the immutable source plan. Root and peer stacks use the same complete MINT
 owner. The database proves the exact retained outcome and rejects any remaining
 carried matching input. A capacity refusal consumes nothing. This bounded form
 requires distinct input/output keys and excludes unrelated value participants.
+
+Finite world USE callbacks can declare `effects.item_reward` using the same
+complete output layout as NPC rewards. The source transition must advance
+bounded state; read-only, offering-consuming and item-on-target callbacks
+cannot use this form. The original world occurrence, quest receipt and all
+native output/audit participants commit together. Positive appearance-only
+selectors resolve the actual server map stack for item-id registrations.

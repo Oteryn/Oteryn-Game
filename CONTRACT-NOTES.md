@@ -48,3 +48,22 @@ The isolated PostgreSQL fixture replaces only the server RNG function to drive
 normal and bonus outcomes deterministically; it seeds neither quest progress
 nor earned outputs. Native orb/ammunition providers are reused unchanged.
 Migration1145 was checked against24 current main/engine/quest heads.
+
+### L2 world USE reward participants
+
+Reuse PC8 d90c1bfa29fac954fbdd08e014a6473d4a33de96's finite world
+USE reward composition through the existing complete native MINT owner.
+Migration1146 extends the installed receipt proof without changing published
+migrations; 24 current main/engine/quest heads were checked for allocation.
+World metadata must identify the same USE, quest, storage and complete output
+plan. The weaker context-free writer cannot execute a world value grant.
+Existing NPC fee, bulk and absolute-deadline proof arms remain active.
+
+Item-id registrations use a positive appearance selector and the resolved
+server map stack, including untagged placements; they require no fabricated
+position, action or unique id. The source Father corpse registrations are
+`data-global/scripts/quests/fathers_burden/actions_corpse.lua:2-3,13-19`,
+Crystal9f, sha256 ab1477d63aba338744198875b5746abc4c7092d90318331af3a2bad4732fa9a1.
+They issue scale11550/sinew11548 once per character, without a mission-start
+prerequisite, and retain the corpse. This slice proves the world grant
+participant; it does not independently qualify the complete Father quest.

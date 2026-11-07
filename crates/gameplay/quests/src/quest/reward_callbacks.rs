@@ -140,6 +140,39 @@ struct TrackDeclaration {
     sources: Vec<String>,
 }
 
+/// One bounded complete output layout, shared by NPC and world participants.
+pub(crate) fn valid_item_reward(r: &ItemReward) -> bool {
+    let item = |key: &str, count: u16| {
+        key.len() <= 256
+            && key.strip_prefix("oteryn:item.").is_some_and(|tail| {
+                !tail.is_empty()
+                    && tail.bytes().all(|b| {
+                        b.is_ascii_lowercase() || b.is_ascii_digit() || b"._/:-".contains(&b)
+                    })
+            })
+            && (1..=100).contains(&count)
+    };
+    item(&r.item, r.count)
+        && r.contents.len() <= 20
+        && (r.contents.is_empty() || r.backpack_outputs.is_empty())
+        && r.backpack_outputs.len() <= 19
+        && r.contents
+            .iter()
+            .chain(&r.backpack_outputs)
+            .all(|s| item(&s.item, s.count))
+        && r.decay.as_ref().is_none_or(|decay| {
+            decay.duration_millis > 0
+                && r.count == 1
+                && r.contents.is_empty()
+                && r.backpack_outputs.is_empty()
+                && decay.target.as_ref().is_none_or(|target| {
+                    item(&target.key, 1)
+                        && !target.revision.is_empty()
+                        && target.revision.len() <= 512
+                })
+        })
+}
+
 fn is_false(value: &bool) -> bool {
     !*value
 }
@@ -286,25 +319,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.take
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
-            || c.give.as_ref().is_some_and(|r| {
-                !item(&r.item, r.count)
-                    || r.contents.len() > 20
-                    || (!r.contents.is_empty() && !r.backpack_outputs.is_empty())
-                    || r.backpack_outputs.len() > 19
-                    || r.backpack_outputs.iter().any(|s| !item(&s.item, s.count))
-                    || r.contents.iter().any(|s| !item(&s.item, s.count))
-                    || r.decay.as_ref().is_some_and(|decay| {
-                        decay.duration_millis == 0
-                            || r.count != 1
-                            || !r.contents.is_empty()
-                            || !r.backpack_outputs.is_empty()
-                            || decay.target.as_ref().is_some_and(|target| {
-                                !item(&target.key, 1)
-                                    || target.revision.is_empty()
-                                    || target.revision.len() > 512
-                            })
-                    })
-            })
+            || c.give.as_ref().is_some_and(|r| !valid_item_reward(r))
             || c.outfit
                 .as_ref()
                 .is_some_and(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
