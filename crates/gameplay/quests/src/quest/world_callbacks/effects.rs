@@ -176,6 +176,16 @@ pub struct Encounter {
     pub monsters: Vec<EncounterMonster>,
     pub room_min: Position,
     pub room_max: Position,
+    /// A value-free source switch schedules native monsters without moving a party.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timing: Option<EncounterTiming>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterTiming {
+    pub spawn_after_ms: u32,
+    pub reset_after_ms: u32,
 }
 
 pub(super) fn valid(callback: &Callback) -> bool {
@@ -284,7 +294,24 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         if encounter.minimum_level == 0
-            || !(1..=8).contains(&encounter.players.len())
+            || if let Some(timing) = encounter.timing {
+                !encounter.players.is_empty()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.native_rule.is_some()
+                    || effects.item_reward.is_some()
+                    || effects.outfit_reward.is_some()
+                    || !(1..=60_000).contains(&timing.spawn_after_ms)
+                    || timing.reset_after_ms <= timing.spawn_after_ms
+                    || timing.reset_after_ms > 3_600_000
+                    || (u64::from(encounter.room_max.x.saturating_sub(encounter.room_min.x)) + 1)
+                        * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
+                        > 4096
+            } else {
+                !(1..=8).contains(&encounter.players.len())
+            }
             || !(1..=8).contains(&encounter.monsters.len())
             || callback.reversible
             || unique_from.len() != encounter.players.len()

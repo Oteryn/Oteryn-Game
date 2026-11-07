@@ -60,6 +60,17 @@ pub(crate) fn native_scene(
     specs: Vec<NativeCrop>,
     teleports: &[ExpectedTeleport],
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    native_scene_with_appearances(native, specs, teleports, &[])
+}
+
+/// Keep source tiles unchanged while admitting source-script projection states
+/// through the same production registry as the retained native base palette.
+pub(crate) fn native_scene_with_appearances(
+    native: &NativeGameplayState,
+    specs: Vec<NativeCrop>,
+    teleports: &[ExpectedTeleport],
+    appearances: &[u16],
+) -> TestResult<crate::map::boot::BundleWorld> {
     let first = specs.first().ok_or("native crop set")?;
     let start = (first.start.0, first.start.1, -i8::try_from(first.region.0)?);
     let min_x = specs.iter().map(|s| s.bounds.0).min().ok_or("minimumx")?;
@@ -210,6 +221,30 @@ pub(crate) fn native_scene(
         teleports.len(),
         "every declared source teleport was retained"
     );
+    for appearance in appearances {
+        let key = format!("oteryn:item.tibia.i{appearance}");
+        if manifest.palette.iter().any(|entry| entry.key == key) {
+            continue;
+        }
+        let Resolution::Resolved(family, id) = registry.resolve(&key) else {
+            return Err(format!("unresolved source projection:{key}").into());
+        };
+        if family == bundle::Family::Item {
+            assert_eq!(
+                item_index
+                    .definition_ref("Item", &key, "definition-r1")
+                    .ok_or("native projection Item")?
+                    .get(),
+                id + 1
+            );
+        }
+        manifest.palette.push(bundle::PaletteEntry {
+            terrain: registry.terrain(&key)?,
+            key,
+            family,
+            id,
+        });
+    }
     let mut sectors = sectors
         .into_iter()
         .map(|((floor, sx, sy), mut tiles)| {
@@ -241,7 +276,11 @@ pub(crate) fn native_scene(
                 crate::content::ReferenceItemField::Known(physical)
                 if physical.pickupable == crate::content::ReferenceItemField::Known(true))
             }),
-            door: false,
+            door: profile.is_some_and(|profile| {
+                matches!(&profile.semantics.classification,
+                    crate::content::ReferenceItemField::Known(classification)
+                    if classification.item_type == crate::content::ReferenceItemField::Known(crate::content::ReferenceItemType::Door))
+            }),
         })
     };
     crate::map::boot::boot(

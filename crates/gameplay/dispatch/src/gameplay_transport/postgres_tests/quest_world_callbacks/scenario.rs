@@ -29,11 +29,15 @@ fn scenario_case(
     let carried_step = name.starts_with("l6-tomb-carried-") || tomb_native;
     let mead = name == "l6/waterskin-of-mead";
     let spirit = name == "qengine-rewards-questpc4-spirit";
+    let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = small_ruby || mead || spirit || tomb_native || native_switch || native_gate;
+    let native_crop =
+        small_ruby || mead || spirit || tomb_native || native_tower || native_switch || native_gate;
     let start = if native_gate {
         super::super::l6_shared_gate_native::start(name)?
+    } else if native_tower {
+        super::super::l6_paradox_native::start(name)
     } else if native_switch {
         super::super::l6_shared_switch_native::start(name)?
     } else if tomb_native {
@@ -234,11 +238,13 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
-        if small_ruby || carried_step {
+        if small_ruby || carried_step || native_tower {
             let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
                 .fetch_one(&h.pool)
                 .await?;
-            if carried_step {
+            if native_tower {
+                eprintln!("POSTGRES_DATABASE_READY {name} native_scene_pending version={version}");
+            } else if carried_step {
                 eprintln!("POSTGRES_DATABASE_READY l6_carried_step version={version}");
             } else {
                 eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
@@ -263,6 +269,13 @@ fn scenario_case(
         let world = if native_gate {
             super::super::l6_shared_gate_native::world(
                 generation.native_gameplay().ok_or("native gate policies")?,
+                name,
+            )?
+        } else if native_tower {
+            super::super::l6_paradox_native::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native tower policies")?,
                 name,
             )?
         } else if native_switch {

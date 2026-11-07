@@ -810,6 +810,9 @@ impl BundleFacts {
         pos: TilePos,
         baseline: bool,
     ) -> bool {
+        let Ok(rotations) = self.rotations.lock().map(|states| Arc::clone(&states)) else {
+            return true;
+        };
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
@@ -824,6 +827,7 @@ impl BundleFacts {
         };
         if states.hidden.range(first..=first + 63).next().is_none()
             && states.passable.range(first..=first + 63).next().is_none()
+            && rotations.range(first..=first + 63).next().is_none()
         {
             return !tile.walkable() || baseline;
         }
@@ -848,6 +852,13 @@ impl BundleFacts {
                 continue;
             }
             if self.doors.contains(key) {
+                continue;
+            }
+            if let Some((_, after)) = rotations.get(&key)
+                && let Some(after_blocked) = self.override_blocks(*after)
+            {
+                changed = true;
+                blocked |= after_blocked;
                 continue;
             }
             let palette = self

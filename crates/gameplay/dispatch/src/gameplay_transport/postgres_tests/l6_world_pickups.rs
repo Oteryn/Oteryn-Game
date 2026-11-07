@@ -9,7 +9,8 @@ mod wire;
 #[path = "l6_world_pickups/world.rs"]
 mod world;
 pub(super) use world::{
-    ExpectedTeleport, ExpectedTile, NativeCrop, native_crop, native_scene, small_ruby,
+    ExpectedTeleport, ExpectedTile, NativeCrop, native_crop, native_scene,
+    native_scene_with_appearances, small_ruby,
 };
 #[path = "l6_world_pickups/reset.rs"]
 mod reset;

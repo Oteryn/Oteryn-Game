@@ -29,8 +29,8 @@ pub enum Trigger {
 
 mod effects;
 pub use effects::{
-    CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer, Facing,
-    ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
+    CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
+    EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -540,6 +540,9 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
     let bytes = serde_json::to_vec(&value).map_err(|error| error.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))
 }
+
+#[cfg(test)]
+mod timed_tests;
 
 #[cfg(test)]
 mod batch4_tests;

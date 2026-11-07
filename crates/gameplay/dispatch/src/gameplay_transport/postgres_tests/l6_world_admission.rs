@@ -276,7 +276,7 @@ async fn progress(h: &Harness, track: &str) -> TestResult<i64> {
 async fn consumed(h: &Harness, key: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_quest_callback_consumptions WHERE transition_key=$1").bind(key).fetch_one(&h.pool).await?)
 }
-async fn use_source(
+pub(super) async fn use_source(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     pos: Position,

@@ -45,6 +45,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         self.bundle_map()
                             .and_then(|map| map.facts.next_movement_decay_time()),
                     )
+                    .chain(self.states.quest_callbacks.next_encounter_due_us())
                     .chain(
                         npc_voices
                             .as_ref()
@@ -101,6 +102,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             self.drain_source_item_deadlines().await;
+            self.drain_quest_encounter_deadlines().await;
             self.drain_source_party_deadlines_bounded().await;
             let _ = self.drain_native_ai_timers().await;
             if let Some(cycle) = npc_voices.as_mut() {

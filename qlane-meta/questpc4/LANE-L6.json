@@ -222,10 +222,10 @@
       },
       "current_work": {
         "owner": "questpc4",
-        "stage": "generic_engine_green_local_pending_remote_reconciliation",
+        "stage": "owner_stop_replacement_r2_handoff",
         "level_component": "PG18.6 GREEN91.999669123s; whole quest not yet qualified",
         "world_puzzles": "PG18.6 GREEN including actual advertised handle USE52.626333695s; whole native route remains in progress",
-        "next": "complete native multifloor route and exact selected NPC/reward chain; implement remaining admission mechanisms here",
+        "next": "publish native component after final checks and incoming merge, then complete ordered NPC story and single whole physical selected climb/reward",
         "source_document": "content/quests/authoring/paradox-tower.md",
         "shared_engine_contracts": [
           "qlane-meta/questpc4/LEVEL-BINDING-CONTRACT.md",
@@ -238,14 +238,23 @@
         "checks": "fmt/check5crates/clippy5crates alltargets allfeatures -Dwarnings,9pureunits,pin-check and generated ladder check PASS"
       },
       "world_admission_component": {
-        "status": "GREEN_MERGED_READY_TO_FF_PUSH",
+        "status": "PUSHED",
         "proof": "QUEST-STATUS.json#/world_admission_batch",
         "whole_entry": "IN_PROGRESS",
         "scopes": [
           "exact food4/food5 open/debit/free close/reopen",
           "physical STEP admission",
           "renamed+stripped protected-track refusal"
-        ]
+        ],
+        "published_head": "2d8bd8c5c8d728f85ee44b74d47b9973aa359271"
+      },
+      "native_tower_component": {
+        "status": "GREEN_OWNER_HANDOFF_PENDING_PUSH",
+        "proof": "QUEST-STATUS.json#/paradox_native_batch",
+        "whole_entry": "IN_PROGRESS",
+        "postgres": "18.6",
+        "passed": 3,
+        "seconds": 137.64
       }
     },
     {
@@ -565,7 +574,7 @@
         "questpc4"
       ],
       "blocker": {
-        "missing_piece": "Native tomb assembly/gate counterparts, full native route composition and remaining conditional room/NPC/finale behavior are active obligations; do not redo qualified generic assembly/lifetimes, seven native carried routes, shared lease activation/count gates, physical/personal expiry or exact native shared-switch USE counterparts.",
+        "missing_piece": "Native tomb assembly counterpart, full native route composition and remaining conditional room/NPC/finale behavior are active obligations. Qualified components include generic assembly/lifetimes, seven native carried routes, shared lease activation/count gates, physical/personal expiry, exact native shared-switch USE counterparts and selected native8/7/5 threshold transports. Do not redo finished components; whole quest remains IN_PROGRESS.",
         "source": ".questpc4/evidence/wiki/The Ancient Tombs Quest_Spoiler.wiki:8",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/15/definition",
