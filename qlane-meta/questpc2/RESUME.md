@@ -1,90 +1,80 @@
-# questpc2 continuation
+# questpc2 — continue now
 
-AUTHORING on `claude/happy-davinci-ijz3wy-questpc2`. No PR or frozen head.
-Do not end a turn while owned scope remains. Work directly here, commit as the
-owner with the required task trailers, fetch/merge any remote movement and push
-fast-forward after every green batch. Never force or write main. Read git log
-and verify the requested remote branch before continuing.
+AUTHORING on claude/happy-davinci-ijz3wy-questpc2. No PR, main writes, force,
+credentials or final summary with owned work remaining. Commit as blakinio with
+the task’s required trailers and FF push after every green batch. Always fetch
+and merge any newer lane work first. Lane metadata is removed before a future PR.
 
-Whole L3 counts remain 0 QUALIFIED / 35 UNFINISHED / 0 externally blocked. These are
-active tasks in this lane. Prior N-Q (39) and 14 scoped reward qualifications remain
-in status/history; do not redo them or infer whole qualification from rewards.
-Follow QSPLIT ownership and owner world-lane exclusions. Father’s Burden 11-track
-write stays atomic; grants charge only exact matches.
+Whole L3 remains 0 QUALIFIED / 35 UNFINISHED / 0 external blockers. Prior N-Q(39)
+and14 scoped reward qualifications stay preserved; don’t redo finished work.
+Use QSPLIT ownership, owner world-lane exclusions and original packet scope.
+Father’s Burden11-track write is atomic; grants charge only exact matches.
 
-## Latest green checkpoint
+## Green integration checkpoint
 
-`BATCH-scoped-corpse-2026-11-07.json` records engine reuse and the native Instance
-corpse bridge. This checkpoint must be committed/pushed before new authoring.
-It merges qengine2@5a6de28c142de185594217ce1e5cbc7f4b6e6e4e into the published
-f304dda7cae995b1ef564e6997ea20fbeeb4d53e base. Other inspected lane/native-mint
-implementations were still Channel-only; no delivered bridge was duplicated.
+Local5ee9e1c83 merged qengine2@5a6de28c142de185594217ce1e5cbc7f4b6e6e4e and an
+independent corpse implementation. Pre-push fetch found newer remotef9cc1e550
+with published owner647e33cf3, native binding1ee1efc2a and corpse-authoring tools.
+The integration reuses that published owner, not a second mechanism. Preserve
+apps/game-server/migrations/1024_instance_corpse_mint.sql byte-for-byte (Git blob
+c89455d0a109379a848015f815f1e3a997b07b48); unpublished duplicate migration removed.
+Instance corpse_ref uses published tag3, while Ground scope kind remains2.
+All native, immutable-raw-scope, current-owner, foreign-permit/no-charge and
+legacy Channel tests are retained. No active Item-data change in this merge.
 
-The complete full death cause now carries the actual closed Channel/Instance
-namespace. Forward migration1024 preserves all legacy Channel keys/wire bytes,
-full-cause equality, reservation/receipt immutability, corpse timestamp, current
-node/assignment fences, capacity locks and existing installed proof arms.
-Audit provenance, Ground and envelope agree. Runtime binding takes the current
-owner fence and exact retained death scope/generation. Native W03 private reward
-settlement/collection stays independent and creates no ordinary loot copy.
+BATCH-remote-integration-2026-11-07.json records the fresh green evidence:
+real native Instance PG109.760s; exact canonical Primal corpse/binding/private
+reward PG103.27s; Soul root/permit/native progression PG104.32s; ordinary Channel
+corpse/loot/XP PG104.53s.31 audit,8 corpse-owner,5 typed carrier and1 migration
+unit tests pass, plus32 focused Python tests. All changed-crate check, clippy
+(all targets/features,-D warnings),fmt pass. Historical5ee evidence (including
+five endgame cases) remains in BATCH-scoped-corpse-2026-11-07.json; do not confuse
+its unpublished old migration format with the integrated published one.
 
-PG RED: 96.81s and 110.13s, no corpse. Database-only GREEN exposed a runtime binding
-gap; stronger runtime-view PG RED: 108.78s, durable corpse 1 / visible corpse 0.
-Final native PG GREEN: 106.898s, 1 executed / 0 failed / 0 ignored, exact Item
-identity/bytes and replay, runtime visibility, immutable raw scope, private
-reward custody and no second ordinary loot copy. Five selected endgame PG cases
-also pass. Annihilator entry 54.98s, NPC reward 93.10s and ordinary Channel
-corpse/loot/XP 104.09s pass. 88 unit tests and 19 focused Python tests pass.
-Changed-crate check, all-target/all-feature clippy -D warnings and fmt pass.
-The batch JSON includes every command/result/marker and intermediate correction.
+Merge checkpoint must be committed and FF pushed before new authoring; verify
+HEAD and the fetched lane branch rather than assuming tracking refs exist.
 
-Merged world bindings were regenerated with repository tools, retaining both
-access and chest overlays (23 selectors). Exact registration count 42 includes
-the qengine proof file. Failed generator parent and all remaining checks were
-rerun, pin-refresh completed, and starter-kit history was checked against f304.
-Pin: f11e3f836b7b742c69126d7a088001b579f3f9c6fd2ca1da5a42621a634dff1a.
-Producer output now reproduces the repository’s compact spells manifest exactly.
-No hand-edited pins, workflow/tool-repository changes or reference dumps.
+## Next batch — implement here
 
-## Continue immediately after publication
+1. Primal39530 is ALREADY canonically admitted. Its absence from the separate
+   spell-native provider is not authoritative admission evidence. Do not redo it.
+2. Reuse encounter_corpse_items.py and primal_corpse_items.py’s builder for the
+   seven source-pinned Spite/Bakragore stages. XML facts and conservative Game
+   policies are in CONTRACT-NOTES.md; preserve source48/30 capacities and decay.
+   Keep existing30-entry corpse and16-entry generated-plan budgets. Declared
+   positive source capacity is distinct from actual bounded writes; don’t clamp
+   data or increase budgets just to admit an empty reward-boss corpse.
+3. /tmp/questpc2-next-native-corpse-assertions.patch adds exact source Item roots
+   and visible Item identity assertions for Spite33867 and Bakragore44012.
+   Apply after publication, run actual PG RED, then author canonical records,
+   materializer hook and positive-capacity Content loader. Obtain PG GREEN.
+4. Materializer is tools/content-migration/world_project_v2_to_tree.py:149,193,
+   next to the existing Primal overlay. Reuse delivered source/WorldObject guard.
+5. Grizzly shard rebind must use its new --refresh-canonical-inputs --base-ref HEAD
+   mode, preserving source/profiles/refusals and selected shop facts. No hand
+   hashes or admission guard bypass. Follow repo regeneration: resolve any
+   PREY_MODEL_STALE with prey_difficulty.py --simulate, regenerate --native-only,
+   build_full_spell_artifact --refresh-loot-tables, registration and repo pins.
+   Remote notes mentioned uncommitted PC edits; they are not in this checkout.
+   Author from the delivered tools here; wait on no lane.
+6. Then prove ordinary Instance corpse-container loot and replace Content’s
+   obsolete InstanceCorpseMintUnavailable gate with complete source closure.
+   Reuse the proven four-player/six-native-demon Annihilator entry; finish the
+   full encounter/escape/reward path, and continue owned whole quests in3-6
+   entry batches. No whole qualification from entry or reward cohorts alone.
 
-1. Extend the existing ordinary Instance encounter PG case to prove real
-   corpse-container loot/custody/replay, using existing source-native profiles.
-2. Replace the obsolete Content `InstanceCorpseMintUnavailable` technical gate
-   with source-native reward/corpse closure checks backed by the delivered bridge.
-   Qualify real source room/map/templates and implement missing boss callbacks.
-3. Reuse delivered Annihilator four-player/native-six-demon entry. Finish its
-   source escape/completion/reward path, then continue owned entries batch by
-   batch. Whole qualification needs the complete quest, not entry alone.
-4. Update QUEST-STATUS and this resume after every batch; commit and FF push each
-   green result. Implement any further shared mechanism here; wait on no lane.
+Donor’s95–105% factor affects nominal100% chance (loot_plan.rs:579); don’t weaken
+RNG or write flaky fixed-count tests. Existing isolated scheduled-event test
+setup can use an explicit configured chance rate (199%, versus200% extra rolls).
 
-Source facts already confirmed: Angry Demon and corpse 5995 have admitted native
-profiles in content; don’t reauthor them. Donor lever and creature facts are in
-committed corpus: Crystal9f5a72c data-global/monster/quests/annihilator/angry_demon.lua:5,16-19, sha256
-c0e5f4430fe4fc8984715c7129cd4c85542cda8c9bfc1c932cd7622c9aecf717.
-Primal level500/five slots was verified in the preceding batch against the pinned
-Crystal source. Next body-source facts are recorded in the batch JSON with XML file:line and
-sha256: Spite33867 has capacity48,10s ->33866; Primal39530 capacity30,10s ->39529;
-Bakragore44012 capacity30,60s ->44013. Author the missing source-native profiles
-and decay closure; reconcile Spite’s source capacity with bounded generic
-materialization. Do not discard the source fact or relax native admission to
-pretend that a missing profile is qualified.
+World access/chest overlays were generated together (23 selectors), pin
+f11e3f836b7b742c69126d7a088001b579f3f9c6fd2ca1da5a42621a634dff1a. No hand pins.
+Qengine output reproduces the repository’s compact spells manifest. No workflow
+or tools/repository changes. No reference dumps/build binaries committed.
 
-For ordinary-loot PG setup, remember the donor95–105% factor also affects
-nominal100% rolls (loot_plan.rs:579). Do not write a flaky fixed-count test or
-weaken the RNG. Existing scheduled-event fixture APIs support an explicit
-configured-rate test setup;199% selects the chance-multiplier route, while200%
-selects independent extra rolls. Keep any such test-only setup explicit.
-
-Earlier native death/XP/Quest proofs are preserved in
-BATCH-native-death-2026-11-06.json and f304’s history.
-
-Retained backup stash2a1a3f5f6633ed62e906c4d5757a2841b0334315 was APPLIED before
-implementation; do not reapply it. Normal Rust settings are retained. Only
-inactive generated incremental caches were trimmed for disk capacity; compiled
-artifacts and PostgreSQL data were kept. Source environment from
-/workspace/oteryn-env/env.sh for Cargo/PG; never print credentials.
-
-Lane metadata is transient and removed before a future PR; the owner currently
-forbids making a PR. Continue rather than ending with unfinished entries.
+Source /workspace/oteryn-env/env.sh for Cargo/PG, never print credentials. Normal
+build settings retained. Latest caches/outputs/PG kept; older compiler sessions
+are archived and byte-verified in /tmp before reclaiming originals. No broad
+clean or disabling incremental builds. Backup stash2a1a3f5f6633ed62e906c4d5757a2841b0334315
+was APPLIED before implementation; do not reapply. Continue until whole scope
+is qualified and pushed, or an exact proven hard blocker; no engine deferrals.

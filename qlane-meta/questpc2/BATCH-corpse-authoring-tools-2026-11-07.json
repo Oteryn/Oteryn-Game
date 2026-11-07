@@ -1,0 +1,35 @@
+{
+  "batch_id": "corpse-authoring-tools-2026-11-07",
+  "base_sha": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+  "scope": "Authoring/regeneration utilities only. No canonical Item data, native provider, runtime Rust or manifest changes in this commit.",
+  "whole_quest_qualifications": 0,
+  "tools": [
+    "Reuse the existing Primal corpse definition builder without changing its outputs; four existing tests pass before and after.",
+    "Add pinned XML/WorldObject-based Spite/Bakragore corpse authoring with complete decay closure, source capacity preservation, unknown unrelated groups and atomic refusal for invalid independent WorldObject facts.",
+    "Add explicit Grizzly canonical hash refresh. The actual Git base must match the captured descriptors; source captures/refusals, catalogue and selected canonical shop facts cannot change. Unrelated corpse changes in shared shards may rebind only the derived input hashes. Existing native admission guards remain unchanged."
+  ],
+  "validation": {
+    "python_tests_passed": 14,
+    "postgres_applicable": false,
+    "reason": "No database/runtime code or active Item admission is published by this authoring-tool slice.",
+    "logs": [
+      "/tmp/questpc2-grizzly-refresh-tests.log",
+      "/tmp/questpc2-primal-admission-before.log",
+      "/tmp/questpc2-primal-admission-after.log",
+      "/tmp/questpc2-encounter-item-tests.log"
+    ]
+  },
+  "active_next_batch": {
+    "pg_red": "Spite native corpse roots=0, PG18.6,73.07s; /tmp/questpc2-corpse-admission-red.log",
+    "pending": "Canonical seven-stage Item admission, materializer wiring, positive-capacity runtime loader and full native provider/pin regeneration remain local uncommitted work until green.",
+    "regeneration": "Grizzly shared-shard fingerprint drift resolved without changing any shop profile or rejection. PREY_MODEL_STALE requires the existing prey_difficulty.py --simulate command; its build hit a full filesystem."
+  },
+  "environment_recovery": {
+    "error": "bwrap: Can't create file /workspace/.git: No space left on device",
+    "filesystem": "32GB overlay was100% full; inodes available",
+    "action": "Archived and verified one obsolete dispatch incremental session and one abandoned durability scratch directory in /tmp/questpc2-obsolete-incremental.tgz, then removed only those archived originals. Latest completed cache, binaries, source and PostgreSQL preserved.",
+    "available_after": "1.9GB on overlay;7.9GB on /tmp"
+  },
+  "self_review": "No runtime/source grant or admission guard is bypassed. Tool tests cover source-pin drift, atomic WorldObject refusal, unowned Item preservation, unchanged shop facts, source-capture drift and invalid Git-base descriptors. No binary/reference copies committed.",
+  "next": "Continue native provider regeneration and source corpse PG qualification immediately; do not stop or defer missing mechanisms."
+}

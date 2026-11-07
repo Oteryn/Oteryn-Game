@@ -1620,19 +1620,31 @@
   },
   "current_batch": {
     "state": "GREEN",
-    "kind": "generic mechanism and engine reuse",
-    "record": "qlane-meta/questpc2/BATCH-scoped-corpse-2026-11-07.json",
+    "kind": "remote integration and engine reuse",
+    "record": "qlane-meta/questpc2/BATCH-remote-integration-2026-11-07.json",
     "whole_quests_newly_qualified": 0,
-    "scope": "Native Instance physical corpse MINT, audit/custody/runtime binding and independent W03 rewards; source engine entry/NPC regression reuse.",
     "external_dependencies_to_wait_for": []
   },
   "completed_batch_records": [
-    "BATCH-scoped-corpse-2026-11-07.json"
+    "BATCH-scoped-corpse-2026-11-07.json",
+    "BATCH-instance-corpse-root-2026-11-06.json",
+    "BATCH-native-corpse-binding-2026-11-07.json",
+    "BATCH-corpse-authoring-tools-2026-11-07.json",
+    "BATCH-remote-integration-2026-11-07.json"
   ],
   "next_batch": {
-    "work_owner": "questpc2",
     "state": "AUTHORING",
-    "task": "Prove ordinary Instance corpse-container loot and source-native template admission, then compose owned quest encounters and finish whole quests in3-6 entry batches.",
+    "work_owner": "questpc2",
+    "task": "Use delivered authoring tools to admit Spite/Bakragore source corpse chains, wire materializer and positive declared-capacity loader, obtain native PG RED/GREEN; then source rooms/callbacks and whole quest batches. Primal canonical admission already complete: do not redo it.",
     "external_dependencies_to_wait_for": []
+  },
+  "remote_publications_reused": {
+    "sha": "f9cc1e5508ce71e312bb4806047e6d2628254aed",
+    "records": [
+      "BATCH-instance-corpse-root-2026-11-06.json",
+      "BATCH-native-corpse-binding-2026-11-07.json",
+      "BATCH-corpse-authoring-tools-2026-11-07.json"
+    ],
+    "primal_canonical_corpse_admission": "already complete; native spell-provider membership is not the admission authority"
   }
 }

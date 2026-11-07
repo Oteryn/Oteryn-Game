@@ -303,6 +303,7 @@ pub struct CreatureDeathOccurrenceRefV1 {
     pub actor_local_id: u32,
     #[prost(uint64, tag = "5")]
     pub actor_local_generation: u64,
+    /// Absent for legacy Channel deaths; an Instance carries no Channel ID.
     #[prost(bytes = "vec", optional, tag = "6")]
     pub instance_id: Option<Vec<u8>>,
 }
@@ -325,7 +326,7 @@ fn decode_runtime_scope(
     use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
     check_uuid_v7(world_id)?;
     let world = WorldId::decode(world_id).map_err(|_| AuditError::InvalidInput)?;
-    match instance_id {
+    match &instance_id {
         None => {
             check_uuid_v7(channel_id)?;
             let channel = ChannelId::decode(channel_id).map_err(|_| AuditError::InvalidInput)?;
@@ -335,7 +336,9 @@ fn decode_runtime_scope(
             check_uuid_v7(instance)?;
             RuntimeScopeRefV1::instance(
                 world,
-                instance.try_into().map_err(|_| AuditError::InvalidInput)?,
+                (*instance)
+                    .try_into()
+                    .map_err(|_| AuditError::InvalidInput)?,
             )
             .map_err(|_| AuditError::InvalidInput)
         }
@@ -792,9 +795,13 @@ pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), 
     let value = decode_common_envelope(wire)?;
     let mint = decode_payload(&value.payload)?;
     let scope = mint_scope(&mint)?;
-    if value.world_id.as_deref() != Some(scope.world_id.as_slice())
-        || value.channel_id != scope.channel_id
-        || value.instance_id != scope.instance_id
+    if value.world_id.as_deref() != Some(scope.world_id().as_bytes().as_slice())
+        || value.channel_id.as_deref()
+            != scope
+                .channel_id()
+                .as_ref()
+                .map(|id| id.as_bytes().as_slice())
+        || value.instance_id.as_deref() != scope.instance_id().as_ref().map(|id| id.as_slice())
         || value.game_session_id.is_some()
         || value.command_id.is_some()
         || value.causation.is_some()
@@ -804,26 +811,16 @@ pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), 
     Ok((value, mint))
 }
 
-/// Exact wire namespace of a validated death; a Ground destination repeats it
-/// and a corpse-container destination leaves it implicit.
-struct MintEventScope {
-    world_id: Vec<u8>,
-    channel_id: Option<Vec<u8>>,
-    instance_id: Option<Vec<u8>>,
-}
-
-fn mint_scope(mint: &OneItemMintV1) -> Result<MintEventScope, AuditError> {
+/// The event's World and Channel: the death's own scope, which a Ground
+/// destination repeats exactly ([`check_mint`]) and a corpse-container
+/// destination leaves implicit.
+fn mint_scope(mint: &OneItemMintV1) -> Result<crate::foundation::RuntimeScopeRefV1, AuditError> {
     let death = mint
         .source
         .as_ref()
         .and_then(|source| source.death_occurrence.as_ref())
         .ok_or(AuditError::InvalidInput)?;
-    death.runtime_scope()?;
-    Ok(MintEventScope {
-        world_id: death.world_id.clone(),
-        channel_id: (!death.channel_id.is_empty()).then(|| death.channel_id.clone()),
-        instance_id: death.instance_id.clone(),
-    })
+    death.runtime_scope()
 }
 
 /// Operation-independent RL-07 envelope gate shared by MINT and TRANSFER:
@@ -914,9 +911,9 @@ pub fn encode_mint_event(
         privacy_class: RESTRICTED_PLAYER_LINKED,
         retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
-        world_id: Some(scope.world_id),
-        channel_id: scope.channel_id,
-        instance_id: scope.instance_id,
+        world_id: Some(scope.world_id().as_bytes().to_vec()),
+        channel_id: scope.channel_id().map(|id| id.as_bytes().to_vec()),
+        instance_id: scope.instance_id().map(|id| id.to_vec()),
         transaction_event: Some(TransactionEventRefV1 {
             transaction_id: identity.transaction_id.to_vec(),
             ordinal: 1,
@@ -1784,6 +1781,61 @@ pub(super) mod tests {
             .runtime_scope_ownership_generation = 2;
         assert_eq!(
             encode_mint_event(identity(), other_generation, Type2EventTuple::V1),
+            Err(AuditError::InvalidInput)
+        );
+    }
+
+    #[test]
+    fn instance_mint_preserves_namespace_and_exact_envelope_scope() {
+        let mut value = mint();
+        let ground = value.destination.as_mut().unwrap();
+        ground.channel_id.clear();
+        ground.instance_id = Some(uuid(2));
+        let death = value
+            .source
+            .as_mut()
+            .unwrap()
+            .death_occurrence
+            .as_mut()
+            .unwrap();
+        death.channel_id.clear();
+        death.instance_id = Some(uuid(2));
+        let wire = encode_mint_event(identity(), value.clone(), Type2EventTuple::V1).unwrap();
+        let (envelope, decoded) = decode_envelope(&wire).unwrap();
+        assert_eq!(decoded, value);
+        assert_eq!(envelope.channel_id, None);
+        assert_eq!(envelope.instance_id, Some(uuid(2)));
+
+        let mut foreign = value.clone();
+        foreign.destination.as_mut().unwrap().instance_id = Some(uuid(3));
+        assert_eq!(
+            encode_mint_event(identity(), foreign, Type2EventTuple::V1),
+            Err(AuditError::InvalidInput)
+        );
+        let mut channel_twin = value.clone();
+        let ground = channel_twin.destination.as_mut().unwrap();
+        ground.instance_id = None;
+        ground.channel_id = uuid(2);
+        assert_eq!(
+            encode_mint_event(identity(), channel_twin, Type2EventTuple::V1),
+            Err(AuditError::InvalidInput)
+        );
+        let death = value
+            .source
+            .as_mut()
+            .unwrap()
+            .death_occurrence
+            .as_mut()
+            .unwrap();
+        death.channel_id = uuid(2);
+        assert_eq!(
+            encode_mint_event(identity(), value, Type2EventTuple::V1),
+            Err(AuditError::InvalidInput)
+        );
+        let mut wrong_envelope = envelope;
+        wrong_envelope.channel_id = Some(uuid(2));
+        assert_eq!(
+            decode_envelope(&wrong_envelope.encode_to_vec()),
             Err(AuditError::InvalidInput)
         );
     }
