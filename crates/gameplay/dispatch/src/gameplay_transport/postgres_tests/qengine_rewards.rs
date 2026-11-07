@@ -159,6 +159,13 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-royal-costume-base" => &["outfit", "yes", "armor"],
         "l4-royal-costume-shield" => &["outfit", "yes", "shield"],
         "l4-royal-costume-crown" => &["outfit", "yes", "crown"],
+        "l5-oriental-female-first-start" => &["outfit", "yes"],
+        "l5-oriental-female-comb" => &["comb"],
+        "l5-oriental-female-second-start" => &["task", "yes"],
+        "l5-oriental-female-ape-fur" => &["ape fur"],
+        "l5-oriental-female-fish-fins" => &["fish fins"],
+        "l5-oriental-female-wings" => &["enchanted chicken wings"],
+        "l5-oriental-female-blue-cloth" => &["blue cloth"],
         "l4-pirate-sabre-start" => &["task", "yes"],
         "l4-pirate-eye-patches" => &["eye patches"],
         "l4-pirate-peg-legs" => &["peg legs"],
@@ -615,7 +622,7 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
-    if name.starts_with("qengine-rewards-l2-") || name.starts_with("qengine-rewards-l3-") || name.starts_with("qengine-rewards-l4-") {
+    if name.starts_with("qengine-rewards-l2-") || name.starts_with("qengine-rewards-l3-") || name.starts_with("qengine-rewards-l4-") || name.starts_with("qengine-rewards-l5-") {
         return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
     }
     if name == "qengine-rewards-l1-legacy-decaying" {

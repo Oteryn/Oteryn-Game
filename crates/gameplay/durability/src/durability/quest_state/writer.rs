@@ -153,9 +153,13 @@ impl DurabilityRoot {
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
     ) -> Result<QuestTransitionOutcome> {
-        let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
-            .map_err(|_| CharacterProgressionError::InvalidInput)?
-            .into_iter()
+        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        if reward_callbacks.iter().any(|c| c.participants.iter().enumerate().any(|(i,_)|
+            oteryn_gameplay_quests::quest::reward_callbacks::participant_key(&c.key,i) == request.transition_key)) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let reward_callback = reward_callbacks.into_iter()
             .find(|c| c.key == request.transition_key);
         if reward_callback.is_some() != reward_admission.is_some()
             || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
@@ -493,6 +497,7 @@ impl DurabilityRoot {
                     keys.extend(final_flags.iter().map(String::as_str));
                     if let Some(callback) = &reward_callback {
                         keys.extend(callback.requires.iter().map(|r| r.track.as_str()));
+                        keys.extend(callback.participants.iter().flat_map(|p| p.storage.iter().map(|s| s.track.as_str())));
                     }
                     keys.sort_unstable(); keys.dedup();
                     let rows = sqlx::query(
@@ -509,7 +514,7 @@ impl DurabilityRoot {
                     for row in &rows {
                         let key: String = row.try_get("track_key")?;
                         let read_only = reward_callback.as_ref().is_some_and(|c|
-                            c.requires.iter().any(|r| r.track == key));
+                            c.requires.iter().any(|r| r.track == key) || c.participants.iter().any(|p| p.storage.iter().any(|s| s.track == key)));
                         let expected_owner: &str = if read_only {
                             &catalogue.track(&key).ok_or(DurabilityError::InvalidStoredState)?.quest
                         } else { quest };
@@ -556,7 +561,8 @@ impl DurabilityRoot {
                     } else { refusal };
                     // Reading all Grizzly inputs does not reserve capacity for untouched tracks.
                     let written_keys: Vec<&str> = grizzly_plan.as_ref().map_or_else(
-                        || keys.clone(),
+                        || keys.iter().copied().filter(|key| reward_callback.as_ref().is_none_or(|c|
+                            !c.requires.iter().any(|r| r.track == *key))).collect(),
                         |plan| plan.changes.iter().map(|change| change.track.as_str()).collect(),
                     );
                     let new_tracks = written_keys.iter().filter(|key| !stored.contains_key(**key)).count();
@@ -668,7 +674,7 @@ impl DurabilityRoot {
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
-                        && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref()).await?
+                        && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let Some(world) = &callback
                         && let Some(reward) = &world.effects.outfit_reward

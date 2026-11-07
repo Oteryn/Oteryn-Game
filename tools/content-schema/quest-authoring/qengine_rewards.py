@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -229,8 +229,8 @@ def build():
             'topic':0,'next_topic':6,'storage':callbacks[-1]['storage'],
             'reply':['Did you bring me the vampiric crest?']})
     # Parent prerequisites stay read-only and retain their original quest owner.
-    def requirement(track,value):
-        return {'track':track,'minimum':value,'maximum':value}
+    def requirement(track,value,maximum=None):
+        return {'track':track,'minimum':value,'maximum':value if maximum is None else maximum}
     library=prefix+'u11_80/the_secret_library/'
     library_ready=[storage(library+'library_permission',6,7),storage(library+'questlog',-1,1,1)]
     for name,value in [('small_islands',4),('liquid_death',8),('asuras',7),('falcon_bastion',3),('darashia',9),('mo_ta',8)]:
@@ -359,6 +359,41 @@ def build():
         take=[(6101,1),(6102,1),(6100,1),(6099,1)],outfit=('pirate',2),topic=5)
     offers.append({'npc':'oteryn:npc.ariella','keywords':['task'],'topic':0,'next_topic':5,
         'storage':[storage(hat,1,2)],'reply':['Did you bring the shirt, sabre, hat and eye patch?']})
+    oriental=prefix+'u7_8/oriental_outfits/'
+    orc_powder=prefix+'u7_6/explorer_society/the_orc_powder'
+    # The door belongs to Oriental; the source addon/global-start tracks retain their shared owner.
+    for sex,first_npc,second_npc in [('female','ishina','miraia'),('male','habdel','razan')]:
+        first=oriental+'first_oriental_addon'
+        second=oriental+'second_oriental_addon'
+        common='oteryn:quest-progress/outfit_quest/default_start'
+        states=[storage(first,-1,1,0),storage(common,-1,1,1)]
+        add('l5-oriental-'+sex+'-first-start','outfit_and_addon_quests',first_npc,['yes'],states,topic=2,
+            requires=[requirement(orc_powder,35,2147483647)])
+        callbacks[-1]['creation_sex']=sex
+        callbacks[-1]['participants']=[{'quest':'oteryn:quest.oriental_outfits_quest',
+            'storage':[storage(oriental+'oriental_door',0,1,1)]}]
+        for words,before,after in [(['outfit'],0,1),(['yes'],1,2)]:
+            offers.append({'npc':'oteryn:npc.'+first_npc,'keywords':words,'topic':before,'next_topic':after,
+                'storage':states,'requires':[requirement(orc_powder,35,2147483647)],'reply':['Could you bring a mermaid comb?']})
+        add('l5-oriental-'+sex+'-comb','outfit_and_addon_quests',first_npc,['yes'],[storage(first,1,2)],
+            take=[(5945,1)],outfit=('oriental',1),topic=3)
+        callbacks[-1]['creation_sex']=sex
+        offers.append({'npc':'oteryn:npc.'+first_npc,'keywords':['comb'],'topic':0,'next_topic':3,
+            'storage':[storage(first,1,2)],'reply':['Have you brought the mermaid comb?']})
+        states=[storage(second,-1,1,0),storage(common,-1,1,1)]
+        add('l5-oriental-'+sex+'-second-start','outfit_and_addon_quests',second_npc,['yes'],states,topic=2)
+        callbacks[-1]['creation_sex']=sex
+        for words,before,after in [(['task'],0,1),(['yes'],1,2)]:
+            offers.append({'npc':'oteryn:npc.'+second_npc,'keywords':words,'topic':before,'next_topic':after,
+                'storage':states,'reply':['Bring ape fur, fish fins, enchanted chicken wings and blue cloth in order.']})
+        for name,word,item,count,before in [('ape-fur','ape fur',5883,100,1),('fish-fins','fish fins',5895,100,2),
+            ('wings','enchanted chicken wings',5891,2,3),('blue-cloth','blue cloth',5912,100,4)]:
+            states=[storage(second,before,before+1)]
+            add('l5-oriental-'+sex+'-'+name,'outfit_and_addon_quests',second_npc,['yes'],states,
+                take=[(item,count)],outfit=('oriental',2) if before==4 else None,topic=3)
+            callbacks[-1]['creation_sex']=sex
+            offers.append({'npc':'oteryn:npc.'+second_npc,'keywords':[word],'topic':0,'next_topic':3,
+                'storage':states,'reply':['Did you bring the '+word+'?']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -423,7 +458,7 @@ def validate_callbacks(document):
     declarations=document.get('tracks',[])
     declared=set()
     readonly={r['track'] for c in document['callbacks'] for r in c.get('requires',[])}
-    written={r['track'] for c in document['callbacks'] for r in c['storage']}
+    written={r['track'] for c in document['callbacks'] for r in c['storage']+[s for p in c.get('participants',[]) for s in p['storage']]}
     for track in declarations:
         if (track['key'] in declared or not track['min']<=track['initial']<=track['max']
             or track['key'] not in readonly or track['key'] in written):
@@ -432,6 +467,15 @@ def validate_callbacks(document):
     keys=set()
     for callback in document['callbacks']:
         storage=callback['storage']
+        participants=callback.get('participants',[])
+        participant_storage=[s for p in participants for s in p['storage']]
+        all_keys=[s['track'] for s in storage+participant_storage]
+        if (len(all_keys)>8 or len(all_keys)!=len(set(all_keys))
+            or len({p['quest'] for p in participants})!=len(participants)
+            or any(p['quest']==callback['quest'] for p in participants)
+            or any(s['minimum']>s['maximum'] for s in participant_storage)
+            or {r['track'] for r in callback.get('requires',[])} & set(all_keys)):
+            raise ValueError('invalid reward participants '+callback['key'])
         requires=callback.get('requires',[])
         if (callback['key'] in keys
             or len({s['track'] for s in storage})!=len(storage)

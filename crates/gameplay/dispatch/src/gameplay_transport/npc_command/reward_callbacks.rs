@@ -51,7 +51,11 @@ pub(super) fn prepare(
             let text = intent.text.trim().to_ascii_lowercase();
             let eligible = |storage: &[Storage]| {
                 storage.iter().all(|s| {
-                    (s.minimum..=s.maximum).contains(&tracks.get(&s.track).copied().unwrap_or(-1))
+                    tracks
+                        .get(&s.track)
+                        .copied()
+                        .or_else(|| catalogue.track(&s.track).map(|track| track.initial))
+                        .is_some_and(|value| (s.minimum..=s.maximum).contains(&value))
                 })
             };
             let mut selected = callbacks.iter().filter(|c| {
@@ -59,6 +63,7 @@ pub(super) fn prepare(
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
+                    && c.participants.iter().all(|p| eligible(&p.storage))
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
             if let Some(callback) = selected.next() {

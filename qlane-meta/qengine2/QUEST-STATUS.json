@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 12,
-    "unfinished": 54,
+    "qualified": 13,
+    "unfinished": 53,
     "blocked": 0
   },
   "quests": [
@@ -1120,7 +1120,7 @@
     {
       "canonical": "unresolved:questpc2:oriental_outfits_quest",
       "title": "Oriental Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc2",
@@ -1131,7 +1131,13 @@
           "matched_path": "prior_rounds/N-Q-before-L3/quests"
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
+      "qualification": {
+        "batch": "L1-05A",
+        "resolved_canonical": "oteryn:quest.oriental_outfits_quest",
+        "scope": "Complete female source introductions and all exact hand-ins;both gender paths authored. Wrong-sex direct native commit and standalone participant bypass refuse;foreign Oriental door retains owner/pin and same primary revision;forged late participant rejected by PostgreSQL;replay,3 immutable account facts and ordinary final appearance selection pass. Only external Explorer Society prerequisite arranged.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=79.80126811s success=true"
+      }
     },
     {
       "canonical": "unresolved:questpc2:pirate_outfits_quest",
@@ -2023,7 +2029,7 @@
       "unresolved:questpc2:norseman_outfits_quest",
       "oteryn:quest.the_ice_islands_quest"
     ],
-    "phase": "Checkpoint:12qualified remain pushed;current generic participant/Oriental production code is still uncommitted until PG GREEN. Final selector check54.94s/clippy1m16s passed. SQL-only alias correction retry51680 now running.",
+    "phase": "Oriental and generic native participants QUALIFIED;immediate source commit/push. Follow-on content/world/pin checks pending. Continue Norseman+Formorgar next.",
     "reuse_audit": "Refreshed questpc2..8 primary branches; no current matched entry QUALIFIED; no newer reward sex guard found. Existing immutable Character sex reader reused. Audit /tmp/qengine2-batch5-status-audit.log.",
     "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l5_oriental -- --nocapture",
     "red_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=45.088365726s success=false",
@@ -2036,6 +2042,28 @@
       "Actual PostgreSQL attempt2.554788608s failed executing SQL1001:syntax error at CASE expression. Parenthesized CASE expression;no assertion/proof weakened. Same focused test retry70137 /tmp/qengine2-batch5-oriental-green2.log;build41.52s completed.",
       "PostgreSQL79.793748713s exercised source but first-stage receipt assertion failed0vs1. Dialogue eligibility used hardcoded absent=-1 for an existing Door track with declared initial0;selector now uses admitted catalogue initial and refuses unknown tracks. All source/receipt assertions retained.",
       "PostgreSQL77.366610395s reached native foreign write but rejected ambiguous e reference in participant proof aggregate;renamed JSON alias declared_storage. Same proof/test retained;retry51680 green4.log."
+    ],
+    "slices": [
+      {
+        "id": "L1-05A",
+        "status": "QUALIFIED",
+        "entries": [
+          "unresolved:questpc2:oriental_outfits_quest"
+        ],
+        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=45.088365726s success=false",
+        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=79.80126811s success=true",
+        "result": "1passed;0failed;0ignored;79.80s;actualPostgreSQL18.6",
+        "scope": "Complete female source introductions and all exact hand-ins;both gender paths authored. Wrong-sex direct native commit and standalone participant bypass refuse;foreign Oriental door retains owner/pin and same primary revision;forged late participant rejected by PostgreSQL;replay,3 immutable account facts and ordinary final appearance selection pass. Only external Explorer Society prerequisite arranged.",
+        "checks": [
+          "cargo fmt --all --check;explicit mounted leaf rustfmt",
+          "quests/durability/dispatch all-feature check1m02s;final selector dispatch check54.94s",
+          "3 Rust reward-callback unit tests1.17s",
+          "strict three-crate clippy2m55s;final selector dispatch clippy1m16s",
+          "18authoring tests6.122s;callback/placement reproduction",
+          "repo pin-refresh81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7"
+        ],
+        "follow_on_verification": "pending after immediate green source push"
+      }
     ]
   }
 }

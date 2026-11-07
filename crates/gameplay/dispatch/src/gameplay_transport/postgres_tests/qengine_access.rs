@@ -817,6 +817,8 @@ async fn wardrobe(
         next_topic: 0,
         storage: callback.storage.clone(),
         requires: vec![],
+        participants: vec![],
+        creation_sex: None,
         take: vec![],
         fee: None,
         present: vec![],

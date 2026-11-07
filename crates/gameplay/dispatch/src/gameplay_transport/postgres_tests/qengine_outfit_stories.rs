@@ -61,6 +61,13 @@ fn qengine_l4_pirate_full_source_outfit_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l4-pirate-story")
 }
 
+#[test]
+fn qengine_l5_oriental_female_complete_source_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l5-oriental-story")
+}
+
+const ORC_POWDER: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder";
+
 const SHATTERED: &str = "oteryn:quest-progress/quest/u7_8/the_shattered_isles/";
 
 const ANNIHILATOR: &str = "oteryn:quest-progress/quest/u7_24/the_annihilator/reward";
@@ -358,12 +365,27 @@ pub(super) async fn exercise(
             ],
             155,
         ),
+        "qengine-rewards-l5-oriental-story" => (
+            "oriental",
+            &[
+                ("female-first-start", None, None, None),
+                ("female-comb", Some((5945, 1)), None, Some(1)),
+                ("female-second-start", None, None, None),
+                ("female-ape-fur", Some((5883, 100)), None, None),
+                ("female-fish-fins", Some((5895, 100)), None, None),
+                ("female-wings", Some((5891, 2)), None, None),
+                ("female-blue-cloth", Some((5912, 100)), None, Some(2)),
+            ],
+            150,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let mut callbacks = Vec::new();
     for (suffix, take, present, addon) in steps {
-        let batch = if name.starts_with("qengine-rewards-l4-") {
+        let batch = if name.starts_with("qengine-rewards-l5-") {
+            "l5"
+        } else if name.starts_with("qengine-rewards-l4-") {
             "l4"
         } else if name.starts_with("qengine-rewards-l3-") {
             "l3"
@@ -450,6 +472,12 @@ pub(super) async fn exercise(
                     maximum: 5,
                 },
             ]
+        } else if family == "oriental" && suffix.ends_with("first-start") {
+            vec![Requirement {
+                track: ORC_POWDER.into(),
+                minimum: 35,
+                maximum: i64::from(i32::MAX),
+            }]
         } else if family == "glooth-engineer" {
             if *suffix == "base" {
                 vec![Requirement {
@@ -494,6 +522,16 @@ pub(super) async fn exercise(
         );
         callbacks.push(callback);
     }
+    if family == "oriental" {
+        for callback in &callbacks {
+            assert_eq!(
+                serde_json::to_value(callback)?
+                    .get("creation_sex")
+                    .and_then(|v| v.as_str()),
+                Some("female")
+            );
+        }
+    }
     // Build one fixed catalogue for the whole story. Only external prerequisite
     // quests are arranged; the outfit's own stages run through actual NPC commands.
     let canonical = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
@@ -506,11 +544,30 @@ pub(super) async fn exercise(
             .storage
             .iter()
             .map(|s| s.track.as_str())
+            .chain(
+                callback
+                    .participants
+                    .iter()
+                    .flat_map(|p| p.storage.iter().map(|s| s.track.as_str())),
+            )
             .chain(required.iter().map(|r| r.track.as_str()))
         {
             tracks.insert(
                 key.to_owned(),
                 canonical.track(key).cloned().ok_or("canonical track")?,
+            );
+        }
+        for (i, _) in callback.participants.iter().enumerate() {
+            transitions.push(
+                canonical
+                    .transition(
+                        &oteryn_gameplay_quests::quest::reward_callbacks::participant_key(
+                            &callback.key,
+                            i,
+                        ),
+                    )
+                    .cloned()
+                    .ok_or("participant transition")?,
             );
         }
         if readonly.is_none() {
@@ -522,6 +579,31 @@ pub(super) async fn exercise(
                 .cloned()
                 .ok_or("canonical transition")?,
         );
+    }
+    if family == "oriental" {
+        let opposite = all
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/l5-oriental-male-first-start")
+            .ok_or("male source counterpart")?;
+        transitions.push(
+            canonical
+                .transition(&opposite.key)
+                .cloned()
+                .ok_or("male transition")?,
+        );
+        for (i, _) in opposite.participants.iter().enumerate() {
+            transitions.push(
+                canonical
+                    .transition(
+                        &oteryn_gameplay_quests::quest::reward_callbacks::participant_key(
+                            &opposite.key,
+                            i,
+                        ),
+                    )
+                    .cloned()
+                    .ok_or("male participant")?,
+            );
+        }
     }
     let initial: Vec<(String, i64)> = if family == "battle-mage" {
         [
@@ -538,6 +620,8 @@ pub(super) async fn exercise(
         .collect()
     } else if family == "festive" {
         vec![(FEATHERS.into(), 1)]
+    } else if family == "oriental" {
+        vec![(ORC_POWDER.into(), 35)]
     } else if family == "pirate" {
         vec![
             (format!("{SHATTERED}access_to_laguna_island"), 1),
@@ -648,7 +732,10 @@ pub(super) async fn exercise(
             .ok_or("capabilities")?;
     // Earn ordinary carrying capacity through the real progression owner for
     // the largest source recipes, preserving every native weight check.
-    if matches!(family, "battle-mage" | "royal-costume" | "pirate") {
+    if matches!(
+        family,
+        "battle-mage" | "royal-costume" | "pirate" | "oriental"
+    ) {
         let carrying_level = if family == "royal-costume" { 200 } else { 50 };
         use crate::durability::character_progression::{
             ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
@@ -703,8 +790,92 @@ pub(super) async fn exercise(
             .map_err(debug)?;
         assert!(matches!(outcome, ExperienceCommitOutcome::Committed(_)));
     }
+    if family == "oriental" {
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        let native = owner
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native")?;
+        let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+            .with_wheel(owner.premium_coordinator);
+        let before = counts(h).await?;
+        let outcome = {
+            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            slot.commit_quest_reward(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: "oteryn:quest-reward/l5-oriental-male-first-start".into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(9300).map_err(debug)?,
+                    )),
+                },
+                owner.quest_catalogue.clone().ok_or("catalogue")?,
+                crate::durability::reward_claim_mint::QuestRewardAdmission {
+                    native,
+                    weights: &weights,
+                    fee_payment: None,
+                },
+            )
+            .await
+            .map_err(debug)?
+        };
+        assert!(
+            matches!(
+                outcome,
+                QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+            ),
+            "immutable creation sex must guard the native commit: {outcome:?}"
+        );
+        assert_eq!(counts(h).await?, before);
+        let participants: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_participants")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(
+            participants, 0,
+            "wrong-sex source cannot write the foreign owner"
+        );
+        let bypass = {
+            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            slot.commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key:
+                        oteryn_gameplay_quests::quest::reward_callbacks::participant_key(
+                            "oteryn:quest-reward/l5-oriental-female-first-start",
+                            0,
+                        ),
+                    cause: QuestCause::Command(CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(9301).map_err(debug)?,
+                    )),
+                },
+                owner.quest_catalogue.clone().ok_or("catalogue")?,
+            )
+            .await
+        };
+        assert!(matches!(bypass,Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)),"participant cannot bypass the source reward owner: {bypass:?}");
+        assert_eq!(counts(h).await?, before);
+    }
     let mut npcs = BTreeMap::new();
-    if family == "pirate" {
+    if family == "oriental" {
+        let keys = ["oteryn:npc.ishina", "oteryn:npc.miraia"];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "pirate" {
         let keys = [
             "oteryn:npc.raymond_striker",
             "oteryn:npc.duncan",
@@ -1052,5 +1223,37 @@ pub(super) async fn exercise(
     ));
     let root: (i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key LIKE $1),(SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key LIKE $1)").bind(format!("oteryn:outfit.{}/quest-grant/%",family.replace('-',"_"))).fetch_one(&h.pool).await?;
     assert_eq!(root, (3, 3), "one base and two immutable addon facts");
+    if family == "oriental" {
+        let (value, owner, same_revision): (i64,String,bool) = sqlx::query_as("SELECT t.value,t.quest_key,t.committed_character_revision=r.committed_character_revision FROM game_character_quest_tracks t JOIN game_quest_reward_participants p ON p.character_id=t.character_id AND p.quest_key=t.quest_key AND t.track_key=ANY(p.track_keys) JOIN game_character_quest_receipts r ON r.character_id=p.character_id AND r.cause_id=p.cause_id AND r.cause_ordinal=p.cause_ordinal AND r.transition_key=p.transition_key WHERE t.track_key='oteryn:quest-progress/quest/u7_8/oriental_outfits/oriental_door'").fetch_one(&h.pool).await?;
+        assert_eq!(value, 1);
+        assert_eq!(owner, "oteryn:quest.oriental_outfits_quest");
+        assert!(
+            same_revision,
+            "door and source introduction share one atomic revision"
+        );
+        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_participants")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(count, 1, "literal replay cannot repeat foreign effects");
+        let mut forged = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_quest_reward_participants(character_id,cause_id,cause_ordinal,transition_key,participant_index,quest_key,plan,pinned_content_revision,definition_hash,track_keys,values_before,values_after,committed_character_revision) SELECT character_id,cause_id,cause_ordinal,transition_key,2,'oteryn:quest.forged_participant',jsonb_set(plan,'{quest}','\"oteryn:quest.forged_participant\"'::jsonb),pinned_content_revision,definition_hash,track_keys,values_before,values_after,committed_character_revision FROM game_quest_reward_participants WHERE participant_index=0").execute(&mut *forged).await?;
+        let error = forged
+            .commit()
+            .await
+            .expect_err("a later transaction cannot attach a participant to an old source");
+        let database = error
+            .as_database_error()
+            .ok_or("database constraint refusal")?;
+        assert_eq!(database.code().as_deref(), Some("23514"));
+        assert!(database.message().contains("exact same-transaction source"));
+        let retained: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_participants")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(
+            retained, 1,
+            "forged late participant transaction rolled back"
+        );
+    }
     Ok(())
 }

@@ -120,6 +120,7 @@ mod contents;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
+mod quest_participants;
 pub use quest::{QuestRewardAdmission, QuestRewardFeePayment};
 mod soul_war;
 mod tibiadrome;

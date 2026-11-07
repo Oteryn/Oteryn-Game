@@ -14,6 +14,20 @@ class QuestRewards(unittest.TestCase):
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
 
+    def test_oriental_source_costs_gender_and_foreign_door_owner(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        for sex in ('female','male'):
+            start=callbacks['l5-oriental-'+sex+'-first-start']
+            self.assertEqual(start['creation_sex'],sex)
+            self.assertEqual(start['participants'],[{'quest':'oteryn:quest.oriental_outfits_quest','storage':[{
+                'track':'oteryn:quest-progress/quest/u7_8/oriental_outfits/oriental_door',
+                'minimum':0,'maximum':1,'set':1}]}])
+            self.assertEqual(start['requires'][0]['minimum'],35)
+            for name,item,count in [('comb',5945,1),('ape-fur',5883,100),('fish-fins',5895,100),('wings',5891,2),('blue-cloth',5912,100)]:
+                c=callbacks['l5-oriental-'+sex+'-'+name]
+                self.assertEqual(c['take'],[{'item':f'oteryn:item.tibia.i{item}','count':count}])
+                self.assertEqual(c['creation_sex'],sex)
+
     def test_qengine_rewards_outputs_reproduce_and_validate(self):
         q.validate_callbacks(self.callbacks)
         for path,raw in self.outputs.items():
@@ -126,10 +140,10 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),34)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),38)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),23)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

@@ -475,6 +475,89 @@
       ]
     },
     {
+      "npc": "oteryn:npc.habdel",
+      "keywords": [
+        "comb"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you brought the mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.habdel",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Could you bring a mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.habdel",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Could you bring a mermaid comb?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.irmana",
       "keywords": [
         "addon"
@@ -755,6 +838,215 @@
       ],
       "reply": [
         "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ishina",
+      "keywords": [
+        "comb"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you brought the mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ishina",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Could you bring a mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ishina",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Could you bring a mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "ape fur"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you bring the ape fur?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "blue cloth"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Did you bring the blue cloth?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "enchanted chicken wings"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Did you bring the enchanted chicken wings?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "fish fins"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Did you bring the fish fins?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring ape fur, fish fins, enchanted chicken wings and blue cloth in order."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring ape fur, fish fins, enchanted chicken wings and blue cloth in order."
       ]
     },
     {
@@ -1083,6 +1375,132 @@
       ],
       "reply": [
         "The donation is 7500 silver tokens and 6250 gold tokens."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "ape fur"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you bring the ape fur?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "blue cloth"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Did you bring the blue cloth?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "enchanted chicken wings"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Did you bring the enchanted chicken wings?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "fish fins"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Did you bring the fish fins?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring ape fur, fish fins, enchanted chicken wings and blue cloth in order."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring ape fur, fish fins, enchanted chicken wings and blue cloth in order."
       ]
     },
     {

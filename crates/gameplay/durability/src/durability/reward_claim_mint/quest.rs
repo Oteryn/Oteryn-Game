@@ -86,6 +86,8 @@ pub(crate) async fn apply(
     callback: &RewardCallback,
     admission: QuestRewardAdmission<'_>,
     achievement: Option<&AchievementGrantRequest>,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    reserve_primary_state: bool,
 ) -> std::result::Result<bool, DurabilityError> {
     let super::super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
@@ -94,6 +96,18 @@ pub(crate) async fn apply(
         return Ok(false);
     }
     if callback.outfit.as_ref().is_some_and(|reward| !outfit_compatible(admission.native, reward)) {
+        return Ok(false);
+    }
+    if let Some(required) = callback.creation_sex {
+        use oteryn_gameplay_quests::quest::reward_callbacks::CreationSex;
+        let sex = super::super::character_appearance::item_action_sex(tx,fence.character_id).await?;
+        let expected = match required {
+            CreationSex::Female => crate::domain::appearance::Sex::Female,
+            CreationSex::Male => crate::domain::appearance::Sex::Male,
+        };
+        if sex != expected { return Ok(false); }
+    }
+    if !super::quest_participants::apply(tx,fence,request,callback,catalogue,reserve_primary_state).await? {
         return Ok(false);
     }
     if let Some(fee) = &callback.fee {

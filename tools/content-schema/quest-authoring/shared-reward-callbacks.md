@@ -102,3 +102,20 @@ Carried-only prices never debit Bank. Missing inputs or any later grant refusal
 roll back the entire payment, state, item and appearance transaction. A distinct
 native audit cause binds the callback, exact price and bank policy; it retains
 all bounded carried-source audit checks and the Type2 activation tuple.
+
+`creation_sex` optionally requires immutable Character creation sex (`female` or
+`male`). The fenced appearance owner reads it before any source value is paid.
+Selected look, disguise and caller-supplied gender never establish this guard.
+
+`participants` optionally names up to three distinct existing foreign quest
+owners and their exact storage effects. The combined primary and participant
+write set is limited to eight tracks, with no duplicates or overlap with readonly
+prerequisites. A participant cannot invent or reassign a track. Its validated
+transition contributes to its original owner's definition hash. Participants
+cannot be submitted as independent quest transitions. The Character writer locks
+the sorted union of source tracks and admits shared track/state capacity; all
+participants, exact owner pins, source proof, primary stage, costs and rewards
+commit at one revision or roll back together. Immutable participant proofs link
+to the same-transaction source and primary Quest receipt. Original single-owner
+SQL proof arms and row immutability remain in force, with a precise additional
+participant proof arm. A participant never completes another quest.

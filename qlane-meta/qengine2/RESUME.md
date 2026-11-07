@@ -255,3 +255,12 @@ passed. PG77.366610395s reachednativewrite thenconstraintfunction rejected
 ambiguous e (PLvariable/JSONalias);renamedaliasdeclared_storage,retainedproof.
 PGretry51680 /tmp/qengine2-batch5-oriental-green4.log running. Pushmetadata
 checkpoint for owner30mincadence;pushsourceimmediatelyafteractualGREEN.
+
+Oriental L1-05A QUALIFIED actualPG79.80126811s,1passed/0failed/0ignored.
+All7source stages/exactcosts,originalforeignDoorowner/pin/sameR,wrongsexnative
+refusal,standaloneparticipantbypassrefusal,forgedlateSQLproof23514,replay,
+3immutablefacts,ordinaryfinalappearance PASS. Counts13/66qual,53remaining.
+Generic sourceparticipants/nativecreationsex+catalogueinitialadvisoryfix ready;
+commit/pushimmediately. Checks18Python6.122s,3Rust1.17s,check1m02s+54.94s,
+clippy2m55s+1m16s,fmt,repro,pinrefresh81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7.
+Follow-on123content/5world/pincheckpending aftersourcepush;thenNorsemanRED.
