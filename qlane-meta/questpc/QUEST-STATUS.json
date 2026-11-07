@@ -3539,7 +3539,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Five native shared stock keys3003-3007 PG and strict verification green. Continue exact native5097 door/access bindings, first stock/NPC exchange, party switches and complete source reward composition."
+      "active_batch": "Native stock3003-3007 and doors3001/3002/3003 plus both Hellgate3012 doors PG/strict green. Continue doors3004-3008, source selectors/level gate, party and first stock/NPC exchange, then complete reward composition."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8512,8 +8512,8 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "name": "Five exact native source-stock bindings and runtime owner integration",
-    "validation": "qlane-meta/questpc/cloud-native-key-validation.json",
+    "name": "Five exact native source key-door access entries",
+    "validation": "qlane-meta/questpc/cloud-draconia-door-validation.json",
     "qualified_titles_added": 0,
     "counts": {
       "QUALIFIED": 60,
@@ -9135,6 +9135,11 @@
       "native_checkpoint": "qlane-meta/questpc/cloud-native-key-checkpoint.json",
       "implementation_published": true,
       "native_validation": "qlane-meta/questpc/cloud-native-key-validation.json"
+    },
+    "draconia_source_doors": {
+      "state": "first_five_native_access_entries_pg_green",
+      "validation": "qlane-meta/questpc/cloud-draconia-door-validation.json",
+      "next": "Remaining source doors3004-3008, same native5097 profile and generic owner; then complete source access/party/NPC/stock route."
     }
   },
   "cross_lane_qualified_elsewhere": {

@@ -231,3 +231,21 @@ to this slice's capture; exact position/item/floor/house checks and conflicting
 native attributes remain authoritative. Effective startup attributes must pass
 the same closed pickup eligibility wrapper, including derived unique/action
 refusals, so a stale handle cannot materialize an entry the binder seals.
+
+First native key-door access slice reuses questpc6 commit8aacc18bb's framed M06
+source-door scenario and the same startup binder. The primary table gives doors
+3001=(32814,31597,7),3002=(32796,31597,7),3003=(32811,31597,7), and3012 at
+(32675,31649,10)/(32676,31671,10). All five unique non-House native roots are
+locked door5097; there are no fixture-injected action numbers. Source capture
+checks SHA256/git blob custody, native region hashes and exact source/native shape.
+The binder combines stock and door captures with one global bound/ambiguity check.
+
+Native5098/5099 profiles already exist. Only5097 is added to the existing key-door
+profile importer/admitter. Physics/classification come from the pinned Canary
+items.xml and appearances.dat at99902524e052f37574194466c2949c576e4ab269, verified
+against canary-ground-proof.json (XMLbf773d2c..., appearances17a72b30...). Sources:
+https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/items/items.xml
+https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/items/appearances.dat
+The importer confirms5097/5098 DOOR blocks movement/projectiles;5099 is open.
+Raw source assets remain temporary and are not committed. Existing profile records
+and stock capture stay unchanged; no binary map or native graph admission edit.

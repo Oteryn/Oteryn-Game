@@ -19,7 +19,9 @@ struct Binding {
 pub(super) fn apply(position: TilePos, appearance: u16, house: u32, attrs: &mut Attrs) {
     static CAPTURE: OnceLock<Option<Capture>> = OnceLock::new();
     let Some(capture) = CAPTURE.get_or_init(|| {
-        parse(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-stock-key-bindings.json"))
+        let stock = parse(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-stock-key-bindings.json"))?;
+        let doors = parse(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-route-key-door-bindings.json"))?;
+        combine(stock, doors)
     }) else {
         return;
     };
@@ -50,7 +52,18 @@ fn parse(raw: &str) -> Option<Capture> {
     if raw.len() > 1_048_576 {
         return None;
     }
-    let capture: Capture = serde_json::from_str(raw).ok()?;
+    validate(serde_json::from_str(raw).ok()?)
+}
+
+fn combine(mut capture: Capture, additional: Capture) -> Option<Capture> {
+    if capture.schema != additional.schema {
+        return None;
+    }
+    capture.bindings.extend(additional.bindings);
+    validate(capture)
+}
+
+fn validate(capture: Capture) -> Option<Capture> {
     let unique: std::collections::BTreeSet<_> = capture
         .bindings
         .iter()
@@ -109,6 +122,46 @@ mod tests {
             apply(pos, 2969, 0, &mut conflicting);
             assert_eq!(conflicting.action, Some(42));
         }
+    }
+
+    #[test]
+    fn source_door_bindings_are_exact_and_preserve_native_attributes() {
+        for (x, y, floor, number) in [
+            (32814, 31597, -7, 3001),
+            (32796, 31597, -7, 3002),
+            (32811, 31597, -7, 3003),
+            (32675, 31649, -10, 3012),
+            (32676, 31671, -10, 3012),
+        ] {
+            let pos = TilePos { x, y, floor };
+            let mut attrs = Attrs::default();
+            apply(pos, 5097, 0, &mut attrs);
+            assert_eq!(attrs.action, Some(number));
+            for (p, appearance, house) in [
+                (TilePos { x: x + 1, ..pos }, 5097, 0),
+                (pos, 5098, 0),
+                (pos, 5097, 1),
+            ] {
+                let mut untouched = Attrs::default();
+                apply(p, appearance, house, &mut untouched);
+                assert_eq!(untouched.action, None);
+            }
+            let mut native = Attrs {
+                action: Some(42),
+                ..Attrs::default()
+            };
+            apply(pos, 5097, 0, &mut native);
+            assert_eq!(native.action, Some(42));
+        }
+    }
+
+    #[test]
+    fn source_capture_union_rejects_cross_capture_ambiguity() -> Result<(), String> {
+        let raw = r#"{"schema":1,"bindings":[{"position":[1,2,7],"item":5097,"attribute":"action","value":3001}]}"#;
+        let first = parse(raw).ok_or("first capture")?;
+        let second = parse(raw).ok_or("second capture")?;
+        assert!(combine(first, second).is_none());
+        Ok(())
     }
 
     #[test]
