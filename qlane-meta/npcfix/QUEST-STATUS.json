@@ -263,29 +263,29 @@
   },
   "incoming_cooldown_delivery": {},
   "active_physical_batch": {
-    "name": "retail-population-qualification-37",
+    "name": "retail-population-qualification-38",
     "state": "PG_RED_GREEN_COMPLETE; STRICT_SOURCE_GATES_PENDING",
     "entries": [
-      "Demonguard",
-      "Dustrunner",
-      "Eustacio",
-      "Frank The Plank",
-      "Frans",
-      "George The Boyscout"
+      "Guide Elena",
+      "Jean Claude",
+      "Julian",
+      "Lightfoot",
+      "Livielle",
+      "Lorbas"
     ],
-    "source_commit": "fc2f7163d3e0e70ebe550cbcf26a45619da64848",
+    "source_commit": "50338f10a42a44f0979ae5cd62e7c1d9ff321d04",
     "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 160.83,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-37-red.log",
-      "sha256": "863e1f24162e060c1fd9b52b8ee4461b19721e46a760524a7daa0e8f08a9b71f"
+      "seconds": 80.06,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-38-red.log",
+      "sha256": "6a452b312a5682f99117a16c3bba50d8bb4d13fd3c9451727790056506555bbc"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 138.19,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-37-green.log",
-      "sha256": "a20ab4e4e18a51ff1aab953c16e5c2eee2d24fb733ea30f2625f84672251d4f0"
+      "seconds": 156.02,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-38-green.log",
+      "sha256": "b46b1a86e23a4e23bd962da203884806928e6d46ffce9e3f0fc8ec92ee9050ef"
     }
   },
   "active_refusal_batch": {
@@ -7627,6 +7627,32 @@
         "seconds": 138.19,
         "log": "/tmp/npcfix-evidence/retail-population-qualification-37-green.log",
         "sha256": "a20ab4e4e18a51ff1aab953c16e5c2eee2d24fb733ea30f2625f84672251d4f0"
+      }
+    },
+    {
+      "name": "retail-population-qualification-38",
+      "state": "PG_RED_GREEN_COMPLETE; STRICT_SOURCE_GATES_PENDING",
+      "entries": [
+        "Guide Elena",
+        "Jean Claude",
+        "Julian",
+        "Lightfoot",
+        "Livielle",
+        "Lorbas"
+      ],
+      "source_commit": "50338f10a42a44f0979ae5cd62e7c1d9ff321d04",
+      "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 80.06,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-38-red.log",
+        "sha256": "6a452b312a5682f99117a16c3bba50d8bb4d13fd3c9451727790056506555bbc"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 156.02,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-38-green.log",
+        "sha256": "b46b1a86e23a4e23bd962da203884806928e6d46ffce9e3f0fc8ec92ee9050ef"
       }
     }
   ]

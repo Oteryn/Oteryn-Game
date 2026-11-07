@@ -2462,6 +2462,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-38",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Historical ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb 33-placement tree proves the selected cohort absent. Retain exact current audited retail positions and pinned promotion-candidates-v1.json SHA2561f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; source-qualified names unchanged.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.guide_elena",
+          "name": "Guide Elena",
+          "expected": {
+            "x": 32952,
+            "y": 32030,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.jean_claude",
+          "name": "Jean Claude",
+          "expected": {
+            "x": 33006,
+            "y": 32053,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.julian",
+          "name": "Julian",
+          "expected": {
+            "x": 32883,
+            "y": 32076,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lightfoot",
+          "name": "Lightfoot",
+          "expected": {
+            "x": 32921,
+            "y": 32076,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.livielle",
+          "name": "Livielle",
+          "expected": {
+            "x": 32982,
+            "y": 32036,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lorbas",
+          "name": "Lorbas",
+          "expected": {
+            "x": 32695,
+            "y": 32310,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
