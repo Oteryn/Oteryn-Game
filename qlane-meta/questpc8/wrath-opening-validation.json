@@ -1,5 +1,5 @@
 {
-  "state": "WIP: authoring compiles; native first greeting remains RED",
+  "state": "Opening native PG GREEN; whole Wrath remains in progress",
   "scope": "Opening hand-in only; full Wrath remains unqualified",
   "test": "questpc8_wrath_native_opening_exact_materials_crate_and_replay",
   "red": {
@@ -47,9 +47,27 @@
       "oteryn-gameplay-quests",
       "oteryn-gameplay-npc"
     ],
-    "unit_state": "running; four crates; cadence exception",
-    "own_pg": "RED99.213s; command1 hi Rejected",
-    "latest_workspace_check": "PASS5m51s with final fixture edits",
-    "fmt": "PASS"
+    "unit_state": "four-crate run active; item/content run507/510 passed, three content failures collected",
+    "own_pg": "PASS217.555976812s",
+    "latest_workspace_check": "PASS5m18s with capability3 and required trait import",
+    "fmt": "PASS",
+    "main_attempt": {
+      "head": "f641d8d6c",
+      "result": "Aborted conflicts under owner fallback; retry after active runs to avoid changing their inputs"
+    }
+  },
+  "green": {
+    "postgres": true,
+    "duration_seconds": 217.555976812,
+    "marker": "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
+    "log_sha256": "758d68438f76bb2cf7161dbe7c07d52991c14f57894c2a1a05232aea60f2f2a4",
+    "assertions": [
+      "source NPC and source map landing",
+      "missing materials retained",
+      "exact three nails and one wood charged",
+      "exact one marked crate minted",
+      "same command and cold reload cannot duplicate",
+      "whole quest not completed"
+    ]
   }
 }

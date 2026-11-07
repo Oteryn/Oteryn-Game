@@ -1688,8 +1688,13 @@
     "active_validation": {
       "scope": "Opening hand-in native qualification in progress; no whole-quest qualification",
       "proof": "wrath-opening-validation.json",
-      "red": "PostgreSQL99.213s: first hi still Rejected after lease binding/native landing; opening remains WIP",
-      "engine_boundary": "Item-look disguise remains assigned to qengine2; no generic feature implemented locally"
+      "red": "Prior PG99.213s hi rejection; resolved by negotiating NPC capability3",
+      "engine_boundary": "Item-look disguise remains assigned to qengine2; no generic feature implemented locally",
+      "green": {
+        "postgres_seconds": 217.555976812,
+        "marker": "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
+        "scope": "Opening exact-material hand-in and replay only"
+      }
     }
   },
   {

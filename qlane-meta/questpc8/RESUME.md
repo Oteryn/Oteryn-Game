@@ -1,3 +1,23 @@
+# Active checkpoint: Wrath opening PG GREEN
+
+Real native opening passed PostgreSQL217.555976812s, marker
+POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS. Capability3 negotiation
+resolved first hi rejection; keep FreshAdmissionAuthority import, real lease
+binding and collision-checked source landing. Exact3nails+1wood charge,
+single11328 crate, missing-input refusal, replay and cold reload all pass.
+Whole Wrath stays unqualified. No quest count increment for this slice.
+Workspace all-target check PASS5m18s; fmtPASS.
+PREPUSH-2 four-crate unit run is active. Content/items run finished507/510
+with3 content failures: starter overlay now10 plus3 native base identities;
+Queen source loot now admitted; Ornamented Shield exact ITEMHOLD-Q precedence
+admits150 default charges, superseding raw1 only for the pinned source leaf.
+Do not weaken assertions or restore unqualified partial charge state.
+Four-crate failures so far: source construction census, source equipment
+census, and one transient invalid-manifest failure during merge attempt.
+Draft exact173-key equipment census generator is in/tmp.
+Main f641d8d6c QNPCFX merge attempted, conflicted, aborted under owner fallback.
+Retry after current unit runs; active tests read these files dynamically.
+
 # PREPUSH-2 checkpoint
 
 Merged main e1ca3e003 cleanly in40c63fb32. Regenerated binding evidence,
