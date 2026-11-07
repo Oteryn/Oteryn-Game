@@ -118,8 +118,11 @@ impl ActivityHandoffOwnerRuntime for Owner {
     fn binding(&self) -> SoulpitActivityBinding {
         self.binding
     }
-    fn kernel(&mut self) -> Result<SoulpitKernel<'_>, SoulpitRuntimeError> {
-        Ok(SoulpitKernel {
+    fn with_kernel<T>(
+        &mut self,
+        operation: impl FnOnce(SoulpitKernel<'_>) -> Result<T, SoulpitRuntimeError>,
+    ) -> Result<T, SoulpitRuntimeError> {
+        operation(SoulpitKernel {
             carrier: &mut self.carrier,
             continuity: &self.continuity,
             content: &self.content,
@@ -127,8 +130,8 @@ impl ActivityHandoffOwnerRuntime for Owner {
             scene: &self.scene,
         })
     }
-    fn survivors(&self) -> Vec<CurrentCharacterGameplayFence> {
-        Vec::new()
+    fn survivors(&self) -> Result<Vec<CurrentCharacterGameplayFence>, SoulpitRuntimeError> {
+        Ok(Vec::new())
     }
     fn read_encounter(&mut self) -> ActivityFuture<'_, SoulpitStoredEncounter> {
         Box::pin(async { Ok(self.stored.clone()) })
@@ -204,8 +207,11 @@ impl ActivityHandoffOwnerRuntime for Owner {
             Ok(())
         })
     }
-    fn return_participants(&mut self, phase: EncounterPhase) -> ActivityFuture<'_, ()> {
-        Box::pin(async move {
+    fn return_participants(
+        &mut self,
+        phase: EncounterPhase,
+    ) -> impl Future<Output = Result<(), SoulpitRuntimeError>> {
+        async move {
             self.returns.push(phase);
             if self.fail_return {
                 self.fail_return = false;
@@ -213,7 +219,7 @@ impl ActivityHandoffOwnerRuntime for Owner {
             } else {
                 Ok(())
             }
-        })
+        }
     }
 }
 

@@ -77,6 +77,21 @@ pub(crate) fn project_native_record(
 }
 
 impl CreatureAiTable {
+    /// Preflight the exact native ordinary-creature closure before an encounter debits
+    /// its source item. This grants neither a creature actor nor an AI registration.
+    /// Crystal 201189f data-global/scripts/quests/soulpit/soulpit_fight.lua:37-106.
+    pub fn qualify_native_creature(
+        runtime: &ChannelRuntimeV1,
+        native: &NativeGameplayState,
+        creature: &crate::content::ProjectV2DefinitionRef,
+    ) -> Result<(), behaviour_profile::ProfileRefusal> {
+        let profile = project_native(runtime, native, creature)?;
+        if !profile.targeting().hostile || !profile.targeting().can_target {
+            return Err(behaviour_profile::ProfileRefusal::Invalid);
+        }
+        Ok(())
+    }
+
     pub fn admit_native_creature(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -111,6 +126,101 @@ impl CreatureAiTable {
         state.is_summon = !role.is_ordinary();
         state.creature_key = Some(creature.key.clone());
         self.admit(state, now);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod soulpit_preflight_tests {
+    use super::*;
+    use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+
+    #[test]
+    fn native_soulpit_preflight_qualifies_without_spawning_or_admitting_an_actor()
+    -> Result<(), String> {
+        fn debug(error: impl std::fmt::Debug) -> String {
+            format!("{error:?}")
+        }
+        fn id(seed: u8) -> [u8; 16] {
+            let mut id = [seed; 16];
+            id[6] = 0x70;
+            id[8] = 0x80;
+            id
+        }
+        let world = WorldId::decode(&id(1)).map_err(debug)?;
+        let (controller, _) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("native")?;
+        let runtime = |digest| {
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                ChannelId::decode(&id(2)).map_err(debug)?,
+                NodeId::decode(&id(3)).map_err(debug)?,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                8,
+                ChannelContentPin::from_activation(
+                    world,
+                    1,
+                    digest,
+                    [2; 32],
+                    [3; 32],
+                    [4; 32],
+                    (100, 100, 7),
+                ),
+            )
+            .map_err(debug)
+        };
+        let runtime = runtime(native.source_digest())?;
+        let rat = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|record| record.profile.target.key == "oteryn:creature.rat")
+            .ok_or("native rat")?
+            .profile
+            .target
+            .clone();
+        assert!(runtime.positioned_actor_census().map_err(debug)?.is_empty());
+        CreatureAiTable::qualify_native_creature(&runtime, native, &rat).map_err(debug)?;
+        assert!(runtime.positioned_actor_census().map_err(debug)?.is_empty());
+        let mut missing = rat.clone();
+        missing.revision = "unadmitted-revision".into();
+        assert_eq!(
+            CreatureAiTable::qualify_native_creature(&runtime, native, &missing),
+            Err(behaviour_profile::ProfileRefusal::Missing)
+        );
+        let mut mismatch = native.source_digest();
+        mismatch[0] ^= 1;
+        let other = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(2)).map_err(debug)?,
+            NodeId::decode(&id(3)).map_err(debug)?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::from_activation(
+                world,
+                1,
+                mismatch,
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (100, 100, 7),
+            ),
+        )
+        .map_err(debug)?;
+        assert_eq!(
+            CreatureAiTable::qualify_native_creature(&other, native, &rat),
+            Err(behaviour_profile::ProfileRefusal::Invalid)
+        );
         Ok(())
     }
 }

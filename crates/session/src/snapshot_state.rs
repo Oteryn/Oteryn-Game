@@ -256,6 +256,10 @@ impl SnapshotState {
                 appearance_items,
             )?;
         }
+        crate::activity_handoff::validate_projection(
+            selected_capabilities,
+            &state.gated_snapshots,
+        )?;
         appearance_state::validate_entities(state.appearance.as_ref(), state.entities.as_ref())?;
         if attack_selected && state.combat_state.is_none() {
             return Err(SessionError::MissingDomain(

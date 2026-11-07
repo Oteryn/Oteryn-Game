@@ -680,3 +680,54 @@ Read-only donor evidence fetched successfully:
 - https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/creature/raids.cpp
 
 Fury Gates selects/realizes at startup; donor content is not an accepted Game realization receipt or an advance prediction window. Wiki checks: **wiki-pending**. NEED-FETCH: none.
+
+## W07/W08 Soulpit shared owner (2026-11-07)
+
+- Allocation base is `9668e0a04e`, lane offset `+40`. Migration numbers
+  `1140` (terminal return proof) and `1141` (runtime staging floor) are inside
+  the assigned `1140–1149` range. Activity return reason `52` is main's next
+  unused reason `12 + 40`. Command `710 ACTIVITY_SCOPE_ACK` is main's next
+  unused command `670 + 40`. No capability, mechanic ordinal or offer-order
+  number is allocated; the acknowledgement belongs to existing capability 117
+  and state domain 99. Existing donor source appearance IDs are retained.
+- Crystal `201189f` `data-global/scripts/quests/soulpit/soulpit_fight.lua:37-106`
+  validates all five staging positions, consumes one core and starts the fight.
+  The native adapter reserves the same shared Instance carrier/session handoff;
+  its Type2 transaction commits the debit, craft audit, encounter, participants
+  and every fresh destination session together. A failed successor rolls them
+  all back. Core species uses the existing reverse-variation/name resolver and
+  pinned Crystal roster, then preflights the real native AI closure before debit.
+- Runtime/LastPosition floor is source z `8`; map `TilePos` is `-8` under
+  ADR-0021. Migration 1141 fixes the deferred participant proof forward while
+  retaining exact source-position and same-transaction admission checks.
+- Crystal `201189f` `data-global/lib/others/soulpit.lua:31-140` and
+  `data/scripts/globalevents/encounters.lua:12` supply the waves, independent
+  spawn/kick deadlines and terminal cleanup. The existing World owner drives
+  registered current Instances even with no connected participant. Private
+  Bundle overlays and door facts are independent from the originating Channel.
+- The task's missing static-map projection extends the older nonground Terrain
+  rule in `OTERYN_GAME_MAP_LOAD_PACKET1_BUNDLE_LOADER_DECISION_2026-10-04.md:124`:
+  nonground `walkable` may carry a known boolean, while nonground speed stays
+  absent. Old `None` semantics are preserved. The bounded 55-record Soulpit
+  profile derives exact ground/layer/unpass flags from the admitted official
+  appearance artifact; Crystal `201189f` `src/items/items.cpp:175-176,203-208,227,233,244`
+  supplies their physical interpretation. No unknown decoration is invented as
+  a wall and no native Item alias is created. Generator and repository-B3 tests
+  bind the exact artifact, membership and placement digests.
+- Crystal `201189f` `src/creatures/players/player.cpp:6584-6607,12932-12936`
+  supplies stack-40 XP and weapon points. The real lethal callback freezes
+  contributors and equipment in the existing settlement queue; other stacks
+  and summons do not enter ordinary loot or progression callbacks.
+- Crystal `201189f` `data-global/scripts/quests/soulpit/soulpit_fight.lua:100-106`
+  supplies survival mastery. Completion and Animus grants remain one lifecycle
+  transaction. Shared death/logout/exit returns remove membership atomically;
+  independently proven owner-loss recovery interrupts the old fight, without
+  restarting process-local actors/timers or granting survival mastery.
+- Crystal `201189f`
+  `data-global/scripts/actions/soulpit/soulpit_arena_exit.lua:8-16` supplies
+  USE-only exit. The client consumes pinned core/obelisk/exit handles and the
+  existing domain-99 shared-session receipt. Soulpit barriers additionally
+  require command 710 bound to the exact handoff and destination session after
+  the full destination snapshot. The server preserves partial source frames
+  and discards in-flight source commands until this acknowledgement, preventing
+  generation-one commands from executing in the fresh destination namespace.

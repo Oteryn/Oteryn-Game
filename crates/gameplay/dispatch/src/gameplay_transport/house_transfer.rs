@@ -143,8 +143,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     floor: p.floor,
                 };
                 super::respawn_cell_admissible(
-                    self.movement_cells.index(),
-                    self.movement_cells.scope(),
+                    self.movement_cells().index(),
+                    self.movement_cells().scope(),
                     self.world_id,
                     runtime.content_pin().server_artifact_digest(),
                     doors.blocking_cells(),
@@ -449,9 +449,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     z: i32::from(position.floor),
                 };
                 let Some(placement) = self
-                    .movement_cells
+                    .movement_cells()
                     .house_tiles()
-                    .house_at(self.movement_cells.scope(), cell)
+                    .house_at(self.movement_cells().scope(), cell)
                     .ok()?
                 else {
                     continue;

@@ -178,7 +178,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let ground = if let Some(source) = ground_source {
-            let Some(room) = self.rooms.gate_ground_item_action() else {
+            let Some(room) = self.rooms().gate_ground_item_action() else {
                 return Ok(Some(outcome(UseDisposition::NotPossible)));
             };
             let runtime = self.runtime.lock().await;

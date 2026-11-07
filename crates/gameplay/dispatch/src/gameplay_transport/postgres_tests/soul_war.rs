@@ -672,7 +672,7 @@ async fn reward_delivery(
         assert_eq!(position, crate::map::overlay::TilePos { x:33620,y:31400,floor:-10 }, "source USE position");
         let runtime = owner.runtime.lock().await;
         let actor = admitted.runtime_actor.ok_or("source USE actor")?;
-        assert!(crate::gameplay_transport::hazard::qualified_source_frame(&runtime, owner.movement_cells).is_some(), "source USE frame");
+        assert!(crate::gameplay_transport::hazard::qualified_source_frame(&runtime, owner.movement_cells()).is_some(), "source USE frame");
         assert!(runtime.player_control_facts(actor, session).is_ok_and(|facts| facts.control_loss.is_none()), "source USE current control");
         assert!(runtime.bound_attacker_lease(actor, session).is_ok_and(|lease|
             lease.character_id().as_bytes() == current_fence.character_id.as_bytes()

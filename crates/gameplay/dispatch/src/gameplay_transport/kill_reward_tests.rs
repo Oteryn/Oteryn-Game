@@ -151,6 +151,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         activity_at_death: Some(Vec::new()),
         facts,
         creature: "fixture:rat".into(),
+        soulpit_experience: None,
         row: Some(row(drops)),
         bosstiary_only: None,
         boss_slot_bonuses: std::sync::Arc::new(std::sync::OnceLock::new()),

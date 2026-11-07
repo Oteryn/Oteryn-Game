@@ -18,7 +18,7 @@ use crate::content::{
     FirstProductionLootTable, FirstProductionPresentation, FirstProductionRegion,
     FirstProductionRelocation, FirstProductionRevisionSet, FirstProductionRngContext,
     FirstProductionSpawn, FirstProductionTerrain, FirstProductionXpDefinition,
-    LocalObjectCollisionPresence, MultiplicityClass, OwnerCapabilityRequirement,
+    LocalObjectCollisionPresence, LogicalCell, MultiplicityClass, OwnerCapabilityRequirement,
     ProjectFilesystemLimits, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
     REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinition, ReferenceDefinitionKind,
     ReferencePlayableContentSource, SpawnRecoveryClass, TransitionBinding, TransitionKey,
@@ -726,6 +726,68 @@ pub struct NativeEntryStart {
 }
 
 impl QualifiedNativeEntryRoom {
+    /// The World map owner supplies the same immutable base under its freshly
+    /// allocated Instance's independent overlay and mutable fact owners.
+    pub fn with_activity_bundle_index(
+        &self,
+        index: crate::content::native_cell_lookup::BundleCollisionIndex,
+        bounds: [i32; 6],
+    ) -> Option<Self> {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+        if !matches!(
+            self.movement_cells.index(),
+            NativeMovementCollisionIndex::Bundle(_)
+        ) {
+            return None;
+        }
+        let mut view = self.clone();
+        view.movement_cells.index = NativeMovementCollisionIndex::Bundle(index);
+        view.bounded_bundle_activity_view(bounds, self.entry_start)
+    }
+
+    /// W07 bounds an already qualified full World bundle without changing any
+    /// frame, map or artifact identity. Crystal soulpit.lua:31-84 supplies bounds.
+    pub(in crate::content) fn bounded_bundle_activity_view(
+        &self,
+        bounds: [i32; 6],
+        start: NativeEntryStart,
+    ) -> Option<Self> {
+        use crate::content::native_cell_lookup::{
+            BundleCollisionIndex, NativeMovementCollisionIndex,
+        };
+        let NativeMovementCollisionIndex::Bundle(parent) = self.movement_cells.index() else {
+            return None;
+        };
+        if bounds[0] > bounds[2] || bounds[1] > bounds[3] || bounds[4] > bounds[5] {
+            return None;
+        }
+        let start_cell = LogicalCell {
+            x: start.x,
+            y: start.y,
+            z: i32::from(start.floor),
+        };
+        let index = BoundedActivityBundle {
+            parent: parent.clone(),
+            bounds,
+        };
+        if crate::content::native_cell_lookup::BundleCollisionLookup::lookup(
+            &index,
+            self.movement_cells.scope(),
+            start_cell,
+        )
+        .ok()
+            != Some(CollisionClass::Walkable)
+        {
+            return None;
+        }
+        let mut view = self.clone();
+        view.entry_start = start;
+        view.movement_cells.index =
+            NativeMovementCollisionIndex::Bundle(BundleCollisionIndex(std::sync::Arc::new(index)));
+        view.spawn_source = None;
+        Some(view)
+    }
+
     /// Activity-local cells remain in the original qualified map/frame. Unlike
     /// a bundle view, this view cannot substitute a different coordinate source.
     pub(in crate::content) fn activity_view(
@@ -833,6 +895,44 @@ impl QualifiedNativeEntryRoom {
     /// See [`NativeEntryProject::spawn_source`].
     pub fn spawn_source(&self) -> Option<&NativeEntrySpawnSource> {
         self.spawn_source.as_ref()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct BoundedActivityBundle {
+    parent: crate::content::native_cell_lookup::BundleCollisionIndex,
+    bounds: [i32; 6],
+}
+
+impl crate::content::native_cell_lookup::BundleCollisionLookup for BoundedActivityBundle {
+    fn parent_index(&self) -> Option<&crate::content::native_cell_lookup::BundleCollisionIndex> {
+        Some(&self.parent)
+    }
+
+    fn lookup(
+        &self,
+        scope: &crate::content::static_cell_engine::EngineeringStaticCellScope,
+        cell: LogicalCell,
+    ) -> Result<CollisionClass, crate::content::static_cell_engine::StaticCellEngineError> {
+        if cell.x < self.bounds[0]
+            || cell.x > self.bounds[2]
+            || cell.y < self.bounds[1]
+            || cell.y > self.bounds[3]
+            || cell.z < self.bounds[4]
+            || cell.z > self.bounds[5]
+        {
+            return Err(crate::content::static_cell_engine::StaticCellEngineError::Absent);
+        }
+        self.parent.lookup(scope, cell)
+    }
+
+    fn same_index(
+        &self,
+        other: &dyn crate::content::native_cell_lookup::BundleCollisionLookup,
+    ) -> bool {
+        (other as &dyn std::any::Any)
+            .downcast_ref::<Self>()
+            .is_some_and(|other| self == other)
     }
 }
 

@@ -147,7 +147,7 @@ pub(super) async fn finish(
         let doors = crate::map::floor::BundleDoors(world.facts().doors());
         let proof = crate::map::floor::prepare_quest_callback_teleport(
             &runtime,
-            owner.movement_cells,
+            owner.movement_cells(),
             actor,
             admitted.game_session_id,
             expected,
