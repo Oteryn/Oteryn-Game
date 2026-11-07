@@ -129,6 +129,19 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
+    # NPC exchanges borrow the same fenced MINT owner as world callbacks.
+    # Carry their complete physical input/output closure into the admitted
+    # generation; a canonical declaration alone is not a native Item policy.
+    npc_inputs = set()
+    shared = root / 'content/quests/shared-reward-callbacks.json'
+    if shared.is_file():
+        for callback in json.loads(shared.read_bytes())['callbacks']:
+            npc_inputs.update(item['item'] for item in callback.get('take', []))
+            npc_inputs.update(item['item'] for item in callback.get('present', []))
+            reward = callback.get('give')
+            if reward:
+                keys.add(reward['item'])
+                keys.update(item['item'] for item in reward.get('contents', []))
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
@@ -184,6 +197,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         for row in json.loads(path.read_bytes())['records']:
             definition = row['definition']
             key = definition['identity']['key']
+            # Already qualified input owners retain their authority. This MINT
+            # importer may additionally carry only canonically admitted inputs;
+            # every output still passes the full strict checks below.
+            if key in npc_inputs and definition['materializable'] and definition['stack_class'] in ('StackCapable', 'NonStackable'):
+                keys.add(key)
             if key in keys:
                 if key in definitions:
                     raise ValueError('QUEST_CALLBACK_DUPLICATE_ITEM')

@@ -115,7 +115,9 @@ pub(super) fn prepare(
         Some(Pending::Topic(previous))
             if previous.context == context
                 && previous.actor == actor
-                && previous.npc == intent.npc_actor =>
+                && previous.npc == intent.npc_actor
+                && state.quest_dialogue.topic(&context).number
+                    == u16::from(previous.topic.step) =>
         {
             Some(previous.clone())
         }
@@ -153,6 +155,14 @@ pub(super) fn prepare(
             reply,
         })))
     } else {
+        state.quest_dialogue.apply_topic(
+            context,
+            Some(
+                next.as_ref()
+                    .map_or(0, |next| u16::from(next.topic.step))
+                    .into(),
+            ),
+        );
         state.threatened_dreams = next.map(Pending::Topic);
         Some(Step::Reply(reply))
     }
@@ -179,6 +189,12 @@ fn install_topic(
     if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
         && let Some(state) = sessions.get_mut(&session)
     {
+        if let Some(conversation) = &next {
+            state.quest_dialogue.apply_topic(
+                conversation.context.clone(),
+                Some(u16::from(conversation.topic.step).into()),
+            );
+        }
         state.threatened_dreams = next.map(Pending::Topic);
     }
 }

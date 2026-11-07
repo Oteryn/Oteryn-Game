@@ -57,6 +57,7 @@ def documents():
     document["npcs"] = [n for n in document["npcs"] if n["npc"] not in names]
     document["npcs"] += [{"npc": npc, "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
                           "farewell": "Safe travels, |PLAYERNAME|.", "walkaway": "Safe travels."} for npc in sorted(names)]
+    document["npcs"].sort(key=lambda row: row["npc"])
     result[path] = document
     index_path = "content/services/blessings/index.json"
     index = json.loads((ROOT / index_path).read_text())

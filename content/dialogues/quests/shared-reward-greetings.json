@@ -2,16 +2,10 @@
   "schema": 1,
   "npcs": [
     {
-      "npc": "oteryn:npc.santiago",
-      "greet": "Welcome to Rookgaard, |PLAYERNAME|. Can you help me?",
-      "farewell": "Take care, |PLAYERNAME|.",
-      "walkaway": "Enjoy your stay on Rookgaard."
-    },
-    {
-      "npc": "oteryn:npc.zirella",
-      "greet": "Hello, |PLAYERNAME|. Can you help me with a quest?",
-      "farewell": "Thank you, dear. Take care.",
-      "walkaway": "Come back if you need help with the firewood."
+      "npc": "oteryn:npc.aurita",
+      "greet": "Welcome, |PLAYERNAME|. How can I help you?",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
     },
     {
       "npc": "oteryn:npc.edala",
@@ -120,6 +114,30 @@
       "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
       "farewell": "Safe travels, |PLAYERNAME|.",
       "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.santiago",
+      "greet": "Welcome to Rookgaard, |PLAYERNAME|. Can you help me?",
+      "farewell": "Take care, |PLAYERNAME|.",
+      "walkaway": "Enjoy your stay on Rookgaard."
+    },
+    {
+      "npc": "oteryn:npc.taegen",
+      "greet": "Welcome, |PLAYERNAME|. How can I help you?",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.valindara",
+      "greet": "Welcome, |PLAYERNAME|. How can I help you?",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "greet": "Hello, |PLAYERNAME|. Can you help me with a quest?",
+      "farewell": "Thank you, dear. Take care.",
+      "walkaway": "Come back if you need help with the firewood."
     }
   ]
 }

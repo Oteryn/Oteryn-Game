@@ -1,4 +1,4 @@
-"""Admit Rapier's exact existing portable, nonstacking Item facts for its chest.
+"""Admit quest rewards from their exact existing portable Item facts.
 
 Crystal201189f rookgaard/rapier_quest.lua:4-11 grants one 3272. Canonical Item
 facts already prove its 15 oz weight, portability and nonstackability. Preserve
@@ -80,3 +80,60 @@ def apply_admissions(definitions):
                 or reward['stack_class'] != 'NonStackable'):
             raise ValueError(f'R–S charged core facts changed: {key}')
         reward['materializable'] = True
+
+    # Retained Crystal NPC sources: aurita.lua:81-88, taegen.lua:174-188,
+    # valindara.lua:75-90 at tree9f5a72c6. Existing canonical physical and
+    # nonstacking facts are complete; preserve all other semantics verbatim.
+    for ident, weight in ((25731, 1200), (25733, 1200), (25779, 400)):
+        key = f'oteryn:item.tibia.i{ident}'
+        candidates = [row for row in definitions if row['identity']['key'] == key]
+        if len(candidates) != 1:
+            raise ValueError(f'Threatened reward missing or duplicated: {key}')
+        reward = candidates[0]
+        if (reward['identity'] != {'family': 'Item', 'key': key, 'revision': 'definition-r1'}
+                or reward['semantics']['physical'] != known({
+                    'weight': known(weight), 'movable': known(True), 'pickupable': known(True)})
+                or reward['semantics']['stack'].get('state') != 'KNOWN'
+                or reward['semantics']['stack']['value']['stackable'] != known(False)
+                or (reward['materializable'], reward['stack_class']) not in
+                   ((False, 'Unknown'), (True, 'NonStackable'))):
+            raise ValueError(f'Threatened reward core facts changed: {key}')
+        reward['materializable'] = True
+        reward['stack_class'] = 'NonStackable'
+
+
+def refresh_tree(root, check=False):
+    """Apply strict admissions to existing canonical shards without rebuilding World."""
+    index = json.loads((root / 'content/items/index.json').read_text())
+    documents = {}
+    definitions = []
+    for relative in index['shards']:
+        document = json.loads((root / relative).read_text())
+        documents[relative] = document
+        definitions.extend(row['definition'] for row in document['records'])
+    apply_admissions(definitions)
+    changed = []
+    for relative, document in documents.items():
+        target = root / relative
+        data = json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n'
+        if target.read_text() != data:
+            changed.append(relative)
+            if not check:
+                target.write_text(data)
+    if check and changed:
+        raise ValueError('Quest Item admission drift: ' + ', '.join(changed))
+    return changed
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command', choices=['content'])
+    parser.add_argument('--check', action='store_true')
+    args = parser.parse_args()
+    changed = refresh_tree(Path(__file__).resolve().parents[2], args.check)
+    print(f'PASS quest Item admissions changed={len(changed)} check={args.check}')
+
+
+if __name__ == '__main__':
+    main()

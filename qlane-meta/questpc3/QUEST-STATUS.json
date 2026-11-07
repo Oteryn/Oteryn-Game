@@ -1947,6 +1947,30 @@
           "ad00240bb",
           "fdfef6b4e"
         ]
+      },
+      "threatened_inventory_04": {
+        "status": "GREEN",
+        "red": {
+          "log": "/tmp/questpc3-threatened-inventory-red-fixture-fixed.log",
+          "marker": "THREATENED_INVENTORY POSTGRES_ASSERTION_REACHED vial_ok=false catcher_ok=false cloak_ok=false receipts=0",
+          "duration_ms": 108077,
+          "success": false
+        },
+        "invalid_setup_attempt": "Earlier105.72s failed on numeric fixture ordinal binding; corrected, not counted as RED.",
+        "unit": "PASS3tests1.729s final; native profile15tests126.255s; converter8tests; fmt--all--check PASS",
+        "item_refresh": "PASS strict targeted refresh changed one shard; --check0drift /tmp/questpc3-threatened-item-refresh.log",
+        "green": {
+          "log": "/tmp/questpc3-threatened-topic-green.log",
+          "marker": "THREATENED_INVENTORY POSTGRES_ASSERTION_REACHED vial_ok=true catcher_ok=true cloak_ok=true receipts=3",
+          "duration_ms": 124571,
+          "success": true
+        },
+        "check": "PASS dispatch allfeatures/tests 9m42s including build-lock wait; earlier content/quests/dispatch check4m10s",
+        "clippy": "PASS dispatch allfeatures/alltargets -Dwarnings final topic bridge check; /tmp/questpc3-threatened-topic-clippy.log",
+        "pins": "PASS repo pin-refresh /tmp/questpc3-threatened-inventory-native-pins.log; world084e8c18a46956687904b8fe2b7098e0896c02b001721d2ddb72663ce128f629",
+        "scope": "Aurita vial, Taegen four-gem catcher, Valindara100-feather cloak; whole Threatened Dreams remains IN_PROGRESS.",
+        "native_provider": "PASS15tests126.255s; shared NPC reward output/container closure and admitted input evidence reused by native provider; three mint policies restored",
+        "recovery_regression": "PASS existing real NPC start/fences/topics/lost acknowledgement PostgreSQL125.89s; /tmp/questpc3-threatened-topic-recovery-regression.log"
       }
     },
     "source_corrections": [

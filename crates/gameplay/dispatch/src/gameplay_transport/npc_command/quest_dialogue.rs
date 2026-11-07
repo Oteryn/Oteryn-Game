@@ -60,7 +60,7 @@ impl NpcConversations {
 }
 
 impl State {
-    fn topic(&self, context: &Context) -> Topic {
+    pub(super) fn topic(&self, context: &Context) -> Topic {
         if self.context.as_ref() == Some(context) {
             self.topic.clone()
         } else {
@@ -68,7 +68,7 @@ impl State {
         }
     }
 
-    fn apply_topic(&mut self, context: Context, next: Option<Topic>) {
+    pub(super) fn apply_topic(&mut self, context: Context, next: Option<Topic>) {
         let previous = self.topic(&context);
         self.context = Some(context);
         self.topic = next.unwrap_or(previous);
