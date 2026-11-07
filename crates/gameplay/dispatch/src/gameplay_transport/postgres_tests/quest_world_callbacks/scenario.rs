@@ -87,6 +87,8 @@ fn scenario_case(
             | "qengine-rewards-nimmersatt-passage"
     ) {
         super::super::questpc5_nimmersatt_world_items::world()?
+    } else if name == "qengine-rewards-noodles" {
+        super::super::questpc5_noodles::world()?
     } else if name == "qengine-rewards-nomads-mini" {
         super::super::questpc5_nomads_mini::world()?
     } else if name == "qengine-rewards-newhaven-legion-route" {
