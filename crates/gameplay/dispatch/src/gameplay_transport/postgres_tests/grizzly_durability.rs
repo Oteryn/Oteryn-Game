@@ -111,6 +111,7 @@ fn entry_context(boss_id: u8) -> TestResult<GrizzlyBossEntryContext> {
             reset_epoch: 0,
             actor_placement: id(91),
             movement_revision: 1,
+            party: Vec::new(),
         },
     })
 }

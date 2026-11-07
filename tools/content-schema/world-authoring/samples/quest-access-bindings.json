@@ -59,6 +59,18 @@
     },
     {
       "position": [
+        32673,
+        32086,
+        8
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 30030,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 1002
+    },
+    {
+      "position": [
         32573,
         32121,
         7

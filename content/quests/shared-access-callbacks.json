@@ -187,6 +187,164 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/desert-dungeon-party-rite",
+      "quest": "oteryn:quest.desert_dungeon_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32673,
+          "y": 32086,
+          "floor": -8
+        },
+        "unique": 30030,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/world-action/desert-dungeon-rite",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32679,
+            "y": 32089,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3059",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32667,
+            "y": 32089,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3585",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32673,
+            "y": 32083,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3349",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32673,
+            "y": 32094,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3264",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null,
+        "party_transfer": {
+          "activation_appearance": 2772,
+          "stations": [
+            {
+              "to": {
+                "x": 32671,
+                "y": 32071,
+                "floor": -8
+              },
+              "offering": {
+                "x": 32679,
+                "y": 32089,
+                "floor": -8
+              },
+              "vocation": "sorcerer",
+              "from": {
+                "x": 32677,
+                "y": 32089,
+                "floor": -8
+              }
+            },
+            {
+              "to": {
+                "x": 32673,
+                "y": 32071,
+                "floor": -8
+              },
+              "offering": {
+                "x": 32667,
+                "y": 32089,
+                "floor": -8
+              },
+              "vocation": "druid",
+              "from": {
+                "x": 32669,
+                "y": 32089,
+                "floor": -8
+              }
+            },
+            {
+              "to": {
+                "x": 32670,
+                "y": 32071,
+                "floor": -8
+              },
+              "offering": {
+                "x": 32673,
+                "y": 32083,
+                "floor": -8
+              },
+              "vocation": "paladin",
+              "from": {
+                "x": 32673,
+                "y": 32085,
+                "floor": -8
+              }
+            },
+            {
+              "to": {
+                "x": 32672,
+                "y": 32071,
+                "floor": -8
+              },
+              "offering": {
+                "x": 32673,
+                "y": 32094,
+                "floor": -8
+              },
+              "vocation": "knight",
+              "from": {
+                "x": 32673,
+                "y": 32093,
+                "floor": -8
+              }
+            }
+          ]
+        }
+      },
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:1-84#sha256:72e3bcedf70a9dd7ffe81bb5f71aaa831acdd66110b91bc44aae11ab43acf1ad"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/thais-lighthouse-plate",
       "quest": "oteryn:quest.thais_lighthouse_quest",
       "trigger": "step_in",

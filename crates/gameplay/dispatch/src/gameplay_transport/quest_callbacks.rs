@@ -7,6 +7,7 @@ use super::{
 mod effects;
 mod encounter;
 mod execute;
+mod party_transfer;
 mod reward_door;
 mod rewards;
 mod soul_war_reward;
@@ -43,6 +44,7 @@ struct Pending {
     origin: Option<MovementPositionSnapshot>,
     context: Option<QuestWorldContext>,
     ingress_settled: bool,
+    participants: Vec<GameSessionId>,
 }
 
 #[derive(Default)]
@@ -220,7 +222,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .quest_callbacks
                 .records
                 .lock()
-                .map_or(true, |p| p.contains_key(&session))
+                .map_or(true, |p| {
+                    p.contains_key(&session)
+                        || p.values()
+                            .any(|pending| pending.participants.contains(&session))
+                })
     }
 
     fn callback_content(&self) -> &[Callback] {
@@ -237,6 +243,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.reconcile_grizzly_boss(session).await {
             return false;
         }
+        let session = match self.states.quest_callbacks.records.lock() {
+            Ok(records) => records
+                .iter()
+                .find_map(|(owner, pending)| {
+                    pending.participants.contains(&session).then_some(*owner)
+                })
+                .unwrap_or(session),
+            Err(_) => return false,
+        };
         if !self.reconcile_quest_callback_receipts(session).await {
             return false;
         }
@@ -574,6 +589,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         origin: Some(origin),
                         context: None,
                         ingress_settled: false,
+                        participants: Vec::new(),
                     });
                     pending.origin = Some(origin);
                 }

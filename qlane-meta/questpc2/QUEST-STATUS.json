@@ -653,7 +653,7 @@
       "title": "The Desert Dungeon Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Multi-vocation offering stations and the central lever lack one atomic party/item/access occurrence and bound native targets.",
+      "blocker": "Active next work: restore source level20 gate and both chest selectors, reuse exact250-charge native projection for desert2, and compose earned native route/replay proof. Party/fencing/offering mechanism is implemented and PostgreSQL-green.",
       "source_lane_checks": [
         {
           "lane": "questpc4",
@@ -664,7 +664,8 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "mechanism_verification": "BATCH-desert-party-rite-mechanism-2026-11-07.json"
     },
     {
       "canonical": "oteryn:quest.the_dream_courts_quest",
@@ -1646,10 +1647,32 @@
     }
   },
   "current_batch": {
-    "id": "annihilator-native-source-entry-2026-11-07",
-    "record": "BATCH-annihilator-native-source-entry-2026-11-07.json",
+    "id": "desert-party-rite-mechanism-2026-11-07",
+    "state": "GREEN",
+    "last_green_commit": "853614652",
+    "scope": [
+      "Reusable exact party transfer and all-member fences",
+      "Atomic source altar-stack consumption and replay",
+      "Four normalized source scenery profiles",
+      "UID30030 source binding and production bundle lookup reuse"
+    ],
     "whole_quest_qualifications": 0,
-    "next": "Extend the same real route through native combat clearance, physical earned chest, source exit and sealed re-entry; reuse existing owners, no invented kill-storage gate or escape timer."
+    "red": {
+      "postgres_version": 180006,
+      "missing_callback_test_seconds": 3.64,
+      "source_map_item_reference_test_seconds": 56.01,
+      "overstrict_fixture_lookup_test_seconds": 56.2,
+      "fresh_fixture_pending_unavailable_test_seconds": 56.49
+    },
+    "next": "Continue source Desert level gate and both earned chests; exact native charge projection from questpc4, native route and replay proof.",
+    "postgres_green": {
+      "server_version_num": 180006,
+      "test_runtime_seconds": 61.9,
+      "command_seconds": 137.783,
+      "passed": 1,
+      "marker": "DESERT_PARTY_RITE POSTGRES_CASE_COMPLETED"
+    },
+    "record": "BATCH-desert-party-rite-mechanism-2026-11-07.json"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1666,12 +1689,13 @@
     "BATCH-annihilator-reward-door-2026-11-07.json",
     "BATCH-annihilator-startup-selectors-2026-11-07.json",
     "BATCH-door-startup-integration-2026-11-07.json",
-    "BATCH-annihilator-native-source-entry-2026-11-07.json"
+    "BATCH-annihilator-native-source-entry-2026-11-07.json",
+    "BATCH-desert-party-rite-mechanism-2026-11-07.json"
   ],
   "next_batch": {
     "state": "AUTHORING",
     "work_owner": "questpc2",
-    "task": "Implement source Desert Dungeon four-vocation/four-offering atomic party transfer with genuine Fresh/Character owner proof; reuse native encounter movement and existing immutable offering receipts. Continue owned whole quests without deferral.",
+    "task": "Compose source Desert level20 gate, four-party rite and both physical earned chest rewards. Reuse questpc4 exact charged-Item projection only for owned desert2; preserve all other lane ownership. Qualify whole source path with real PostgreSQL proof and continue all owned entries.",
     "external_dependencies_to_wait_for": []
   },
   "remote_publications_reused": {
@@ -1683,7 +1707,8 @@
       "BATCH-corpse-materializer-2026-11-07.json",
       "BATCH-source-corpse-admission-2026-11-07.json"
     ],
-    "primal_canonical_corpse_admission": "already complete; native spell-provider membership is not the admission authority"
+    "primal_canonical_corpse_admission": "already complete; native spell-provider membership is not the admission authority",
+    "latest_integrated_sha": "853614652"
   },
   "verification": {
     "source_corpse_admission_2026_11_07": {
@@ -1705,6 +1730,12 @@
     "annihilator_native_source_entry_2026_11_07": {
       "record": "BATCH-annihilator-native-source-entry-2026-11-07.json",
       "postgres_cases_passed": 1,
+      "whole_quest_qualifications": 0
+    },
+    "desert_party_rite_mechanism_2026_11_07": {
+      "record": "BATCH-desert-party-rite-mechanism-2026-11-07.json",
+      "postgres_cases_passed": 3,
+      "python_cases_passed": 14,
       "whole_quest_qualifications": 0
     }
   },
@@ -1755,5 +1786,11 @@
     "resource_recovery": "16GiB cgroup recorded one OOM kill. Inactive check/clippy/durability caches retained compressed with SHA verification; restore before next check/clippy using /tmp/questpc2-combat-ram-cache-retention.json. Native cache stays active.",
     "whole_quest_qualifications": 0,
     "next": "Complete native combat, earned chest, actual exit and sealed re-entry; no forced kills, fake stats, invulnerability, source health reduction or kill flag."
-  }
+  },
+  "assumptions": [
+    {
+      "batch": "desert-party-rite-mechanism-2026-11-07",
+      "rule": "The internal rite occurrence track owns the existing immutable offering receipt; it is not donor storage or a reward/access gate. Repeated valid source rites remain allowed. Exact whole matching stacks retain the existing maximum100 consumption proof bound; blocked/PZ-invalid landings refuse before consumption. No minimum level or participant requirement for the initiating lever user is invented."
+    }
+  ]
 }

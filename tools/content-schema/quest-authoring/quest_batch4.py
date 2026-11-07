@@ -228,7 +228,7 @@ def validate_native(callback, context):
 def validate_effects(callback, context):
     """The optional Channel effects share the Rust world_callbacks closed shape."""
     effects = callback.get('effects', {})
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'reward_door'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'reward_door', 'party_transfer'}
     fields(effects, set(), allowed, context + ': effects')
     outfit = effects.get('outfit_reward')
     if outfit is not None:
@@ -253,11 +253,38 @@ def validate_effects(callback, context):
         fields(magic, {'position', 'effect'}, {'position', 'effect'}, context + ': magic')
         position(magic['position'], context + ': magic')
         require(integer(magic['effect'], 1, 65535), context + ': invalid magic effect')
-    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter', 'reward_door'))
+    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter', 'reward_door', 'party_transfer'))
     require(operations <= 1 and (operations == 0 or callback['trigger'] == 'use'
-            and callback.get('lever') is not None and not callback['storage']
+            and callback.get('lever') is not None and (not callback['storage'] or effects.get('party_transfer') is not None)
             and not callback['passages'] and callback.get('teleport') is None),
             context + ': incompatible map effects')
+    party = effects.get('party_transfer')
+    if party is not None:
+        fields(party, {'activation_appearance', 'stations'}, {'activation_appearance', 'stations'}, context + ': party transfer')
+        require(integer(party['activation_appearance'], 1, 65535)
+                and party['activation_appearance'] in callback['lever']
+                and callback.get('reversible') is True and callback['storage']
+                and callback.get('minimum_level') is None and callback.get('experience') is None
+                and callback.get('monk_reward') is None and callback.get('native_rule') is None
+                and callback.get('item_on_target') is None
+                and all(effects.get(field) is None for field in ('outfit_reward', 'transform', 'facing', 'magic')),
+                context + ': incompatible party transfer')
+        require(isinstance(party['stations'], list) and 1 <= len(party['stations']) <= MAX_EFFECTS
+                and len(callback['offerings']) == len(party['stations']), context + ': party bounds')
+        origins, destinations, altars = set(), set(), set()
+        for station in party['stations']:
+            names = {'from', 'to', 'vocation', 'offering'}
+            fields(station, names, names, context + ': party station')
+            origin = position(station['from'], context + ': party origin')
+            destination = position(station['to'], context + ': party destination')
+            altar = position(station['offering'], context + ': party altar')
+            require(origin not in origins and destination not in destinations and altar not in altars
+                    and origin != destination and station['vocation'] in ('sorcerer','druid','paladin','knight','monk')
+                    and sum(o['position'] == station['offering'] and o['count'] == 1 for o in callback['offerings']) == 1,
+                    context + ': invalid or duplicated party station')
+            origins.add(origin)
+            destinations.add(destination)
+            altars.add(altar)
     reward_door = effects.get('reward_door')
     if reward_door is not None:
         fields(reward_door, {'claim'}, {'claim'}, context + ': reward door')

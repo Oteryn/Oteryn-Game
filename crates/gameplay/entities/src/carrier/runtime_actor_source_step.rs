@@ -215,4 +215,42 @@ mod tests {
             5
         );
     }
+
+    #[test]
+    fn source_group_projection_refusal_restores_every_member_and_retries_once() {
+        let (mut runtime, actors) = fixture();
+        let before = runtime.carrier.clone();
+        let initial = actors.map(|actor| runtime.read_actor_position(actor).unwrap());
+        assert_eq!(
+            runtime.commit_source_steps_and_project(proofs(&runtime, actors), || false),
+            Err(CarrierError::PlanConflict)
+        );
+        assert_eq!(runtime.carrier, before);
+        let snapshots = runtime
+            .commit_source_steps_and_project(proofs(&runtime, actors), || true)
+            .unwrap();
+        for ((actor, initial), committed) in actors.into_iter().zip(initial).zip(snapshots) {
+            assert_eq!(committed.revision(), initial.revision() + 1);
+            assert_eq!(runtime.read_actor_position(actor).unwrap(), committed);
+        }
+        let mut projected = false;
+        let stale = Proof {
+            actor: actors[0],
+            expected: initial[0],
+            destination: initial[0].position(),
+            guard: None,
+        };
+        assert_eq!(
+            runtime.commit_source_steps_and_project(vec![stale], || {
+                projected = true;
+                true
+            }),
+            Err(CarrierError::PositionSnapshotMismatch)
+        );
+        assert!(!projected);
+        assert_eq!(
+            runtime.commit_quest_encounter_entry(proofs(&runtime, actors), &[], || true),
+            Err(CarrierError::PlanConflict)
+        );
+    }
 }

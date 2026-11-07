@@ -52,6 +52,7 @@ async fn context(owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '
         reset_epoch: owner.reset_epoch,
         actor_placement: actor.placement_identity(),
         movement_revision: runtime.read_actor_position(actor).map_err(debug)?.revision(),
+        party: Vec::new(),
     })
 }
 

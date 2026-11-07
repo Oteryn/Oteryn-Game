@@ -15,6 +15,23 @@ pub struct QuestWorldContext {
     pub reset_epoch: u64,
     pub actor_placement: [u8; 16],
     pub movement_revision: u64,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub party: Vec<QuestWorldPartyMember>,
+}
+
+/// Frozen station membership is part of the original immutable offering receipt.
+/// The runtime proves placement; the writer rechecks every session/lease/scope
+/// and base vocation before consuming any altar input.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct QuestWorldPartyMember {
+    pub character: [u8; 16],
+    pub session: [u8; 16],
+    pub connection_generation: u64,
+    pub lease_generation: u64,
+    pub scope_generation: u64,
+    pub actor_placement: [u8; 16],
+    pub movement_revision: u64,
 }
 
 struct Input {
@@ -316,7 +333,20 @@ async fn consume_inputs(
             location: row.try_get("before_ground")?,
             kind: "ground".into(),
             quantity: row.try_get("quantity")?,
-            count: offering.count,
+            count: if callback.effects.party_transfer.is_some() {
+                let quantity: i64 = row.try_get("quantity")?;
+                let Ok(count) = u16::try_from(quantity) else {
+                    return Ok(false);
+                };
+                // Retain the existing altar consumption proof bound. A source
+                // remove() takes the whole matching stack, never a partial burn.
+                if !(1..=100).contains(&count) {
+                    return Ok(false);
+                }
+                count
+            } else {
+                offering.count
+            },
             replacement: None,
         });
     }
@@ -434,4 +464,81 @@ async fn apply_input(
         }
     }
     Ok(())
+}
+
+/// Admission locks already serialize lifecycle writers. Read every member under
+/// its real Item fence before the first offering mutation; a copied runtime
+/// vocation or a stale connection cannot admit the rite.
+pub(super) async fn party_is_current(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &super::runtime_scope_assignment::NodeIncarnationProof,
+    initiator: CurrentCharacterGameplayFence,
+    callback: &Callback,
+    context: &QuestWorldContext,
+) -> Result<bool, DurabilityError> {
+    use crate::foundation::{ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
+    let Some(party) = &callback.effects.party_transfer else {
+        return Ok(context.party.is_empty());
+    };
+    if context.party.len() != party.stations.len() || !(1..=8).contains(&context.party.len()) {
+        return Ok(false);
+    }
+    let mut characters = std::collections::BTreeSet::new();
+    let mut sessions = std::collections::BTreeSet::new();
+    for (member, station) in context.party.iter().zip(&party.stations) {
+        if !characters.insert(member.character)
+            || !sessions.insert(member.session)
+            || member.actor_placement == [0; 16]
+            || member.movement_revision == 0
+            || member.scope_generation != initiator.scope_ownership_generation.get()
+        {
+            return Ok(false);
+        }
+        let (
+            Ok(character_id),
+            Ok(game_session_id),
+            Ok(connection_generation),
+            Ok(scope_ownership_generation),
+        ) = (
+            crate::domain::CharacterId::from_bytes(member.character),
+            GameSessionId::decode(&member.session),
+            ConnectionGeneration::new(member.connection_generation),
+            ScopeOwnershipGeneration::new(member.scope_generation),
+        )
+        else {
+            return Ok(false);
+        };
+        let fence = super::item_transfer::CurrentCharacterItemFence {
+            character_id,
+            game_session_id,
+            connection_generation,
+            character_lease_generation: member.lease_generation,
+            scope_ownership_generation,
+            ..initiator.item_fence()
+        };
+        if super::character_progression::assert_item_only_fence(tx, &fence, node)
+            .await?
+            .is_err()
+        {
+            return Ok(false);
+        }
+        let vocation: Option<String> = sqlx::query_scalar(
+            "SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+        )
+        .bind(member.character.as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
+        let base = match vocation.as_deref() {
+            Some("druid" | "elder_druid") => "druid",
+            Some("sorcerer" | "master_sorcerer") => "sorcerer",
+            Some("paladin" | "royal_paladin") => "paladin",
+            Some("knight" | "elite_knight") => "knight",
+            Some("monk" | "exalted_monk") => "monk",
+            _ => return Ok(false),
+        };
+        if base != station.vocation {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
