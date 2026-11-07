@@ -413,3 +413,8 @@ exact SQL proof migration1002;source-backed writable declaration opt-in
 20Python6.641s;5Rustunit1.17s;check14.41s;clippy2m54s;fmt,repro,pinrefresh.
 17/66qualified49remaining. Commit/push now;content/world/pin followon pending.
 Then Beggar:reuse delivered timers and native GrizzlyPremiumGate Current.
+CitizenRookfollowon COMPLETE:123content2.08s;5world47.03s;pin-check
+24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25.
+Source e9d98947f fast-forward pushed. Beggar male/female story tests added;
+actualPGRED pending,log /tmp/qengine2-batch6-beggar-red.log. Native Current
+premium fixture reused in outer scenario,immutable male/female root creation.

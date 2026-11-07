@@ -2159,7 +2159,7 @@
       "oteryn:quest.citizen_outfits_quest_on_rook",
       "oteryn:quest.beggar_outfits_quest"
     ],
-    "phase": "CitizenRook QUALIFIED real PostgreSQL79.962115793s;commit/push now,follow-on content/world/pin checks next;then Beggar premium and source paths.",
+    "phase": "CitizenRook all checks complete and source pushed. Beggar male/female independent full-story PG RED queued before premium source implementation.",
     "facts": "Tom.lua:230-250:direct addon introduction bodyStage<1->1;paws/yes takes5896x50+5897x50,stage1->2,bodyaddon1. No source second addon on Rook;testmustassertmask1,notinventmask2. Hugo needs24hdeadline,Amber2hdeadline and Ref counter;Simon male5daytimer/femaleimmediate path with source stage bug.",
     "eligibility_audit": "Readactualsource:IrmanahasNOisPremiumguard;do not reopenfinishedNobleman. Hugo/Simon explicitlyrequirepremium;reuseexistingGrizzlyPremiumGate Current native authority for those new paths.",
     "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=43.490976609s success=false",
@@ -2206,7 +2206,9 @@
           "5Rustreward_callbacks1.17s;fmt;check14.41s;strictclippy2m54s",
           "repo pin-refresh passed"
         ],
-        "follow_on_verification": "PENDING after immediate green push"
+        "follow_on_verification": "COMPLETE:123content2.08s;5world47.03s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25",
+        "commit": "e9d98947f",
+        "push": "fast-forward confirmed"
       }
     ],
     "citizen_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=43.140819762s success=false"
