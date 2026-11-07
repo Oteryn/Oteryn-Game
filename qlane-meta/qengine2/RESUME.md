@@ -497,3 +497,25 @@ partialfirstingredientatomicrefusalremainsonALLmulti-inputrecipes. Actualfail
 markersAssassin80.711302894/Druid80.780567711/Knight79.708959976,160.42stotal.
 Clippyfix23.51spassed;PG rerun session95987 log /tmp/qengine2-batch7-green2.log.
 No entriesqualifiedyet;pushimmediatelywhengreen. Lastsource/metadataHEADa585529d7.
+Assassin full actualPG92.674685234s passed. Druid83.573871312s/Knight79.114808667s
+exposed missingprimarydoor default-1 versus inventedzero guard. Correctedwith
+explicit General declarations initial0/min-1;doorassignmentbounds-1..1 and
+MissionHelmet fullnativeassignmentdomain. Sourceunconditionalassignments
+are not extra prerequisites.22Python8.293s/regressionpass. Genericnegative
+addon guard takesexisting accountgrantlock before read throughcost/grant.
+Check15.87s/clippy37.89s pass. Compilation thenfailedtwiceBEFOREPG ontempdir
+No space left on device(os error28). Recovered17GB byremovinginactiveincremental
+caches,retainingfocuseddispatchtestcache;nosource/binaries/evidenceremoved.
+PG rerun session50139 log /tmp/qengine2-batch7-green5.log;do not rerun old
+failedbuildpipeline. No qualifierupdate until3actualPGGREEN;thencommit/push.
+
+L1-07 QUALIFIED actualPostgreSQL3passed0failed0ignored169.73s:
+Knight81.732860551s,Druid88.001043398s,Assassin92.810090059s.
+All9/12/19literalstages,exactrecipes/gifts,partialrecipe atomic refusals,
+parentfreshrefusals,strictclockrefusal,nativeconditionabsence/refundedcosts,
+accountunowned lock,replay/3facts/normalappearance. No outfit stages seeded.
+22Python8.293s;7Rustunit;check15.87s;clippy37.89s;fmt,repro,pinrefreshpassed.
+21/66qualified45remaining. Commit/push NOW;content/world/pin followonpending.
+Diskrecovery strategy retaineddispatchtestincremental0clhrjm82foyu andremoved
+inactiveotherincrementalcaches;now15GBfree. Source/binaries/evidenceintact.
+Do not redo finishedwork;continue nextbatch afterfollowonchecks.

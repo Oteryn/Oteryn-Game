@@ -17,6 +17,85 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+async fn actor_condition_fixture(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    kind: oteryn_gameplay_quests::quest::reward_callbacks::ActorConditionRequirement,
+    active: bool,
+) -> TestResult {
+    use crate::foundation::{
+        ApplicationFacts, ConditionDefinition, ConditionType, DamageSchedule, DamageSegment,
+        DotElement, StatusKind,
+    };
+    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+    use oteryn_gameplay_quests::quest::reward_callbacks::ActorConditionRequirement;
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    let actor = admitted.runtime_actor.ok_or("condition actor")?;
+    let now = owner.owner_now().get();
+    let runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let state = states
+        .get_mut(&runtime, actor, admitted.game_session_id)
+        .ok_or("current condition owner")?;
+    let condition_type = match kind {
+        ActorConditionRequirement::Fire => ConditionType::DamageOverTime(DotElement::Fire),
+        ActorConditionRequirement::Drunk => ConditionType::Status(StatusKind::Drunk),
+    };
+    state.conditions.remove_type(condition_type);
+    if !active {
+        return Ok(());
+    }
+    let definition = match kind {
+        ActorConditionRequirement::Drunk => ConditionDefinition::new(
+            "qengine2.fixture.drunk",
+            1,
+            ConditionValues::TimedStatus {
+                kind: StatusKind::Drunk,
+                duration_ms: 3_600_000,
+            },
+        ),
+        ActorConditionRequirement::Fire => ConditionDefinition::new_damage_schedule(
+            "qengine2.fixture.fire",
+            1,
+            DotElement::Fire,
+            DamageSchedule::Fixed {
+                delayed: true,
+                segments: vec![DamageSegment {
+                    count: 1,
+                    interval_ms: 3_600_000,
+                    amount: 1,
+                }],
+            },
+        ),
+    }
+    .ok_or("condition definition")?;
+    let decision_root = GameplayDecisionRoot::from_bytes([173; 32]);
+    let facts = ApplicationFacts {
+        now,
+        base_speed: 220,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &decision_root,
+        occurrence: DecisionOccurrenceId::from_bytes([174; 16]),
+    };
+    let next = state
+        .stage_owned_test_conditions(&[definition], &facts)
+        .ok_or("native condition application")?;
+    assert!(states.commit(&runtime, actor, admitted.game_session_id, next));
+    let state = states
+        .get(&runtime, actor, admitted.game_session_id)
+        .ok_or("condition owner")?;
+    assert!(
+        state
+            .owned_conditions()
+            .visible_statuses(now)
+            .any(|(k, _)| k == condition_type)
+    );
+    Ok(())
+}
+
 const LIBRARY: &str = "oteryn:quest-progress/quest/u11_80/the_secret_library/";
 const FEATHERS: &str = "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers";
 
@@ -88,6 +167,19 @@ fn qengine_l6_beggar_female_complete_source_outfit_story() -> TestResult {
 #[test]
 fn qengine_l6_beggar_male_complete_source_outfit_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l6-beggar-male-story")
+}
+
+#[test]
+fn qengine_l7_knight_complete_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l7-knight-story")
+}
+#[test]
+fn qengine_l7_druid_complete_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l7-druid-story")
+}
+#[test]
+fn qengine_l7_assassin_complete_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l7-assassin-story")
 }
 
 const ICE_ISLANDS: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/";
@@ -423,6 +515,64 @@ pub(super) async fn exercise(
             ],
             148,
         ),
+        "qengine-rewards-l7-knight-story" => (
+            "knight",
+            &[
+                ("sword-start", None, None, None),
+                ("sword", Some((5892, 1)), Some((5880, 100)), Some(1)),
+                ("helmet-start", None, None, None),
+                ("fangs", Some((5893, 100)), None, None),
+                ("helmet", Some((5924, 1)), None, None),
+                ("sweat", Some((5885, 1)), None, None),
+                ("steel", Some((5887, 1)), None, None),
+                ("helmet-work", None, None, None),
+                ("helmet-reward", None, None, Some(2)),
+            ],
+            139,
+        ),
+        "qengine-rewards-l7-druid-story" => (
+            "druid",
+            &[
+                ("body-start", None, None, None),
+                ("body", Some((5896, 50)), Some((5897, 50)), Some(1)),
+                ("hat-start", None, None, None),
+                ("griffinclaw", Some((5937, 1)), None, None),
+                ("water-start", None, None, None),
+                ("water", Some((5939, 1)), None, None),
+                ("dust-start", None, None, None),
+                ("dust", Some((5906, 100)), None, None),
+                ("chain-start", None, None, None),
+                ("chain", Some((5940, 1)), None, None),
+                ("language", None, None, None),
+                ("hat", None, None, Some(2)),
+            ],
+            148,
+        ),
+        "qengine-rewards-l7-assassin-story" => (
+            "assassin",
+            &[
+                ("base-start", None, None, None),
+                ("eyes", Some((5898, 30)), None, None),
+                ("scales", Some((5882, 10)), None, None),
+                ("lizard", Some((5881, 30)), None, None),
+                ("fins", Some((5895, 20)), None, None),
+                ("vampire", Some((5905, 20)), None, None),
+                ("demon", Some((5906, 10)), None, None),
+                ("sweat", Some((5885, 1)), None, None),
+                ("base", None, None, Some(0)),
+                ("first-start", None, None, None),
+                ("blue", Some((5912, 50)), None, None),
+                ("green", Some((5910, 50)), None, None),
+                ("red", Some((5911, 50)), None, None),
+                ("brown", Some((5913, 50)), None, None),
+                ("yellow", Some((5914, 50)), None, None),
+                ("white", Some((5909, 50)), None, None),
+                ("yarn", Some((5886, 10)), None, Some(1)),
+                ("second-start", None, None, None),
+                ("second", Some((5804, 1)), Some((5930, 1)), Some(2)),
+            ],
+            156,
+        ),
         "qengine-rewards-l6-beggar-female-story" => (
             "beggar",
             &[
@@ -486,7 +636,9 @@ pub(super) async fn exercise(
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let mut callbacks = Vec::new();
     for (suffix, take, present, addon) in steps {
-        let batch = if name.starts_with("qengine-rewards-l6-") {
+        let batch = if name.starts_with("qengine-rewards-l7-") {
+            "l7"
+        } else if name.starts_with("qengine-rewards-l6-") {
             "l6"
         } else if name.starts_with("qengine-rewards-l5-") {
             "l5"
@@ -497,7 +649,9 @@ pub(super) async fn exercise(
         } else {
             "l2"
         };
-        let key = if family == "pirate" && *suffix == "sabre" {
+        let key = if family == "knight" && *suffix == "sword" {
+            "oteryn:quest-reward/knight-sword".into()
+        } else if family == "pirate" && *suffix == "sabre" {
             "oteryn:quest-reward/pirate-sabre".into()
         } else {
             format!("oteryn:quest-reward/{batch}-{family}-{suffix}")
@@ -525,19 +679,39 @@ pub(super) async fn exercise(
                 .map(amount)
                 .collect();
         }
-        if matches!(family, "royal-costume" | "druid-rook") {
+        if matches!(
+            family,
+            "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin"
+        ) {
             expected_take.extend(present.iter().map(amount));
         }
         assert_eq!(callback.take, expected_take);
         assert_eq!(
             callback.present,
-            if matches!(family, "royal-costume" | "druid-rook") {
+            if matches!(
+                family,
+                "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin"
+            ) {
                 vec![]
             } else {
                 present.iter().map(amount).collect::<Vec<_>>()
             }
         );
         assert_eq!(callback.outfit.as_ref().map(|o| o.addons), *addon);
+        let expected_give = match (family, *suffix) {
+            ("druid", "hat-start") => Some(4867),
+            ("druid", "water-start") => Some(5938),
+            _ => None,
+        };
+        assert_eq!(
+            callback
+                .give
+                .as_ref()
+                .map(|g| (g.item.clone(), g.count, g.contents.len())),
+            expected_give.map(|id| (format!("oteryn:item.tibia.i{id}"), 1, 0)),
+            "exact source quest gift"
+        );
+
         if family == "beggar" && *suffix == "first-materials" {
             assert_eq!(
                 serde_json::to_value(&callback)?["fee"],
@@ -567,6 +741,23 @@ pub(super) async fn exercise(
                 track: format!("{LIBRARY}library_permission"),
                 minimum: 7,
                 maximum: 7,
+            }]
+        } else if family == "knight"
+            && matches!(
+                *suffix,
+                "helmet-start" | "fangs" | "helmet" | "sweat" | "steel"
+            )
+        {
+            vec![Requirement {
+                track: "oteryn:quest-progress/quest/u7_6/the_ape_city/questline".into(),
+                minimum: 16,
+                maximum: 18,
+            }]
+        } else if family == "assassin" && *suffix == "first-start" {
+            vec![Requirement {
+                track: format!("{SHATTERED}shipwrecked"),
+                minimum: 2,
+                maximum: 2,
             }]
         } else if family == "festive" && *suffix != "base" {
             vec![Requirement {
@@ -760,6 +951,13 @@ pub(super) async fn exercise(
         std::iter::once((format!("{ICE_ISLANDS}questline"), 39))
             .chain((1..=4).map(|n| (format!("{ICE_ISLANDS}obelisk0{n}"), 5)))
             .collect()
+    } else if family == "knight" {
+        vec![(
+            "oteryn:quest-progress/quest/u7_6/the_ape_city/questline".into(),
+            16,
+        )]
+    } else if family == "assassin" {
+        vec![(format!("{SHATTERED}shipwrecked"), 2)]
     } else if family == "oriental" {
         vec![(ORC_POWDER.into(), 35)]
     } else if family == "pirate" {
@@ -874,7 +1072,7 @@ pub(super) async fn exercise(
     // the largest source recipes, preserving every native weight check.
     if matches!(
         family,
-        "battle-mage" | "royal-costume" | "pirate" | "oriental"
+        "battle-mage" | "royal-costume" | "pirate" | "oriental" | "knight"
     ) {
         let carrying_level = if family == "royal-costume" { 200 } else { 50 };
         use crate::durability::character_progression::{
@@ -962,6 +1160,7 @@ pub(super) async fn exercise(
                     native,
                     weights: &weights,
                     fee_payment: None,
+                    actor_conditions: None,
                 },
                 &owner.premium_coordinator,
             )
@@ -1033,6 +1232,28 @@ pub(super) async fn exercise(
         for (key, actor) in keys.into_iter().zip(actors) {
             npcs.insert(key.to_owned(), actor);
         }
+    } else if family == "knight" {
+        let keys = ["oteryn:npc.morgan", "oteryn:npc.gregor", "oteryn:npc.sam"];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "druid" {
+        let keys = [
+            "oteryn:npc.ustan",
+            "oteryn:npc.ceiron",
+            "oteryn:npc.a_majestic_warwolf",
+        ];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "assassin" {
+        let keys = ["oteryn:npc.vescu", "oteryn:npc.erayo", "oteryn:npc.atrad"];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
     } else if family == "beggar" {
         let keys = ["oteryn:npc.hugo", "oteryn:npc.simon_the_beggar"];
         let actors = super::classic_quests::install(owner, admitted, keys).await?;
@@ -1056,6 +1277,10 @@ pub(super) async fn exercise(
     let mut occurrence = 500;
     for (step_index, callback) in callbacks.iter().enumerate() {
         let npc = *npcs.get(&callback.npc).ok_or("story NPC actor")?;
+        for kind in &callback.requires_actor_conditions {
+            actor_condition_fixture(owner, admitted, *kind, true).await?;
+        }
+
         if name == "qengine-rewards-l3-dark-trails-story" && callback.key.ends_with("-second") {
             commit_fixture(
                 owner,
@@ -1136,8 +1361,12 @@ pub(super) async fn exercise(
             if quantity(h, &item.item).await? < i64::from(item.count) {
                 supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
             }
-            if (matches!(family, "royal-costume" | "druid-rook")
-                || (matches!(family, "pirate" | "citizen-rook") && callback.key.ends_with("-hat")))
+            if (matches!(
+                family,
+                "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin"
+            ) || (matches!(family, "pirate" | "citizen-rook")
+                && callback.key.ends_with("-hat")))
+                && needed.len() > 1
                 && index == 0
             {
                 let before = counts(h).await?;
@@ -1201,6 +1430,7 @@ pub(super) async fn exercise(
                         native,
                         weights: &weights,
                         fee_payment: None,
+                        actor_conditions: None,
                     },
                     &owner.premium_coordinator,
                 )
@@ -1267,6 +1497,32 @@ pub(super) async fn exercise(
         } else {
             None
         };
+        if !callback.requires_actor_conditions.is_empty() {
+            for kind in &callback.requires_actor_conditions {
+                actor_condition_fixture(owner, admitted, *kind, false).await?;
+            }
+            let before = counts(h).await?;
+            let money = coin_worth(h).await?;
+            let (result, _, _) =
+                super::qengine_rewards::wire_reward(owner, admitted, npc, callback, false).await?;
+            assert_eq!(
+                result,
+                NpcIntentDisposition::Rejected,
+                "absent current source condition refuses"
+            );
+            assert_eq!(counts(h).await?, before);
+            assert_eq!(coin_worth(h).await?, money);
+            for (item, count) in &held {
+                assert_eq!(
+                    quantity(h, item).await?,
+                    *count,
+                    "condition refusal cannot consume"
+                );
+            }
+            for kind in &callback.requires_actor_conditions {
+                actor_condition_fixture(owner, admitted, *kind, true).await?;
+            }
+        }
         if callback.requires_premium {
             let current = owner.premium_coordinator.take();
             let before = counts(h).await?;
@@ -1293,13 +1549,30 @@ pub(super) async fn exercise(
                 );
             }
         }
+        let gift_before = if let Some(gift) = &callback.give {
+            Some(quantity(h, &gift.item).await?)
+        } else {
+            None
+        };
         let before = counts(h).await?;
         let (result, catalogues, command) =
             super::qengine_rewards::wire_reward(owner, admitted, npc, callback, true).await?;
         assert_eq!(result, NpcIntentDisposition::Ok);
         let after = counts(h).await?;
-        assert_eq!(after.0, before.0 + 1);
-        assert_eq!(after.2, before.2);
+        assert_eq!(
+            after.0,
+            before.0 + 1,
+            "source transition {} must commit",
+            callback.key
+        );
+        assert_eq!(after.2, before.2 + i64::from(callback.give.is_some()));
+        if let (Some(gift), Some(before)) = (&callback.give, gift_before) {
+            assert_eq!(
+                quantity(h, &gift.item).await?,
+                before + i64::from(gift.count),
+                "exact source gift delivered once"
+            );
+        }
         let new_facts = callback
             .outfit
             .as_ref()

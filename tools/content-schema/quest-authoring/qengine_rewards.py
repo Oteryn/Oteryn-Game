@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -521,6 +521,118 @@ def build():
         if callback['key'].startswith('oteryn:quest-reward/l6-beggar-'):
             npc=callback['npc'].split('.')[-1]
             callback['sources']=[beggar_source(npc,'55-199' if npc=='hugo' else '84-222')]
+    def source_offer(npc,words,topic,next_topic,states):
+        offers.append({'npc':'oteryn:npc.'+npc,'keywords':words,'topic':topic,'next_topic':next_topic,
+            'storage':states,'reply':['Will you help me with this task?']})
+    knight=prefix+'u7_8/knight_outfits/'
+    ape=prefix+'u7_6/the_ape_city/questline'
+    knight_helmet=knight+'addon_helmet'
+    knight_mission=knight+'mission_helmet'
+    for key,maximum,npc,lines in [(knight_helmet,7,'gregor','63-211'),
+            (knight+'ramsays_helmet_door',1,'gregor','149-160'),
+            (prefix+'u7_8/druid_outfits/druid_amulet_door',1,'ceiron','174-180'),
+            ('oteryn:quest-progress/atrad',2,'atrad','75-104')]:
+        path='data-global/npc/'+npc+'.lua'
+        declarations.append({'key':key,'quest':'oteryn:quest.'+general,'initial':0,'min':-1,
+            'max':maximum,'writable':True,'sources':[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']})
+    def stamp(track):
+        return {'track':track,'from':{'kind':'any'},'effect':{'kind':'set_now'}}
+    def elapsed(track,seconds):
+        return {'track':track,'from':{'kind':'elapsed_at_least','seconds':seconds},'effect':{'kind':'add','value':0}}
+    add('l7-knight-sword-start',general,'morgan',["knight's sword"],[storage(knight+'addon_sword',-1,1,0)])
+    callbacks[-1]['forbids_addons']=[{'outfit':'oteryn:outfit.knight','addons':1}]
+    next(c for c in callbacks if c['key']=='oteryn:quest-reward/knight-sword')['forbids_addons']=[{'outfit':'oteryn:outfit.knight','addons':1}]
+    states=[storage(knight_helmet,-1,1,0),storage(knight_mission,0,1,6)]
+    add('l7-knight-helmet-start',general,'gregor',['yes'],states,topic=2,
+        requires=[{'track':ape,'minimum':16,'maximum':18}])
+    callbacks[-1]['requires_premium']=True
+    callbacks[-1]['state_ops']=[{'track':rook_ref,'from':{'kind':'between','minimum':0,'maximum':2147483646},'effect':{'kind':'add','value':1}}]
+    source_offer('gregor',['task'],0,1,states)
+    source_offer('gregor',['yes'],1,2,states)
+    for name,word,item,count,before,topic in [('fangs','behemoth fang',5893,100,1,3),
+            ('helmet','ramsay the reckless helmet',5924,1,2,4),('sweat','sweat',5885,1,3,5),('steel','royal steel',5887,1,4,6)]:
+        states=[storage(knight_helmet,before,before+1),storage(knight_mission,-1,before+1,6)]
+        if name=='fangs':states.append(storage(knight+'ramsays_helmet_door',-1,1,1))
+        add('l7-knight-'+name,general,'gregor',['yes'],states,take=[(item,count)],topic=topic,
+            requires=[{'track':ape,'minimum':16,'maximum':18}])
+        source_offer('gregor',[word],0,topic,states)
+    add('l7-knight-helmet-work',general,'sam',['adorn','outfit','addon'],
+        [storage(knight_helmet,5,6),storage(knight_mission,-1,6,6)])
+    callbacks[-1]['state_ops']=[stamp(knight+'addon_helmet_timer')]
+    add('l7-knight-helmet-reward',general,'sam',['adorn','outfit','addon'],
+        [storage(knight_helmet,6,7),storage(knight_mission,-1,0,6),storage(rook_ref,0,0,2147483647)],outfit=('knight',2))
+    callbacks[-1]['state_ops']=[elapsed(knight+'addon_helmet_timer',7201)]
+    druid=prefix+'u7_8/druid_outfits/'
+    body=druid+'druid_body_addon'
+    hat=druid+'druid_hat_addon'
+    add('l7-druid-body-start',general,'ustan',['addon'],[storage(body,-1,1,0)])
+    states=[storage(body,1,2)]
+    add('l7-druid-body',general,'ustan',['yes'],states,take=[(5896,50),(5897,50)],outfit=('druid',1),topic=1)
+    source_offer('ustan',['paws','bear paws'],0,1,states)
+    states=[storage(hat,-1,1,0),storage(druid+'default_start',0,1,1)]
+    add('l7-druid-hat-start',general,'ceiron',['yes'],states,give=(4867,1),topic=4)
+    for words,topic,next_topic in [(['addon','outfit'],0,2),(['faolan'],2,3),(['yes'],3,4)]:
+        source_offer('ceiron',words,topic,next_topic,states)
+    states=[storage(hat,1,2)]
+    add('l7-druid-griffinclaw',general,'ceiron',['yes'],states,take=[(5937,1)],topic=5)
+    source_offer('ceiron',['griffinclaw','container'],0,5,states)
+    for name,before,topic,give in [('water-start',2,6,(5938,1)),('dust-start',4,8,None),('chain-start',6,10,None)]:
+        states=[storage(hat,before,before+1)]
+        if name=='chain-start':states.append(storage(druid+'druid_amulet_door',-1,1,1))
+        add('l7-druid-'+name,general,'ceiron',['yes'],states,give=give,topic=topic)
+        source_offer('ceiron',['task'],0,topic,states)
+    for name,words,item,count,before,topic in [('water',['waterskin','water skin'],5939,1,3,7),
+            ('dust',['dust','demon dust'],5906,100,5,9),('chain',['chain','wolf tooth chain'],5940,1,7,11)]:
+        states=[storage(hat,before,before+1)]
+        add('l7-druid-'+name,general,'ceiron',['yes'],states,take=[(item,count)],topic=topic)
+        source_offer('ceiron',words,0,topic,states)
+    add('l7-druid-language',general,'ceiron',['faolan'],[storage(hat,8,9)])
+    states=[storage(hat,9,10)]
+    add('l7-druid-hat',general,'a_majestic_warwolf',['yes'],states,outfit=('druid',2),topic=1)
+    source_offer('a_majestic_warwolf',['addon','outfit'],0,1,states)
+    assassin=prefix+'u7_8/assassin_outfits/'
+    base=assassin+'assassin_base_outfit'
+    first=assassin+'assassin_first_addon'
+    second=assassin+'assassin_second_addon'
+    states=[storage(base,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l7-assassin-base-start',general,'vescu',['yes'],states,topic=3)
+    callbacks[-1]['requires_actor_conditions']=['drunk']
+    for words,topic,next_topic in [(['sober'],0,1),(['potion'],1,2),(['yes'],2,3)]:
+        source_offer('vescu',words,topic,next_topic,states)
+    for name,word,item,count,before in [('eyes','30 bonelord eyes',5898,30,1),('scales','10 red dragon scales',5882,10,2),
+            ('lizard','30 lizard scales',5881,30,3),('fins','20 fish fins',5895,20,4),('vampire','20 vampire dust',5905,20,5),
+            ('demon','10 demon dust',5906,10,6),('sweat',"warrior's sweat",5885,1,7)]:
+        states=[storage(base,before,before+1)]
+        add('l7-assassin-'+name,general,'vescu',['yes'],states,take=[(item,count)],topic=4)
+        source_offer('vescu',[word],0,4,states)
+    add('l7-assassin-base',general,'vescu',['secret'],[storage(base,8,9)],outfit=('assassin',0))
+    states=[storage(first,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
+    add('l7-assassin-first-start',general,'erayo',['yes'],states,topic=2,
+        requires=[{'track':prefix+'u7_8/the_shattered_isles/shipwrecked','minimum':2,'maximum':2}])
+    callbacks[-1]['requires_outfits']=['oteryn:outfit.assassin']
+    source_offer('erayo',['addon'],0,1,states)
+    source_offer('erayo',['yes'],1,2,states)
+    for index,(name,item) in enumerate([('blue',5912),('green',5910),('red',5911),('brown',5913),('yellow',5914),('white',5909),('yarn',5886)],1):
+        count=10 if name=='yarn' else 50
+        word='10 spools of yarn' if name=='yarn' else f'50 {name} cloth'
+        states=[storage(first,index,index+1)]
+        add('l7-assassin-'+name,general,'erayo',['yes'],states,take=[(item,count)],
+            outfit=('assassin',1) if name=='yarn' else None,topic=3)
+        source_offer('erayo',[word],0,3,states)
+    atrad='oteryn:quest-progress/atrad'
+    states=[storage(atrad,-1,1,0),storage(second,0,1)]
+    add('l7-assassin-second-start',general,'atrad',['yes'],states,topic=3)
+    callbacks[-1]['requires_actor_conditions']=['fire']
+    source_offer('atrad',['addon','outfit'],0,2,states)
+    source_offer('atrad',['yes'],2,3,states)
+    add('l7-assassin-second',general,'atrad',['nose ring','ring'],[storage(atrad,1,2),storage(second,1,2)],
+        take=[(5804,1),(5930,1)],outfit=('assassin',2))
+    callbacks[-1]['requires_actor_conditions']=['fire']
+    for callback in callbacks:
+        if callback['key'].startswith('oteryn:quest-reward/l7-'):
+            npc=callback['npc'].split('.')[-1];path='data-global/npc/'+npc+'.lua'
+            lines={'morgan':'115-148','gregor':'63-211','sam':'67-88','ustan':'63-85','ceiron':'60-187','a_majestic_warwolf':'64-75','vescu':'56-189','erayo':'57-114','atrad':'60-105'}[npc]
+            callback['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})

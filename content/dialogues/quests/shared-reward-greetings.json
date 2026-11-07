@@ -2,6 +2,17 @@
   "schema": 1,
   "npcs": [
     {
+      "npc": "oteryn:npc.a_majestic_warwolf",
+      "greet": "Interesting. A human who can speak the language of wolves.",
+      "farewell": "YOOOOUHHOOOUU!",
+      "walkaway": "YOOOOUHHOOOUU!",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_majestic_warwolf.lua:83:sha256:9fa8cee3622cacee85aec7770960d7d1bf46d25569f3a6ef857d0605bc842572",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_majestic_warwolf.lua:84:sha256:9fa8cee3622cacee85aec7770960d7d1bf46d25569f3a6ef857d0605bc842572",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_majestic_warwolf.lua:85:sha256:9fa8cee3622cacee85aec7770960d7d1bf46d25569f3a6ef857d0605bc842572"
+      ]
+    },
+    {
       "npc": "oteryn:npc.amber",
       "greet": "Oh hello, nice to see you |PLAYERNAME|. Are you here to hear some stories of my {adventures} or do you need {help}?",
       "farewell": "See you later, |PLAYERNAME|.",
@@ -21,6 +32,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ariella.lua:187:sha256:90cd51edf9d8829e054e2bfa38cbf61aa3bece945b56ceb60e9cb9a346c95a56",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.atrad",
+      "greet": "Hehe. That's a good show, player. With all the pyrotechnical effects, you got my {attention} - for a minute at least.",
+      "farewell": "I guess someone blew out the candle.",
+      "walkaway": "I guess someone blew out the candle.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/atrad.lua:67:sha256:ffdc0e1b8d0d5455be4be4c6875b3f832dca3a488440ed08020bfa20bd7bde01",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/atrad.lua:110:sha256:ffdc0e1b8d0d5455be4be4c6875b3f832dca3a488440ed08020bfa20bd7bde01",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/atrad.lua:111:sha256:ffdc0e1b8d0d5455be4be4c6875b3f832dca3a488440ed08020bfa20bd7bde01"
       ]
     },
     {
@@ -68,6 +90,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.ceiron",
+      "greet": "Always nice to meet a fellow druid, |PLAYERNAME|.",
+      "farewell": "May Crunor bless and guide you, |PLAYERNAME|.",
+      "walkaway": "May Crunor bless and guide you, |PLAYERNAME|.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ceiron.lua:200:sha256:fb4cc1a978148a1ea552764b78930c098afd735af56738433797f20aa17da780",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ceiron.lua:201:sha256:fb4cc1a978148a1ea552764b78930c098afd735af56738433797f20aa17da780",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ceiron.lua:202:sha256:fb4cc1a978148a1ea552764b78930c098afd735af56738433797f20aa17da780"
+      ]
+    },
+    {
       "npc": "oteryn:npc.costello",
       "greet": "Welcome, |PLAYERNAME|! Feel free to tell me what has brought you here.",
       "farewell": "Good bye. Come back soon.",
@@ -112,6 +145,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.erayo",
+      "greet": "What the... I mean, of course I sensed you.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/erayo.lua:129:sha256:dc6c54417c8bfdd32abcea9f068322f17d029c4d7722f1acfdeb6cd795a4c48f",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.ezebeth",
       "greet": "Hello! I guess you are here for a {mission}.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -120,6 +164,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:118:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gregor",
+      "greet": "Greetings, |PLAYERNAME|. What do you want?",
+      "farewell": "Be careful on your journeys.",
+      "walkaway": "Be careful on your journeys.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gregor.lua:285:sha256:f56640cfe0501c564d092d3572b7b065aebaa6e22cb8f5af561a524079c8db98",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gregor.lua:286:sha256:f56640cfe0501c564d092d3572b7b065aebaa6e22cb8f5af561a524079c8db98",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gregor.lua:287:sha256:f56640cfe0501c564d092d3572b7b065aebaa6e22cb8f5af561a524079c8db98"
       ]
     },
     {
@@ -318,6 +373,28 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tom.lua:264:sha256:5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ustan",
+      "greet": "Crunor's blessing, traveller.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ustan.lua:364:sha256:441ed6570ee072e3e75ffa98af95aa653b3d6ec8836327f6a5927833c5faed89",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "T-time for another b-beer. <hicks>",
+      "walkaway": "Oh, two t-trolls. Hellooo, wittle twolls. <hicks>",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vescu.lua:204:sha256:af26eb8e9e31d41d3d00f08d03a971cf3136c4c2ffc83317af414e1dcb40262b",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vescu.lua:205:sha256:af26eb8e9e31d41d3d00f08d03a971cf3136c4c2ffc83317af414e1dcb40262b"
       ]
     },
     {

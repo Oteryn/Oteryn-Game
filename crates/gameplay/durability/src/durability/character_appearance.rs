@@ -325,9 +325,9 @@ pub(super) async fn podium_cosmetic_owned<C: AppearanceContent<String>>(
     target: crate::domain::appearance::EarnedCosmetic<'_>,
 ) -> Result<bool, DurabilityError> {
     use crate::domain::appearance::{AccountUnlocks, EarnedCosmetic, EarnedCosmetics, UnlockFact};
-    // Only an outfit depends on sex; a mount is the account's (`hasMount`).
+    // Outfit/addon starter admission depends on sex; mounts belong to the account.
     let sex = match target {
-        EarnedCosmetic::Outfit(_) => match character_sex::read(&mut *connection, character).await {
+        EarnedCosmetic::Outfit(_) | EarnedCosmetic::Addon(..) => match character_sex::read(&mut *connection, character).await {
             Ok(sex) => Some(sex),
             Err(AppearanceWriteError::Unavailable(error)) => return Err(error),
             Err(_) => return Ok(false),
@@ -349,7 +349,12 @@ pub(super) async fn podium_cosmetic_owned<C: AppearanceContent<String>>(
             let key = key.to_owned();
             content.mount_exists(&key) && unlocks.mount(&key) == UnlockFact::Compatible
         }
-        EarnedCosmetic::Addon(..) => false,
+        EarnedCosmetic::Addon(key,addon) => {
+            let key=key.to_owned();
+            addon>0 && content.outfit_addon_count(&key).is_some_and(|count|addon<=count)
+                && (sex.is_some_and(|sex|content.addon_is_starter(&key,sex,addon))
+                    || unlocks.addon(&key,addon)==UnlockFact::Compatible)
+        },
     })
 }
 

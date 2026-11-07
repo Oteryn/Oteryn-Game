@@ -138,3 +138,14 @@ the fenced transaction; an absent owner refuses before costs. Optional
 `requires_outfits` (at most8 distinct outfit identities) reuses the normal
 starter-or-compatible-earned account appearance proof in that transaction,
 before inventory or value effects. Empty/default fields preserve legacy plans.
+
+`requires_actor_conditions` is a bounded unique list of source Fire/Drunk kinds.
+The command admission samples the existing runtime/player condition owners under
+their normal locks. An opaque proof binds that sample to the exact command,
+callback, current item fence and native generation. SQL reward application
+refuses absent/mismatched evidence before value participants and does not lock
+the runtime while holding SQL locks. This models source greeting prerequisites
+conservatively at each value action; no storage flag substitutes for a condition.
+`forbids_addons` reuses the compatible earned/starter appearance owner for each
+requested addon bit. Unknown identities or unsupported bits refuse. Both optional
+fields omit empty values to preserve historical callback plan serialization.

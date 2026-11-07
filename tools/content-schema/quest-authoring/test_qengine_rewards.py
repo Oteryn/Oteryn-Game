@@ -26,6 +26,27 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(reachable[0]['next_topic'],second['topic'])
         self.assertTrue(all(s['minimum']<=phase<=s['maximum'] for s in second['storage']))
 
+    def test_l7_source_paths_keep_complete_recipes_gifts_and_live_guards(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for family,name,item,count in [('knight','fangs',5893,100),('knight','helmet',5924,1),('knight','sweat',5885,1),('knight','steel',5887,1),('druid','griffinclaw',5937,1),('druid','water',5939,1),('druid','dust',5906,100),('druid','chain',5940,1),('assassin','yarn',5886,10)]:
+            self.assertEqual(rows[f'l7-{family}-{name}']['take'],[{'item':f'oteryn:item.tibia.i{item}','count':count}])
+        for name,item in [('hat-start',4867),('water-start',5938)]:
+            self.assertEqual(rows['l7-druid-'+name]['give'],{'item':f'oteryn:item.tibia.i{item}','count':1,'contents':[]})
+        for name,suffix in [('l7-knight-fangs','ramsays_helmet_door'),('l7-druid-chain-start','druid_amulet_door')]:
+            assigned=next(e for e in rows[name]['storage'] if e['track'].endswith(suffix))
+            self.assertEqual((assigned['minimum'],assigned['maximum'],assigned['set']),(-1,1,1))
+            declaration=next(t for t in self.callbacks['tracks'] if t['key']==assigned['track'])
+            self.assertEqual((declaration['initial'],declaration['quest']),(0,'oteryn:quest.outfit_and_addon_quests'))
+        self.assertEqual(rows['l7-knight-helmet-reward']['state_ops'][0]['from'],{'kind':'elapsed_at_least','seconds':7201})
+        self.assertTrue(rows['l7-knight-helmet-start']['requires_premium'])
+        self.assertEqual(rows['knight-sword']['forbids_addons'],[{'outfit':'oteryn:outfit.knight','addons':1}])
+        self.assertEqual(rows['l7-assassin-base-start']['requires_actor_conditions'],['drunk'])
+        for name in ('second-start','second'):
+            self.assertEqual(rows['l7-assassin-'+name]['requires_actor_conditions'],['fire'])
+        for field,value in [('requires_actor_conditions',['fire','fire']),('requires_actor_conditions',['invented']),('forbids_addons',[{'outfit':'oteryn:outfit.knight','addons':0}])]:
+            bad=copy.deepcopy(self.callbacks);bad['callbacks'][0][field]=value
+            with self.assertRaises(ValidationError):q.validate_callbacks(bad)
+
     def test_beggar_preserves_source_costs_clocks_and_native_guards(self):
         rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
         for name,item,count in [('cloth',5913,20),('leather',5878,50),('wings',5894,10),('blossoms',5921,30),('first-materials',5883,100),('staff',6107,1)]:
@@ -188,10 +209,10 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),48)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),38)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),54)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),71)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

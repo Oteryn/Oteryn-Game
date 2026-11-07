@@ -88,6 +88,14 @@ impl TrackRequirement {
     }
 }
 
+/// Current native actor conditions admitted for one source command.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "snake_case")]
+pub enum ActorConditionRequirement {
+    Fire,
+    Drunk,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
@@ -108,6 +116,10 @@ pub struct RewardCallback {
     pub requires_premium: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_outfits: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub requires_actor_conditions: Vec<ActorConditionRequirement>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub forbids_addons: Vec<OutfitReward>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires: Vec<TrackRequirement>,
     pub take: Vec<ItemAmount>,
@@ -284,6 +296,22 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.storage.is_empty()
             || c.storage.len() > 8
             || tracks.len() != c.storage.len()
+            || c.requires_actor_conditions.len() > 8
+            || c.requires_actor_conditions
+                .iter()
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.requires_actor_conditions.len()
+            || c.forbids_addons.len() > 8
+            || c.forbids_addons
+                .iter()
+                .map(|r| (&r.outfit, r.addons))
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.forbids_addons.len()
+            || c.forbids_addons.iter().any(|r| {
+                !slug(&r.outfit, "oteryn:outfit.", b"_", 128) || !(1..=3).contains(&r.addons)
+            })
             || c.requires_outfits.len() > 8
             || c.requires_outfits.iter().collect::<BTreeSet<_>>().len() != c.requires_outfits.len()
             || c.requires_outfits
@@ -546,6 +574,34 @@ mod tests {
         let encoded = serde_json::to_value(legacy).map_err(|e| e.to_string())?;
         assert!(encoded.get("participants").is_none());
         assert!(encoded.get("creation_sex").is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn actor_and_unowned_addon_guards_fail_closed() -> Result<(), String> {
+        let original: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-reward-callbacks.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        for guard in [
+            serde_json::json!({"requires_actor_conditions":["fire","fire"]}),
+            serde_json::json!({"requires_actor_conditions":["invented"]}),
+            serde_json::json!({"forbids_addons":[{"outfit":"oteryn:outfit.knight","addons":0}]}),
+            serde_json::json!({"forbids_addons":[{"outfit":"oteryn:outfit.knight","addons":1},{"outfit":"oteryn:outfit.knight","addons":1}]}),
+        ] {
+            let mut doc = original.clone();
+            for (key, value) in guard.as_object().ok_or("guard")? {
+                doc["callbacks"][0][key] = value.clone();
+            }
+            assert!(parse(&doc.to_string()).is_err());
+        }
+        let legacy = load()?
+            .into_iter()
+            .find(|c| c.requires_actor_conditions.is_empty() && c.forbids_addons.is_empty())
+            .ok_or("legacy")?;
+        let value = serde_json::to_value(legacy).map_err(|e| e.to_string())?;
+        assert!(value.get("requires_actor_conditions").is_none());
+        assert!(value.get("forbids_addons").is_none());
         Ok(())
     }
 

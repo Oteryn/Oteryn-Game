@@ -71,6 +71,7 @@ pub struct QuestRewardAdmission<'a> {
     pub native: &'a NativeGameplayState,
     pub weights: &'a dyn super::super::item_transfer::ItemWeightLookup,
     pub fee_payment: Option<&'a QuestRewardFeePayment>,
+    pub actor_conditions: Option<&'a super::QuestActorConditionProof>,
 }
 
 #[allow(
@@ -97,6 +98,30 @@ pub(crate) async fn apply(
     }
     if callback.outfit.as_ref().is_some_and(|reward| !outfit_compatible(admission.native, reward)) {
         return Ok(false);
+    }
+    if !callback.requires_actor_conditions.is_empty() && admission.actor_conditions.is_none_or(|proof|
+        !proof.permits(fence,request,admission.native.source_digest(),&callback.requires_actor_conditions)) {
+        return Ok(false);
+    }
+    if !callback.forbids_addons.is_empty() {
+        // Keep a negative ownership predicate stable through costs and grant.
+        // Reuse the account grant owner's lock; another character cannot win
+        // the same addon after this read and still let this transaction charge.
+        let account:sqlx::types::Uuid=sqlx::query_scalar(
+            "SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+        ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        super::super::character_appearance::lock_account_grants(tx,account).await?;
+        let Some(cosmetics)=admission.native.cosmetics() else {return Ok(false);};
+        for reward in &callback.forbids_addons {
+            let Some(count)=cosmetics.outfit_addon_count(&reward.outfit) else {return Ok(false);};
+            for addon in 1..=2 {
+                if reward.addons & (1 << (addon-1)) != 0 && addon>count {return Ok(false);}
+                if reward.addons & (1 << (addon-1)) != 0
+                    && super::super::character_appearance::podium_cosmetic_owned(
+                        tx,fence.character_id,cosmetics,EarnedCosmetic::Addon(&reward.outfit,addon)
+                    ).await? { return Ok(false); }
+            }
+        }
     }
     if !callback.requires_outfits.is_empty() {
         let Some(cosmetics) = admission.native.cosmetics() else { return Ok(false); };

@@ -121,6 +121,8 @@ mod grizzly;
 mod monk;
 pub(crate) mod quest;
 mod quest_participants;
+mod quest_actor_conditions;
+pub use quest_actor_conditions::QuestActorConditionProof;
 pub use quest::{QuestRewardAdmission, QuestRewardFeePayment};
 mod soul_war;
 mod tibiadrome;
