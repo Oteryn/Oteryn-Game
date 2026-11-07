@@ -850,7 +850,7 @@
         "sha256": "c172ebab19214e792f141fc1c38ef9f78b4cf3c508949bdb67d7a5a827533e2b"
       }
     ],
-    "current_batch": "threatened_final_06: Taegen flower/herb, Maelyrra held lights and exact-zero final bag",
+    "current_batch": "threatened_light_07: generic carried-use area/time predicates and six source transform branches",
     "tutorial_corpse_publication": {
       "id": "corpse-pilgrimage-threatened-merge",
       "phase": "GREEN; commit and fast-forward publication next",
@@ -2392,7 +2392,29 @@
           "log": "/tmp/questpc3-threatened-final-pins.log"
         },
         "placements": "56NPCs57records0held; new Maelyrra from existing source candidate",
-        "next": "Implement actual light gathering, fifteen unique barrier sources, remaining animal/stone interactions and whole source journey before whole-quest qualification."
+        "next": "Implement actual light gathering, fifteen unique barrier sources, remaining animal/stone interactions and whole source journey before whole-quest qualification.",
+        "published": "0874c2694"
+      },
+      "threatened_light_07": {
+        "status": "RED_PROVEN_IMPLEMENTING",
+        "red": {
+          "duration_ms": 210324,
+          "log": "/tmp/questpc3-threatened-light-red-world-fixture-fixed.log",
+          "markers": "moon/star/sun primary=false cosmetic=false receipts0 for allthree",
+          "success": false
+        },
+        "invalid_setup": "Initial compile passed BundleWorld where native room expected; fixed to existing movement-cell world binding; not counted as RED.",
+        "source": "Three verified retained scripts action_moon_mirror.lua/action_starlight_vial.lua/action_sun_catcher.lua,6/8 branches and five distinct repair positions each. Source facts in CONTRACT-NOTES; no source copies committed.",
+        "feature": "Reuse existing world callback/quest/item replacement transaction. Add carried trigger, exact source, actor rectangle, recorded server clock, bound definition terms and exact replay. No competing ledger.",
+        "reuse_checked": "Explicit remote tracking refs refreshed qengine2 2638a83ca plus questpc5/questpc6/questl2; no matching carried area/time rule found. Existing World CLOCK-1 and source item replacement reused.",
+        "clock_support_checkpoint": {
+          "scope": "Deterministic recorded World-clock test source; production system clock unchanged; six-branch RED fixture remains uncommitted pending GREEN.",
+          "compatibility_pg_ms": 158618,
+          "compatibility_pg_log": "/tmp/questpc3-world-clock-fixture-inventory-pg.log",
+          "check": "PASS dispatch allfeatures/tests6m58s including build lock",
+          "clippy": "PASS dispatch allfeatures/alltargets -Dwarnings2m11s",
+          "fmt": "PASS cargo fmt --all --check"
+        }
       }
     },
     "source_corrections": [
