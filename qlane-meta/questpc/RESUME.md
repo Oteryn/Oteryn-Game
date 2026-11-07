@@ -1,3 +1,37 @@
+## Cadence evidence batch
+Own Citizen PG2/2 and audit regression1/1 pass. Generation and world pin-refresh
+pass with no generated-content delta. Independent pin-check was killed by memory
+pressure while workspace compilation overlapped; retry sequentially afterwards.
+No World/pin inputs changed. Workspace all-targets PASS6m42s; workspace fmt PASS.
+Pushing evidence-only batch under PREPUSH-2; dispatch units remain in progress.
+Dispatch library selection still running: three findings so far (two exact
+seam/gate inventory omissions; profile count3829 vs3664). No partial fix pushed;
+collect remaining results and reconcile independent source cohorts before pins.
+
+## Post-main NPC regression proof
+Citizen source stories reran on pushed adc0ab91f against PostgreSQL18.6:
+female92.1237s, male92.1365s,2passed/0failed; log hashes and actual execution
+markers in cloud-post3032-citizen-validation.json. Audit inventory1/1 GREEN.
+Dispatch1625-case unit selection still running; two inventory omissions found
+(newhaven_corruptor test construction, source_dropdown gate call). Read both
+owners: fixture qualified room remains None; dropdown uses its existing source
+world gate. Collect ALL remaining failures, then make one grouped repair.
+Deduplicated engine handoffs are in ENGINE-REQUESTS.md.
+Blood Brothers requires live necklace-slot3083 proof; Barbarian Test needs source
+random sip/reset outcomes and actual drunkenness for mammoth. ENGINE-REQUESTs
+sent; exact URLs/hashes/decisions recorded. No whole quest promoted.
+
+## Continuation: audit GREEN and source requests
+Audit strict-inventory regression rerun PASS1/1 (0.197s, real unit, not PG).
+Dispatch library suite (main PG module excluded) is building; collect all failures before repairs.
+Botany source final branch needs two physical reward types; extend Bigfoot's
+atomic multi-root NPC request. Lion's Rock needs15s pagoda/amphora reset and60s
+flower regrowth; extend Uneasy's shared timed-object request. Source hashes,
+URLs and conservative decisions are in QUEST-STATUS/CONTRACT-NOTES. No quest
+promoted. Reconciled stale top-level migration/full-reverse-dep status fields;
+older evidence remains explicit historical context. Own migration range now
+1290,1292,1293,1295,1296; shared canonical0999-1008 and1310-1315.
+
 ## Main PR3032 and Citizen qualification batch
 Merged canonical main47db34f09 row-application helper; removed our temporary
 33-line NPC input helper. Workspace all-targets PASS4m42s after exact-inventory regeneration; strict Clippy

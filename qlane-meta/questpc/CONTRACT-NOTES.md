@@ -630,3 +630,41 @@ Repository otbm_reader.read_tiles decoded19,325,129 tiles and found zero items
 whose unique-ID attribute5 equals3091. A raw byte match cannot establish a
 source placement. Keep the held exact-UID callback unchanged; do not manufacture
 an object or substitute coordinates for the stored unique ID.
+
+## Botany and Lion's Rock source decisions (2026-11-07)
+Rabaz source: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/rabaz.lua
+SHA256 b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643.
+Final yes consumes11699x1, gives11700x1 plus physical3035x10, awards3000XP
+and sets questline4. Shared qengine2 live head279a9cff8 still rejects multiple
+GiveItem types. Extend the Bigfoot request; do not silently substitute a wallet
+credit or synthetic container. Almanach chest proof alone remains insufficient.
+
+Lion's Rock sources: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/lions_rock/actions_lions_rock.lua
+and https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/lions_rock/movements_lions_rock.lua
+SHA256 actions985436b56fe3e623d6574feb0265b2fae6ba04bee76ba2bcb522b4e0b02f5aac;
+movements6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9.
+Three sacrifices require exact target positions and an unlit pagoda; source
+resets pagodas after15s. Flower21388 transforms21935 and regrows after60s;
+StepIn amphora21945 transforms21946 and resets after15s while granting scroll.
+These are shared object states, not per-character cooldowns. Extend the Uneasy
+Alliance timed-transform request. Retain source timers and selector requirements;
+final fountain separately chooses among seven rewards, excluding lion's heart
+when mount40 is owned, and enforces a strict next-day timestamp.
+
+## Blood Brothers and Barbarian source decisions (2026-11-07)
+Julius: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/julius.lua
+SHA256 a3184eb9261079bc3fc08b97a5437fc34bf57b7df84b95dba39432316e775ea4.
+At source stage11 Julius checks necklace SLOT for3083, then writes Mission01=2.
+Carried ownership is not equivalent. Shared item programme currently rejects
+Equipped guards, including at live qengine2 head279a9cff8. Requested its durable
+owner composition; do not truncate/bypass this stage to activate later bread.
+
+Barbarian sources at https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/barbarian_test
+(action_mead.lua1bc325...1db88; action_horn.luaee5a98...197f) and
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sven.lua
+(SHA256885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95).
+Mead uses math.random(5)>1; failure resets successes0 and applies a1s outfit.
+Counter9 succeeds before total increments; total>20 asks for a new round.
+Sven resets total0, not the success counter. Preserve these literal source
+boundaries; do not guarantee completion after ten USEs. Mammoth requires live
+CONDITION_DRUNK. Requested random quest outcome/condition owner composition.

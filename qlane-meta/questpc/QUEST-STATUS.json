@@ -10608,32 +10608,44 @@
     }
   },
   "migration_registry_progress": {
-    "state": "PASS: registry applied; six actualPG cases and strict checks GREEN",
+    "state": "Canonical main/QNPCFX consolidation pushed adc0ab91f; duplicate-number check passed",
     "range": "1290-1299",
     "used_lane_versions": [
       1290,
-      1291,
       1292,
       1293,
-      1294,
       1295,
       1296
     ],
-    "qengine": "0999-1006 exact shared content verified1b6001748",
-    "qbase": "1200-1205 exact canonical; own XP variable repair1296",
+    "qengine": "0999-1008 canonical main content",
+    "qbase": "No1200-1205 copies; canonical shared NPC migrations1310-1315 from main",
     "evidence": "cloud-migration-registry-validation.json",
     "file_list": "MIGRATION-REGISTRY.md",
-    "pr3020": "OPEN at final validation; consume shared files as-is until main merge",
-    "runtime_published": true
+    "pr3020": "MERGED1ae39c7f; followed by QNPCFX f641d8d6c and compile repair47db34f09",
+    "runtime_published": true,
+    "superseded_pre_main_registry": {
+      "used_lane_versions": [
+        1290,
+        1291,
+        1292,
+        1293,
+        1294,
+        1295,
+        1296
+      ],
+      "qengine": "0999-1006 exact shared content verified1b6001748",
+      "qbase": "1200-1205 exact canonical; own XP variable repair1296",
+      "pr3020": "OPEN at final validation; consume shared files as-is until main merge"
+    }
   },
   "stock_wire_progress": {
     "state": "GREEN: final literal PG3 plus personal chest fallback and strict checks",
     "evidence": "cloud-stock-wire-validation.json",
     "runtime_published": true
   },
-  "latest_qualified_title": "Draconia Quest",
+  "latest_qualified_title": "Citizen Outfits Quest",
   "reverse_dependency_gate": {
-    "state": "RUNNING; no push until complete affected-set pass",
+    "state": "SUPERSEDED by owner PREPUSH-2; no full reverse-dependency test run is active",
     "main_merge": "bbb3e06d04875fc1e63f024b853194f7580cc875",
     "direct_crates": [
       "oteryn-architecture-check",
@@ -10745,7 +10757,7 @@
   },
   "qengine_main_consolidation": {
     "requested_main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
-    "state": "Finishing existing local merge checkpoint, then merging newly published main; no push until regenerated full reverse-dependency PG gate passes.",
+    "state": "COMPLETE; published adc0ab91f contains main47db34f09 and its canonical shared migrations",
     "superseded_validation": "Prior pin-check and final converter check interrupted by explicit owner main-merge direction; no final-green or PostgreSQL credit claimed."
   },
   "latest_main_consolidation": {
@@ -10932,9 +10944,97 @@
     "duplicate_migrations": "PASS",
     "durability_units_before_inventory_regeneration": "617passed/1failed; strict inventory regenerated to include existing tutorial_viola.rs",
     "pending": [
-      "regenerated audit inventory test rerun",
       "dispatch unit suite"
     ],
-    "cadence_exception": "PREPUSH-2 tests-pending exception; own Citizen PG stories passed89.6288s and89.6768s on PostgreSQL18.6"
+    "cadence_exception": "PREPUSH-2 tests-pending exception; own Citizen PG stories passed89.6288s and89.6768s on PostgreSQL18.6",
+    "durability_inventory_rerun": {
+      "result": "PASS1/1",
+      "test": "every_type2_insert_takes_its_tuple_from_a_type2_transaction",
+      "duration_seconds": 0.197,
+      "log": "/tmp/questpc-main3032-audit-unit-green.log"
+    },
+    "dispatch_unit_findings": {
+      "state": "RUNNING; no partial fix pushed",
+      "findings": [
+        "Exact CONSTRUCTIONS omits test-only newhaven_corruptor.rs (qualified room stays None)",
+        "Exact gate_source_world inventory omits existing source_dropdown.rs producer",
+        "Pinned production speed profile count expects3664 but loads3829; tracing admitted source cohorts before changing any pin"
+      ],
+      "next": "Collect all1625 results, fix all root causes together, rerun affected cases and the complete selected unit set"
+    }
+  },
+  "botany_source_followup": {
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/rabaz.lua",
+    "sha256": "b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643",
+    "final_hand_in": "consume11699x1; grant11700x1 and3035x10; grant3000XP; questline4",
+    "engine_request": "Atomic NPC multiple fresh root item types under one source receipt; extend existing Bigfoot request",
+    "decision": "Do not substitute gold balance for source physical coins or invent a container; retain full-quest qualification hold while moving to other owned entries",
+    "shared_ref_checked": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d; still only one GiveItem type per branch"
+  },
+  "lions_rock_source_followup": {
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "sources": [
+      {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/lions_rock/actions_lions_rock.lua",
+        "sha256": "985436b56fe3e623d6574feb0265b2fae6ba04bee76ba2bcb522b4e0b02f5aac"
+      },
+      {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/lions_rock/movements_lions_rock.lua",
+        "sha256": "6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9"
+      }
+    ],
+    "engine_request": "Revision-fenced timed ground transforms on USE/StepIn, shared with Uneasy Alliance",
+    "source_delays_seconds": {
+      "pagodas": 15,
+      "flower_regrowth": 60,
+      "amphora": 15
+    },
+    "decision": "Source object state must gate the atomic item/quest grant and reset; do not replace shared objects with character-only cooldowns or skip timers. Final fountain also requires source random reward selection and mount40 exclusion."
+  },
+  "blood_brothers_source_followup": {
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/julius.lua",
+    "sha256": "a3184eb9261079bc3fc08b97a5437fc34bf57b7df84b95dba39432316e775ea4",
+    "engine_request": "Live equipped-slot predicate in source NPC item programmes",
+    "source_condition": "At mission stage11, necklace slot must contain item3083 before Mission01 becomes2; carried ownership alone is insufficient",
+    "decision": "Preserve equipped proof; do not lower it to a carried-item test or admit a truncated programme that bypasses this prerequisite",
+    "shared_ref_checked": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d; item_exchange_keys rejects Equipped guards"
+  },
+  "barbarian_test_source_followup": {
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "sources": [
+      {
+        "path": "data-global/scripts/quests/barbarian_test/action_mead.lua",
+        "sha256": "1bc325ebac44559608819bbe27bde37cd815c12ea1cd813ba62be6e4f5c1db88"
+      },
+      {
+        "path": "data-global/scripts/quests/barbarian_test/action_horn.lua",
+        "sha256": "ee5a983a8eec21cb3332f908b8baf0e66311797615eae25e103518e1583a197f"
+      },
+      {
+        "path": "data-global/npc/sven.lua",
+        "sha256": "885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
+      }
+    ],
+    "engine_request": "Replay-bound random quest outcome and live player-condition predicates",
+    "source_contract": "math.random(5)>1 increments success counter; failed sip resets it0 and applies1s outfit condition; success at counter9 returns before total increment; >20 total requests another round. Mammoth requires CONDITION_DRUNK.",
+    "decision": "Do not replace source RNG with ten deterministic USEs, alter negative initial counters, or substitute a quest flag for actual drunkenness."
+  },
+  "latest_citizen_pg_regression": "cloud-post3032-citizen-validation.json",
+  "other_lane_reuse_check": {
+    "qengine2": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
+    "qready1": "5f2359204f9fd1b719cc84de7f2b2de3c86d0d50",
+    "qready2": "a9f723152f128ce76c0a793dae0f6905bd85ca73",
+    "result": "QREADY2 repeats seven packet titles already qualified here or explicitly qualified elsewhere. No unfinished owned story implementation found; no replacement written."
+  },
+  "continuation_validation": {
+    "source_head": "adc0ab91f4c679c9060093ced951e12c33ed8042",
+    "own_pg": "Citizen2/2 PASS; PostgreSQL18.6;92.1237s/92.1365s",
+    "audit_unit": "PASS1/1;0.197s",
+    "regeneration": "Native providers, world metadata, NPC placements, quest binding evidence, completion matrix, audit goldens and exact insert inventory regenerated; world pin-refresh PASS; no generated-content diff",
+    "independent_pin_check": "Attempt killed by memory pressure with concurrent workspace metadata compilation; retry sequentially after compilation. No changed World/pin inputs.",
+    "dispatch_units": "Still running; all findings will be grouped; no partial source repair in this evidence-only batch",
+    "changed_crates": [],
+    "workspace_all_targets": "PASS6m42s",
+    "fmt_all": "PASS"
   }
 }

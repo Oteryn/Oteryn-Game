@@ -1,0 +1,26 @@
+{
+  "code_pushed": "adc0ab91f4c679c9060093ced951e12c33ed8042",
+  "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+  "postgres_version": "18.6 (Debian18.6-1.pgdg13+2)",
+  "cases": [
+    {
+      "marker": "qengine-rewards-questpc-citizen-female-story",
+      "duration_seconds": 92.123722424,
+      "success": true
+    },
+    {
+      "marker": "qengine-rewards-questpc-citizen-male-story",
+      "duration_seconds": 92.136539147,
+      "success": true
+    }
+  ],
+  "nextest_summary": "2passed;0failed;92.194s",
+  "log_sha256": "49d97fb797a3ac7ee432650f12a38a4401f0b4c66e1f96b334b6b66a5dbf1a51",
+  "audit_inventory_regression": {
+    "result": "PASS1/1",
+    "duration_seconds": 0.197,
+    "log_sha256": "14a227828e09ec471fac50541be44aa4b627a67c515361229cd9ff5d2835a6f3"
+  },
+  "dispatch_units": "Running1625 selected library cases (main PG module excluded); two exact seam/gate inventory omissions and a production profile-count mismatch observed. Collect all failures before grouped repair.",
+  "qualification_changes": false
+}
