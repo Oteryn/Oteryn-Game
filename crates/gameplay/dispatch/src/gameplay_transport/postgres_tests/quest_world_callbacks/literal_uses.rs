@@ -242,7 +242,24 @@ fn exercise_with_missing(
     )
 }
 
-// The finite matrix varies the existing movement/refusal fixture plus one remote map fact.
+#[test]
+fn questpc5_serpentine_remote_predicate_observes_dropped_item() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::super::kill_reward_e2e::scenario_thread::run("serpentine-dropped-remote", || {
+        let mut callback = callback("formogar-hoist-3060")?;
+        callback.selector.position = Some(position((32157, 31126, -10)));
+        callback
+            .remote_teleport
+            .as_mut()
+            .ok_or("remote")?
+            .appearance = 3031;
+        exercise_with_dropped_remote(callback, 100, 1, Some(1), None, false, false, None, true)
+    })
+}
+
+// Existing callers keep their original static remote fixture matrix.
 #[allow(clippy::too_many_arguments)]
 fn exercise_with_remote(
     callback: Callback,
@@ -253,6 +270,32 @@ fn exercise_with_remote(
     recovery: bool,
     departed: bool,
     remote_appearance: Option<u16>,
+) -> TestResult {
+    exercise_with_dropped_remote(
+        callback,
+        appearance,
+        ordinal,
+        stage,
+        missing,
+        recovery,
+        departed,
+        remote_appearance,
+        false,
+    )
+}
+
+// The finite matrix varies the existing movement/refusal fixture plus one remote map fact.
+#[allow(clippy::too_many_arguments)]
+fn exercise_with_dropped_remote(
+    callback: Callback,
+    appearance: u16,
+    ordinal: u8,
+    stage: Option<i64>,
+    missing: Option<usize>,
+    recovery: bool,
+    departed: bool,
+    remote_appearance: Option<u16>,
+    dropped_remote: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let step = callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
@@ -485,6 +528,27 @@ fn exercise_with_remote(
             drop(slot);
             owner.quest_catalogue = Some(catalogue);
         }
+        if dropped_remote {
+            let remote = callback.remote_teleport.as_ref().ok_or("remote")?;
+            super::input_item(
+                &owner,
+                fence.item_fence(),
+                &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                    position: remote.position,
+                    item: format!("oteryn:item.tibia.i{}", remote.appearance),
+                    count: 1,
+                },
+                8201,
+                false,
+            )
+            .await?;
+            owner.states.loop_ground.invalidate();
+            let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i3031' AND g.spatial_position=$1").bind(crate::durability::map_item_mint_audit::map_item_spatial_position(remote.position.x, remote.position.y, remote.position.floor)).fetch_one(&h.pool).await?;
+            assert_eq!(
+                count, 1,
+                "real durable carried item was dropped before STEP"
+            );
+        }
         let key = oteryn_world_bundle::bundle::placement_key(
             trigger.floor,
             trigger.x,
@@ -640,7 +704,7 @@ fn exercise_with_remote(
             if allowed && !departed {
                 local(
                     if let Some(remote) = &callback.remote_teleport
-                        && remote_appearance == Some(remote.appearance)
+                        && (dropped_remote || remote_appearance == Some(remote.appearance))
                     {
                         remote.destination
                     } else {
