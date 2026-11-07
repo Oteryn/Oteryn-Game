@@ -437,6 +437,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let after = view::EntryFacts {
                 definition: MapDefinition::Item(reference),
                 appearance_id: u16::try_from(row.item).unwrap_or(0),
+                blocks_projectile: native
+                    .item_policy_for_source_id(row.item)
+                    .and_then(|policy| policy.record().attributes.blocks_projectile)
+                    .unwrap_or(entry.facts.blocks_projectile),
                 ..entry.facts
             };
             let gathering = matches!(

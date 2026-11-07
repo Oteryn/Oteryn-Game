@@ -47,3 +47,15 @@ The loop Ground snapshot bridge reuses PC6's existing delegation pattern at
 `movement_item` and `movement_items` delegate to the wrapped map facts. The House
 map adapter keeps its intentional exclusion of Channel projections. The actual
 wire PG test exposed the missing bridge here before the methods were added.
+
+Native Machete traversal exposed a collision gap in the existing terrain owner:
+`install_terrain_state` published its durable projection in the rotation/fact
+snapshot, while `quest_callback_blocked` read only hidden/passable callback
+projections and the immutable base. The concrete PostgreSQL proof cut3696 to3695
+successfully, then STEP remained Blocked. Keep all terrain-tool SQL guards and the
+base boot refusal intact. The shared collision reader now considers an exact
+qualified replacement definition/appearance for that entry, preserving every
+other top-level blocker and restoring collision on regrowth. Unknown/ambiguous
+replacement facts cannot clear an original blocker. The terrain refresh also
+uses the qualified successor's projectile flag. Native source B3 bytes and all
+House/custody/item admission guards remain unchanged.

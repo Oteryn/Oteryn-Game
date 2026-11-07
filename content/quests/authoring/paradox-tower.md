@@ -84,3 +84,29 @@ Public Crystal201189f copies of `action_four_floor_lever.lua:1-49` and
 `action_fifth_floor_lever.lua:1-41` have been SHA256 checked against the above
 repository9f5a72c bytes and are identical. The original source guard and reward
 claims remain held; these bindings qualify only the selected Oteryn behavior.
+
+The third-floor lever supplies its ghoul. Pinned
+`action_third_floor_lever.lua:11-22` (SHA256
+`ace0db48b50044dcff1abce8ff159f1e24bde452d0e60eff817bfbb009d66324`)
+creates it at32479,31900,z5 after2 seconds, changes9125 to9126, then clears the
+upper room and restores9125 after100 seconds. There is no missing static spawn.
+The cleanup helper `data/libs/functions/position.lua:234-270`, SHA256
+`c18d16465394a4064e82d35463105511c1f273e7c6de588f29b9da8b1eadaf9b`,
+removes monsters in the inclusive room32476..32481,31900..31901,z5 and leaves
+players. These bytes are in the repository's pinned9f5a72c corpus.
+
+The selected native bindings make two conservative choices where B3 has no UIDs:
+the first-floor grass-covered pressure plate431 at32481,31905,z7 opens the stair;
+leaving either actual entry cell32478/32479,31906,z7 restores its stone. This exit
+is an authored StepOut binding because the historical25014/25015 positions were
+not retained. The monster plate is the actual431 at the donor's explicit ghoul
+spawn position32479,31900,z5. It admits monsters only; no historical25017 UID is
+invented. The six second-floor switches and main lever use their exact native
+positions, original appearances and the source pattern.
+
+Public Crystal201189f source copies were byte-compared with the repository9f
+scripts; each is identical:
+
+- [second-floor lever](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_paradox_tower/action_second_floor_lever.lua):1-42, SHA256 `7bbde6f5e8f8d3028aae11f81f2509b053a51c0cf31660f193896ebdcad8a16c`.
+- [timed ghoul lever](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_paradox_tower/action_third_floor_lever.lua):1-28, SHA256 `ace0db48b50044dcff1abce8ff159f1e24bde452d0e60eff817bfbb009d66324`.
+- [monster plate](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_paradox_tower/movement_third_floor_ghoul.lua):1-37, SHA256 `e9cc04623815e716b9158617a7bdb5c600d85fe264b873318a9047f3d80a04c5`.

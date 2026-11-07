@@ -7619,7 +7619,7 @@
     "remote_verified": true
   },
   "world_admission_batch": {
-    "status": "GREEN_MERGED_READY_TO_FF_PUSH",
+    "status": "PUSHED",
     "previous_pushed_head": "bd8716ce21a5f51abd45377dfa82cfe26c50ae1b",
     "scope": [
       "exact reusable food debit when opening, free close",
@@ -7941,6 +7941,325 @@
         "PC8 shared authored scene progression and retained tool evacuation",
         "qengine2 carried document USE and source exchanges"
       ]
+    },
+    "published": {
+      "head": "2d8bd8c5c8d728f85ee44b74d47b9973aa359271",
+      "remote_verified": true,
+      "fast_forward_from": "bd42f09bb",
+      "author": "blakinio <75369544+blakinio@users.noreply.github.com>"
     }
+  },
+  "paradox_native_batch": {
+    "status": "GREEN_LOCAL_OWNER_REQUESTED_HANDOFF",
+    "previous_pushed_head": "2d8bd8c5c8d728f85ee44b74d47b9973aa359271",
+    "session": 2469,
+    "log": "/tmp/questpc4-paradox-native-red.log",
+    "scope": [
+      "first grass predicate and source stair transform",
+      "second six exact levers and owned ladder",
+      "third timed ghoul switch and monster plate"
+    ],
+    "test_rule": "Probe three missing production bindings only after real PG/version and exact native B3 tile assertions; extend each into physical route before any GREEN claim",
+    "source_census": "/tmp/questpc4-paradox-native-tower-census.json",
+    "important_source_recovery": {
+      "path": "data-global/scripts/quests/the_paradox_tower/action_third_floor_lever.lua",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "ace0db48b50044dcff1abce8ff159f1e24bde452d0e60eff817bfbb009d66324",
+      "lines": "11-22",
+      "facts": "Use9125 queues Ghoul32479,31900,z5 after2000ms, transforms9126;100000ms clears source bounded monster area and resets9125. Missing static spawn is expected. No invented static placement."
+    },
+    "generic_reuse": [
+      "existing world predicates/passage replacement",
+      "source-owned ladder and sealed native ladder USE",
+      "existing monster-only plate occupancy",
+      "existing encounter/native monster admission and Channel timers; inspect lane branches before extending timed spawn-only behavior",
+      "existing floor_assembly_profiles capture supports exact Ground-only source policies; add only operands proved necessary by native flows"
+    ],
+    "whole_entry_status": "IN_PROGRESS;4qualified/17active/2external exclusions unchanged",
+    "timed_contract": "qlane-meta/questpc4/TIMED-ENCOUNTER-CONTRACT.md",
+    "cleanup_source": {
+      "path": "data/libs/functions/position.lua",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "c18d16465394a4064e82d35463105511c1f273e7c6de588f29b9da8b1eadaf9b",
+      "lines": "234-270",
+      "facts": "true,false removes monsters in inclusive source room, leaves players",
+      "proof": "/tmp/questpc4-paradox-cleanup-helper-facts.json"
+    },
+    "timed_reuse_check": {
+      "qengine2": "97cb9db79",
+      "pc3": "009f5f9e1",
+      "pc6": "53d5648b8",
+      "pc8": "70a0d92af",
+      "result": "No spawn-only timed quest callback found; reuse existing run_source_owner_cycles precise deadline loop and native carrier policy admission. Existing party encounters retain all player proof requirements."
+    },
+    "red": {
+      "log": "/tmp/questpc4-paradox-native-red.log",
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "passed": 0,
+      "failed": 3,
+      "ignored": 0,
+      "seconds": 105.43,
+      "cases": {
+        "first_missing_native_grass_stair": 53.737434922,
+        "second_missing_native_pattern_ladder": 53.29643942,
+        "third_missing_native_timed_ghoul_switch": 52.129238043
+      },
+      "proof": "All exact source region/positions/IDs/no-house/no-invented-attrs assertions ran before missing binding error"
+    },
+    "implemented": [
+      "optional default-omitted EncounterTiming with bounded spawn-only mode; old party guards unchanged",
+      "native carrier staged creature batch with rollback and native policy install",
+      "bounded source-placement/revision/content/owner queue in existing Channel source-owner precise deadline loop",
+      "source monster-only cleanup and same-turn plate release; no SQL progress/reward/kill writes from timers",
+      "13 exact/conservative documented native bindings for grass/stair, six switches/main, timed ghoul and monster plate",
+      "native_scene_with_appearances production-registry projection palette; unchanged source B3 tiles"
+    ],
+    "stationary_profiles": {
+      "producer": "tools/content-migration/floor_assembly_profiles.py",
+      "old": 3637,
+      "new": 3647,
+      "changed_old": 0,
+      "added": [
+        430,
+        431,
+        1772,
+        1791,
+        1947,
+        1948,
+        2772,
+        2773,
+        9125,
+        9126
+      ],
+      "all_new_materializable": false,
+      "all_new_legal_destinations": [
+        "Ground"
+      ],
+      "audit": "/tmp/questpc4-paradox-native-profile-audit.json",
+      "generation": "/tmp/questpc4-paradox-native-generate.log",
+      "files": 42,
+      "capture_repairs": [
+        "canonical client stubs have no semantics; preserve their explicit materializable=false and qualify physical facts only",
+        "source XML defines some IDs using fromid/toid; source line scanner now handles exact pinned ranges and still requires every ID line"
+      ]
+    },
+    "checks_so_far": {
+      "preliminary_rust_check": {
+        "status": "PASS",
+        "duration": "3m31s",
+        "log": "/tmp/questpc4-paradox-native-check1.log",
+        "scope": "entities/quests/dispatch alltargets/allfeatures before native fixture/source profile expansion; repeat final checks on frozen candidate"
+      },
+      "pure_units": {
+        "status": "PASS",
+        "passed": 6,
+        "seconds": 1.53,
+        "log": "/tmp/questpc4-paradox-native-units2.log",
+        "scope": "timed schema/old party guards/default omission, protected tracks, no-value predicates and frozen legacy hashes"
+      },
+      "fixture_compile_repair": {
+        "log": "/tmp/questpc4-paradox-native-fixture-check.log",
+        "error": "snapshot health lives on CompanionSnapshot, not CompanionState; corrected; removed unused import",
+        "pg_cases_ran": false
+      },
+      "earlier_clippy": {
+        "status": "PASS",
+        "duration": "9m35s",
+        "log": "/tmp/questpc4-paradox-native-final-clippy.log",
+        "note": "Before newly discovered shared terrain collision repair; repeat changed World/dispatch gates after repair"
+      },
+      "terrain_collision_unit": {
+        "status": "PASS",
+        "log": "/tmp/questpc4-terrain-collision-unit3.log",
+        "passed": 1,
+        "seconds": 0.01,
+        "assertions": [
+          "cleared qualified grass allows movement",
+          "separate solid entry remains blocking",
+          "regrowth blocks again",
+          "older completion cannot reopen",
+          "unqualified replacement cannot clear original blocker"
+        ]
+      },
+      "native_regressions": {
+        "status": "PASS",
+        "log": "/tmp/questpc4-native-regressions-final.log",
+        "passed": 3,
+        "failed": 0,
+        "seconds": 115.46,
+        "mead_seconds": 60.788849247,
+        "native3956_seconds": 60.785487027,
+        "party_encounter_seconds": 54.671146437
+      },
+      "world_final_units": {
+        "status": "PASS",
+        "log": "/tmp/questpc4-native-world-units-final.log",
+        "passed": 2,
+        "failed": 0,
+        "seconds": 0.01,
+        "scope": "terrain collision and House base isolation; pure units, not PostgreSQL"
+      },
+      "native_freshness_final": {
+        "status": "PASS",
+        "log": "/tmp/questpc4-paradox-native-freshness-final.log",
+        "source_profile_check": "PASS exact pinned XML including range/duplicate/missing guards",
+        "unchanged_prior_callbacks": 3,
+        "new_callbacks": 13
+      },
+      "final_check": {
+        "status": "PASS",
+        "crates": [
+          "content",
+          "entities",
+          "quests",
+          "world",
+          "dispatch"
+        ],
+        "all_targets": true,
+        "all_features": true,
+        "duration": "2m27s",
+        "log": "/tmp/questpc4-native-five-check-final.log"
+      },
+      "final_clippy": {
+        "status": "PASS",
+        "warnings": "DENY",
+        "duration": "2m36s",
+        "log": "/tmp/questpc4-native-five-clippy-final.log"
+      },
+      "final_fmt": "PASS",
+      "final_quest_units": {
+        "status": "PASS",
+        "passed": 6,
+        "seconds": 1.22,
+        "log": "/tmp/questpc4-native-quest-units-final.log"
+      },
+      "extra_content_integration": "Stopped while compiling at owner STOP/r2 handoff; no result claimed. Required native source generator, pin check and focused PG/units/check/clippy/fmt all passed."
+    },
+    "pin_refresh": {
+      "status": "PASS",
+      "digest": "f970b97d1976c5b587f04448aac5828729c0819dd76b113a66a5bc196101dbd7",
+      "bytes": 31101924,
+      "refresh_log": "/tmp/questpc4-paradox-native-pin-refresh.log",
+      "check_log": "/tmp/questpc4-paradox-native-pin-check.log",
+      "producer": "oteryn-world-bundle-compiler"
+    },
+    "native_proof_status": "Component GREEN: 3 native PG routes, 3 focused PG regressions, 8 final pure units, five-crate check/clippy and fmt. Owner STOP requires publish/handoff to r2 now; whole Paradox remains IN_PROGRESS.",
+    "native_position_rules": [
+      {
+        "rule": "First opening plate uses unique native431+grass tile32481,31905,z7; no historicalUID invented",
+        "evidence": "region-z07-x126-y124.b3 SHA71d0f001114257d94cc70fc7bf7405d0e7dc5f05266e71eb87cfab37ba0d43f6"
+      },
+      {
+        "rule": "Authored exit reset on StepOut of actual entry cells32478/32479,31906,z7; historical25014/25015 positions unavailable",
+        "scope": "Conservative selected Oteryn rule, not donor UID parity"
+      },
+      {
+        "rule": "Monster plate is actual431 at donor explicitGhoulspawn32479,31900,z5; no invented25017UID",
+        "evidence": "source action_third_floor_lever.lua:14-15 + native B3z5 SHA77e62338d0a32bc18735f981a2531e4614a37591fd3afc444fa5e626fec146d6"
+      }
+    ],
+    "physical_flow": {
+      "status": "GREEN_NATIVE_PG_PENDING_FINAL_CHECKS",
+      "session": 5439,
+      "log": "/tmp/questpc4-paradox-native-flow4.log",
+      "source_snapshot": "First attempted fixture starts on blockedgrass; no bootguard bypass. Current source now startsactualwalkablecorridor32478,31908,z7 and opensnative1632/1633 door, then cutsrealmaze. This run diagnostic; finalfrozen3-casePG rerun required.",
+      "clock_repair": "Timer fixture reads productionqueue due time and enforces monotonic semanticclock rather than inferring schedule instant from client latency.",
+      "diagnostic_results": {
+        "log": "/tmp/questpc4-paradox-native-flow1.log",
+        "postgres": "18.6",
+        "passed": 0,
+        "failed": 3,
+        "seconds": 111.67,
+        "first": {
+          "seconds": 55.320472684,
+          "error": "StartNotEnterable; unchanged bootguard rejects initial grass tile",
+          "repair": "actualwalkablecorridorstart and existingdoor USE"
+        },
+        "second": {
+          "seconds": 57.796833523,
+          "error": "Blocked; x77/x80 columns contain actual2438..2440 statues",
+          "repair": "Source-census route through open columns76/81 and row31901, retain statues/collision guard"
+        },
+        "third": {
+          "seconds": 56.348612572,
+          "error": "Rejected on initial switch; native creature policy registry unbound in fixture",
+          "repair": "Timed source owner installs matching artifact-qualified native policy registry via existing NativeGameplayRuntimeExt before lookup; no invented Ghoul stats or guard bypass"
+        }
+      },
+      "flow2": {
+        "log": "/tmp/questpc4-paradox-native-flow2.log",
+        "postgres": "18.6",
+        "passed": 2,
+        "failed": 1,
+        "seconds": 113.35,
+        "second_green": 89.629861508,
+        "third_green": 56.285747918,
+        "first_red": {
+          "seconds": 57.064288867,
+          "error": "NothingToUse on native1632door; fixture globallysetdoor=false",
+          "repair": "Native scene helper derives Door from qualified native classification exactly as existing native door tests"
+        }
+      },
+      "first_flow3": {
+        "log": "/tmp/questpc4-paradox-native-first-flow3.log",
+        "postgres": "18.6",
+        "seconds": 56.516385416,
+        "error": "Door USE and cut3696->3695 succeed; subsequent STEP Blocked",
+        "root_cause": "install_terrain_state stores rotations; quest_callback_blocked ignored rotations and retained immutable base grass collision",
+        "fix": "Shared World collision reads exact qualified replacement per base entry, retains every unrelated blocker, preserves unknown target baseline and closes again on regrowth; refresh uses successor projectile flag"
+      },
+      "collision_unit_log": "/tmp/questpc4-terrain-collision-unit2.log",
+      "collision_unit_session": 58314,
+      "flow4": {
+        "log": "/tmp/questpc4-paradox-native-flow4.log",
+        "postgres": "18.6",
+        "passed": 2,
+        "failed": 1,
+        "seconds": 115.59,
+        "first_red_seconds": 60.062377955,
+        "second_green_seconds": 87.843914147,
+        "third_green_seconds": 55.531500093,
+        "root_cause": "Actual native amphora1772 at32477,31903,z7 blocks the drafted route; collision fix correctly retains it. Route corrected around column32476 and north row31900; no source geometry or blocker changed. Added missing real STEP onto pressure plate after cutting."
+      },
+      "diagnostic_session": 69022,
+      "diagnostic_log": "/tmp/questpc4-paradox-native-first-flow5.log",
+      "flow6": {
+        "log": "/tmp/questpc4-paradox-native-flow6.log",
+        "postgres": "18.6",
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0,
+        "seconds": 137.64,
+        "first_seconds": 79.974774652,
+        "second_seconds": 89.205218979,
+        "third_seconds": 57.657802866
+      },
+      "first_flow5": {
+        "log": "/tmp/questpc4-paradox-native-first-flow5.log",
+        "postgres": "18.6",
+        "seconds": 61.875645604,
+        "error": "STEP from32476,31903 toward32477,31903 Blocked, exact source amphora1772 retained; fixed route via column76/northrow0"
+      }
+    },
+    "changed_crates_final": [
+      "content",
+      "entities",
+      "quests",
+      "world",
+      "dispatch"
+    ],
+    "remote_advancement": {
+      "head": "dbf0eca70",
+      "new_work": [
+        "original shared switch lease expiry restores",
+        "original-actor fenced quest consequences from source expiry",
+        "exact native Tomb lever counterparts"
+      ],
+      "action": "Preserve and merge after local native batch green, validate combined relevant deadline/admission/collision paths, FF push; never overwrite or force"
+    }
+  },
+  "owner_handoff": {
+    "instruction": "STOP: replacement r2 now owns this branch after final green commit/merge/push; no further work in this thread",
+    "native_whole_red_wrapper": "Untracked l6_paradox_whole.rs intentionally excluded from component commit; retain for r2 whole-route work"
   }
 }

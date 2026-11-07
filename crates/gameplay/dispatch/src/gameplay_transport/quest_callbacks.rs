@@ -11,6 +11,7 @@ pub(super) mod monsters;
 mod rewards;
 mod shared_gate;
 mod soul_war_reward;
+mod timed_encounter;
 
 use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{
@@ -48,6 +49,7 @@ struct Pending {
 
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
+    timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     soul_rewards:
         std::sync::Mutex<std::collections::HashMap<GameSessionId, soul_war_reward::Pending>>,
@@ -55,6 +57,17 @@ pub(super) struct PendingCallbacks {
     pub(super) fixture: OnceLock<Vec<Callback>>,
     #[cfg(test)]
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
+}
+
+impl PendingCallbacks {
+    pub(super) fn next_encounter_due_us(&self) -> Option<u64> {
+        self.timed
+            .lock()
+            .ok()?
+            .iter()
+            .map(|pending| pending.next_due_us())
+            .min()
+    }
 }
 
 fn callbacks() -> &'static [Callback] {

@@ -23,9 +23,17 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            if name.starts_with("qengine-rewards-questpc4-admission-") {
+            if name.starts_with("qengine-rewards-questpc4-native-tower-") {
+                super::l6_paradox_native::trigger(name)
+            } else if name.starts_with("qengine-rewards-questpc4-admission-") {
                 super::l6_world_admission::trigger(name)
-            } else { Position {x:33294,y:31677,floor:-15} },
+            } else {
+                Position {
+                    x: 33294,
+                    y: 31677,
+                    floor: -15,
+                }
+            },
             false,
         )
     });
@@ -157,18 +165,18 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-royal-costume-base" => &["outfit", "yes", "armor"],
         "l4-royal-costume-shield" => &["outfit", "yes", "shield"],
         "l4-royal-costume-crown" => &["outfit", "yes", "crown"],
-        "l6-citizen-rook-backpack-start" => &["addon","backpack"],
+        "l6-citizen-rook-backpack-start" => &["addon", "backpack"],
         "l6-citizen-rook-backpack-materials" => &["backpack"],
         "l6-citizen-rook-hat-start" | "l6-citizen-rook-hat" => &["hat"],
-        "l6-beggar-start" => &["outfit","yes"],
+        "l6-beggar-start" => &["outfit", "yes"],
         "l6-beggar-cloth" => &["20 brown pieces of cloth"],
         "l6-beggar-leather" => &["50 minotaur leathers"],
         "l6-beggar-wings" => &["10 bat wings"],
         "l6-beggar-blossoms" => &["30 heaven blossoms"],
         "l6-beggar-base" => &["outfit"],
-        "l6-beggar-first-start" => &["outfit","yes"],
+        "l6-beggar-first-start" => &["outfit", "yes"],
         "l6-beggar-first-materials" => &["100 ape fur"],
-        "l6-beggar-staff-start" => &["addon","staff","yes"],
+        "l6-beggar-staff-start" => &["addon", "staff", "yes"],
         "l6-beggar-staff" => &["staff"],
         "l6-druid-rook-body" => &["paws"],
         "l5-norseman-first-shards" | "l5-norseman-second-shards" => &["shard"],
@@ -222,7 +230,11 @@ async fn wire_grant(
     admitted: &mut AdmittedSession,
     npc: EntityRef,
     callback: &RewardCallback,
-) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
+) -> TestResult<(
+    NpcIntentDisposition,
+    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
+    u64,
+)> {
     wire_reward(owner, admitted, npc, callback, true).await
 }
 
@@ -272,7 +284,11 @@ pub(super) async fn wire_reward(
         })
         .collect::<TestResult<Vec<_>>>()?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let expected_outfit = if expect_outfit { callback.outfit.clone() } else { None };
+    let expected_outfit = if expect_outfit {
+        callback.outfit.clone()
+    } else {
+        None
+    };
     let peer = tokio::spawn(async move {
         let mut catalogues = Vec::new();
         let mut result = None;
@@ -635,8 +651,11 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-questpc4-native-tower-") {
+        return super::l6_paradox_native::exercise(owner, admitted, h, name).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-admission-") {
-        return super::l6_world_admission::exercise(owner,admitted,h,authority,name).await;
+        return super::l6_world_admission::exercise(owner, admitted, h, authority, name).await;
     }
     if name.starts_with("qengine-rewards-questpc4-puzzle-") {
         return super::l6_world_puzzles::exercise(owner, admitted, h, name).await;
@@ -647,7 +666,12 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-questpc4-spirit" {
         return super::l6_spirit::exercise(owner, admitted, h, authority).await;
     }
-    if name.starts_with("qengine-rewards-l2-") || name.starts_with("qengine-rewards-l3-") || name.starts_with("qengine-rewards-l4-") || name.starts_with("qengine-rewards-l5-") || name.starts_with("qengine-rewards-l6-") {
+    if name.starts_with("qengine-rewards-l2-")
+        || name.starts_with("qengine-rewards-l3-")
+        || name.starts_with("qengine-rewards-l4-")
+        || name.starts_with("qengine-rewards-l5-")
+        || name.starts_with("qengine-rewards-l6-")
+    {
         return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
     }
     if name == "qengine-rewards-l1-legacy-decaying" {
@@ -679,20 +703,25 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
         // Palimuth's source completion at questline 52 does not test the side.
         // Keep the actual callback unchanged while arranging the opposite side.
-        setup.storage.retain(|state| !state.track.ends_with("/side_decision"));
+        setup
+            .storage
+            .retain(|state| !state.track.ends_with("/side_decision"));
         for state in &mut setup.storage {
             if state.track.ends_with("/door_to_reward") || state.track.ends_with("/mission10") {
                 state.minimum = -1;
             }
         }
-        setup.storage.push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
-            track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision".into(),
-            minimum: 2,
-            maximum: 2,
-            set: 2,
-            preserve: true,
-            increment: false,
-        });
+        setup
+            .storage
+            .push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+                track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision"
+                    .into(),
+                minimum: 2,
+                maximum: 2,
+                set: 2,
+                preserve: true,
+                increment: false,
+            });
     }
     seed(owner, admitted, &setup, 9000).await?;
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;

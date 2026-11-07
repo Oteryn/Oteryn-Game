@@ -318,7 +318,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn use_added_ladder(
+pub(super) async fn use_added_ladder(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     position: crate::map::overlay::TilePos,

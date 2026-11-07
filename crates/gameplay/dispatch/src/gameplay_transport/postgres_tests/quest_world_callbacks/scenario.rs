@@ -29,8 +29,11 @@ fn scenario_case(
     let carried_step = name.starts_with("l6-tomb-carried-") || tomb_native;
     let mead = name == "l6/waterskin-of-mead";
     let spirit = name == "qengine-rewards-questpc4-spirit";
-    let native_crop = small_ruby || mead || spirit || tomb_native;
-    let start = if tomb_native {
+    let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
+    let native_crop = small_ruby || mead || spirit || tomb_native || native_tower;
+    let start = if native_tower {
+        super::super::l6_paradox_native::start(name)
+    } else if tomb_native {
         Position {
             x: trigger.x,
             y: trigger.y - 1,
@@ -228,11 +231,13 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
-        if small_ruby || carried_step {
+        if small_ruby || carried_step || native_tower {
             let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
                 .fetch_one(&h.pool)
                 .await?;
-            if carried_step {
+            if native_tower {
+                eprintln!("POSTGRES_DATABASE_READY {name} native_scene_pending version={version}");
+            } else if carried_step {
                 eprintln!("POSTGRES_DATABASE_READY l6_carried_step version={version}");
             } else {
                 eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
@@ -254,7 +259,14 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if tomb_native {
+        let world = if native_tower {
+            super::super::l6_paradox_native::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native tower policies")?,
+                name,
+            )?
+        } else if tomb_native {
             super::super::l6_tomb_native::world(
                 generation.native_gameplay().ok_or("native Tomb policies")?,
                 callback.selector.unique.ok_or("source UID")?,
