@@ -1267,6 +1267,18 @@
       ]
     },
     {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "supply"
+      ],
+      "topic": 0,
+      "next_topic": 105,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.gregor",
       "keywords": [
         "behemoth fang"

@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 25,
-    "unfinished": 41,
+    "qualified": 27,
+    "unfinished": 39,
     "blocked": 0
   },
   "quests": [
@@ -300,7 +300,7 @@
     {
       "canonical": "oteryn:quest.crystal_warlord_outfits_quest",
       "title": "Crystal Warlord Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -317,7 +317,16 @@
           ]
         }
       ],
-      "remaining_work": "NPC token trades, base/both-addon native USE, achievement and no-spend/replay/SQL-negative stories passed. Completing the selected supply-package acquisition stage through its original chance table before whole-entry qualification."
+      "qualification": {
+        "batch": "L1-09B",
+        "scope": "Complete source20Major base voucher and70Minor addon1 voucher trades, ordinary native USE/prerequisites/current Premium/replay/no-spend, Gnomally2Minor supply-package trade, actual package USE produces rare addon2 voucher under original25-outcome10001-point chance table, final addon/achievement/normalmask3. Actual package identity retained; ordinary admitted harmless commands reach witness draw. No quest progress or rare voucher fixture MINT in acquisition case. Free-gift SQL rejection and same-R native MINT proofs.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l9-crystal-warlord-package-story duration=83.055503896s success=true",
+        "native_owner_canonicals": [
+          "oteryn:quest.crystal_warlord_outfits_quest",
+          "oteryn:quest.bigfoot_s_burden_quest"
+        ],
+        "source": "CONTRACT-NOTES.md L1-09B; random_items.lua:49-80 sha14fc3cf10ca10338aa4479a5371bb3dd7b9b0dede3353a4dec92ffdd11c7023b"
+      }
     },
     {
       "canonical": "oteryn:quest.dark_trails_quest",
@@ -1395,7 +1404,7 @@
     {
       "canonical": "oteryn:quest.soil_guardian_outfits_quest",
       "title": "Soil Guardian Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc3",
@@ -1405,7 +1414,16 @@
           ]
         }
       ],
-      "remaining_work": "NPC token trades, base/both-addon native USE, achievement and no-spend/replay/SQL-negative stories passed. Completing the selected supply-package acquisition stage through its original chance table before whole-entry qualification."
+      "qualification": {
+        "batch": "L1-09B",
+        "scope": "Complete source20Major base voucher and70Minor addon1 voucher trades, ordinary native USE/prerequisites/current Premium/replay/no-spend, Gnomally2Minor supply-package trade, actual package USE produces rare addon2 voucher under original25-outcome10001-point chance table, final addon/achievement/normalmask3. Actual package identity retained; ordinary admitted harmless commands reach witness draw. No quest progress or rare voucher fixture MINT in acquisition case. Free-gift SQL rejection and same-R native MINT proofs.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l9-soil-guardian-package-story duration=83.067978133s success=true",
+        "native_owner_canonicals": [
+          "oteryn:quest.soil_guardian_outfits_quest",
+          "oteryn:quest.bigfoot_s_burden_quest"
+        ],
+        "source": "CONTRACT-NOTES.md L1-09B; random_items.lua:49-80 sha14fc3cf10ca10338aa4479a5371bb3dd7b9b0dede3353a4dec92ffdd11c7023b"
+      }
     },
     {
       "canonical": "oteryn:quest.warmaster_outfits_quest",
@@ -2033,6 +2051,17 @@
         "per-command MINT occurrence with original one-shot ledger"
       ],
       "postgres": "/tmp/qengine2-batch9-green5.log:3 passed162.73s (Afflicted81.959783736s,Crystal81.869075022s,Soil80.856197729s). Old Mage male80.744879902s green under1004. Rust8unit1.35s,Python24tests9.887s,check1m02s,clippy42.25s/final1m24s,fmt/repro/pinrefresh24ab pass. Soil/Crystal grant stages green but package acquisition remains active, not whole-entry qualified."
+    },
+    {
+      "batch": "L1-09B",
+      "status": "QUALIFIED",
+      "entries": [
+        "Soil Guardian Outfits Quest",
+        "Crystal Warlord Outfits Quest"
+      ],
+      "postgres_red": "/tmp/qengine2-batch9b-red.log:43.641406526s/44.064888606s",
+      "postgres_green": "/tmp/qengine2-batch9b-green1.log:2 passed83.07s; Crystal83.055503896s/Soil83.067978133s",
+      "verification": "6Rust bag units;24Python9.564s;1bag-catalogue test0.004s;check4crates1m15s;clippy58.91s;fmt/3reproducers/pin-refresh24ab pass. Source acquisition uses existing bag owner, exact25ranges/quantities; no probability/UID/command-admission bypass. Targeted server content/world followons running session87022."
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",
@@ -2361,24 +2390,16 @@
     "finding": "The questpc5/6/7/8 NPC source executor provides bounded sorted foreign storage reads, source defaults and atomic Father-specific inventory operations; it still supplies empty outfit snapshots and uses storage-only planning elsewhere. No general shared-reward parent predicate or replacement general outfit owner was found. Reuse existing QuestComparison semantics and the established lock/fresh-default pattern with the already delivered shared value participant. Preserve Father atomicity and avoid unrelated lane data."
   },
   "delivery_rule": "Push every finished green quest/mechanism slice immediately and at least every30minutes while green work exists. Bound each investigation/missing-fact search to10minutes; record conservative decisions in CONTRACT-NOTES.md and implement. No full workspace/PG suite.",
-  "active_batch": "L1-09B: complete original Gnomish Supply Package acquisition for Soil Guardian and Crystal Warlord",
+  "active_batch": "L1-09 complete; push B slice, close targeted followons/pincheck, then next remaining entries",
   "active_batch_progress": {
-    "batch": "L1-09",
-    "phase": "GENERIC MECHANISM IMPLEMENTED; source bindings generated; GREEN checks next",
-    "reuse_audit": {
-      "questpc3": "73a106fc5035885a844c81e8618900f80c028116: no selected canonical entries in current status",
-      "questpc5": "115393d62b6a28e449a78d43c12f808e5ad31a77: no selected canonical entries in current status",
-      "questpc6": "3bfd856061e5aa89668747ec7405af8c2b8cf7f5: Crystal Warlord UNFINISHED"
-    },
-    "mechanisms": "Generic cost-backed value-only source exchanges use exact carried input and native backpack MINT with original same-R proofs; no invented quest flags. Bounded achievement_progress reuses existing catalogue and account achievement owner, once per paid occurrence. Five NPC trades and nine canonical item grant mappings authored. Four physical source profiles imported. Quest authoring24 tests9.887s; initial engine check1m17s passed. Full PG GREEN pending.",
-    "postgres_red_log": "/tmp/qengine2-batch9-red2.log",
-    "postgres_red_markers": [
-      "Crystal Warlord45.568645727s false",
-      "Afflicted45.872666643s false",
-      "Soil Guardian42.719011131s false"
+    "batch": "L1-09B",
+    "status": "QUALIFIED",
+    "entries": [
+      "Soil Guardian Outfits Quest",
+      "Crystal Warlord Outfits Quest"
     ],
-    "verification": "Actual PG RED3 cases88.29s recorded. Generic exchange/progress Rust8 tests1.35s, authoring24 tests9.887s, check29.59s, clippy2m43s plus final current-fixture clippy28.47s, fmt and both reproducers pass. Repository pin-refresh24ab unchanged passed. Three PG stories compiling /tmp/qengine2-batch9-green1.log session29069, followed by one-shot Mage male regression. No new qualified entries.",
-    "latest_pg": "GREEN5 all3 grant stories pass162.73s, plus old MageMale80.744879902s. Afflicted QUALIFIED. Final scope check found both voucher quests explicitly require supply-package acquisition; implementing native USE from original random_items.lua chance table before promoting those entries. Gnomish source14fc3cf10ca10338aa4479a5371bb3dd7b9b0dede3353a4dec92ffdd11c7023b:49-77. No fake guarantee or loot probability.",
-    "repeatability_fix": "Source-level PG proved second Ottokar trade refused because existing MINT claim key was once per callback. Implemented storage-free paid-exchange per-command SHA256 claim identity; original MINT ledger/pending checks unchanged. Migration1004 derives and checks exact same identity including full unsigned command domain. Phase-bound claims retain original callback identity. Check1m02s and clippy42.25s passed; current three-case PG rerun /tmp/qengine2-batch9-green5.log session98118 and fresh one-shot regression pending. Prior GREEN4 Crystal80.175203388s/Soil78.26523001s; Afflicted diagnostic confirmed direct authority StageMismatch on second trade. No qualifications before rerun."
+    "postgres_red": "/tmp/qengine2-batch9b-red.log:43.641406526s/44.064888606s",
+    "postgres_green": "/tmp/qengine2-batch9b-green1.log:2 passed83.07s; Crystal83.055503896s/Soil83.067978133s",
+    "verification": "6Rust bag units;24Python9.564s;1bag-catalogue test0.004s;check4crates1m15s;clippy58.91s;fmt/3reproducers/pin-refresh24ab pass. Source acquisition uses existing bag owner, exact25ranges/quantities; no probability/UID/command-admission bypass. Targeted server content/world followons running session87022."
   }
 }

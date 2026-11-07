@@ -195,6 +195,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l9-soil-guardian-first" => &["addition to the soil guardian outfit"],
         "l9-crystal-warlord-base" => &["basic crystal warlord outfit"],
         "l9-crystal-warlord-first" => &["addition to the crystal warlord armor outfit"],
+        "l9-gnomish-supply" => &["supply"],
         "l9-afflicted-pouch" => &["medicine"],
         "l8-hunter-start" => &["addon","task","yes"],
         "l8-hunter-crossbow" => &["crossbow"],

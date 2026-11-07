@@ -6208,6 +6208,36 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l9-gnomish-supply",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 105,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16128",
+          "count": 2
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i15698",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l9-soil-guardian-base",
       "quest": "oteryn:quest.soil_guardian_outfits_quest",
       "npc": "oteryn:npc.gnomally",

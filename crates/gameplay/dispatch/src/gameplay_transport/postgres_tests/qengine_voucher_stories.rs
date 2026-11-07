@@ -23,6 +23,15 @@ fn qengine_l9_crystal_warlord_complete_native_voucher_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l9-crystal-warlord-story")
 }
 
+#[test]
+fn qengine_l9b_soil_guardian_native_supply_package_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l9-soil-guardian-package-story")
+}
+#[test]
+fn qengine_l9b_crystal_warlord_native_supply_package_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l9-crystal-warlord-package-story")
+}
+
 async fn quantity(h: &Harness, item: u16) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
         .bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
@@ -137,14 +146,23 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let (family, looks, vouchers) = match name {
         "qengine-rewards-l9-afflicted-story" => ("afflicted", (430, 431), [12551, 12787, 12786]),
-        "qengine-rewards-l9-soil-guardian-story" => {
+        "qengine-rewards-l9-soil-guardian-story"
+        | "qengine-rewards-l9-soil-guardian-package-story" => {
             ("soil_guardian", (514, 516), [16252, 16253, 16254])
         }
-        "qengine-rewards-l9-crystal-warlord-story" => {
+        "qengine-rewards-l9-crystal-warlord-story"
+        | "qengine-rewards-l9-crystal-warlord-package-story" => {
             ("crystal_warlord", (512, 513), [16255, 16256, 16257])
         }
         _ => return Err("unknown native voucher story".into()),
     };
+    let package_required = name.contains("-package-story");
+    if package_required {
+        assert!(
+            oteryn_gameplay_items::reward_bag::is_reward_bag("oteryn:item.tibia.i15698"),
+            "missing original Gnomish Supply Package action"
+        );
+    }
     let key = format!("oteryn:outfit.{family}");
     let native = owner
         .active_generation
@@ -412,7 +430,97 @@ pub(super) async fn exercise(
             assert_eq!(quantity(h, voucher).await?, 0);
             mask(owner, admitted, &key, addon).await?;
         }
-        mint(owner, admitted, vouchers[2], 1, &mut ordinal).await?;
+        if package_required {
+            let callback = callbacks
+                .iter()
+                .find(|c| c.key == "oteryn:quest-reward/l9-gnomish-supply")
+                .ok_or("source supply trade")?;
+            assert_eq!(
+                callback.take,
+                vec![ItemAmount {
+                    item: "oteryn:item.tibia.i16128".into(),
+                    count: 2
+                }]
+            );
+            mint(owner, admitted, 16128, 1, &mut ordinal).await?;
+            let (result, _, _) =
+                super::qengine_rewards::wire_reward(owner, admitted, npc, callback, false).await?;
+            assert_eq!(
+                result,
+                oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Ok
+            );
+            assert_eq!(
+                quantity(h, 15698).await?,
+                1,
+                "actual Gnomally supply-package MINT"
+            );
+            let source:sqlx::types::Uuid=sqlx::query_scalar("SELECT i.item_instance_id FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i15698'").fetch_one(&h.pool).await?;
+            let definition = crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "oteryn:item.tibia.i15698".into(),
+                revision_ref: "definition-r1".into(),
+            };
+            let native = owner
+                .active_generation
+                .and_then(|g| g.native_gameplay())
+                .ok_or("native")?;
+            let wanted = format!("oteryn:item.tibia.i{}", vouchers[2]);
+            let first = admitted.continuity.next_command_id;
+            let witness = (first..first + 10000)
+                .find(|command| {
+                    let draw = oteryn_gameplay_items::reward_bag::reward_bag_draw(
+                        *admitted.game_session_id.as_bytes(),
+                        *command,
+                        *source.as_bytes(),
+                    );
+                    oteryn_gameplay_items::reward_bag::reward_bag_conversion(
+                        native,
+                        &definition,
+                        draw,
+                    )
+                    .is_some_and(|plan| {
+                        plan.outputs
+                            .iter()
+                            .any(|(item, count)| item.production_key == wanted && *count == 1)
+                    })
+                })
+                .ok_or("reachable unchanged source rare-voucher draw")?;
+            // Advance through real harmless NPC commands. Never rewrite a bag
+            // identity, skip command admission or change a production probability.
+            while admitted.continuity.next_command_id < witness {
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(2))
+                    .ok_or("clock")?;
+                let command = admitted.continuity.next_command_id;
+                let payload = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(
+                    &oteryn_protocol_oteryn::npc_service::NpcTalkIntent {
+                        npc_actor: npc,
+                        text: "hi".into(),
+                    },
+                )
+                .map_err(debug)?;
+                super::quest_world_callbacks::wire(owner, admitted, command, 7, payload).await?;
+                assert_eq!(
+                    admitted.continuity.next_command_id,
+                    command + 1,
+                    "ordinary admitted witness command"
+                );
+            }
+            use_native(owner, admitted, 15698, UseDisposition::Committed).await?;
+            assert_eq!(
+                quantity(h, 15698).await?,
+                0,
+                "package consumed exactly once, including literal replay"
+            );
+            assert_eq!(
+                quantity(h, vouchers[2]).await?,
+                1,
+                "rare voucher came from ordinary package USE, not a fixture MINT"
+            );
+        } else {
+            mint(owner, admitted, vouchers[2], 1, &mut ordinal).await?;
+        }
         use_native(owner, admitted, vouchers[2], UseDisposition::Committed).await?;
     }
     // A free gift cannot borrow the paid-exchange receipt arm. Check this

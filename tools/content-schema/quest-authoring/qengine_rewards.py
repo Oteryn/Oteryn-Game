@@ -33,7 +33,8 @@ def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar')]
-    paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
+    paths += ['data-global/scripts/actions/valuables/random_items.lua',
+              'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
     result = {}
@@ -737,6 +738,8 @@ def build():
         for suffix,token,count,gift,topic,word in [('base',16129,20,base,start,base_word),('first',16128,70,first,start+1,first_word)]:
             add('l9-'+family+'-'+suffix,quest,'gnomally',['yes'],[],take=[(token,count)],give=(gift,1),topic=topic)
             source_offer('gnomally',[word],0,topic,[])
+    add('l9-gnomish-supply','bigfoot_s_burden_quest','gnomally',['yes'],[],take=[(16128,2)],give=(15698,1),topic=105)
+    source_offer('gnomally',['supply'],0,105,[])
     add('l9-afflicted-pouch','afflicted_outfits_quest','ottokar',['yes'],[],take=[(12517,1)],give=(12413,1),topic=1)
     callbacks[-1]['achievement_progress']=[{'key':'oteryn:achievement/doctor_doctor','target':100}]
     source_offer('ottokar',['medicine','medicine pouch','belongings of deceasead'],0,1,[])
@@ -756,6 +759,23 @@ def build():
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
+    # Preserve the source's complete contiguous 1..10001 supply-package table.
+    random_path='data-global/scripts/actions/valuables/random_items.lua'
+    parser=load_module('qengine_literal_item_tables','tools/content-migration/event_item_actions.py')
+    config,_=parser.table(inputs[random_path].decode(),'config')
+    chances=config[15698]['chances'];rewards=[];last=0
+    if list(chances)!=list(range(1,26)):raise ValueError('GNOMISH_SOURCE_OUTCOME_COUNT')
+    for row in chances.values():
+        if row['from']!=last+1 or row['to']<row['from']:raise ValueError('GNOMISH_SOURCE_RANGE_GAP')
+        count=row.get('count',1)
+        rewards.append({'item':f"oteryn:item.tibia.i{row['itemId']}",'name':'','weight':row['to']-row['from']+1,'minimum':count,'maximum':count})
+        last=row['to']
+    if last!=10001:raise ValueError('GNOMISH_SOURCE_ROLL_BOUND')
+    generated['tools/content-schema/native-gameplay/qengine-reward-bag-profiles.json']=encoded({
+        'schema':'OTERYN_QENGINE_REWARD_BAG_PROFILES/v1','sources':[{'path':random_path,'revision':PIN,'sha256':sha(inputs[random_path])}],
+        'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
+            'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
+            'rewards':rewards}]})
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
         path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
