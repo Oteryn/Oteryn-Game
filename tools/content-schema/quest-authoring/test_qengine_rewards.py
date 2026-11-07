@@ -3,10 +3,24 @@ import copy
 import json
 import unittest
 from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
 import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_exact_conditional_storage_rejects_overloaded_or_out_of_range_guards(self):
+        document=copy.deepcopy(self.callbacks)
+        callback=document['callbacks'][0]
+        callback['storage'].append({
+            'track':'oteryn:quest-progress/conditional-reward/flag',
+            'minimum':-1, 'maximum':2, 'set':0, 'set_if':1})
+        q.validate_callbacks(document)
+        for patch in [{'set_if':3}, {'set_if':True}, {'preserve':True}]:
+            invalid=copy.deepcopy(document)
+            invalid['callbacks'][0]['storage'][-1].update(patch)
+            with self.assertRaises((ValueError, ValidationError)):
+                q.validate_callbacks(invalid)
+
     @classmethod
     def setUpClass(cls):
         cls.outputs=q.build()

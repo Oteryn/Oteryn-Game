@@ -101,9 +101,13 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.storage.is_empty()
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || tracks.len() != c.storage.len()
-            || c.storage
-                .iter()
-                .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
+            || c.storage.iter().any(|s| {
+                !slug(&s.track, "oteryn:", b"._/:-", 128)
+                    || s.minimum > s.maximum
+                    || s.set_if.is_some_and(|value| {
+                        !(s.minimum..=s.maximum).contains(&value) || s.preserve
+                    })
+            })
             || (!c.repeatable
                 && c.storage
                     .iter()
@@ -188,7 +192,12 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     effect: if s.preserve {
                         QuestEffectKind::Add(0)
                     } else {
-                        QuestEffectKind::Set(s.set)
+                        s.set_if.map_or(QuestEffectKind::Set(s.set), |equals| {
+                            QuestEffectKind::SetIf {
+                                equals,
+                                value: s.set,
+                            }
+                        })
                     },
                 })
                 .collect(),
@@ -237,6 +246,7 @@ mod tests {
                 minimum: 0,
                 maximum: 0,
                 set: 1,
+                set_if: None,
                 preserve: false,
             })
             .collect();
@@ -249,6 +259,7 @@ mod tests {
             minimum: 0,
             maximum: 0,
             set: 1,
+            set_if: None,
             preserve: false,
         });
         assert!(parse(&document(&callback)).is_err());

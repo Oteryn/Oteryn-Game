@@ -296,6 +296,7 @@ def validate_callbacks(document):
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
             or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
             or any(s['minimum']>s['maximum'] for s in storage)
+            or any(s.get('set_if') is not None and (not s['minimum']<=s['set_if']<=s['maximum'] or s.get('preserve',False)) for s in storage)
             or (not callback.get('repeatable',False)
                 and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False)

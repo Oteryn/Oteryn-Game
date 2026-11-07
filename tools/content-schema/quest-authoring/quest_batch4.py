@@ -61,7 +61,7 @@ PACKET_FIELDS = {
 CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
-    'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
+    'offerings', 'item_on_target', 'return_on_failure', 'failure_teleport', 'failure_message',
     'success_message', 'native_rule', 'effects', 'sources',
 }
 CALLBACK_REQUIRED = {
@@ -337,18 +337,27 @@ def validate_callback(callback, directory):
                 key + ': invalid lever')
     if callback.get('teleport') is not None:
         position(callback['teleport'], key + ': teleport')
+    if callback.get('failure_teleport') is not None:
+        position(callback['failure_teleport'], key + ': failure_teleport')
+        require(callback['trigger'] == 'step_in' and callback['return_on_failure'],
+                key + ': failure landing requires returning step')
     for field in ('passages', 'storage', 'offerings'):
         require(isinstance(callback[field], list) and len(callback[field]) <= MAX_EFFECTS,
                 key + ': invalid or excessive ' + field)
     seen = set()
     for storage in callback['storage']:
         fields(storage, {'track', 'minimum', 'maximum', 'set'},
-               {'track', 'minimum', 'maximum', 'set', 'preserve'}, key + ': storage')
+               {'track', 'minimum', 'maximum', 'set', 'preserve', 'set_if'}, key + ': storage')
         require(valid_key(storage['track']) and storage['track'] not in seen, key + ': duplicate or invalid track')
         seen.add(storage['track'])
         require(all(integer(storage[field], -(2 ** 63), 2 ** 63 - 1) for field in ('minimum', 'maximum', 'set'))
                 and storage['minimum'] <= storage['maximum'], key + ': invalid storage range')
         require(type(storage.get('preserve', False)) is bool, key + ': invalid preserve')
+        if storage.get('set_if') is not None:
+            require(integer(storage['set_if'], -(2 ** 63), 2 ** 63 - 1)
+                    and storage['minimum'] <= storage['set_if'] <= storage['maximum']
+                    and not storage.get('preserve', False) and callback.get('native_rule') is None,
+                    key + ': invalid conditional set')
     seen = set()
     for passage in callback['passages']:
         fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement'}, key + ': passage')

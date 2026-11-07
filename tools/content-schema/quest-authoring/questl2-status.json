@@ -72,6 +72,87 @@
         "Seven remaining tokens cannot pay twenty",
         "The original once-only exchange path still commits"
       ]
+    },
+    {
+      "name": "exact conditional quest storage replacement",
+      "status": "QUALIFIED",
+      "reuse": {
+        "commit": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+        "path": "qlane-meta/questpc6/cloud-conditional-reset-verification.json",
+        "sha256": "eb9a0946751fc304fc3c3905a2e1977834f2448f31fa2cfa7b63032d4080a289",
+        "red": {
+          "failed": 3,
+          "execution_seconds": 3.85,
+          "postgres_version": "18.6",
+          "marker": "POSTGRES_CASE_STARTED for each of the three cases",
+          "error": "expected conditional commit, got Refused(OutOfRange)",
+          "log": "/tmp/questpc6-reset-red.log"
+        },
+        "scope": "Original PostgreSQL RED proof from the reused implementation; compile/setup errors are excluded."
+      },
+      "fresh_postgres_green": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-match",
+          "seconds": 75.885924223
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-absent",
+          "seconds": 15.041148322
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-later",
+          "seconds": 10.943092321
+        }
+      ],
+      "postgresql": "18.6",
+      "proves": [
+        "Only an exact locked value of one resets to zero",
+        "Absent minus-one and later value two remain unchanged",
+        "One fenced receipt binds each command; replay cannot write again",
+        "NPC rewards and world callbacks lower the same closed effect; invalid condition combinations fail authoring"
+      ],
+      "qualification_scope": "Shared engine mechanism only; complete Draconia journey remains active."
+    },
+    {
+      "name": "authored recovery landing after a refused step",
+      "status": "QUALIFIED",
+      "reuse": {
+        "commit": "c651c87d52acd0fcc56c5b426a1e9f27ab0b92ba",
+        "path": "qlane-meta/questpc6/cloud-failure-landing-verification.json",
+        "sha256": "3d887bff8873abf073f2c0da3bb0f016b98cbe9cc1991d11a46ff5318e8315d2",
+        "red": {
+          "cases": 2,
+          "failed": 2,
+          "execution_seconds": 44.92,
+          "proof": "Both cases reached PostgreSQL-backed framed STEP and failed actor-position assertions: actual origin (32817,31598,9), expected authored recovery (32818,31599,9) or retained entered tile (32818,31598,9).",
+          "log": "/tmp/questpc6-failure-red.log"
+        },
+        "scope": "Original PostgreSQL RED proof from the reused implementation; compile/setup errors are excluded."
+      },
+      "fresh_postgres_green": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-failure-landing",
+          "seconds": 89.495244525
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-failure-blocked",
+          "seconds": 165.626305471
+        }
+      ],
+      "legacy_regression": {
+        "test": "quest_world_callbacks_real_step_checks_storage_and_teleports",
+        "seconds": 80.687,
+        "passed": true
+      },
+      "postgresql": "18.6",
+      "proves": [
+        "A refused callback uses the authored valid landing",
+        "Quest state and quest receipt count stay unchanged",
+        "Replay retains the same position",
+        "An unavailable recovery cannot invent a walkable tile",
+        "Omitted recovery preserves legacy behavior"
+      ],
+      "qualification_scope": "Shared engine mechanism only; no full quest qualification is inferred."
     }
   ],
   "entries": [
@@ -396,11 +477,12 @@
   ],
   "validation": {
     "quest_unit_tests": {
-      "passed": 256,
-      "failed": 0
+      "passed": 259,
+      "failed": 0,
+      "seconds": 13.41
     },
     "reward_authoring_tests": {
-      "passed": 39,
+      "passed": 40,
       "failed": 0,
       "pattern": "test_*rewards.py"
     },
@@ -435,7 +517,10 @@
       "digest": "ca2d91bbc2bee0b64d1ba223134eb669aeaf321840a9026bb918f6152f80fa20",
       "bytes": 31101960,
       "reason": "Merged all souvenir profiles and included Jorge in the production NPC placement family",
-      "tool": "regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check"
+      "tool": "regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
+      "unchanged_in_latest_engine_batch": true,
+      "latest_refresh_log": "/tmp/l2-reset-failure-pin-refresh.log",
+      "latest_check_log": "/tmp/l2-reset-failure-pin-check.log"
     },
     "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed",
     "content_tests": {
@@ -529,6 +614,29 @@
       "log": "/tmp/l2-remote-merged-pg.log",
       "atomic_eleven_seconds": 92.249054197,
       "scope": "All37 souvenirs, independent paid repeats, replay/refusal, and eleven-track atomicity after integrating the remote branch."
+    },
+    "callback_authoring_tests": {
+      "batch3": 6,
+      "batch4": 16,
+      "failed": 0
+    },
+    "latest_focused_postgres": {
+      "passed": 6,
+      "failed": 0,
+      "selected_skipped": 0,
+      "unselected": 2557,
+      "seconds": 257.489,
+      "log": "/tmp/l2-reset-failure-pg-green.log"
+    },
+    "latest_clippy": {
+      "packages": [
+        "oteryn-gameplay-quests",
+        "oteryn-gameplay-dispatch",
+        "oteryn-gameplay-durability"
+      ],
+      "all_targets": true,
+      "deny_warnings": true,
+      "exit_code": 0
     }
   },
   "cross_lane_inspection": {

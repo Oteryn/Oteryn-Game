@@ -25,7 +25,7 @@ Each record has these fields:
 | `npc` | Canonical `oteryn:npc.<name>`, resolved through the current conversation. |
 | `keywords` | One to eight exact, trimmed, lowercase ASCII player messages. |
 | `topic`, `next_topic` | Current/committed conversation topic, unsigned 16-bit integers. |
-| `storage` | One to sixteen `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as `-1`. `preserve: true` keeps that predicate's value. A non-repeatable callback must change a value outside its accepted range. |
+| `storage` | One to sixteen `{track, minimum, maximum, set, preserve?, set_if?}` predicates/effects. Bounds are inclusive; missing progress reads as `-1`. `preserve: true` keeps that predicate's value. A non-repeatable callback must change a value outside its accepted range. |
 | `repeatable` | Optional boolean, default false. Only explicit costed item exchanges may repeat: nonempty `take`, non-null `give`, no outfit or achievement. Each paid command has its own MINT claim identity; replay retains its original receipt. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
@@ -95,3 +95,23 @@ The world callback writer composes these grants with its existing fenced USE
 receipt and storage transaction; the Channel owner applies only map projections.
 A world outfit reward requires nonempty, once-only storage guards and the current
 native generation. Existing world callbacks can omit that participant.
+
+Exact conditional storage replacement uses `set_if`: the fenced writer replaces
+only that locked value with `set`, retaining every other value. It cannot be
+combined with `preserve` or a native rule, and the exact comparison must lie
+inside the accepted range. NPC rewards and world callbacks lower to the same
+closed QuestState effect. Existing records omit the field and retain their
+previous intent hashes.
+
+A returning `step_in` callback may specify `failure_teleport`. Failure uses that
+validated landing; omitting it retains the original approach-tile recovery.
+Recovery grants no quest progress or quest receipt, and an unavailable landing cannot
+invent a walkable tile. Source implementation reused from PC6 commits
+`be812420e3c20d9dd8ae6c3c23a9c4acb942ceda` and
+`c651c87d52acd0fcc56c5b426a1e9f27ab0b92ba`.
+
+Donor justification: Crystal `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
+`data-global/scripts/quests/draconia/movement-escape.lua:11,16-19`, SHA256
+`53f3313e99fb541c3e016b5ac09a2e372c0ad8a382786ccd79db6bb40a700312`:
+the missing-offering branch uses its authored recovery point; the successful
+branch resets Dragonfetish only when its locked value is exactly one.

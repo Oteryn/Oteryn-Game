@@ -8,7 +8,7 @@
 //! loads the lowered quest content into it (QUEST-LOWER-1).
 //!
 //! [`QuestStateCatalogue::evaluate`] is the pure §4 validation of one transition against the
-//! values the writer read under lock: the closed `from` comparisons, then `SET`, checked `ADD`
+//! values the writer read under lock: the closed `from` comparisons, then `SET`, exact `SET_IF`, checked `ADD`
 //! and `SET_NOW` (database transaction time, never a node clock), each within the track's
 //! bounds. It writes nothing; `durability::quest_state` owns the transaction.
 //!
@@ -162,6 +162,11 @@ impl QuestComparison {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuestEffectKind {
     Set(i64),
+    /// Replace only an exact locked value; other values remain unchanged.
+    SetIf {
+        equals: i64,
+        value: i64,
+    },
     /// Checked `i64` addition.
     Add(i64),
     /// The database transaction time, in Unix seconds.
@@ -182,6 +187,11 @@ impl QuestEffectKind {
             }
             Self::Add(value) => {
                 out.push(2);
+                out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::SetIf { equals, value } => {
+                out.push(6);
+                out.extend_from_slice(&equals.to_be_bytes());
                 out.extend_from_slice(&value.to_be_bytes());
             }
             Self::SetNow => out.push(3),
@@ -347,6 +357,10 @@ impl QuestStateCatalogue {
                 };
                 let effect_ok = match effect.effect {
                     QuestEffectKind::Set(value) => (track.min..=track.max).contains(&value),
+                    QuestEffectKind::SetIf { equals, value } => {
+                        (track.min..=track.max).contains(&equals)
+                            && (track.min..=track.max).contains(&value)
+                    }
                     _ => true,
                 };
                 if !comparison_ok || !effect_ok {
@@ -486,6 +500,9 @@ impl QuestStateCatalogue {
             .map(|(effect, (track, before))| {
                 let after = match effect.effect {
                     QuestEffectKind::Set(value) => Some(value),
+                    QuestEffectKind::SetIf { equals, value } => {
+                        Some(if before == equals { value } else { before })
+                    }
                     QuestEffectKind::Add(delta) => before.checked_add(delta),
                     QuestEffectKind::SetNow => Some(now),
                     QuestEffectKind::Computed => None,
@@ -623,6 +640,62 @@ mod tests {
             .collect();
         let transition = catalogue.transition(key).expect("transition");
         catalogue.evaluate(transition, &stored, now)
+    }
+
+    #[test]
+    fn conditional_set_matches_exact_value_preserves_other_values_and_binds_hash() {
+        const KEY: &str = "oteryn:quest-transition/test.conditional-reset";
+        let make = |equals| {
+            catalogue(vec![transition(
+                KEY,
+                vec![effect(
+                    STAGE,
+                    QuestComparison::Any,
+                    QuestEffectKind::SetIf { equals, value: 0 },
+                )],
+                false,
+            )])
+        };
+        let catalogue = make(1);
+        for before in [-1, 0, 1, 2] {
+            let changes =
+                run(&catalogue, KEY, &[(STAGE, before)], 100).expect("conditional effect");
+            assert_eq!(
+                changes,
+                vec![QuestTrackChange {
+                    track: STAGE.into(),
+                    before,
+                    after: if before == 1 { 0 } else { before },
+                }]
+            );
+        }
+        assert_ne!(
+            catalogue.definition_hash(QUEST),
+            make(2).definition_hash(QUEST)
+        );
+        for kind in [
+            QuestEffectKind::SetIf {
+                equals: 11,
+                value: 0,
+            },
+            QuestEffectKind::SetIf {
+                equals: 1,
+                value: 11,
+            },
+        ] {
+            assert!(
+                QuestStateCatalogue::new(
+                    "content-1",
+                    vec![track(STAGE, -1, -1, 10)],
+                    vec![transition(
+                        KEY,
+                        vec![effect(STAGE, QuestComparison::Any, kind)],
+                        false
+                    )]
+                )
+                .is_err()
+            );
+        }
     }
 
     #[test]

@@ -66,6 +66,9 @@ pub struct Storage {
     pub minimum: i64,
     pub maximum: i64,
     pub set: i64,
+    /// Replace only this exact locked value; other values remain unchanged.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set_if: Option<i64>,
     /// A read-only gate: validate the locked value without resetting later progress.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
@@ -122,6 +125,9 @@ pub struct Callback {
     #[serde(default)]
     pub item_on_target: Option<ItemOnTarget>,
     pub return_on_failure: bool,
+    /// Explicit recovery landing for a refused STEP; absent preserves its origin.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure_teleport: Option<Position>,
     pub failure_message: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub success_message: Option<String>,
@@ -180,6 +186,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback.failure_teleport.is_some_and(|p| {
+                !valid_pos(p) || callback.trigger != Trigger::StepIn || !callback.return_on_failure
+            })
             || !effects::valid(callback)
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
@@ -252,10 +261,15 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || o.count > 100
                     || !super::valid_quest_key(&o.item)
             })
-            || callback
-                .storage
-                .iter()
-                .any(|s| !super::valid_quest_key(&s.track) || s.minimum > s.maximum)
+            || callback.storage.iter().any(|s| {
+                !super::valid_quest_key(&s.track)
+                    || s.minimum > s.maximum
+                    || s.set_if.is_some_and(|value| {
+                        !(s.minimum..=s.maximum).contains(&value)
+                            || s.preserve
+                            || callback.native_rule.is_some()
+                    })
+            })
         {
             return Err(format!("invalid callback {}", callback.key));
         }
@@ -312,7 +326,12 @@ fn extend_callbacks(
                     effect: match callback.native_rule {
                         Some(rule) => QuestEffectKind::Native(rule),
                         None if s.preserve => QuestEffectKind::Add(0),
-                        None => QuestEffectKind::Set(s.set),
+                        None => s.set_if.map_or(QuestEffectKind::Set(s.set), |equals| {
+                            QuestEffectKind::SetIf {
+                                equals,
+                                value: s.set,
+                            }
+                        }),
                     },
                 })
                 .collect(),
@@ -330,6 +349,84 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn conditional_storage_compiles_exact_value_effect_and_rejects_guard_overloading()
+    -> Result<(), String> {
+        let callback = serde_json::json!({
+            "key":"oteryn:quest-callback/conditional-reset", "quest":"oteryn:quest/conditional-reset",
+            "trigger":"use", "selector":{"position":{"x":1,"y":2,"floor":-7}},
+            "reversible":false, "passages":[], "offerings":[], "return_on_failure":false,
+            "storage":[{"track":"oteryn:quest-progress/conditional-reset/flag", "minimum":-1,"maximum":2,"set":0,"set_if":1}],
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:fixture.lua:1"]
+        });
+        let encoded = |callback: serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()
+        };
+        let callbacks = parse(&encoded(callback.clone()))?;
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("catalogue")?,
+            &callbacks,
+        )?;
+        let effect = catalogue
+            .transition("oteryn:quest-callback/conditional-reset")
+            .ok_or("transition")?
+            .effects[0]
+            .effect;
+        assert_eq!(
+            effect,
+            QuestEffectKind::SetIf {
+                equals: 1,
+                value: 0
+            }
+        );
+        for (field, value) in [
+            ("set_if", serde_json::json!(3)),
+            ("read_only", serde_json::json!(true)),
+            ("preserve", serde_json::json!(true)),
+        ] {
+            let mut invalid = callback.clone();
+            invalid["storage"][0][field] = value;
+            assert!(parse(&encoded(invalid)).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn conditional_failure_destination_requires_returning_step_and_native_floor()
+    -> Result<(), String> {
+        let document: serde_json::Value =
+            serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;
+        let mut callback = document["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|c| {
+                c["key"]
+                    .as_str()
+                    .is_some_and(|k| k.ends_with("liquid-black-shortcut"))
+            })
+            .cloned()
+            .ok_or("returning step")?;
+        callback["failure_teleport"] = serde_json::json!({"x":32818,"y":31599,"floor":-9});
+        let encoded = |callback: serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()
+        };
+        assert!(parse(&encoded(callback.clone())).is_ok());
+        for (field, value) in [
+            ("trigger", serde_json::json!("use")),
+            ("return_on_failure", serde_json::json!(false)),
+            (
+                "failure_teleport",
+                serde_json::json!({"x":1,"y":2,"floor":-16}),
+            ),
+        ] {
+            let mut invalid = callback.clone();
+            invalid[field] = value;
+            assert!(parse(&encoded(invalid)).is_err());
+        }
+        Ok(())
+    }
 
     #[test]
     fn qengine_shared_access_rejects_ambiguous_or_unbounded_effects() -> Result<(), String> {

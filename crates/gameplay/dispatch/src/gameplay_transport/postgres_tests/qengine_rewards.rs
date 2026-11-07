@@ -720,6 +720,7 @@ pub(super) async fn exercise(
                 minimum: 2,
                 maximum: 2,
                 set: 2,
+                set_if: None,
                 preserve: true,
             });
     }
