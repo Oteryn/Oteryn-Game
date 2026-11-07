@@ -123,3 +123,32 @@ async fn counters(h: &Harness) -> TestResult<(i64, i64, i64)> {
     .fetch_one(&h.pool)
     .await?)
 }
+
+/// First production prerequisite of the W10 chain: the durable catalogue must
+/// expose the qualified room before entry can spawn or settle any creature.
+#[test]
+fn primal_ordeal_postgres_qualified_production_room_is_reachable() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("primal-production-room", || {
+        run(async |admin| {
+            reset();
+            let h = Harness::create_with_admission_seed(admin, "primal_production_room", true, false).await?;
+            prepare_current_session(&h).await?;
+            let deps = Dependencies::new()?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let owner = deps.owner(&h, &authority);
+            deps.initialize(&owner).await;
+            let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                .current_session_at(deps.admitted.game_session_id).await?.0;
+            let fence = item_fence_of(current).ok_or("current item fence")?;
+            let room = crate::durability::activity_handoff::ActivityHandoffOwner::new(h.root.clone())
+                .read_boss_room(owner.character, owner.holder, fence, "oteryn:creature.the_primal_menace")
+                .await?;
+            assert!(room.is_some(), "W10 production Primal Ordeal room is missing from the durable catalogue");
+            Ok(())
+        })
+    })
+}

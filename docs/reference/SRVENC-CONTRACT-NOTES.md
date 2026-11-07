@@ -739,3 +739,12 @@ audit and receipt with all deferred constraints, and observed one exact corpse.
 Foreign Instance, missing audit and substituted audit each raised23514.
 Combined executable proof duration115ms; no timing sleeps. Native dispatch
 cases will be rerun after the owned Instance-map compilation step.
+
+## SRVENC composition coordination and note ownership
+
+Merged ENCX through `46669330a` (`88795094f` shared endgame prerequisite
+composition and `46669330a` production-room regression). SRVENC does not
+implement a second `endgame_entry.rs` composition. The next W02 step adds
+owned, isolated map assets and a source-qualified ordinary boss template.
+All future SRVENC notes live in this lane-specific document; the root
+`CONTRACT-NOTES.md` is removed by the requested `git mv`.

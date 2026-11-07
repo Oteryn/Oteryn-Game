@@ -1,8 +1,6 @@
-//! W10/W11 live lever prerequisites and the existing W02 consumer boundary.
-//!
-//! W10/W11 have no qualified native boss Instance. Their command 178 replies REJECTED;
-//! internally the endgame seam returns ContentUnavailable, never a fake handoff.
-//! Other boss activities retain the shared native owner (PR #2784, ANSWER 6547426887).
+//! Endgame prerequisites for the shared qualified native activity owner.
+//! Crystal 201189f actions/bosses_levers/the_primal_manace.lua:6-12;
+//! quests/rotten_blood_quest/movements_blood_entrance.lua:20-32.
 
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::character_progression::CharacterProgressionError;
@@ -86,12 +84,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             access,
             chain_ready,
         };
-        // Until W02 is composed this is a principal-only prerequisite preview. It cannot
-        // admit even a solo group. W02 resolves the real lever roster, reloads every current
-        // Quest fact under its admission locks, and calls this same group consumer.
-        Ok(endgame_entry::enter(encounter, &[facts], |_| async {
-            Err(EntryRefusal::ContentUnavailable)
-        })
-        .await)
+        // This validates quest prerequisites only. The caller must still resolve a
+        // qualified content template and perform the shared native scope handoff.
+        Ok(endgame_entry::enter(encounter, &[facts], |_| async { Ok(()) }).await)
     }
 }
