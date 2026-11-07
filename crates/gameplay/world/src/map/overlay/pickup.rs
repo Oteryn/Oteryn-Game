@@ -17,7 +17,7 @@
 use super::{Admission, ChannelOverlay, OverlayError, TilePos};
 use crate::durability::map_item_mint::{CommittedMapItemMint, MapItemPlacement};
 use oteryn_world_bundle::bundle::placement_key;
-use oteryn_world_bundle::sector::Tile;
+use oteryn_world_bundle::sector::{Attrs, Tile};
 
 pub use oteryn_gameplay_items::map_pickup::Ineligible;
 
@@ -57,6 +57,28 @@ pub fn eligibility_with_key(
     dropped_teleports: &[u64],
     key_item: bool,
 ) -> Result<EligibleEntry, Ineligible> {
+    eligibility_with_attributes(
+        tile,
+        floor,
+        ordinal,
+        pickupable,
+        dropped_teleports,
+        key_item,
+        None,
+    )
+}
+
+/// The same closed wrapper using trusted startup attributes for the exact source entry.
+/// Contents and all structural facts still come from the original tile.
+pub(crate) fn eligibility_with_attributes(
+    tile: &Tile,
+    floor: i8,
+    ordinal: u8,
+    pickupable: bool,
+    dropped_teleports: &[u64],
+    key_item: bool,
+    attributes: Option<&Attrs>,
+) -> Result<EligibleEntry, Ineligible> {
     let at = tile
         .items
         .iter()
@@ -67,7 +89,7 @@ pub fn eligibility_with_key(
         .ok_or(Ineligible::NotTopLevel)?;
     let key = placement_key(floor, tile.x, tile.y, ordinal).ok_or(Ineligible::NotTopLevel)?;
     let item = &tile.items[at];
-    let attrs = &item.attrs;
+    let attrs = attributes.unwrap_or(&item.attrs);
     let quantity = attrs.count.map_or(1, u32::from);
     let key_number = attrs.action.filter(|number| key_item && *number != 0);
     if key_number.is_some() && quantity != 1 {
@@ -333,6 +355,37 @@ mod map_overlay_pickup_tests {
         assert_eq!(
             eligibility_with_key(&base, -5, 0, true, &[dropped], true),
             Err(Ineligible::DroppedTeleport)
+        );
+    }
+
+    #[test]
+    fn map_overlay_pickup_uses_effective_startup_attributes_without_losing_refusals() {
+        let base = tile(0, vec![plain()]);
+        let mut attrs = Attrs {
+            action: Some(3003),
+            ..Attrs::default()
+        };
+        assert_eq!(
+            eligibility_with_attributes(&base, -7, 0, true, &[], true, Some(&attrs))
+                .expect("startup key")
+                .key_number,
+            Some(3003)
+        );
+        assert_eq!(
+            eligibility_with_key(&base, -7, 0, true, &[], true)
+                .expect("base")
+                .key_number,
+            None
+        );
+        attrs.unique = Some(17);
+        assert_eq!(
+            eligibility_with_attributes(&base, -7, 0, true, &[], true, Some(&attrs)),
+            Err(Ineligible::Unique)
+        );
+        attrs.action = None;
+        assert_eq!(
+            eligibility_with_attributes(&base, -7, 0, true, &[], false, Some(&attrs)),
+            Err(Ineligible::Unique)
         );
     }
 

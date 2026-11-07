@@ -36,6 +36,7 @@ use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
 mod quest_callbacks;
+mod source_bindings;
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::QuestObjectMutation;
 
@@ -215,6 +216,24 @@ impl BundleFacts {
             let top = tile.items.iter().filter(|item| item.depth == 0);
             let mut blocks = false;
             for (ordinal, item) in top.enumerate() {
+                // Reuse the exact source startup binder from questpc6. Ambiguous duplicate
+                // appearances never acquire a selector or key number.
+                let mut item = item.clone();
+                if let Some(entry) = self.palette.get(item.palette as usize)
+                    && tile
+                        .items
+                        .iter()
+                        .filter(|other| other.depth == 0 && other.palette == item.palette)
+                        .count()
+                        == 1
+                {
+                    source_bindings::apply(
+                        pos,
+                        entry.facts.appearance_id,
+                        tile.house,
+                        &mut item.attrs,
+                    );
+                }
                 let door = self
                     .palette
                     .get(item.palette as usize)
@@ -310,13 +329,14 @@ impl BundleFacts {
                     PaletteDoor::No => {}
                 }
                 let palette = self.palette.get(item.palette as usize);
-                let pickup = pickup::eligibility_with_key(
+                let pickup = pickup::eligibility_with_attributes(
                     tile,
                     sector.floor,
                     ordinal as u8,
                     palette.is_some_and(|p| p.facts.pickupable),
                     &manifest.dropped_teleports,
                     palette.is_some_and(standard_key),
+                    Some(&item.attrs),
                 );
                 let key_number = pickup.as_ref().ok().and_then(|entry| entry.key_number);
                 let placement = Placement {

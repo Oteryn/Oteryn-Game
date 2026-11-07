@@ -1,3 +1,36 @@
+## Exact native source stock runtime GREEN — 2026-11-07
+Reused questpc6@f91534062 source_bindings.rs and its source/native pin producer
+pattern. Exact pinned startup keys3003-3007 now receive their action numbers at
+native boot; source attributes remain authoritative, House/position/item/floor and
+ambiguity guards retained. Effective startup attrs feed the closed pickup wrapper,
+so derived unique/action bindings cannot bypass materialization restrictions.
+No binary maps changed. Producer verifies source SHA256/git blob and native region
+hashes/unique unbound stock shape. Primary source replaces approximate wiki mapping.
+
+Actual PG RED5 cases224.64s (fresh processes after first assertion poisoned fixture
+mutex), GREEN5/5,226.66s. Source-coordinate key3003 crash/rehide/replay41.351462413s;
+3004=40.914068296s;3005=40.775798261s;3006=41.486564917s;3007=41.160423235s.
+Seven pure binding/wrapper units0.05s, fmt, source capture check, world+dispatch
+all-target/all-feature check2m39s and strict clippy2m51s PASS. Pin refresh unchanged
+2cabea56... . cloud-native-key-validation.json references all logs and proves final
+source hashes exactly match the PG checkpoint. Runtime code/capture now published;
+prior0d20fa90f was evidence only while strict checks ran. No title promotion:
+counts remain60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: exact source key doors and access. All eight Draconia key doors plus two
+Hellgate3012 doors are native appearance5097 with no attrs, source positions and
+numbers in pinned startup KeyDoorAction. Facts in /tmp/questpc-draconia-native-door-facts.json.
+Suggested next5-entry batch: doors3001/3002/3003 and the two3012 doors; then3004-3008.
+Check5097/5098/5099 native profiles; reuse questpc6 key-door profile producer if
+missing. Reuse/extend source binder with a second scoped capture; preserve other
+lanes and conflicting native attrs. Source door cases should use real framed key
+USE at exact native positions (reuse questpc6 m06_keys fixture). Then source reward
+selectors/level gate, first shared stock key/NPC exchange, party pressure gates,
+and original reward composition. Do not end while entries remain.
+
+BUILD: source /workspace/oteryn-env/env.sh; export CARGO_INCREMENTAL=0. Only
+rebuildable25GB incremental cache was removed after disk filled;22GB+ space free.
+
 ## Five native stock PG proofs — runtime local, strict checks in progress
 All five actual PostgreSQL18.6 source-coordinate stock cases RED on missing key
 number, then GREEN5/5,226.66s. Keys3003-3007 use their exact pinned startup/native

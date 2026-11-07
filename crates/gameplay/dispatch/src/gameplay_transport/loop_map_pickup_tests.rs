@@ -67,6 +67,57 @@ fn scenario_with_key(
     epoch: u64,
     source_key: Option<(u16, u16)>,
 ) -> TestResult {
+    scenario_at(crash, full, epoch, source_key, None)
+}
+
+#[test]
+fn map_native_key_pickup_draconia_3003_crash_replay() -> TestResult {
+    native_key(3003, 32790, 31593, -7, true)
+}
+#[test]
+fn map_native_key_pickup_draconia_3004() -> TestResult {
+    native_key(3004, 32807, 31576, -6, false)
+}
+#[test]
+fn map_native_key_pickup_draconia_3005() -> TestResult {
+    native_key(3005, 32792, 31590, -6, false)
+}
+#[test]
+fn map_native_key_pickup_draconia_3006() -> TestResult {
+    native_key(3006, 32801, 31579, -6, false)
+}
+#[test]
+fn map_native_key_pickup_draconia_3007() -> TestResult {
+    native_key(3007, 32813, 31576, -5, false)
+}
+
+fn native_key(number: u16, x: u16, y: u16, floor: i8, crash: bool) -> TestResult {
+    scenario_at(
+        crash,
+        false,
+        0,
+        Some((2969, number)),
+        Some(crate::map::overlay::TilePos { x, y, floor }),
+    )
+}
+
+fn scenario_at(
+    crash: bool,
+    full: bool,
+    epoch: u64,
+    source_key: Option<(u16, u16)>,
+    native_position: Option<crate::map::overlay::TilePos>,
+) -> TestResult {
+    let source_at = native_position.unwrap_or(crate::map::overlay::TilePos {
+        x: 7,
+        y: 0,
+        floor: -7,
+    });
+    let source_local = MovementLocalPosition {
+        x: i32::from(source_at.x),
+        y: i32::from(source_at.y),
+        floor: -i16::from(source_at.floor),
+    };
     // These three full database bootstraps share the test cluster. Serialize this fixture's
     // setup/teardown so concurrent migrations cannot exhaust the owner's fixed DB deadlines.
     static DATABASE_BOOT: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -82,7 +133,7 @@ fn scenario_with_key(
                 .fetch_one(&harness.pool)
                 .await?;
             eprintln!(
-                "QUESTPC-MAP-KEY-WIRE-PG version={version} appearance={appearance} key={number} crash={crash} full={full}"
+                "QUESTPC-MAP-KEY-WIRE-PG version={version} appearance={appearance} key={number} crash={crash} full={full} native={native_position:?}"
             );
         }
         if epoch != 0 {
@@ -165,8 +216,41 @@ fn scenario_with_key(
                 .filter(|item| item.depth == 0)
                 .nth(1)
                 .ok_or("key fixture item")?;
-            item.attrs.action = Some(number);
+            if native_position.is_none() {
+                item.attrs.action = Some(number);
+            }
             item.attrs.count = None;
+            if native_position.is_some() {
+                // Only the controlled fixture is translated. Production selectors remain the
+                // exact pinned startup positions; no synthetic aliases are introduced.
+                let mut sectors = std::collections::BTreeMap::new();
+                for sector in bundle.sectors {
+                    for mut tile in sector.tiles {
+                        tile.x += source_at.x - 7;
+                        tile.y += source_at.y;
+                        sectors
+                            .entry((source_at.floor, tile.x / 32, tile.y / 32))
+                            .or_insert_with(Vec::new)
+                            .push(tile);
+                    }
+                }
+                bundle.sectors = sectors
+                    .into_iter()
+                    .map(
+                        |((floor, sx, sy), tiles)| oteryn_world_bundle::bundle::Sector {
+                            floor,
+                            sx,
+                            sy,
+                            tiles,
+                        },
+                    )
+                    .collect();
+                bundle.manifest.world.min_x = source_at.x - 7;
+                bundle.manifest.world.max_x = source_at.x + 25;
+                bundle.manifest.world.min_y = source_at.y;
+                bundle.manifest.world.max_y = source_at.y + 32;
+                bundle.manifest.world.floors = vec![source_at.floor];
+            }
             bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
                 &bundle.manifest,
                 &bundle.sectors,
@@ -181,11 +265,7 @@ fn scenario_with_key(
             &BootPins {
                 map_revision: crate::map::overlay::map_revision(&base),
                 bundle: bundle_pins,
-                start: crate::map::overlay::TilePos {
-                    x: 7,
-                    y: 0,
-                    floor: -7,
-                },
+                start: source_at,
             },
             deps.admitted.world_id,
             deps.admitted.channel_id,
@@ -224,7 +304,7 @@ fn scenario_with_key(
             generation.identity().client_artifact_digest(),
             activated_pin.frame_binding().digest(),
             world.map_revision_digest(),
-            (7, 0, 7),
+            (source_local.x, source_local.y, source_local.floor),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -243,14 +323,7 @@ fn scenario_with_key(
             .map_err(debug)?;
         deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
         runtime
-            .initialize_pinned_test_position(
-                deps.actor,
-                MovementLocalPosition {
-                    x: 7,
-                    y: 0,
-                    floor: 7,
-                },
-            )
+            .initialize_pinned_test_position(deps.actor, source_local)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
@@ -305,7 +378,9 @@ fn scenario_with_key(
                         ground: GroundPlacement {
                             spatial_position:
                                 crate::durability::map_item_mint_audit::map_item_spatial_position(
-                                    7, 0, -7,
+                                    source_at.x,
+                                    source_at.y,
+                                    source_at.floor,
                                 ),
                             corpse_ref: id(3).to_vec(),
                             map_revision: world.map_revision().into(),
@@ -399,15 +474,7 @@ fn scenario_with_key(
         assert_eq!(snapshot.header.reset_epoch, epoch);
         let key = ItemKey::MapBase {
             bundle_digest: world.base().digest(),
-            placement_key: crate::map::view::placement_key(
-                crate::map::overlay::TilePos {
-                    x: 7,
-                    y: 0,
-                    floor: -7,
-                },
-                1,
-            )
-            .ok_or("key")?,
+            placement_key: crate::map::view::placement_key(source_at, 1).ok_or("key")?,
             reset_epoch: epoch,
         };
         let handle = items.table().handle(&key).ok_or("map handle")?;
@@ -451,7 +518,7 @@ fn scenario_with_key(
         if full {
             // A full real backpack refuses before MINT; reach and stale identities likewise
             // preserve both the durable footprint and the issued source handle.
-            for (x, assert_far) in [(1, true), (7, false)] {
+            for (x, assert_far) in [(source_local.x - 6, true), (source_local.x, false)] {
                 let mut runtime = owner.runtime.lock().await;
                 let mut movement = runtime.borrow_movement_position();
                 loop {
@@ -631,7 +698,9 @@ fn scenario_with_key(
                 .tiles
                 .iter()
                 .find(|tile| {
-                    tile.position.x == 7 && tile.position.y == 0 && tile.position.floor == -7
+                    tile.position.x == i32::from(source_at.x)
+                        && tile.position.y == i32::from(source_at.y)
+                        && tile.position.floor == i16::from(source_at.floor)
                 })
                 .ok_or("origin tile resent")?;
             assert_eq!(
@@ -655,7 +724,7 @@ fn scenario_with_key(
                 }
             );
             eprintln!(
-                "QUESTPC-MAP-KEY-WIRE-PG GREEN key={number} crash={crash} full={full} duration={:?}",
+                "QUESTPC-MAP-KEY-WIRE-PG GREEN key={number} crash={crash} full={full} native={native_position:?} duration={:?}",
                 started.elapsed()
             );
         }

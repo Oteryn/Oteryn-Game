@@ -3539,7 +3539,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Shared resettable key binding: durable MINT PG green; map wrapper/wire integration next, then party floor switches and reward composition."
+      "active_batch": "Five native shared stock keys3003-3007 PG and strict verification green. Continue exact native5097 door/access bindings, first stock/NPC exchange, party switches and complete source reward composition."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8512,8 +8512,8 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "name": "Five native source-stock PG evidence checkpoint; runtime local pending strict checks",
-    "validation": "qlane-meta/questpc/cloud-native-key-checkpoint.json",
+    "name": "Five exact native source-stock bindings and runtime owner integration",
+    "validation": "qlane-meta/questpc/cloud-native-key-validation.json",
     "qualified_titles_added": 0,
     "counts": {
       "QUALIFIED": 60,
@@ -9128,12 +9128,13 @@
       }
     },
     "shared_map_keys": {
-      "state": "native_stock_pg_green_verification_running",
+      "state": "native_stock_runtime_pg_green",
       "validation": "qlane-meta/questpc/cloud-map-key-validation.json",
-      "next": "Finish strict Rust checks and pin refresh, publish runtime binding slice immediately; then exact source doors/access/party/NPC and remaining route composition.",
+      "next": "Exact source key doors/access (native5097), party gates, NPC/first shared key and complete original Draconia route/reward composition.",
       "wire_validation": "qlane-meta/questpc/cloud-map-key-wire-validation.json",
       "native_checkpoint": "qlane-meta/questpc/cloud-native-key-checkpoint.json",
-      "implementation_published": false
+      "implementation_published": true,
+      "native_validation": "qlane-meta/questpc/cloud-native-key-validation.json"
     }
   },
   "cross_lane_qualified_elsewhere": {
