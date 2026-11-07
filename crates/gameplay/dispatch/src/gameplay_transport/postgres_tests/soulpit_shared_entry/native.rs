@@ -13,16 +13,22 @@ use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseInte
 
 #[test]
 fn soulpit_native_item_use_entry_return_and_animus_query_postgres() -> TestResult {
-    scenario(false)
+    scenario(false, 32)
 }
 
 #[test]
 fn soulpit_production_owner_spawns_native_wave_and_timeout_returns_without_mastery_postgres()
 -> TestResult {
-    scenario(true)
+    scenario(true, 32)
 }
 
-fn scenario(drive_native: bool) -> TestResult {
+#[test]
+fn soulpit_native_entry_refuses_insufficient_wave_capacity_without_burning_core_postgres()
+-> TestResult {
+    scenario(false, 11)
+}
+
+fn scenario(drive_native: bool, capacity: usize) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -31,7 +37,7 @@ fn scenario(drive_native: bool) -> TestResult {
             let h = Harness::create_with_admission_seed(admin, "soulpit_native_use", true, false)
                 .await?;
             super::super::reset();
-            prepare_current_session(&h).await?;
+            let evidence = prepare_source(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -39,7 +45,6 @@ fn scenario(drive_native: bool) -> TestResult {
                 .await
                 .map_err(debug)?;
             let mut deps = Dependencies::new()?;
-            let evidence = super::super::house_transfer::RecoverySource::start(&h).await?;
             let world = deps.admitted.world_id;
             let (controller, pin) =
                 crate::content::native_gameplay::test_support::activated_with_loot_tables(
@@ -134,7 +139,7 @@ fn scenario(drive_native: bool) -> TestResult {
                 1,
                 1,
                 "runtime-scope-assignment:1",
-                32,
+                capacity,
                 content_pin,
             )
             .map_err(debug)?;
@@ -221,6 +226,22 @@ fn scenario(drive_native: bool) -> TestResult {
                 .await
                 .map_err(|_| "Soulpit USE failed")?
                 .ok_or("Soulpit USE not routed")?;
+            if capacity < 12 {
+                assert_eq!(result.disposition, UseDisposition::Rejected);
+                assert_eq!(entry_counts(&h).await?, (2, 0, 0, 0));
+                assert_eq!(
+                    FreshAdmissionStore::from_root(h.root.clone())
+                        .current_session_at(admitted.game_session_id)
+                        .await?
+                        .0
+                        .session_state(),
+                    GameSessionState::Active
+                );
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             assert_eq!(result.disposition, UseDisposition::Committed);
             assert_eq!(entry_counts(&h).await?, (1, 1, 1, 1));
             let switch = owner
@@ -335,7 +356,24 @@ fn scenario(drive_native: bool) -> TestResult {
                     stored.encounter.snapshot().phase,
                     crate::domain::soulpit::EncounterPhase::Fighting
                 );
-                assert_eq!(stored.encounter.snapshot().monsters_alive, 7);
+                // Crystal soulpit.lua:31-84 makes seven random spawn attempts.
+                // The carrier preserves failed attempts on occupied/duplicate cells;
+                // only acknowledged identities become live monsters.
+                let attempted:serde_json::Value=sqlx::query_scalar("SELECT intent->'action'->'Spawned'->'monster_ids' FROM game_soulpit_events WHERE handoff_id=encode($1,'hex')::uuid AND (intent->'action') ? 'Spawned' ORDER BY revision LIMIT 1")
+                    .bind(receipt.handoff.as_slice()).fetch_one(&h.pool).await?;
+                let attempted: Vec<Option<u64>> = serde_json::from_value(attempted)?;
+                assert_eq!(
+                    attempted.len(),
+                    7,
+                    "every source wave must record all seven spawn attempt slots"
+                );
+                let mut expected_ids: Vec<_> = attempted.into_iter().flatten().collect();
+                expected_ids.sort_unstable();
+                assert!(expected_ids.len() <= 7);
+                assert_eq!(
+                    stored.encounter.snapshot().monsters_alive,
+                    expected_ids.len()
+                );
                 let actors = {
                     let mut runtime = destination.runtime.lock().await;
                     let kernel = runtime.borrow_soulpit_kernel().map_err(debug)?;
@@ -344,10 +382,15 @@ fn scenario(drive_native: bool) -> TestResult {
                         .soulpit_actors(kernel.continuity, receipt.handoff)
                         .map_err(debug)?
                 };
+                let mut identities: Vec<_> = actors
+                    .iter()
+                    .map(|actor| (actor.tag.monster_id, actor.actor))
+                    .collect();
+                identities.sort_by_key(|(id, _)| *id);
                 assert_eq!(
-                    actors.len(),
-                    7,
-                    "the real owner must install the physical wave"
+                    identities.iter().map(|(id, _)| *id).collect::<Vec<_>>(),
+                    expected_ids,
+                    "physical actors must exactly match successful durable spawn slots"
                 );
                 {
                     let states = destination.states.spell_states.lock().await;
@@ -362,6 +405,27 @@ fn scenario(drive_native: bool) -> TestResult {
                         );
                     }
                 }
+                shared
+                    .drive_soulpit(&owner, started + 4_000_000, false)
+                    .await
+                    .map_err(|_| "production Soulpit repeated deadline")?;
+                let repeated = {
+                    let mut runtime = destination.runtime.lock().await;
+                    let kernel = runtime.borrow_soulpit_kernel().map_err(debug)?;
+                    kernel
+                        .carrier
+                        .soulpit_actors(kernel.continuity, receipt.handoff)
+                        .map_err(debug)?
+                };
+                let mut repeated: Vec<_> = repeated
+                    .into_iter()
+                    .map(|actor| (actor.tag.monster_id, actor.actor))
+                    .collect();
+                repeated.sort_by_key(|(id, _)| *id);
+                assert_eq!(
+                    repeated, identities,
+                    "re-driving the same deadline must not duplicate a physical wave"
+                );
                 let source_map = owner.bundle_map().ok_or("Channel map")?;
                 let instance_map = destination.bundle_map().ok_or("Instance map")?;
                 assert!(
@@ -571,8 +635,8 @@ fn bundle(obelisk: u32) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     bundle.manifest.world = Extent {
         min_x: 32362,
         min_y: 31132,
-        max_x: 32390,
-        max_y: 31162,
+        max_x: 32391,
+        max_y: 31163,
         floors: vec![-8],
     };
     let mut sectors = std::collections::BTreeMap::<(u16, u16), Sector>::new();

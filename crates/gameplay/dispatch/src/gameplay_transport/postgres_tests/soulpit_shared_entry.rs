@@ -1,7 +1,7 @@
 //! Real shared entry: a Soul Core debit and fresh Instance session commit together.
 //! Crystal 201189f data-global/scripts/quests/soulpit/soulpit_fight.lua:37-106.
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, prepare_current_session};
+use super::{Dependencies, TestResult};
 use crate::domain::CharacterRevision;
 use crate::durability::activity_handoff::{
     ActivityContentPin, ActivityEnterOutcome, ActivityEnterRequest, ActivityHandoffOwner,
@@ -38,7 +38,7 @@ fn soulpit_shared_entry_debits_core_and_commits_real_instance_session_postgres()
             let h = Harness::create_with_admission_seed(admin, "soulpit_shared_entry", true, false)
                 .await?;
             super::reset();
-            prepare_current_session(&h).await?;
+            let _evidence = prepare_source(&h).await?;
             let deps = Dependencies::new()?;
             admit(&h, &deps).await?;
             h.cleanup().await
@@ -62,7 +62,7 @@ fn soulpit_terminal_return_requires_checkpoint_and_interrupt_never_grants_master
                 Harness::create_with_admission_seed(admin, "soulpit_terminal_return", true, false)
                     .await?;
             super::reset();
-            prepare_current_session(&h).await?;
+            let _evidence = prepare_source(&h).await?;
             let deps = Dependencies::new()?;
             let admitted = admit(&h, &deps).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -166,6 +166,23 @@ fn soulpit_terminal_return_requires_checkpoint_and_interrupt_never_grants_master
 
 /// Keeps every admission, session, custody, audit and deferred group guard enabled.
 /// Only initial inventory/content use the existing migration-owned fixture seed.
+pub(super) async fn prepare_source(
+    h: &Harness,
+) -> TestResult<super::house_transfer::RecoverySource> {
+    // The shared successor owner transfers the real composition publisher's
+    // Account/Character claims. A bare raw fresh receipt cannot authorize that.
+    let evidence = super::house_transfer::RecoverySource::start(h).await?;
+    super::house_transfer::prepare_owned_session(h).await?;
+    let account:String=sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    evidence
+        .evidence
+        .refresh_account(&h.root, &h.node, &account)
+        .await
+        .map_err(debug)?;
+    Ok(evidence)
+}
+
 pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<AdmittedSoulpit> {
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -176,7 +193,8 @@ pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<Admitt
     let source = item_fence_of(
         FreshAdmissionStore::from_root(h.root.clone())
             .current_session_at(deps.admitted.game_session_id)
-            .await?
+            .await
+            .map_err(|error| format!("Soulpit shared source session: {error:?}"))?
             .0,
     )
     .ok_or("source item fence")?;
@@ -214,11 +232,35 @@ pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<Admitt
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice())
         .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     super::item_look::seed_main_backpack(h, &[(&core, 2)]).await?;
-    let scope = super::activity_runtime::allocate_ready_instance(h, 88).await?;
+    let scope = super::activity_runtime::allocate_ready_instance(h, 88)
+        .await
+        .map_err(|error| format!("Soulpit shared allocate ready Instance: {error:?}"))?;
     let owner = ActivityHandoffOwner::new(h.root.clone());
+    {
+        let mut tx = h.pool.begin().await?;
+        let node_history: bool =
+            sqlx::query_scalar("SELECT game_node_registration_history_valid()")
+                .fetch_one(&mut *tx)
+                .await?;
+        let node_proven = crate::durability::runtime_scope_assignment::prove_current_incarnation(
+            &mut tx, &h.node,
+        )
+        .await
+        .map_err(|error| format!("Soulpit shared node proof diagnostic: {error:?}"))?;
+        tx.rollback().await?;
+        assert!(
+            node_history,
+            "Soulpit shared node registration history must be valid"
+        );
+        assert!(
+            node_proven,
+            "Soulpit shared node incarnation proof must be current"
+        );
+    }
     let allocation = owner
         .ready_allocations(&authority, &h.node, world, None)
-        .await?
+        .await
+        .map_err(|error| format!("Soulpit shared ready allocations: {error:?}"))?
         .into_iter()
         .find(|allocation| allocation.scope == scope)
         .ok_or("ready Soulpit allocation")?;
@@ -300,7 +342,10 @@ pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<Admitt
         .await
         .ok_or("current source spell lane")?;
     assert_eq!(
-        owner.enter(&authority, &h.node, group.clone()).await?,
+        owner
+            .enter(&authority, &h.node, group.clone())
+            .await
+            .map_err(|error| format!("Soulpit shared generic bypass refusal: {error:?}"))?,
         ActivityEnterOutcome::Refused(
             crate::durability::activity_handoff::ActivityRefusal::InvalidInput
         ),
@@ -318,7 +363,8 @@ pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<Admitt
                 &stale_definition,
                 native
             )
-            .await?,
+            .await
+            .map_err(|error| format!("Soulpit shared stale definition refusal: {error:?}"))?,
         ActivityEnterOutcome::Refused(
             crate::durability::activity_handoff::ActivityRefusal::AuthorityRejected
         ),
@@ -375,7 +421,8 @@ pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<Admitt
         .await?;
     let receipt = match owner
         .enter_soulpit(&authority, &h.node, &permit, group.clone(), &entry, native)
-        .await?
+        .await
+        .map_err(|error| format!("Soulpit shared successful entry: {error:?}"))?
     {
         ActivityEnterOutcome::Entered(receipt) => receipt,
         other => return Err(format!("shared Soulpit entry refused: {other:?}").into()),
@@ -385,7 +432,8 @@ pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<Admitt
     assert!(matches!(
         owner
             .enter_soulpit(&authority, &h.node, &permit, group.clone(), &entry, native)
-            .await?,
+            .await
+            .map_err(|error| format!("Soulpit shared exact replay: {error:?}"))?,
         ActivityEnterOutcome::Replayed(_)
     ));
     let mut rebound = entry.clone();
