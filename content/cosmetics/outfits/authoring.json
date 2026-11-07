@@ -4532,6 +4532,102 @@
         ]
       },
       {
+        "grant_key": "oteryn:item-grant.outfit.430-431.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.afflicted",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.430-431.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.afflicted",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.430-431.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.afflicted"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.512-513.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.crystal_warlord",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.512-513.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.crystal_warlord",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.512-513.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.crystal_warlord"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.514-516.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.soil_guardian",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.514-516.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.soil_guardian",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.514-516.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.soil_guardian"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:appearance-grant/quest/soul-war/revenant-base",
         "target": {
           "kind": "Outfit",
@@ -6775,6 +6871,102 @@
           },
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.430-431.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.afflicted",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.430-431.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.afflicted",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.430-431.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.afflicted"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.512-513.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.crystal_warlord",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.512-513.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.crystal_warlord",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.512-513.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.crystal_warlord"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.514-516.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.soil_guardian",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.514-516.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.soil_guardian",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.514-516.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.soil_guardian"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
           ]
         },
         {

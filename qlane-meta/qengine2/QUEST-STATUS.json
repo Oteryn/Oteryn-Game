@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 24,
-    "unfinished": 42,
+    "qualified": 25,
+    "unfinished": 41,
     "blocked": 0
   },
   "quests": [
@@ -51,7 +51,7 @@
     {
       "canonical": "oteryn:quest.afflicted_outfits_quest",
       "title": "Afflicted Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -66,7 +66,12 @@
           "matched_statuses": []
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-09A",
+        "scope": "Complete six-piece source combination, base prerequisite and current Premium refusals, Ottokar Medicine Pouch12517 to belongings12413 repeated twice with Doctor progress100/replay safety, both plague accessories and Beak Doctor, three immutable canonical item-action grants, normal appearance and already-owned no-spend. Native item MINT/custody only; no quest stages seeded.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l9-afflicted-story duration=81.959783736s success=true",
+        "native_owner_canonical": "oteryn:quest.afflicted_outfits_quest"
+      }
     },
     {
       "canonical": "oteryn:quest.ancient_aucar_outfits_quest",
@@ -312,7 +317,7 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": "NPC token trades, base/both-addon native USE, achievement and no-spend/replay/SQL-negative stories passed. Completing the selected supply-package acquisition stage through its original chance table before whole-entry qualification."
     },
     {
       "canonical": "oteryn:quest.dark_trails_quest",
@@ -1400,7 +1405,7 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": "NPC token trades, base/both-addon native USE, achievement and no-spend/replay/SQL-negative stories passed. Completing the selected supply-package acquisition stage through its original chance table before whole-entry qualification."
     },
     {
       "canonical": "oteryn:quest.warmaster_outfits_quest",
@@ -2018,6 +2023,16 @@
       ],
       "verification": "Five PG stories green; neutral Druid Rook regression green93.315156406s. Check2m54s; final clippy24.41s; fmt pass;7 Rust callback tests1.35s and sex-qualified mapping unit pass;23 quest Python8.948s and23 cosmetics Python1.965s; source+placement reproduction pass; repo pin-refresh and pin-check pass24ab unchanged. Targeted server content/world follow-ons next.",
       "followon_verification": "Targeted game-server content123 passed2.00s; world project5 passed44.78s; repo pin-check passed24ab unchanged."
+    },
+    {
+      "batch": "L1-09A",
+      "status": "GREEN_MECHANISM_SLICE",
+      "entries": [
+        "Afflicted Outfits Quest",
+        "paid source exchanges and achievement progress",
+        "per-command MINT occurrence with original one-shot ledger"
+      ],
+      "postgres": "/tmp/qengine2-batch9-green5.log:3 passed162.73s (Afflicted81.959783736s,Crystal81.869075022s,Soil80.856197729s). Old Mage male80.744879902s green under1004. Rust8unit1.35s,Python24tests9.887s,check1m02s,clippy42.25s/final1m24s,fmt/repro/pinrefresh24ab pass. Soil/Crystal grant stages green but package acquisition remains active, not whole-entry qualified."
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",
@@ -2346,7 +2361,7 @@
     "finding": "The questpc5/6/7/8 NPC source executor provides bounded sorted foreign storage reads, source defaults and atomic Father-specific inventory operations; it still supplies empty outfit snapshots and uses storage-only planning elsewhere. No general shared-reward parent predicate or replacement general outfit owner was found. Reuse existing QuestComparison semantics and the established lock/fresh-default pattern with the already delivered shared value participant. Preserve Father atomicity and avoid unrelated lane data."
   },
   "delivery_rule": "Push every finished green quest/mechanism slice immediately and at least every30minutes while green work exists. Bound each investigation/missing-fact search to10minutes; record conservative decisions in CONTRACT-NOTES.md and implement. No full workspace/PG suite.",
-  "active_batch": "L1-09: Afflicted, Soil Guardian, Crystal Warlord; native item-use grants and Gnomally token-voucher trades",
+  "active_batch": "L1-09B: complete original Gnomish Supply Package acquisition for Soil Guardian and Crystal Warlord",
   "active_batch_progress": {
     "batch": "L1-09",
     "phase": "GENERIC MECHANISM IMPLEMENTED; source bindings generated; GREEN checks next",
@@ -2363,6 +2378,7 @@
       "Soil Guardian42.719011131s false"
     ],
     "verification": "Actual PG RED3 cases88.29s recorded. Generic exchange/progress Rust8 tests1.35s, authoring24 tests9.887s, check29.59s, clippy2m43s plus final current-fixture clippy28.47s, fmt and both reproducers pass. Repository pin-refresh24ab unchanged passed. Three PG stories compiling /tmp/qengine2-batch9-green1.log session29069, followed by one-shot Mage male regression. No new qualified entries.",
-    "latest_pg": "Legacy one-shot Mage male regression passed80.969743147s against migration1004. First L9 GREEN attempt exposed test setup: Afflicted USE preceded actor-lease binding; existing rust_lottery client parsed legacy snapshots without its required4/11/15/18 capabilities. Corrected fixtures use the existing item_cosmetics capability set plus appearance, and install Ottokar before USE. Corrected three-story run /tmp/qengine2-batch9-green2.log session81707 compiling. Source rules and receipt guards unchanged. Counts24/42; no new qualifications yet."
+    "latest_pg": "GREEN5 all3 grant stories pass162.73s, plus old MageMale80.744879902s. Afflicted QUALIFIED. Final scope check found both voucher quests explicitly require supply-package acquisition; implementing native USE from original random_items.lua chance table before promoting those entries. Gnomish source14fc3cf10ca10338aa4479a5371bb3dd7b9b0dede3353a4dec92ffdd11c7023b:49-77. No fake guarantee or loot probability.",
+    "repeatability_fix": "Source-level PG proved second Ottokar trade refused because existing MINT claim key was once per callback. Implemented storage-free paid-exchange per-command SHA256 claim identity; original MINT ledger/pending checks unchanged. Migration1004 derives and checks exact same identity including full unsigned command domain. Phase-bound claims retain original callback identity. Check1m02s and clippy42.25s passed; current three-case PG rerun /tmp/qengine2-batch9-green5.log session98118 and fresh one-shot regression pending. Prior GREEN4 Crystal80.175203388s/Soil78.26523001s; Afflicted diagnostic confirmed direct authority StageMismatch on second trade. No qualifications before rerun."
   }
 }

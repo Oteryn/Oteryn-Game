@@ -1219,6 +1219,54 @@
       ]
     },
     {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "addition to the crystal warlord armor outfit"
+      ],
+      "topic": 0,
+      "next_topic": 104,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "addition to the soil guardian outfit"
+      ],
+      "topic": 0,
+      "next_topic": 102,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "basic crystal warlord outfit"
+      ],
+      "topic": 0,
+      "next_topic": 103,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "basic soil guardian outfit"
+      ],
+      "topic": 0,
+      "next_topic": 101,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.gregor",
       "keywords": [
         "behemoth fang"
@@ -2885,6 +2933,20 @@
       ],
       "reply": [
         "Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ottokar",
+      "keywords": [
+        "medicine",
+        "medicine pouch",
+        "belongings of deceasead"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
       ]
     },
     {

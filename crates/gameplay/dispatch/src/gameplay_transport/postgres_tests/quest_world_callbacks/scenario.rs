@@ -148,30 +148,33 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium =
-            if name.contains("l6-beggar-") || name.contains("l7-knight-") || name.contains("l8-") {
-                use crate::gameplay_transport::spell_premium_coordinator::{
-                    SpellPremiumCoordinator, purchase_fixture,
-                };
-                let (consumer, clock, activation, _) =
-                    purchase_fixture::current(super::super::fixture::id(40));
-                h.root
-                    .latch_premium_activation(
-                        &activation.activation_id,
-                        activation.switch_over_us,
-                        activation.switch_over_us + 60_000_000,
-                    )
-                    .await
-                    .map_err(debug)?;
-                Some(SpellPremiumCoordinator::new(
-                    consumer,
-                    Some(clock),
-                    Some(activation),
-                    Some(h.root.clone()),
-                ))
-            } else {
-                None
+        let premium = if name.contains("l6-beggar-")
+            || name.contains("l7-knight-")
+            || name.contains("l8-")
+            || name.contains("l9-")
+        {
+            use crate::gameplay_transport::spell_premium_coordinator::{
+                SpellPremiumCoordinator, purchase_fixture,
             };
+            let (consumer, clock, activation, _) =
+                purchase_fixture::current(super::super::fixture::id(40));
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            Some(SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            ))
+        } else {
+            None
+        };
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = premium.as_ref();
         owner.active_generation = Some(generation);

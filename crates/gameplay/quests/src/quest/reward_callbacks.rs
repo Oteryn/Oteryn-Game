@@ -98,6 +98,14 @@ pub enum ActorConditionRequirement {
     Drunk,
 }
 
+/// One paid source occurrence advances the existing Character achievement owner.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct AchievementProgress {
+    pub key: String,
+    pub target: u32,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
@@ -137,6 +145,8 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub exact_take: bool,
     pub achievement: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub achievement_progress: Vec<AchievementProgress>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
 }
@@ -160,14 +170,25 @@ impl RewardCallback {
     pub fn cosmetic_targets(&self) -> impl Iterator<Item = &OutfitReward> {
         self.outfit.iter().chain(&self.outfits)
     }
+    /// Storage-free paid exchanges can repeat under distinct CommandRefs.
+    pub fn is_paid_exchange(&self) -> bool {
+        self.storage.is_empty()
+            && self.state_ops.is_empty()
+            && self.participants.is_empty()
+            && !self.take.is_empty()
+            && self.give.is_some()
+    }
     fn value_only_guarded(&self) -> bool {
-        self.cosmetic_targets().any(|target| {
-            self.forbids_addons.iter().any(|guard| {
-                target.outfit == guard.outfit
-                    && target.addons & guard.addons != 0
-                    && (target.sex.is_none() || target.sex == guard.sex.or(self.creation_sex))
+        // Repeatable source trades spend exact admitted inputs and produce a
+        // native backpack MINT in the same fenced transaction.
+        (!self.take.is_empty() && self.give.is_some())
+            || self.cosmetic_targets().any(|target| {
+                self.forbids_addons.iter().any(|guard| {
+                    target.outfit == guard.outfit
+                        && target.addons & guard.addons != 0
+                        && (target.sex.is_none() || target.sex == guard.sex.or(self.creation_sex))
+                })
             })
-        })
     }
 }
 
@@ -409,6 +430,16 @@ fn parse_document(text: &str) -> Result<Document, String> {
                 s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()
             })
             || c.reply.is_empty()
+            || c.achievement_progress.len() > 8
+            || c.achievement_progress
+                .iter()
+                .map(|p| &p.key)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.achievement_progress.len()
+            || c.achievement_progress
+                .iter()
+                .any(|p| !slug(&p.key, "oteryn:achievement/", b"_", 160) || p.target == 0)
             || c.reply.len() > 8
             || c.reply
                 .iter()
@@ -570,6 +601,35 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn paid_value_only_sources_require_cost_mint_and_bounded_progress() -> Result<(), String> {
+        let original = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/l9-afflicted-pouch")
+            .ok_or("paid source")?;
+        assert!(original.storage.is_empty());
+        assert!(original.is_paid_exchange());
+        for edit in 0..4 {
+            let mut callback = serde_json::to_value(&original).map_err(|e| e.to_string())?;
+            match edit {
+                0 => callback["take"] = serde_json::json!([]),
+                1 => callback["give"] = serde_json::Value::Null,
+                2 => callback["achievement_progress"][0]["target"] = 0.into(),
+                _ => {
+                    let progress = callback["achievement_progress"][0].clone();
+                    callback["achievement_progress"]
+                        .as_array_mut()
+                        .ok_or("progress")?
+                        .push(progress);
+                }
+            }
+            assert!(
+                parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()).is_err(),
+                "invalid paid source case {edit}"
+            );
+        }
+        Ok(())
+    }
     use super::*;
     #[test]
     fn participant_authoring_rejects_owner_confusion_duplicates_and_invalid_sex()

@@ -13,13 +13,19 @@ use oteryn_gameplay_quests::quest::reward_callbacks::{PROVENANCE, RewardCallback
 pub(crate) fn prepare_achievement(
     callback: Option<&RewardCallback>,
 ) -> std::result::Result<Option<AchievementGrantRequest>, DurabilityError> {
-    let Some(key) = callback.and_then(|c| c.achievement.as_ref()) else {
-        return Ok(None);
-    };
+    let Some(callback)=callback else {return Ok(None);};
+    if callback.achievement.is_none() && callback.achievement_progress.is_empty() {return Ok(None);}
+
     let catalogue = oteryn_gameplay_progression::achievement_catalogue::parse_shards(
         &oteryn_gameplay_progression::achievement_catalogue::SHARDS,
     )
     .map_err(|_| DurabilityError::InvalidStoredState)?;
+    for progress in &callback.achievement_progress {
+        if catalogue.get(&progress.key).is_none_or(|entry|entry.retired) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+    }
+    let Some(key)=callback.achievement.as_ref() else {return Ok(None);};
     let entry = catalogue
         .get(key)
         .ok_or(DurabilityError::InvalidStoredState)?;
@@ -209,6 +215,14 @@ pub(crate) async fn apply(
     } else {
         None
     };
+    let progress_event=Sha256::new().chain_update(fence.character_id.as_bytes())
+        .chain_update(command.game_session_id().as_bytes())
+        .chain_update(command.command_id().get().to_be_bytes())
+        .chain_update(callback.key.as_bytes()).finalize();
+    for progress in &callback.achievement_progress {
+        super::super::account_achievement::add_progress(tx,fence.character_id,&progress.key,
+            progress.target,"oteryn:quest-reward",&progress_event).await?;
+    }
     if let Some(achievement) = achievement {
         let mut grant = achievement.clone();
         grant.source.event_id = Sha256::new()
@@ -274,11 +288,22 @@ async fn mint(
             .map(|b| format!("{b:02x}"))
             .collect::<String>()
     );
+    // The MINT owner still permits each claim exactly once. A repeatable paid
+    // exchange supplies its own stable per-command occurrence, not a bypass of
+    // the claim ledger or its pending/reservation checks.
+    let claim_key=if callback.is_paid_exchange() {
+        let digest=Sha256::new().chain_update(b"oteryn:quest-exchange:v1\0")
+            .chain_update(fence.character_id.as_bytes())
+            .chain_update(command.game_session_id().as_bytes())
+            .chain_update(command.command_id().get().to_string().as_bytes())
+            .chain_update(b":").chain_update(callback.key.as_bytes()).finalize();
+        format!("oteryn:quest-exchange/{}",digest.iter().map(|b|format!("{b:02x}")).collect::<String>())
+    } else {callback.key.clone()};
     let request = RewardClaimMintRequest {
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
-            production_key: callback.key.clone(),
+            production_key: claim_key,
             revision_ref: content_revision.clone(),
         },
         source_placement: callback.key.clone(),

@@ -6112,6 +6112,162 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l9-afflicted-pouch",
+      "quest": "oteryn:quest.afflicted_outfits_quest",
+      "npc": "oteryn:npc.ottokar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12517",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12413",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ottokar.lua:61-78:sha256:fe8c4a6740a75448c3af035f27c3b2783b9fe91ecad7ba4d255544003370a951"
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/doctor_doctor",
+          "target": 100
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l9-crystal-warlord-base",
+      "quest": "oteryn:quest.crystal_warlord_outfits_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 103,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16255",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l9-crystal-warlord-first",
+      "quest": "oteryn:quest.crystal_warlord_outfits_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 104,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16128",
+          "count": 70
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16256",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l9-soil-guardian-base",
+      "quest": "oteryn:quest.soil_guardian_outfits_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16129",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16252",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l9-soil-guardian-first",
+      "quest": "oteryn:quest.soil_guardian_outfits_quest",
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 102,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i16128",
+          "count": 70
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i16253",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/outfox-helmet",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.budrik",

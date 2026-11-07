@@ -832,6 +832,7 @@ async fn wardrobe(
         outfits: vec![],
         exact_take: false,
         achievement: None,
+        achievement_progress: vec![],
         reply: vec![],
         sources: vec![],
     };

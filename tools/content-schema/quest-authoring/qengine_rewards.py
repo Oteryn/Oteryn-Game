@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -104,6 +104,18 @@ def build():
                 'kind': 'Addon', 'outfit_key': key, 'addon': addon}
             mappings.append({'grant_key': f'{key}/quest-grant/{addon}', 'target': target,
                              'compatible_provenance': [PROVENANCE]})
+    # Reuse the existing source item-action owner. Matching both source look
+    # identities is required; a source label alone never admits a grant.
+    item_packet=json.loads((ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
+    scoped={'oteryn:outfit.afflicted','oteryn:outfit.soil_guardian','oteryn:outfit.crystal_warlord'}
+    for outfit in outfits:
+        if outfit['key'] not in scoped:continue
+        looks=sorted([outfit['female']['id'],outfit['male']['id']])
+        for grant in item_packet['grants']:
+            if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=looks:continue
+            target={'kind':'Outfit','outfit_key':outfit['key']} if grant['kind']=='outfit' else {
+                'kind':'Addon','outfit_key':outfit['key'],'addon':grant['addon']}
+            mappings.append({'grant_key':grant['key'],'target':target,'compatible_provenance':[item_packet['provenance']]})
     mappings.append({'grant_key': 'oteryn:appearance-grant/quest/soul-war/revenant-base',
         'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.revenant'},
         'compatible_provenance': ['crystal-201189f-soul-war-revenant-v1']})
@@ -716,6 +728,23 @@ def build():
         add('l8-dream-warden-'+name,general,'eruaran',['yes'],states,take=[(item,1)],outfit=('dream_warden',bit),topic=bit)
         callbacks[-1]['requires_premium']=True
         source_offer('eruaran',words,0,bit,states)
+    # Gnomally's private config selector is lowered to distinct conversation
+    # topics. Source trades are repeatable, with no quest storage side effect.
+    for family,base,first,start,base_word,first_word in [
+            ('soil-guardian',16252,16253,101,'basic soil guardian outfit','addition to the soil guardian outfit'),
+            ('crystal-warlord',16255,16256,103,'basic crystal warlord outfit','addition to the crystal warlord armor outfit')]:
+        quest=family.replace('-','_')+'_outfits_quest'
+        for suffix,token,count,gift,topic,word in [('base',16129,20,base,start,base_word),('first',16128,70,first,start+1,first_word)]:
+            add('l9-'+family+'-'+suffix,quest,'gnomally',['yes'],[],take=[(token,count)],give=(gift,1),topic=topic)
+            source_offer('gnomally',[word],0,topic,[])
+    add('l9-afflicted-pouch','afflicted_outfits_quest','ottokar',['yes'],[],take=[(12517,1)],give=(12413,1),topic=1)
+    callbacks[-1]['achievement_progress']=[{'key':'oteryn:achievement/doctor_doctor','target':100}]
+    source_offer('ottokar',['medicine','medicine pouch','belongings of deceasead'],0,1,[])
+    for callback in callbacks:
+        if callback['key'].startswith('oteryn:quest-reward/l9-'):
+            npc=callback['npc'].split('.')[-1];path='data-global/npc/'+npc+'.lua'
+            lines='75-169' if npc=='gnomally' else '61-78'
+            callback['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -801,6 +830,7 @@ def validate_callbacks(document):
         value_guard=any(t['outfit']==g['outfit'] and t['addons'] & g['addons']
             and (t.get('sex') is None or t.get('sex')==(g.get('sex') or callback.get('creation_sex')))
             for t in targets for g in callback.get('forbids_addons',[]))
+        value_guard = value_guard or (bool(callback['take']) and callback.get('give') is not None)
         if callback.get('outfits') and callback.get('outfit') is not None:
             raise ValueError('mixed legacy and target-set grants '+callback['key'])
         participants=callback.get('participants',[])
@@ -818,6 +848,7 @@ def validate_callbacks(document):
         requires=callback.get('requires',[])
         if (callback['key'] in keys
             or len({s['track'] for s in storage})!=len(storage)
+            or len({p['key'] for p in callback.get('achievement_progress',[])})!=len(callback.get('achievement_progress',[]))
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
             or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
             or (callback.get('fee') and any(i['item'] in ('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043') for i in callback['take']))

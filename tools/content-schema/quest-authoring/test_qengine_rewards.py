@@ -14,6 +14,24 @@ class QuestRewards(unittest.TestCase):
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
 
+    def test_l9_repeatable_source_trades_and_canonical_item_grants(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        trade=rows['l9-afflicted-pouch']
+        self.assertEqual(trade['storage'],[])
+        self.assertEqual(trade['take'],[{'item':'oteryn:item.tibia.i12517','count':1}])
+        self.assertEqual(trade['give']['item'],'oteryn:item.tibia.i12413')
+        self.assertEqual(trade['achievement_progress'],[{'key':'oteryn:achievement/doctor_doctor','target':100}])
+        for field,value in [('take',[]),('give',None),('achievement_progress',[{'key':'oteryn:achievement/doctor_doctor','target':0}])]:
+            invalid=copy.deepcopy(self.callbacks)
+            next(c for c in invalid['callbacks'] if c['key']==trade['key'])[field]=value
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(invalid)
+        for family,looks in [('afflicted','430-431'),('soil_guardian','514-516'),('crystal_warlord','512-513')]:
+            mappings={r['grant_key']:r for r in self.author['document']['grant_mappings']}
+            for addon in (0,1,2):
+                key=f'oteryn:item-grant.outfit.{looks}.'+('base' if addon==0 else f'addon{addon}')
+                self.assertEqual(mappings[key]['target'],{'kind':'Outfit','outfit_key':'oteryn:outfit.'+family} if addon==0 else {'kind':'Addon','outfit_key':'oteryn:outfit.'+family,'addon':addon})
+                self.assertEqual(mappings[key]['compatible_provenance'],['crystal-item-cosmetics-201189f-v1'])
+
     def test_l8_source_targets_and_atomic_ten_wand_recipe(self):
         rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
         self.assertEqual(rows['l8-hunter-hat']['outfits'],[
@@ -226,10 +244,10 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),56)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),98)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),103)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 
