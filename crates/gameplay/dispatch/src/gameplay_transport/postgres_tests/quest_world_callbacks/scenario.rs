@@ -185,12 +185,36 @@ fn scenario_case(
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
+        let frame = if name == "qengine-rewards-l2-alliance" {
+            world.frame_binding_digest(deps.admitted.world_id)
+        } else {
+            activated.frame_binding().digest()
+        };
+        let combat_room = if name == "qengine-rewards-l2-alliance" {
+            Some(
+                activated
+                    .qualified_room()
+                    .bundle_view(
+                        cells.clone(),
+                        frame,
+                        world.map_revision_digest(),
+                        crate::content::NativeEntryStart {
+                            x: 33153,
+                            y: 31297,
+                            floor: 3,
+                        },
+                    )
+                    .ok_or("Alliance bundle combat view")?,
+            )
+        } else {
+            None
+        };
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
-            activated.frame_binding().digest(),
+            frame,
             world.map_revision_digest(),
             (
                 i32::from(trigger.x) - 1,
@@ -244,6 +268,9 @@ fn scenario_case(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
+        if combat_room.is_some() {
+            owner.rooms = crate::gameplay_transport::SeamRooms::new(None, combat_room.as_ref());
+        }
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -284,7 +311,7 @@ fn scenario_case(
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
-            .bind(generation.identity().client_artifact_digest().as_slice()).bind(activated.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
         let fresh = super::super::fresh_fixture::fresh::Source::new(0)?.request()?;
         h.root
             .initialize_admission_equipment(

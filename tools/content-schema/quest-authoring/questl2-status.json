@@ -2941,11 +2941,11 @@
       },
       "latest_red": {
         "postgres_version": "18.6",
-        "duration_seconds": 78.263357129,
-        "log": "/tmp/l2-alliance-native-pg.log",
-        "point": "Native spawn refused because the NPC-only fixture had not installed its active creature policies; provision and exact-fluid assertions passed before that point."
+        "duration_seconds": 77.42574987,
+        "log": "/tmp/l2-alliance-native-pg3.log",
+        "point": "Renegade Orc spawned correctly; native attack rejected because the NPC-only fixture had no bundle combat view."
       },
-      "fixture_correction": "Install real native creature policies through NativeGameplayRuntimeExt before spawning the actual Renegade Orc.",
+      "fixture_correction": "Install active native creature policies and the existing qualified bundle combat view; bind the same bundle frame in the runtime pin and durable activation.",
       "pin_refresh": {
         "status": "PASS",
         "log": "/tmp/l2-alliance-pin-refresh.log"
