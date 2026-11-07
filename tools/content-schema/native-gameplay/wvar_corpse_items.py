@@ -131,7 +131,7 @@ def apply_admissions(definitions, root=ROOT):
             'decay_target': ({'state': 'KNOWN', 'value': {'key': f'oteryn:item.tibia.i{target}', 'revision': 'definition-r1'}}
                              if target else {'state': 'NOT_APPLICABLE'})}}
         corrected=copy.deepcopy(definition)
-        if item in (5977,4038,4039) and corrected['semantics']['container']=={'state':'KNOWN','value':{'capacity':{'state':'KNOWN','value':16}}}:
+        if item in (5977,4038,4039) and corrected.get('semantics', {}).get('container')=={'state':'KNOWN','value':{'capacity':{'state':'KNOWN','value':16}}}:
             corrected['semantics']['container']=copy.deepcopy(replacement['semantics']['container'])
         if definition.get('materializable') is True and corrected != replacement:
             raise ValueError('WVAR_CORPSE_ADMITTED_POLICY_CONFLICT')

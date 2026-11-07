@@ -53,7 +53,14 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             assert!(is_active(&all, key), "{key}");
         } else if entry["status"] == "QUALIFIED" {
             qualified += 1;
-            assert!(entry["binding"].is_object(), "{key}");
+            if let Some(recipe) = oteryn_gameplay_world_change::variants::definitions()?
+                .iter()
+                .find(|recipe| recipe.key == key)
+            {
+                assert!(!recipe.variants.is_empty(), "{key}");
+            } else {
+                assert!(entry["binding"].is_object(), "{key}");
+            }
             let mut active = all;
             if let Some(kind) = oteryn_gameplay_world_change::counter::CounterKind::from_key(key) {
                 use oteryn_gameplay_world_change::counter::CounterKind as K;

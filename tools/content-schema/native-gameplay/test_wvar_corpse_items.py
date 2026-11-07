@@ -53,6 +53,15 @@ class WvarCorpseItemsTests(unittest.TestCase):
         wvar.apply_admissions(definitions)
         self.assertEqual(definitions, once)
 
+    def test_unadmitted_legacy_corpse_without_semantics_is_admitted(self):
+        definitions = self.definitions()
+        target = next(d for d in definitions if d['identity']['key'] == 'oteryn:item.tibia.i4039')
+        target['materializable'] = False
+        target.pop('semantics', None)
+        wvar.apply_admissions(definitions)
+        self.assertTrue(target['materializable'])
+        self.assertEqual(target['semantics']['container']['value']['capacity']['value'], 20)
+
     def test_world_object_substitution_refuses_before_item_writes(self):
         definitions = self.definitions()
         before = copy.deepcopy(definitions)
