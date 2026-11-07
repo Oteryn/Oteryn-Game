@@ -27,9 +27,9 @@ def append(root,callbacks,inputs,pin):
         return dict(key='oteryn:quest-reward/questpc7-goblin-'+name,quest=QUEST,npc=NPC,keywords=words,topic=0,next_topic=0,storage=storage,take=[],give=None,outfit=None,achievement=None,reply=[reply],sources=sources)
     callbacks.append(row('intro',['swamp jobs'],[state(name,-1,-1,0) for name in ['programme','signs','odours','captures','urine','trunks','stalkers']],
         'All six swamp jobs are accepted: place three signs, gather four odours, catch three adventurers, apply rat urine, smash three trunks and hunt five marsh stalkers. Ask to buy swamp kit for the source-priced tools.'))
-    kit=row('kit',['buy swamp kit'],[state('programme',0,6,0,True)],'Here are three advertisement signs, a guardcatcher, a perfume gatherer, rat urine and a trunkhammer. The total is 1125 gold.')
-    expanded=[{'item':'oteryn:item.tibia.i'+str(item),'count':1} for item,count,_ in TOOLS for _ in range(count)]
-    kit['give']=dict(expanded[0],contents=[],backpack_outputs=expanded[1:])
+    kit=row('kit',['buy swamp kit'],[state('programme',0,6,0,True),state('kit_bought',-1,-1,1)],'Here are three advertisement signs, a guardcatcher, a perfume gatherer, rat urine and a trunkhammer. The total is 1125 gold.')
+    # The pinned client class makes the three signs one legal stack.
+    outputs=[{'item':'oteryn:item.tibia.i'+str(item),'count':count} for item,count,_ in TOOLS]
+    kit['give']=dict(outputs[0],contents=[],backpack_outputs=outputs[1:])
     kit['fee']=dict(gold=sum(count*price for _,count,price in TOOLS),include_bank=True)
-    kit['counter']=dict(track=TRACK+'kit_purchases',maximum=1000000000000)
     callbacks.append(kit)

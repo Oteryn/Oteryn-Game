@@ -35,7 +35,17 @@
       ],
       "evidence": "Current carried reward route rejects use-with targets; world Selector admits position/appearance/action/unique, not an exact live Actor. Selected stage s4 requires three Adventurers captured with Guardcatcher17669.",
       "reuse_checked": "QENGINE2 5c01deabb and inherited main1ae39c7fb; no live quest-capture route found.",
-      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2"
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "quest_owned_binding": {
+        "programme_track": "oteryn:quest-progress/questpc7/goblin/programme",
+        "active_programme": 0,
+        "capture_track": "oteryn:quest-progress/questpc7/goblin/captures",
+        "required": 3,
+        "counter_after_native_intro": 0,
+        "track_initial_before_intro": -1,
+        "tool": "oteryn:item.tibia.i17669",
+        "boundary": "Do not replace owned track initialization or invent a separate quest. Introduction and exact source-priced tools already have native PG proof."
+      }
     },
     {
       "id": "hot-cuisine-native-eligibility",

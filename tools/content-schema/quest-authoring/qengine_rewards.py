@@ -39,6 +39,7 @@ def donor_inputs():
               'data-global/startup/tables/item.lua']
     paths += [f'data-global/npc/{name}.lua' for name in ('morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari', 'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus', 'jorge', 'henricus', 'the_forgemaster', 'elane', 'a_sweaty_cyclops', 'marina', 'gamon', 'quentin', 'tibra', 'maealil', 'yberius', 'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias', 'yana', 'ivalisse', 'a_strange_chalice')]
     paths += ['data-global/scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua', 'data-global/scripts/quests/the_new_frontier/action_outfit.lua', 'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua', 'data-global/startup/tables/item.lua', 'data/XML/imbuements.xml', 'data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua']
+    paths.append('data-global/npc/rafzan.lua')
     paths = list(dict.fromkeys(paths))
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:

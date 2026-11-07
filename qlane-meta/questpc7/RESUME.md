@@ -1,3 +1,21 @@
+# Goblin introduction/shop slice — 2026-11-07 20:42 UTC
+
+Native RED65.835904231s(NoConversation before the NPC binding) -> GREEN
+68.51049825s on PG18.6. Source-priced bundle1125gp,3stacked signs+4tools,
+no free stock;7-track start atomic; no-funds refusal and exact command replay
+verified. Runtime producer now ENABLED, Rafzan's pinned source is captured,
+5portable tool types are admitted by the existing qualifier. Source-price drift
+rejection and other3author tests PASS9.378s. No new engine was authored.
+
+Workspace all-target check PASS4m06s; fmt PASS. Final repository pin-refresh
+PASS with unchanged world digestc8d643dc6f9bf376116595391dfa26a1b23e7965d556830d11126e59b0bff5e9.
+Publish now under the owner's30minute compiling-progress rule.
+GOBLIN-INTRO-PG-PROOF.json is the slice evidence; whole Goblin remains ACTIVE.
+Next independent work: verify/admit actual Rafzan world placement using existing
+NPC scope/converter, then bind the non-capture physical jobs. Preserve the
+qengine2 live-capture request. Do not implement a new generic engine here.
+Quest counts remain21previous whole qualifications and4ACTIVE.
+
 # Compiling checkpoint — 2026-11-07 20:26 UTC
 
 Current main87957a7fa merged cleanly in5f68638f8. Fresh workspace all-target

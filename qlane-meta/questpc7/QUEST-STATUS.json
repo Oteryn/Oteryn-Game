@@ -993,23 +993,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "intro_progress": {
-      "state": "COMPILING_WIP_TEST_AND_UNWIRED_QUEST_DATA",
-      "test": "questpc7_goblin_six_jobs_and_exact_paid_tools",
-      "programme": "tools/content-schema/quest-authoring/questpc7_goblin_programme.py",
-      "scope": "atomic7-track introduction; separately source-priced7-instance merchant bundle; no whole-quest qualification",
-      "source": "crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
-      "tools": {
-        "17668": 3,
-        "17669": 1,
-        "17670": 1,
-        "17671": 1,
-        "17676": 1
-      },
-      "total_gold": 1125,
-      "source_verification": "pure producer verifies source prices and chosen9-stage signature;2callbacks,7start tracks,7tool instances",
-      "native_attempt": "PG18.6,66.448987651s:Malformed before quest action; capability negotiation corrected, not claimed as valid mechanic RED",
-      "runtime_hook": "not enabled until corrected native RED is obtained",
-      "engine_dependency": "live capture still belongs to qengine2"
+      "state": "NATIVE_INTRO_AND_PAID_TOOLS_QUALIFIED",
+      "proof": "qlane-meta/questpc7/GOBLIN-INTRO-PG-PROOF.json",
+      "runtime_hook": "enabled",
+      "whole_quest": "ACTIVE",
+      "next": "verify native Rafzan world placement, then bind non-capture physical jobs; consume qengine2 live-capture engine when delivered"
     }
   },
   {

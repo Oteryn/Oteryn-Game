@@ -5,6 +5,8 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     selected = load_module('questpc7_selected_rewards', 'tools/content-schema/quest-authoring/questpc7_selected_rewards.py')
     selected.append_golden(root, lane_callbacks, offers, inputs, pin)
     selected.append_friends(root, lane_callbacks, offers, inputs, pin)
+    goblin=load_module('questpc7_goblin_programme','tools/content-schema/quest-authoring/questpc7_goblin_programme.py')
+    goblin.append(root,lane_callbacks,inputs,pin)
     selected.append_tokens(root, lane_callbacks, inputs, pin)
     selected.append_eligibility_starts(root, lane_callbacks, inputs, pin)
     programmes.append(root, lane_callbacks, inputs, pin)
