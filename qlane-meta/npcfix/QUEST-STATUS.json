@@ -1396,6 +1396,34 @@
       },
       "regressions": "All18 original S10T routes, transaction rollback, exact price/confirmation, actual arrival, durable position, one fee/receipt per occurrence and replay retained. Tarak uses its canonical non-walkable water target, an adversarial nearer-house candidate and admitted shore. Existing fallback iterator body byte-identical; only exported for reuse.",
       "checks": "fmt PASS; changed entities and dispatch check alltargets/allfeatures PASS; same crates strict Clippy -D warnings PASS. No World terrain/pin/generated-file change."
+    },
+    {
+      "name": "retail-population-qualification-26",
+      "state": "QUALIFIED",
+      "entries": [
+        "Eddy",
+        "Edowir",
+        "Elane",
+        "Ferryman Kamil",
+        "Galuna",
+        "Gamel"
+      ],
+      "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 51.08,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-26-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 118.8,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-26-green.log",
+        "cumulative_cases": 150
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 9bca5359f4c44b5cf5219600385df8a0017866a2; details in verification_components.latest_checked_source. Source identity checked before each slice",
+      "test_code_commit": "9bca5359f4c44b5cf5219600385df8a0017866a2",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
     }
   ],
   "incoming_six_cells": {
@@ -1410,7 +1438,7 @@
     ],
     "proof": "Incoming actual PG6 actor proof91.16s, retained all identity/placement assertions; canonical Edgar name only,15 passive profiles added with canonical custody facts retained. Preserve publication and do not redo finished work."
   },
-  "next_batch": "Push this green generic landing slice immediately, then continue remaining pure placements, held physical cells and pending NPC mechanisms. No final turn while owned entries remain.",
+  "next_batch": "Continue remaining owned entries immediately; preserve all cumulative PG cases. No final turn until all owned scope qualified and pushed.",
   "note": "Original entry-level lane state is absent from available history. Recovered NPC audit rows preserve unfinished work; no prior authored row has been requalified without fresh evidence.",
   "schema": 1,
   "active_reward_delivery": {
@@ -1600,64 +1628,32 @@
     }
   },
   "active_batch": {
-    "name": "source workshop clocks and monetary hand-ins",
+    "name": "retail-population-qualification-26",
+    "state": "QUALIFIED",
     "entries": [
-      "A Fading Memory",
-      "Altar",
-      "A Sweaty Cyclops"
+      "Eddy",
+      "Edowir",
+      "Elane",
+      "Ferryman Kamil",
+      "Galuna",
+      "Gamel"
     ],
-    "state": "WORKSHOP_RUST_GREEN; MERGING_VALIDATED_SIX_CELL_DATA",
-    "session": 31487,
-    "log": "/tmp/npcfix-evidence/workshop-red.log",
-    "reuse": "Reuse incoming six-cell qualifications and exact-before name authoring. Combine passive-cell source attributes with local8 workshop profiles; retain both fact proofs and every existing known custody field.",
-    "implementation_order": "Actual PG RED first, then generic fee/time participant support, then the three source compositions. Extend final tests to full payment, cooldown and delayed claim semantics; initial red probes missing conversations.",
-    "assumptions": [
-      "Charges and input consumption are atomic with successful admission. Normalize donor Sweaty bug that removes5000 before checking all pieces: missing pieces never charge.",
-      "Doctor/Wandering/Goldro batch4 is pushed and qualified; do not redo."
-    ],
+    "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
     "red": {
-      "result": "3 failed; NoConversation at actual hi",
-      "markers": 3,
-      "duration_seconds": 116.4,
-      "individual_seconds": [
-        105.5747,
-        113.1198,
-        116.3945
-      ],
-      "log": "/tmp/npcfix-evidence/workshop-red.log"
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 51.08,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-26-red.log",
+      "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     },
-    "generic_reuse": "Applied33b640335 fee source selectively, retained physical permit; added bounded clocks using existing SetNow/ElapsedAtLeast and same transaction Quest receipt. Forward1144 preserves fee proof after1142 replacement. Production/PG GREEN still pending.",
-    "progress": "Generic fee+bounded DB clock effects and forward completion proof implemented. Native anchors strict-admitted for all3. Fresh read-only DB-clock refusal replies now retain source Fading reset and Sweaty remaining-time text. Fading source guard corrected from prototype0..1 to source-1..1. Current final PG rebuild64170; previous stale compile interrupted after self-review corrections, not a PG result. Latest Python5 and qengine12 passed; unit261 pass before last dialogue-only additions, rerunning. Sweaty remaining smithing exchanges stay active after amulet slice, never mark whole NPC qualified early.",
-    "sources": {
-      "new_heart_facts": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml#L75956-L75963 sha256:13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
-      "retained_bag_profile": "Existing admitted i43895 profile retained; do not replace existing accepted facts with conflicting XML weight."
+    "green": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 118.8,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-26-green.log",
+      "cumulative_cases": 150
     },
-    "latest_pg": {
-      "log": "/tmp/npcfix-evidence/workshop-green-final.log",
-      "result": "3 physical passed;3 composition fixtures failed;181.46s",
-      "physical_durations_seconds": {
-        "fading": 79.3093,
-        "altar": 88.4055,
-        "sweaty": 74.3037
-      },
-      "repairs": "Fixed test-only clock catalogue to install one stable set of receipt transitions before any write. Source monetary fees retain bank V1 refusal; tests now explicitly check V1 then activate existing V2 switch before bank success. Six-case rerun83195 executing; separate funded-missing-parts regression added, needs compile/run aftercurrent."
-    },
-    "remote": "803a33d3923bbd9756cf3c1733ec63420da1e54f",
-    "proof": {
-      "red": "3 actual PG failures116.40s;3 DB markers",
-      "green": "7 actual PG cases221.52s, all starts/completions; preserved incoming full clock/rollback PG1/96.56s",
-      "units": "quest263/11.67s; unchanged fee43/0.14s and NPC25/204.84s retained within scope",
-      "authoring": "12 shared tests11.125s +6 profile/overlay tests19.182s +13 placement tests; native42 regenerate/check",
-      "repository": "5 passed132.15s; unchanged repository test executable on final checkout inputs",
-      "check": "quests/durability/dispatch all-target/all-feature5m53s",
-      "clippy": "same three crates all targets/features -D warnings5m05s",
-      "pin": "d5f29ca31b87bc3a949017a6d7a2c18f3f9612f0629f9fe49943596a4c2bc0a1; independent pin-check PASS",
-      "fmt": "PASS"
-    },
-    "merge_plan": "Preserve concurrent locked cooldown and malformed-clock tests, reuse its declared-track support, retain local generic paid hand-ins, delayed clocks, fresh literal wait replies and strict physical admission. Resolve duplicate1144 by forward-numbered workshop extension. Revalidate merged source before push.",
-    "incoming": "8a7b65dc2",
-    "implementation": "Reuse published readiness owner and cooldown_reply field; extend remaining-time advice for delayed crafts. Remove duplicate clock reader/post-refusal code. Keep all published direct-owner/literal-reset/malformed-clock assertions plus unchanged-clock probe; preserve1144 and extend1145.",
-    "remaining": "Sweaty amulet component fully validated; remaining smithing exchanges stay active next, no whole NPC qualification yet. Fading/Altar exact audited scope implemented; final reviewed qualification metadata follows."
+    "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 9bca5359f4c44b5cf5219600385df8a0017866a2; details in verification_components.latest_checked_source. Source identity checked before each slice",
+    "test_code_commit": "9bca5359f4c44b5cf5219600385df8a0017866a2",
+    "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
   },
   "workshop_merged_validation": {
     "state": "GREEN; source publication; independent review follows",
@@ -1838,10 +1834,10 @@
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
   "counts": {
-    "QUALIFIED": 157,
+    "QUALIFIED": 163,
     "PENDING": 10,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 126,
+    "AUTHORED; QUALIFICATION PENDING": 120,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -5165,8 +5161,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/86",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Edgar-Ellen",
@@ -5188,8 +5190,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/89",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Elane",
@@ -5197,8 +5205,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/91",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Emiliana",
@@ -5233,8 +5247,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/116",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Ferryman Kamil (Meluna)",
@@ -5269,8 +5289,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/128",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Gamel",
@@ -5278,8 +5304,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/129",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-26",
+        "postgres_red_seconds": 51.08,
+        "postgres_green_seconds": 118.8,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Ghost Captain",
@@ -6153,7 +6185,7 @@
       "log_sha256": "bb1cf3cbbfe2212db5b479c842d792a063562dfa2e4a31fd5b93006e0e5fbc9c",
       "binary_source": "9fd5ca426",
       "scope": "Native command/ordinary chat, shop windows, durable trades, quest/rank restrictions, default charge/state purchases, healing and exact replay as asserted by the existing thirteen-case fixture. Physical cell qualification remains separate.",
-      "source_reuse": "Relevant fixture/service/trade implementation and migrations byte-identical to current HEAD; unrelated smithing offer restart does not alter these paths.",
+      "source_reuse": "Original13 keys and every assertion retained; only suite parameterization and three exact item+Buy-side selector strengthenings. Core NPC trade/service paths unchanged. New5 postal cases PASS456.20s verifies the shared strengthened postal branch. New quest-only1146/1147 validated independently upstream; no original migrations rewritten.",
       "additional_travel_component": {
         "state": "QUALIFIED_COMPONENTS",
         "source": "e2615554b; production source identical through current data-only slices",
@@ -6183,6 +6215,25 @@
         "log": "/tmp/npcfix-evidence/npcfix-existing-travel-proof.log",
         "log_sha256": "134394de26bd32fd1daaa24345b7fad0294d26f4af5b1ce66f9089dd3941e507",
         "scope": "Existing generic travel real-command coverage, durable fare/arrival/replay and refusal assertions. No extra availability, destination or physical source-cell qualification inferred."
+      },
+      "source_comparison": {
+        "source_commit": "0fd218694172109f2e2fb90835c6efd78029f468",
+        "source_path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs",
+        "original_case_count": 13,
+        "original_keys_preserved": true,
+        "all_original_assertions_preserved": true,
+        "normalized_body_identical": true,
+        "normalization": "Only remove the new parcel/letter reference lookup and reverse three strict identity+Buy-side predicate additions. Every other original scenario byte retained.",
+        "selector_strengthening": "Nelly has other merchandise at postal prices; both parcel price lookups and discounted letter assertion now also require the exact item reference and Buy side.",
+        "compiled_fixture_sha256": "80f76d0edc15c3addf86bba5ecff73b069d985c689a3a45196f0aefe3a39d83b",
+        "scenario_body_sha256": "ae300b429fae797bd98e4084785b02853908564494c80d93f22fa07119c656ae",
+        "new_case_keys": [
+          "olrik",
+          "chemar",
+          "chrystal",
+          "fyodor",
+          "nelly"
+        ]
       }
     },
     "physical_merged_smithing": {
@@ -6192,6 +6243,26 @@
       "cumulative_cases": 54,
       "log": "/tmp/npcfix-evidence/retail-09-smithing-merged-green.log",
       "scope": "Freshly compiled exact merged source; all54 physical/native assertions passed."
+    },
+    "latest_checked_source": {
+      "source_commit": "9bca5359f4c44b5cf5219600385df8a0017866a2",
+      "parity_report": "/tmp/npcfix-evidence/current-held-npc-parity.json",
+      "check": "Changed entities+dispatch alltargets/allfeatures PASS5m42s; paid-landing-check.log. Prior exact-source engine crate checks retained.",
+      "clippy": "Changed entities+dispatch alltargets/allfeatures -D warnings PASS14m16s including build-lock wait; paid-landing-clippy.log.",
+      "postgres": "Actual current-schema18-route PG RED160.38s/GREEN169.91s; all authored targets, actual safe arrivals, rollback and replay retained.",
+      "physical_fixture": "Same physical actor fixture and unchanged NPC admission facts; current linked binary includes latest1147 schema/refusal handlers and bounded landing fix. Existing actor proofs retained, new slices run real PG.",
+      "next_physical_cohort": {
+        "state": "PREPARING_AFTER_THREE_PLACEMENT_SLICES",
+        "entries": [
+          "A Starving Dog",
+          "Eirik",
+          "Emiliana",
+          "Fayla",
+          "Gnommander",
+          "Jessica"
+        ],
+        "scope": "Source-proven missing passive profiles only; no terrain/collision exceptions."
+      }
     }
   },
   "recovered_from": "95accb923",

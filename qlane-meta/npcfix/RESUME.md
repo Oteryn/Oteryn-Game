@@ -243,3 +243,5 @@ Merged incoming qualified refusal/Altar/Cyclops and four L2-owned narrative acto
 ## Canonical paid landing fixed and qualified
 
 Tarak Inner restored to QUALIFIED: actual PG RED160.38s at the blocked water/boat target; GREEN169.91s retains all18 routes and rollback/replay, preserves authored32939,31182,7, skips a nearer protected house and persists admitted32940,31183,7. Reuse the existing unchanged NPC-0 radius3/north-clockwise iterator; paid preflight and arrival both exclude house/door fallback cells, while authored protected targets still refuse. Changed entities/dispatch alltargets/allfeatures check and strict Clippy plus fmt PASS. No terrain/guard bypass or pin change. Push now; continue remaining scope immediately.
+
+Pushed-ready retail-population-qualification-26: Eddy, Edowir, Elane, Ferryman Kamil, Galuna, Gamel. Actual PG historical RED51.08s/current GREEN118.80s, marker present; cumulative native placement/identity assertions retained. fmt PASS; unchanged Rust check/clippy proof reused from e2615554b. No production changes; prior authored repair now qualified. Continue immediately.
