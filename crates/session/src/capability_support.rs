@@ -89,6 +89,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
     property_services::raid_schedule::CAPABILITY_RAID_SCHEDULE_V1,
     property_services::house_podium::CAPABILITY_HOUSE_PODIUM_V1,
+    property_services::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
+    property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
     oteryn_protocol_oteryn::daily_boost::CAPABILITY_DAILY_BOOST_V1,
     oteryn_protocol_oteryn::item_forge::CAPABILITY_ITEM_FORGE_V1,
     oteryn_protocol_oteryn::depot_search::CAPABILITY_DEPOT_SEARCH_V1,
@@ -189,6 +191,8 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
     property_services::raid_schedule::CAPABILITY_RAID_SCHEDULE_V1,
     property_services::house_podium::CAPABILITY_HOUSE_PODIUM_V1,
+    property_services::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
+    property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
     oteryn_protocol_oteryn::daily_boost::CAPABILITY_DAILY_BOOST_V1,
     oteryn_protocol_oteryn::item_forge::CAPABILITY_ITEM_FORGE_V1,
     oteryn_protocol_oteryn::depot_search::CAPABILITY_DEPOT_SEARCH_V1,
@@ -334,5 +338,22 @@ mod native_advertisement_tests {
             selected_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
         })?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod house_furniture_tests {
+    use super::*;
+    #[test]
+    fn house_furniture_actions_are_advertised_and_have_real_gated_routes() {
+        for capability in [49, 207, 445] {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+        }
+        for (capability, command) in [(207, 402), (445, 730)] {
+            assert!(
+                gated_routes()
+                    .any(|(id, commands, _)| id == capability && commands.contains(&command))
+            );
+        }
     }
 }

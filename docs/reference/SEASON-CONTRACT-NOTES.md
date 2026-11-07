@@ -784,3 +784,28 @@ Channel-outbox handoff regression, House/Channel and cross-House isolation,
 current-session rejection, and House speech. The new House observation adapter
 uses a nonblocking state lock under the runtime lock. No wire ID is introduced.
 Full decoration owner and expiry integration remains in progress.
+
+### W18 explicit furniture rotation allocation and native client
+
+Base main `9668e0a04` next-free capability 385, command 670, mechanic ordinal
+643 and authored offer 640 receive the SEASON offset +60: capability **445**,
+command **730**, mechanic **703**, offer **700**. The command multiplexes bounded
+catalogue queries and explicit rotation of an authoritative Item or base placement.
+It leaves ordinary USE available for native cupboard opening. The native form
+shows furniture names and offers Rotate; it discards the catalogue after a result
+instead of guessing a new revision. Crystal `src/game/game.cpp:3054-3057`
+returns the original Item when a transform target has no ItemType.
+
+Current integration is work in progress. Focused source admission tests for the
+Cake cohort pass (three tests, 0.031 s). Canonical materialization, decoration and
+seasonal PostgreSQL integration, and final focused validation remain outstanding.
+
+The explicit rotation client now decodes named catalogues, selects the exact typed
+server target, renders native Rotate controls, rejects concurrent submissions and
+invalid replies, and clears stale revisions after an applied response. Ordinary
+USE keeps its container-opening meaning. The shipped session now advertises and
+routes both existing wrap capability 207/command 402 and new rotation 445/730,
+closed over House capability 49. Two UI tests pass (9.184 s build/run), the actual
+native client command/decode test passes (40.226 s), and the advertisement/route
+test passes (20.506 s). These complete this client component; server decoration,
+container, expiry and source-profile integration remain in progress.
