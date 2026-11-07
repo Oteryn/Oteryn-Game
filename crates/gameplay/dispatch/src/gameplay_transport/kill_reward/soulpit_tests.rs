@@ -218,7 +218,8 @@ fn soulpit_lethal_callback_scenario() -> TestResult {
     };
     for (ordinal, actor) in [ordinary, boss].into_iter().enumerate() {
         runtime
-            .commit_monster_lab_damage(actor, &[ordinal as u8], i64::MAX)
+            // Unsequenced owner occurrences cannot contain the binding's NUL delimiter.
+            .commit_monster_lab_damage(actor, &[b'a' + ordinal as u8], i64::MAX)
             .map_err(debug)?;
         record_creature_kill(
             &mut runtime,

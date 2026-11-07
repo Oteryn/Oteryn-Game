@@ -234,7 +234,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         {
             let runtime = self.runtime.lock().await;
-            if crate::ai_think::CreatureAiTable::qualify_native_creature(
+            if crate::ai_think::CreatureAiTable::qualify_soulpit_creature(
                 &runtime,
                 native,
                 &record.profile.target,

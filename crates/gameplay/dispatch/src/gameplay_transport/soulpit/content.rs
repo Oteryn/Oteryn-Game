@@ -94,6 +94,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 // Reuse the Channel's accepted capacity so donor summons have the
                 // same bounded pool rather than a second, unbounded actor owner.
                 let capacity = self.runtime.lock().await.actor_capacity();
+                if capacity
+                    < oteryn_gameplay_domain::domain::soulpit::MAX_PARTICIPANTS
+                        + oteryn_gameplay_domain::domain::soulpit::MONSTERS_PER_WAVE
+                {
+                    // Refuse before debit rather than let resource exhaustion
+                    // turn all seven donor spawn attempts into empty waves.
+                    return Err(ActivityRefusal::NoCapacity);
+                }
                 let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
                     allocation.scope,
                     self.holder.fact().node_id(),
