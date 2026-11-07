@@ -18,6 +18,32 @@ fn questpc5_demon_source_four_native_kills_and_exactly_once_settlement() -> Test
             .fetch_one(&h.pool)
             .await?;
         eprintln!("POSTGRES_CASE_STARTED demon_source_combat server_version={version}");
+        // Admission must retain the accepted canonical facts of these exact
+        // disabled loot Items, rather than replacing them with source Unknown.
+        for (item, slots) in [(3366, 2), (3414, 1), (7382, 3)] {
+            let path = if item == 7382 {
+                "items-31000-31499.json"
+            } else {
+                "items-20500-20999.json"
+            };
+            let document: serde_json::Value = serde_json::from_slice(&std::fs::read(
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../../content/items/definitions")
+                    .join(path),
+            )?)?;
+            let key = format!("oteryn:item.tibia.i{item}");
+            let definition = &document["records"]
+                .as_array()
+                .ok_or("Item records")?
+                .iter()
+                .find(|r| r["definition"]["identity"]["key"] == key)
+                .ok_or("exact Item")?["definition"];
+            assert_eq!(
+                definition["semantics"]["imbuement"]["value"]["slot_count"],
+                serde_json::json!({"state":"KNOWN","value":slots}),
+                "accepted canonical slots: {key}"
+            );
+        }
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -33,6 +59,21 @@ fn questpc5_demon_source_four_native_kills_and_exactly_once_settlement() -> Test
             );
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
+        for (item, slots) in [(3366, 2), (3414, 1), (7382, 3)] {
+            let key = format!("oteryn:item.tibia.i{item}");
+            let policy = native
+                .item_policy(&key, "definition-r1")
+                .ok_or("native loot Item")?;
+            let crate::content::ReferenceItemField::Known(imbuement) =
+                &policy.record().semantics.imbuement
+            else {
+                return Err(format!("accepted native imbuement missing: {key}").into());
+            };
+            assert_eq!(
+                imbuement.slot_count,
+                crate::content::ReferenceItemField::Known(slots)
+            );
+        }
         assert_eq!(
             native
                 .reward_table()

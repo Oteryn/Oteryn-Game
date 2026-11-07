@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "scope": "Repair canonical and native Known-fact preservation in the reusable encounter admission bridge.",
+  "red": {
+    "filter": "questpc5_demon_source_four_native_kills_and_exactly_once_settlement",
+    "postgres_server_version": "18.6",
+    "test_seconds": 3.39,
+    "error": "accepted canonical slots i3366 were Null instead of Known2"
+  },
+  "green": {
+    "filter": "questpc5_demon_source_four_native_kills_and_exactly_once_settlement",
+    "postgres_server_version": "18.6",
+    "test_seconds": 54.28,
+    "completion_marker_seconds": 54.174070386,
+    "assertions": "Canonical and actual native slots3366=2,3414=1,7382=3; all four source Demons retain8200HP/6000baseXP; four XP settlements and four linked corpses; repeated drains preserve count."
+  },
+  "checks": {
+    "focused_unit_tests": 9,
+    "source_leaf_unit_tests": 2,
+    "cargo_fmt": "PASS",
+    "cargo_check_content_dispatch": "PASS16.92s",
+    "strict_clippy_content_dispatch_all_targets_all_features": "PASS42.87s",
+    "main_tree_validation": "PASS items34111/reward_claims337, including exact native source-leaf format. Final static Imbuement derived binding fingerprints still need refresh in next immediate slice.",
+    "repository_pin_refresh_and_check": "PASS"
+  },
+  "preservation": {
+    "canonical": "All legacy Known/NotApplicable groups remain exact. Only physical/stack/container/temporal groups that were Unknown gain source facts. Canonical stack maximum holds remain Unknown; separately admitted native profiles retain100.",
+    "native": "Every previously Known/NotApplicable native fact and every unrelated policy remains unchanged; Unknown facts may gain accepted legacy facts. Only7368policy gains such facts in this candidate.",
+    "loot_section_sha256": "eb16189a128e8eae976d432fd9c5af60241132d153de870bca0f24a982704f5e",
+    "loot_section_changed": false
+  },
+  "safety": "Arbitrary admitted canonical conflicts still refuse before any mutation; repair recognizes only this producer\u2019s exact prior source-only projection. No validator guard was relaxed.",
+  "world_digest": "3fe4f02d9c01f2933270d2871b6f20095341a22c5a180dabbf93dfc27e5523f9"
+}

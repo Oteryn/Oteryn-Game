@@ -45,6 +45,49 @@ class EncounterItemTests(unittest.TestCase):
             encounter.apply_admissions(definitions)
         self.assertEqual(definitions, before)
 
+    def assert_known(self, original, actual):
+        if isinstance(original,dict):
+            if original.get('state') == 'UNKNOWN':
+                return
+            self.assertIsInstance(actual,dict)
+            for key,value in original.items():
+                self.assertIn(key,actual)
+                self.assert_known(value,actual[key])
+        elif isinstance(original,list):
+            self.assertEqual(len(original),len(actual))
+            for expected,observed in zip(original,actual):
+                self.assert_known(expected,observed)
+        else:
+            self.assertEqual(original,actual)
+
+    def test_every_previously_known_canonical_fact_is_retained(self):
+        legacy=json.loads((encounter.ROOT/'content/world/definitions/reference.json').read_bytes())
+        original={d['identity']['key']:d for d in legacy['records']}
+        actual={d['identity']['key']:d for d in self.definitions()}
+        for key in encounter.profiles():
+            with self.subTest(item=key):
+                self.assert_known(original[key].get('semantics',{}),actual[key].get('semantics',{}))
+
+    def test_canonical_admission_retains_existing_semantic_group_owners(self):
+        original = encounter.legacy_definitions()
+        actual = {d['identity']['key']:d for d in self.definitions()}
+        materialization = {'physical','stack','container','temporal'}
+        for key in encounter.profiles():
+            for group in encounter.profiles()[key]['semantics']:
+                previous = original[key].get('semantics',{}).get(group,{'state':'UNKNOWN'})
+                if group not in materialization or previous.get('state') != 'UNKNOWN':
+                    with self.subTest(item=key,group=group):
+                        self.assertEqual(actual[key]['semantics'][group],previous)
+
+    def test_canonical_stack_maximum_hold_is_not_promoted_by_native_admission(self):
+        original = encounter.legacy_definitions()
+        actual = {d['identity']['key']:d for d in self.definitions()}
+        for key,profile in encounter.profiles().items():
+            prior = original[key].get('semantics',{}).get('stack',{}).get('value',{}).get('stack_max',{'state':'UNKNOWN'})
+            if profile['semantics']['stack']['value']['stackable'] == {'state':'KNOWN','value':True} and prior.get('state') == 'UNKNOWN':
+                self.assertEqual(actual[key]['semantics']['stack']['value']['stack_max'],{'state':'UNKNOWN'})
+                self.assertEqual(profile['semantics']['stack']['value']['stack_max'],{'state':'KNOWN','value':100})
+
     def test_native_projection_appends_only_absent_decay_stages(self):
         path = 'content/items/definitions/spell-native-profiles.json'
         manifest = 'content/spells.manifest.json'
@@ -58,7 +101,18 @@ class EncounterItemTests(unittest.TestCase):
         after = json.loads(generated[path])['records']
         self.assertEqual(len(after),len(before)+2)
         existing = {r['production_definition']['production_key']:r for r in after}
-        self.assertTrue(all(existing[r['production_definition']['production_key']] == r for r in before))
+        selected = set(encounter.profiles())
+        for row in before:
+            key = row['production_definition']['production_key']
+            if key not in selected:
+                self.assertEqual(existing[key], row)
+            else:
+                self.assertEqual({k:v for k,v in existing[key].items() if k!='semantics'},
+                                 {k:v for k,v in row.items() if k!='semantics'})
+                self.assert_known(row['semantics'],existing[key]['semantics'])
+        for item,slots in [(3366,2),(3414,1),(7382,3)]:
+            self.assertEqual(existing[f'oteryn:item.tibia.i{item}']['semantics']['imbuement']['value']['slot_count'],
+                             {'state':'KNOWN','value':slots})
 
 if __name__ == '__main__':
     unittest.main()

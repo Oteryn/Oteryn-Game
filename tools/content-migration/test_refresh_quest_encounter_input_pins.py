@@ -15,6 +15,9 @@ class DerivedPinTests(unittest.TestCase):
         target = root / encounter.PATH
         target.parent.mkdir(parents=True)
         target.write_bytes(source.read_bytes())
+        legacy = root / 'content/world/definitions/reference.json'
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text(json.dumps({'records':list(encounter.legacy_definitions().values())}))
         path = Path('content/items/definitions/items-29500-29999.json')
         document = json.loads((encounter.ROOT / path).read_bytes())
         original = copy.deepcopy(document)

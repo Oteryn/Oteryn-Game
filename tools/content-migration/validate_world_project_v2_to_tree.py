@@ -44,6 +44,7 @@ REWARD_CLAIM_COUNT = len(json.loads(
 # Exact native source leaves add identities beyond the historical chest census.
 sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
 from native_source_leaf import inputs as native_source_leaf_inputs
+from native_source_leaf import SCHEMA as NATIVE_SOURCE_LEAF_SCHEMA, SHARD as NATIVE_SOURCE_LEAF_SHARD, validate as validate_native_source_leaf
 REWARD_CLAIM_COUNT += len(native_source_leaf_inputs(ROOT))
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
@@ -858,7 +859,14 @@ def main() -> int:
     reward_claim_keys = set()
     for shard_path in reward_claim_index["shards"]:
         shard = load(ROOT / shard_path)
-        require(shard["family"] == "RewardClaim" and shard["shard"]["count"] == len(shard["records"]), "REWARD_CLAIM_SHARD")
+        if shard.get("schema") == NATIVE_SOURCE_LEAF_SCHEMA:
+            require(shard_path == NATIVE_SOURCE_LEAF_SHARD
+                    and set(shard) == {"family", "schema", "records"}
+                    and shard["family"] == "RewardClaim"
+                    and not validate_native_source_leaf(shard["records"], ROOT),
+                    "REWARD_CLAIM_NATIVE_SOURCE_SHARD")
+        else:
+            require(shard["family"] == "RewardClaim" and shard["shard"]["count"] == len(shard["records"]), "REWARD_CLAIM_SHARD")
         reward_claim_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
     require(len(reward_claim_keys) == REWARD_CLAIM_COUNT, "REWARD_CLAIM_IDENTITY_UNIQUENESS")
     starter_kit_index = load(ROOT / "content" / "starter" / "index.json")

@@ -426,13 +426,20 @@
         "duration_seconds": 55.62,
         "proof": "cloud-demon-complete-proof.json",
         "scope": "Four actual source Demons at native HP; exactly four XP settlements and linked5995 corpses. Completes the retained source acquisition/access/pressure/reward proofs."
+      },
+      {
+        "filter": "questpc5_demon_source_four_native_kills_and_exactly_once_settlement",
+        "result": "PASS",
+        "duration_seconds": 54.28,
+        "scope": "Repair canonical and native Known-fact preservation in the reusable encounter admission bridge.",
+        "proof": "cloud-encounter-known-facts-proof.json"
       }
     ],
     "source_key_access_evidence": "cloud-helmet-source-keys-proof.json",
     "source_level_access_evidence": "cloud-helmet-levels-proof.json",
     "completion_proof": "cloud-demon-complete-proof.json",
     "taxonomy_serialization": "Compact canonical form restored after source digest refresh; parsed values unchanged.",
-    "known_fact_preservation_followup": "Active repair: the wider tree validator exposed original Known canonical Item fields replaced by the source-only admission projection. Restore them from immutable legacy definitions with existing retain_known; retain all native four-kill/access/reward proof and rerun affected validation before further reuse."
+    "known_fact_preservation_followup": "Repaired and PG54.28s; accepted canonical/native facts retained. Static Imbuement binding fingerprints are the next immediate derived-data follow-up."
   },
   {
     "canonical": "oteryn:quest.devil_helmet_quest",

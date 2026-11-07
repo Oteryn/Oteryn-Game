@@ -9,6 +9,7 @@ import argparse
 import copy
 import hashlib
 import json
+from task_board_item_profiles import retain_known
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,23 +37,55 @@ def profiles(root=ROOT):
     return {r['production_definition']['production_key']: r for r in rows}
 
 
+def legacy_definitions(root=ROOT):
+    document = json.loads((root / 'content/world/definitions/reference.json').read_bytes())
+    selected = set(profiles(root))
+    result = {d['identity']['key']: d for d in document['records'] if d['identity']['key'] in selected}
+    if set(result) != selected:
+        raise ValueError('QUEST_ENCOUNTER_LEGACY_CLOSURE')
+    return result
+
+
 def apply_admissions(definitions, root=ROOT):
     definitions = list(definitions)
     indexed = {d['identity']['key']: d for d in definitions}
     if len(indexed) != len(definitions):
         raise ValueError('QUEST_ENCOUNTER_DUPLICATE_CANONICAL_IDENTITY')
+    legacy = legacy_definitions(root)
     replacements = []
     for key, profile in profiles(root).items():
         definition = indexed[key]
         if definition['identity'] != {'family': 'Item', 'key': key, 'revision': 'definition-r1'}:
             raise ValueError('QUEST_ENCOUNTER_CANONICAL_IDENTITY')
-        replacement = copy.deepcopy(definition)
+        replacement = copy.deepcopy(legacy[key])
+        semantics = {group: {'state':'UNKNOWN'} for group in profile['semantics']}
+        semantics.update(copy.deepcopy(legacy[key].get('semantics', {})))
+        # Canonical admission only needs these materialization facts. Other
+        # groups retain their existing owner, including partial Known groups.
+        for group in ('physical','stack','container','temporal'):
+            if semantics[group].get('state') == 'UNKNOWN':
+                semantics[group] = copy.deepcopy(profile['semantics'][group])
+        # The canonical maximum has a separate qualified reward owner. Native
+        # profiles already prove their runtime ceiling; do not promote this hold.
+        stack = semantics.get('stack', {})
+        if (stack.get('state') == 'KNOWN'
+                and stack['value']['stackable'] == {'state':'KNOWN','value':True}
+                and legacy[key].get('semantics',{}).get('stack',{}).get('value',{})
+                    .get('stack_max',{'state':'UNKNOWN'}).get('state') == 'UNKNOWN'):
+            stack['value']['stack_max'] = {'state':'UNKNOWN'}
         replacement.update(materializable=True, stack_class=profile['admission']['stack_class'],
-                           semantics=copy.deepcopy(profile['semantics']))
-        if definition['materializable'] and definition != replacement:
-            raise ValueError('QUEST_ENCOUNTER_CANONICAL_CONFLICT:' + key)
+                           semantics=semantics)
+        # Recognize only this producer's exact earlier source-only projection
+        # when repairing it. Arbitrary admitted facts still refuse unchanged.
+        previous_projection = copy.deepcopy(legacy[key])
+        previous_projection.update(materializable=True, stack_class=profile['admission']['stack_class'],
+                                   semantics=copy.deepcopy(profile['semantics']))
+        if definition['materializable']:
+            if definition not in (replacement, previous_projection):
+                raise ValueError('QUEST_ENCOUNTER_CANONICAL_CONFLICT:' + key)
+        else:
+            replacement['semantics'] = retain_known(replacement['semantics'], definition.get('semantics', {}))
         replacements.append((definition, replacement))
-    # Validate the complete closure before changing any canonical fact.
     for definition, replacement in replacements:
         definition.clear()
         definition.update(replacement)
@@ -62,12 +95,16 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     captured = profiles(root)
     document = json.loads(generated[profile_path])
     existing = {r['production_definition']['production_key']: r for r in document['records']}
+    legacy = legacy_definitions(root)
     for key, row in captured.items():
         if key in existing:
             for group in ('physical', 'stack', 'container', 'temporal'):
                 if existing[key]['semantics'][group] != row['semantics'][group]:
                     raise ValueError('QUEST_ENCOUNTER_NATIVE_CONFLICT:' + key + ':' + group)
+            existing[key]['semantics'] = retain_known(legacy[key].get('semantics', {}), existing[key]['semantics'])
         else:
+            row = copy.deepcopy(row)
+            row['semantics'] = retain_known(legacy[key].get('semantics', {}), row['semantics'])
             document['records'].append(row)
     document['records'].sort(key=order)
     raw = canonical(document)
