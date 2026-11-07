@@ -52,6 +52,7 @@ impl Recipe {
     }
     pub fn transition(&self) -> QuestTransition {
         QuestTransition {
+            world_change: None,
             key: self.key.into(),
             quest: self.quest.into(),
             effects: vec![QuestEffect {

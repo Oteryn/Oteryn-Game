@@ -40,6 +40,7 @@ pub fn recipe(key: &str) -> Option<&'static Recipe> {
 }
 fn activation_callbacks() -> impl Iterator<Item = Callback> {
     RECIPES.iter().map(|r| Callback {
+world_change: None,
         key:r.key.into(),quest:"oteryn:quest.the_ancient_tombs_quest".into(),trigger:Trigger::Use,actor_kind:Default::default(),
         selector:Selector { native: None,position:None,unique:None,action:Some(r.action),appearance:Some(2772)},
         lever:Some([2772,2773]),reversible:false,opening_only:false,requires_world_admission:false,passages:Vec::new(),teleport:None,facing:None,
@@ -157,6 +158,7 @@ pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
     activation_callbacks().chain(GATES.iter().map(|gate| {
         let mut effects=CallbackEffectSet::default();effects.magic=Some(MagicEffect {position:gate.destination,effect:gate.effect});
         Callback {
+world_change: None,
             key:gate.key.into(),quest:gate.quest.into(),trigger:Trigger::StepIn,actor_kind:Default::default(),
             selector:Selector { native: None,position:None,unique:Some(gate.unique),action:None,appearance:None},
             lever:None,reversible:false,opening_only:false,requires_world_admission:gate.progress.is_some(),passages:Vec::new(),teleport:Some(gate.destination),facing:None,effects,

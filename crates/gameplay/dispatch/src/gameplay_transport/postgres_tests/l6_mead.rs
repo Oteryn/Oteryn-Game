@@ -82,6 +82,7 @@ pub(super) fn catalogue(
         .map(|s| original.track(&s.track).cloned().ok_or("Mead track"))
         .collect::<Result<Vec<_>, _>>()?;
     let seed = quest::QuestTransition {
+world_change: None,
         key: SEED.into(),
         quest: callback.quest.clone(),
         effects: callback

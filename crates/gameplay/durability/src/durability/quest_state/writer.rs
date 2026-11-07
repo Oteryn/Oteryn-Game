@@ -317,6 +317,7 @@ impl DurabilityRoot {
                         c.key == request.transition_key
                             && (!c.offerings.is_empty()
                                 || c.item_on_target.is_some()
+                                || c.world_change.is_some()
                                 || c.minimum_level.is_some()
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
@@ -498,6 +499,11 @@ impl DurabilityRoot {
                     }
                     if request.transition_key==oteryn_gameplay_quests::quest::rotten_blood::RESTORE_DOOR
                         && state.try_get::<i64, _>("level")? < i64::from(oteryn_gameplay_quests::quest::rotten_blood::REQUIRED_LEVEL)
+                    {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
+                    if let Some(change) = transition.world_change.as_deref()
+                        && !super::super::world_event::change_active(&mut tx, fence.runtime_scope.world_id(), change).await?
                     {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }

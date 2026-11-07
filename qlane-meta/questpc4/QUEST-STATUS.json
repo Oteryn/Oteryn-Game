@@ -10537,5 +10537,43 @@
     "pin_refresh": "PASS cached release compiler /tmp/questpc4-main669-pin-refresh.log; semantic world pin b2400c60f3a08b751ce3edee7a1ea7979c0fcc94a9cb2fefcab9d6a558d125e6",
     "generation": "Quest tree then binding/catalogue/matrix/candidates/rollout/declarations/state lowering/binding plan/import/preflight/reward candidates/variant packet; native provider regeneration final.",
     "remaining": "Previous CI repair PG/freshness obligations remain explicitly IN_PROGRESS; this batch reconciles current main and compile gates, not whole-quest qualification."
+  },
+  "main_merge_1138720b": {
+    "main": "1138720b1",
+    "state": "CONFLICTS_RESOLVED_VALIDATING",
+    "conflicts": [
+      "postgres_tests/soul_war.rs",
+      "postgres_tests/underwater_drowning.rs",
+      "quest/native_kills.rs",
+      "quest/reward_callbacks.rs",
+      "quest/rotten_blood.rs",
+      "quest/schrodinger_island.rs",
+      "quest/world_callbacks.rs"
+    ],
+    "resolution": "Preserve canonical transition builders and shared native counter builder; propagate callback.world_change for physical transitions and None for unrelated existing constructors. Reuse QWORLD production calendar and migrations1320-1322 unchanged.",
+    "dragon_red": {
+      "seconds": 80.02,
+      "actual": "Rejected",
+      "expected": "Ok",
+      "log": "/tmp/questpc4-main113-dragon-red.log"
+    },
+    "dragon_green": {
+      "postgresql": "18.6",
+      "seconds": 88.701780234,
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l12-dragon-slayer-story success=true",
+      "log": "/tmp/questpc4-main113-dragon-audit-green.log"
+    },
+    "focused_tests": "4PASS /88.761s: real Dragon PG story, Type2audit inventory, canonical trial stage ownership, native counter exact ownership",
+    "root_cause": "Native counter protection omitted an ungated canonical NPC reset operation. Register all exact canonical callback owners while protecting tracks only for the existing gated/native/timer owners. Changed copies and unregistered aliases remain rejected.",
+    "audit": "Real carried_step.rs Type2 transaction tuple captured at105-123; added exact file to existing complete inventory; auditPASS0.268s.",
+    "additional_pg_green_before_qworld": [
+      "Royal Costume194.242472456s, exact15000/12500-token recipe and2000ms deadline unchanged",
+      "Cave Explorer99.198s",
+      "Fire Fighter97.192s",
+      "Mead46.287s"
+    ],
+    "regeneration": "Native43filesPASS; current release compiler pin-refreshPASS, semantic pin b2400c60f3a08b751ce3edee7a1ea7979c0fcc94a9cb2fefcab9d6a558d125e6 unchanged",
+    "initial_workspace_check": "PASS3m32s; final check running after Dragon logic correction",
+    "python_freshness": "Full donor capture and strict metadata replay completed; full Python/donor verification was stopped when main advanced to avoid claims against a moving tree. Resume after this publication."
   }
 }

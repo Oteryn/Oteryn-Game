@@ -186,6 +186,8 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub world_change: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub monk_reward: Option<MonkReward>,
@@ -525,6 +527,7 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
     let binding = gated_binding(callback)?;
     let bound_index = callback.storage.iter().position(|state| !state.preserve);
     Ok(QuestTransition {
+        world_change: callback.world_change.clone(),
         key: callback.key.clone(),
         quest: callback.quest.clone(),
         effects: callback

@@ -621,6 +621,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 return Err(format!("foreign participant operation {}", callback.key));
             }
             transitions.push(QuestTransition {
+                world_change: None,
                 key: participant_key(&callback.key, index),
                 quest: participant.quest.clone(),
                 effects: participant
@@ -680,6 +681,7 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
     let binding = gated_binding(callback)?;
     let bound_effect = callback.storage.iter().position(|state| !state.preserve);
     Ok(QuestTransition {
+        world_change: None,
         key: callback.key.clone(),
         quest: callback.quest.clone(),
         effects: callback

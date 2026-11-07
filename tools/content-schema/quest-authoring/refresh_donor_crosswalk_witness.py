@@ -112,6 +112,15 @@ def outputs(root):
         for name, paths in allowed.items():
             require_same(read_packet(directory / name), read_packet(scratch / name), *paths)
             result[directory / name] = (scratch / name).read_bytes()
+        component_summary = json.loads((directory / 'components248/summary.json').read_bytes())
+        for row in component_summary['outputs']:
+            path = directory / 'components248' / row['path']
+            if path in result:
+                row['sha256'] = digest(result[path])
+            elif digest(path.read_bytes()) != row['sha256']:
+                raise ValueError('unreplayed component capture changed: ' + row['path'])
+        write_component(scratch / 'components248/summary.json', component_summary)
+        result[directory / 'components248/summary.json'] = (scratch / 'components248/summary.json').read_bytes()
         for row in report['outputs']:
             if directory / row['path'] in result:
                 row['sha256'] = digest(result[directory / row['path']])

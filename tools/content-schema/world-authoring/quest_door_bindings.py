@@ -193,7 +193,9 @@ def overlay_region(raw, palette, document, *, attribute="action", item_ids=None)
         return raw, []
     if attribute not in ("action", "unique"):
         raise ValueError("invalid startup attribute")
-    quest_ids = {r["closed"] for r in document["pairs"]} if item_ids is None else item_ids
+    quest_ids = (
+        {r["closed"] for r in document["pairs"]} if item_ids is None else item_ids
+    )
     sectors = {}
     imported = []
     changed = False

@@ -112,6 +112,7 @@ pub(super) async fn exercise(
             }],
             vec![
                 QuestTransition {
+world_change: None,
                     key: SEED.into(),
                     quest: QUEST.into(),
                     effects: vec![QuestEffect {

@@ -463,6 +463,7 @@ async fn seed(
         .collect::<Result<Vec<_>, _>>()?;
     let key = "oteryn:quest-transition/native-room-fixture-ready";
     let setup = QuestTransition {
+world_change: None,
         key: key.into(),
         quest: callback.quest.clone(),
         effects: callback

@@ -18,6 +18,7 @@ pub struct Counter {
 impl Counter {
     pub(crate) fn transition(self) -> QuestTransition {
         QuestTransition {
+            world_change: None,
             key: self.transition.into(),
             quest: self.quest.into(),
             effects: vec![

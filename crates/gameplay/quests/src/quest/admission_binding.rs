@@ -24,14 +24,16 @@ fn registry() -> Result<&'static Registry, String> {
                 owners: BTreeMap::new(),
                 protected_tracks: BTreeSet::new(),
             };
-            let mut add = |transition: QuestTransition, world| -> Result<(), String> {
-                registry.protected_tracks.extend(
-                    transition
-                        .effects
-                        .iter()
-                        .filter(|effect| changes(effect.effect))
-                        .map(|effect| effect.track.clone()),
-                );
+            let mut add = |transition: QuestTransition, world, protect| -> Result<(), String> {
+                if protect {
+                    registry.protected_tracks.extend(
+                        transition
+                            .effects
+                            .iter()
+                            .filter(|effect| changes(effect.effect))
+                            .map(|effect| effect.track.clone()),
+                    );
+                }
                 if registry
                     .owners
                     .insert(transition.key.clone(), Owner { transition, world })
@@ -42,22 +44,28 @@ fn registry() -> Result<&'static Registry, String> {
                 Ok(())
             };
             for callback in reward_callbacks::load()? {
-                if reward_callbacks::gated_binding(&callback)?.is_some() {
-                    add(reward_callbacks::primary_transition(&callback)?, false)?;
-                }
+                let protect = reward_callbacks::gated_binding(&callback)?.is_some();
+                add(
+                    reward_callbacks::primary_transition(&callback)?,
+                    false,
+                    protect,
+                )?;
             }
             for callback in world_callbacks::load()? {
-                if world_callbacks::gated_binding(&callback)?.is_some() {
-                    add(world_callbacks::primary_transition(&callback)?, true)?;
-                }
+                let protect = world_callbacks::gated_binding(&callback)?.is_some();
+                add(
+                    world_callbacks::primary_transition(&callback)?,
+                    true,
+                    protect,
+                )?;
             }
             // Native death writes share tracks with bound NPC trial stages.
             // Their specialised writer already requires an exact native-death proof.
             for counter in super::native_kills::COUNTERS {
-                add(counter.transition(), false)?;
+                add(counter.transition(), false, true)?;
             }
             for recipe in super::timers::RECIPES {
-                add(recipe.transition(), false)?;
+                add(recipe.transition(), false, true)?;
             }
             Ok(registry)
         })
@@ -89,6 +97,28 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn canonical_trial_stages_can_reset_protected_native_counters() -> Result<(), String> {
+        let callbacks = reward_callbacks::load()?;
+        let mut checked = 0;
+        for callback in callbacks
+            .iter()
+            .filter(|callback| callback.key.contains("l12-"))
+        {
+            let original = reward_callbacks::primary_transition(callback)?;
+            validate(&original, false)?;
+            let mut changed = original;
+            changed.completes = !changed.completes;
+            assert!(validate(&changed, false).is_err());
+            checked += 1;
+        }
+        assert!(
+            checked >= 3,
+            "all chosen trial programmes retain exact owners"
+        );
+        Ok(())
+    }
 
     #[test]
     fn native_deaths_keep_their_exact_registered_counter_operation() -> Result<(), String> {
