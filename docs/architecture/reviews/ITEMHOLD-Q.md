@@ -338,3 +338,309 @@ Latest-main checks use the same commands in the merge-validation table above:
 
 No full nextest or full PG suite was run. No PR was opened, no protected branch
 was modified, and neither merge used rebase or force push.
+
+## CI repair after merge head b0d3b5b92
+
+The reward migration packet bound older Item/claim inputs. It was regenerated
+with the documented `reward_claim_variant_migration.py` write mode (no `--check`),
+then its byte-for-byte check passed. The quest checks failure was the obsolete
+38-blocked-variant assertion: Ornamented Shield and Triangle Tower now qualify,
+leaving exactly 36. The test now also removes only those two projections and
+proves that the original 38 failures return, with exactly those two identities.
+
+The quest unit job additionally exposed Grizzly room provider-pin drift, old
+completion-matrix totals, and four historical SOURCE claim views following live
+admissions. The SOURCE compatibility projection preserves all 284 frozen SOURCE
+cores, the 242 immutable chosen recipes/selection/baseline, and the existing 28
+approved core pairs. The narrowly scoped receipt generator verifies every other
+approval input and refreshes only the SOURCE compiler pin and its approval hash.
+Live canonical claims retain their resolved holds/native contents. New regressions
+reject SOURCE core changes and any other approved-field change.
+
+The Quest tree, binding packets, completion/rollout matrices, v2 export, state
+lowering, completion import, source/collect/use/completion binding candidates and
+Grizzly room packet were rebuilt through their owning generators, in the
+dependency order documented in the Quest authoring README. No generated packet,
+receipt, content shard or pin was edited by hand.
+
+| CI-equivalent command | Result |
+| --- | --- |
+| `python tools/content-schema/quest-authoring/run_checks.py --part checks` | PASS |
+| `python tools/content-schema/quest-authoring/run_checks.py --part unit-tests` | PASS; 93 modules, 1,052 tests; pre-existing skips retained |
+| `python tools/content-schema/quest-authoring/run_checks.py --part donor` | PASS |
+| `python tools/content-schema/reward-claim-authoring/test_reward_claim_variant_migration.py` | PASS; 17 tests |
+| `python tools/content-schema/reward-claim-authoring/test_reward_claim_authoring.py` | PASS |
+| `python tools/content-migration/validate_world_project_v2_to_tree.py` | PASS |
+| `amend_itemhold_source_receipt.py --check` and `grizzly_rooms.py --check` | PASS |
+
+All 69 generator-check invocations discovered in the item/reward content
+workflows and the Quest check driver passed. The source-backed checks use the
+workflows' exact pinned upstream revisions and verify their digests. The full
+check inventory follows (commands run from the repository unless shown below):
+
+| Generator check | Result |
+| --- | --- |
+| `python tools/content-schema/item-authoring/lower_client_physical_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_timed_item_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_equip_abilities_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_ranged_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_item_use_observation_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_item_forge289_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/item_weapon_proficiency.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_client_market_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_wiki_movable_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_client_market_d289_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_wiki_movable_d289_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_item_document_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_item_description_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_item_description_wiki_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_item_name_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_item_name15_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_item_hit_magic_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py --check` | PASS |
+| `python tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py --check` | PASS |
+| `python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content --check` | PASS |
+| `python tools/content-schema/reward-claim-authoring/container_source.py --check --verify-upstream` | PASS |
+| `python tools/content-schema/craft-authoring/craft_authoring.py content --check` | PASS |
+| `python tools/content-schema/imbuement-authoring/imbuement_content.py content --check` | PASS |
+| `python tools/content-schema/starter-kit-authoring/starter_kit_authoring.py content --check --seal-base origin/main` | PASS |
+| `python tools/content-schema/proficiency-authoring/proficiency_authoring.py build --check` | PASS |
+| `python tools/content-schema/achievement-authoring/build_catalogue.py --check` | PASS |
+| `python tools/content-schema/wheel-authoring/build_schema.py --check` | PASS |
+| `python tools/content-schema/wheel-authoring/wheel_authoring.py build --check` | PASS |
+| `python tools/content-schema/wheel-authoring/verify_item_assets.py --check` | PASS |
+| `python tools/content-schema/wheel-authoring/client_icons.py --check` | PASS |
+| `python tools/content-schema/wheel-authoring/import_server_data.py --check` | PASS |
+| `python tools/content-schema/wheel-authoring/build_report.py --check` | PASS |
+| `python tools/content-schema/item-authoring/client_appearance_census.py --check --crystal-source /tmp/itemhold-ci-sources/crystal-base --donor-source /tmp/itemhold-ci-sources/crystal --canary-source /tmp/itemhold-ci-sources/canary-base` | PASS |
+| `python tools/content-schema/item-authoring/appearance_membership.py --check --source crystal-ff7ede5=/tmp/itemhold-ci-sources/crystal-base/data/items/appearances.dat --source canary-47dfd51f=/tmp/itemhold-ci-sources/canary-base/data/items/appearances.dat --source crystal-donor-00ce02a5=/tmp/itemhold-ci-sources/crystal/data/items/appearances.dat` | PASS |
+| `python tools/content-schema/world-object-authoring/build_catalogue.py --source /tmp/itemhold-ci-sources/crystal-base --donor-source /tmp/itemhold-ci-sources/crystal --official-client --qualified-world --check` | PASS |
+| `python imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py --capture /workspace/Oteryn-Game/imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json --sources /workspace/Oteryn-Game/imports/ots-source-evidence/item-fx-audio295/retained-source-files.json --batch /workspace/Oteryn-Game/imports/ots-source-evidence/item-fx-audio295/import-batch.json --check` | PASS |
+| `python tools/content-schema/native-gameplay/build_presentation_bindings.py --check --reference-engine /tmp/itemhold-ci-sources/canary-cues --crystal-engine /tmp/itemhold-ci-sources/crystal` | PASS |
+| `python tools/content-schema/native-gameplay/build_creature_races.py --check --canary /tmp/itemhold-ci-sources/canary-monsters --crystal /tmp/itemhold-ci-sources/crystal` | PASS |
+| (Quest authoring directory) `python soul_war_reconstruction.py --check` | PASS |
+| (Quest authoring directory) `python ../encounter-authoring/soul_war_crystal_reconstruction.py --check` | PASS |
+| (Quest authoring directory) `python ../reward-claim-authoring/reward_claim_authoring.py content --check` | PASS |
+| (Quest authoring directory) `python ../reward-claim-authoring/reward_claim_variant_migration.py --check` | PASS |
+| (Quest authoring directory) `python refresh_quest_source_checks.py --check` | PASS |
+| (Quest authoring directory) `python quest_catalogue_authoring.py --check` | PASS |
+| (Quest authoring directory) `python quest_completion_matrix.py --check` | PASS |
+| (Quest authoring directory) `python collect_claim_candidates.py --check` | PASS |
+| (Quest authoring directory) `python use_trigger_candidates.py --check` | PASS |
+| (Quest authoring directory) `python source_text_authoring.py --check` | PASS |
+| (Quest authoring directory) `python build_wiki_source_schema.py --check` | PASS |
+| (Quest authoring directory) `python wiki_source_inventory.py --check` | PASS |
+| (Quest authoring directory) `python wiki_source_supplements.py --check` | PASS |
+| (Quest authoring directory) `python wiki_all_source_inventory.py --check` | PASS |
+| (Quest authoring directory) `python wiki_all_source_inventory.py --schema-out wiki_all_source_specs.schema.json --check` | PASS |
+| (Quest authoring directory) `python wiki_requirement_interpretations.py --check` | PASS |
+| (Quest authoring directory) `python source_facts_authoring.py --specifications samples/wiki-source-all373/source-specs-373.json --samples samples/unbound-source-facts --check` | PASS |
+| (Quest authoring directory) `python authored_quest_authoring.py --check` | PASS |
+| (Quest authoring directory) `python quest_completion_authoring.py --check` | PASS |
+| (Quest authoring directory) `python quest_rollout_authoring.py --check` | PASS |
+| (Quest authoring directory) `python quest_binding_authoring.py --check` | PASS |
+| (Quest authoring directory) `python quest_v2_export.py --check` | PASS |
+| (Quest authoring directory) `python quest_state_lowering.py --check` | PASS |
+| (Quest authoring directory) `python source_lowered_binding_plan.py --check` | PASS |
+| (Quest authoring directory) `python quest_completion_import.py --check` | PASS |
+| (Quest authoring directory) `python quest_native_binding_preflight.py --check` | PASS |
+| (Quest authoring directory) `python quest_reward_only_binding_candidates.py --check` | PASS |
+| (Quest authoring directory) `python bundle_authoring.py --check` | PASS |
+| (Quest authoring directory) `python quest_tree_authoring.py content --check --source-packet /workspace/Oteryn-Game/tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json` | PASS |
+
+### Rust failure reproductions and scoped corrections
+
+On the unchanged `b0d3b5b92` checkout, nextest reproduced
+`equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes`
+with 3,610 actual profiles versus the old 3,604 expectation. The exact six-key
+admission delta is 2949, 12369, 14156, 33330, 44179 and 52732; existing profiles'
+speed attributes are unchanged. The independent cohort inventory now records
+those six additions, and the regression explicitly requires each to be
+materializable with source-qualified zero speed. Existing unknown-speed and
+ability checks remain intact. The corrected test passed in the full dispatch run.
+
+The unchanged native-writing test belongs to nextest hash shard 1/3. Stress
+iteration 4/100 reproduced its `inventory_select(item.handle)` assertion failure.
+The exact six-line fix from `726eaa0f7` on the cached `-gpkg` branch waits for
+initial inventory publication after mail readiness, bounded by three seconds;
+all selection, UTF-8, saving and write-once refusal assertions are preserved.
+After porting it, all 100 stress iterations passed.
+
+| Additional command | Result |
+| --- | --- |
+| `cargo clippy --locked -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings` | PASS |
+| `cargo clippy --locked -p oteryn-client --all-targets --quiet -- -D warnings` | PASS |
+| `cargo nextest run --locked -p oteryn-client --lib -E 'test(srx1_native_writing_selected_item_utf8_save_and_write_once_refusal)' --stress-count 100` | PASS; 100/100 after the port; original fails at iteration 4 |
+| `cargo fmt --all --check` after the dispatch correction | PASS |
+| `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-check . /tmp/itemhold-repair-final-pin` | PASS; bundle `6157033be3cbe48fb8eb1261ce13579cb1e02ec40f457025d1b89ac3d2d62671` |
+| S17 cast/viewer regression selection from the compiled dispatch binary | PASS; 9 tests, including real PostgreSQL persistent bans and viewer projection |
+
+The local PostgreSQL server was stopped when the first baseline SQL test ran.
+It was restarted using the prepared PostgreSQL 18.6 data directory; the same SQL
+reads/share-lock test then passed without a code change. This environment error
+is separate from the reproduced profile-count and native-writing regressions.
+
+### Shared PostgreSQL concurrency correction after the CI report
+
+The five failed jobs in run `42292351375` are partitions 8, 15, 16 and 21
+(library step), and 22 (registered E2E step). GitHub's job metadata confirms
+those steps; downloading the exception logs from its storage host returns
+`Tunnel connection failed: 403 Forbidden`. Local reproduction is used below;
+a partition-to-exception attribution is not inferred from a matching label.
+
+Ported the four common-file changes from `-gpkg` commit
+`886b1c77622582fdb94c66940e271aada9c6e751`, preserving this branch's other work.
+Inspection now holds the spell-lane permit across each complete Item, Trade or
+Player read, with Trade passing that permit into its helper. The history-gap
+probe takes admission guard locks before the reconnect-session row, matching
+live admission's lock order. The regression runs a peer staff refresh alongside
+Player inspection and retains all successful-result assertions.
+
+Applying only that concurrent regression to the old production code reproduced
+`inspection_postgres_trade_counterpart_requires_current_offer_and_leaf_index`:
+`player_trade.rs:359`, actual result 2 versus required 1 (184.164 seconds).
+This demonstrates the inspection race independently of the inaccessible CI log.
+The initially running dispatch diagnostic was superseded before the production
+patch; its partial success is not reported as a completed final suite.
+
+The separate complete PostgreSQL-enabled durability/server library diagnostic
+passed **1,253/1,253** tests (three pre-existing skipped tests):
+`cargo nextest run --locked -p oteryn-gameplay-durability -p oteryn-game-server --lib --no-fail-fast`.
+
+The registered E2E listing was rebuilt with all four workflow targets (858 cases).
+Applying the workflow's unchanged 24-way duration planner selects 41 cases for
+partition 22. Its exact nextest filter union passed **41/41** with PostgreSQL
+18.6 enabled, including `s17_cast_postgres_cross_worker_consent_barrier`.
+The original partition-22 exception has not reproduced locally; no test or
+runtime constraint was relaxed to obtain this result.
+
+Replaying the actual E2E listing before assigning the library cases puts the
+boss readiness-history probe in partition 8, concurrent Trade/Player inspection
+in 15, and the production speed-profile inventory in 16. These match three red
+partitions and the independently established defects. Partition 21 was subsequently reproduced as the stale callback inventory
+(documented below). Both updated Rust crates' Clippy runs pass with `-D warnings`, and
+`cargo fmt --all --check` passes on the combined patch.
+
+The first combined library-list build was killed with `signal: 9, SIGKILL`;
+the container's memory events recorded an OOM kill. It is retried with
+`CARGO_BUILD_JOBS=1`. A repeated bundle pin-check used approximately 8 GB and
+was stopped while compilation was active; the earlier completed pin-check
+already covers the unchanged generated content. Compiler caches and logs are
+outside the repository, and no source or test assertion was changed for this
+environment failure.
+
+The serialized retry succeeded (8m19s). The fresh nextest library listing
+excludes the 21 pre-existing ignored cases before the workflow planner runs;
+using it gives 158/163/163/157 runnable cases for partitions 8/15/16/21,
+respectively (641 total). The three identified regressions remain assigned to
+8/15/16. These exact filter unions run with the workflow's duration priorities.
+
+The complete client library suite also passed **342/342**, zero skipped:
+`cargo nextest run --locked -p oteryn-client --lib --no-fail-fast --test-threads 1`.
+The native-writing stress regression additionally passed 100/100 as recorded
+above. Final dispatch Clippy passed after porting the shared PostgreSQL patch.
+
+### Additional failures found by the complete library runs
+
+The first full dispatch run completed in 2355.939 seconds: 2,572 passed,
+one failed, and 18 pre-existing ignored tests. It reproduced
+`quest_callbacks_binding_and_coverage_require_exact_source_witnesses`:
+`docs/repository/QUEST_CALLBACK_COVERAGE.json` listed 308 supported claims,
+but the real binder listed 311. The exact difference is `kv.powerring2`,
+`kv.triangletower` and `kv.ornamentedshield`. The actual workflow planner puts
+this case in failed PG partition 21, so its cause is this packet's claim admissions.
+
+Regenerated that inventory with its owner, without modifying the Rust assertion:
+`python tools/content-schema/quest-authoring/quest_callback_coverage.py --canary /tmp/itemhold-callback-donors/canary --crystal /tmp/itemhold-callback-donors/crystal`.
+The matching `--check` passes. Retained donor blobs are Canary `47dfd51f`,
+`data-otservbr-global/startup/tables/chest.lua`, SHA-256
+`2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda`,
+and Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`data-global/startup/tables/chest.lua`, SHA-256
+`7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4`.
+Both hashes are checked by the existing generator. This source-bound inventory
+check supplements the 69 workflow generator checks recorded above.
+
+The PostgreSQL run additionally reproduced partition 8's
+`charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_and_dodge`:
+all four assignments executed, but the strict Dodge comparison failed at
+`kill_reward_postgres_e2e_tests.rs:101`. The original run used real elapsed time
+plus manual clock shifts, so the compared scenarios did not supply identical
+semantic times. A focused experiment keeps all original assertions and 64
+samples while feeding the same explicit times through the existing monster
+clock seam and an equivalent test-only auto-attack entry point. The production
+auto-attack entry point still samples its clock at the original location.
+
+
+### Final focused CI repair (owner directive: 2026-11-06 23:55 UTC)
+
+The owner requested stopping broad runs and publishing validated fixes within
+30 minutes. Broad runners were stopped; their partial results are diagnostic,
+not completed green suites. The completed client suite (342), quest unit job
+(1,052), durability/server PG libraries (1,253), and partition-22 E2E share (41)
+remain completed passing runs. Subsequent verification is limited to failing
+regressions and changed-crate fmt/Clippy.
+
+The synchronized 64-turn charm experiment still failed, with identical plain
+and Dodge damage vectors. A temporary single-scenario trace then proved that
+all **31** actual Cave Rat incoming hooks reached stage-3 Dodge and returned
+`NotTriggered`. Clock drift was therefore not the cause of the missing proc:
+the changed content decision root produces no proc in that bounded window.
+The final fixture uses 256 identical semantic turns per assignment, retains
+all existing positive-effect and pointwise damage assertions, and additionally
+requires equal vector lengths. Neither the 11% source chance nor production
+combat/draw rules change. The explicit test-time seams keep the counterfactual
+comparisons on matching turns; production still reads its clock at the original
+locations. Temporary trace code and its diagnostic test were removed.
+
+Partition 16 additionally reproduced
+`reaudit_relocation_tiles_monster_push_trap_entry_exit_postgres`: 50 HP became
+18, outside its stale raw 15..30 expectation. Trap 3944 is Earth damage
+(`paced_movement/special_movement.rs:63`); canonical Troll has mitigation 8/25
+percent and Earth resistance -10 percent
+(`content/creatures/definitions/spell-native-profiles.json:1`). The existing
+source condition finisher truncates mitigation then rounds resistance
+(`crates/gameplay/entities/src/carrier/runtime_actor_periodic.rs:620`). For raw
+15..30 this gives exactly `{15,17,18,19,20,21,22,23,24,25,26,28,29,30,31,32}`.
+The regression now asserts those pinned policy values and this exact one-hit
+set; all trap transformation, refusal, reopening and wolf-capture assertions
+remain intact. Its focused PostgreSQL rerun **PASSed** (89.590 s).
+
+Focused proven red/green corrections also include:
+- production profile inventory: 3,604 expected versus 3,610 actual; six exact
+  admitted keys now checked independently; corrected regression passes;
+- callback coverage: 308 manifest versus 311 real binder claims; regenerated
+  pinned-donor inventory, matching `--check`, and exact Rust regression pass;
+- concurrent inspection: result 2 versus required 1 before the shared `886b1c776`
+  fix; strengthened concurrent regression passes with PostgreSQL (125.527 s);
+- native writing: original fails stress iteration 4; exact `726eaa0f7` startup
+  publication fix passes 100/100 stress iterations and the complete client suite.
+
+Final changed-crate checks:
+- `cargo fmt --all --check`: PASS.
+- `CARGO_BUILD_JOBS=1 cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-client --all-targets --quiet -- -D warnings`: PASS.
+- RewardClaim variant migration `--check`: PASS again after the final packet edits.
+- Pinned-donor quest callback coverage `--check`: PASS again.
+- The completed bundle pin-check covers the unchanged generated content,
+  digest `6157033be3cbe48fb8eb1261ce13579cb1e02ec40f457025d1b89ac3d2d62671`.
+
+
+Final focused Dodge result: **PASS**, 389.689 seconds, all four real PostgreSQL
+assignments completed. Command:
+`CARGO_BUILD_JOBS=1 cargo nextest run --locked -p oteryn-gameplay-dispatch --lib -E 'test(charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_and_dodge)' --no-capture`.
+The exact same strict Dodge comparison failed before the fix (802.196 s), and
+again with synchronized clocks but only 64 turns (1033.137 s); the hook trace
+identified 31 genuine, untriggered draws. Expanding the bounded observation
+window to 256 is the validated correction, with matched semantic clocks and
+all positive-effect/pointwise assertions retained. No production chance,
+validator, deadline or materialization rule was weakened.
+
+At the owner's deadline-driven handoff, all locally reproduced failures are
+fixed and their focused regressions are green. Broad diagnostic suites were
+stopped as requested and are not represented as completed passing suites.
+The original partition-22 exception remains unavailable because its log download
+returns `Tunnel connection failed: 403 Forbidden`; its exact 41-case E2E share
+passed locally without changing those tests. GitHub CI on the pushed commit is
+the publication check; no PR was opened by this task.

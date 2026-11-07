@@ -262,6 +262,12 @@ fn srx1_native_writing_selected_item_utf8_save_and_write_once_refusal() -> Resul
             let item = oteryn_session::ItemEntry { handle: 7.try_into()?, item_definition_ref: 1.try_into()?, count: 1.try_into()?, sub_type: 0 };
             let task = tokio::spawn(run_session(Peer { exchanges: Arc::clone(&exchanges), inventory: Some(oteryn_session::CharacterInventory { main_backpack: Some(oteryn_session::ItemEntry { handle: 1.try_into()?, ..item }), entries: vec![item], equipment: vec![] }) }, incoming, outbox));
             ready(&link).await?;
+            // Mail readiness is published before the initial inventory snapshot.
+            tokio::time::timeout(Duration::from_secs(3), async {
+                while link.inventory_panel().inventory.is_none() {
+                    tokio::task::yield_now().await;
+                }
+            }).await.checked()?;
             assert!(link.inventory_select(item.handle));
             let event = oteryn_input_actions::NormalizedInputEvent::Key {
                 code: oteryn_input_actions::KeyCode::new(16).checked()?,

@@ -167,6 +167,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // All 97 additions have speed_bonus=0.
     // Ten also belong to cohorts added on main; W15 contributes 87 distinct new keys.
     ("QUESTCHEST-W15", 87),
+    // ITEMHOLD-Q: captured wolf, dog collar, Monolith Kit, Bottled Dragon Breath
+    // and Guardian Ring from itemhold_q{,_remaining}.py; the newly qualified
+    // Ornamented Shield recipe also closes over lyre 2949 in quest_callback_profiles.py.
+    // All six retain the source-qualified speed_bonus=0 (ITEMHOLD-Q review evidence).
+    ("ITEMHOLD-Q", 6),
     // Item 7934 used by a world callback's item-on-target step
     // (tools/content-migration/quest_callback_profiles.py). speed_bonus=0.
     ("QUESTCB3", 1),
@@ -287,6 +292,16 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         profiles.records.len(),
         ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
     );
+    for id in [2949, 12369, 14156, 33330, 44179, 52732] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified ITEMHOLD-Q profile {key}"))?;
+        assert!(record.admission.materializable, "{key}");
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
     // SRX-1 qualifies zero speed for these 34 newly admitted writing items.
     // The producer preserves 2815/2821/3505/3507 under their existing owners;
     // those four therefore retain their unknown-speed assertions below.

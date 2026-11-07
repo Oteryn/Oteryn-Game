@@ -617,6 +617,11 @@ async fn refuse_unproven_activity_handoff(
     sqlx::query("SET LOCAL statement_timeout='5s'")
         .execute(&mut *tx)
         .await?;
+    // Match the live owner's admission lock order before the raw handoff probe.
+    // Taking the session lock first can deadlock its next semantic pass.
+    sqlx::query("LOCK TABLE game_durability_admission_account_guards, game_durability_admission_character_guards, game_durability_reconnect_sessions IN EXCLUSIVE MODE")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
     let error = if attempt == 0 {
