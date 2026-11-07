@@ -973,3 +973,27 @@ and custody generators completed, world pin refresh unchanged, duplicate check
 PASS, workspace all-target check PASS204s, fmt PASS. Pending by cadence exception:
 six own runtime PG cases and the six changed-crate unit rerun (dispatch,
 durability, quests, npc, content, items). Do not report those reruns green.
+
+Post-main own runtime PostgreSQL rerun now GREEN6/6 in210.936s: Father
+legacy88.932s, hand-ins93.990s, atomic acceptance104.305s; Winterlight76.506s,
+Venore112.897s, Wrath opening106.628s. Complete scoped unit rerun remains
+building; corpse provider fix still isolated. No whole-Wrath qualification.
+Hero pipe native greeting/access/replay also GREEN on PostgreSQL96.432353614s
+with POSTGRES_CASE_COMPLETED marker. Explicit Wrath marker capture GREEN
+98.489380834s. Focused pipe unit46.08s and equipment census unit64.90s PASS.
+
+Shared source corpse repair is now in this checkout. Native generation PASS,
+Prey simulation PASS15cases/776creatures, generated census180additional items;
+workspace all-target check PASS210s, fmt PASS, tool pin refresh PASS with world
+digest unchanged. Full scoped unit set3069cases is rebuilding against the final
+compile-time census/manifest; prior stale-input run was interrupted, not green.
+See shared-corpse-validation.json. Do not change provider inputs during this run.
+Fresh post-generation Wrath PG GREEN156.470097261s with explicit marker;
+corrected source reward-boss fixture GREEN111.02s, original totals retained.
+The ongoing3069-case six-crate run still contains the earlier compiled fixture
+which fails on Bazir; its corrected focused test is green. Collect the complete
+remaining run before reporting whole-set success. Final check/clippy queued.
+Cadence checkpoint: compiling tree and own focused/PG checks pass; full scoped
+unit run pending. Exact remaining clippy RED: npc_rules.rs:726 empty lines after
+orphaned doc comments above cfg(test). Fix comments after this checkpoint,
+rerun mandatory checks and clippy, then push the corrected slice immediately.

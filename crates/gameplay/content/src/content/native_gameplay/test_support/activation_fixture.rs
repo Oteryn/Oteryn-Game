@@ -3,6 +3,9 @@ use super::*;
 #[cfg(test)]
 #[path = "source_loot_assertions.rs"]
 mod source_loot_assertions;
+#[cfg(test)]
+#[path = "source_loot_refusals.rs"]
+mod source_loot_refusals;
 
 fn manifest_input() -> NativeGameplayInput {
     let manifest = Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
@@ -234,6 +237,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     let mut inadmissible = 0;
     let mut admitted = Vec::new();
     let mut shared_body = Vec::new();
+    let mut refreshed_body_loot_refusals = Vec::new();
     for policy in &bosses {
         let record = source
             .creature_profiles()
@@ -260,6 +264,45 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             })
         });
         let expected = if let Some(corpse) = materializable_corpse {
+            if matches!(
+                policy.definition_key.as_str(),
+                "oteryn:creature.bazir" | "oteryn:creature.infernatil"
+            ) {
+                // Loot regeneration refreshes their already qualified source body;
+                // none of these eight unsupported loot identities becomes a grant.
+                assert_eq!(corpse.key, "oteryn:item.tibia.i4097");
+                let binding = loot
+                    .creature_loot
+                    .iter()
+                    .find(|binding| binding.creature.key == policy.definition_key)
+                    .ok_or("source refused boss loot binding")?;
+                let reference = binding.loot.as_ref().ok_or("source refused boss loot")?;
+                let table = loot
+                    .tables
+                    .iter()
+                    .find(|table| table.identity == *reference)
+                    .ok_or("source refused boss table")?;
+                assert_eq!(
+                    source_loot_refusals::items(&table.entries, &loot.items),
+                    [
+                        "oteryn:item.tibia.i3002",
+                        "oteryn:item.tibia.i3061",
+                        "oteryn:item.tibia.i3072",
+                        "oteryn:item.tibia.i3070",
+                        "oteryn:item.tibia.i3069",
+                        "oteryn:item.tibia.i2903",
+                        "oteryn:item.tibia.i3116",
+                        "oteryn:item.tibia.i3309",
+                    ]
+                );
+                assert_eq!(
+                    source.reward_table().row(&policy.definition_key).err(),
+                    Some(NoSettlementReason::LootItemInadmissible)
+                );
+                inadmissible += 1;
+                refreshed_body_loot_refusals.push(policy.definition_key.as_str());
+                continue;
+            }
             if matches!(
                 policy.definition_key.as_str(),
                 "oteryn:creature.an_observer_eye"
@@ -365,6 +408,11 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         ]
     );
     shared_body.sort_unstable();
+    refreshed_body_loot_refusals.sort_unstable();
+    assert_eq!(
+        refreshed_body_loot_refusals,
+        ["oteryn:creature.bazir", "oteryn:creature.infernatil"]
+    );
     assert_eq!(
         shared_body,
         [

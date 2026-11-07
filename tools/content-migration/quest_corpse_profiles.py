@@ -85,6 +85,8 @@ def required(root=ROOT, creatures=None):
         if corpse is None:
             raise ValueError('QUEST_CORPSE_REQUIRED_SOURCE_ABSENT')
         roots.add(item_id(corpse))
+    import quest_shared_boss_corpses
+    roots.update(quest_shared_boss_corpses.roots(by_creature))
     if len(roots) > MAX_ROOTS:
         raise ValueError('QUEST_CORPSE_ROOT_BOUNDS')
     return roots

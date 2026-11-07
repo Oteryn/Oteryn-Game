@@ -19,3 +19,11 @@ were sent in the conversation; no large generic replacement is implemented here.
 The packet still lists these two, but the ownership coordinator may transfer
 not-started entries to the new lanes. Reuse any existing work and await that
 explicit ownership/merged-engine notice before duplicating their implementation.
+
+Rechecked main47db34f09 and QENGINE2 279a9cff8 on2026-11-07. QENGINE2's
+new canonical NPC reward/input repairs do not implement either selected-peer
+colour predicates or lookTypeEx item disguises. Reuse the canonical main NPC
+implementation already merged here; retain the two requests above rather than
+creating another shared engine owner. Wrath's exact-material opening slice is
+implemented and has its own native PostgreSQL proof; that does not qualify the
+later disguise graph or the entire quest.

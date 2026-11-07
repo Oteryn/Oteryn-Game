@@ -780,3 +780,21 @@ markers and recreates its constraint triggers with identical definitions inside
 one transaction before renaming the function. It is a no-op once the canonical
 required_xp function exists. Fresh PG18.6 schema and upgrade preservation checks
 passed; runtime regression cases remain pending until their rebuild completes.
+
+Shared-boss fixture repair: five existing production policies reference three
+source corpse roots5995/6006/5973 which were already absent before this merge.
+Use the existing quest_corpse_profiles qualifier on those exact pinned Creature
+bindings; its XML hash, physical, stack, container, temporal, full decay closure
+and bounded-source checks remain unchanged. The local join helper is26lines.
+No loot refusal/count assertion is relaxed. Refresh loot and run the repository's
+real Prey simulation (15cases,776creatures) before native provider regeneration;
+never manufacture model rates or hand-repin its stale-input hash. The generated
+equipment delta grows from174to180 because six source body/decay identities are
+now admitted. Final unit tests must rebuild after this regeneration because the
+census and manifest are included at compile time.
+The loot refresh also reconciles57previously stale Item facts with existing
+provider admissions. Bazir/Infernatil use already admitted body4097, not one
+of the three new corpse roots. The fixture now explicitly preserves their
+LootItemInadmissible refusal and verifies all eight unsupported source items;
+it retains the original totals and exact five shared-body bosses. No forbidden
+loot becomes a grant and no test count or refusal assertion is relaxed.

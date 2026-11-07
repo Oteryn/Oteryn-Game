@@ -428,7 +428,6 @@ impl NpcRuleCatalog {
 
     /// Preserve the source's absent value while accepting the complete native
     /// track range shared with other quest owners. Source bytes keep their digest.
-
     pub fn load_embedded() -> Result<Self, NpcRuleError> {
         Self::embedded().cloned()
     }

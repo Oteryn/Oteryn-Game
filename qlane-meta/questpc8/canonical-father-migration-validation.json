@@ -19,7 +19,44 @@
     "marker": "POSTGRES_QUESTPC8_1307_CANONICAL_UPGRADE_UNCHANGED_PASS",
     "log_sha256": "eb71b0a14ca05175e2a12c5cd0d67a0594857cc8ff0701436d511d76fa8c1e4f"
   },
-  "runtime_pg_rerun": "six cases building",
+  "runtime_pg_rerun": {
+    "result": "PASS",
+    "cases": [
+      {
+        "test": "catalogue_npc_father_legacy_hash_preserves_defaults_and_restart_receipts",
+        "seconds": 88.932
+      },
+      {
+        "test": "fathers_burden_eight_handins_cape_experience_and_replay",
+        "seconds": 93.99
+      },
+      {
+        "test": "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction",
+        "seconds": 104.305
+      },
+      {
+        "test": "questpc8_winterlight_native_disguise_four_fires_queen_and_base_outfit",
+        "seconds": 76.506
+      },
+      {
+        "test": "questpc8_venore_native_daily_circuit_and_exact_repeat_boundary",
+        "seconds": 112.897
+      },
+      {
+        "test": "questpc8_wrath_native_opening_exact_materials_crate_and_replay",
+        "seconds": 106.628
+      }
+    ],
+    "total_seconds": 210.936,
+    "log_sha256": "27a56527f011a942f019f571d7c667e54f627b0f98d9bc30fbfd8ac45e086f05",
+    "unit_rerun": "six changed-crate units still building",
+    "explicit_marker_capture": {
+      "test": "questpc8_wrath_native_opening_exact_materials_crate_and_replay",
+      "seconds": 98.489380834,
+      "marker": "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
+      "log_sha256": "b58354714c13a835f1efeedde2651d237b9a8b2c3a5862eb7878bf03af045921"
+    }
+  },
   "own_migrations": [
     "1300_questpc8_custody_and_npc_proofs.sql",
     "1301_questpc8_reward_backpack_outputs.sql",
@@ -37,5 +74,23 @@
     "generated": "binding evidence, completion, audit tags and custody census regenerated; world pins unchanged",
     "duplicate_migrations": "PASS",
     "pending": "six own runtime PostgreSQL cases and unit rerun of dispatch/durability/quests/npc/content/items; cadence exception; no new runtime qualification"
-  }
+  },
+  "pipe_runtime_pg": {
+    "result": "PASS",
+    "seconds": 96.432353614,
+    "marker": "POSTGRES_CASE_COMPLETED hero_of_rathleton_pipe_greeting_commits_access_once_and_replays",
+    "log_sha256": "36933232b0b2f17fba27a7e51bc9aea04d730438e934bb6c9f4e10605fc2b4b9"
+  },
+  "focused_unit_repairs": [
+    {
+      "test": "native_quest_book_admits_only_requested_source_greetings",
+      "seconds": 46.08,
+      "result": "PASS"
+    },
+    {
+      "test": "equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+      "seconds": 64.9,
+      "result": "PASS"
+    }
+  ]
 }

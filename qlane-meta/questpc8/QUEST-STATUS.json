@@ -1431,9 +1431,9 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "1138720b1",
-        "qengine2": "a1ea4e48d",
-        "result": "Authored binding envelope exists; requested carried-output/peer or item-look capability still absent."
+        "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+        "qengine2": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
+        "result": "Canonical NPC reward repairs available; selected-player colour predicate and item-look disguise still absent."
       }
     }
   },
@@ -1560,7 +1560,11 @@
       "Report gives exactly1000XP and1000gold, completes once, retains cooldown state",
       "Original callback source key retained; occurrence MINT claim differs by nonce through shared SQL owner",
       "Immediate/cold refusal, exact72000-second boundary, rejected no-op occurrence effects"
-    ]
+    ],
+    "merged_revalidation": {
+      "proof": "canonical-father-migration-validation.json",
+      "result": "PASS on PostgreSQL18.6 after main47db34f09 and forward1307"
+    }
   },
   {
     "canonical": "oteryn:quest.winterlight_solstice",
@@ -1586,7 +1590,11 @@
         "proof": "winterlight-route-validation.json",
         "duration_seconds": 88.598050216
       }
-    ]
+    ],
+    "merged_revalidation": {
+      "proof": "canonical-father-migration-validation.json",
+      "result": "PASS on PostgreSQL18.6 after main47db34f09 and forward1307"
+    }
   },
   {
     "canonical": "oteryn:quest.authored.torch_quest",
@@ -1661,8 +1669,8 @@
     "mechanism": "native_reward_source_placement",
     "blocker": {
       "kind": "active_implementation",
-      "owner": "questpc8",
-      "missing_piece": "Mount authored programme and reusable shared-feature drafts, run full native PostgreSQL graph and strict/generated checks. The five-entry batch has actual PostgreSQL RED evidence; implementation is owned here, not waiting for another lane.",
+      "owner": "qengine2 (shared disguise); questpc8 (quest graph)",
+      "missing_piece": "Native exact-material opening and replay qualified as a slice; later source item-look disguise requires the existing qengine2 request. Whole-quest qualification awaits the real remaining graph, without a substitute appearance implementation.",
       "evidence": [
         "qlane-meta/questpc8/RESUME.md",
         "qlane-meta/questpc8/continuation-validation.json"
@@ -1680,9 +1688,9 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "1138720b1",
-        "qengine2": "a1ea4e48d",
-        "result": "Authored binding envelope exists; requested carried-output/peer or item-look capability still absent."
+        "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+        "qengine2": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
+        "result": "Canonical NPC reward repairs available; selected-player colour predicate and item-look disguise still absent."
       }
     },
     "active_validation": {
@@ -1697,7 +1705,7 @@
       },
       "post_main_revalidation": {
         "schema_proof": "canonical-father-migration-validation.json",
-        "runtime_cases": "six own PostgreSQL cases rebuilding; not yet green",
+        "runtime_cases": "6/6 PASS; Wrath opening106.628s; see canonical-father-migration-validation.json",
         "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05"
       }
     }
