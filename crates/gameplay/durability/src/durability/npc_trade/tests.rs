@@ -40,6 +40,8 @@ fn sword() -> TypedDefinitionRef {
 
 fn request(side: NpcTradeSide, quantity: u32, unit_price: u64) -> NpcTradeRequest {
     NpcTradeRequest {
+        fluid_subtype: None,
+        full_charges: None,
         cause: NpcTradeCause {
             npc_key: "oteryn:npc.tibia.sam".into(),
             catalogue_revision: 1,
@@ -422,6 +424,29 @@ fn only_albinius_exact_blank_scroll_offer_activates_the_durable_gate() {
     value.unit_price -= 1;
     value.cause.npc_key = "oteryn:npc.someone_else".into();
     assert!(!is_albinius_blank_scroll(&value));
+}
+
+#[test]
+fn srv9b_subtype_binding_and_native_single_item_shapes() {
+    use crate::foundation::{ChannelId, ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration};
+    let world=WorldId::decode(&id(1)).unwrap();
+    let fence=CurrentCharacterItemFence { character_id:CharacterId::from_bytes(id(3)).unwrap(),game_session_id:GameSessionId::decode(&id(50)).unwrap(),connection_generation:ConnectionGeneration::new(1).unwrap(),character_lease_generation:1,runtime_scope:RuntimeScopeRefV1::channel(world,ChannelId::decode(&id(2)).unwrap()),scope_ownership_generation:ScopeOwnershipGeneration::new(1).unwrap() };
+    let mut value=request(NpcTradeSide::Buy,1,2);
+    value.item=facts(definition("Item","oteryn:item.tibia.i2880"),ItemStackClass::NonStackable);
+    let ordinary=request_binding(&fence,world,&value,false);
+    value.fluid_subtype=Some(0);let empty=request_binding(&fence,world,&value,false);
+    value.fluid_subtype=Some(3);let beer=request_binding(&fence,world,&value,false);
+    assert_ne!(ordinary,empty);assert_ne!(empty,beer);assert!(validate(&value,false).is_ok());
+    value.quantity=2;assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
+    value.quantity=1;value.offer_count=3;assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
+    value.offer_count=1;value.fluid_subtype=Some(21);assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
+    value.fluid_subtype=None;
+    value.item.definition=definition("Item","oteryn:item.tibia.i50293");
+    let plain_wrap=request_binding(&fence,world,&value,false);
+    value.full_charges=Some(500);let charged=request_binding(&fence,world,&value,false);
+    assert_ne!(plain_wrap,charged);
+    assert_ne!(ordinary,charged);assert!(validate(&value,false).is_ok());
+    value.full_charges=Some(0);assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
 }
 
 #[test]

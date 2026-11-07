@@ -120,6 +120,11 @@ pub struct OneItemNpcTradeLineV1 {
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemNpcTradeV1 {
+    /// NPC-TRADE-3: Item fluid state, including an explicitly empty container.
+    #[prost(uint32, optional, tag = "19")]
+    pub fluid_subtype: Option<u32>,
+    #[prost(uint32, optional, tag = "20")]
+    pub full_charges: Option<u32>,
     #[prost(message, optional, tag = "1")]
     pub cause: Option<OneItemNpcTradeCauseV1>,
     /// The command 8 the occurrence is bound to.
@@ -194,9 +199,10 @@ pub fn npc_trade_usage(value: &OneItemNpcTradeV1) -> TransactionResourceUsage {
         effect_work_units: 3 * whole
             + 2 * (burns - whole)
             + 2 * minted
-            + 2 * u64::from(value.bank_debit.is_some())
-            + 2 * children
-            + u64::from(value.house_furniture_kit.is_some()),
+            + 2 * u64::from(value.bank_debit.is_some()) + 2 * children
+            + u64::from(value.house_furniture_kit.is_some())
+            + u64::from(value.fluid_subtype.is_some_and(|subtype| subtype != 0)
+                && value.cause.as_ref().is_some_and(|cause| cause.side == SIDE_BUY)),
         events: 1,
     }
 }
@@ -331,6 +337,12 @@ fn line_item(line: &OneItemNpcTradeLineV1) -> Option<&[u8]> {
 mod yeo;
 
 pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
+    if value.fluid_subtype.is_some_and(|subtype| subtype > 20)
+        || value.full_charges.is_some_and(|charges| !(1..=65535).contains(&charges))
+        || (value.fluid_subtype.is_some() && value.full_charges.is_some())
+    {
+        return Err(AuditError::InvalidInput);
+    }
     if value
         .cause
         .as_ref()

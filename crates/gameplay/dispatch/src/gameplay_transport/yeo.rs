@@ -293,6 +293,8 @@ pub(super) async fn apply(
             .and_then(|d| i64::try_from(d.as_millis()).ok())
             .unwrap_or(0);
         NpcTradeRequest {
+            fluid_subtype: None,
+            full_charges: None,
             cause: NpcTradeCause {
                 npc_key: NPC.into(),
                 catalogue_revision: pending.source.context.0,

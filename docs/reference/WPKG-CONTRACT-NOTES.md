@@ -1352,3 +1352,8 @@ Retain only the independent pin-refresh tooling repair: named preproduction
 fields regenerate even if manifest and pin were retained from different merge
 parents. The existing manifest equality test and strict pin-tool Clippy passed.
 Continue with SRV9; regenerate and validate final bundle pins after composition.
+
+
+## SRV9 merge checkpoint — qualification pending
+
+Source17d0a9f83 merges after the explicit WVAR/WCONTRIB/WEVENTS reverts. Preserve WORLDCHG Yeo admission and source-name templates while adding S10 healing/travel/blessings, fluid subtypes, full charges and reciprocal marriage. The Yeo request explicitly retains None subtype/charge defaults. Migrations1082/1083 are combined in1345;1084,1085,1086 become1346,1347,1348 using git mv and updated filename references. All324 migrations replayed on PostgreSQL18.6 in4.597s actual with the WORLDCHG proof arms preserved. All changed libraries pass all-feature Cargo check; full legacy/native regeneration, pins, strict all-target checks and focused PostgreSQL are pending. No new qualification is claimed from compilation alone.

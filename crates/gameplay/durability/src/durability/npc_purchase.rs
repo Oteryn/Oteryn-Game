@@ -16,6 +16,7 @@ use crate::foundation::CommandRef;
 use sqlx::Row;
 
 mod receipt;
+mod phoenix;
 mod recovery;
 pub(super) use receipt::load_by_command;
 pub(super) use recovery::verify_purchase_integrity;
@@ -148,6 +149,21 @@ impl DurabilityRoot {
                     return Ok(Err(CharacterProgressionError::AuthorityRejected));
                 }
                 let level = u32::try_from(state.try_get::<i64,_>("level")?).map_err(|_| DurabilityError::InvalidStoredState)?;
+                if request.service.key() == oteryn_gameplay_content::content::npc_catalogue::premium_services::PHOENIX_PREPARATION {
+                    let outcome = phoenix::prepare(&mut tx, &fence, &request, &binding).await?;
+                    tx.commit(deadline).await?;
+                    return Ok(Ok(outcome));
+                }
+                if matches!(&request.service, PurchaseService::Blessing(_))
+                    && oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()
+                        .map_err(|_| DurabilityError::InvalidStoredState)?.blessings.iter()
+                        .any(|blessing| !blessing.premium && blessing.service == request.service.key()) {
+                    let policy = super::spell_field_policy::read_world_field_policy_in_transaction(
+                        &mut tx, self, fence.runtime_scope, fence.scope_ownership_generation.get()).await?;
+                    if policy.is_none_or(|policy| policy.bind(&tx).mode() == super::spell_field_policy::FieldWorldType::PvpEnforced) {
+                        return Ok(Ok(PurchaseOutcome::Refused(PurchaseRefusal::NotEligible)));
+                    }
+                }
                 let quote = match &request.service {
                     PurchaseService::Promotion(_) => super::promotion_purchase::quote(&mut tx,fence.character_id,&request.npc_key,&request.service,level).await?.map(|(price, _)| (price, Vec::new())),
                     PurchaseService::Blessing(_) => super::blessing_purchase::quote(&mut tx,fence.character_id,&request.npc_key,&request.service,level).await?,
@@ -181,6 +197,10 @@ impl DurabilityRoot {
                     for key in blessing {
                         super::blessing_purchase::grant(&mut tx,fence.character_id,&key,occurrence).await?;
                     }
+                }
+                if request.service.key() == oteryn_gameplay_content::content::npc_catalogue::premium_services::PHOENIX_SERVICE {
+                    sqlx::query("UPDATE game_character_phoenix_prerequisites SET active=false,consumed_by_purchase=encode($2,'hex')::uuid WHERE character_id=encode($1,'hex')::uuid AND active")
+                        .bind(fence.character_id.as_bytes().as_slice()).bind(occurrence.as_slice()).execute(&mut **tx).await?;
                 }
                 let receipt = load_by_command(&mut tx,fence.character_id,request.command).await?.ok_or(DurabilityError::InvalidStoredState)?.1;
                 tx.commit(deadline).await?;

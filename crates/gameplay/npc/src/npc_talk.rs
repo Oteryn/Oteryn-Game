@@ -176,6 +176,7 @@ impl NpcTalkEntry {
 pub struct NpcTalkBook {
     /// Source-qualified automatic speech, installed only by the catalogue/bundle boot binding.
     source_voices: std::collections::BTreeMap<String, crate::npc_voice::VoiceProfile>,
+    source_walks: Option<crate::npc_actor::NpcWalkBook>,
     /// S-ENTNAME: all admitted catalogue names, including NPCs without native dialogue.
     display_names: HashMap<String, String>,
     npcs: HashMap<String, NpcTalkEntry>,
@@ -194,8 +195,15 @@ impl NpcTalkBook {
         if self.catalogue_revision != Self::from_model(model).catalogue_revision {
             return Err(crate::npc_voice::VoiceError::ContentSourceMismatch);
         }
+        let walks = crate::npc_actor::NpcWalkBook::from_catalogue(catalogue, model)
+            .map_err(|_| crate::npc_voice::VoiceError::ContentSourceMismatch)?;
         self.source_voices = crate::npc_voice::profiles_from_catalogue(catalogue, model, qualify)?;
+        self.source_walks = Some(walks);
         Ok(())
+    }
+
+    pub fn source_walks(&self) -> Option<&crate::npc_actor::NpcWalkBook> {
+        self.source_walks.as_ref()
     }
 
     pub fn source_voices(
@@ -209,7 +217,7 @@ impl NpcTalkBook {
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
@@ -222,6 +230,8 @@ impl NpcTalkBook {
                     OROCKLE_TRADE
                 ),
                 isle_of_evil::revision_material(),
+                crate::content::npc_catalogue::healing::DATA,
+                crate::content::npc_catalogue::travel::revision_material(),
                 YASIR_SOURCE,
                 YASIR_GREET,
                 YASIR_FAREWELL,
@@ -259,6 +269,17 @@ impl NpcTalkBook {
                     "Welcome to the Paw and Fur - Hunting Elite. Would you like to join?".into(),
                     "Good hunting!".into(),
                     Some("Ask me about tasks, points, rank, promotion or bosses.".into()),
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.lynda" {
+                // Crystal201189f lynda.lua:307-309; only the native marriage caller opens.
+                (
+                    "Welcome in the name of the gods, pilgrim |PLAYERNAME|!".into(),
+                    "Be careful on your journeys.".into(),
+                    Some(
+                        "Ask me about marriage, celebration, removing a proposal, or divorce."
+                            .into(),
+                    ),
                     Vec::new(),
                 )
             } else if reference.key == DEEP_SEAS_GUARDIAN {
@@ -398,6 +419,16 @@ impl NpcTalkBook {
                         .cloned()
                         .collect(),
                 )
+            } else if crate::content::npc_catalogue::healing::profile(&reference.key).is_some() {
+                (
+                    format!(
+                        "Greetings, I am {}. Ask me for healing if you are injured.",
+                        npc.name
+                    ),
+                    "Farewell.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else if let Some((greet, farewell)) = &dark_messages {
                 (greet.clone(), farewell.clone(), None, Vec::new())
             } else if let Some(messages) = &isle_messages {
@@ -428,7 +459,7 @@ impl NpcTalkBook {
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
                     greeting_reply,
                     farewell_reply,
-                    source_name_templates: matches!(
+                    source_name_templates: bank || reference.key == "oteryn:npc.lynda" || matches!(
                         reference.key.as_str(),
                         YASIR | OROCKLE | DEEP_SEAS_GUARDIAN
                     ) || dark_messages.is_some()
@@ -1221,6 +1252,185 @@ mod dark_trails_admission_tests {
                 "missing {key}"
             );
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod s10_tests {
+    #[test]
+    fn s10_healers_reach_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = super::NpcTalkBook::from_model(&model);
+        for key in [
+            "isimov",
+            "rahkem",
+            "rock_with_a_soft_spot",
+            "tibra",
+            "tyrias",
+            "cipfried",
+            "dallheim",
+            "zerbrus",
+            "hector_the_mentor",
+        ] {
+            let key = format!("oteryn:npc.{key}");
+            assert!(book.get(&key).is_some(), "healer missing: {key}");
+        }
+        Ok(())
+    }
+    #[test]
+    fn s10_nonpremium_blessing_givers_reach_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = super::NpcTalkBook::from_model(&model);
+        for stem in ["norf", "humphrey", "edala", "quentin", "kawill", "pydar"] {
+            let key = format!("oteryn:npc.{stem}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("unavailable blessing NPC {key}"))?;
+            assert!(
+                crate::npc_promotion::select("blessing", &entry.premium_services).is_some(),
+                "{key}"
+            );
+        }
+        for stem in ["ishebad", "enpa_rudra", "emperor_rehal"] {
+            let key = format!("oteryn:npc.{stem}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("unavailable promotion NPC {key}"))?;
+            assert!(
+                crate::npc_promotion::select("promotion", &entry.premium_services).is_some(),
+                "{key}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn s10_ungated_source_travel_reaches_the_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = super::NpcTalkBook::from_model(&model);
+        for (stem, keyword, price, x, y, floor) in [
+            ("scrutinon", "ab'dendriel", 0, 32734, 31668, 6),
+            ("scrutinon", "edron", 0, 33175, 31764, 6),
+            ("scrutinon", "venore", 0, 32954, 32022, 6),
+            ("scrutinon", "darashia", 0, 33289, 32480, 6),
+            ("rapanaio_isle_of_evil", "kazordoon", 0, 32700, 31990, 15),
+            ("a_ghostly_sage", "help", 0, 32834, 32275, 9),
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("unavailable travel NPC {key}"))?;
+            let route = entry
+                .travel_routes
+                .iter()
+                .find(|route| route.keyword == keyword)
+                .ok_or_else(|| format!("missing {key}/{keyword}"))?;
+            assert!(!route.held, "{key}/{keyword}");
+            assert!(!route.route.premium);
+            assert_eq!(route.route.price, price);
+            assert_eq!(
+                (
+                    route.route.destination.x,
+                    route.route.destination.y,
+                    route.route.destination.floor
+                ),
+                (x, y, floor)
+            );
+        }
+        for key in ["oteryn:npc.rapanaio_boat", "oteryn:npc.dalbrect"] {
+            assert!(
+                book.get(key)
+                    .is_none_or(|entry| entry.travel_routes.is_empty()),
+                "quest-only route escaped admission: {key}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn s10_source_registered_bankers_reach_the_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = super::NpcTalkBook::from_model(&model);
+        for stem in [
+            "atur",
+            "ebenizer",
+            "eighty",
+            "elgar",
+            "eva",
+            "ferks",
+            "finarfin",
+            "gnomillion",
+            "jefrey",
+            "jessica",
+            "kaya",
+            "kepar",
+            "lokur",
+            "murim",
+            "muzir",
+            "naji",
+            "raffael",
+            "rokyn",
+            "siestaar",
+            "sissek",
+            "suzy",
+            "tesha",
+            "virgil",
+            "znozel",
+            "wentworth",
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("unavailable banker {key}"))?;
+            assert!(entry.bank(), "bank service missing for {key}");
+        }
+        // The owner excludes Dawnport; an existing NPC must not gain this new service.
+        let dawnport = model
+            .npcs()
+            .iter()
+            .find(|(reference, _)| reference.key == "oteryn:npc.plunderpurse")
+            .map(|(_, npc)| npc)
+            .ok_or("Plunderpurse source NPC absent")?;
+        assert!(
+            !dawnport
+                .services
+                .iter()
+                .any(|service| service.key == "oteryn:service.bank.standard"),
+            "Dawnport banker escaped the S10 scope"
+        );
         Ok(())
     }
 }

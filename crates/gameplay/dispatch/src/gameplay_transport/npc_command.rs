@@ -44,12 +44,14 @@ mod endgame;
 mod fire_feathered;
 mod grizzly;
 mod grizzly_shop;
+mod healing;
 mod hero_of_bounac;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
 mod hive_shared;
 mod isle_of_evil;
 mod liquid_black;
+mod marriage;
 mod monk;
 mod planegazer_finale;
 mod premium_purchase;
@@ -66,6 +68,7 @@ pub(super) use premium_purchase::resume_npc_talk;
 #[derive(Default)]
 struct SessionNpc {
     recent: RecentIntents,
+    healing_command: Option<u64>,
     /// The NPC whose trade window the session was shown (domain 8).
     window: Option<EntityRef>,
     /// The exact bounded offer list shown in this window, including its rank filter.
@@ -83,6 +86,7 @@ struct SessionNpc {
     yeo_last_request: Option<crate::durability::npc_trade::NpcTradeRequest>,
     grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
+    marriage: Option<marriage::Pending>,
     monk: Option<monk::Pending>,
     quest_dialogue: quest_dialogue::State,
     endgame: Option<endgame::Pending>,
@@ -433,13 +437,11 @@ impl NpcConversations {
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
         }
-        if !entry.offers().contains(source)
-            || source.currency.is_some()
-            || source.sub_type.is_some()
-        {
+        if !entry.offers().contains(source) || source.currency.is_some() {
             return Err(Box::new(rejected()));
         }
         Ok(NpcTradeOffer {
+            sub_type: source.sub_type,
             npc_key: npc_key.to_owned(),
             catalogue_revision: intent.catalogue_revision,
             offer_index: intent.offer_index,
@@ -632,6 +634,9 @@ pub(super) async fn npc_bank_talk(
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef};
+    if let Some(outcome) = marriage::replay(admission, command, Some(&intent)).await {
+        return outcome;
+    }
     if let Some(outcome) = yeo::resume(admission, actor, command, &intent).await {
         return outcome;
     }
@@ -706,6 +711,14 @@ pub(super) async fn npc_bank_talk(
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
     }
+    if let Some(step) = marriage::prepare(admission, actor, command, &intent, &runtime) {
+        if matches!(step, marriage::Step::Ordinary) {
+            return ordinary;
+        }
+        drop(runtime);
+        drop(_trade_permit.take());
+        return marriage::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(context) = admission
         .states
         .npc_conversations
@@ -726,6 +739,9 @@ pub(super) async fn npc_bank_talk(
             _trade_permit = Some(permit);
         }
         runtime = admission.runtime.lock().await;
+    }
+    if let Some(outcome) = healing::apply(admission, &mut runtime, actor, command, &intent) {
+        return outcome;
     }
     if let Some(step) = yeo::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
