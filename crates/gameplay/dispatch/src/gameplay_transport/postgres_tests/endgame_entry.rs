@@ -131,7 +131,19 @@ fn primal_ordeal_postgres_qualified_production_room_is_reachable() -> TestResult
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("primal-production-room", || {
+    qualified_catalogue_scenario(true)
+}
+
+#[test]
+fn qualified_activity_catalogue_postgres_equals_boot_qualified_set() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    qualified_catalogue_scenario(false)
+}
+
+fn qualified_catalogue_scenario(require_primal: bool) -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("primal-production-room", move || {
         run(async |admin| {
             reset();
             let h = Harness::create_with_admission_seed(admin, "primal_production_room", true, false).await?;
@@ -141,11 +153,26 @@ fn primal_ordeal_postgres_qualified_production_room_is_reachable() -> TestResult
             let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
             let owner = deps.owner(&h, &authority);
             deps.initialize(&owner).await;
+            let (controller, pin) = crate::content::native_gameplay::test_support::activated_loop_monster(deps.admitted.world_id, false);
+            let candidates = crate::content::bosses::activity_template::captured_boss_levers().map_err(debug)?;
+            let (templates, diagnostics) = controller.qualify_initial_activity_template(pin.qualified_room(), "content-1", &candidates);
+            let publisher = crate::durability::activity_handoff::ActivityHandoffOwner::new(h.root.clone());
+            publisher.publish_qualified_boss_rooms(owner.holder, &templates).await?;
+            publisher.publish_qualified_boss_rooms(owner.holder, &templates).await?;
+            let actual: Vec<String> = sqlx::query_scalar("SELECT boss_key FROM game_boss_room_catalogue ORDER BY boss_key").fetch_all(&h.pool).await?;
+            let mut expected: Vec<String> = templates.iter().map(|t| t.boss_key().to_owned()).collect();
+            expected.sort();
+            assert_eq!(actual, expected, "catalogue contains exactly the qualified set after replay");
+            if !require_primal { return Ok(()); }
+            eprintln!("Primal boot qualification diagnostics: {diagnostics:?}");
             let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(deps.admitted.game_session_id).await?.0;
             let fence = item_fence_of(current).ok_or("current item fence")?;
+            let primal_key = candidates.iter().find_map(|candidate| {
+                candidate.boss_key().filter(|key| key == "oteryn:boss.the_primal_menace")
+            }).ok_or("captured Primal boss identity")?;
             let room = crate::durability::activity_handoff::ActivityHandoffOwner::new(h.root.clone())
-                .read_boss_room(owner.character, owner.holder, fence, "oteryn:creature.the_primal_menace")
+                .read_boss_room(owner.character, owner.holder, fence, &primal_key)
                 .await?;
             assert!(room.is_some(), "W10 production Primal Ordeal room is missing from the durable catalogue");
             Ok(())

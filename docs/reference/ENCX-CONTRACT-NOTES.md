@@ -680,3 +680,20 @@ Read-only donor evidence fetched successfully:
 - https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/creature/raids.cpp
 
 Fury Gates selects/realizes at startup; donor content is not an accepted Game realization receipt or an advance prediction window. Wiki checks: **wiki-pending**. NEED-FETCH: none.
+
+## ENCX qualified activity catalogue publication
+
+- Migration 1150 grants the existing runtime catalogue publisher INSERT/UPDATE and
+  adds uniqueness for `(room_template_key, content_revision)`; no wire identifiers
+  or capability bits are allocated.
+- Boot publishes only `QualifiedActivityRoomTemplate` values through
+  `ActivityHandoffOwner`, under the current node incarnation and admission lock.
+  Captured candidates and qualification refusals cannot be supplied as templates.
+- Source identity: Crystal `201189f`,
+  `data-global/scripts/actions/bosses_levers/the_primal_manace.lua:2-4` binds
+  the lever's boss name to its creature. The captured creature suffix determines
+  the boss namespace identity in one mapping on `BossLeverCandidate`.
+- The current source-map importer captures Canary Thalom cells
+  `[5840,5283,5871,5314,5,8]`; Crystal Primal's source arena is
+  `[33547,32749,33570,32769,15,15]` (same donor file:15-17).
+  Publishing rejected candidates cannot repair that missing map admission.
