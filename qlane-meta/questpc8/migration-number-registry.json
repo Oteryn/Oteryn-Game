@@ -53,7 +53,8 @@
   "lane_migrations": [
     "apps/game-server/migrations/1300_questpc8_reward_backpack_outputs.sql",
     "apps/game-server/migrations/1301_questpc8_world_reward_receipts.sql",
-    "apps/game-server/migrations/1302_questpc8_state_operation_validation.sql"
+    "apps/game-server/migrations/1302_questpc8_state_operation_validation.sql",
+    "apps/game-server/migrations/1303_questpc8_occurrence_reward_mint.sql"
   ],
   "duplicate_numbers": [],
   "validation_state": "PASS: coordinator numbering, byte-identical shared migrations, focused PostgreSQL proofs and all selected strict/generated checks.",
@@ -131,5 +132,12 @@
       "cases": 1,
       "log_sha256": "1c768f26bcdc5afd34fb54d83c7a69af28cd028fb1dcb6345bf0279624e8abcb"
     }
-  }
+  },
+  "supplement_1303": {
+    "path": "apps/game-server/migrations/1303_questpc8_occurrence_reward_mint.sql",
+    "sha256": "c79752de099590d21afb9ae783e47cb9adf804bcf7663bd715af2a245c31fc37",
+    "state": "Schema migrated and native occurrence-key report passed; final full circuit rerun and strict test-delta checks running."
+  },
+  "fresh_shared_qengine2_head": "52e3dbacb",
+  "all_shared_migrations_still_byte_identical": true
 }

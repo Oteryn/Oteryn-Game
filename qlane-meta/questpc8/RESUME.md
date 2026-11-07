@@ -1,3 +1,19 @@
+# Full native Venore PG GREEN116.777669567s
+
+The complete receipt-backed native circuit, exact1000XP/1000gold report,
+occurrence-key separation, completed-dialogue no-value invariants, immediate/
+cold cooldown refusal and exact20-hour SQL boundaries now PASS. Changed-state
+SQL guard rejects an otherwise-valid legacy no-op. No quest progress seeded.
+Strict4-crate Clippy and latest dispatch test-delta Clippy3m03s pass; default
+check, native/generated drift, pins and formatting checks pass. Legacy Valley
+PG110.531496224s and atomic Father's acceptance74.568621783s pass.
+
+Before qualification finish the filtered embedded-ledger unit and verify the
+native corym corpse/XP source (the kill pipeline logged corpse inadmission;
+do not invent a corpse or silently ignore a genuinely required missing item).
+19of23remain QUALIFIED until that final source check. Then qualify Venore,
+push and continue the remaining Colours,Winterlight,Wrath entries. Do not end.
+
 # Occurrence-bound recurring MINT compiles; final native test running
 
 Actual PGRED113.401070463s completed all nine machines, both hand-ins, five

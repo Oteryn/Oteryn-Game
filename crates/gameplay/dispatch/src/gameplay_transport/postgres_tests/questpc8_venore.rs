@@ -301,12 +301,24 @@ pub(super) async fn exercise(
         10,
         "1000gold in native platinum denomination"
     );
-    say_refused(owner, admitted, norman, &mut command, "construction report").await?;
+    let report_stamp = progress(h, "last-report").await?;
+    let report_receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/chosen/venore-daily/report'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    let quest_revision:String=sqlx::query_scalar("SELECT committed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.venore_daily_tasks_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    // With no eligible report transition, the NPC accepts ordinary conversation;
+    // it must produce no new quest/value receipt or state mutation.
+    say(
+        owner,
+        admitted,
+        norman,
+        &mut command,
+        &["hi", "construction report"],
+    )
+    .await?;
     say_refused(owner, admitted, norman, &mut command, "construction jobs").await?;
     assert_eq!(
         progress(h, "stage").await?,
         13,
-        "fresh report and immediate daily restart refuse"
+        "completed conversation and immediate restart cannot reopen the circuit"
     );
     assert_eq!(quantity(h, 3035).await?, gold + 10);
     owner
@@ -321,6 +333,21 @@ pub(super) async fn exercise(
         progress(h, "stage").await?,
         13,
         "cold reload retains cooldown"
+    );
+    assert_eq!(
+        progress(h, "last-report").await?,
+        report_stamp,
+        "fresh/cold attempts preserve the cooldown stamp"
+    );
+    let after_receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/chosen/venore-daily/report'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        after_receipts, report_receipts,
+        "completed conversation cannot create a value occurrence"
+    );
+    let after_revision:String=sqlx::query_scalar("SELECT committed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.venore_daily_tasks_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        after_revision, quest_revision,
+        "no quest transition on repeated/cold conversation"
     );
     assert_eq!(
         experience(h).await?,
