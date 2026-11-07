@@ -839,8 +839,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/305",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-07",
+        "postgres_red_seconds": 32.76,
+        "postgres_green_seconds": 80.06,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Thomas",
@@ -848,8 +854,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/309",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-07",
+        "postgres_red_seconds": 32.76,
+        "postgres_green_seconds": 80.06,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Ursula",
@@ -857,8 +869,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/314",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-07",
+        "postgres_red_seconds": 32.76,
+        "postgres_green_seconds": 80.06,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Willard",
@@ -866,8 +884,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/319",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-07",
+        "postgres_red_seconds": 32.76,
+        "postgres_green_seconds": 80.06,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Wyrdin",
@@ -875,8 +899,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/322",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-07",
+        "postgres_red_seconds": 32.76,
+        "postgres_green_seconds": 80.06,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "A Fading Memory",
@@ -933,8 +963,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/8",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-07",
+        "postgres_red_seconds": 32.76,
+        "postgres_green_seconds": 80.06,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "A Strange Chalice",
@@ -3877,6 +3913,34 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse 9fd5ca426 upstream3787a419a all-target/all-feature check5m53s and strict clippy5m05s plus local combined PG18/79.06s; source identity checked before each slice",
       "test_code_commit": "bf56eaabdc2919e9ca5ebf7cacc23a72b8af2ea8",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "retail-population-qualification-07",
+      "state": "QUALIFIED",
+      "entries": [
+        "Telas Golem",
+        "Thomas",
+        "Ursula",
+        "Willard",
+        "Wyrdin",
+        "A Sleeping Dragon"
+      ],
+      "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 32.76,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-07-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 80.06,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-07-green.log",
+        "cumulative_cases": 42
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse 9fd5ca426 upstream3787a419a all-target/all-feature check5m53s and strict clippy5m05s plus local combined PG18/79.06s; source identity checked before each slice",
+      "test_code_commit": "bf56eaabdc2919e9ca5ebf7cacc23a72b8af2ea8",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
     }
   ],
   "owner_constraints": {
@@ -3925,28 +3989,28 @@
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
   },
   "active_batch": {
-    "name": "retail-population-qualification-06",
+    "name": "retail-population-qualification-07",
     "state": "QUALIFIED",
     "entries": [
-      "Mirabell",
-      "Myzzi",
-      "Pemaret",
-      "Puffels",
-      "Rudolph",
-      "Sane Mage"
+      "Telas Golem",
+      "Thomas",
+      "Ursula",
+      "Willard",
+      "Wyrdin",
+      "A Sleeping Dragon"
     ],
     "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 29.62,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-06-red.log",
+      "seconds": 32.76,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-07-red.log",
       "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 72.98,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-06-green.log",
-      "cumulative_cases": 36
+      "seconds": 80.06,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-07-green.log",
+      "cumulative_cases": 42
     },
     "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse 9fd5ca426 upstream3787a419a all-target/all-feature check5m53s and strict clippy5m05s plus local combined PG18/79.06s; source identity checked before each slice",
     "test_code_commit": "bf56eaabdc2919e9ca5ebf7cacc23a72b8af2ea8",

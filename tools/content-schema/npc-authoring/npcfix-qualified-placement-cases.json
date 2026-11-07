@@ -422,6 +422,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-07",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.telas_golem",
+          "name": "Telas Golem",
+          "expected": {
+            "x": 33267,
+            "y": 31789,
+            "floor": -11
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.thomas",
+          "name": "Thomas",
+          "expected": {
+            "x": 33256,
+            "y": 31838,
+            "floor": -4
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.ursula",
+          "name": "Ursula",
+          "expected": {
+            "x": 33268,
+            "y": 31849,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.willard",
+          "name": "Willard",
+          "expected": {
+            "x": 33214,
+            "y": 31793,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.wyrdin",
+          "name": "Wyrdin",
+          "expected": {
+            "x": 33268,
+            "y": 31838,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.a_sleeping_dragon",
+          "name": "A Sleeping Dragon",
+          "expected": {
+            "x": 33243,
+            "y": 31219,
+            "floor": -10
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
