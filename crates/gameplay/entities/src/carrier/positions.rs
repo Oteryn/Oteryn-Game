@@ -994,3 +994,54 @@ impl ChannelRuntimeV1 {
         })
     }
 }
+
+impl ChannelRuntimeV1 {
+    /// Current scene presence for stateless source projections. Only committed,
+    /// positioned players, living creatures and ordinary NPCs count. A reserved
+    /// destination is not an entered tile, and another frame is not this scene.
+    /// The caller retains the runtime owner lock across this read and projection.
+    pub fn committed_world_cell_occupied(
+        &self,
+        cell: MovementLocalPosition,
+    ) -> Result<bool, CarrierError> {
+        self.carrier.validate_current_continuity(&self.continuity)?;
+        self.owner_fence()?;
+        let context = self.pinned_position_context();
+        for &index in &self.carrier.occupied {
+            let Some(slot) = self
+                .carrier
+                .slots
+                .get(usize::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?)
+            else {
+                continue;
+            };
+            let position = match slot {
+                Slot::Occupied {
+                    committed: true,
+                    position: Some(p),
+                    ..
+                } => Some(p),
+                Slot::CreatureOccupied {
+                    health,
+                    position: Some(p),
+                    ..
+                } if *health > 0 => Some(p),
+                Slot::NpcOccupied {
+                    position,
+                    hireling: None,
+                    ..
+                } => Some(position),
+                _ => None,
+            };
+            if position.is_some_and(|p| {
+                p.context == context
+                    && p.position.x == cell.x
+                    && p.position.y == cell.y
+                    && p.position.floor == cell.floor
+            }) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+}

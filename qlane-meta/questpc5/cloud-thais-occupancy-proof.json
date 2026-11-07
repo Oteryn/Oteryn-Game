@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "scope": "Reusable committed-occupancy pressure projection and exact Thais startup treasure selectors; whole route remains active.",
+  "red": {
+    "postgres_marker_seconds": 3.458625942,
+    "test_seconds": 3.46,
+    "error": "unknown field occupancy_driven"
+  },
+  "registration_green": {
+    "postgres_marker_seconds": 4.826757331,
+    "test_seconds": 5.03,
+    "unique_selectors": [
+      6014,
+      6015
+    ]
+  },
+  "occupancy_green": {
+    "filter": "qengine_thais_plate_step_out_restores_stairs",
+    "test_seconds": 54.73,
+    "actual_native_player_descent": true,
+    "original_player_stepout_revision": 4,
+    "living_creature_opens": true,
+    "unchanged_presence_idempotent": true,
+    "relocation_restores": true,
+    "death_restores": true,
+    "retirement_restores": true,
+    "durable_quest_state_unchanged": true,
+    "quest_receipts_unchanged": true
+  },
+  "checks": [
+    "three physical startup Python cases",
+    "seventeen batch-four Python cases",
+    "closed paired projection Rust positive and six negative cases",
+    "authoring reproduction",
+    "cargo fmt",
+    "cargo check entities/quests/dispatch",
+    "all-target all-feature clippy -D warnings entities/quests/dispatch",
+    "repository pin-refresh and pin-check"
+  ],
+  "logs": {
+    "registration": {
+      "path": "/tmp/questpc5-thais-source-green1.log",
+      "sha256": "aef2810114b1c9fa57bc68ccc460b252c154319aff69e4cccde7ee91acff5f35"
+    },
+    "occupancy": {
+      "path": "/tmp/questpc5-thais-occupancy-green7.log",
+      "sha256": "69dc3497b08cb20b01ee9affdf807113c1b2e0d17ffb521b0e63dcf0163786eb"
+    },
+    "clippy": {
+      "path": "/tmp/questpc5-thais-occupancy-clippy-final3.log",
+      "sha256": "14d99acb0f6d5fc1ab7d9cea35d4326d044f994ab0ec668ba3737a147dbcb5e3"
+    },
+    "pins": {
+      "path": "/tmp/questpc5-thais-pins-final.log",
+      "sha256": "0128a104bea948e37fd2aff9d4401a40d4ca8d159af76ca3c86f3827c6a80d64"
+    },
+    "pin_check": {
+      "path": "/tmp/questpc5-thais-pin-check.log",
+      "sha256": "a36d6f0c6a11cd72397ab0ac387eaa744b39dafa3247fe38954079c3733e25ed"
+    }
+  },
+  "world_digest": "fd9730294db60975bc9d39c28b69b28fa86931afafb78832aa37e668160b6a95"
+}

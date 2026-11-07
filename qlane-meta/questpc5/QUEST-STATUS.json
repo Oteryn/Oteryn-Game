@@ -492,7 +492,7 @@
     "title": "Thais Lighthouse Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Remaining whole route: ladder and all reward claims, plus creature relocation/end-path plate restoration. Global source selectors now materialize during compilation; source-bound portal creation/travel/removal/expiry and repeated player departure/stale replay already have PostgreSQL proof.",
+    "blocker": "Active next slice: compose source ladder, actual native descents, paired portals and both once treasure claims with the now-delivered creature occupancy/end-path restoration.",
     "from_lanes": [
       "questpc4"
     ],
@@ -521,9 +521,17 @@
         ],
         "scope": "Shared plate and paired portal engine only; whole quest remains active.",
         "proof": "cloud-shared-engine-proof.json"
+      },
+      {
+        "filter": "qengine_thais_plate_step_out_restores_stairs",
+        "result": "PASS",
+        "duration_seconds": 54.73,
+        "proof": "cloud-thais-occupancy-proof.json",
+        "scope": "Shared creature occupancy/end paths and exact treasure selectors; whole route not yet qualified."
       }
     ],
     "shared_engine_evidence": "cloud-shared-engine-proof.json",
-    "startup_binding_evidence": "cloud-startup-bindings-proof.json"
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json",
+    "occupancy_rule": "Pure paired source projections follow committed living current-scene presence. Dead, retired, reserved and foreign-frame actors do not hold a plate; observations are idempotent. See CONTRACT-NOTES.md."
   }
 ]

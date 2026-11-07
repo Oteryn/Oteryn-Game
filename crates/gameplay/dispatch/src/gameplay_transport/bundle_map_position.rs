@@ -103,6 +103,11 @@ pub(super) async fn observe(
     let _permit = admission.spell_lane_permit().await?;
     let (at, index) = {
         let mut runtime = admission.runtime.lock().await;
+        if let Some(map) = admission.bundle_map()
+            && !admission.synchronize_occupancy_locked(&runtime, map)
+        {
+            return None;
+        }
         let index = item_ref_admission::pinned_index(&runtime, admission.active_generation);
         (
             bundle_map_position(&mut runtime, admission.movement_cells, actor)?,

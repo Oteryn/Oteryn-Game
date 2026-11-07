@@ -112,6 +112,9 @@ pub struct RemoteTeleport {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
+    /// Only a validated pure STEP-in/out pair may be derived from current creature presence.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub occupancy_driven: bool,
     pub key: String,
     pub quest: String,
     pub trigger: Trigger,
@@ -179,6 +182,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     if keys.len() != callbacks.len() {
         return Err("duplicate callback across registries".into());
     }
+    validate_occupancy_pairs(&callbacks)?;
     Ok(callbacks)
 }
 
@@ -189,6 +193,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
     }
     let mut keys = BTreeSet::new();
     for callback in &document.callbacks {
+        if callback.occupancy_driven {
+            validate_occupancy_shape(callback)?;
+        }
         let selector = &callback.selector;
         let valid_pos = |p: Position| (-15..=0).contains(&p.floor);
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
@@ -878,6 +885,98 @@ mod tests {
                 parse(&value.to_string()).is_err(),
                 "invalid wardrobe edit {edit}"
             );
+        }
+        Ok(())
+    }
+}
+
+fn validate_occupancy_shape(c: &Callback) -> Result<(), String> {
+    let mut effects = c.effects.clone();
+    effects.transform = None;
+    if !matches!(c.trigger, Trigger::StepIn | Trigger::StepOut)
+        || c.selector.position.is_none()
+        || c.selector.appearance.is_none()
+        || c.effects.transform.is_none()
+        || !effects.is_empty()
+        || c.lever.is_some()
+        || c.reversible
+        || !c.storage.is_empty()
+        || !c.offerings.is_empty()
+        || c.teleport.is_some()
+        || c.remote_teleport.is_some()
+        || c.item_on_target.is_some()
+        || c.minimum_level.is_some()
+        || c.experience.is_some()
+        || c.monk_reward.is_some()
+        || c.native_rule.is_some()
+        || c.return_on_failure
+        || c.failure_message.is_some()
+        || c.success_message.is_some()
+        || c.passages.iter().any(|p| p.replacement.is_none())
+    {
+        return Err(format!(
+            "occupancy callback is not a pure source projection {}",
+            c.key
+        ));
+    }
+    Ok(())
+}
+
+fn validate_occupancy_pairs(callbacks: &[Callback]) -> Result<(), String> {
+    for c in callbacks.iter().filter(|c| c.occupancy_driven) {
+        validate_occupancy_shape(c)?;
+        let pair: Vec<_> = callbacks
+            .iter()
+            .filter(|p| p.occupancy_driven && p.selector == c.selector)
+            .collect();
+        if pair.len() != 2
+            || pair[0].quest != pair[1].quest
+            || pair[0].trigger == pair[1].trigger
+            || pair[0].passages != pair[1].passages
+            || pair
+                .iter()
+                .find(|p| p.trigger == Trigger::StepOut)
+                .is_none_or(|p| p.effects.transform != p.selector.appearance)
+        {
+            return Err(format!("unpaired or ambiguous occupancy source {}", c.key));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod occupancy_tests {
+    use super::*;
+
+    #[test]
+    fn occupancy_pairs_are_closed_pure_and_have_one_source_restore() -> Result<(), String> {
+        let all = load()?;
+        let pair: Vec<_> = all.into_iter().filter(|c| c.occupancy_driven).collect();
+        assert_eq!(pair.len(), 2);
+        validate_occupancy_pairs(&pair)?;
+        for edit in 0..6 {
+            let mut bad = pair.clone();
+            match edit {
+                0 => {
+                    bad.pop();
+                }
+                1 => bad[0].selector.position = None,
+                2 => bad[0].minimum_level = Some(1),
+                3 => bad[0].passages[0].replacement = None,
+                4 => {
+                    let out = bad
+                        .iter_mut()
+                        .find(|c| c.trigger == Trigger::StepOut)
+                        .ok_or("out")?;
+                    out.effects.transform = Some(999);
+                }
+                _ => {
+                    let mut duplicate = bad[0].clone();
+                    duplicate.key.push_str("-duplicate");
+                    bad.push(duplicate);
+                }
+            }
+            assert!(validate_occupancy_pairs(&bad).is_err(), "edit {edit}");
         }
         Ok(())
     }

@@ -240,6 +240,7 @@ pub(super) async fn exercise(
                 }),
                 "the opened stairs must actually descend"
             );
+            runtime.remove_test_actor(partner).map_err(debug)?;
         }
         step(owner, admitted, 2, StepDirection::East).await?;
         assert_eq!(
@@ -260,6 +261,206 @@ pub(super) async fn exercise(
             map.facts.object_revision(key),
             4,
             "native plate animation plus quest passage callback on each ingress/egress"
+        );
+        let durable_before = owner
+            .root
+            .read_character_quest_state(owner.character, fence.character_id)
+            .await
+            .map_err(debug)?;
+        let receipts_before: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
+                .fetch_one(&h.pool)
+                .await?;
+        let creature = owner
+            .runtime
+            .lock()
+            .await
+            .admit_pinned_test_creature(local(trigger))
+            .map_err(debug)?;
+        let refresh = async || -> TestResult {
+            let permit = owner
+                .enter_input(admitted.game_session_id)
+                .await
+                .ok_or("source input reconciliation")?;
+            drop(permit);
+            Ok(())
+        };
+        refresh().await?;
+        assert_eq!(
+            map.facts
+                .base_entry(tile(trigger), 1, 1)
+                .ok_or("plate")?
+                .appearance_id,
+            430
+        );
+        assert_eq!(
+            map.facts
+                .base_entry(stairs, 1, 2)
+                .ok_or("stairs")?
+                .appearance_id,
+            7767
+        );
+        let pressed = map.facts.object_revision(key);
+        refresh().await?;
+        assert_eq!(
+            map.facts.object_revision(key),
+            pressed,
+            "an unchanged occupancy read is idempotent"
+        );
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let closed = crate::map::floor::BundleDoors(map.facts.doors());
+            eprintln!(
+                "POSTGRES_OCCUPANCY_MOVE scope_matches={} destination_admissible={} plate_admissible={}",
+                owner.movement_cells.scope().generation_digest
+                    == runtime.content_pin().server_artifact_digest(),
+                crate::movement::relocate::creature_cell_admissible(
+                    owner.movement_cells,
+                    &closed,
+                    local(Position {
+                        x: trigger.x - 1,
+                        ..trigger
+                    })
+                ),
+                crate::movement::relocate::creature_cell_admissible(
+                    owner.movement_cells,
+                    &closed,
+                    local(trigger)
+                )
+            );
+            crate::movement::relocate::relocate_creature(
+                &mut runtime,
+                creature,
+                owner.movement_cells,
+                &closed,
+                local(Position {
+                    x: trigger.x - 1,
+                    ..trigger
+                }),
+            )
+            .map_err(|e| format!("native creature relocation: {e:?}"))?;
+        }
+        refresh().await?;
+        assert_eq!(
+            map.facts
+                .base_entry(tile(trigger), 1, 1)
+                .ok_or("plate")?
+                .appearance_id,
+            431
+        );
+        assert_eq!(
+            map.facts
+                .base_entry(stairs, 1, 2)
+                .ok_or("stairs")?
+                .appearance_id,
+            429
+        );
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let closed = crate::map::floor::BundleDoors(map.facts.doors());
+            eprintln!(
+                "POSTGRES_OCCUPANCY_MOVE scope_matches={} destination_admissible={} plate_admissible={}",
+                owner.movement_cells.scope().generation_digest
+                    == runtime.content_pin().server_artifact_digest(),
+                crate::movement::relocate::creature_cell_admissible(
+                    owner.movement_cells,
+                    &closed,
+                    local(Position {
+                        x: trigger.x - 1,
+                        ..trigger
+                    })
+                ),
+                crate::movement::relocate::creature_cell_admissible(
+                    owner.movement_cells,
+                    &closed,
+                    local(trigger)
+                )
+            );
+            crate::movement::relocate::relocate_creature(
+                &mut runtime,
+                creature,
+                owner.movement_cells,
+                &closed,
+                local(trigger),
+            )
+            .map_err(|e| format!("native creature relocation: {e:?}"))?;
+        }
+        refresh().await?;
+        assert_eq!(
+            map.facts
+                .base_entry(stairs, 1, 2)
+                .ok_or("stairs")?
+                .appearance_id,
+            7767
+        );
+        assert!(owner.runtime.lock().await.kill_creature_for_test(creature));
+        refresh().await?;
+        assert_eq!(
+            map.facts
+                .base_entry(stairs, 1, 2)
+                .ok_or("stairs")?
+                .appearance_id,
+            429,
+            "a dead creature cannot hold the source projection"
+        );
+        owner
+            .runtime
+            .lock()
+            .await
+            .remove_test_actor(creature)
+            .map_err(debug)?;
+        let replacement = owner
+            .runtime
+            .lock()
+            .await
+            .admit_pinned_test_creature(local(trigger))
+            .map_err(debug)?;
+        refresh().await?;
+        assert_eq!(
+            map.facts
+                .base_entry(stairs, 1, 2)
+                .ok_or("stairs")?
+                .appearance_id,
+            7767
+        );
+        owner
+            .runtime
+            .lock()
+            .await
+            .remove_test_actor(replacement)
+            .map_err(debug)?;
+        refresh().await?;
+        assert_eq!(
+            map.facts
+                .base_entry(tile(trigger), 1, 1)
+                .ok_or("plate")?
+                .appearance_id,
+            431
+        );
+        assert_eq!(
+            map.facts
+                .base_entry(stairs, 1, 2)
+                .ok_or("stairs")?
+                .appearance_id,
+            429,
+            "retirement restores without an event from a stale actor"
+        );
+        assert_eq!(
+            owner
+                .root
+                .read_character_quest_state(owner.character, fence.character_id)
+                .await
+                .map_err(debug)?,
+            durable_before
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_quest_receipts")
+                .fetch_one(&h.pool)
+                .await?,
+            receipts_before
+        );
+        eprintln!(
+            "POSTGRES_CASE_OBSERVED thais_committed_creature_relocation_death_retirement_and_no_writes"
         );
     } else if let Some(cycle) = &callback.effects.item_cycle {
         assert_eq!((cycle.remove, cycle.create), (1270, 1025));

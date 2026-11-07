@@ -239,6 +239,12 @@ fn world_remote(
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
+    if callback.occupancy_driven {
+        // Source Thais neighbor32224,32267,z9 has walkable ground356. The
+        // generic boot fixture's terrain:grass has no native source id and
+        // intentionally cannot qualify a creature movement destination.
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i356".into();
+    }
     let mut cells = BTreeMap::new();
     for x in trigger.x - 2..=trigger.x + 8 {
         for y in trigger.y - 1..=trigger.y + 1 {

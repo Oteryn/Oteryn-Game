@@ -7,6 +7,7 @@ use super::{
 mod effects;
 mod encounter;
 mod execute;
+mod occupancy;
 mod rewards;
 mod soul_war_reward;
 
@@ -294,6 +295,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
+        if !self.reconcile_occupancy_callbacks().await {
+            return false;
+        }
         if !self.reconcile_grizzly_boss(session).await {
             return false;
         }

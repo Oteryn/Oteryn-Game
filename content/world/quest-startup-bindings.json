@@ -106,6 +106,18 @@
     {
       "position": [
         32225,
+        32265,
+        10
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6014,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 685
+    },
+    {
+      "position": [
+        32225,
         32268,
         9
       ],
@@ -126,6 +138,18 @@
       "value": 30005,
       "source": "data-global/startup/tables/lever.lua",
       "line": 775
+    },
+    {
+      "position": [
+        32226,
+        32265,
+        10
+      ],
+      "item": 2472,
+      "attribute": "unique",
+      "value": 6015,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 693
     },
     {
       "position": [

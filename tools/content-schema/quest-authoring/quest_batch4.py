@@ -62,7 +62,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'effects', 'sources', 'remote_teleport',
+    'success_message', 'native_rule', 'effects', 'sources', 'remote_teleport', 'occupancy_driven',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -412,6 +412,20 @@ def validate_callback(callback, directory):
     require(callback.get('monk_reward') is None, key + ': Monk rewards are outside batch four')
     text_message(callback.get('failure_message'), key + ': failure_message')
     text_message(callback.get('success_message'), key + ': success_message')
+    require(type(callback.get('occupancy_driven',False)) is bool,key + ': occupancy flag')
+    if callback.get('occupancy_driven',False):
+        effect=callback.get('effects',{})
+        require(callback['trigger'] in ('step_in','step_out') and callback['selector']['position'] is not None
+                and callback['selector']['appearance'] is not None and effect.get('transform') is not None
+                and all(v is None for k,v in effect.items() if k!='transform')
+                and not callback['storage'] and not callback['offerings'] and callback['lever'] is None
+                and not callback['reversible'] and callback.get('teleport') is None
+                and callback.get('remote_teleport') is None and callback.get('item_on_target') is None
+                and callback.get('minimum_level') is None and callback.get('experience') is None
+                and callback.get('monk_reward') is None and callback.get('native_rule') is None
+                and not callback['return_on_failure'] and callback['failure_message'] is None
+                and callback.get('success_message') is None
+                and all(p.get('replacement') is not None for p in callback['passages']),key + ': impure occupancy projection')
     provenance(callback['sources'], key, outfit=callback.get('effects',{}).get('outfit_reward') is not None)
     validate_native(callback, key)
     validate_effects(callback, key)

@@ -14,7 +14,7 @@ def position(x, y, z):
 
 def callback(name, quest, trigger, source, *, unique=None, action=None,
              at=None, appearance=None, lever=None, reversible=False,
-             passages=None, teleport=None, **effects):
+             passages=None, teleport=None, occupancy_driven=False, **effects):
     return dict(key='oteryn:quest-callback/' + name,
                 quest='oteryn:quest.' + quest, trigger=trigger,
                 selector=dict(position=at, unique=unique, action=action,
@@ -24,7 +24,7 @@ def callback(name, quest, trigger, source, *, unique=None, action=None,
                 return_on_failure=False, failure_message=None,
                 effects=dict(transform=None, facing=None, magic=None,
                              portals=None, item_cycle=None, encounter=None) | effects,
-                sources=[PIN + source])
+                sources=[PIN + source], **({'occupancy_driven':True} if occupancy_driven else {}))
 
 
 def document():
@@ -32,7 +32,7 @@ def document():
     stairs = [dict(position=position(32225, 32282, 9), appearance=429, replacement=7767)]
     rows = [callback('thais-lighthouse-plate' + suffix, 'thais_lighthouse_quest', trigger,
                      thais + 'movement-stair.lua:' + lines, unique=25010, appearance=431, at=position(32225,32268,9),
-                     passages=stairs, transform=appearance)
+                     passages=stairs, transform=appearance, occupancy_driven=True)
             for suffix, trigger, appearance, lines in
             [('', 'step_in', 430, '6-16'), ('-out', 'step_out', 431, '24-33')]]
     rows.append(callback('thais-lighthouse-portals', 'thais_lighthouse_quest', 'use',

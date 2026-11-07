@@ -32,6 +32,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        if callback.occupancy_driven {
+            return if self.synchronize_occupancy_locked(runtime, map) {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            };
+        }
         let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
             return UseDisposition::Rejected;
         };

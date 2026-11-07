@@ -192,7 +192,8 @@
       },
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:6-16"
-      ]
+      ],
+      "occupancy_driven": true
     },
     {
       "key": "oteryn:quest-callback/thais-lighthouse-plate-out",
@@ -236,7 +237,8 @@
       },
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:24-33"
-      ]
+      ],
+      "occupancy_driven": true
     },
     {
       "key": "oteryn:quest-callback/thais-lighthouse-portals",

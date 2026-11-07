@@ -23,7 +23,7 @@ REQUESTED = {
     'tile.lua': {'TileUnique': {25010}, 'TileAction': {50022}},
     'teleport.lua': {'TeleportUnique': {3059, 3060, 3061}, 'TeleportAction': {50022}},
     'corpse.lua': {'CorpseUnique': {20003}},
-    'chest.lua': {'ChestUnique': {6113, 6151, 6152, 6214}},
+    'chest.lua': {'ChestUnique': {6014, 6015, 6113, 6151, 6152, 6214}},
 }
 
 
