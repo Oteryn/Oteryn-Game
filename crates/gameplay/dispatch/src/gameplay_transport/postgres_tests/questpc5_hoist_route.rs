@@ -57,32 +57,7 @@ fn position(x: u16, y: u16, floor: i8) -> Position {
     Position { x, y, floor }
 }
 
-// Only navigation between distant source objects is abbreviated. All acquisitions,
-// lever changes and source-floor transitions below are literal player commands.
-async fn relocate(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
-    actor: ExactActorRef,
-    at: Position,
-) -> TestResult {
-    let map = owner.bundle_map().ok_or("map")?;
-    let closed = crate::map::floor::BundleDoors(map.facts.doors());
-    let mut runtime = owner.runtime.lock().await;
-    let expected = runtime.read_actor_position(actor).map_err(debug)?;
-    let proof = crate::map::floor::prepare_quest_callback_teleport(
-        &runtime,
-        owner.movement_cells,
-        actor,
-        admitted.game_session_id,
-        expected,
-        super::quest_world_callbacks::local(at),
-        false,
-        &closed,
-    )
-    .map_err(debug)?;
-    runtime.commit_source_step(proof).map_err(debug)?;
-    Ok(())
-}
+use super::quest_catalogue_chests::relocate_source_actor as relocate;
 
 async fn snapshot(
     owner: &ComposedFreshAdmission<'_, '_, '_>,

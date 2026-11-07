@@ -31,7 +31,7 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari')]
+        'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari', 'seymour')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -219,6 +219,15 @@ def build():
         offers.append({'npc':'oteryn:npc.palimuth','keywords':['job','addon'],
             'topic':0,'next_topic':6,'storage':callbacks[-1]['storage'],
             'reply':['Did you bring me the vampiric crest?']})
+    # L5 Present's selected recipe completes once through the captured nested-box exchange.
+    add('present-box','present_quest','seymour',['yes'],
+        [storage('oteryn:quest-progress/native-reward/present/seymour',-1,1)],
+        take=[(2856,1)],give=(3374,1),topic=1)
+    callbacks[-1]['reply']=['THANK YOU! Here is a helmet that will serve you well.']
+    callbacks[-1]['sources']=[f'crystal:{PIN}:data-global/npc/seymour.lua:100-107:sha256:{sha(inputs["data-global/npc/seymour.lua"])}']
+    offers.append({'npc':'oteryn:npc.seymour','keywords':['box','present box'],
+        'topic':0,'next_topic':1,'storage':callbacks[-1]['storage'],
+        'reply':['Do you have a suitable present box for me?']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})

@@ -68,7 +68,9 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
         // LOOP-MAP-1 (#2152) adds the `content/cyclopedia/` sibling of `world` under `content/`: +1 (measured, 230).
         // WEATHER-1 adds the `content/weather/` sibling of `world` under `content/`: +1 (measured, 231).
         // CRAFT-CONTENT-1 adds content/craft/: +1 (measured, 232).
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1,
+        // QUESTPC5 startup selectors add quest-startup-bindings.json to world/:
+        // one sibling in each of the same eleven locator scans, +11 (measured, 243).
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1 + 11,
     }
 }
 
@@ -264,3 +266,31 @@ impl NpcDataCatalogue {
 pub const VOICE_INTERVAL: &str = "oteryn:source.npc.voice_interval_ms";
 pub const VOICE_CHANCE: &str = "oteryn:source.npc.voice_chance_percent";
 pub const VOICE_LINES: &str = "oteryn:source.npc.voice_lines";
+
+#[cfg(test)]
+mod questpc5_capture_budget_tests {
+    use super::*;
+
+    #[test]
+    fn npc_current_repository_capture_budget_is_exact() -> Result<(), ProjectFilesystemError> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content");
+        let limits = npc_catalogue_preproduction_limits();
+        assert_eq!(limits.max_total_directory_entries_scanned, 243);
+        let mut insufficient = limits;
+        insufficient.max_total_directory_entries_scanned -= 1;
+        assert!(
+            matches!(
+                NpcDataCatalogue::load(&root, OsStr::new("world"), insufficient),
+                Err(ProjectFilesystemError::LimitExceeded {
+                    resource: "total directory entries scanned",
+                    actual: 243,
+                    limit: 242
+                })
+            ),
+            "one below the measured corpus budget must still fail closed"
+        );
+        let catalogue = NpcDataCatalogue::load(&root, OsStr::new("world"), limits)?;
+        assert!(catalogue.npc_count() > 0);
+        Ok(())
+    }
+}

@@ -272,18 +272,28 @@
     "canonical": "oteryn:quest.present_quest",
     "title": "Present Quest",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
-    "blocker": "Remaining whole-route qualification. The exact UID6113 backpack and all four children are already natively admitted, including Item2882/2881 water subtypes; historical ITEM_SEMANTICS_MISSING holds are resolved. Preserve the exact source reward and verify the access/NPC composition.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc2"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole selected once recipe: reach actual6113 source, claim full backpack and all source contents, retain cold replay and exact water states, consume the nested Present through canonical source-placed Seymour, grant exactly one Legion Helmet and prove replay/once behavior.",
     "input_canonical": "unresolved:questpc2:present_quest",
     "canonical_location": {
       "path": "content/quests/definitions/quests-00000-00099.json",
       "pointer": "/records/74/definition"
     },
-    "startup_binding_evidence": "cloud-startup-bindings-proof.json"
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json",
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-present-complete-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_present_complete_source_route",
+        "result": "PASS",
+        "duration_seconds": 98.32,
+        "postgres_marker_seconds": 4.345191309,
+        "proof": "cloud-present-complete-proof.json"
+      }
+    ]
   },
   {
     "canonical": "oteryn:quest.targuna_quest",

@@ -151,6 +151,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l1-wayfarer-hat" => &["hat"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
+        "present-box" => &["box"],
         "deepling-helmet" => &[
             "flou", "explain", "yes", "no", "yes", "yes", "yes", "helmet",
         ],
@@ -181,7 +182,7 @@ async fn acknowledge_probe(
 
 // A conversation spans several commands on ONE connection. Re-opening the
 // one-command movement helper correctly clears conversation engagement.
-async fn wire_grant(
+pub(super) async fn wire_grant(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,

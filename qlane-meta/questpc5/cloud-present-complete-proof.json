@@ -1,0 +1,129 @@
+{
+  "schema": 1,
+  "status": "QUALIFIED",
+  "scope": "Whole chosen Present Quest: actual6113 source claim and cold replay, nested Present hand-in to canonical Seymour at his admitted source cell, exact Legion Helmet reward and once/replay behavior.",
+  "red": {
+    "test_seconds": 4.06,
+    "postgres_marker_seconds": 4.05742636,
+    "error": "Seymour's source Present exchange has no admitted native callback"
+  },
+  "additional_actual_pg_red": {
+    "test_seconds": 61.59,
+    "postgres_marker_seconds": 3.841277363,
+    "error": "LimitExceeded { resource: \"total directory entries scanned\", actual: 233, limit: 232 }",
+    "repair": "Measured new startup file across eleven locator scans: exact new bounded corpus243; a separate boundary regression rejects242 and loads243."
+  },
+  "green": {
+    "test_filter": "questpc5_present_complete_source_route",
+    "test_seconds": 98.32,
+    "postgres_marker_seconds": 4.345191309,
+    "registration_seconds": 4.833599491,
+    "actual_source_claim_exchange_replay_program_seconds": 37.446318748,
+    "source_claim": "oteryn:reward-claim.kv.present_box",
+    "source_unique_id": 6113,
+    "root_backpack": 2854,
+    "original_children": [
+      2882,
+      2856,
+      2881,
+      2905
+    ],
+    "consumed_exact_nested_item": 2856,
+    "consumed_quantity": 1,
+    "granted_item": 3374,
+    "granted_quantity": 1,
+    "unchanged_remaining_children_and_state": true,
+    "water_subtype": 1,
+    "water_children": 2,
+    "source_and_consumption_and_MINT_and_appearance_receipts": [
+      1,
+      1,
+      2,
+      0
+    ],
+    "literal_confirmation_replay": true,
+    "second_completion_refused_without_mutation": true,
+    "final_native_completion_flag": 1
+  },
+  "npc": {
+    "key": "oteryn:npc.seymour",
+    "source_position": [
+      32104,
+      32189,
+      -7
+    ],
+    "conversation": [
+      "hi",
+      "box",
+      "yes"
+    ],
+    "source_path": "data-global/npc/seymour.lua",
+    "source_lines": "100-107",
+    "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "source_sha256": "d7593e3c151aca33ba89d5b856cab39d57e286af806e145042b18071effb3632",
+    "source_placement_file": "content/world/npc-placements/placements-00000-00033.json"
+  },
+  "chosen_rule": "The existing selected recipe explicitly chooses the Seymour exchange and once completion; native final -1->1 flag enforces that chosen recipe. No synthetic input/progress seeding.",
+  "reuse": "Existing bounded nested carried-input exchange and reward MINT/progress owner, source NPC placement and timed/fluid admission. No new value-writing engine or migration.",
+  "checks": {
+    "qengine_authoring_python_tests": 11,
+    "runtime_loader_rust_tests": 1,
+    "exact_NPC_budget_rust_tests": 1,
+    "cargo_check_content_quests_dispatch": 0,
+    "clippy_content_quests_dispatch_all_targets_all_features_D_warnings": 0,
+    "cargo_and_mounted_fmt": 0,
+    "authoring_reproduction": 0,
+    "pin_refresh": 0,
+    "pin_check": 0
+  },
+  "regression": {
+    "test_filter": "questpc5_hoist_complete_source_route",
+    "result": "PASS",
+    "postgres_marker_seconds": 4.110575392,
+    "actual_program_seconds": 3.600689459,
+    "note": "Shared fixture extraction retained the Hoist case; the filtered two-case run subsequently exposed Present test ordinal decoding, which is fixed and independently GREEN98.32s."
+  },
+  "world_digest": "264a3573a295a70bf5fe6dfaa2f41a82fdedd9f37c4d1116c6386a66b178d24d",
+  "logs": {
+    "red": {
+      "path": "/tmp/questpc5-present-red.log",
+      "sha256": "d64a658e4fe577bc0318c9257c75dee16093add790c3dfe8b3bd5efaaffa65ba"
+    },
+    "green": {
+      "path": "/tmp/questpc5-present-composed-green3.log",
+      "sha256": "4ac0340aa09c9522e397e39032ef894254b791bb15c4eb860c191facc0f5963b"
+    },
+    "loader_budget_red": {
+      "path": "/tmp/questpc5-present-composed-green2.log",
+      "sha256": "d22a5e263802871a265f893f3c8e9bd74407821f4f0d81c9f60eddcb0ffa0036"
+    },
+    "loader_budget_green": {
+      "path": "/tmp/questpc5-present-npc-budget2.log",
+      "sha256": "f4f41705b0567bb7e43eaa84b35fb386baad947659bed398d3815c90484b9e53"
+    },
+    "runtime_loader": {
+      "path": "/tmp/questpc5-present-loader-tests.log",
+      "sha256": "1aad638bba33e4acaf6245222939289d55cadde90b4811664ee83d3855b535e9"
+    },
+    "hoist_regression": {
+      "path": "/tmp/questpc5-present-composed-green.log",
+      "sha256": "c112914a9518794b6d82750615aa8baf3eecb04ff1c2d9ef4bbc272d0ccc28b0"
+    },
+    "check": {
+      "path": "/tmp/questpc5-present-check3.log",
+      "sha256": "d90882dca927b3ed65bd99e335168e810f30f9122726572fb36e30e3b9928b45"
+    },
+    "clippy": {
+      "path": "/tmp/questpc5-present-clippy4.log",
+      "sha256": "791bf8ec7585ea036a7d9dd4409796cab96c8808940ad2e4a8dede201a4bce03"
+    },
+    "pin_refresh": {
+      "path": "/tmp/questpc5-present-pin-refresh3.log",
+      "sha256": "ea726f4e37a3648676a6138e172d3d68b9e3c16443fbd92bc480962367df3310"
+    },
+    "pin_check": {
+      "path": "/tmp/questpc5-present-pin-check3.log",
+      "sha256": "e8c726b332e3bc2efb552785082484f1b4d421a48eb9d070352c2b42e7662782"
+    }
+  }
+}

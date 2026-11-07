@@ -513,6 +513,43 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/present-box",
+      "quest": "oteryn:quest.present_quest",
+      "npc": "oteryn:npc.seymour",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/native-reward/present/seymour",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i2856",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3374",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "THANK YOU! Here is a helmet that will serve you well."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/seymour.lua:100-107:sha256:d7593e3c151aca33ba89d5b856cab39d57e286af806e145042b18071effb3632"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/sam-backpack",
       "quest": "oteryn:quest.sam_s_old_backpack_quest",
       "npc": "oteryn:npc.sam",

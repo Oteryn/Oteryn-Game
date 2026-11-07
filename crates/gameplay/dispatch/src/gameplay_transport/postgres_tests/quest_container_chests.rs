@@ -12,6 +12,12 @@ use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generatio
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum SourceRoute {
+    Hoist,
+    Present,
+}
+
 #[derive(Clone, Copy)]
 enum Case {
     Bear,
@@ -104,14 +110,14 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn scenario(case: Case) -> TestResult {
-    scenario_case(case, None, None, None, false)
+    scenario_case(case, None, None, None, None)
 }
 
 pub(super) fn catalogue_scenario(
     chest: &super::quest_catalogue_chests::CatalogueChest,
     activation: &super::quest_catalogue_chests::CatalogueActivation,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), None, false)
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), None, None)
 }
 
 pub(super) fn catalogue_scenario_with_progress(
@@ -125,7 +131,7 @@ pub(super) fn catalogue_scenario_with_progress(
             Some(chest),
             Some(activation),
             Some(track),
-            false,
+            None,
         ),
         None => catalogue_scenario(chest, activation),
     }
@@ -136,7 +142,7 @@ fn scenario_case(
     catalogue: Option<&super::quest_catalogue_chests::CatalogueChest>,
     activation: Option<&super::quest_catalogue_chests::CatalogueActivation>,
     progress: Option<&str>,
-    hoist: bool,
+    route: Option<SourceRoute>,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let (claim, chest, unique, root_key, expected) = match case {
@@ -266,8 +272,8 @@ fn scenario_case(
                 2472,
             )?
         } else if let Some(chest) = catalogue {
-            if hoist {
-                super::quest_catalogue_chests::catalogue_source_world_with_hoist(chest, true)?
+            if route.is_some() {
+                super::quest_catalogue_chests::catalogue_source_world_with_route(chest, route)?
             } else {
                 super::quest_catalogue_chests::catalogue_source_world(chest)?
             }
@@ -591,7 +597,7 @@ fn scenario_case(
                 let mut owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(generation);
                 owner.movement_cells = &cells;
-                if progress.is_some() {
+                if progress.is_some() || route.is_some() {
                     owner.quest_catalogue = Some(std::sync::Arc::new(
                         oteryn_gameplay_quests::quest::loader::load_embedded_quest_state(
                             "content-1",
@@ -603,11 +609,11 @@ fn scenario_case(
                 }
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
-                if progress.is_some() {
+                if progress.is_some() || route.is_some() {
                     owner.admit_quest_session(&admitted).await;
                 }
                 if cold_replay {
-                    if hoist {
+                    if route.is_some() {
                         // Continue the current cold transport, never resurrect the
                         // warm socket's controller after its replacement connected.
                         let (results, stream) =
@@ -846,17 +852,30 @@ fn scenario_case(
                         "authored text must not forge a player rewrite receipt"
                     );
                 }
-                if hoist && cold_replay {
+                if let Some(route) = route.filter(|_| cold_replay) {
                     // Keep the live owner's retained command-ingress journal;
                     // a newly constructed owner cannot resume this socket's counter.
                     let mut stream = route_session.take().ok_or("source claim stream")?;
-                    super::questpc5_hoist_route::exercise(
-                        &mut owner,
-                        &mut stream,
-                        &harness,
-                        deps.actor,
-                    )
-                    .await?;
+                    match route {
+                        SourceRoute::Hoist => {
+                            super::questpc5_hoist_route::exercise(
+                                &mut owner,
+                                &mut stream,
+                                &harness,
+                                deps.actor,
+                            )
+                            .await?
+                        }
+                        SourceRoute::Present => {
+                            super::questpc5_present_route::exercise(
+                                &mut owner,
+                                &mut stream,
+                                &harness,
+                                deps.actor,
+                            )
+                            .await?
+                        }
+                    }
                 }
             }
             let achievements:i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/annihilator'")
@@ -914,6 +933,19 @@ pub(super) fn hoist_scenario(
         Some(chest),
         Some(activation),
         Some(super::questpc5_hoist_route::PLANS_TRACK),
-        true,
+        Some(SourceRoute::Hoist),
+    )
+}
+
+pub(super) fn present_scenario(
+    chest: &super::quest_catalogue_chests::CatalogueChest,
+    activation: &super::quest_catalogue_chests::CatalogueActivation,
+) -> TestResult {
+    scenario_case(
+        Case::Catalogue,
+        Some(chest),
+        Some(activation),
+        None,
+        Some(SourceRoute::Present),
     )
 }

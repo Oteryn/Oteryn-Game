@@ -358,6 +358,26 @@
           "set": 1
         }
       ]
+    },
+    {
+      "npc": "oteryn:npc.seymour",
+      "keywords": [
+        "box",
+        "present box"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/native-reward/present/seymour",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you have a suitable present box for me?"
+      ]
     }
   ]
 }

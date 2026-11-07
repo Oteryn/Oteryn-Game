@@ -953,13 +953,14 @@ pub(super) async fn assert_charges(
 pub(super) fn catalogue_source_world(
     chest: &CatalogueChest,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    catalogue_source_world_with_hoist(chest, false)
+    catalogue_source_world_with_route(chest, None)
 }
 
-pub(super) fn catalogue_source_world_with_hoist(
+pub(super) fn catalogue_source_world_with_route(
     chest: &CatalogueChest,
-    hoist: bool,
+    route: Option<super::quest_container_chests::SourceRoute>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    let hoist = route == Some(super::quest_container_chests::SourceRoute::Hoist);
     use oteryn_world_bundle::{bundle, sector};
     use std::collections::BTreeMap;
     let mut placements = Vec::new();
@@ -1078,6 +1079,25 @@ pub(super) fn catalogue_source_world_with_hoist(
                     ..Default::default()
                 },
             });
+    }
+    if route == Some(super::quest_container_chests::SourceRoute::Present) {
+        // The already admitted source Seymour placement:32104,32189,z7.
+        for y in 32186..=32191 {
+            for x in 32102..=32106 {
+                tiles.entry((-7, y, x)).or_insert_with(|| sector::Tile {
+                    x,
+                    y,
+                    flags: 0,
+                    house: 0,
+                    zones: Vec::new(),
+                    items: vec![sector::Item {
+                        palette: 0,
+                        depth: 0,
+                        attrs: sector::Attrs::default(),
+                    }],
+                });
+            }
+        }
     }
     let coordinates: Vec<_> = tiles.keys().copied().collect();
     data.manifest.world = bundle::Extent {
@@ -1231,5 +1251,60 @@ pub(super) fn hoist_route_cohort() -> TestResult {
         })?
         .join()
         .map_err(|_| "hoist route thread panicked")??;
+    Ok(())
+}
+
+pub(super) fn present_route_cohort() -> TestResult {
+    let claim = super::questpc5_present_route::CLAIM;
+    let cases: Vec<_> = cases_including(|key| key == claim)?
+        .into_iter()
+        .filter(|c| c.claim == claim)
+        .collect();
+    assert_eq!(cases.len(), 1);
+    let case = cases.into_iter().next().ok_or("present source")?;
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || -> Result<(), String> {
+            let world = crate::foundation::WorldId::decode(&super::fixture::id(42))
+                .map_err(|e| format!("{e:?}"))?;
+            let activation =
+                super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")
+                    .map_err(|e| e.to_string())?;
+            super::quest_container_chests::present_scenario(&case, &activation)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "present route thread panicked")??;
+    Ok(())
+}
+
+// Only navigation between distant source objects is abbreviated. All acquisitions,
+// lever changes and source-floor transitions below are literal player commands.
+pub(super) async fn relocate_source_actor(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
+    actor: crate::foundation::ExactActorRef,
+    at: oteryn_gameplay_quests::quest::world_callbacks::Position,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("map")?;
+    let closed = crate::map::floor::BundleDoors(map.facts.doors());
+    let mut runtime = owner.runtime.lock().await;
+    let expected = runtime
+        .read_actor_position(actor)
+        .map_err(super::fixture::debug)?;
+    let proof = crate::map::floor::prepare_quest_callback_teleport(
+        &runtime,
+        owner.movement_cells,
+        actor,
+        admitted.game_session_id,
+        expected,
+        super::quest_world_callbacks::local(at),
+        false,
+        &closed,
+    )
+    .map_err(super::fixture::debug)?;
+    runtime
+        .commit_source_step(proof)
+        .map_err(super::fixture::debug)?;
     Ok(())
 }
