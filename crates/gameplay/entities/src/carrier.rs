@@ -831,6 +831,8 @@ pub enum Slot {
     NpcOccupied {
         generation: u64,
         key: Arc<str>,
+        /// Authored source cell; ordinary NPC movement never changes admission provenance.
+        home: LocalPosition,
         position: VersionedPosition,
         /// E12: House custody is attached to the existing NPC slot, never a parallel actor map.
         hireling: Option<Box<npc_actor::HouseHirelingBinding>>,

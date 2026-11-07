@@ -328,6 +328,7 @@ impl ChannelRuntimeV1 {
             generation,
             key,
             hireling: None,
+            home: position,
             position: VersionedPosition {
                 actor_local_id,
                 actor_local_generation: ActorLocalGeneration(generation),
@@ -341,6 +342,21 @@ impl ChannelRuntimeV1 {
         carrier.free_head = next_free;
         carrier.occupied.push(free_head);
         Ok(ExactActorRef(actor_ref))
+    }
+
+    /// Immutable authored cell of a current non-Hireling NPC, even after wandering.
+    pub fn npc_home_position(&self, actor: ExactActorRef) -> Option<LocalPosition> {
+        self.owner_fence().ok()?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
+        match &self.carrier.slots[index] {
+            Slot::NpcOccupied {
+                generation,
+                home,
+                hireling: None,
+                ..
+            } if *generation == actor.0.actor_local_generation.0 => Some(*home),
+            _ => None,
+        }
     }
 
     /// The NPC key of a current NPC actor; `None` for any other or stale actor.
@@ -402,6 +418,42 @@ mod tests {
             )
             .expect("native NPC placements");
         (runtime, outcome.actors[0], outcome.actors[1])
+    }
+
+    #[test]
+    fn npc_home_admission_survives_movement_and_rejects_retired_actors() {
+        let (mut runtime, actor, _) = movement_fixture();
+        let home = runtime.npc_home_position(actor).expect("authored NPC home");
+        assert_eq!(
+            home,
+            LocalPosition {
+                x: 20,
+                y: 10,
+                floor: 7
+            }
+        );
+        let before = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("current NPC");
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(
+                before,
+                super::super::MovementLocalPosition {
+                    x: 20,
+                    y: 9,
+                    floor: 7,
+                },
+            )
+            .expect("wander");
+        assert_eq!(runtime.npc_home_position(actor), Some(home));
+        runtime
+            .remove_dynamic_npc("oteryn:npc.a")
+            .expect("remove native NPC");
+        assert_eq!(runtime.npc_home_position(actor), None);
+        runtime.retire_owner_cycle();
+        assert_eq!(runtime.npc_home_position(actor), None);
     }
 
     #[test]
