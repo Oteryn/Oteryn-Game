@@ -82,3 +82,7 @@ check/Clippy4crates all features/all targets passed; initial atomic-start unit1 
 ## Metadata proof update integrated
 
 Remote b7f1399770ea27b4232c973cb3c0dd3f19684c87 changes only qlane metadata and CONTRACT-NOTES; no Rust/content inputs. Its changed proof records are preserved in cloud_continuation.remote_metadata_proofs.b7f139977. Green source merge is8b4ef8e01, reward implementation023219279. Publish this metadata-only merge immediately; no additional gameplay run is needed for notes. Then begin the three-Cockroach occurrence bridge with new real PG RED. All other remaining tutorial mechanisms and the other4owned quests remain ours to implement; no final summary while any remain.
+
+## Completed validation checkpoint
+
+The Clippy run for merged source025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e completed successfully in5m56s (/tmp/questpc3-merged-greet-clippy.log). Together with the already recorded three focused PostgreSQL cases, this closes that prior integration check. This evidence predates the active Pilgrimage slice and does not claim it GREEN. Preserve the incoming physical Santiago Item/XP slice. Continue Pilgrimage and all five owned quests.

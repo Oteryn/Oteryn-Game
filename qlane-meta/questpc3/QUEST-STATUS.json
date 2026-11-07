@@ -1497,6 +1497,13 @@
           "crates/gameplay/quests/src/quest/loader.rs": "b7ffac34197442b75912f2b3d05f0eb5a51aa7720bd0580c0dd485b281b632f1",
           "crates/gameplay/quests/src/quest/mod.rs": "ed1a016dea2c235271e3e6601e088ea770d67fa151e148f4734eb1683b205a1f"
         }
+      },
+      "greeting_merge_clippy_completion": {
+        "status": "PASS",
+        "duration": "5m56s",
+        "log": "/tmp/questpc3-merged-greet-clippy.log",
+        "validated_source_commit": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
+        "scope": "quests/npc/durability/dispatch all features and targets; completed before Pilgrimage changes"
       }
     },
     "source_corrections": [
