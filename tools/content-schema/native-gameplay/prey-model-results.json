@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "acd56043baadc7383365bdfeb6fc3c104a6fabe7cfea6c2f18174655335392bf",
+  "input_sha256": "6bcf8bdf3b3e3b48f02f7606dfda8fd7c2212e3bcb8d0ea32df67b4ffc63d2ec",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -1004,6 +1004,7 @@
     "oteryn:creature.burning_book": 24870466,
     "oteryn:creature.burning_gladiator": 34042553,
     "oteryn:creature.burster_spectre": 0,
+    "oteryn:creature.cake_golem": 303157894,
     "oteryn:creature.candy_floss_elemental": 60952380,
     "oteryn:creature.candy_horror": 122814498,
     "oteryn:creature.capricious_phantom": 12478336,
@@ -1760,6 +1761,7 @@
     "oteryn:creature.bulltaur_alchemist",
     "oteryn:creature.bulltaur_brute",
     "oteryn:creature.bulltaur_forgepriest",
+    "oteryn:creature.cake_golem",
     "oteryn:creature.candy_horror",
     "oteryn:creature.capricious_phantom",
     "oteryn:creature.chocolate_blob",
@@ -1948,6 +1950,7 @@
     "oteryn:creature.burning_book",
     "oteryn:creature.burning_gladiator",
     "oteryn:creature.burster_spectre",
+    "oteryn:creature.cake_golem",
     "oteryn:creature.candy_floss_elemental",
     "oteryn:creature.candy_horror",
     "oteryn:creature.capricious_phantom",

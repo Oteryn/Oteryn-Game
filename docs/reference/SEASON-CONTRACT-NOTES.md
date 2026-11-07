@@ -843,3 +843,18 @@ This is a compiling WIP, not row completion. Focused caller tests, current nativ
 provider/loot/Prey regeneration, timer/bed greens, remaining seasonal phases and
 source-qualified placement, complete furniture projection, clippy and final
 pins/architecture qualification remain required.
+
+### Native Creature/Loot successor qualification
+
+Normal Prey regeneration completed15 real runtime model cases with777 creatures
+(5m45.797s); normal registration regenerated43 files (1m28.914s). The actual Rust
+artifact-loader regression passes in2.18s (25.60s build), including refusal when
+the Cake binding is removed. Exact source-backed sugar chance and corpse12141
+are retained; no fabricated empty loot table is used.
+
+Further reserved allocations: supplementary House container capability446
+(next main sequence386+60) retains legacy capability14's20-entry bound and
+negotiates25 for source-qualified House containers; no new command/domain.
+Santa delivery audit field66 is next message field6+60, preserving legacy bytes.
+Migration1163 is reserved for exact House auto-carpet occurrences;1166 for Cake
+phases/bonus. Santa delivery extends this lane's1165 rather than taking either.

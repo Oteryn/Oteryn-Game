@@ -594,6 +594,14 @@
       "tier": 4
     },
     {
+      "creature": "oteryn:creature.cake_golem",
+      "display_name": "Cake Golem",
+      "exclusive": false,
+      "experience": 100,
+      "max_health": 444,
+      "tier": 2
+    },
+    {
       "creature": "oteryn:creature.candy_floss_elemental",
       "display_name": "Candy Floss Elemental",
       "exclusive": false,
@@ -6249,9 +6257,9 @@
       "experience_max": 999,
       "experience_min": 100,
       "minimum_level": 50,
-      "nonexclusive_count": 161,
+      "nonexclusive_count": 162,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 159,
+      "runtime_available_count": 160,
       "runtime_unsettleable_count": 159,
       "tier": 2
     },
