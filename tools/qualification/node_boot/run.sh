@@ -221,6 +221,7 @@ fields = {
     "item_profiles", "spell_appearances", "build_training", "familiar_config",
     "familiar_defenses", "wheel_profile", "source_world", "progression", "item_keys",
     "loot_tables",
+    "cosmetics", "starting_loadout_item_profiles", "item_profile_updates",
 }
 manifest_bytes = manifest.read_bytes()
 document = json.loads(manifest_bytes)
@@ -245,6 +246,9 @@ for field in fields:
     if name in selected and selected[name] != data:
         raise ValueError("conflicting manifest input")
     selected[name] = data
+sys.path.insert(0, str(repo_root / "tools/qualification/spells"))
+from provisioning_inputs import select_cosmetics_inputs
+select_cosmetics_inputs(document, manifest, repo_root, selected)
 staged.mkdir(mode=0o700)
 for name, data in selected.items():
     destination = staged / name
