@@ -96,3 +96,17 @@ Neither PG case is claimed green in this checkpoint.
 Effective reset calendar is Europe/Berlin06:00 after migration0562; the original
 0148 Berlin10:00 declaration was superseded. C follows the persisted calendar
 and its revision, including DST, rather than a fixed86400-second day.
+
+### Resync repair: executed green
+
+A permanent private force-touch helper now advances revision/outbox for operator
+resync even when normal source capture coalesces unchanged content. Guild and
+house source derivation now serializes before reading its snapshot cut, including
+catalogue-sync versus owner/name changes. Privacy-dependent death subjects are
+visited in stable UUID order.
+
+The two previously red Guild/house PG cases now pass:2 passed,0 failed,0 ignored,
+10.81s execution (2m05s build;137s command). Each printed
+`PUBPROJ_GUILD_HOUSE_PG_EXECUTED` with elapsed_ms=10797. Old ACK versus newer source
+revision, explicit catalogue withdrawal, unknown-source freshness and operator
+resync were exercised. Other B validation and C/D implementation remain pending.

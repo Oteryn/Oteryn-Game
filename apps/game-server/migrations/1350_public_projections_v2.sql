@@ -46,7 +46,7 @@ GRANT SELECT ON game_public_v2_heads,game_public_death_killers,game_public_house
 GRANT SELECT,DELETE ON game_public_v2_outbox TO oteryn_game_runtime,oteryn_game_control;
 GRANT INSERT ON game_public_death_killers TO oteryn_game_runtime;
 
-CREATE FUNCTION game_public_v2_touch(f TEXT,w TEXT,s TEXT,p JSONB) RETURNS VOID
+CREATE FUNCTION game_public_v2_force_touch(f TEXT,w TEXT,s TEXT,p JSONB) RETURNS VOID
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE r BIGINT; t BIGINT:=floor(extract(epoch FROM clock_timestamp())*1000)::bigint;
 BEGIN
@@ -57,6 +57,11 @@ BEGIN
  SET revision=game_public_v2_heads.revision+1,observed_ms=t,payload=p RETURNING revision INTO r;
  INSERT INTO game_public_v2_outbox SELECT f,w,s,projection_epoch,r,t
  FROM game_public_projection_epoch WHERE epoch_scope=1;
+END $$;
+-- Source capture can coalesce, but operator resync must always enqueue.
+CREATE FUNCTION game_public_v2_touch(f TEXT,w TEXT,s TEXT,p JSONB) RETURNS VOID
+LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN
+ PERFORM game_public_v2_force_touch(f,w,s,p);
 END $$;
 CREATE FUNCTION game_public_v2_character_visible(c UUID) RETURNS BOOLEAN
 LANGUAGE sql STABLE SECURITY DEFINER AS $$
@@ -70,6 +75,8 @@ $$;
 CREATE FUNCTION game_public_v2_deaths(c UUID) RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE p JSONB;
 BEGIN
+ PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
+ PERFORM pg_advisory_xact_lock(hashtextextended('pubproj-v2:deaths:' || c::text,0));
  -- Missing immutable historical classification is unknown, never PvE/empty.
  IF game_public_v2_character_visible(c) AND EXISTS(
   SELECT 1 FROM (SELECT death_occurrence_id FROM game_character_death_receipts
@@ -97,6 +104,8 @@ END $$;
 CREATE FUNCTION game_public_v2_guild(g UUID) RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE p JSONB;
 BEGIN
+ PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
+ PERFORM pg_advisory_xact_lock(hashtextextended('pubproj-v2:guild:' || g::text,0));
  SELECT jsonb_build_array(jsonb_build_object('world_id',x.world_id::text,'name',x.name,
  'state',CASE x.state WHEN 1 THEN 'FORMING' WHEN 2 THEN 'ACTIVE' WHEN 3 THEN 'DISBANDING' END,
  'founded_at',(x.created_at/1000)::text,
@@ -136,7 +145,7 @@ CREATE TRIGGER public_v2_outbox_no_truncate BEFORE TRUNCATE ON game_public_v2_ou
 ALTER FUNCTION game_public_projection_resync(TEXT,BOOLEAN) RENAME TO game_public_projection_resync_before_v2;
 CREATE FUNCTION game_public_projection_resync(p_family TEXT,p_raise_epoch BOOLEAN) RETURNS BIGINT
 LANGUAGE plpgsql SECURITY INVOKER AS $$
-DECLARE e BIGINT; h RECORD;
+DECLARE e BIGINT; h RECORD; latest_payload JSONB;
 BEGIN
  IF p_family IN('character_deaths','guild','house') THEN
   IF p_raise_epoch THEN RAISE EXCEPTION 'only all may raise epoch' USING ERRCODE='22023'; END IF;
@@ -148,9 +157,10 @@ BEGIN
  ORDER BY family,world_id,subject LOOP
   IF h.family='character_deaths' THEN
    PERFORM game_public_v2_deaths(h.subject::uuid);
-  ELSE
-   PERFORM game_public_v2_touch(h.family,h.world_id,h.subject,h.payload);
   END IF;
+  SELECT payload INTO STRICT latest_payload FROM game_public_v2_heads
+   WHERE family=h.family AND world_id=h.world_id AND subject=h.subject;
+  PERFORM game_public_v2_force_touch(h.family,h.world_id,h.subject,latest_payload);
  END LOOP;
  RETURN e;
 END $$;
@@ -172,12 +182,12 @@ LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE c UUID;
 BEGIN
  PERFORM game_public_profile_touch_before_v2(p_character,p_vacated,p_world);
- PERFORM game_public_v2_deaths(p_character);
  -- A withdrawn killer's identity must disappear from every affected victim.
- FOR c IN SELECT DISTINCT d.character_id FROM game_public_death_killers k
+ FOR c IN SELECT p_character AS character_id
+ UNION SELECT d.character_id FROM game_public_death_killers k
  JOIN game_character_death_receipts d USING(death_occurrence_id)
- WHERE k.character_id=p_character ORDER BY d.character_id LOOP
-  IF c<>p_character THEN PERFORM game_public_v2_deaths(c); END IF;
+ WHERE k.character_id=p_character ORDER BY character_id LOOP
+  PERFORM game_public_v2_deaths(c);
  END LOOP;
  PERFORM game_public_v2_character_dependencies(p_character);
 END $$;

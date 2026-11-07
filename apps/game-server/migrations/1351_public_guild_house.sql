@@ -70,6 +70,9 @@ DECLARE c game_public_house_catalogue; p game_house_properties; a game_house_auc
  owner TEXT; owner_kind TEXT; status TEXT; extra JSONB:='{}'; out JSONB;
  due BIGINT; disposition SMALLINT; n INT; price BIGINT; top BIGINT; second BIGINT;
 BEGIN
+ -- Serialize derivation before reading the catalogue/property cut, not after it.
+ PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
+ PERFORM pg_advisory_xact_lock(hashtextextended('pubproj-v2:house:' || w::text || ':' || h,0));
  SELECT * INTO c FROM game_public_house_catalogue WHERE world_id=w AND house_key=h;
  IF NOT FOUND THEN DELETE FROM game_public_house_source_pending WHERE world_id=w AND house_key=h; PERFORM game_public_v2_touch('house',w::text,h,'[]'); RETURN; END IF;
  SELECT * INTO p FROM game_house_properties WHERE world_id=w AND house_key=h;
