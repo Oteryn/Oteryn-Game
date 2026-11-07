@@ -22,6 +22,7 @@ pub struct CreditedKill {
     pub transition: &'static str,
     pub maximum: i64,
     pub achievement: &'static str,
+    pub notice: Option<&'static str>,
 }
 
 pub const SPIDER_NEST: CreditedKill = CreditedKill {
@@ -32,6 +33,7 @@ pub const SPIDER_NEST: CreditedKill = CreditedKill {
     transition: "oteryn:quest-transition/world-change/spider-nest/credited-kill",
     maximum: 3,
     achievement: "oteryn:achievement/nestling",
+    notice: None,
 };
 pub const BORED: CreditedKill = CreditedKill {
     creature: "oteryn:creature.giant_spider_wyda",
@@ -41,6 +43,7 @@ pub const BORED: CreditedKill = CreditedKill {
     transition: "oteryn:quest-transition/world-change/bored/credited-kill",
     maximum: 1,
     achievement: "oteryn:achievement/someone_s_bored",
+    notice: Some("It seems this was just an illusion."),
 };
 pub const DOWN_THE_DRAIN: CreditedKill = CreditedKill {
     creature: "oteryn:creature.water_elemental",
@@ -50,8 +53,22 @@ pub const DOWN_THE_DRAIN: CreditedKill = CreditedKill {
     transition: "oteryn:quest-transition/world-change/down-the-drain/credited-kill",
     maximum: 50,
     achievement: "oteryn:achievement/down_the_drain",
+    notice: None,
 };
-pub const DEFINITIONS: [CreditedKill; 3] = [SPIDER_NEST, BORED, DOWN_THE_DRAIN];
+// Warpath spoiler page76270/rev944151, source body SHA256
+//25a6dec3aceaee5d95e56659c96ff4673ae2db757a8105dcd380fd1da1c40e9d:
+//https://tibia.fandom.com/index.php?curid=76270&oldid=944151.
+pub const BIBBY: CreditedKill = CreditedKill {
+    creature: "oteryn:creature.bibby_bloodbath",
+    change: "warpath",
+    quest: "oteryn:quest.world_change_warpath",
+    track: "oteryn:quest-progress/world-change/warpath/credited-kills",
+    transition: "oteryn:quest-transition/world-change/warpath/credited-kill",
+    maximum: 1,
+    achievement: "oteryn:achievement/bibby_s_bloodbath",
+    notice: None,
+};
+pub const DEFINITIONS: [CreditedKill; 4] = [SPIDER_NEST, BORED, DOWN_THE_DRAIN, BIBBY];
 
 pub fn for_creature(creature: &str) -> Option<CreditedKill> {
     DEFINITIONS

@@ -200,6 +200,7 @@ impl AnalyserStreams {
 #[derive(Debug, Default)]
 pub(super) struct DeathReceipts {
     pub(super) kill: bool,
+    pub(super) world_change_notice: bool,
     pub(super) loot: HashSet<[u8; 16]>,
     pub(super) xp: HashSet<crate::domain::CharacterId>,
     pub(super) recipients: Option<Vec<(crate::domain::CharacterId, ExactActorRef, GameSessionId)>>,

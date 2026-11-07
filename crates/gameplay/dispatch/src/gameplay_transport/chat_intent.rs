@@ -50,6 +50,8 @@ const fn result(disposition: ChatDisposition) -> ChatIntentResult {
 
 #[path = "mount_voices.rs"]
 mod mount_voices;
+#[path = "world_change_death_notice.rs"]
+mod world_change_death_notice;
 
 struct ChatSession {
     last_mount_voice: Option<u64>,

@@ -103,6 +103,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    async fn publish_world_change_death_notice(&self, entry: &PendingKillSettlement) {
+        let Some(text) = rules::for_creature(&entry.creature).and_then(|rule| rule.notice) else {
+            return;
+        };
+        let mut runtime = self.runtime.lock().await;
+        let receipts = {
+            let attack = self.states.attack.lock().await;
+            attack.kills().analyser_receipts(&runtime, entry.target)
+        };
+        let Ok(mut receipt) = receipts.lock() else {
+            return;
+        };
+        if receipt.world_change_notice {
+            return;
+        }
+        if self.states.chat.publish_native_death_notice(
+            &mut runtime,
+            entry.target,
+            &entry.creature,
+            text,
+        ) {
+            receipt.world_change_notice = true;
+        }
+    }
+
     /// Exact principal only: native shared XP membership never fabricates a kill
     /// recipient. The current Character/session/generation is rechecked twice.
     pub(super) async fn credit_world_change_death(&self, entry: &PendingKillSettlement) -> bool {
@@ -139,6 +164,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return true;
             }
         }
+        self.publish_world_change_death_notice(entry).await;
         let Some(permit) = self.spell_lane_permit().await else {
             return false;
         };
