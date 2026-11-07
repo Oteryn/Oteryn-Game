@@ -6,8 +6,9 @@ const SANTA: &str = "oteryn:npc.santa_claus";
 
 // Crystal201189f data-global/npc/santa_claus.lua:1-25 identifies the native NPC;
 // its donor spawn registry supplies no seasonal placement. Exact positions are
-// the retained structured source Santa Claus revision443236:38-52 (captured by
-// docs/reference/content-prep/season-20261107/W05d.md), not inferred offsets.
+// retained structured BR source, not donor spawn coordinates:
+// docs/reference/content-prep/season-20261107/seasonal-calendar-source.json:87
+// binds all15 placements to Santa Claus revision443236, original lines38-52.
 const SANTA_POSITIONS: [(u16, u16, i8); 20] = [
     (32655, 31665, 8),
     (33070, 32878, 6),

@@ -18,6 +18,7 @@
 //! (immediate line admission, deferred line and receipt proofs) decide the same facts again.
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
+mod house;
 mod seed_drop;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
 
@@ -641,6 +642,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
     content: &C,
     plan: LoopPlan<'_>,
+    house: Option<&super::consume_transform::HouseActionContext>,
 ) -> LoopResult<PlannedDestination> {
     let LoopPlan {
         character,
@@ -679,9 +681,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             rest: count,
         });
     }
-    let Some(slot) = load_slot(tx, character).await? else {
-        return refuse(LoopMoveRefusal::NoBackpack);
-    };
+    let slot = load_slot(tx, character).await?;
 
     let target = match destination {
         LoopDestination::Ground(ground) => {
@@ -696,9 +696,9 @@ async fn plan_loop_destination<C: ItemLoopContent>(
                 native_room_placement_context: ground.placement_context.clone(),
             })
         }
-        LoopDestination::MainBackpack => main_target(tx, content, &slot).await?,
-        LoopDestination::Container(parent) if *parent == slot.item_instance_id => {
-            main_target(tx, content, &slot).await?
+        LoopDestination::MainBackpack => main_target(tx, content, slot.as_ref().ok_or(LoopError::Refused(LoopMoveRefusal::NoBackpack))?).await?,
+        LoopDestination::Container(parent) if slot.as_ref().is_some_and(|slot| *parent == slot.item_instance_id) => {
+            main_target(tx, content, slot.as_ref().ok_or(LoopError::Refused(LoopMoveRefusal::NoBackpack))?).await?
         }
         LoopDestination::Container(parent) => {
             let parent = *parent;
@@ -707,7 +707,10 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             }
             let parent_depth = match loop_owner(tx, parent).await? {
                 Some((owner, depth)) if owner == *character.as_bytes() && depth >= 0 => depth,
-                _ => return refuse(LoopMoveRefusal::Stale),
+                _ => match house {
+                    Some(context) => house::path(tx,context,parent).await?.ok_or(LoopError::Refused(LoopMoveRefusal::Stale))?.depth,
+                    None => return refuse(LoopMoveRefusal::Stale),
+                },
             };
             let Some((parent_definition, _, _)) = lock_live_item(tx, parent, world).await? else {
                 return refuse(LoopMoveRefusal::Stale);
@@ -762,6 +765,10 @@ async fn plan_loop_destination<C: ItemLoopContent>(
         }
     };
 
+    let house_target = if let (Some(context),Target::Container {parent,..}) = (house,&target) {
+        house::path(tx,context,*parent).await?.is_some()
+    } else { false };
+
     // BAGS-1 ceilings and the destination's room.
     let fresh = partial;
     if let Target::Container { parent_depth, .. } = &target
@@ -781,13 +788,12 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     let split_in_place = partial
         && match &target {
             Target::Container { parent, .. } => match source {
-                SourceKind::Main => *parent == slot.item_instance_id,
-                SourceKind::Nested { parent: from } => from == *parent,
+                SourceKind::Main => slot.as_ref().is_some_and(|slot| *parent == slot.item_instance_id),
+                SourceKind::Nested { parent: from } | SourceKind::CustodyNested { parent: from } => from == *parent,
                 SourceKind::Ground
                 | SourceKind::Depot
                 | SourceKind::Corpse
-                | SourceKind::Inbox
-                | SourceKind::CustodyNested { .. } => false,
+                | SourceKind::Inbox => false,
             },
             Target::Ground(_) | Target::Depot { .. } => false,
         };
@@ -827,13 +833,12 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     {
         let already_here = !partial
             && match source {
-                SourceKind::Main => *parent == slot.item_instance_id,
-                SourceKind::Nested { parent: from } => from == *parent,
+                SourceKind::Main => slot.as_ref().is_some_and(|slot| *parent == slot.item_instance_id),
+                SourceKind::Nested { parent: from } | SourceKind::CustodyNested { parent: from } => from == *parent,
                 SourceKind::Ground
                 | SourceKind::Depot
                 | SourceKind::Corpse
-                | SourceKind::Inbox
-                | SourceKind::CustodyNested { .. } => false,
+                | SourceKind::Inbox => false,
             };
         let occupied = entries.len() - usize::from(already_here);
         if placed && *capacity != 0 && occupied + 1 > *capacity as usize {
@@ -857,7 +862,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
         } else {
             0
         };
-        if added > 0 && *capacity != 0 {
+        if added > 0 && *capacity != 0 && !house_target {
             let tree: i64 =
                 sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
                     .bind(character.as_bytes().as_slice())
@@ -870,7 +875,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     }
 
     // B3-3: a pickup brings the whole stack into the Character.
-    if matches!(
+    if !house_target && matches!(
         source,
         SourceKind::Ground
             | SourceKind::Depot
@@ -883,8 +888,15 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             Err(ItemWeightRefused::Unknown) => return refuse(LoopMoveRefusal::WeightUnknown),
             Err(ItemWeightRefused::DefinitionMismatch) => return refuse(LoopMoveRefusal::Rejected),
         };
+        let subtree_weight = if height > 0 && let (Some(context),Some(item)) = (house,item)
+            && house::path(tx,context,item).await?.is_some() {
+            Some(house::subtree_weight(tx,content,item,world).await?)
+        } else { None };
         let carried = carried_weight(tx, character, world, content).await?;
         let capacity = read_derived_transfer_capacity_centi_oz(tx, character, content).await?;
+        if subtree_weight.is_some_and(|incoming| carried.checked_add(incoming).is_none_or(|total|total>capacity)) {
+            return refuse(LoopMoveRefusal::Overweight);
+        }
         let incoming_item = InventoryItem {
             // A preflight has no durable identity yet. The pure weight planner needs only
             // one unique incoming root; this sentinel is never stored or used as a source.
@@ -929,6 +941,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     depot: Option<DepotMove>,
     quick: Option<quick_loot::MoveContext>,
     search: Option<i16>,
+    house: Option<&super::consume_transform::HouseActionContext>,
 ) -> LoopResult<LoopMoveReceipt> {
     let character = fence.character_id;
     let scope = fence.runtime_scope;
@@ -943,10 +956,14 @@ async fn apply_loop_move<C: ItemLoopContent>(
         RuntimeScopeRefV1::Instance { .. } => {
             assert_recovery_fence(tx, record).await?;
             super::db::lock_admission_relations(tx).await?;
-            if !super::item_transfer::assert_activity_item_content(tx, node, fence, command, digest)
-                .await?
-            {
-                return refuse(LoopMoveRefusal::Rejected);
+            match house {
+                Some(context) if context.fence()==*fence && digest!=[0;32] => {
+                    if !house::current(tx,node,context).await? { return refuse(LoopMoveRefusal::Rejected); }
+                }
+                Some(_) => return refuse(LoopMoveRefusal::Rejected),
+                None => if !super::item_transfer::assert_activity_item_content(tx, node, fence, command, digest).await? {
+                    return refuse(LoopMoveRefusal::Rejected);
+                },
             }
         }
     }
@@ -1026,7 +1043,10 @@ async fn apply_loop_move<C: ItemLoopContent>(
             Some((owner, depth)) if owner == *character.as_bytes() && depth >= 1 => {
                 SourceKind::Nested { parent }
             }
-            _ => return refuse(LoopMoveRefusal::Stale),
+            _ => if let Some(context) = house {
+                if house::path(tx,context,request.item).await?.is_none() { return refuse(LoopMoveRefusal::Stale); }
+                SourceKind::CustodyNested {parent}
+            } else { return refuse(LoopMoveRefusal::Stale); },
         }
     } else if has_ground {
         if ground_kind != Some(scope_kind)
@@ -1099,6 +1119,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 size,
                 destination: &request.destination,
             },
+            house,
         )
         .await?
     };
@@ -1291,6 +1312,9 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
     .execute(&mut **tx)
     .await?;
+    if let Some(context) = house {
+        house::prepare(tx,node,context,transaction_id,content,request).await?;
+    }
     for (index, line) in lines.iter().enumerate() {
         sqlx::query(
             "INSERT INTO game_item_loop_move_lines (transaction_id, line_ordinal, item_instance_id, \
@@ -1541,6 +1565,7 @@ impl DurabilityRoot {
                                 size: 1,
                                 destination,
                             },
+                            None,
                         )
                         .await?;
                         Ok(())
@@ -1572,7 +1597,7 @@ impl DurabilityRoot {
     ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
     {
         self.commit_loop_with_depot(
-            permit, recovery, node, fence, command, content, request, None,
+            permit, recovery, node, fence, command, content, request, None, None,
         )
         .await
     }
@@ -1588,9 +1613,10 @@ impl DurabilityRoot {
         content: &C,
         request: LoopMoveRequest,
         depot: Option<DepotMove>,
+        house: Option<super::consume_transform::HouseActionContext>,
     ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
     {
-        permit.check_scope(fence.runtime_scope)?;
+        if house.is_none() { permit.check_scope(fence.runtime_scope)?; }
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -1604,11 +1630,18 @@ impl DurabilityRoot {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     let attempt: LoopResult<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>> =
                         async {
-                            let intent = match depot {
+                            let intent = if let Some(context) = house.as_ref() {
+                                assert_recovery_fence(&mut tx,&record).await?;
+                                if context.fence()!=fence || !house::current(&mut tx,&node,context).await? {
+                                    return Ok(Err(LoopMoveRefusal::Rejected));
+                                }
+                                serde_json::to_vec(&json!({"character": fence.character_id.as_bytes(),"request":request,"house":context.house().house_key()}))
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?
+                            } else { match depot {
                                 Some(access) => serde_json::to_vec(&json!({"character": fence.character_id.as_bytes(), "request": request, "depot": access}))
                                     .map_err(|_| DurabilityError::InvalidStoredState)?,
                                 None => intent_bytes(fence.character_id, &request)?,
-                            };
+                            }};
                             lock_loop_command(&mut tx, command).await?;
                             if let Some(replay) =
                                 committed_loop_move(&mut tx, command, fence.character_id, &intent)
@@ -1618,7 +1651,7 @@ impl DurabilityRoot {
                             }
                             apply_loop_move(
                                 &mut tx, permit, &record, &node, &fence, command, content,
-                                &request, &intent, depot, None, None,
+                                &request, &intent, depot, None, None, house.as_ref(),
                             )
                             .await
                             .map(Ok)

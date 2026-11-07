@@ -997,6 +997,7 @@ RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
   ('oteryn:item.tibia.i35942','oteryn:item.tibia.i35941'),
   ('oteryn:item.tibia.i35942','oteryn:item.tibia.i35942'),
   ('oteryn:item.tibia.i35949','oteryn:item.tibia.i35969'),
+  ('oteryn:item.tibia.i35951','oteryn:item.tibia.i35971'),
   ('oteryn:item.tibia.i35954','oteryn:item.tibia.i35957'),
   ('oteryn:item.tibia.i35955','oteryn:item.tibia.i35958'),
   ('oteryn:item.tibia.i35956','oteryn:item.tibia.i35961'),
@@ -1009,6 +1010,7 @@ RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
   ('oteryn:item.tibia.i35963','oteryn:item.tibia.i35954'),
   ('oteryn:item.tibia.i35964','oteryn:item.tibia.i35927'),
   ('oteryn:item.tibia.i35969','oteryn:item.tibia.i35949'),
+  ('oteryn:item.tibia.i35971','oteryn:item.tibia.i35951'),
   ('oteryn:item.tibia.i35973','oteryn:item.tibia.i35974'),
   ('oteryn:item.tibia.i35974','oteryn:item.tibia.i35973'),
   ('oteryn:item.tibia.i36496','oteryn:item.tibia.i36496'),
@@ -2002,6 +2004,7 @@ RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
   ('oteryn:item.tibia.i35926','oteryn:item.tibia.i35923'),
   ('oteryn:item.tibia.i35927','oteryn:item.tibia.i35956'),
   ('oteryn:item.tibia.i35949','oteryn:item.tibia.i35969'),
+  ('oteryn:item.tibia.i35951','oteryn:item.tibia.i35971'),
   ('oteryn:item.tibia.i35954','oteryn:item.tibia.i35957'),
   ('oteryn:item.tibia.i35955','oteryn:item.tibia.i35958'),
   ('oteryn:item.tibia.i35956','oteryn:item.tibia.i35961'),
@@ -2014,6 +2017,7 @@ RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
   ('oteryn:item.tibia.i35963','oteryn:item.tibia.i35954'),
   ('oteryn:item.tibia.i35964','oteryn:item.tibia.i35927'),
   ('oteryn:item.tibia.i35969','oteryn:item.tibia.i35949'),
+  ('oteryn:item.tibia.i35971','oteryn:item.tibia.i35951'),
   ('oteryn:item.tibia.i35973','oteryn:item.tibia.i35974'),
   ('oteryn:item.tibia.i35974','oteryn:item.tibia.i35973'),
   ('oteryn:item.tibia.i36626','oteryn:item.tibia.i36627'),
@@ -6261,3 +6265,30 @@ RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
 $$;
 REVOKE ALL ON FUNCTION game_house_bed_kit_pair(TEXT,TEXT,TEXT) FROM PUBLIC,oteryn_game_control;
 GRANT EXECUTE ON FUNCTION game_house_bed_kit_pair(TEXT,TEXT,TEXT) TO oteryn_game_runtime;
+CREATE OR REPLACE FUNCTION game_house_bed_kit_layout(p_kit TEXT)
+RETURNS JSONB LANGUAGE sql IMMUTABLE AS $$
+ SELECT layout FROM (VALUES
+  ('oteryn:item.tibia.i831','{"south":[734,735],"east":[736,737]}'::jsonb),
+  ('oteryn:item.tibia.i832','{"south":[742,743],"east":[744,745]}'::jsonb),
+  ('oteryn:item.tibia.i833','{"south":[738,739],"east":[740,741]}'::jsonb),
+  ('oteryn:item.tibia.i834','{"south":[2487,2488],"east":[2493,2494]}'::jsonb),
+  ('oteryn:item.tibia.i17972','{"south":[17917,17918],"east":[17919,17920]}'::jsonb)
+ ) AS kits(kit,layout) WHERE kit=p_kit
+$$;
+REVOKE ALL ON FUNCTION game_house_bed_kit_layout(TEXT) FROM PUBLIC,oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_house_bed_kit_layout(TEXT) TO oteryn_game_runtime;
+CREATE OR REPLACE FUNCTION game_house_base_decay_spec(p_key TEXT)
+RETURNS JSONB LANGUAGE sql IMMUTABLE AS $$
+ SELECT spec FROM (VALUES
+  ('oteryn:item.tibia.i35949','{"duration_ms":200000,"target":"oteryn:item.tibia.i35950","static_rotation":true}'::jsonb),
+  ('oteryn:item.tibia.i35950','{"duration_ms":1000,"target":"oteryn:item.tibia.i35951","static_rotation":true}'::jsonb),
+  ('oteryn:item.tibia.i35951','{"duration_ms":200000,"target":"oteryn:item.tibia.i35952","static_rotation":true}'::jsonb),
+  ('oteryn:item.tibia.i35952','{"duration_ms":1000,"target":"oteryn:item.tibia.i35949","static_rotation":true}'::jsonb),
+  ('oteryn:item.tibia.i35969','{"duration_ms":200000,"target":"oteryn:item.tibia.i35970","static_rotation":true}'::jsonb),
+  ('oteryn:item.tibia.i35970','{"duration_ms":1000,"target":"oteryn:item.tibia.i35971","static_rotation":true}'::jsonb),
+  ('oteryn:item.tibia.i35971','{"duration_ms":200000,"target":"oteryn:item.tibia.i35972","static_rotation":true}'::jsonb),
+  ('oteryn:item.tibia.i35972','{"duration_ms":1000,"target":"oteryn:item.tibia.i35969","static_rotation":true}'::jsonb)
+ ) AS timings(key,spec) WHERE key=p_key
+$$;
+REVOKE ALL ON FUNCTION game_house_base_decay_spec(TEXT) FROM PUBLIC,oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_house_base_decay_spec(TEXT) TO oteryn_game_runtime;

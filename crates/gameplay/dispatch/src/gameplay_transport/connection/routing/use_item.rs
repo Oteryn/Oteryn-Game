@@ -60,7 +60,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             crate::foundation::RuntimeScopeRefV1::Instance { .. }))
         && let Ok(intent) = &decoded
         && intent.use_with.is_none()
-        && intent.use_with_map_item.is_none()
+        && (intent.use_with_map_item.is_none()
+            || (admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
+                crate::foundation::RuntimeScopeRefV1::Instance { .. }))
+                && matches!(intent.use_with_map_item.as_ref(), Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(_)))))
         && intent.use_with_position.is_none()
         && matches!(
             intent.target,

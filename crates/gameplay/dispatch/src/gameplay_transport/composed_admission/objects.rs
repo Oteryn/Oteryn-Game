@@ -358,6 +358,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.use_soulpit_exit(actor, command, &target).await {
             return outcome;
         }
+        if let Some(outcome) = self
+            .use_house_base_decoration(actor, command, &target)
+            .await
+        {
+            return outcome;
+        }
         if self
             .rooms
             .gate_source_world()

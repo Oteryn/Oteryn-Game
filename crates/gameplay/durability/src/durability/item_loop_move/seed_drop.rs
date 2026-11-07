@@ -86,7 +86,7 @@ impl DurabilityRoot {
                 }
                 // Existing owner proves the exact drop/split, including nested/Ground source
                 // custody and every original deferred move constraint, before this consequence.
-                let receipt=apply_loop_move(&mut tx,permit,&record,&node,&fence,command,content,&request,&intent,None,None,None).await?;
+                let receipt=apply_loop_move(&mut tx,permit,&record,&node,&fence,command,content,&request,&intent,None,None,None,None).await?;
                 let planted=sqlx::query("SELECT to_jsonb(i) AS before_item,to_jsonb(g) AS before_ground,uuid_send(i.item_instance_id) AS item,i.quantity FROM game_item_loop_move_lines l JOIN game_item_instances i USING(item_instance_id) JOIN game_item_ground_locations g USING(item_instance_id) WHERE l.transaction_id=encode($1,'hex')::uuid AND l.to_kind=3 AND g.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.spatial_position=$4 FOR UPDATE OF i")
                     .bind(receipt.transaction_id.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&ground.spatial_position)
                     .fetch_one(&mut **tx).await?;

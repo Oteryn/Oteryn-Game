@@ -194,6 +194,16 @@ impl DurabilityRoot {
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let interval_due = before.last_fired_at_ms.is_none_or(|last|
                         request.now_ms.saturating_sub(last) >= i64::from(window.interval_ms));
+                    // Crystal globalevents_cake_raids.lua:9-29 registers 24
+                    // absolute daily slots: save06:00 + offset4, hourly modulo1440.
+                    // Its config:388-405 requires stage1 at the actual firing.
+                    let interval_due = if candidate.key.as_str() == "oteryn:raid.piece_of_cake" {
+                        let phase = crate::durability::raid_runner::cake::phase_one_in_transaction(
+                            &mut tx, request.world, request.reset_epoch).await?;
+                        clock.minute_of_day % 60 == 4
+                            && before.last_fired_at_ms.is_none_or(|last| last < clock.minute_started_at_ms)
+                            && phase.is_some_and(|progress| progress.phase_one_active())
+                    } else { interval_due };
                     let persistent_fired = !window.repeat && candidate.definition.despawn_after_ms.is_none()
                         && before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch);
                     RaidAction::ResolvedCheck {

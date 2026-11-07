@@ -531,6 +531,20 @@ pub(super) async fn move_loop_item(
     ) {
         return refused(LoopMoveRefusal::Rejected);
     }
+    let named_house = command.item_fence.is_some_and(|fence| {
+        matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        )
+    }) && admission
+        .runtime
+        .lock()
+        .await
+        .house_actor_state(actor, command.game_session_id)
+        .is_ok();
+    if named_house {
+        return house_container::move_item(admission, actor, command, request, &permit).await;
+    }
     if matches!(request.item, ItemKey::MapBase { .. } | ItemKey::MapAdded(_)) {
         let result =
             map_pickup::move_map_item(admission, actor, command, request, &permit, None).await;

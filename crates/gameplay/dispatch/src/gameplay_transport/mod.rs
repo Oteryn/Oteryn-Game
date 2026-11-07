@@ -82,6 +82,7 @@ mod guild_bank;
 mod guild_chat;
 mod guild_war;
 mod highscores;
+mod house_base_decorations;
 mod house_destroy;
 mod house_furnishing;
 mod house_item_use;

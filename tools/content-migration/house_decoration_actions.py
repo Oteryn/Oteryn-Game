@@ -116,6 +116,11 @@ def capture(crystal, canary):
             continue
         scanned.add(item)
         attrs = source.attrs(xml[item])
+        # Crystal items.xml:67147-67173,67218-67244: aqueduct phases can
+        # rotate after decay too. Harvest USE/ROTATE from the entire phase graph.
+        decay_target = int(attrs.get('decayto', '0'))
+        if decay_target > 0:
+            pending.add(decay_target)
         if attrs.get('type') in ('door', 'magicfield', 'teleport'):
             continue
         for name, kind in [('rotateto', 'ROTATE'), ('transformonuse', 'USE')]:
@@ -150,6 +155,18 @@ def capture(crystal, canary):
         ids.update((row['item_id'], *row['south'], *row['east']))
     ids.update((2491, 5501, 15506, 2489, 5499, 15508))
     ids.update(bed_item_ids)
+    # Crystal Items::parseItemNode's decayTo targets remain real Item references;
+    # close the native policy graph rather than admitting only the active variants.
+    pending = list(ids)
+    while pending:
+        item = pending.pop()
+        attrs = source.attrs(xml[item])
+        target = int(attrs.get('decayto', '0'))
+        if target > 0 and target not in ids:
+            if target not in qualified:
+                raise ValueError(f'HOUSE_DECORATION_UNQUALIFIED_DECAY_TARGET:{item}:{target}')
+            ids.add(target)
+            pending.append(target)
     if ids - qualified:
         raise ValueError('HOUSE_RECIPE_UNAVAILABLE_INPUTS:' + str(sorted(ids - qualified)))
     physical = {row['server_item_id']: row for row in source.policies(appearance_raw, xml_raw, ids)}
@@ -217,7 +234,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     generated[manifest_path] = canonical(manifest)
 
 
-def sql_pairs(catalogue):
+def sql_pairs(catalogue, profiles=None):
     base = {(row['item_id'], row['target']) for field in ('windows', 'native_transforms') for row in catalogue[field]}
     pairs = base | {(row['item_id'], row['target']) for field in ('carpets', 'magic_trees') for row in catalogue[field]}
     pairs.update((row['item_id'], row['item_id']) for row in catalogue['carpets'])
@@ -260,6 +277,49 @@ def sql_pairs(catalogue):
              '\n ) AS pairs(kit,source,target) WHERE kit=p_kit AND source=p_source AND target=p_target)\n$$;\n'
              f'REVOKE ALL ON FUNCTION {function}(TEXT,TEXT,TEXT) FROM PUBLIC,oteryn_game_control;\n'
              f'GRANT EXECUTE ON FUNCTION {function}(TEXT,TEXT,TEXT) TO oteryn_game_runtime;\n')
+    rows = ',\n'.join("  ('oteryn:item.tibia.i" + str(row['item_id']) + "','"
+                       + json.dumps({'south': row['south'], 'east': row['east']}, separators=(',', ':'))
+                       + "'::jsonb)" for row in catalogue['bed_kits'])
+    text += ('CREATE OR REPLACE FUNCTION game_house_bed_kit_layout(p_kit TEXT)\n'
+             'RETURNS JSONB LANGUAGE sql IMMUTABLE AS $$\n'
+             ' SELECT layout FROM (VALUES\n' + rows + '\n ) AS kits(kit,layout) WHERE kit=p_kit\n$$;\n'
+             'REVOKE ALL ON FUNCTION game_house_bed_kit_layout(TEXT) FROM PUBLIC,oteryn_game_control;\n'
+             'GRANT EXECUTE ON FUNCTION game_house_bed_kit_layout(TEXT) TO oteryn_game_runtime;\n')
+    if profiles is None:
+        profiles = json.loads((ROOT / PROFILES).read_bytes())
+    timing_by_key = {row['production_definition']['production_key']: row['semantics']['temporal']
+                     for row in profiles['records']}
+    static_rotation = set()
+    for row in catalogue['native_transforms']:
+        keys = {f"oteryn:item.tibia.i{row['item_id']}", f"oteryn:item.tibia.i{row['target']}"}
+        if any(timing_by_key[key]['state'] == 'KNOWN' for key in keys):
+            static_rotation.update(keys)
+    pending = list(static_rotation)
+    while pending:
+        timing = timing_by_key[pending.pop()]
+        if timing['state'] == 'KNOWN' and timing['value']['decay_target']['state'] == 'KNOWN':
+            target = timing['value']['decay_target']['value']['key']
+            if target not in static_rotation:
+                static_rotation.add(target)
+                pending.append(target)
+    temporal = []
+    for row in profiles['records']:
+        timing = row['semantics']['temporal']
+        if timing['state'] != 'KNOWN':
+            continue
+        value = timing['value']
+        duration, target = value['duration'], value['decay_target']
+        if duration['state'] == 'KNOWN' and target['state'] == 'KNOWN':
+            temporal.append((row['production_definition']['production_key'],
+                             {'duration_ms': duration['value'], 'target': target['value']['key'],
+                              'static_rotation': row['production_definition']['production_key'] in static_rotation}))
+    rows = ',\n'.join("  ('" + key + "','" + json.dumps(spec, separators=(',', ':')) + "'::jsonb)"
+                       for key, spec in sorted(temporal))
+    text += ('CREATE OR REPLACE FUNCTION game_house_base_decay_spec(p_key TEXT)\n'
+             'RETURNS JSONB LANGUAGE sql IMMUTABLE AS $$\n'
+             ' SELECT spec FROM (VALUES\n' + rows + '\n ) AS timings(key,spec) WHERE key=p_key\n$$;\n'
+             'REVOKE ALL ON FUNCTION game_house_base_decay_spec(TEXT) FROM PUBLIC,oteryn_game_control;\n'
+             'GRANT EXECUTE ON FUNCTION game_house_base_decay_spec(TEXT) TO oteryn_game_runtime;\n')
     return text.encode()
 
 
@@ -270,7 +330,7 @@ if __name__ == '__main__':
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
     catalogue, profiles = capture(args.crystal, args.canary)
-    for path, raw in ((CATALOGUE, encode(catalogue)), (PROFILES, encode(profiles)), (SQL, sql_pairs(catalogue))):
+    for path, raw in ((CATALOGUE, encode(catalogue)), (PROFILES, encode(profiles)), (SQL, sql_pairs(catalogue, profiles))):
         target = ROOT / path
         if args.check:
             if target.read_bytes() != raw:

@@ -731,6 +731,40 @@ mod tests {
         seasonal.tick(&mut runtime).expect("source placements");
         seasonal.tick(&mut runtime).expect("idempotent retry");
         assert_eq!(runtime.visible_entities().npcs.len(), 15);
+        let evidence: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/reference/content-prep/season-20261107/seasonal-calendar-source.json"
+        )))
+        .expect("retained structured placement evidence");
+        let santa_source = evidence["records"]
+            .as_array()
+            .expect("source records")
+            .iter()
+            .find(|record| record["title"] == "Santa Claus")
+            .expect("pinned Santa source");
+        let expected: BTreeSet<_> = santa_source["placements"]
+            .as_array()
+            .expect("source placements")
+            .iter()
+            .map(|row| {
+                (
+                    i32::try_from(row["x"].as_i64().expect("source x")).expect("coordinate"),
+                    i32::try_from(row["y"].as_i64().expect("source y")).expect("coordinate"),
+                    i16::try_from(row["z"].as_i64().expect("source floor")).expect("floor"),
+                )
+            })
+            .collect();
+        let actual: BTreeSet<_> = runtime
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .map(|npc| (npc.position.x, npc.position.y, npc.position.floor))
+            .collect();
+        assert_eq!(
+            actual, expected,
+            "all native actors must use retained source coordinates"
+        );
+
         // The normal NPC movement owner may move Santa off the source cell;
         // reconciliation must retain the exact live actor rather than clone it.
         let santa = runtime.visible_entities().npcs[0].actor;

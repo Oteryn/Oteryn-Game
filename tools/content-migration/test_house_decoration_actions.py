@@ -50,6 +50,9 @@ class HouseDecorationActions(unittest.TestCase):
         self.assertIn(b"('oteryn:item.tibia.i831','oteryn:item.tibia.i2491','oteryn:item.tibia.i734')", pairs)
         self.assertIn(b"('oteryn:item.tibia.i831','oteryn:item.tibia.i2492','oteryn:item.tibia.i735')", pairs)
         self.assertNotIn(b"('oteryn:item.tibia.i832','oteryn:item.tibia.i2491','oteryn:item.tibia.i734')", pairs)
+        rotations = {(row['item_id'], row['target']) for row in catalogue['native_transforms'] if row['kind'] == 'ROTATE'}
+        self.assertTrue({(35949,35969),(35969,35949),(35951,35971),(35971,35951)} <= rotations,
+                        'both aqueduct steady phases retain their source rotations after decay')
         self.assertTrue(encode(catalogue).endswith(b'\n'))
 
     def test_admission_preserves_existing_specialized_facts_and_adds_closed_sources(self):
@@ -83,6 +86,16 @@ class HouseDecorationActions(unittest.TestCase):
             self.assertIn('Ground', profile['admission']['legal_destinations'])
             self.assertIsInstance(profile['attributes']['always_on_top'], bool)
             self.assertIn(profile['attributes']['always_on_top_order'], (0, 1, 2, 3))
+
+    def test_native_decoration_temporal_targets_are_closed(self):
+        profiles = {row['production_definition']['production_key']: row for row in json.loads(
+            (ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())['records']}
+        for source, target in ((35949, 35950), (35969, 35970)):
+            row = profiles[f'oteryn:item.tibia.i{source}']
+            temporal = row['semantics']['temporal']['value']
+            self.assertEqual(temporal['decay_target']['value']['key'], f'oteryn:item.tibia.i{target}')
+            self.assertTrue(f'oteryn:item.tibia.i{target}' in profiles,
+                            f'native decay target {target} must be admitted')
 
     def test_srx_updates_keep_source_top_order_after_specialized_overrides(self):
         facts = json.loads((ROOT / PROFILES).read_bytes())['always_on_top']

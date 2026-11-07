@@ -62,6 +62,13 @@ impl State {
             self.stash_rows = None;
             return routing::house_podium::route(authority, admitted, command).await;
         }
+        // W18 rotation has its own capability445 and current named-House owner,
+        // independently of the hireling service. The registered route retains
+        // command selection, exact DTO decoding and the owner generation fence.
+        if command.command_type == oteryn_protocol_oteryn::house_rotation::COMMAND {
+            self.stash_rows = None;
+            return routing::house_rotation::route(authority, admitted, command).await;
+        }
         // Ordinary item USE and container views keep their existing capability gates
         // in a House without requiring the independent hireling mechanic.
         if !self.enabled

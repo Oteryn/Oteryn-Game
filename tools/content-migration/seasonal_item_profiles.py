@@ -1,4 +1,4 @@
-"""Admit Santa's existing canonical present and snowball through normal Item policies.
+"""Admit existing seasonal reward/corpse identities through normal Item policies.
 
 Crystal santa_claus.lua:111-119 creates container6510 and includes snowball2992.
 No identity, reward probability or seasonal entitlement is invented here.
@@ -20,8 +20,9 @@ from build_spell_item_identities import BINDINGS, bind_profiles, binding_index
 PATH = 'tools/content-schema/native-gameplay/seasonal-item-profiles.json'
 PIN = '201189f871d23597b82caf88fd611454a2ddefb8'
 CANARY = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
-IDS = {6510, 2992}
+IDS = {6510, 2992, 12141, 2886, 2887}
 SANTA = 'data-global/npc/santa_claus.lua'
+CAKE = 'data-global/monster/quests/a_piece_of_cake/cake_golem.lua'
 
 
 def encode(document):
@@ -38,6 +39,12 @@ def capture(crystal, canary):
     santa_raw = (crystal / SANTA).read_bytes()
     if 'Player(creature):addItem(6510)' not in santa_raw.decode() or 'reward[i] == 2992' not in santa_raw.decode():
         raise ValueError('SEASONAL_GIFT_SOURCE_DRIFT')
+    cake_raw = (crystal / CAKE).read_bytes()
+    if (hashlib.sha1(b'blob ' + str(len(cake_raw)).encode() + b'\0' + cake_raw).hexdigest()
+            != 'd95b96f4ed3c5e47d9219a3112c6065ea5de1e2d'
+            or 'monster.corpse = 12141' not in cake_raw.decode()
+            or 'monster.race = "venom"' not in cake_raw.decode()):
+        raise ValueError('SEASONAL_CAKE_ITEM_SOURCE_DRIFT')
     xml = source.xml_index(xml_raw)
     appearances = source.engine_items.load_appearance_objects(appearance_raw)
     physical = {row['server_item_id']: row for row in source.policies(appearance_raw, xml_raw, IDS)}
@@ -52,8 +59,10 @@ def capture(crystal, canary):
                         for name, revision, path, raw in (
                             ('crystal', PIN, 'data/items/items.xml', xml_raw),
                             ('canary', CANARY, 'data/items/appearances.dat', appearance_raw),
-                            ('crystal', PIN, SANTA, santa_raw))],
-            'producer': SANTA + ':111-119', 'records': bound['records']}
+                            ('crystal', PIN, SANTA, santa_raw),
+                            ('crystal', PIN, CAKE, cake_raw))],
+            'producer': SANTA + ':111-119',
+            'cake_producer': CAKE + ':25-26', 'records': bound['records']}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):

@@ -1,6 +1,5 @@
-//! The existing carried-container reader projected under a current named-House actor.
-//! Command 21 and container USE keep the shared view/handle owner; this child grants no
-//! Channel Ground or HouseInterior container custody through a carried observation.
+//! Named-House containers retain the existing container handles and nested item owner.
+//! A carried read grants no House custody; current House roots have their own fenced read.
 use super::super::ComposedFreshAdmission;
 use super::super::container_view::ContainerObservation;
 use super::super::item_ref_admission::{definition_ref, generation_item_facts, pinned_index};
@@ -49,13 +48,26 @@ pub(super) async fn observe(
     {
         return Some(ContainerObservation::Gone);
     }
-    // The item owner already proves the bounded same-Character carried graph.
-    // A missing carried container must never fall through to a Channel Ground read.
-    let read = admission
+    // Preserve carried custody; only the actual same-House owner may supply a
+    // separate bounded House graph. Neither path falls through to Channel Ground.
+    let carried = admission
         .root
         .read_item_loop_container(admission.character, fence.character_id, container)
         .await
         .ok()?;
+    let read = match carried {
+        Some(read) => Some(read),
+        None => admission
+            .root
+            .read_house_item_loop_container(
+                admission.character,
+                admission.holder,
+                &context,
+                container,
+            )
+            .await
+            .ok()?,
+    };
     let Some(read) = read else {
         return Some(ContainerObservation::Gone);
     };
@@ -69,8 +81,8 @@ pub(super) async fn observe(
     }
     {
         let runtime = admission.runtime.lock().await;
-        if HouseActionContext::from_native_owner(&runtime, actor, fence.game_session_id, fence)
-            .is_err()
+        if !HouseActionContext::from_native_owner(&runtime, actor, fence.game_session_id, fence)
+            .is_ok_and(|current| current.position() == context.position())
             || pinned_index(&runtime, admission.active_generation).is_none()
         {
             return Some(ContainerObservation::Gone);
@@ -85,6 +97,9 @@ pub(super) async fn observe(
     let Some(capacity) = capacity else {
         return Some(ContainerObservation::NotAContainer);
     };
+    if read.entries.len() > usize::from(capacity) {
+        return Some(ContainerObservation::Gone);
+    }
     let entries = read
         .entries
         .iter()
@@ -107,4 +122,85 @@ pub(super) async fn observe(
         capacity,
         entries,
     })
+}
+
+pub(super) async fn move_item(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: super::super::connection::UseCommand,
+    request: super::super::item_move::LoopMove,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+) -> super::super::item_move::LoopMoveResult {
+    use super::super::item_move::{LoopMoveRefusal, LoopMoveResult, LoopTarget};
+    use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
+    let refused = LoopMoveResult::Refused;
+    let Some(fence) = command.item_fence else {
+        return refused(LoopMoveRefusal::Rejected);
+    };
+    let ItemKey::Instance(item) = request.item else {
+        return refused(LoopMoveRefusal::NotSupported);
+    };
+    let (context, native) = {
+        let runtime = admission.runtime.lock().await;
+        let states = admission.states.spell_states.lock().await;
+        if !runtime
+            .house_player_control_facts(actor, command.game_session_id)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return refused(LoopMoveRefusal::Rejected);
+        }
+        let Some(native) = super::super::equipment_move::native_for_move(
+            &runtime,
+            admission.active_generation,
+            states.is_dead(actor),
+            states.has_pending_spell_commit(actor, command.game_session_id),
+        ) else {
+            return refused(LoopMoveRefusal::Rejected);
+        };
+        let Ok(context) =
+            HouseActionContext::from_native_owner(&runtime, actor, command.game_session_id, fence)
+        else {
+            return refused(LoopMoveRefusal::Rejected);
+        };
+        (context, native)
+    };
+    let destination = match request.target {
+        LoopTarget::MainBackpack => LoopDestination::MainBackpack,
+        LoopTarget::Container(ItemKey::Instance(parent)) => LoopDestination::Container(parent),
+        _ => return refused(LoopMoveRefusal::NotSupported),
+    };
+    let Ok(id) = crate::foundation::CommandId::new(command.command_id) else {
+        return refused(LoopMoveRefusal::Rejected);
+    };
+    let result = admission
+        .root
+        .commit_house_item_loop_move(
+            permit,
+            admission.character,
+            admission.holder,
+            &context,
+            crate::foundation::CommandRef::new(command.game_session_id, id),
+            &super::super::item_ref_admission::NativeItemWeights(native)
+                .with_wheel(admission.premium_coordinator),
+            LoopMoveRequest {
+                item,
+                count: request.count,
+                pickup_cell: None,
+                destination,
+            },
+        )
+        .await;
+    if matches!(result, Ok(Ok(_))) {
+        admission
+            .states
+            .attack
+            .lock()
+            .await
+            .forget_weapon(actor, command.game_session_id);
+    }
+    match result {
+        Ok(Ok(_)) => LoopMoveResult::Committed,
+        Ok(Err(error)) => refused(error),
+        Err(_) => LoopMoveResult::Unknown,
+    }
 }

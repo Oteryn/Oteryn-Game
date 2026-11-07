@@ -809,3 +809,22 @@ closed over House capability 49. Two UI tests pass (9.184 s build/run), the actu
 native client command/decode test passes (40.226 s), and the advertisement/route
 test passes (20.506 s). These complete this client component; server decoration,
 container, expiry and source-profile integration remain in progress.
+
+### W18 compiling durable integration checkpoint
+
+The durable House decoration/static-base/container owners, normal native source
+closure, explicit rotation server route, and their focused PostgreSQL fixtures
+are integrated as WIP. Shared consume/transform plumbing also carries the W05d
+Baker prerequisites; seasonal completion is not claimed by this checkpoint.
+The full focused dispatch test binary compiles. Actual PostgreSQL cases now pass
+for nested container moves/replay/owner fences and mixed-subject exit/disposition
+(45.514 s), bathtub (45.471 s), conflicting carpet refusal (45.572 s), fish tank
+(47.594 s), magic tree (45.329 s), music (45.342 s), and mirror cooldown/replay
+(45.367 s). These are real production-caller cases, not schema-only smoke tests.
+
+Exact red points remain: map-target bed-kit USE routing; native rotation through
+the House service command gate; timed aqueduct rotation refuses NotPossible
+before the new timer owner is installed; static fixture reach/reset setup.
+Auto-carpet neighbor occurrences, authored base-container materialization,
+source25-slot container negotiation, complete tree-preserving disposition and
+remaining seasonal stages are still being completed. No row is marked DONE.

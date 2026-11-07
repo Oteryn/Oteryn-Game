@@ -35,6 +35,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+mod cake;
 mod classic_quests;
 mod coin_exchange;
 mod dark_trails;
@@ -751,6 +752,11 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
         )
         .await;
+    }
+    if let Some(step) = cake::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return cake::apply(admission, actor, command, intent, step).await;
     }
     if let Some(context) = seasonal::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

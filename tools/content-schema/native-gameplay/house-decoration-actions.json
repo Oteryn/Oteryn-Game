@@ -5636,6 +5636,12 @@
       "donor": "data/items/items.xml:67147"
     },
     {
+      "item_id": 35951,
+      "kind": "ROTATE",
+      "target": 35971,
+      "donor": "data/items/items.xml:67161"
+    },
+    {
       "item_id": 35954,
       "kind": "ROTATE",
       "target": 35957,
@@ -5706,6 +5712,12 @@
       "kind": "ROTATE",
       "target": 35949,
       "donor": "data/items/items.xml:67218"
+    },
+    {
+      "item_id": 35971,
+      "kind": "ROTATE",
+      "target": 35951,
+      "donor": "data/items/items.xml:67232"
     },
     {
       "item_id": 35973,

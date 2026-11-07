@@ -42,6 +42,10 @@ const MAP_OFFERS: &[OfferedCapability] = &[
         requires: &[],
     },
     OfferedCapability {
+        id: 11,
+        requires: &[15, 18],
+    },
+    OfferedCapability {
         id: 12,
         requires: &[4],
     },
@@ -64,6 +68,10 @@ const MAP_OFFERS: &[OfferedCapability] = &[
     OfferedCapability {
         id: 86,
         requires: &[],
+    },
+    OfferedCapability {
+        id: 445,
+        requires: &[49],
     },
 ];
 
@@ -107,6 +115,14 @@ enum Case {
     Carried,
     Nested,
     Foreign,
+    Decoration(u32, u32),
+    StaticWindow,
+    StaticAqueduct,
+    TimedRotation,
+    BedKit(u32),
+    NativeNoop(u32),
+    Container,
+    CarpetTile { other: u32, removed: bool },
 }
 
 #[test]
@@ -126,6 +142,82 @@ fn w19_house_balloon_outside_house_and_changed_character_custody_refuse() -> Tes
     run_case(Case::Foreign)
 }
 
+#[test]
+fn w18_house_static_windows_preserve_current_house_fence() -> TestResult {
+    run_case(Case::StaticWindow)
+}
+#[test]
+fn w18_house_container_opens_nested_moves_replay_and_fences_actual_owner() -> TestResult {
+    run_case(Case::Container)
+}
+
+#[test]
+fn w18_house_native_chair_rotates_through_existing_item_owner() -> TestResult {
+    run_case(Case::Decoration(2358, 2359))
+}
+#[test]
+fn w18_house_native_cupboard_rotation_keeps_instance_and_capacity() -> TestResult {
+    run_case(Case::Decoration(34278, 34276))
+}
+#[test]
+fn w18_house_unavailable_native_target_returns_original_furniture_26099() -> TestResult {
+    run_case(Case::NativeNoop(26099))
+}
+
+#[test]
+fn w18_house_unavailable_native_target_returns_original_cupboard() -> TestResult {
+    run_case(Case::NativeNoop(34276))
+}
+#[test]
+fn w18_house_unavailable_native_target_returns_original_zao_cabinet() -> TestResult {
+    run_case(Case::NativeNoop(37782))
+}
+
+#[test]
+fn w18_house_conflicting_carpet_refuses_without_receipt_or_source_mutation() -> TestResult {
+    run_case(Case::CarpetTile {
+        other: 23431,
+        removed: false,
+    })
+}
+#[test]
+fn w18_house_auto_carpet_top_retires_only_clicked_carpet_and_replays() -> TestResult {
+    run_case(Case::CarpetTile {
+        other: 5302,
+        removed: true,
+    })
+}
+
+#[test]
+fn w18_house_carpet_uses_source_pair_and_replays_without_second_fold() -> TestResult {
+    run_case(Case::Decoration(22736, 22737))
+}
+#[test]
+fn w18_house_empty_bathtub_drains_under_native_occupancy_owner() -> TestResult {
+    run_case(Case::Decoration(26077, 26076))
+}
+#[test]
+fn w18_house_music_advances_existing_achievement_without_mutating_instrument() -> TestResult {
+    run_case(Case::Decoration(2959, 2959))
+}
+#[test]
+fn w18_house_fish_tank_retains_exact_plunging_fish_effect() -> TestResult {
+    run_case(Case::Decoration(23691, 23691))
+}
+#[test]
+fn w18_house_birdcage_audits_source_outcome_without_minting() -> TestResult {
+    run_case(Case::Decoration(2976, 0))
+}
+
+#[test]
+fn w18_house_mirror_cooldown_is_durable_and_replay_is_read_only() -> TestResult {
+    run_case(Case::Decoration(2603, 2603))
+}
+#[test]
+fn w18_house_magic_tree_transforms_once_under_current_house_custody() -> TestResult {
+    run_case(Case::Decoration(26189, 26193))
+}
+
 fn run_case(case: Case) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         eprintln!("W19 POSTGRES_CASE_COMPLETED status=SKIPPED no_admin_url");
@@ -135,10 +227,12 @@ fn run_case(case: Case) -> TestResult {
         .stack_size(256 << 20)
         .spawn(move || {
             run(async |admin| {
+                let started = std::time::Instant::now();
                 let h = Harness::create_with_admission_seed(admin, "house_balloon", true, false)
                     .await?;
                 let result = scenario(&h, case).await;
                 h.cleanup().await?;
+                eprintln!("W18_PG_CASE {case:?} elapsed={:?}", started.elapsed());
                 result
             })
             .map_err(|error| error.to_string())
@@ -148,9 +242,31 @@ fn run_case(case: Case) -> TestResult {
     Ok(())
 }
 
+#[test]
+fn w18_house_timed_rotation_resets_timer_and_catches_up_all_phases() -> TestResult {
+    run_case(Case::TimedRotation)
+}
+
+#[test]
+fn w18_house_static_aqueduct_rotates_and_decays() -> TestResult {
+    run_case(Case::StaticAqueduct)
+}
+#[test]
+fn w18_house_bed_kit_replaces_both_tiles_and_replays() -> TestResult {
+    run_case(Case::BedKit(831))
+}
+
+#[path = "house_balloon/container.rs"]
+mod container;
+#[path = "house_balloon/decorations.rs"]
+mod decorations;
+#[path = "house_balloon/rotation.rs"]
+mod rotation;
 #[path = "house_balloon/scenario.rs"]
 mod scenario;
+#[path = "house_balloon/timed.rs"]
+mod timed;
 #[path = "house_balloon/wire.rs"]
-mod wire;
+pub(super) mod wire;
 use scenario::scenario;
 use wire::{HouseExchange, exchange};

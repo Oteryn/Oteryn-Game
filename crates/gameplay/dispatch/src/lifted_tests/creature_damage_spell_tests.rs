@@ -227,7 +227,11 @@ fn setup_named_at(
         .expect("qualified fixture");
     let (records, profiles) = if matches!(
         name,
-        "radiant_acolyte" | "radiant_paragon" | "radiant_templar" | "phosphorus_final"
+        "radiant_acolyte"
+            | "radiant_paragon"
+            | "radiant_templar"
+            | "phosphorus_final"
+            | "cake_golem"
     ) {
         let document: crate::content::native_gameplay::CreatureProfilesDocument =
             serde_json::from_slice(include_bytes!(concat!(
@@ -1973,6 +1977,17 @@ fn qualify_current_spell_replay(name: &str, index: usize) {
         ),
         Err(AttackError::StaleOwner)
     );
+}
+
+#[test]
+fn w05d_native_cake_poisoned_cake_uses_undefined_hp_and_current_owner_replay() {
+    // Crystal cake_golem.lua:79 omits the type: monsters.hpp:244 defaults
+    // Undefined. Its poison appearance does not convert the HP family to Earth.
+    let (_, _, source, _, _, _, _) = setup_named("cake_golem", 1);
+    assert_eq!(source.element(), Some("undefined"));
+    assert_eq!((source.minimum, source.maximum, source.range), (0, 40, 7));
+    assert!(!source.armor);
+    qualify_current_spell_replay("cake_golem", 1);
 }
 
 #[test]

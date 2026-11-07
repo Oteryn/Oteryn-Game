@@ -923,6 +923,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             command.item_fence.map(|fence| fence.runtime_scope),
             Some(crate::foundation::RuntimeScopeRefV1::Instance { .. })
         ) {
+            // The House bed-kit bridge also accepts a map target. Other named
+            // Instances keep their existing map-item handlers and authority.
+            if intent.use_with_map_item.is_some()
+                && self
+                    .runtime
+                    .lock()
+                    .await
+                    .house_actor_state(actor, command.game_session_id)
+                    .is_err()
+            {
+                return Ok(None);
+            }
             return self
                 .use_house_event_item(actor, command, &intent, source)
                 .await;

@@ -70,6 +70,24 @@ fn w05d_christmas_real_npc_present_replay_and_permanent_claim() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn w05d_cake_real_baker_burns_only_remaining_goal_and_replays() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(2, Some("A Piece of Cake")).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Cake native NPC thread panicked")??;
+    eprintln!(
+        "W05D_CAKE_BAKER_PG_EXECUTED elapsed_ms={}",
+        started.elapsed().as_millis()
+    );
+    Ok(())
+}
+
 fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
     run(async move |admin| {
         reset();
@@ -78,7 +96,10 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
         if seasonal.is_some() {
             // Fixture clock set before the real reset writer creates its epoch;
             // admission, publication and mutation guards remain enabled.
-            if seasonal == Some("Christmas") {
+            if seasonal == Some("A Piece of Cake") {
+                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2030-02-21 06:00 Europe/Berlin'; RETURN NEW; END $$")
+                    .execute(&h.pool).await?;
+            } else if seasonal == Some("Christmas") {
                 sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2030-12-12 06:00 Europe/Berlin'; RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             } else {
@@ -192,6 +213,9 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
             .map_err(debug)?;
         if seasonal == Some("Christmas") {
             santa_present_scenario(&h, &owner, actor, admitted.game_session_id, item_fence).await?;
+        }
+        if seasonal == Some("A Piece of Cake") {
+            cake_baker_scenario(&h, &owner, actor, admitted.game_session_id, item_fence).await?;
         }
         let offered = owner.offered_capabilities();
         assert!(
@@ -561,7 +585,64 @@ async fn santa_present_scenario(
             .disposition,
         NpcIntentDisposition::Ok
     );
-    let gift = owner.npc_talk(actor, command(101), intent("present")).await;
+    // Constrain only the fixture input, using the real deterministic decision
+    // domain: both source branches must be exercised for every content digest.
+    // The production NPC caller still performs its own original draws.
+    let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+        owner
+            .runtime
+            .lock()
+            .await
+            .content_pin()
+            .server_artifact_digest(),
+    );
+    let mut normal_command = None;
+    let mut empty_command = None;
+    for candidate in 101_u64..10_101 {
+        use sha2::{Digest, Sha256};
+        let mut hash = Sha256::new();
+        hash.update(b"oteryn:santa-present:v1");
+        hash.update(session.as_bytes());
+        hash.update(candidate.to_be_bytes());
+        hash.update(fence.character_id.as_bytes());
+        let occurrence = oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(
+            hash.finalize()[..16].try_into().map_err(debug)?,
+        );
+        let value = oteryn_simulation_determinism::deterministic_decision_u64(
+            &root,
+            occurrence,
+            "santa.present.chance",
+            0,
+        )
+        .map_err(debug)?;
+        if value >= u64::MAX - u64::MAX % 100 {
+            continue;
+        }
+        if value % 100 < 90 {
+            normal_command.get_or_insert(candidate);
+        } else {
+            empty_command.get_or_insert(candidate);
+        }
+        if normal_command.is_some() && empty_command.is_some() {
+            break;
+        }
+    }
+    let normal_command = normal_command.ok_or("fixture normal source branch")?;
+    let empty_command = empty_command.ok_or("fixture failed source branch")?;
+    let failed = owner
+        .npc_talk(actor, command(empty_command), intent("present"))
+        .await;
+    assert!(!failed.inventory_changed);
+    assert_eq!(failed.disposition, NpcIntentDisposition::Rejected);
+    let failed_counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE claim_production_key='oteryn:reward-claim.santa-claus-present'),(SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i6510'),(SELECT count(*) FROM game_reward_claim_mint_receipts)").fetch_one(&h.pool).await?;
+    assert_eq!(
+        failed_counts,
+        (0, 0, 0),
+        "the failed script mints no partial bag and sets no permanent flag"
+    );
+    let gift = owner
+        .npc_talk(actor, command(normal_command), intent("present"))
+        .await;
     assert!(gift.inventory_changed, "native gift must reach MINT");
     assert_eq!(
         gift.conversation.as_ref().ok_or("gift conversation")?.lines,
@@ -569,9 +650,20 @@ async fn santa_present_scenario(
     );
     let counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE claim_production_key='oteryn:reward-claim.santa-claus-present'),(SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i6510'),(SELECT count(*) FROM game_reward_claim_mint_receipts)").fetch_one(&h.pool).await?;
     assert_eq!(counts, (1, 1, 1));
-    let replay = owner.npc_talk(actor, command(101), intent("present")).await;
+    let replay = owner
+        .npc_talk(actor, command(normal_command), intent("present"))
+        .await;
     assert!(replay.inventory_changed);
-    let repeated = owner.npc_talk(actor, command(102), intent("present")).await;
+    // Four real talk intents exhausted this source window. Advance only the
+    // fixture's existing monotonic Channel clock before the next real intent.
+    let mut later = (*owner).clone();
+    later.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("fixture monotonic clock")?;
+    let repeated = later
+        .npc_talk(actor, command(20_000), intent("present"))
+        .await;
     assert!(!repeated.inventory_changed);
     assert_eq!(
         repeated
@@ -583,5 +675,133 @@ async fn santa_present_scenario(
     );
     let after: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE claim_production_key='oteryn:reward-claim.santa-claus-present'),(SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i6510'),(SELECT count(*) FROM game_reward_claim_mint_receipts)").fetch_one(&h.pool).await?;
     assert_eq!(after, counts);
+    Ok(())
+}
+
+async fn cake_baker_scenario(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> TestResult {
+    use crate::foundation::{MovementFacing, NpcPlacement};
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::npc_talk::{NpcTalkBook, NpcTalkEntry};
+    use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+    let book = NpcTalkBook::default().with(
+        "oteryn:npc.biff_the_baker",
+        NpcTalkEntry::new("Biff The Baker", Some("Hello!")),
+    );
+    owner
+        .states
+        .chat
+        .install_npc_talk(std::sync::Arc::new(book));
+    owner
+        .states
+        .chat
+        .admit(session, "Fixture Hero", owner.owner_now());
+    owner.states.chat.set_npc_service(session);
+    let npc_actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let position = runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
+        let npc = runtime
+            .place_dynamic_npc(
+                "oteryn:npc.biff_the_baker",
+                NpcPlacement {
+                    x: u16::try_from(position.x + 1)?,
+                    y: u16::try_from(position.y)?,
+                    floor: -i8::try_from(position.floor)?,
+                    direction: MovementFacing::South,
+                },
+            )
+            .map_err(debug)?;
+        let npc = runtime
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .find(|visible| visible.actor == npc)
+            .ok_or("Biff native actor")?;
+        EntityRef {
+            identity: npc.actor.placement_identity(),
+            generation: npc.generation,
+        }
+    };
+    super::item_look::seed_main_backpack(
+        h,
+        &[
+            ("oteryn:item.tibia.i12143", 100),
+            ("oteryn:item.tibia.i12143", 100),
+            ("oteryn:item.tibia.i12143", 100),
+        ],
+    )
+    .await?;
+    let command = |command_id| UseCommand {
+        game_session_id: session,
+        command_id,
+        item_fence: Some(fence),
+    };
+    let intent = |text: &str| NpcTalkIntent {
+        npc_actor,
+        text: text.into(),
+    };
+    assert_eq!(
+        owner
+            .npc_talk(actor, command(100), intent("hi"))
+            .await
+            .disposition,
+        NpcIntentDisposition::Ok
+    );
+    let delivered = owner.npc_talk(actor, command(101), intent("deliver")).await;
+    assert!(
+        delivered.inventory_changed,
+        "native Baker topic must reach the physical burn owner"
+    );
+    assert_eq!(
+        delivered
+            .conversation
+            .as_ref()
+            .ok_or("Baker delivery conversation")?
+            .lines,
+        ["Wonderful, thank you! You delivered 200 substance(s). (200/200 total delivered)"]
+    );
+    let progress = owner
+        .root
+        .cake_world_progress(owner.world_id, owner.reset_epoch)
+        .await?
+        .ok_or("committed Cake occurrence")?;
+    assert_eq!((progress.substances, progress.golems), (200, 0));
+    let remaining:i64=sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i12143' AND lifecycle=1").fetch_one(&h.pool).await?;
+    assert_eq!(remaining, 100);
+    let replay = owner.npc_talk(actor, command(101), intent("deliver")).await;
+    assert!(replay.inventory_changed);
+    assert_eq!(
+        replay
+            .conversation
+            .as_ref()
+            .ok_or("Baker replay conversation")?
+            .lines,
+        delivered
+            .conversation
+            .as_ref()
+            .ok_or("delivery reply")?
+            .lines
+    );
+    let goal = owner.npc_talk(actor, command(102), intent("deliver")).await;
+    assert!(!goal.inventory_changed);
+    assert_eq!(
+        goal.conversation
+            .as_ref()
+            .ok_or("Baker goal conversation")?
+            .lines,
+        ["We already have all the substances we need, thank you though!"]
+    );
+    let after:i64=sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i12143' AND lifecycle=1").fetch_one(&h.pool).await?;
+    let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:cake.baker-substances'").fetch_one(&h.pool).await?;
+    assert_eq!((after, receipts), (remaining, 1));
     Ok(())
 }
