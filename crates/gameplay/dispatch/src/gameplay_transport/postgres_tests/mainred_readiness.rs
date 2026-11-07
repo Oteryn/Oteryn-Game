@@ -1,5 +1,6 @@
 //! Physical holder contention/retirement at the real projection and progression callers.
-use super::fixture::{Harness, debug, join_two, run};
+use super::fixture::{Harness, debug, join_two};
+use super::kill_reward_e2e::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::character_progression_binding::{
