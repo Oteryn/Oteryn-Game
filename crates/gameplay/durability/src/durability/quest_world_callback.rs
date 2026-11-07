@@ -453,8 +453,8 @@ async fn apply_input(
     apply_input_rows(tx, input, transaction).await
 }
 
-// Both entry points retain their existing closed authority: the spell lane
-// above, or consume_npc_inputs' unforgeable NpcItemPermit. Share only the rows.
+/// Applies the row changes of one consumed input once the caller has proven
+/// its authority (spell lane channel check or the NPC item permit).
 async fn apply_input_rows(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     input: &Input,

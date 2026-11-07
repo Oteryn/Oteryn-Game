@@ -10,7 +10,10 @@ pub(super) async fn fresh_after_reset(
     successor: [u8; 16],
     generation: u64,
     previous_lease: u64,
-) -> TestResult<GameSessionId> {
+) -> TestResult<(
+    GameSessionId,
+    crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1,
+)> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::foundation::admission_authority_publication::{
         AdmissionAuthorityGuardKeyV1 as Key, AdmissionAuthorityGuardStateV1 as State,
@@ -104,5 +107,5 @@ pub(super) async fn fresh_after_reset(
             .generation(),
         previous_lease + 1
     );
-    Ok(next_session)
+    Ok((next_session, next.operation().clone()))
 }

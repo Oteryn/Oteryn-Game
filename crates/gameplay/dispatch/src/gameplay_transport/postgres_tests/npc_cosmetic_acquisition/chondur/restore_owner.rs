@@ -49,6 +49,7 @@ pub(super) async fn attach(
     previous: AdmittedSession,
     session: crate::foundation::GameSessionId,
     account: [u8; 16],
+    operation: &crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1,
 ) -> TestResult<AdmittedSession> {
     let current = FreshAdmissionStore::from_root(h.root.clone())
         .current_session(session)
@@ -92,6 +93,23 @@ pub(super) async fn attach(
         }),
         ..previous
     };
+    // Same legitimate admission step as production first_entry.rs; the owner
+    // independently verifies this exact operation's committed receipt/fence.
+    let native = owner
+        .active_generation
+        .and_then(crate::content::ActiveGeneration::native_gameplay)
+        .ok_or("actual native admission equipment source")?;
+    owner
+        .root
+        .initialize_admission_equipment(
+            owner.character,
+            owner.holder,
+            &item_fence,
+            native.source_digest(),
+            operation,
+        )
+        .await
+        .map_err(debug)?;
     owner.admit_progression_session(&mut admitted).await;
     let fence = owner
         .current_quest_fence(session)

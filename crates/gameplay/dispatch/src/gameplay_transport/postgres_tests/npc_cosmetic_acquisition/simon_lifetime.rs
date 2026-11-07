@@ -209,7 +209,14 @@ pub(super) async fn exercise(
     );
     super::super::item_forge::support::seed_items(h, &[(94, "oteryn:item.tibia.i5883", 100, 0)])
         .await?;
-    talk(owner, admitted, simon, command, &["hi", "ape fur", "yes"]).await?;
+    talk(
+        owner,
+        admitted,
+        simon,
+        command,
+        &["hi", "100 ape fur", "yes"],
+    )
+    .await?;
     command += 3;
     assert_eq!(
         stage(h).await?,
@@ -223,13 +230,31 @@ pub(super) async fn exercise(
     );
     super::super::item_forge::support::seed_items(h, &[(95, "oteryn:item.tibia.i3043", 2, 0)])
         .await?;
-    talk(owner, admitted, simon, command, &["hi", "ape fur", "yes"]).await?;
+    talk(
+        owner,
+        admitted,
+        simon,
+        command,
+        &["hi", "100 ape fur", "yes"],
+    )
+    .await?;
     assert_eq!(
         stage(h).await?,
         8,
         "actual paid Simon source must commit fur and cash/bank child atomically"
     );
-    let paid:i64=sqlx::query_scalar("SELECT count(*) FROM game_npc_cosmetic_receipts WHERE character_id=encode($1,'hex')::uuid AND source_key=ANY($2::text[])").bind(id(41).as_slice()).bind(vec!["oteryn:npc-cosmetic/simon_the_beggar/beggar-fur-pay-male","oteryn:npc-cosmetic/simon_the_beggar/beggar-fur-pay-female"]).fetch_one(&h.pool).await?;
-    assert_eq!(paid, 1);
+    // This exact source exchange is owned by the merged mature Qengine writer.
+    let paid:(i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/l6-beggar-first-materials'),(SELECT count(*) FROM game_quest_reward_fees WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/l6-beggar-first-materials' AND fee_gold_units=20000 AND include_bank)")
+        .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        paid,
+        (1, 1),
+        "one actual main-owned quest parent and exact fee companion"
+    );
+    let remaining_fur:i64=sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1").bind(id(94).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        remaining_fur, 0,
+        "same genuine compound source hand-in consumes all100fur"
+    );
     Ok(())
 }

@@ -43,6 +43,27 @@ BEGIN
  EXECUTE format('ALTER FUNCTION game_item_mint_reservation_guard() SET search_path=%I,pg_temp',current_schema());
 END $mint_guard_path$;
 
+-- The deferred materializer's one-way mark has the same generated-key
+-- ordering as reservation charging. Only the derived key is omitted; every
+-- writable receipt/cause/scope/physical body field remains immutable.
+CREATE OR REPLACE FUNCTION game_item_mint_receipt_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_OP='UPDATE' AND OLD.loot_purpose_key='CORPSE_MATERIALIZATION'
+ AND OLD.materialized_at IS NULL AND NEW.materialized_at IS NOT NULL
+ AND (to_jsonb(NEW)-'materialized_at'-'death_scope_key')
+     =(to_jsonb(OLD)-'materialized_at'-'death_scope_key') THEN
+  RETURN NEW;
+ END IF;
+ RAISE EXCEPTION 'DUR-03 item MINT receipt is immutable except its one-way materialized_at mark'
+  USING ERRCODE='23514';
+END $$;
+DO $mint_receipt_guard_path$
+BEGIN
+ EXECUTE format('ALTER FUNCTION game_item_mint_receipt_guard() SET search_path=%I,pg_temp',current_schema());
+END $mint_receipt_guard_path$;
+
+
 -- This context is neither client input nor a writable GUC. Only possession of
 -- the actual registered Node secret can arm its current Instance assignment.
 CREATE TABLE game_summer_instance_mint_context(

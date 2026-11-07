@@ -23,7 +23,7 @@ fn run_scenario(historical: bool) -> TestResult {
             false,
         )
         .await?;
-        prepare_current_session(&h).await?;
+        let mut admission_operation = prepare_current_session(&h).await?.operation().clone();
         super::super::super::item_look::seed_main_backpack(&h, &[]).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -143,7 +143,7 @@ fn run_scenario(historical: bool) -> TestResult {
                     .game_session_id()
                     .ok_or("fresh source session")?
                     .as_bytes();
-                session = fresh_after_reset::fresh_after_reset(
+                (session, admission_operation) = fresh_after_reset::fresh_after_reset(
                     &h,
                     id(41),
                     *account.as_bytes(),
@@ -158,9 +158,15 @@ fn run_scenario(historical: bool) -> TestResult {
             owner.movement_cells = &cells;
             owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&deps.room));
             owner.reset_epoch = h.root.active_world_reset_epoch(world).await?.unwrap_or(0);
-            let mut admitted =
-                restore_owner::attach(&h, &owner, deps.admitted, session, *account.as_bytes())
-                    .await?;
+            let mut admitted = restore_owner::attach(
+                &h,
+                &owner,
+                deps.admitted,
+                session,
+                *account.as_bytes(),
+                &admission_operation,
+            )
+            .await?;
             let offered = crate::gameplay_transport::appearance_change::offer::offered(
                 owner.offered_capabilities(),
                 owner.appearance_available(),

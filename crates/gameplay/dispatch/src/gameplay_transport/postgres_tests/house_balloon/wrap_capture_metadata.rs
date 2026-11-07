@@ -47,6 +47,19 @@ pub(super) async fn metadata(
     let mut references = serde_json::Map::new();
     for id in ids {
         let key = format!("oteryn:item.tibia.i{id}");
+        if id == 12699 {
+            // Pinned XML still names the legacy magic gold converter, but
+            // BOTH current donor DATs and official membership omit it. Its
+            // existing canonical alias is retired/ABSENT. Retain UNKNOWN;
+            // do not invent a definition reference or materialization policy.
+            assert!(
+                index
+                    .definition_ref("Item", &key, "definition-r1")
+                    .is_none()
+            );
+            assert!(native.item_policy(&key, "definition-r1").is_none());
+            continue;
+        }
         let reference = index
             .definition_ref("Item", &key, "definition-r1")
             .ok_or("qualified XML wrap source reference")?;
@@ -64,6 +77,9 @@ pub(super) async fn metadata(
         "furniture_rules_sha256":hex(&Sha256::digest(&rules)),"item_keys_sha256":hex(&Sha256::digest(&keys)),
         "client_content_generation":hex(&generation),"public_artifact_sha256":hex(&Sha256::digest(public_artifact)),
         "wrap_advisory_definition_refs":references,
+        "raw_xml_only_wrap_source_count":73,
+        "qualified_wrap_advisory_source_count":72,
+        "unavailable_wrap_advisory_sources":[{"source_item_id":12699,"status":"CURRENT_OFFICIAL_IDENTITY_ABSENT","canonical_state":"RETIRED_WITHOUT_SUCCESSOR","admitted_set":"ABSENT"}],
         "viewer":{"house":viewer.house,"runtime_cell":[viewer.position.x,viewer.position.y,viewer.position.floor],"native_cell":[viewer.position.x,viewer.position.y,-i32::from(viewer.position.floor)],"scope_generation":viewer.generation.get(),"lease_generation":viewer.lease.generation()},
         "session":hex(admitted.game_session_id.as_bytes()),"connection_generation":admitted.continuity.connection_generation,
         "selected_capabilities":admitted.continuity.selected_capabilities.as_slice()

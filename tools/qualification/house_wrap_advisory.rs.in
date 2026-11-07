@@ -1,0 +1,100 @@
+//! Generated source-only House wrapping affordances; mutation authority stays on the server.
+use sha2::{Digest, Sha256};
+use std::sync::OnceLock;
+const QUALIFICATION_SHA256: &str = "@SHA256@";
+#[derive(Debug)]
+struct Projection {
+    generation: [u8; 32],
+    items: Vec<(u32, u16)>,
+}
+fn digest(value: &str) -> Option<[u8; 32]> {
+    if value.len() != 64 {
+        return None;
+    }
+    let mut out = [0; 32];
+    for (slot, byte) in out.iter_mut().zip(value.as_bytes().as_chunks::<2>().0) {
+        let digit = |c: u8| match c {
+            b'0'..=b'9' => Some(c - b'0'),
+            b'a'..=b'f' => Some(c - b'a' + 10),
+            _ => None,
+        };
+        *slot = digit(byte[0])?
+            .checked_mul(16)?
+            .checked_add(digit(byte[1])?)?;
+    }
+    Some(out)
+}
+fn load() -> Option<Projection> {
+    let raw = include_bytes!("house-wrap-advisory.json");
+    let observed: [u8; 32] = Sha256::digest(raw).into();
+    if raw.len() > 32 * 1024 || observed != digest(QUALIFICATION_SHA256)? {
+        return None;
+    }
+    let packet: serde_json::Value = serde_json::from_slice(raw).ok()?;
+    if packet["schema"] != "OTERYN_HOUSE_WRAP_ADVISORY/v1" {
+        return None;
+    }
+    let unavailable = packet["unavailable_sources"].as_array()?;
+    if packet["raw_xml_only_source_count"] != 73
+        || unavailable.len() != 1
+        || unavailable[0]["source_item_id"] != 12699
+        || unavailable[0]["status"] != "CURRENT_OFFICIAL_IDENTITY_ABSENT"
+    {
+        return None;
+    }
+    let generation = digest(packet["client_content_generation"].as_str()?)?;
+    let rows = packet["items"].as_array()?;
+    if rows.len() != 72 {
+        return None;
+    }
+    let mut items = Vec::with_capacity(72);
+    for row in rows {
+        let definition = u32::try_from(row["definition_ref"].as_u64()?).ok()?;
+        let appearance = u16::try_from(row["appearance_id"].as_u64()?).ok()?;
+        if definition == 0
+            || appearance == 0
+            || appearance == 23398
+            || items.last().is_some_and(|(prior, _)| *prior >= definition)
+        {
+            return None;
+        }
+        items.push((definition, appearance));
+    }
+    Some(Projection { generation, items })
+}
+/// A UI hint only, bound to the actual observed definition and current map generation.
+pub fn allows(generation: [u8; 32], definition: u32, appearance: u16) -> bool {
+    static PINNED: OnceLock<Option<Projection>> = OnceLock::new();
+    let Some(projection) = PINNED.get_or_init(load) else {
+        return false;
+    };
+    projection.generation == generation
+        && projection
+            .items
+            .binary_search(&(definition, appearance))
+            .is_ok()
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn exact_source_xml_only_affordance_is_bound_to_definition_and_generation()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let projection = load().ok_or("qualified72 advisory with explicit retired12699")?;
+        let &(definition, appearance) = projection
+            .items
+            .iter()
+            .find(|(_, id)| *id == 23722)
+            .ok_or("actual XML-only portable item23722")?;
+        assert!(allows(projection.generation, definition, appearance));
+        assert!(!allows(projection.generation, definition, 23398));
+        assert!(!allows(projection.generation, 0, appearance));
+        let mut foreign = projection.generation;
+        foreign[0] ^= 1;
+        assert!(!allows(foreign, definition, appearance));
+        for &(definition, appearance) in &projection.items {
+            assert!(allows(projection.generation, definition, appearance));
+        }
+        Ok(())
+    }
+}

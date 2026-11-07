@@ -335,7 +335,7 @@ pub(super) async fn scenario(
         Case::NativeMove => &[4, 6, 11, 15, 18, 49, 86],
         Case::Voice => &[4, 6, 7, 11, 15, 18, 49, 86, 288, 350],
         Case::StaticBase => &[4, 6, 11, 15, 18, 49, 86],
-        Case::ArtistEasel => &[4, 6, 11, 15, 18, 49, 86, 207, 350, 387, 388],
+        Case::ArtistEasel => &[4, 6, 11, 15, 18, 30, 49, 86, 207, 350, 387, 388],
         Case::AbsoluteRotate | Case::AbsoluteLegacyPlace | Case::AbsoluteHistory => {
             &[4, 6, 11, 15, 18, 49, 86, 388, 350]
         }
@@ -352,12 +352,15 @@ pub(super) async fn scenario(
         // the SAME composed offer; a House resume may not silently drop either.
         let actual_offers = owner.offered_capabilities();
         owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-            &[11, 18],
+            &[11, 18, 30],
             crate::foundation::RuntimeScopeRefV1::channel(admitted.world_id, admitted.channel_id),
             1, "policy-1", actual_offers,
         ).map_err(debug)?;
         let supported = capabilities;
-        let fresh = owner.required_capabilities.authenticate_support(supported).map_err(debug)?;
+        let fresh = owner
+            .required_capabilities
+            .authenticate_support(supported)
+            .map_err(debug)?;
         admitted.continuity.selected_capabilities = fresh.selected();
         assert!(admitted.continuity.selected_capabilities.contains(207));
         assert!(admitted.continuity.selected_capabilities.contains(387));

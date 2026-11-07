@@ -32,6 +32,19 @@ pub(super) async fn command(
                     oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())
                         .map_err(debug)?;
                 for domain in domains {
+                    if domain.domain_id == 1
+                        && initial.continuity.selected_capabilities.contains(30)
+                    {
+                        //30 adds no route/domain; consume the actual existing
+                        //VIS-2 state with its exact negotiated field codec.
+                        assert_eq!(domain.snapshot_type, 2);
+                        let _ = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot_with_fields(
+                            domain.payload,
+                            oteryn_protocol_oteryn::world_spatial_entities::EntityFields::selected(
+                                initial.continuity.selected_capabilities.as_slice(),
+                            ),
+                        ).map_err(debug)?;
+                    }
                     if domain.domain_id
                         == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
                     {
