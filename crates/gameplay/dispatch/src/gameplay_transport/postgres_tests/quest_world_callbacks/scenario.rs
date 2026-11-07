@@ -38,6 +38,7 @@ fn scenario_case(
                 | "catalogue-npc-hero"
                 | "catalogue-npc-legacy"
                 | "catalogue-npc-scoped"
+                | "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp"
                 | "classic-quests-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
@@ -368,7 +369,15 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "qengine-rewards-goblin-intro" {
+        if name == "catalogue-npc-xp" {
+            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "catalogue-npc-calendar" {
+            super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h).await?;
+        } else if name == "catalogue-npc-end" {
+            super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
+        } else if name == "catalogue-npc" {
+            super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "qengine-rewards-goblin-intro" {
             super::super::questpc7_goblin::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-feaster-prefix" {
             super::super::questpc7_feaster::exercise(&mut owner,&mut admitted,&h).await?;
@@ -423,6 +432,8 @@ fn scenario_case(
         } else if name == "questpc7-golden" {
             super::super::questpc7_golden::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if outfit_world {
+            super::super::qengine_access::exercise(&mut owner,&mut admitted,&h,deps.actor,fence,&callback,trigger).await?;
         } else if shared_rewards {
             super::super::qengine_rewards::exercise(
                 &mut owner,
@@ -508,8 +519,6 @@ fn scenario_case(
                 name == "catalogue-npc-hero",
             )
             .await?;
-        } else if name == "catalogue-npc" {
-            super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "conditional-quest-greetings" {
             super::super::conditional_quest_greetings::exercise(
                 &mut owner,

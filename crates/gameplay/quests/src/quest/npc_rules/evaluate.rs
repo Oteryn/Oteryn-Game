@@ -46,7 +46,11 @@ impl<'a> Staged<'a> {
             .copied()
             .or_else(|| definition.map(|track| track.initial))
             .ok_or_else(|| NpcRuleError::MissingTrack(key.to_owned()))?;
-        if definition.is_some_and(|track| !(track.min..=track.max).contains(&original)) {
+        // A source's absent sentinel is a read default, not permission to store
+        // that value outside the native owner's range. Explicit rows stay strict.
+        if self.original.contains_key(key)
+            && definition.is_some_and(|track| !(track.min..=track.max).contains(&original))
+        {
             return Err(NpcRuleError::Invalid(format!(
                 "track outside bounds: {key}"
             )));
@@ -321,6 +325,16 @@ pub(super) fn plan(
                 if storage_only
                     && !matches!(
                         guard,
+                        NpcRuleGuard::Storage { .. }
+                            | NpcRuleGuard::StorageTime { .. }
+                            | NpcRuleGuard::CalendarMonth { .. }
+                    )
+                {
+                    return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
+                }
+                if storage_only
+                    && !matches!(
+                        guard,
                         NpcRuleGuard::Storage { .. } | NpcRuleGuard::StorageTime { .. }
                     )
                 {
@@ -348,6 +362,19 @@ pub(super) fn plan(
                 state.track_limit = 11;
             }
             for effect in &rule.effects {
+                if storage_only
+                    && !matches!(
+                        effect,
+                        NpcRuleEffect::Set { .. }
+                            | NpcRuleEffect::Add { .. }
+                            | NpcRuleEffect::SetNowPlus { .. }
+                            | NpcRuleEffect::SetTopic { .. }
+                            | NpcRuleEffect::EndConversation { .. }
+                            | NpcRuleEffect::Experience { .. }
+                    )
+                {
+                    return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
+                }
                 if storage_only
                     && !matches!(
                         effect,

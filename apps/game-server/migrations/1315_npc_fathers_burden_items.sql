@@ -1,33 +1,3 @@
--- QUESTPC / NPC-LEGACY-1: read-compatible definition activation, no durable repinning.
--- Existing states/receipts/track rows are immutable. The catalogue retains each
--- exact pre-activation hash and absent-track default; only those hashes are read
--- compatibly by the fenced quest owner. Unknown hashes still require migration.
--- Father acceptance is one source operation: eleven tracks, one Character
--- revision and receipt. Every other receipt keeps the existing eight-track cap.
--- Rollback retains this additive constraint and the compatibility reader; an old
--- artifact unable to read the new definition must be rejected before activation.
-ALTER TABLE game_character_quest_receipts
-    DROP CONSTRAINT game_character_quest_receipt_effects_shape;
-ALTER TABLE game_character_quest_receipts
-    ADD CONSTRAINT game_character_quest_receipt_effects_shape CHECK (
-        (cardinality(track_keys) BETWEEN 0 AND 8
-             OR (cause_kind = 'command'
-                 AND NOT completes
-                 AND quest_key = 'oteryn:quest.a_father_s_burden_quest'
-                 AND transition_key = 'oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept'
-                 AND track_keys = ARRAY['oteryn:quest-progress/quest/u8_6/afathers_burden/cloth','oteryn:quest-progress/quest/u8_6/afathers_burden/crystal','oteryn:quest-progress/quest/u8_6/afathers_burden/iron','oteryn:quest-progress/quest/u8_6/afathers_burden/progress','oteryn:quest-progress/quest/u8_6/afathers_burden/quest_log','oteryn:quest-progress/quest/u8_6/afathers_burden/root','oteryn:quest-progress/quest/u8_6/afathers_burden/scale','oteryn:quest-progress/quest/u8_6/afathers_burden/silk','oteryn:quest-progress/quest/u8_6/afathers_burden/sinew','oteryn:quest-progress/quest/u8_6/afathers_burden/status','oteryn:quest-progress/quest/u8_6/afathers_burden/wood']::text[]
-                 AND values_after = ARRAY[1,1,1,0,1,1,1,1,1,1,1]::bigint[]))
-        AND (cardinality(track_keys) > 0 OR completes)
-        AND (cardinality(track_keys) = 0
-             OR (array_ndims(track_keys) = 1 AND array_lower(track_keys, 1) = 1
-                 AND array_ndims(values_before) = 1 AND array_lower(values_before, 1) = 1
-                 AND array_ndims(values_after) = 1 AND array_lower(values_after, 1) = 1))
-        AND cardinality(values_before) = cardinality(track_keys)
-        AND cardinality(values_after) = cardinality(track_keys)
-        AND array_position(track_keys, NULL) IS NULL
-        AND array_position(values_before, NULL) IS NULL
-        AND array_position(values_after, NULL) IS NULL);
-
 -- Tereban's eight material debits and final cape are bound to the existing
 -- source NPC quest receipt and recoverable quest-XP obligation in one transaction.
 -- Rollback disables these NPC branches; immutable earned receipts remain.
@@ -46,7 +16,7 @@ END $migration$;
 
 CREATE FUNCTION game_father_values_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE q game_character_quest_receipts%ROWTYPE; craft game_item_craft_records%ROWTYPE;
-        cape game_reward_claim_mint_receipts%ROWTYPE; material TEXT; expected_track TEXT; expected_rule TEXT; amount BIGINT;
+        cape game_reward_claim_mint_receipts%ROWTYPE; material TEXT; expected_track TEXT; expected_rule TEXT; required_xp BIGINT;
 BEGIN
  IF TG_TABLE_NAME='game_character_quest_receipts' THEN q:=NEW;
  ELSIF TG_TABLE_NAME='game_item_craft_records' THEN
@@ -71,7 +41,7 @@ BEGIN
     AND track_key='oteryn:quest-progress/quest/u8_6/afathers_burden/progress' AND value=8)
   THEN RAISE EXCEPTION 'Father completion requires eight hand-ins and one cape' USING ERRCODE='23514'; END IF;
   IF NOT EXISTS(SELECT 1 FROM game_item_instances WHERE item_instance_id=cape.item_instance_id AND definition_family='Item' AND definition_production_key='oteryn:item.tibia.i11701' AND quantity=1 AND lifecycle=1 AND minted_transaction_id=cape.transaction_id) THEN RAISE EXCEPTION 'Father requires the exact fresh cape' USING ERRCODE='23514'; END IF;
-  amount:=8000;
+  required_xp:=8000;
  ELSE
   SELECT * INTO craft FROM game_item_craft_records WHERE character_id=q.character_id AND game_session_id=q.cause_id
    AND command_id=q.cause_ordinal AND recipe='oteryn:npc-handoff.father-material';
@@ -94,11 +64,11 @@ BEGIN
     IS DISTINCT FROM q.values_before[array_position(q.track_keys,'oteryn:quest-progress/quest/u8_6/afathers_burden/progress')]+1
   THEN RAISE EXCEPTION 'Father hand-in requires its exact material and progress' USING ERRCODE='23514'; END IF;
   PERFORM game_item_craft_complete(craft.transaction_id);
-  amount:=2500;
+  required_xp:=2500;
  END IF;
  IF NOT EXISTS(SELECT 1 FROM game_character_quest_xp_obligations x WHERE x.character_id=q.character_id
   AND x.cause_id=q.cause_id AND x.cause_ordinal=q.cause_ordinal AND x.transition_key=q.transition_key
-  AND x.amount=amount AND x.xmin=pg_current_xact_id()::xid)
+  AND x.amount=required_xp AND x.xmin=pg_current_xact_id()::xid)
  THEN RAISE EXCEPTION 'Father values require their atomic quest XP obligation' USING ERRCODE='23514'; END IF;
  RETURN NULL;
 END $$;

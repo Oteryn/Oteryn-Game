@@ -1,3 +1,26 @@
+# Main3032 integration checkpoint — 2026-11-07 23:29 UTC
+
+Merged main47db34f09 (QNPCFX3027 + MAINRED3024/3032). Adopt main NPC engine
+implementations instead of duplicated additive-driver function bodies. Preserve
+Viola binding and all lane quest callbacks/PG functions. Four duplicate unit
+names renamed; assertions unchanged. Single NPC catalogue registration and
+single dispatcher branch retained. Exact main Father atomic11 write preserved.
+Drop lane1282/1284/1285 now superseded by main1312/1314/1315; obsolete item
+exchange helpers removed after reusing main owners. Main1310 explicitly consumes
+the pre-existing1280 NPC response table. Other128x migrations remain unchanged.
+Repo quest-binding evidence, callbacks, native providers, Item/Mount content
+tree and world pin refresh passed. Fresh workspace PASS4m46s, final dispatch strict Clippy PASS4m16s, fmt PASS.
+Five-crate Clippy group reported only the now-fixed dispatcher condition.
+PREPUSH-2 permits publishing after gates1/2/4 when crate tests exceed cadence;
+Used for this checkpoint: unit7 packages are BUILDING; own3PG cases remain
+PENDING, with no duration claim. Continue the existing test session after push.
+MAIN-3032-INTEGRATION-PROOF.json records the concrete pending tests. Prior build
+was superseded before test execution after duplicate NPC registration was found.
+Next: finish full selected unit run and3focused PG cases, collect all failures,
+fix root causes together, rerun, and push. No quest gained qualification here.
+Only then continue native Goblin sign sites. Four quests remain ACTIVE; shared
+feature requests still belong to qengine2. Never rewrite completed quests.
+
 # Main1138720 integration ready to publish — 2026-11-07 21:13 UTC
 
 All27 derived JSON conflicts resolved and rebuilt with repository tooling.

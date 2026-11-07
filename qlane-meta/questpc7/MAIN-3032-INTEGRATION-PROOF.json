@@ -1,0 +1,79 @@
+{
+  "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+  "kind": "compiling main-integration checkpoint; PREPUSH-2 cadence fallback if tests remain pending",
+  "reused": "Main QNPCFX source NPC runtime, item/XP owners, conversation handling, and migrations1310-1315",
+  "removed_lane_migrations": [
+    "1282_quest_native_npc_revision.sql",
+    "1284_npc_quest_item_exchange.sql",
+    "1285_fathers_burden_xp_proof_name.sql"
+  ],
+  "retained_lane_migrations": [
+    "1280_quest_native_reward_initialization.sql",
+    "1281_quest_corruptor_lifecycle.sql",
+    "1283_quest_viola_rewards.sql",
+    "1286_quest_repeatable_exchanges.sql",
+    "1287_quest_world_item_rewards.sql",
+    "1288_quest_backpack_outputs.sql"
+  ],
+  "atomic_father": "Main1314 exact11-track constraint and1315 hand-in/cape/XP proof; never split",
+  "bootstrap": "Main1310 explicitly guards its table/function/trigger bootstrap with to_regclass; it consumes the existing1280 canonical NPC response table",
+  "removed_obsolete_production_helpers": [
+    "quest_state/npc_program/inventory_exchange.rs",
+    "reward_claim_mint/npc_exchange.rs"
+  ],
+  "tests_preserved": "Retained lane-specific Father/scoped PG functions; retained both sets of four duplicate unit assertions under unique names. Removed an unreachable duplicate dispatcher branch, not a test.",
+  "generators": {
+    "quest_binding_evidence": "PASS",
+    "lane_callbacks": "PASS",
+    "native_providers": "PASS",
+    "content_tree_item_mount_registration": "PASS",
+    "world_metadata_pins": "PASS",
+    "broad_regenerator": "Initial materializer build failed on additive duplicates; not claimed passing; repaired source and used repository owners for generated outputs"
+  },
+  "pins": "cf412119b1943d9736515677e09f2d2fb22191384ed43f4945fc132ecb0c561d",
+  "workspace_check": {
+    "state": "PASS",
+    "duration": "4m46s",
+    "log": "/tmp/questpc7-main-3032-check-final.log"
+  },
+  "clippy": {
+    "state": "DISPATCH_FINAL_PASS",
+    "duration": "4m16s",
+    "final_log": "/tmp/questpc7-main-3032-clippy-final.log",
+    "group_log": "/tmp/questpc7-main-3032-clippy.log",
+    "group_scope": "five changed crates; only reported failure was the now-fixed duplicated dispatcher condition"
+  },
+  "fmt": {
+    "state": "PASS",
+    "log": "/tmp/questpc7-main-3032-fmt-independent.log"
+  },
+  "unit_tests": {
+    "state": "BUILDING",
+    "packages": [
+      "oteryn-game-server",
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-items"
+    ],
+    "builds": "Superseded before execution after source-registration deduplication; no passing test or PG result claimed",
+    "log": "/tmp/questpc7-main-3032-unit3.log"
+  },
+  "own_pg": {
+    "state": "PENDING",
+    "cases": [
+      "questpc7_goblin_six_jobs_and_exact_paid_tools",
+      "npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay",
+      "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction"
+    ],
+    "duration_proof": null,
+    "log": "/tmp/questpc7-main-3032-own-pg3.log"
+  },
+  "scope_counts": {
+    "previously_qualified": 21,
+    "active": 4
+  },
+  "publication_rule": "PREPUSH-2 owner exception: gates1/2/4 pass; seven crate-unit sets and three own PG cases still pending at cadence boundary"
+}

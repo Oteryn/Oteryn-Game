@@ -129,7 +129,6 @@ mod quest_participants;
 mod quest_actor_conditions;
 pub use quest_actor_conditions::QuestActorConditionProof;
 pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
-pub(in crate::durability) mod npc_exchange;
 mod soul_war;
 mod tibiadrome;
 mod viola_book;
@@ -2325,3 +2324,6 @@ mod tests {
         );
     }
 }
+
+pub(super) mod npc_program;
+pub(super) mod marlin_trophy;

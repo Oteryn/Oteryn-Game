@@ -4,7 +4,12 @@ use oteryn_gameplay_quests::quest::npc_rules::{
     NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRulePlan, NpcRuleTrigger,
 };
 mod fathers_burden;
-mod inventory_exchange;
+mod marlin_trophy;
+mod items;
+mod rewards;
+
+/// Constructed only by this fenced NPC owner after current equipment admission.
+pub(in crate::durability) struct NpcItemPermit(());
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NpcProgramRequest {
@@ -23,20 +28,9 @@ pub struct NpcProgramCommit {
     pub next_topic: i32,
     /// The locked source branch only replied; it wrote no receipt or value.
     pub read_only: bool,
-}
-
-/// The response layer refreshes inventory for the same source-selected item
-/// operations as the writer, including durable response replay.
-pub fn moves_items(request: &NpcProgramRequest) -> bool {
-    fathers_burden::owns(request)
-        || (request.npc == oteryn_gameplay_quests::quest::hot_cuisine::NPC
-            && request.transition_key.starts_with("oteryn:quest-npc/hot_cuisine_quest/jean_pierre/native-cook-"))
-        || NpcRuleCatalog::runtime().is_ok_and(|source| source.programs().iter()
-            .flat_map(|program| &program.document.rules)
-            .any(|rule| rule.key == request.transition_key && rule.npc == request.npc
-                && rule.effects.iter().any(|effect| matches!(effect,
-                    oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::TakeItem { .. }
-                    | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::GiveItem { .. }))))
+    pub inventory_changed: bool,
+    pub end_conversation: bool,
+    pub end_delay_ms: u64,
 }
 
 impl NpcProgramRequest {
@@ -79,17 +73,30 @@ pub fn preview(
     now: i64,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
-    let source = NpcRuleCatalog::runtime()?
-        .clone()
-        .with_native_bounds(catalogue)?;
-    let optimistic = if request.npc != "oteryn:npc.tereban" && inventory_exchange::owns(&source, request) {
-        Some(inventory_exchange::optimistic(&source, request)?)
-    } else { None };
-    match evaluate_source(&source, request, tracks, catalogue, now, optimistic.as_ref()) {
+    let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
+        return Ok(None);
+    };
+    match evaluate_source(&source, request, tracks, catalogue, now, None) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
-            &source, request, tracks, catalogue, now,
+            &source,
+            request,
+            tracks,
+            catalogue,
+            now,
             Some(&fathers_burden::optimistic_inventory()),
         ),
+        Err(_) if marlin_trophy::owns(request) => evaluate_source(
+            &source,
+            request,
+            tracks,
+            catalogue,
+            now,
+            Some(&marlin_trophy::optimistic_inventory()),
+        ),
+        Err(error) => match source.optimistic_item_inventory(&request.npc) {
+            Some(inventory) => evaluate_source(&source, request, tracks, catalogue, now, Some(&inventory)),
+            None => Err(error),
+        },
         result => result,
     }
 }
@@ -105,7 +112,7 @@ fn evaluate_source(
 {
     let mut complete = tracks.clone();
     for program in source.programs() {
-        for rule in &program.document.rules {
+        for rule in program.document.rules.iter().filter(|rule| rule.npc == request.npc) {
             for guard in &rule.guards {
                 if let oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Storage {
                     track, ..
@@ -114,6 +121,9 @@ fn evaluate_source(
                     track,
                     ..
                 } = guard
+                    // Local absent values belong to the source evaluator. Only
+                    // foreign guards need a catalogue-backed snapshot entry.
+                    && !program.document.tracks.iter().any(|definition| definition.key == *track)
                     && let Some(definition) = catalogue.track(track)
                 {
                     let initial = source
@@ -136,30 +146,18 @@ fn evaluate_source(
         tracks: &complete,
         inventory: inventory.unwrap_or(&empty),
         now_epoch_seconds: now,
-        calendar_month: oteryn_gameplay_quests::quest::hot_cuisine::YearMonth::from_unix_seconds(now)
-            .ok_or_else(|| oteryn_gameplay_quests::quest::npc_rules::NpcRuleError::Invalid("UTC calendar".into()))?.month,
+        calendar_month: utc_calendar_month(now)?,
         level: 0,
         vocation: "",
         sex: 0,
         outfits: &BTreeMap::new(),
     };
-    if request.npc == oteryn_gameplay_quests::quest::hot_cuisine::NPC {
-        use oteryn_gameplay_quests::quest::hot_cuisine::{HotCuisineProgram, YearMonth};
-        let hot = HotCuisineProgram::embedded()?;
-        let calendar = hot.calendar_snapshot(&input, YearMonth::from_unix_seconds)?;
-        if let Some(program) = source.program(oteryn_gameplay_quests::quest::hot_cuisine::QUEST)
-            && let Some(plan) = hot.plan(program, &input, &calendar)? {
-                return Ok(Some(plan));
-        }
-    }
-    if inventory.is_some() && request.npc == "oteryn:npc.tereban" {
+    if inventory.is_some() && marlin_trophy::owns(request) {
+        source.plan_marlin_items(&input)
+    } else if inventory.is_some() && fathers_burden::owns(request) {
         source.plan_father_items(&input)
     } else if inventory.is_some() {
-        match source.plan_storage(&input) {
-            Ok(plan) => Ok(plan),
-            Err(oteryn_gameplay_quests::quest::npc_rules::NpcRuleError::MissingNativeResolution(_)) => source.plan_inventory(&input),
-            Err(error) => Err(error),
-        }
+        source.plan_item_exchange(&input)
     } else {
         source.plan_storage(&input)
     }
@@ -215,10 +213,9 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
         let source = NpcRuleCatalog::runtime()
-            .and_then(|source| source.clone().with_native_bounds(&catalogue))
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        oteryn_gameplay_quests::quest::hot_cuisine::HotCuisineProgram::embedded()
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            .and_then(|source| source.admitted_for_npc(&request.npc, &catalogue))
+            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .ok_or(CharacterProgressionError::InvalidInput)?;
         let mut content = items;
         self.try_issue_semantic_pass()?.run_with_context(&mut content, move |holder,deadline,content| Box::pin(async move {
             let mut tx=super::super::db::begin_type2_transaction(holder,deadline).await?;
@@ -231,9 +228,6 @@ impl DurabilityRoot {
                 Ok(Some(replay)) => {tx.commit(deadline).await?;return Ok(Ok(replay));}
                 Err(error) => return Ok(Err(error)),
                 Ok(None) => {}
-            }
-            if inventory_exchange::owns(&source, &request) {
-                super::super::reward_claim_mint::npc_exchange::lock_command(&mut tx, request.command).await?;
             }
             let root=match assert_gameplay_fence(&mut tx,&fence,&node).await? {
                 Ok(root)=>root,Err(e)=>return Ok(Err(e)),
@@ -266,17 +260,21 @@ impl DurabilityRoot {
                 }
             }
             let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint").fetch_one(&mut **tx).await?;
-            let father_action = fathers_burden::owns(&request);
-            let exchange_action = !father_action && request.npc != "oteryn:npc.tereban" && inventory_exchange::owns(&source, &request);
-            let item_action = father_action || exchange_action;
-            let inventory = if father_action {
+            let father_items = fathers_burden::owns(&request);
+            let marlin_items = marlin_trophy::owns(&request);
+            let plain_keys = source.item_exchange_keys(&request.npc);
+            let generic_items = !father_items && !marlin_items && plain_keys.is_some();
+            let inventory_owned = father_items || marlin_items || generic_items;
+            let inventory = if marlin_items {
+                Some(fathers_burden::inventory_for(&mut tx, fence, &[marlin_trophy::FISH.into()]).await?)
+            } else if father_items {
                 Some(fathers_burden::inventory(&mut tx, fence).await?)
-            } else if exchange_action {
-                Some(inventory_exchange::inventory(&mut tx, fence).await?)
+            } else if let Some(keys) = plain_keys.filter(|_| generic_items) {
+                Some(fathers_burden::inventory_for(&mut tx, fence, &keys).await?)
             } else { None };
             let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,inventory.as_ref());
-            if item_action && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() {
-                let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true };
+            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !rewards::has_experience(&plan.effects) {
+                let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan) };
                 tx.commit(deadline).await?;
                 return Ok(Ok(result));
             }
@@ -284,6 +282,14 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && !plan.track_changes.is_empty()=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            let experience = rewards::experience(&plan.effects)?;
+            if father_items && fathers_burden::experience(&plan)? != experience { return Err(DurabilityError::InvalidStoredState); }
+            if experience > 0 {
+                let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id).fetch_one(&mut **tx).await?;
+                if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
+            }
+            let item_action = father_items || marlin_items || (generic_items && items::changes_items(&plan));
             let quest=&plan.quest;
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
             let stored_state=sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE").bind(id).bind(quest).fetch_optional(&mut **tx).await?;
@@ -303,10 +309,7 @@ impl DurabilityRoot {
             let keys=plan.track_changes.iter().map(|c|c.key.as_str()).collect::<Vec<_>>();
             let existing=keys.iter().filter(|k|tracks.contains_key(**k)).count();
             if !capacity::tracks_fit(&mut tx,character,&keys,existing).await? {return Ok(Ok(refused(QuestRefusal::CapacityExceeded)));}
-            let physical_action = father_action || plan.effects.iter().any(|effect| matches!(effect,
-                oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::TakeItem { .. }
-                | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::GiveItem { .. }));
-            if physical_action {
+            if item_action {
                 match super::super::character_equipment::assert_current_equipment_in_transaction(
                     &mut tx, &recovery, &node, &fence.item_fence(), Some(request.command), content.loop_content_digest(),
                 ).await {
@@ -315,15 +318,12 @@ impl DurabilityRoot {
                     Err(super::super::character_equipment::EquipmentError::Durability(error)) => return Err(error),
                     Err(super::super::character_equipment::EquipmentError::Database(error)) => return Err(error.into()),
                 }
-                if father_action {
-                    let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=encode($1,'hex')::uuid")
-                        .bind(id).fetch_one(&mut **tx).await?;
-                    if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
-                }
-                let applied = if father_action {
-                    fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await?
+                let applied = if marlin_items {
+                    marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
+                } else if generic_items {
+                    items::apply(&mut tx, fence, &request, &plan, *content, &node).await?
                 } else {
-                    inventory_exchange::apply(&mut tx, fence, &request, &plan, *content, &node).await?
+                    fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await?
                 };
                 match applied {
                     true => {},
@@ -348,16 +348,15 @@ impl DurabilityRoot {
             } else {
                 sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric)").bind(id).bind(quest).bind(&pin).bind(hash.as_slice()).bind(&committed).execute(&mut **tx).await?;
             }
-            sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6)")
-                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).execute(&mut **tx).await?;
-            if father_action {
-                let amount = fathers_burden::experience(&plan)?;
-                insert_xp_obligation(&mut tx, character, &q, amount, &pin).await?;
+            sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer)")
+                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).execute(&mut **tx).await?;
+            if experience > 0 {
+                insert_xp_obligation(&mut tx, character, &q, experience, &pin).await?;
             }
             let receipt=load_receipt(&mut tx,character,&q).await?.ok_or(DurabilityError::InvalidStoredState)?;
             let receipt=decode_receipt(&receipt)?;
             tx.commit(deadline).await?;
-            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),reply:plan.reply,next_topic:plan.next_topic,read_only:false}))
+            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),end_conversation:items::ends(&plan),end_delay_ms:items::end_delay(&plan),reply:plan.reply,next_topic:plan.next_topic,read_only:false,inventory_changed:item_action}))
         })).await?
     }
 }
@@ -368,6 +367,9 @@ fn refused(refusal: QuestRefusal) -> NpcProgramCommit {
         reply: Vec::new(),
         next_topic: 0,
         read_only: false,
+        inventory_changed: false,
+        end_conversation: false,
+        end_delay_ms: 0,
     }
 }
 
@@ -382,12 +384,42 @@ async fn load(
     if row.try_get::<Vec<u8>, _>("request_binding")? != request.binding(character) {
         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
     }
-    let response=sqlx::query("SELECT reply,next_topic FROM game_quest_npc_program_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND transition_key=$4")
+    let response=sqlx::query("SELECT reply,next_topic,inventory_changed,end_conversation,end_delay_ms FROM game_quest_npc_program_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND transition_key=$4")
         .bind(character.as_bytes().as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).fetch_optional(&mut **tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
     Ok(Ok(Some(NpcProgramCommit {
         transition: QuestTransitionOutcome::AlreadyCommitted(decode_receipt(&row)?),
         reply: response.try_get("reply")?,
         next_topic: response.try_get("next_topic")?,
         read_only: false,
+        inventory_changed: response.try_get("inventory_changed")?,
+        end_conversation: response.try_get("end_conversation")?,
+        end_delay_ms: u64::try_from(response.try_get::<i32, _>("end_delay_ms")?).map_err(|_| DurabilityError::InvalidStoredState)?,
     })))
+}
+
+// Civil-from-days, inverse of the UTC scheduler conversion in gameplay-foundation.
+// Locked evaluation supplies PostgreSQL transaction time; previews supply server time.
+fn utc_calendar_month(seconds: i64) -> std::result::Result<u8, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
+    let days = seconds.div_euclid(86_400) + 719_468;
+    let era = days.div_euclid(146_097);
+    let day_of_era = days - era * 146_097;
+    let year_of_era = (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let shifted_month = (5 * day_of_year + 2) / 153;
+    let month = shifted_month + if shifted_month < 10 { 3 } else { -9 };
+    u8::try_from(month).map_err(|_| oteryn_gameplay_quests::quest::npc_rules::NpcRuleError::Arithmetic("calendar month".into()))
+}
+
+#[cfg(test)]
+mod calendar_tests {
+    use super::utc_calendar_month;
+
+    #[test]
+    fn authoritative_epoch_month_boundaries() -> Result<(), String> {
+        for (second, before, after) in [(0, 12, 1), (1_706_745_600, 1, 2), (1_709_251_200, 2, 3), (1_735_689_600, 12, 1)] {
+            assert_eq!(utc_calendar_month(second - 1).map_err(|e| e.to_string())?, before);
+            assert_eq!(utc_calendar_month(second).map_err(|e| e.to_string())?, after);
+        }
+        Ok(())
+    }
 }

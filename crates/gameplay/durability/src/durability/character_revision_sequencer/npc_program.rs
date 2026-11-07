@@ -4,7 +4,7 @@ use super::*;
 impl RevisionSlot {
     #[allow(
         clippy::too_many_arguments,
-        reason = "forwards the existing fenced NPC writer's arguments through the revision sequencer"
+        reason = "the sequencer passes authority, fence, catalogue and the item owner independently"
     )]
     pub async fn commit_npc_program<C: super::super::item_loop_move::ItemLoopContent>(
         &mut self,
