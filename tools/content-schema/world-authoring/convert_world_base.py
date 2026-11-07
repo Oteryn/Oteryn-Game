@@ -1176,6 +1176,9 @@ def build(
     quest_access_bindings.overlay_outputs(
         out, capture_bytes=blobs.get(quest_access_bindings.CAPTURE)
     )
+    import qready1_chest_bindings
+
+    qready1_chest_bindings.overlay_outputs(out)
     return out
 
 
