@@ -249,6 +249,7 @@ pub(super) async fn exercise(
         .await;
     assert_eq!(coryms.len(), 5, "five native coryms beneath southern site");
     for (index, corym) in coryms.into_iter().enumerate() {
+        let before_native_experience = experience(h).await?;
         super::grizzly_npc::questpc8_campaign::lethal(
             owner,
             admitted,
@@ -259,6 +260,10 @@ pub(super) async fn exercise(
         )
         .await?;
         assert_eq!(progress(h, "kills").await?, i64::try_from(index + 1)?);
+        assert!(
+            experience(h).await? > before_native_experience,
+            "each native corym death must also commit its ordinary experience; corpse admission cannot be skipped"
+        );
     }
     arrive_near(
         owner,
