@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 39,
-    "unfinished": 27,
+    "qualified": 40,
+    "unfinished": 26,
     "blocked": 0
   },
   "quests": [
@@ -1598,7 +1598,7 @@
     {
       "canonical": "oteryn:quest.rift_warrior_outfits_quest",
       "title": "Rift Warrior Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc3",
@@ -1608,7 +1608,21 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-13A",
+        "postgres": "18.6",
+        "red": "restart13-red2:114.999723584s missing actual base binding",
+        "green": "/tmp/qengine2-restart13-green2.log:165.587663057s success=true",
+        "scope": [
+          "creation level, chosen minimum0; Current Premium",
+          "read-only real parent completed_character_revision; missing completion refusal before effects",
+          "actual Cledwyn base and100silver tokens per addon",
+          "incomplete funding and second-before-first refusal; exact costs and surplus retention",
+          "literal NPC replay,3canonical account facts, Rift Warrior achievement, normal mask3 selection"
+        ],
+        "checks": "fmt;3crate all-feature check50.75s;3crate strict all-target/all-feature clippy1m49;10reward Rust units4.38s;29authoring cases covered by full run plus corrected inventory/endgame retests; deterministic output reproduction; pin-refresh and pin-check24ab unchanged",
+        "material_candidate": "38232aafd"
+      }
     },
     {
       "canonical": "oteryn:quest.authored.rootwalker_outfits_quest",
@@ -2764,7 +2778,7 @@
       "Rift Warrior Outfits Quest"
     ],
     "postgres_red": "/tmp/qengine2-batch13-red2.log;3failed119.36s; Decaying115.012835105s,Revenant75.866553285s,Rift43.496484156s actual PostgreSQL markers; missing actual addon/base bindings after original parent base flow",
-    "progress": "Revenant full actual parent base + carried accessories GREEN107.576753529s (batch13-green3); Rift source exchanges GREEN84.770133313s, but replacing provisional parent signal with generic read of existing quest_states completion before qualification. Decaying first carried USE EOF: fixed new test variant continuity to Positioned after its runtime already initialized position. All remain active until final checks/parent completion mechanism green.",
+    "progress": "Rift slice QUALIFIED and fully checked; publish immediately. Strengthen Revenant exact canonical/native receipt assertions; trace Decay EOF without weakening guards.",
     "assumptions": [
       "Revenant ordered skull then bracelet uses actual source bits2 then1, not an invented slot1/slot2 encoding.",
       "Cledwyn is the chosen parent-completion attestation desk for Rift base; actual donor NPC only grants addons. Parent completion is read-only and separately owned."
@@ -2789,7 +2803,14 @@
         "Decaying Defender: native USE43899 command2 ended EOF at231.517821279s. Trace precise carried-USE error while preserving all guards."
       ],
       "qualification": "Rift PG green; final3-crate check/clippy in progress before QUALIFIED. Other2 remain UNFINISHED; no final-state deferral."
-    }
+    },
+    "qualified": [
+      "Rift Warrior Outfits Quest"
+    ],
+    "remaining": [
+      "Revenant Outfits Quest",
+      "Decaying Defender Outfits Quest"
+    ]
   },
   "restart_audit": {
     "base": "e7867e061eb765cc6d2b5f4f4366221b72191b2f",

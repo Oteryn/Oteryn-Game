@@ -710,3 +710,13 @@ native receipt; do not weaken engine/SQL proof guards. Decay needs exact error
 trace next. Current final-check/clippy pipeline session60027, logs final-check
 andfinal-clippy. Reproduction session63933. Rift QUALIFIED only after required
 checks; countsstill39/27/0. Current code now includes min0/Premium corrections.
+
+L1-13A Rift Warrior QUALIFIED: actualPG GREEN165.587663057s, selected no skips,
+creation-level min0/Premium/read-only completed-parent gating; actualNPC100+100
+silver token trades, insufficient funding/stage refusal, exact surplus, literal
+replay,3canonical facts/RiftWarrior achievement/normal mask3 selection. Fresh
+3crate check50.75s andstrict clippy1m49 passed;10Rust4.38s;29authoring cases
+covered via full run plus corrected inventory17.970s/endgame17.525s; reproducible
+outputs. Pin-check completed24ab unchanged, inputsba9915519b5c78a50987ce70b8c2af6429737eac595b3daeaf53898cefcce5a2.
+Counts40QUALIFIED/26UNFINISHED/0BLOCKED. Publish this checked slice now; continue
+Revenant assertion precision and Decay EOF. S06/W15b also remain active scope.
