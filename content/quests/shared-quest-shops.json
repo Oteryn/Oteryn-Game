@@ -1,4 +1,86 @@
 {
   "schema": 1,
-  "shops": []
+  "shops": [
+    {
+      "npc": "oteryn:npc.cael",
+      "service": "oteryn:service.quest.cael.tomes",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:30-35:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
+      ],
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i2965",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "initial": 0,
+              "minimum": 6,
+              "maximum": 12
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i2966",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 1000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "initial": 0,
+              "minimum": 6,
+              "maximum": 12
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10216",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2500,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "initial": 0,
+              "minimum": 11,
+              "maximum": 12
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10288",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 5000,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "initial": 0,
+              "minimum": 12,
+              "maximum": 12
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

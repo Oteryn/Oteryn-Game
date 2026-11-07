@@ -15,6 +15,29 @@ class LaneL2Rewards(unittest.TestCase):
             for c in json.loads(cls.outputs['content/quests/shared-reward-callbacks.json'])['callbacks']
         }
 
+    def test_cael_incremental_unlocks_costed_xp_and_real_portable_shop_kits(self):
+        prefix='oteryn:quest-progress/quest/u8_54/the_new_frontier/'
+        for number in range(1,13):
+            callback=self.callbacks[f'l2-cael-tome-{number}']
+            self.assertEqual(callback['quest'],'oteryn:quest.the_new_frontier_quest')
+            self.assertEqual(callback['take'],[{'item':'oteryn:item.tibia.i10217','count':1}])
+            self.assertEqual(callback['storage'][0],{'track':prefix+'tomeof_knowledge','minimum':number-1,'maximum':number-1,'set':number})
+            self.assertEqual(len(callback['requires']),1+int(number>=7))
+        for number,flag in [(7,'snake_head_teleport'),(8,'corruption_hole'),(10,'zao_palace_doors')]:
+            self.assertEqual(self.callbacks[f'l2-cael-tome-{number}']['storage'][1]['track'],prefix+flag)
+            self.assertEqual(self.callbacks[f'l2-cael-tome-{number}']['storage'][1]['set'],1)
+        repeat=self.callbacks['l2-cael-tome-13']
+        self.assertTrue(repeat['repeatable']);self.assertEqual(repeat['experience'],5000)
+        self.assertTrue(repeat['storage'][0]['preserve']);self.assertIsNone(repeat['give'])
+        shop=json.loads(self.outputs['content/quests/shared-quest-shops.json'])['shops'][0]
+        self.assertEqual([(o['item']['key'],o['unit_price'],o['requirements'][0]['minimum']) for o in shop['offers']],
+            [(f'oteryn:item.tibia.i{i}',p,n) for i,p,n in [(2965,5000,6),(2966,1000,6),(10216,2500,11),(10288,5000,12)]])
+        worlds=json.loads((q.ROOT/'content/quests/world-callbacks.json').read_bytes())['callbacks']
+        books=[c for c in worlds if c['key'].startswith('oteryn:quest-callback/l2-tome-')]
+        self.assertEqual(len(books),10)
+        self.assertEqual(len({(c['selector']['position']['x'],c['selector']['position']['y'],c['selector']['position']['floor']) for c in books}),10)
+        self.assertTrue(all(c['effects']['item_reward']['item']=='oteryn:item.tibia.i10217' for c in books))
+
     def test_botany_source_issue_order_and_atomic_hat_gold(self):
         start=self.callbacks['l2-botany-start'];finish=self.callbacks['l2-botany-return']
         self.assertEqual(start['quest'],'oteryn:quest.tibia_tales')

@@ -62,6 +62,9 @@ pub(super) async fn exercise(
     if name.ends_with("regalia") {
         return regalia(owner, admitted, h).await;
     }
+    if name.ends_with("tomes") {
+        return tomes(owner, admitted, h).await;
+    }
     Err(format!("full native player journey has not been composed yet: {name}").into())
 }
 
@@ -572,5 +575,318 @@ async fn kill_rebel(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         crate::gameplay_transport::kill_reward::DrainOutcome::Drained
     );
+    Ok(())
+}
+
+async fn tomes(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::questl2_journeys::{quantity, use_at, walk};
+    use oteryn_protocol_oteryn::{world_object::UseDisposition, world_spatial::StepDirection};
+    use std::collections::BTreeMap;
+    let canonical = owner.quest_catalogue.clone().ok_or("catalogue")?;
+    let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
+    let worlds = oteryn_gameplay_quests::quest::world_callbacks::load()?;
+    let mut tracks = BTreeMap::new();
+    let mut transitions = BTreeMap::new();
+    for callback in &all {
+        let mut keys = vec![callback.key.clone()];
+        keys.extend(callback.participants.iter().enumerate().map(|(i, _)| {
+            oteryn_gameplay_quests::quest::reward_callbacks::participant_key(&callback.key, i)
+        }));
+        for key in keys {
+            let t = canonical
+                .transition(&key)
+                .cloned()
+                .ok_or("reward transition")?;
+            for key in t
+                .effects
+                .iter()
+                .map(|e| e.track.as_str())
+                .chain(callback.requires.iter().map(|r| r.track.as_str()))
+            {
+                tracks.insert(
+                    key.to_owned(),
+                    canonical.track(key).cloned().ok_or("reward track")?,
+                );
+            }
+            transitions.insert(t.key.clone(), t);
+        }
+    }
+    for callback in &worlds {
+        if let Some(t) = canonical.transition(&callback.key) {
+            for e in &t.effects {
+                tracks.insert(
+                    e.track.clone(),
+                    canonical.track(&e.track).cloned().ok_or("world track")?,
+                );
+            }
+            transitions.insert(t.key.clone(), t.clone());
+        }
+    }
+    let frontier = "oteryn:quest-progress/quest/u8_54/the_new_frontier/";
+    // Other entries' prerequisites only. Counter and every source book start absent.
+    for (key, quest, values) in [
+        (
+            "frontier-ready",
+            "the_new_frontier_quest",
+            vec![(format!("{frontier}mission08"), 2)],
+        ),
+        (
+            "frontier-finished",
+            "the_new_frontier_quest",
+            vec![(format!("{frontier}mission10_1"), 2)],
+        ),
+        (
+            "curos-ready",
+            "an_uneasy_alliance_quest",
+            vec![(
+                "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline".into(),
+                4,
+            )],
+        ),
+        (
+            "zalamon-ready",
+            "children_of_the_revolution_quest",
+            vec![
+                (
+                    "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline".into(),
+                    17,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04".into(),
+                    5,
+                ),
+            ],
+        ),
+    ] {
+        for (track, _) in &values {
+            tracks.insert(
+                track.clone(),
+                canonical
+                    .track(track)
+                    .cloned()
+                    .ok_or("foreign prerequisite track")?,
+            );
+        }
+        let t = QuestTransition {
+            key: format!("oteryn:quest-transition/l2-tomes-fixture/{key}"),
+            quest: format!("oteryn:quest.{quest}"),
+            effects: values
+                .into_iter()
+                .map(|(track, value)| QuestEffect {
+                    track,
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Set(value),
+                })
+                .collect(),
+            completes: false,
+            experience: None,
+        };
+        transitions.insert(t.key.clone(), t);
+    }
+    owner.quest_catalogue = Some(Arc::new(
+        QuestStateCatalogue::new(
+            canonical.content_revision(),
+            tracks.into_values().collect(),
+            transitions.into_values().collect(),
+        )
+        .map_err(debug)?,
+    ));
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("tome capabilities")?;
+    let [cael, curos, zalamon] = super::super::classic_quests::install_nearby(
+        owner,
+        admitted,
+        ["oteryn:npc.cael", "oteryn:npc.curos", "oteryn:npc.zalamon"],
+    )
+    .await?;
+    assert_eq!(quantity(h, 10217).await?, 0);
+    let find = |key: &str| {
+        all.iter()
+            .find(|c| c.key.ends_with(key))
+            .ok_or("tome callback")
+    };
+    assert_eq!(
+        wire_reward(owner, admitted, cael, find("/l2-cael-tome-1")?, false)
+            .await?
+            .0,
+        NpcIntentDisposition::Rejected
+    );
+    for (n, key) in ["frontier-ready", "curos-ready", "zalamon-ready"]
+        .into_iter()
+        .enumerate()
+    {
+        tome_prerequisite(owner, admitted, key, 18000 + u64::try_from(n)?).await?;
+    }
+    assert_eq!(
+        wire_reward(owner, admitted, curos, find("/l2-alliance-finish")?, false)
+            .await?
+            .0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(
+        wire_reward(owner, admitted, zalamon, find("/l2-zalamon-tome")?, false)
+            .await?
+            .0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(quantity(h, 10217).await?, 2);
+    let mut books: Vec<_> = worlds
+        .iter()
+        .filter(|c| c.key.starts_with("oteryn:quest-callback/l2-tome-"))
+        .map(|c| c.selector.position.ok_or("book position"))
+        .collect::<Result<_, _>>()?;
+    books.sort_by_key(|p| (p.floor, p.x, p.y));
+    assert_eq!(books.len(), 10);
+    for p in books {
+        use_at(owner, admitted, p, UseDisposition::Committed).await?;
+        use_at(owner, admitted, p, UseDisposition::Rejected).await?;
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        walk(owner, admitted, StepDirection::South).await?;
+    }
+    assert_eq!(
+        quantity(h, 10217).await?,
+        12,
+        "ten actual chests plus two actual NPC gifts"
+    );
+    for n in 1..=12 {
+        let c = find(&format!("/l2-cael-tome-{n}"))?;
+        if n == 7 {
+            assert_eq!(
+                wire_reward(owner, admitted, cael, c, false).await?.0,
+                NpcIntentDisposition::Rejected,
+                "seventh tome requires full New Frontier"
+            );
+            assert_eq!(quantity(h, 10217).await?, 6);
+            tome_prerequisite(owner, admitted, "frontier-finished", 18005).await?;
+        }
+        assert_eq!(
+            wire_reward(owner, admitted, cael, c, false).await?.0,
+            NpcIntentDisposition::Ok
+        );
+        let count: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind(format!("{frontier}tomeof_knowledge"))
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(count, n);
+        assert_eq!(quantity(h, 10217).await?, 12 - n);
+    }
+    for flag in ["snake_head_teleport", "corruption_hole", "zao_palace_doors"] {
+        let v: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind(format!("{frontier}{flag}"))
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(v, 1);
+    }
+    let extra = find("/l2-cael-tome-13")?;
+    assert_eq!(
+        wire_reward(owner, admitted, cael, extra, false).await?.0,
+        NpcIntentDisposition::Rejected
+    );
+    // Extra ordinary books are inputs, not seeded progression or earned rewards.
+    supply(
+        owner,
+        admitted,
+        10217,
+        18010,
+        Position {
+            x: 33156,
+            y: 31229,
+            floor: -15,
+        },
+    )
+    .await?;
+    let before = counts(h).await?;
+    let xp_before: i64 =
+        sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(
+        wire_reward(owner, admitted, cael, extra, false).await?.0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(quantity(h, 10217).await?, 0);
+    assert_ne!(counts(h).await?, before);
+    let xp:i64=sqlx::query_scalar("SELECT sum(amount)::bigint FROM game_character_quest_xp_obligations WHERE transition_key=$1").bind(&extra.key).fetch_one(&h.pool).await?;
+    assert_eq!(xp, 5000);
+    let xp_after: i64 =
+        sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(xp_after - xp_before, 5000);
+    assert_eq!(
+        wire_reward(owner, admitted, cael, extra, false).await?.0,
+        NpcIntentDisposition::Rejected
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT total_experience FROM game_character_progression_state"
+        )
+        .fetch_one(&h.pool)
+        .await?,
+        xp_after
+    );
+    Ok(())
+}
+
+async fn tome_prerequisite(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    key: &str,
+    ordinal: u64,
+) -> TestResult {
+    let catalogue = owner.quest_catalogue.clone().ok_or("catalogue")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "fence")?
+        .ok_or("fence")?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let outcome = slot
+        .commit_quest_transition(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            QuestTransitionRequest {
+                transition_key: format!("oteryn:quest-transition/l2-tomes-fixture/{key}"),
+                cause: QuestCause::Command(CommandRef::new(
+                    admitted.game_session_id,
+                    CommandId::new(ordinal).map_err(debug)?,
+                )),
+            },
+            catalogue,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+    drop(slot);
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     Ok(())
 }

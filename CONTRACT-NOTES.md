@@ -384,3 +384,13 @@ canonical cost proofs and requires the existing same-transaction quest XP
 obligation, rather than treating a claimed XP amount as earned value. Full
 Tomes of Knowledge journey proof remains pending; these mechanisms alone do
 not qualify that entry.
+
+Cael kit identity restoration: Crystal cael.lua:30-35 (SHA256
+4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd)
+labels the shop offers as Dragon Statue Kit and Dragon Throne Kit, but names
+placed, nonportable furniture10212/10286. The pinned Canary items.xml:26570-26590
+and26700-26712 (SHA2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2)
+identifies the actual portable kits10216/10288, weighing6500/7500. Oteryn sells
+those real kit identities at the source prices and tome thresholds; it does not
+invent portability for the placed furniture. House construction remains governed
+by the existing furniture owner.

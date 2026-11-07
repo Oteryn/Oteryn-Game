@@ -371,7 +371,7 @@ def build():
     questl2_vampire.append(callbacks, offers, declarations, inputs, PIN)
     questl2_carried_use.append(add, storage, callbacks, offers, declarations, inputs, PIN)
     questl2_deliveries.append(add, storage, callbacks, offers, declarations, inputs, PIN)
-    questl2_knowledge.append(add, callbacks, offers, inputs, PIN)
+    questl2_knowledge.append(add, callbacks, offers, declarations, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})

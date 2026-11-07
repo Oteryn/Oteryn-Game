@@ -2,7 +2,7 @@
 import hashlib
 
 
-def append(add, callbacks, offers, inputs, pin):
+def append(add, callbacks, offers, declarations, inputs, pin):
     path='data-global/npc/yonan.lua'
     add('l2-regalia-combine','kilmaresh_quest','yonan',['yes'],[],
         take=[(31572,1),(31573,1),(31574,1),(31575,1)],give=(31576,1),topic=5)
@@ -39,6 +39,39 @@ def append(add, callbacks, offers, inputs, pin):
         callbacks[-1]['sources']=[witness(curos,lines)]
         callbacks[-1]['reply']=[reply]
 
+    # Cael owns New Frontier's existing counter, rather than a parallel quest flag.
+    cael='data-global/npc/cael.lua'
+    counter=frontier+'tomeof_knowledge'
+    for number in range(1,14):
+        before=min(number-1,12)
+        states=[state(counter,before,min(number,12),preserve=number==13)]
+        unlocks={7:('snake_head_teleport',-1),8:('corruption_hole',-1),10:('zao_palace_doors',0)}
+        if number in unlocks:
+            name,initial=unlocks[number]
+            states.append(state(frontier+name,initial,1,0 if initial==-1 else None))
+        requires=[{'track':frontier+'mission08','minimum':2,'maximum':2}]
+        if 7<=number<=12:
+            requires.append({'track':frontier+'mission10_1','minimum':2,'maximum':2})
+        add('l2-cael-tome-'+str(number),'the_new_frontier_quest','cael',['yes'],states,
+            take=[(10217,1)],topic=number,next_topic=number+20,requires=requires)
+        callbacks[-1]['sources']=[witness(cael,'84-128')]
+        callbacks[-1]['reply']=['Thank you! I look forward to reading this interesting discovery of yours and learn a few things about Zao.']
+        if number==13:
+            callbacks[-1].update(repeatable=True,experience=5000)
+        offers.append({'npc':'oteryn:npc.cael','keywords':['tome','knowledge'],
+            'topic':0,'any_topic':True,'next_topic':number,
+            'storage':[state(counter,before,before,preserve=True)],
+            'requires':requires,'reply':['Have you found a Tome of Knowledge for me to read?']})
+    declarations.append({'writable':True,'key':frontier+'corruption_hole','quest':'oteryn:quest.the_new_frontier_quest',
+        'initial':-1,'min':-1,'max':1,'sources':[witness(cael,'118-122')]})
+    child='oteryn:quest-progress/quest/u8_54/children_of_the_revolution/'
+    add('l2-zalamon-tome','children_of_the_revolution_quest','zalamon',['yes'],
+        [state(child+'questline',17,18),state(child+'mission04',5,6)],give=(10217,1),topic=12)
+    callbacks[-1]['sources']=[witness('data-global/npc/zalamon.lua','325-335')]
+    offers.append({'npc':'oteryn:npc.zalamon','keywords':['mission'],'topic':0,'any_topic':True,
+        'next_topic':12,'storage':[state(child+'questline',17,17,preserve=True)],
+        'reply':['Have you found the way which will lead us to the great gate?']})
+
 
 def kill_bindings(inputs, pin):
     path='data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua'
@@ -49,4 +82,12 @@ def kill_bindings(inputs, pin):
 
 
 def shops(inputs,pin):
-    return {'schema':1,'shops':[]}
+    path='data-global/npc/cael.lua'
+    track='oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge'
+    return {'schema':1,'shops':[{'npc':'oteryn:npc.cael','service':'oteryn:service.quest.cael.tomes',
+        'sources':[f'crystal:{pin}:{path}:30-35:sha256:{hashlib.sha256(inputs[path]).hexdigest()}'],
+        'offers':[{'item':{'family':'Item','key':f'oteryn:item.tibia.i{item}','revision':'definition-r1'},
+            'direction':'SellToPlayer','unit_price':price,
+            'requirements':[{'quest':'oteryn:quest.the_new_frontier_quest','track':track,
+                'initial':0,'minimum':count,'maximum':12}]}
+            for item,price,count in [(2965,5000,6),(2966,1000,6),(10216,2500,11),(10288,5000,12)]]}]}

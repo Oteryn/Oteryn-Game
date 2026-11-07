@@ -87,6 +87,34 @@ pub(crate) fn world(
             });
         }
     }
+    let books = if name.ends_with("tomes") {
+        let mut rows = oteryn_gameplay_quests::quest::world_callbacks::load()?
+            .into_iter()
+            .filter(|c| c.key.starts_with("oteryn:quest-callback/l2-tome-"))
+            .map(|c| {
+                Ok((
+                    c.selector.position.ok_or("book position")?,
+                    c.selector.appearance.ok_or("book appearance")?,
+                ))
+            })
+            .collect::<TestResult<Vec<_>>>()?;
+        rows.sort_by_key(|(p, _)| (p.floor, p.x, p.y));
+        for (n, appearance) in [2472, 2480].into_iter().enumerate() {
+            data.manifest.palette.push(bundle::PaletteEntry {
+                id: 100 + u32::try_from(n)?,
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: bundle::Family::Terrain,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+        }
+        rows
+    } else {
+        Vec::new()
+    };
     let mut cells = BTreeMap::<(i8, u16, u16), Vec<sector::Item>>::new();
     let mut patch = |floor: i8, x0: u16, x1: u16, y0: u16, y1: u16| {
         for x in x0..=x1 {
@@ -103,7 +131,17 @@ pub(crate) fn world(
     };
     type FixtureCell = (u16, u16, i8);
     let mut portals: Vec<(FixtureCell, FixtureCell)> = Vec::new();
-    let start = if name.ends_with("alliance") {
+    let start = if name.ends_with("tomes") {
+        for (p, _) in &books {
+            patch(p.floor, p.x - 2, p.x + 1, p.y - 1, p.y + 2);
+        }
+        let p = books.first().ok_or("source books")?.0;
+        Position {
+            x: p.x - 1,
+            y: p.y,
+            floor: p.floor,
+        }
+    } else if name.ends_with("alliance") {
         patch(-3, 33148, 33160, 31294, 31300);
         Position {
             x: 33153,
@@ -188,6 +226,21 @@ pub(crate) fn world(
                     },
                 });
         }
+    }
+    for (n, (p, _)) in books.iter().enumerate() {
+        cells
+            .get_mut(&(p.floor, p.x, p.y))
+            .ok_or("source book tile")?
+            .push(sector::Item {
+                palette: if books[n].1 == 2472 { 100 } else { 101 },
+                depth: 0,
+                attrs: Default::default(),
+            });
+        let next = books[(n + 1) % books.len()].0;
+        portals.push((
+            (p.x - 1, p.y + 1, p.floor),
+            (next.x - 1, next.y, next.floor),
+        ));
     }
     for ((x, y, z), destination) in portals {
         cells
