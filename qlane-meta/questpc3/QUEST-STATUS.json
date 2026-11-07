@@ -3187,122 +3187,38 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
-      "batch": "threatened_rakes_10",
+      "batch": "threatened_delivery_11",
       "entries": [
-        "Stone1 rake interaction",
-        "Stone2 rake interaction",
-        "Stone3 rake interaction",
-        "Stone4 rake interaction",
-        "Stone5 rake interaction"
+        "Book on pallet12648",
+        "Book on pallet12649",
+        "Whelp fur on stone25237"
       ],
-      "phase": "GREEN; ready to commit and fast-forward publish",
-      "previous_published": [
-        "73067a442",
-        "473461206"
+      "regression_only": [
+        "Existing tent32949",
+        "Existing tent32950",
+        "Existing tent32951"
       ],
-      "source": "data-global/scripts/actions/tools/rake.lua:17-44 git-blob fccb45af39905199322583cadeefbaf36282374d SHA256 c3a636bdb1ed7a1ed0670692eab4d6c3e74f5239581c5cd2411f15a17f37fd61",
-      "pending_implementation": [
-        "TimeWindow end boundary1440 allows all-day [0,1440) without changing existing values or hashes",
-        "strict existing-facts admission of rake3452, weight1500, portable/nonstackable",
-        "5 positional callback rows, retained tool, unique player flags"
+      "phase": "DOC-ONLY checkpoint; delivery tests/code remain local and unpublished. Corrected test-only RED compiling /tmp/questpc3-delivery-red.log; production unchanged.",
+      "previous_published": "009f5f9e1",
+      "missing_generic_support": [
+        "allow a selected carried source to burn with replacement=None on world-target USE only",
+        "admit appearance-only selectors on carried-target USE while preserving normal/self-use restrictions",
+        "resolve appearance on plain base-stack placements for the carried target only"
       ],
-      "reuse_check": {
-        "qengine2": "97cb9db791482391e77049c8a27fefd659003669",
-        "questpc5": "3d15358523c3d0b81ae245814f0a7b7e5311b966",
-        "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
-        "questl2": "0c74b25ccd342e964ec8c37497f6e718eb9d0dfa",
-        "result": "No carried target/all-day time-window implementation found there. Reuse current fenced carried-target owner and map/clock helpers. qengine2 newer carried_item document+physical exchange support must be reused for later book/map steps; do not duplicate that owner."
+      "existing_reused": "Existing exact-source SQL consumer already supports burn; current dispatcher/parser unnecessarily require replacements. Existing three tent callbacks preserved without reauthoring.",
+      "facts": "Targets have no configured decay; ItemType defaults decayTime0/decayTo-1 and Item::canDecay rejects them, so target decay is a no-op. Existing book/fur canonical Items already materializable/nonstackable; preserve all facts including canonical fur weight105.",
+      "reuse_heads": {
+        "qengine2": "d44f015c1",
+        "questpc5": "3d1535852",
+        "questpc6": "53d5648b8",
+        "questl2": "88804481a"
       },
-      "test_priors": "Carried rake and wrong tool fixtures; GrumpyStone0 then1. No scratch flags, successful receipts or replacement tool seeded.",
-      "pg_red": {
-        "duration_ms": 60730,
-        "marker": "THREATENED_RAKES POSTGRES_CASE_COMPLETED",
-        "evidence": "scratches=0 receipts=0",
-        "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c"
-      },
-      "retained_tool_review": "Existing durability quest_world_callback.rs apply_input preserves UUID/quantity with replacement=source prototype; only audits last_transaction_id. No new read-only owner, physical debit or mint needed. PG strengthened after RED to assert same UUID after every positive scratch.",
-      "resolved_checks": [
-        "World callback provenance required canonical quest-state anchor; retained exact rake witness preserved, no validator weakened.",
-        "Rake shares canonical Item shard with condition-potion profiles. Repo refresh_native_profile_shards.py proved every selected potion definition and term unchanged, refreshed only whole-shard digest. Other metadata formats left unchanged."
+      "test_priors": "Three carried books, two furs; preceding Animals stages0/2/8/6 seeded explicitly. No success, consumption, receipt or spawned output seeded. Three existing tent steps enter through literal wire movement.",
+      "fixture_corrections": [
+        "Manually placed fixture must set FirstEntryOutcome::Positioned and fresh item fence, as existing world-callback scenario does.",
+        "Wire frames must use admitted sequential command ids1/2/3; original32301 produced exact protocol_error next_command_id=1. No fixture error counted as missing-mechanism RED."
       ],
-      "checks": {
-        "cargo_check": "PASS1m02s",
-        "strict_clippy": "PASS2m22s; quests/durability/dispatch allfeatures/alltargets -Dwarnings",
-        "fmt": "PASS",
-        "carried_units": "PASS5 tests0.01s including unchanged published self bindings",
-        "authoring": "PASS2 tests2.048s",
-        "native_generation": "PASS41 files",
-        "potion_shard_witness": "PASS all selected definitions/source terms unchanged",
-        "pin_refresh": {
-          "inputs_digest": "2680d94c35cfe335c0bb640059f7a031a6bac8a299ccb31aca1528d849a081df",
-          "pins": [
-            {
-              "digest": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
-              "previous": "0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf",
-              "world": "oteryn"
-            }
-          ]
-        }
-      },
-      "review": "Exactly5 positional callbacks; all previous callbacks and published self bindings preserved. Only3452 canonical materializable/stack_class changed. All-day interval explicitly0..1440; wrong mission/tool/target, exact replay, repeat refusal, unchanged target revisions and retained rake UUID/quantity pass. Potion shard metadata refreshed only after all selected rows/source terms proved unchanged. No whole-quest completion claimed.",
-      "postgres_green": {
-        "duration_ms": 62373,
-        "scratches": 5,
-        "receipts": 5,
-        "retained_rake_uuid_and_quantity": true
-      },
-      "proofs": {
-        "pg_red": {
-          "sha256": "b75bbdb719e79e36b93b65f114c9f93a720a6ffae991cfc3ee66693ce3d5d93c",
-          "log": "/tmp/questpc3-rakes-red.log",
-          "result": "expected RED"
-        },
-        "pg_green": {
-          "sha256": "b30913812dce6d6254cbcd804c86d6dd6b887e214d1f05d5c9cc5f3c71f2b7e1",
-          "log": "/tmp/questpc3-rakes-green.log",
-          "result": "PASS"
-        },
-        "clippy": {
-          "sha256": "5af1aebcb7f79d1e28ac88e84acbeefc87cf90a8ec86a84f47b23bc3db3bd510",
-          "log": "/tmp/questpc3-rakes-clippy.log",
-          "result": "PASS"
-        },
-        "cargo_check": {
-          "sha256": "dbf6d62665f0f9f01d54f066822bdb4551d7116b4db2fd931606c618f67a0984",
-          "log": "/tmp/questpc3-rakes-check.log",
-          "result": "PASS"
-        },
-        "authoring": {
-          "sha256": "9381d3f87ea1a360432764430e1aeead7e6c7a68cf81c911bce32aaef405f320",
-          "log": "/tmp/questpc3-rakes-authoring.log",
-          "result": "PASS"
-        },
-        "native_generation": {
-          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
-          "log": "/tmp/questpc3-rakes-native.log",
-          "result": "PASS"
-        },
-        "pins": {
-          "sha256": "e5ef1768d888224ee07095b8bc7f22423e3a21857983e2dee06bee1e4a847f68",
-          "log": "/tmp/questpc3-rakes-pins.log",
-          "result": "PASS"
-        },
-        "carried_units": {
-          "sha256": "0a531a1092ce9968a009348b83cb42b6e0a8b4964a4554e34b982a0863f3c178",
-          "log": "/tmp/questpc3-rakes-units.log",
-          "result": "PASS"
-        },
-        "fmt": {
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "log": "/tmp/questpc3-rakes-fmt.log",
-          "result": "PASS"
-        },
-        "potion_witness": {
-          "sha256": "a276230f382009f5516def6a0aaf9e7857f8bc096a3b9192dc49292939561f98",
-          "log": "/tmp/questpc3-rakes-potion-witness.log",
-          "result": "PASS"
-        }
-      }
+      "next_steps": "Await genuine RED burns0/tents3. Then target-only optional replacement(None burn), target-only appearance selector and plain-base appearance fallback; author3 rows, reuse native policy generator for2missing native profiles (canonical Items already admitted), fmt/check/Clippy/PGGREEN, repin only when declared compiler inputs change, commit+FFpush."
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
