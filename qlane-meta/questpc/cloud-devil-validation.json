@@ -1,0 +1,88 @@
+{
+  "test": "devil_helmet_source_sewer_and_five_rewards_once_replay_and_refusal",
+  "result": "PASS",
+  "marker": "POSTGRES_CASE_COMPLETED devil_helmet_source_sewer_and_five_rewards_once_replay_and_refusal duration=262.763565316s",
+  "duration_seconds": 262.763565316,
+  "red_seconds": 3.44,
+  "scope": "Pinned UID25030 entry/departure and explicit435 USE plus all five native source reward claims in controlled real-dispatch PostgreSQL scenes. No deployed completeWorld/frozen-head/CI assertion.",
+  "source_cases": [
+    "create/remove/re-entry, exact STEP replay identity, USE departure cleanup",
+    "preserve existing435 until departure, then normal re-creation",
+    "unrelated UID25031 changes nothing",
+    "missing landing refuses USE, retains grate and actor position"
+  ],
+  "native_cases": {
+    "oteryn:reward-claim.kv.devilhemet1": "6.733815399",
+    "oteryn:reward-claim.kv.devilhemet2": "6.88595529",
+    "oteryn:reward-claim.kv.devilhemet3": "6.754177996",
+    "oteryn:reward-claim.quest.key.id3610": "6.476706394",
+    "oteryn:reward-claim.quest.key.id3667": "6.431329979"
+  },
+  "sources": [
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/devil_helmet/movements_sewer.lua",
+      "sha256": "71542a6acba0cd100b6f2d86339473e86781c777fa10aa339a62ea02d54e1e84"
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
+      "sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
+    }
+  ],
+  "reuse": {
+    "branch": "origin/claude/happy-davinci-ijz3wy-questpc6",
+    "head": "3bfd856061e5aa89668747ec7405af8c2b8cf7f5",
+    "source_cases": "pressure_plate_sewer.rs; compose using generic ObjectEffects and StepOut rather than another fixed quest dispatcher",
+    "other_lane_status": "Freshly fetched questpc5 and questpc6 both UNFINISHED for Devil Helmet; no QUALIFIED duplicate found in other lane status files"
+  },
+  "validation": {
+    "check": "PASS changed crates, all targets/all features,29.33s",
+    "clippy": "PASS changed crates, all targets/all features,-D warnings,41.48s",
+    "rust_callback_units": "15 passed,2.36s; pure unit, not PG",
+    "python_generator_units": "16 passed,0.505s; pure unit, not PG",
+    "generation": "23 packets; two generated files changed; follow-up check clean",
+    "source_contract": "PASS all five selectors, positions, item IDs, quantities and key numbers against pinned chest source",
+    "pin": "PASS; unchanged2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
+  },
+  "logs": {
+    "red": {
+      "log": "qlane-meta/questpc/cloud-devil-red.log",
+      "sha256": "7bb1a3b0e1b6f441540ef819706ad01a03cac548f257dbca7ba8682a83acc7fa"
+    },
+    "green": {
+      "log": "qlane-meta/questpc/cloud-devil-green.log",
+      "sha256": "dbbb832be93940cc3e0465d2002d9b874ce193e2c91f70a017258712a269b155"
+    },
+    "generation": {
+      "log": "qlane-meta/questpc/cloud-devil-generation.log",
+      "sha256": "e9c3651cf88b19ebe2a25fde1bd12716976a1d6be7b009d3a7c5310ecbaa9870"
+    },
+    "generated-check": {
+      "log": "qlane-meta/questpc/cloud-devil-generated-check.log",
+      "sha256": "9cf9f5e6beb9f15854cc65285097df5ae846f796dacd2edf3014b79914843557"
+    },
+    "python": {
+      "log": "qlane-meta/questpc/cloud-devil-python.log",
+      "sha256": "3309c4b6db51dcc8275d08e5b447e6fe9b42832a13a6c62f38e0397808654576"
+    },
+    "rust-schema": {
+      "log": "qlane-meta/questpc/cloud-devil-rust-schema.log",
+      "sha256": "37cbd085cacc3b919c60c48b86466af19f8af3f49170165da19468efe36680a0"
+    },
+    "check": {
+      "log": "qlane-meta/questpc/cloud-devil-check.log",
+      "sha256": "28685f42021dc1ea7ac00866ed5ac1b9d0a132908998c851ea6acdd82a169c81"
+    },
+    "clippy": {
+      "log": "qlane-meta/questpc/cloud-devil-clippy.log",
+      "sha256": "c9adc244e4fe873ae3391235e7d7824115739ebba47e7fa5e2749def7cd77b5e"
+    },
+    "source-contract": {
+      "log": "qlane-meta/questpc/cloud-devil-source-contract.log",
+      "sha256": "1838f611e7e8b261d1b349737a1b9a4002f61e9dff6e0eddbb92e04e52d252e3"
+    },
+    "pin": {
+      "log": "qlane-meta/questpc/cloud-devil-pin.log",
+      "sha256": "4433bfd7ad6a85db963bcaf32f64a663ddfa891012b51e35af3d120cf130c58b"
+    }
+  }
+}

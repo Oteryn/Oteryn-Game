@@ -5,7 +5,7 @@ The committed packets are authored inputs, not an executable Lua interpreter.
 Existing callback keys outside those inputs retain their values. The combined
 registry is sorted by key, matching the batch-three compiler.
 No dialogue manifest, NPC qualification, item, map or quest recipe is changed.
-The default requires all 22 packets. Explicit --quests and --available modes
+The default requires all 23 packets. Explicit --quests and --available modes
 support regenerating independently cherry-picked quest inputs.
 """
 import argparse
@@ -21,7 +21,7 @@ INPUT_DIRECTORY = Path('tools/content-schema/quest-authoring/batches/quests4')
 CALLBACK_OUTPUT = Path('content/quests/world-callbacks.json')
 NPC_OUTPUT_DIRECTORY = Path('content/dialogues/quest-sources')
 QUEST_ORDER = (
-    'cults_of_tibia', 'dreamers_challenge_quest', 'elemental_spheres',
+    'cults_of_tibia', 'devil_helmet', 'dreamers_challenge_quest', 'elemental_spheres',
     'formogar_mine_hoist', 'kilmaresh', 'koshei_the_deathless_quest',
     'krailos', 'lions_rock', 'mintwallin_quest', 'newhaven', 'rotten_blood_quest', 'spirit_hunters',
     'svargrond_arena', 'thais_lighthouse', 'the_explorer_society',
@@ -31,6 +31,7 @@ QUEST_ORDER = (
 )
 QUEST_OWNERS = {
     'cults_of_tibia': 'oteryn:quest.cults_of_tibia_quest',
+    'devil_helmet': 'oteryn:quest.devil_helmet_quest',
     'dreamers_challenge_quest': 'oteryn:quest.dreamer_s_challenge_quest',
     'elemental_spheres': 'oteryn:quest.elemental_spheres_quest',
     'formogar_mine_hoist': 'oteryn:quest.formogar_mine_hoist',
@@ -354,7 +355,7 @@ def select_quests(root, selected=None, available=False):
     actual = {path.name for path in directory.glob('*.json')}
     expected = {name + '.json' for name in QUEST_ORDER}
     if selected is None and not available:
-        require(actual == expected, 'batch four requires exactly 22 named inputs; missing=' +
+        require(actual == expected, 'batch four requires exactly 23 named inputs; missing=' +
                 ','.join(sorted(expected - actual)) + '; foreign=' + ','.join(sorted(actual - expected)))
         return QUEST_ORDER
     require(actual <= expected, 'foreign batch-four input names: ' + ','.join(sorted(actual - expected)))

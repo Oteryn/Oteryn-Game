@@ -60,13 +60,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some(facts) = map.facts.quest_object_facts(appearance) else {
                     return UseDisposition::Rejected;
                 };
-                // Floor-changing objects need the composed floor resolver; do not
-                // publish a visual-only hole before that source path is qualified.
-                if appearance == 435
-                    || crate::map::floor::palette_mask(
-                        oteryn_world_bundle::bundle::Family::Terrain,
-                        &format!("oteryn:terrain.tibia.i{appearance}"),
-                    ) != 0
+                // Passive floor-changing objects require composed floor support.
+                // Sewer435 is an explicit USE dropdown handled by the movement owner.
+                if crate::map::floor::palette_mask(
+                    oteryn_world_bundle::bundle::Family::Terrain,
+                    &format!("oteryn:terrain.tibia.i{appearance}"),
+                ) != 0
                 {
                     return UseDisposition::Rejected;
                 }

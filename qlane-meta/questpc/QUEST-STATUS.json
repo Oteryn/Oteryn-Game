@@ -3,8 +3,8 @@
   "scope": "Pinned wiki titles A..M; no numeric or N..Z titles",
   "lifecycle": "AUTHORING on claude/happy-davinci-ijz3wy-questpc-pc2; green batch commits and fast-forward pushes authorized; no frozen integration candidate.",
   "counts": {
-    "QUALIFIED": 58,
-    "UNFINISHED": 119,
+    "QUALIFIED": 59,
+    "UNFINISHED": 118,
     "BLOCKED": 1
   },
   "owner_excluded_with_blocked_status": 1,
@@ -3194,8 +3194,8 @@
       "title": "Devil Helmet Quest",
       "canonical": "oteryn:quest.devil_helmet_quest",
       "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/23/definition",
-      "status": "UNFINISHED",
-      "scope": "complete pinned quest path",
+      "status": "QUALIFIED",
+      "scope": "Pinned original source UID25030 sewer entry/departure, explicit435 USE, and all five native source reward claims in controlled real-dispatch PG scenes",
       "reward_claims": [
         {
           "claim": "oteryn:reward-claim.kv.devilhemet1",
@@ -3223,20 +3223,6 @@
           "retained_test": "quest_catalogue_chests_phase_a_05_use_replay_and_refusal"
         }
       ],
-      "queued_stage_binding": {
-        "stage": "s1",
-        "native_dispatch_binding": null,
-        "runtime_enabled": false
-      },
-      "first_unqualified_stage": {
-        "key": "s1",
-        "kind": "explore",
-        "objective": "Reach the Cyclops chamber under the Ancient Temple.",
-        "targets": [
-          "Ancient Temple",
-          "Cyclops chamber"
-        ]
-      },
       "historical_blocker": {
         "missing_piece": "Source movements_sewer.lua requires an onStepOut edge to remove sewer435 when the player leaves UID25030. The shared Callback Trigger atworld_callbacks.rs:24 has only Use/StepIn. QENGINE owns this missing shared movement edge; a chest test cannot supply it from the lane module.",
         "evidence": [
@@ -3254,10 +3240,50 @@
           "Compared source edge and create/remove/occupant requirements with the current production Callback/Trigger/Passage schema and current QENGINE allocation.",
           "Retained existing native reward receipts without promoting them to a complete path. Did not replace StepOut with StepIn, bypass party conditions or invent absent map entries."
         ],
-        "other_unfinished_composition": "No complete real-dispatch PG qualification for s1 (explore: Ancient Temple, Cyclops chamber) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage."
+        "other_unfinished_composition": "No complete real-dispatch PG qualification for s1 (explore: Ancient Temple, Cyclops chamber) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+        "superseded_queue": {
+          "queued_stage_binding": {
+            "stage": "s1",
+            "native_dispatch_binding": null,
+            "runtime_enabled": false
+          },
+          "first_unqualified_stage": {
+            "key": "s1",
+            "kind": "explore",
+            "objective": "Reach the Cyclops chamber under the Ancient Temple.",
+            "targets": [
+              "Ancient Temple",
+              "Cyclops chamber"
+            ]
+          }
+        }
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Generic435 source USE and live callback-object map handles PG qualified90.436342034s; reused questpc6 handler/forwarding with generic ordered departure/entry. Next compose exact UID25030 StepIn/StepOut and all five source rewards here. No title promotion yet."
+      "active_batch": "Original source contract QUALIFIED with fresh PG source/replay/refusal and all five claim proofs. Continue next title.",
+      "qualification": [
+        {
+          "test": "devil_helmet_source_sewer_and_five_rewards_once_replay_and_refusal",
+          "marker": "POSTGRES_CASE_COMPLETED devil_helmet_source_sewer_and_five_rewards_once_replay_and_refusal duration=262.763565316s",
+          "duration_seconds": 262.763565316,
+          "log": "qlane-meta/questpc/cloud-devil-green.log",
+          "log_sha256": "dbbb832be93940cc3e0465d2002d9b874ce193e2c91f70a017258712a269b155",
+          "validation": "qlane-meta/questpc/cloud-devil-validation.json",
+          "source_cases": [
+            "create/remove/re-entry, exact STEP replay identity, USE departure cleanup",
+            "preserve existing435 until departure, then normal re-creation",
+            "unrelated UID25031 changes nothing",
+            "missing landing refuses USE, retains grate and actor position"
+          ],
+          "native_claims": [
+            "oteryn:reward-claim.kv.devilhemet1",
+            "oteryn:reward-claim.kv.devilhemet2",
+            "oteryn:reward-claim.kv.devilhemet3",
+            "oteryn:reward-claim.quest.key.id3610",
+            "oteryn:reward-claim.quest.key.id3667"
+          ],
+          "integration_review": "AUTHORING; controlled original source-contract scenes, no deployed completeWorld/frozen-head/CI assertion"
+        }
+      ]
     },
     {
       "title": "Devovorga's Essence Mini World Change",
@@ -8427,12 +8453,12 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "name": "Reusable source435 explicit USE and live callback-object projection",
-    "validation": "qlane-meta/questpc/cloud-dropdown-validation.json",
-    "qualified_titles_added": 0,
+    "name": "Devil Helmet source sewer and five rewards",
+    "validation": "qlane-meta/questpc/cloud-devil-validation.json",
+    "qualified_titles_added": 1,
     "counts": {
-      "QUALIFIED": 58,
-      "UNFINISHED": 119,
+      "QUALIFIED": 59,
+      "UNFINISHED": 118,
       "BLOCKED": 1
     }
   },

@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "quest_directory": "devil_helmet",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/devil-helmet-sewer-entry",
+      "quest": "oteryn:quest.devil_helmet_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 25030,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "objects": {
+        "consume_trigger": false,
+        "mutations": [
+          {
+            "position": {
+              "x": 32482,
+              "y": 32170,
+              "floor": -14
+            },
+            "remove": null,
+            "create": 435
+          }
+        ]
+      },
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/devil_helmet/movements_sewer.lua:1-24"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/devil-helmet-sewer-departure",
+      "quest": "oteryn:quest.devil_helmet_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": null,
+        "unique": 25030,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": true,
+      "passages": [],
+      "objects": {
+        "consume_trigger": false,
+        "mutations": [
+          {
+            "position": {
+              "x": 32482,
+              "y": 32170,
+              "floor": -14
+            },
+            "remove": 435,
+            "create": null
+          }
+        ]
+      },
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/devil_helmet/movements_sewer.lua:27-45"
+      ]
+    }
+  ],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "devil_helmet",
+    "runtime_admission": false,
+    "entries": []
+  },
+  "step_inventory": [],
+  "preserved_claims": []
+}

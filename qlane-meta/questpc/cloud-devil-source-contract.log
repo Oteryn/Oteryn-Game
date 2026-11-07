@@ -1,0 +1,61 @@
+{
+  "result": "PASS",
+  "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
+  "claims": {
+    "oteryn:reward-claim.quest.key.id3610": {
+      "unique": 5017,
+      "position": [
+        32589,
+        32100,
+        14
+      ],
+      "item": 2969,
+      "count": 1,
+      "key_number": 3610
+    },
+    "oteryn:reward-claim.quest.key.id3667": {
+      "unique": 5016,
+      "position": [
+        32576,
+        32216,
+        15
+      ],
+      "item": 2969,
+      "count": 1,
+      "key_number": 3667
+    },
+    "oteryn:reward-claim.kv.devilhemet1": {
+      "unique": 6139,
+      "position": [
+        32459,
+        32144,
+        15
+      ],
+      "item": 3029,
+      "count": 4,
+      "key_number": null
+    },
+    "oteryn:reward-claim.kv.devilhemet2": {
+      "unique": 6140,
+      "position": [
+        32465,
+        32148,
+        15
+      ],
+      "item": 3356,
+      "count": 1,
+      "key_number": null
+    },
+    "oteryn:reward-claim.kv.devilhemet3": {
+      "unique": 6141,
+      "position": [
+        32466,
+        32148,
+        15
+      ],
+      "item": 3269,
+      "count": 1,
+      "key_number": null
+    }
+  }
+}

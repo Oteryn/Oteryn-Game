@@ -34,6 +34,7 @@ fn scenario_case(
 ) -> TestResult {
     let departure = name == "departure-map-regression";
     let dropdown = name.starts_with("source-dropdown");
+    let devil = name.starts_with("devil-helmet-source");
     let object_mutation = name.starts_with("object-mutation-");
     let mintwallin = name == "mintwallin-source";
     let monk = name.starts_with("monk-guidance");
@@ -55,7 +56,7 @@ fn scenario_case(
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(
-        if classic_npc || departure || object_mutation || mintwallin || dropdown {
+        if classic_npc || departure || object_mutation || mintwallin || dropdown || devil {
             "behemoth"
         } else if rotten_purchase {
             "rotten-blood/sacrifice"
@@ -178,7 +179,58 @@ fn scenario_case(
             ..trigger
         });
     }
-    let world = if departure {
+    if devil {
+        callback.selector.unique = Some(if name.ends_with("unrelated") {
+            25031
+        } else {
+            25030
+        });
+        callback.selector.action = None;
+        callback.selector.appearance = Some(100);
+        callback.lever = None;
+        callback.passages.clear();
+        callback.objects = Some(
+            oteryn_gameplay_quests::quest::world_callbacks::ObjectEffects {
+                consume_trigger: false,
+                mutations: vec![
+                    oteryn_gameplay_quests::quest::world_callbacks::ObjectMutation {
+                        position: Position {
+                            x: 32482,
+                            y: 32170,
+                            floor: -14,
+                        },
+                        remove: None,
+                        create: Some(435),
+                    },
+                ],
+            },
+        );
+        callback.teleport = (!name.ends_with("blocked")).then_some(Position {
+            x: 32482,
+            y: 32170,
+            floor: -15,
+        });
+        if name.ends_with("existing") {
+            callback
+                .passages
+                .push(oteryn_gameplay_quests::quest::world_callbacks::Passage {
+                    position: Position {
+                        x: 32482,
+                        y: 32170,
+                        floor: -14,
+                    },
+                    appearance: 435,
+                    replacement: None,
+                });
+        }
+    }
+    let world = if devil {
+        super::world_with_palette(
+            &callback,
+            trigger,
+            &[(435, oteryn_world_bundle::bundle::TerrainKind::Common)],
+        )?
+    } else if departure {
         super::world_ordinal(&callback, trigger, 2772, 1)?
     } else {
         world(&callback, trigger)?
@@ -189,7 +241,15 @@ fn scenario_case(
         if dropdown {
             println!("POSTGRES_CASE_STARTED source_dropdown database_created=true");
         }
-        let callback = if object_mutation {
+        let devil_departure = if devil {
+            println!("POSTGRES_CASE_STARTED devil_helmet_source database_created=true");
+            Some(super::callback("devil-helmet-sewer-departure")?)
+        } else {
+            None
+        };
+        let callback = if devil {
+            super::callback("devil-helmet-sewer-entry")?
+        } else if object_mutation {
             println!("POSTGRES_CASE_STARTED quest_object_mutations database_created=true");
             let mut value = serde_json::to_value(&callback)?;
             value["lever"] = serde_json::Value::Null;
@@ -314,6 +374,18 @@ fn scenario_case(
                     ])
                     .is_ok()
             );
+        } else if devil {
+            assert!(
+                owner
+                    .states
+                    .quest_callbacks
+                    .fixture
+                    .set(vec![
+                        callback.clone(),
+                        devil_departure.ok_or("departure callback")?
+                    ])
+                    .is_ok()
+            );
         } else if lever_fixture || target_swap || object_mutation || mintwallin {
             assert!(
                 owner
@@ -370,7 +442,17 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if dropdown {
+        if devil {
+            super::super::devil_helmet_source::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                trigger,
+                name,
+            )
+            .await?;
+        } else if dropdown {
             super::super::source_dropdown::exercise(
                 &owner,
                 &admitted,

@@ -162,7 +162,8 @@ pub(super) async fn wire_created_grate(
         )
         .map_err(debug)?;
         let mut results = Vec::new();
-        for command_id in [1, 2] {
+        let first = admitted.continuity.next_command_id;
+        for command_id in [first, first + 1] {
             let frame = oteryn_protocol_oteryn::encode_client_command(
                 admitted.continuity.connection_generation,
                 &oteryn_protocol_oteryn::ClientCommandValue {

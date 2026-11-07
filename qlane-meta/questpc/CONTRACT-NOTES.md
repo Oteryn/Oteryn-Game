@@ -86,3 +86,18 @@ adds exact command-fence validation and the existing ordered generic movement
 callbacks after relocation. Focused PG90.436342034s proves static and created
 world grates through real USE, lower-floor repeat refusal and no Quest receipts.
 No new protocol capability or passive floor flag is introduced.
+
+Devil Helmet source composition (201189f871d23597b82caf88fd611454a2ddefb8):
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/devil_helmet/movements_sewer.lua
+SHA25671542a6acba0cd100b6f2d86339473e86781c777fa10aa339a62ea02d54e1e84,
+identical to the retained source-gap script. UID25030 creates435 at32482,32170,z14
+only if absent; departure removes435. The controlled test plate at32481,32170,z14
+is a fixture, never a production coordinate alias. Both runtime selectors are UID-only.
+
+The five existing claim contracts match the exact pinned chest source:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua
+UID6139: four3029 at32459,32144,z15; UID6140: one3356 at32465,32148,z15;
+UID6141: one3269 at32466,32148,z15. UID5017 supplies2969/key3610 at32589,32100,z14;
+UID5016 supplies2969/key3667 at32576,32216,z15. Existing canonical claim selectors,
+positions, item IDs, quantities and key bindings were independently checked against
+these source rows. The original misspellingdevilhemet1/2/3 remains the claim identity.

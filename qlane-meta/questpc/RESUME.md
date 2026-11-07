@@ -1,3 +1,28 @@
+## Devil Helmet qualified — 2026-11-07
+Original source contractQUALIFIED: UID25030 entry creates one435 if absent;
+departure removes it, including real USE departure. Source tests cover fresh and
+existing grates, exact STEP replay identity, unrelated UID refusal, missing landing
+refusal with unchanged actor/grate, and no Quest state/receipt writes. All five
+native source rewards run through USE/replay/full-bag refusal. Real PostgreSQL
+POSTGRES_CASE_COMPLETED devil_helmet_source_sewer_and_five_rewards_once_replay_and_refusal
+262.763565316s. RED3.44s missing callback after actual database creation.
+
+ChecksPASS: changed crates alltarget/allfeature check29.33s; strict clippy41.48s;
+15callback units2.36s;16Python units0.505s;23source packets, clean generated check;
+cargo fmt plus explicit mounted formatting; pin refresh unchanged2cabea56... .
+Exact logs/hashes/sourceURLs/reuse:cloud-devil-validation.json. The controlled UID
+plate anchor is not a production coordinate alias. Counts59QUALIFIED/118UNFINISHED/
+1excludedDawnportBLOCKED. All historical holds remain archival, not new deferrals.
+
+NEXT: Draconia. Fresh questpc6@3bfd85606 already has the escape/offering source
+callback and Item3206 profile; reuse them and the needed generic conditional
+failure-teleport/preserved-flag support instead of rewriting. Still UNFINISHED
+there. Also compose four-lever exit UID35011, party switches/shared resettable
+keys and all four existing rewards. Inspect exact retained source packets and
+qengine2/other-lane implementations, then implement any missing reusable pieces
+here. Do not replace shared source mechanics with personal ordered approximations.
+Ten-minute fact cap; document conservative choices in CONTRACT-NOTES.md.
+
 ## Source435 mechanic green — 2026-11-07
 Reusable placed/created sewer435 explicit USE passes real PostgreSQL90.436342034s,
 including lower-floor repeat refusal and zero quest receipts. Created grate USE

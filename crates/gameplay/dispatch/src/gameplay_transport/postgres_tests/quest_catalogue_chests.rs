@@ -1190,6 +1190,24 @@ fn mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal() -> Te
 }
 
 #[test]
+fn devil_helmet_source_sewer_and_five_rewards_once_replay_and_refusal() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none(){return Ok(());}
+    std::thread::Builder::new().stack_size(256<<20).spawn(||->Result<(),String>{
+        let started=std::time::Instant::now();
+        for name in ["devil-helmet-source","devil-helmet-source-existing","devil-helmet-source-unrelated","devil-helmet-source-blocked"] {
+            super::quest_world_callbacks::scenario(name,oteryn_gameplay_quests::quest::world_callbacks::Position {x:32481,y:32170,floor:-14},false).map_err(|e|e.to_string())?;
+        }
+        let claims=["oteryn:reward-claim.kv.devilhemet1","oteryn:reward-claim.kv.devilhemet2","oteryn:reward-claim.kv.devilhemet3","oteryn:reward-claim.quest.key.id3610","oteryn:reward-claim.quest.key.id3667"];
+        let selected=cases().map_err(|e|e.to_string())?.into_iter().filter(|c|claims.contains(&c.claim.as_str())).collect::<Vec<_>>();
+        assert_eq!(selected.len(),5);
+        execute(selected).map_err(|e|e.to_string())?;
+        println!("POSTGRES_CASE_COMPLETED devil_helmet_source_sewer_and_five_rewards_once_replay_and_refusal duration={:?}",started.elapsed());
+        Ok(())
+    })?.join().map_err(|_|"Devil Helmet source scenario panicked")??;
+    Ok(())
+}
+
+#[test]
 fn quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal() -> TestResult {
     let claims: BTreeSet<_> = [
         "desert2",

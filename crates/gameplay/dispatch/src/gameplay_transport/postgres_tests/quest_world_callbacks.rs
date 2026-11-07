@@ -250,6 +250,30 @@ fn world_ordinal(
     appearance: u16,
     ordinal: u8,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_ordinal_palette(callback, trigger, appearance, ordinal, &[])
+}
+
+pub(super) fn world_with_palette(
+    callback: &Callback,
+    trigger: Position,
+    extra: &[(u16, oteryn_world_bundle::bundle::TerrainKind)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_ordinal_palette(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+        extra,
+    )
+}
+
+fn world_ordinal_palette(
+    callback: &Callback,
+    trigger: Position,
+    appearance: u16,
+    ordinal: u8,
+    extra: &[(u16, oteryn_world_bundle::bundle::TerrainKind)],
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -287,6 +311,18 @@ fn world_ordinal(
             ground_speed: None,
         }),
     });
+    for &(appearance, kind) in extra {
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{appearance}"),
+            family: bundle::Family::Terrain,
+            id: u32::try_from(data.manifest.palette.len())?,
+            terrain: Some(bundle::Terrain {
+                kind,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+    }
     if let Some(appearance) = callback
         .item_on_target
         .as_ref()
