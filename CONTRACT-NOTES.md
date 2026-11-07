@@ -969,3 +969,65 @@ QENGPR validation `integration`: 123 passed, 0 ignored; command wall time 125.66
 QENGPR validation `world-integration`: 5 passed, 0 ignored; command wall time 118.875s.
 
 QENGPR validation `alias-unit`: 2 passed, 0 ignored; command wall time 74.507s.
+
+## PR #3020 CI repairs (2026-11-07)
+
+The cosmetics provisioning authoring document is 804,946 bytes after QENGINE2,
+so its old 200,000-byte sample limit rejected the canonical manifest before any
+gameplay could activate. Its limit now matches the authoring producer's 8 MiB
+document budget. Descriptor, source-shard, section and overall artifact limits
+remain independent. A real materialization test accepts exactly 8 MiB and rejects
+one byte more, with valid hashes at both boundaries; the test failed before the
+limit fix. Existing input-tampering checks remain intact.
+
+Regenerated islands and their capture sample with convert_islands.py. The normal
+world pin-refresh command now also refreshes the client placement-index digest,
+using the client's LF-normalized SHA256 convention, and refuses ambiguous pin
+source declarations. This replaces the obsolete client digest without editing a
+generated digest by hand.
+
+The Content tree family-count assertion is unchanged. The lock was incomplete:
+raid_catalogue.py restores Encounter.Raid=239 from content/encounters/raids/index.json
+and restores its manifest/project registrations. Every family count now equals
+origin/main. Provenance of the exact inventory (counts are index entries unless
+noted): Ability=7392 abilities/definitions; Behavior=3145 behaviors; Charm=25
+charms; Creature=1863 creatures/definitions; Dialogue=836 dialogues/definitions;
+Document=1609 documents; Effect=5797 abilities/effects; Encounter=108
+encounters/definitions; Encounter.Raid=239 encounters/raids; Formula=6126
+abilities/formulas; Item=34111 items; Loot=1290 loot; Mount=252 cosmetics/mounts;
+NPC=1282 npcs/definitions; Presentation=3145 presentations/definitions;
+Proficiency=443 proficiencies; Quest=352 quests/definitions; RewardClaim=336
+interactions/reward_claims (231 ordinary claims plus 105 variants); Service.Bank=1,
+Service.Blessing=4, Service.Promotion=4, Service.Trade=324 and Service.Travel=56
+from their services indices; StarterKit=1 starter; item_conversion=129 craft.
+QENGINE2 adds runtime profiles/reward bindings, not additional indexed family
+identities. The exact native-overlay output inventory is 43, including its
+QENGINE2 reward-item proof. The chest-profile identity inventory is 134: the prior
+130 plus ITEMHOLD-Q items 2859, 2949, 3053 and 3083 (also Triangle Tower).
+
+FeeBurnCause already assigns QuestRewardPayment tag 18. Added its missing exact
+golden tag and independent wire bytes; all existing tags and byte fixtures remain
+unchanged. All five audit wire tests passed in 0.081 seconds.
+
+The generator sweep also refreshed creature level-rating/power-score reports,
+monster-attack source authoring/pins, and explore-area candidate input hashes.
+The frozen Wave 1 market observation stays unchanged; its checker now recognizes
+only the accepted market packet's explicit WAVE1_WIKI_MARKETABLE_FALSE
+supersession. Positive and negative owner checks retain exact staged bytes.
+
+Validation at the owner's requested immediate CI push:
+- Cosmetics provisioning boundary and existing tamper tests: 2 passed, 8.44s.
+- All five fee-cause/operation golden and wire tests: passed, 0.081s.
+- Full requested world-metadata command sequence: passed.
+- pin-refresh and its new source-pin unit test: passed.
+- cargo fmt --all --check: passed, 33s.
+- Client placement digest and all five requested client scene/map cases: passed
+  in the ongoing 190-case run, including the 126 requested cases.
+- Cargo check/Clippy, final pin-check, requested Rust/real-PG run and focused
+  Python reruns remain in progress at this push; no success is claimed yet.
+- Exhaustive Python discovery ran 450 files in 3114.43s: 417 returned success,
+  33 returned nonzero initially. These include unavailable historical workspace
+  fixtures, old source-stage assumptions, stale reports since regenerated, and
+  a runner error invoking the script-only tree test through unittest (its script
+  assertions and child commands reached their final PASS before unittest exited
+  with no discovered classes). Focused corrections are being rerun.
