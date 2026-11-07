@@ -36,7 +36,7 @@
     "title": "Newhaven Legion Helmet Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Selected recipe has no formal quest prerequisites: implement/prove both Gustavo and Viola contacts, the training-cave descent, exact corpse helmet USE and nearby forcefield return. The former item-admission and stronger separate-mission prerequisite text is superseded by the canonical chosen recipe.",
+    "blocker": "Active implementation: both actual NPC contacts and generic atomic corpse claim predicates are proven. Finish native source buried-hole descent, add cave predicate, then source forcefield return/completion and whole-route PostgreSQL proof; no missing shared feature is deferred.",
     "from_lanes": [
       "questpc2"
     ],
@@ -65,6 +65,12 @@
       "postgres_green_seconds": 91.643903393,
       "proof": "cloud-legion-contacts-proof.json",
       "scope": "Both source NPC contacts and once-only personal tracks; no prerequisite quests, rewards or quest completion seeded. Cave/corpse/forcefield remain active."
+    },
+    "claim_gates_progress": {
+      "postgres_red_seconds": 53.386024031,
+      "postgres_green_seconds": 54.946823409,
+      "proof": "cloud-legion-claim-gates-proof.json",
+      "whole_recipe_qualified": false
     }
   },
   {

@@ -22,6 +22,16 @@ class LegionContactsTests(unittest.TestCase):
             self.assertNotIn('experience',r)
             self.assertNotIn('completes',r)
 
+    def test_claim_gate_is_bounded_to_the_two_exact_personal_contacts(self):
+        raw=qengine_rewards.build()['content/quests/reward-claim-gates.json']
+        document=json.loads(raw)
+        self.assertEqual(document['schema'],1)
+        gate,=document['gates']
+        self.assertEqual(gate['claim'],'oteryn:reward-claim.kv.legiondawnport')
+        self.assertEqual(gate['quest'],'oteryn:quest.newhaven_legion_helmet_quest')
+        self.assertEqual(gate['conditions'],[dict(track='oteryn:quest-progress/legion-helmet/'+name,minimum=1,maximum=1) for name in ['gustavo','viola']])
+        self.assertTrue(gate['sources'])
+
     def test_prior_callbacks_preserved_exactly(self):
         old=[r for r in self.rows if not r['key'].startswith('oteryn:quest-reward/legion-contact-')]
         self.assertEqual(hashlib.sha256(json.dumps(old,sort_keys=True,separators=(',',':')).encode()).hexdigest(),'9213a6522d1ab4673f25c6e635d04c8a4e093dce77b43ce0ebf63c72f2cf94cb')

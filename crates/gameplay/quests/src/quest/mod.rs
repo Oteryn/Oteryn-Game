@@ -37,6 +37,7 @@ pub mod native_rules;
 pub mod npc_rules;
 mod quests_2_focus;
 pub mod reward_callbacks;
+pub mod reward_claim_gates;
 pub mod rotten_blood;
 pub mod soul_war;
 pub mod soul_war_dialogue;

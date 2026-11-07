@@ -23,7 +23,13 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            if matches!(
+            if name == "qengine-rewards-newhaven-legion-gates" {
+                Position {
+                    x: 32143,
+                    y: 31910,
+                    floor: -8,
+                }
+            } else if matches!(
                 name,
                 "qengine-rewards-newhaven-native-goal"
                     | "qengine-rewards-newhaven-route"
@@ -603,6 +609,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-newhaven-legion-gates" {
+        return Box::pin(super::questpc5_legion_claim_gate::exercise(
+            owner, admitted, h,
+        ))
+        .await;
+    }
     if name == "qengine-rewards-newhaven-legion-contacts" {
         return Box::pin(super::questpc5_newhaven_route::legion_contacts(
             owner, admitted, h,

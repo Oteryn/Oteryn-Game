@@ -1,0 +1,40 @@
+{
+  "slice": "Reusable personal RewardClaim quest predicates; Legion two-contact admission",
+  "whole_recipe_qualified": false,
+  "filter": "questpc5_legion_helmet_claim_requires_both_personal_contacts_and_is_once_only",
+  "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 53.386024031,
+    "failure": "Actual source corpse USE returned Committed without either contact",
+    "log": "/tmp/questpc5-legion-gates-wire-red.log"
+  },
+  "green": {
+    "seconds": 54.946823409,
+    "component_seconds": 0.77886531,
+    "result": "PASS",
+    "log": "/tmp/questpc5-legion-gates-green.log"
+  },
+  "coverage": [
+    "Zero contacts: no reward or claim",
+    "Only Gustavo: no reward or claim",
+    "Both personal tracks: exactly one native3374 and one original claim",
+    "Second USE: unchanged one helmet and claim",
+    "Unknown/duplicate/empty/out-of-bounds authoring refused by bounded catalogue parser"
+  ],
+  "checks": {
+    "python_authoring_and_prior_callback_preservation": 4,
+    "rust_bounded_gate_parser": 1,
+    "generator_check": "PASS",
+    "final_rust_legacy_and_pins": "PASS fmt; check57.16s; strict all-target/all-feature clippy89s; legacy Present whole-route101.67s/component38.487184092s; independent repository pin-check07127a12e4dd254b9cb51d00db6543f2f4d93580213fe6b9f62fa57b54698354",
+    "legacy_present_log": "/tmp/questpc5-legion-gates-legacy-present.log"
+  },
+  "scope": "Contact tracks explicitly seeded only in this component admission fixture. Actual source NPC contacts separately proven by cloud-legion-contacts-proof.json. Cave and forcefield whole-route binding remain active.",
+  "source": "content/quests/definitions/quests-00000-00099.json:/records/62/definition",
+  "gate_limits": {
+    "claims": 128,
+    "predicates_per_claim": 8,
+    "sources_per_claim": 8,
+    "source_bytes": 512
+  },
+  "legacy_policy": "Claims without an exact matching production key gate retain their existing MINT path. Original Legion identity, source UID6006/4240 at32143,31910,8, reward3374 quantity1 and once receipt remain unchanged."
+}

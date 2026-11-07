@@ -124,6 +124,7 @@ mod fluid;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
+mod quest_gates;
 pub use quest::QuestRewardAdmission;
 mod soul_war;
 mod viola_book;
@@ -206,6 +207,8 @@ pub struct RewardClaimMintRequest {
 /// Refusal reasons. A refusal writes nothing and the player can retry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RewardClaimRefusal {
+    /// The claim's bounded personal quest predicates are not satisfied.
+    QuestConditions,
     /// The character already holds this `once` claim.
     AlreadyClaimed,
     /// Another CommandRef's MINT of this claim is still pending
@@ -1047,6 +1050,11 @@ async fn admit(
     let granter =
         FencedGrantingCharacter::after_fence(tx, fence.character_id, RewardClaimFenceChecked(()))
             .await?;
+    if !quest_gates::satisfied(tx, fence.character_id, &request.claim.production_key).await? {
+        return Ok(Err(RewardClaimMintError::Refused(
+            RewardClaimRefusal::QuestConditions,
+        )));
+    }
     let already_claimed: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_reward_claims \
                          WHERE character_id = encode($1,'hex')::uuid \

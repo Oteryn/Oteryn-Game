@@ -259,6 +259,7 @@ def build():
     newhaven_rewards.extend(callbacks, offers, greetings)
     import legion_helmet
     legion_helmet.extend(callbacks)
+    generated['content/quests/reward-claim-gates.json']=encoded(legion_helmet.claim_gates())
     callbacks.sort(key=lambda c:c['key'])
     greetings.sort(key=lambda c:c['npc'])
     validate_callbacks({'schema':1,'callbacks':callbacks})

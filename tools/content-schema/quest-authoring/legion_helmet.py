@@ -23,3 +23,13 @@ def extend(callbacks):
             take=[],give=None,outfit=None,achievement=None,
             reply=['The helmet route leads through the training cave. Speak to both of us, descend to the equipment room, search the dead human, then return through the magic forcefield.'],
             sources=[source]))
+
+
+def claim_gates():
+    path='content/quests/definitions/quests-00000-00099.json'
+    raw=(ROOT/path).read_bytes()
+    return dict(schema=1,gates=[dict(claim='oteryn:reward-claim.kv.legiondawnport',
+        quest='oteryn:quest.newhaven_legion_helmet_quest',
+        conditions=[dict(track='oteryn:quest-progress/legion-helmet/'+name,minimum=1,maximum=1)
+                    for name in ['gustavo','viola']],
+        sources=[f'oteryn:selected-recipe:{path}:/records/62/definition:sha256:{hashlib.sha256(raw).hexdigest()}'])])

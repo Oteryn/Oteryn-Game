@@ -255,6 +255,8 @@ pub fn load_embedded_quest_state(
             .collect(),
     )
     .map_err(QuestLoadError::Catalogue)?;
+    super::reward_claim_gates::validate_catalogue(&lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     lowered.catalogue.npc_legacy = npc_legacy;
     lowered
         .source_tracks
