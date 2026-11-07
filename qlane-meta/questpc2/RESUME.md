@@ -1,3 +1,27 @@
+# Current continuation — shield fixed locally, demon corpse admission next
+
+Offline shield authoring/registration now completes28unknown weapon-kind
+fields across35existing Shield taxonomies agreeing with pinned XML. No stats,
+identity or admission changes; defense34 preserved over donor26. Tool4tests,
+registration --check42files, World pin-refresh unchangedb731b0...e9356, clippy
+42.99s pass. Data/tool changes remain staged locally until a complete PG slice.
+Same compiled RED test now hits177damage immediately and reaches lethal melee
+on the full8200HP demon, then PG18.6 RED88.75s refuses
+corpse_item_inadmissible creature=oteryn:creature.angry_demon. Runtime Item5995
+is a materializable15-slot container; CANONICAL Item5995 is not admitted.
+Next extend existing generic encounter_corpse_items.py source admission: XML
+chain5995(cap15,10s)->4097(cap24,300s)->4098(cap24,300s)->4099(no container,60s)->0.
+Prove existing WorldObject pointers/corpse flags before authoring. Reuse
+primal_corpse_items.corpse_definition and repository generation; no second
+corpse engine, forced kill, fake XP or weakened lethal-reward assertion.
+
+Inactive check/clippy/durability caches HAVE BEEN RESTORED (ledger
+/tmp/questpc2-shield-caches-restored.json); prune superseded READY after checks.
+The obsolete failed object/executable archives were removed after preserving
+latest native READY + verified entry executable. Gold entry archive remains
+/tmp/questpc2-before-combat-verified-entry-executable.gz. Current native combat
+code and support helpers remain local pending a green full slice. Continue.
+
 # Active combat authoring checkpoint
 
 Published runtime remains verified entry381736fef; combat changes are local

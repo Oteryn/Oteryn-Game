@@ -148,3 +148,14 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   CREATURE_THINK_INTERVAL_MILLIS, and use normal first-entry equipment plus
   physically minted/carried native health potions and actual item USE.
   No quest progress/reward, fake actor stats, invulnerability or forced kill.
+
+- Equipped melee refusal was source-owned incomplete hand metadata:3425 is
+  admitted taxonomy Shields but native weapon_type was UNKNOWN. Exact donor
+  imports/canary/items-xml/items.xml:10447-10455, SHA256
+  1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+  Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b explicitly states shield.
+  Generic hand_weapon_kinds.py completes only missing kinds where taxonomy,
+  exact existing identity binding and XML agree; known defense34 wins over
+  donor26 and all other facts remain identical. SourceResolver still fails
+  closed for unknown hand policies. This enables real equipped lethal damage;
+  the next actual refusal is canonical demon-corpse admission, not a kill flag.

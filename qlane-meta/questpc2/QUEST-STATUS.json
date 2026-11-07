@@ -1754,6 +1754,17 @@
     ],
     "resource_recovery": "16GiB cgroup recorded one OOM kill. Inactive check/clippy/durability caches retained compressed with SHA verification; restore before next check/clippy using /tmp/questpc2-combat-ram-cache-retention.json. Native cache stays active.",
     "whole_quest_qualifications": 0,
-    "next": "Complete native combat, earned chest, actual exit and sealed re-entry; no forced kills, fake stats, invulnerability, source health reduction or kill flag."
+    "next": "Complete native combat, earned chest, actual exit and sealed re-entry; no forced kills, fake stats, invulnerability, source health reduction or kill flag.",
+    "latest_progress": {
+      "native_shield_kind_fix": "28 UNKNOWN hand kinds completed from35 agreeing admitted Shield taxonomies and pinned XML; all other fields byte-semantically unchanged, defense34 preserved over donor26.",
+      "tool_tests_passed": 4,
+      "world_pin": "b731b0debd508413ce0ccd353e43cb1b6eac8c350a169f7887541881fa6e9356",
+      "registration_check": "PASS42 files",
+      "clippy_seconds": 42.99,
+      "postgres_red_seconds": 88.75,
+      "server_version": 180006,
+      "new_refusal": "Lethal native melee reached; corpse_item_inadmissible creature=oteryn:creature.angry_demon. Canonical corpse5995 is not admitted despite runtime Item profile. Implement source chain5995->4097->4098->4099 using existing generic corpse authoring.",
+      "runtime_code_published": false
+    }
   }
 }
