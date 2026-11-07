@@ -1,39 +1,31 @@
-# Active r2: selector/activation full slice GREEN, native wire combat next
+# Active r2: native wire fixture compiles, PG RED pending
 
-BATCH-basement-selector-alias-2026-11-07.json finalized: PG180006 source
-RED75.36s ->GREEN85.60s, phase flags same xmin/revision; goal2cases99.30s and
-atomic/stale2cases166.36s GREEN. Check78s, clippy185s, fmt, alias6unit,
-closed-goal2unit, qengine_access and native43write/check PASS. Isolated pin
-refresh/check PASS, world32170e60e0f946dd1ba74dc68e45399579b85e66e819259a7adfef3bc5ad8502,
-inputs53806f56d1ee04d4b4ba877e419fd8c3be1ff83d9b58c03505a4906382d5ac5c;
-unchanged geometry/pin data. Prior proof e7163c164 pushed, finalize metadata now.
+New auto-mounted elvenbane_combat.rs drives genuine source Dragon via attack/
+chase protocol, ordinary auto-attacks/nativeAI, healing, XP/corpse/loot; asserts
+native Dragoncounter1 and ownphase3. All six original pinned SpawnSource points
+are selected from production project families (cells/keys/respawn unchanged),
+no qualification spawn helper/fixture damage/HP/kill flags. New RouteElvenbaneCombat
+follows actual earned source exploration. Binary compiled84s; actualPG180006
+started in session46024/log /tmp/questpc2-elvenbane-native-wire-corrected-red-pg.log.
+Exact pending point: expects6 runtime source actors; fixture intentionally lacks
+production activation call. Observe actual RED before adding begin_activation_spawn_sources/
+realize_activation_spawn_window(0) before Fresh admission, exactly serve boot.
+Then unchanged wire helper must kill Dragon and earn both progress tracks.
+Fix any real caller gaps generically; no snapshot/manual-credit bypasses.
 
-NEXT IMMEDIATELY: full wire combat fixture using source-native six defenders.
-Production API found: BundleWorld.activation_spawns + runtime.begin_activation_spawn_sources/
-realize_activation_spawn_window; serve.rs2445-2471. SourceWorld project.families
-contains actual SpawnSource.points {creature,cell,direction,respawn_ms}; select
-only six pinned goal origins in the new combat fixture before compilation;
-assert exactly6 actual projected/realized native source actors. No qualification
-spawn helper/fake HP/deaths/flags in whole-quest proof. Activate before Fresh
-players as production does, retain actual actor references even if AI moves.
-Start from earned basement/poison/Dragon-floor route, then actual protocol attack
-and autoattack/nativeAI drains (existing annihilator_combat driver reusable),
-ordinary XP/corpse/loot settlement, exact native counters. Then generic atomic
-seven-item backpack reward/capacity/replay + source exit/journal; qualify full
-Elvenbane only after whole driver. Keep owned27 unfinished until then.
+Immediate source file edits already compile; earlier missing fence local fixed.
+No production/content/migration changes in this WIP. Runtime selector/canonical
+activation/5PGcases/pins fully green at5346b5b3f and pushed. Authgit commands
+MUST source /workspace/oteryn-env/env.sh first; otherwise fetch may fail username.
+Push target10min (max15) and everygreen, fetchownbranch/merge beforeeverypush.
 
-Resource: overlapping pins killed137/OOM21kill10; isolated pin tools now passed.
-To restore positive native incremental after pins, read
-/tmp/questpc2-selector-alias-positive-native-ready.json, extract its archive into
-/tmp/questpc2-dispatch-native-incremental (contains saved directory), retain READY.
-Positive selector executable backup in cache hold ledger
-/tmp/questpc2-cache-hold-basement-five-pg-before-pin.json. Restore it or let cargo
-rebuild; no native executable currently. Cache helper/index under/tmp; only
-restore clippy/check after native build finishes. Current inactive caches archived.
-Root2.4GBfree/tmp1.4GB at13:20; fixture33idle DB cleanup freed1.4GiB. New early
-return cleanup verified by source/atomic PG cases. No broad clean/profile flags/
-credential reads. Push target10min to guarantee owner15min maximum; everygreen
-step immediately. Beforeeachpush fetch ownbranch/merge remote ifmoved.
+Positive selector ABI cache/executable restored; current native binary is new
+RED candidate. Old positive READY archive retired AFTER verified restore to
+reclaim link space: /tmp/questpc2-selector-alias-positive-native-ready.json now
+retired=true; live READY remains. Do not restore retired archive. Positive
+five-case exe archive remains per cache hold ledger basement-five-pg-before-pin.
+Cache helper latest index supports inactive mode restore; currentclippy/check
+archived, no heavy parallel compiler. Whole Elvenbane/owned27 still unfinished.
 
 Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
 2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE

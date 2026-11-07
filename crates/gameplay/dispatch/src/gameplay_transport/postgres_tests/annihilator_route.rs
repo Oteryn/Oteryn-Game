@@ -30,6 +30,7 @@ enum Route {
     ObjectiveAtomicity,
     ObjectiveAtomicityStale,
     ElvenbaneExploration,
+    ElvenbaneCombat,
 }
 
 pub(super) fn native_objective_atomicity() -> TestResult {
@@ -38,6 +39,10 @@ pub(super) fn native_objective_atomicity() -> TestResult {
 
 pub(super) fn native_objective_stale_capture() -> TestResult {
     run(Route::ObjectiveAtomicityStale)
+}
+
+pub(super) fn elvenbane_source_combat() -> TestResult {
+    run(Route::ElvenbaneCombat)
 }
 
 pub(super) fn elvenbane_source_exploration() -> TestResult {
@@ -55,7 +60,7 @@ fn run(route: Route) -> TestResult {
             y: 31645,
             floor: -5,
         }
-    } else if route == Route::ElvenbaneExploration {
+    } else if matches!(route, Route::ElvenbaneExploration | Route::ElvenbaneCombat) {
         Position {
             x: 32599,
             y: 31652,
@@ -93,6 +98,7 @@ fn run(route: Route) -> TestResult {
         let world = source_world(
             generation.native_gameplay().ok_or("native gameplay")?,
             start,
+            route == Route::ElvenbaneCombat,
         )?;
         let now: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -221,7 +227,7 @@ fn run(route: Route) -> TestResult {
         if combat {
             pending.push(oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1);
         }
-        if route == Route::ElvenbaneExploration {
+        if matches!(route, Route::ElvenbaneExploration | Route::ElvenbaneCombat) {
             pending.push(oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1);
             pending.push(oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1);
         }
@@ -383,6 +389,15 @@ fn run(route: Route) -> TestResult {
                 route == Route::ObjectiveAtomicityStale,
             )
             .await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
+        if route == Route::ElvenbaneCombat {
+            let result =
+                super::elvenbane_combat::scenario(&mut owner, &mut admitted[0], &h.pool).await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -592,11 +607,42 @@ async fn level(
 fn source_world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     start: Position,
+    elvenbane_combat: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::bundle;
     use oteryn_world_bundle_compiler::{compile, project, source};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let project = source::project_regions(&root, &[(start.x / 256, start.y / 256)])?;
+    let mut project = source::project_regions(&root, &[(start.x / 256, start.y / 256)])?;
+    if elvenbane_combat {
+        let goals = oteryn_gameplay_quests::quest::native_kill_goals::load().map_err(debug)?;
+        for source in &mut project.families.spawns {
+            source.points.retain(|point| {
+                goals.iter().any(|goal| {
+                    goal.quest == oteryn_gameplay_quests::quest::kill_objectives::QUEST
+                        && goal.matches(
+                            &point.creature,
+                            i32::from(point.cell.0),
+                            i32::from(point.cell.1),
+                            i16::from(point.cell.2),
+                        )
+                })
+            });
+        }
+        project
+            .families
+            .spawns
+            .retain(|source| !source.points.is_empty());
+        assert_eq!(
+            project
+                .families
+                .spawns
+                .iter()
+                .map(|source| source.points.len())
+                .sum::<usize>(),
+            6,
+            "compile the six actual pinned source declarations, retaining cells/policy/respawn facts"
+        );
+    }
     let (registry, palette) = source::registry(&root, &project)?;
     let identity: bundle::Identity = serde_json::from_slice(&std::fs::read(
         root.join("content/world/pins/oteryn.identity.json"),

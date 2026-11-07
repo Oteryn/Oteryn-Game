@@ -2062,5 +2062,13 @@
     "atomic_pg_seconds": 166.36,
     "goal_pg_seconds": 99.3,
     "pins": "isolated refresh/check PASS"
+  },
+  "source_wire_combat_authoring": {
+    "state": "WIP_FIXTURE_COMPILES_PG_RUNNING",
+    "base": "5346b5b3f",
+    "compile_seconds": 84,
+    "pg_log": "/tmp/questpc2-elvenbane-native-wire-corrected-red-pg.log",
+    "point": "New fixture requires six real projected source actors; normal runtime source activation is intentionally not installed yet. Observe actual PG RED then install production activation and drive real wire Dragon attack/XP/cohort progress.",
+    "next": "PG result; production source activation before Fresh players; wire/chase/nativeAI and ordinary XP/corpse/loot; whole upper defenders/reward/exit later."
   }
 }

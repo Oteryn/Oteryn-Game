@@ -72,7 +72,7 @@ pub(super) async fn prepare_supplies(
     Ok(())
 }
 
-async fn heal(
+pub(super) async fn heal(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
 ) -> TestResult {
@@ -116,7 +116,7 @@ async fn heal(
     Ok(())
 }
 
-async fn command(
+pub(super) async fn command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
     kind: u32,
