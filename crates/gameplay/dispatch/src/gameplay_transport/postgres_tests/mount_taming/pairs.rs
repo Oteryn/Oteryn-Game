@@ -100,7 +100,12 @@ pub(super) async fn run(
         // Each authored failure is reached through the wire, including ACTION_ALL and
         // BREAK=false. A single retained draw selects its weighted outcome.
         // A 100% rule has no reachable failure bucket, even if its donor supplies text.
-        for (i, failure) in rule.failures.iter().enumerate().filter(|_| rule.chance < 100) {
+        for (i, failure) in rule
+            .failures
+            .iter()
+            .enumerate()
+            .filter(|_| rule.chance < 100)
+        {
             let n = u128::try_from(rule.failures.len())?;
             let bucket = u128::from(rule.chance) * n + u128::try_from(i)?;
             let draw = u64::try_from((bucket << 64).div_ceil(100 * n))?;
@@ -192,7 +197,8 @@ pub(super) async fn run(
         // before current visibility and source resolution.
         let mut replay = retained;
         replay.continuity.next_command_id = command;
-        let (results, _) = wire::exchange(owner, replay, std::slice::from_ref(&success_payload)).await?;
+        let (results, _) =
+            wire::exchange(owner, replay, std::slice::from_ref(&success_payload)).await?;
         assert_eq!(results, [UseDisposition::Committed]);
         assert_eq!(item_quantity(h, &rule.item_key).await?, before - 1);
         assert_eq!(h.count("game_mount_taming_attempts").await?, attempts);

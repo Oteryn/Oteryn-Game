@@ -771,3 +771,9 @@ mount definitions/grant bindings; retain taming probabilities/guards. W15b
 generic chest resolver stillsingle-item andallrewardvariants also explicitly
 owned. Refresh other-lane qualification before remaining24 entries. Keep15min
 compiled-WIP/green pushes, namedredpoints, no qengpr/main/PR/force/rebase.
+
+S06 compiling WIP: stock-content mount taming cases built in5m15s, now running
+against configured PostgreSQL. Production remains unchanged before RED. Missing
+point: native cosmetics mounts=[] and absent taming grant mappings. Tests retain
+existing outcome, consumption, replay, equipment and all51pair assertions.
+Donor mounts.xml250rows verified sha e5ed55b01274d1e29472a43224ccdb579684f8967244e50e8927ce3858a392b8.

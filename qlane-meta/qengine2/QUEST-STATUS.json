@@ -2894,7 +2894,8 @@
         "id": "S06",
         "status": "AUTHORING",
         "scope": "Complete outfit/addon/mount acquisition population and taming rules; generic real-dispatch PostgreSQL qualification.",
-        "finding": "Stock active cosmetics authoring document has64outfits and0mounts; canonical252mounts and51taming rules already exist. Populate active artifact and exercise stock real dispatcher, preserving existing taming mechanics."
+        "finding": "Stock active cosmetics authoring document has64outfits and0mounts; canonical252mounts and51taming rules already exist. Populate active artifact and exercise stock real dispatcher, preserving existing taming mechanics.",
+        "progress": "Compiling WIP: three stock-content real-dispatch PostgreSQL taming tests compiled in5m15s; executing RED before production changes. Exact missing binding: active cosmetics mounts=[] and no taming grant mappings."
       },
       {
         "id": "W15b",
