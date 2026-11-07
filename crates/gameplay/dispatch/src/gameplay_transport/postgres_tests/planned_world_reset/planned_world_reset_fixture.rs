@@ -54,17 +54,6 @@ pub(crate) fn set_runtime(
     pin: &crate::content::NativeEntryContentPin,
     generation: u64,
 ) -> TestResult {
-    set_runtime_with_capacity(deps, world, channel, pin, generation, 2)
-}
-
-pub(crate) fn set_runtime_with_capacity(
-    deps: &mut Dependencies,
-    world: WorldId,
-    channel: ChannelId,
-    pin: &crate::content::NativeEntryContentPin,
-    generation: u64,
-    capacity: usize,
-) -> TestResult {
     let room = pin.qualified_room();
     let start = room.entry_start();
     let content = ChannelContentPin::from_activation(
@@ -85,7 +74,7 @@ pub(crate) fn set_runtime_with_capacity(
             generation,
             generation,
             &format!("runtime-scope-assignment:{generation}"),
-            capacity,
+            2,
             content,
         )
         .map_err(debug)?,

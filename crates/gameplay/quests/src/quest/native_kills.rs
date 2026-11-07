@@ -78,7 +78,6 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
     for counter in COUNTERS {
         transitions.push(QuestTransition {
-            world_change: None,
             key: counter.transition.into(),
             quest: counter.quest.into(),
             effects: vec![

@@ -18,7 +18,6 @@ pub struct TravelRoute {
     pub yalahar_gate: bool,
     pub yalahar_town_gate: Option<String>,
     pub quest_gate: Option<String>,
-    pub world_change: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -41,8 +40,6 @@ struct Correction {
     native_addition: bool,
     #[serde(default)]
     quest_gate: Option<String>,
-    #[serde(default)]
-    world_change: Option<String>,
 }
 
 /// Bind route corrections to the same revision as their production conversation book.
@@ -116,7 +113,6 @@ pub fn resolve(
                 yalahar_gate: correction.yalahar_gate,
                 yalahar_town_gate: correction.yalahar_town_gate.clone(),
                 quest_gate: correction.quest_gate.clone(),
-                world_change: correction.world_change.clone(),
             })
         })
         .collect()

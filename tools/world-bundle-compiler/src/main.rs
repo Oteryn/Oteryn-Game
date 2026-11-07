@@ -161,7 +161,6 @@ const INPUT_PATHS: &[&str] = &[
     "content/world/",
     "content/cyclopedia/",
     "content/encounters/world-changes/layers.json",
-    "content/encounters/world-changes/runtime.json",
     "content/assets/files/",
     "imports/cipsoft-staticdata/map/subareas/",
     "content/houses/",

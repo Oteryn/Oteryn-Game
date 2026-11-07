@@ -1105,8 +1105,7 @@ pub(super) async fn exercise(
             if let oteryn_gameplay_quests::quest::reward_callbacks::StateCondition::ElapsedAtLeast { seconds } = operation.from {
                 let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint").fetch_one(&h.pool).await?;
                 let key=format!("oteryn:quest-transition/qengine2-story/clock-advance-{}",clock_fixtures.len());
-                transitions.push(QuestTransition {
-                    world_change: None, key:key.clone(),quest:callback.quest.clone(),
+                transitions.push(QuestTransition {key:key.clone(),quest:callback.quest.clone(),
                     effects:vec![QuestEffect {track:operation.track.clone(),from:QuestComparison::Any,
                         effect:QuestEffectKind::Set(now-i64::from(seconds)-1)}],completes:false,experience:None});
                 clock_fixtures.insert(callback.key.clone(),(operation.track.clone(),seconds,key));
@@ -1205,7 +1204,6 @@ pub(super) async fn exercise(
         let key = format!("oteryn:quest-transition/qengine2-story/setup-{index}");
         setup_keys.push(key.clone());
         transitions.push(QuestTransition {
-            world_change: None,
             key,
             quest,
             effects,
@@ -1221,7 +1219,6 @@ pub(super) async fn exercise(
             ("restore", required.minimum),
         ] {
             transitions.push(QuestTransition {
-            world_change: None,
                 key: format!("oteryn:quest-transition/qengine2-story/{key}"),
                 quest: track.quest.clone(),
                 effects: vec![QuestEffect {
@@ -1236,7 +1233,6 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-l3-dark-trails-story" {
         transitions.push(QuestTransition {
-            world_change: None,
             key: "oteryn:quest-transition/qengine2-story/vote-six".into(),
             quest: tracks.get(VOTES).ok_or("votes owner")?.quest.clone(),
             effects: vec![QuestEffect {

@@ -236,7 +236,6 @@ pub(super) fn extend(
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for transition in &book.data.transitions {
         transitions.push(QuestTransition {
-            world_change: None,
             key: transition_key(&transition.key),
             quest: QUEST.into(),
             effects: transition

@@ -38,7 +38,7 @@ fn srv6_planegazer_real_npc_exact_finale_sequence_and_title() -> TestResult {
             owner.active_generation=Some(active);
             let canonical=oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?.catalogue().clone();
             let mut transitions=canonical.transition(COMPLETE).cloned().into_iter().collect::<Vec<_>>();
-            transitions.push(QuestTransition{world_change:None,key:"oteryn:quest-transition/srv6-planegazer-ready".into(),quest:QUEST.into(),effects:vec![QuestEffect{track:READY.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(1)}],completes:false,experience:None});
+            transitions.push(QuestTransition{key:"oteryn:quest-transition/srv6-planegazer-ready".into(),quest:QUEST.into(),effects:vec![QuestEffect{track:READY.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(1)}],completes:false,experience:None});
             let tracks=[READY,CLAIMED].into_iter().map(|key|QuestTrack{key:key.into(),quest:QUEST.into(),initial:0,min:0,max:1}).collect();
             owner.quest_catalogue=Some(Arc::new(QuestStateCatalogue::new("content-1",tracks,transitions).map_err(debug)?));
             deps.initialize(&owner).await;

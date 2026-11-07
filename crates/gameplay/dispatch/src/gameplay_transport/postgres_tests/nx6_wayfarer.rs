@@ -62,7 +62,6 @@ pub(super) async fn exercise(
     // finale, receipt or achievement is seeded; the final transition is production code.
     let setup_key = "oteryn:quest-transition/nx6-fixture-dream-ready";
     let mut transitions = vec![QuestTransition {
-            world_change: None,
         key: setup_key.into(),
         quest: quest::QUEST.into(),
         effects: keys

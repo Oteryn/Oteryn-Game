@@ -43,8 +43,7 @@ fn srv6_hero_title_real_npc_final_report_atomic_and_replay() -> TestResult {
             owner.active_generation=Some(active);
             let canonical=oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?.catalogue().clone();
             let mut transitions=canonical.transition("oteryn:quest-transition/hero-of-bounac/final-report").cloned().into_iter().collect::<Vec<_>>();
-            transitions.push(QuestTransition {
-            world_change: None,key:"oteryn:quest-transition/srv6-hero-ready".into(),quest:QUEST.into(),effects:vec![QuestEffect{track:MISSION.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(5)}],completes:false,experience:None});
+            transitions.push(QuestTransition {key:"oteryn:quest-transition/srv6-hero-ready".into(),quest:QUEST.into(),effects:vec![QuestEffect{track:MISSION.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(5)}],completes:false,experience:None});
             owner.quest_catalogue=Some(Arc::new(QuestStateCatalogue::new("content-1",[MISSION,DOOR].into_iter().map(|key|canonical.track(key).cloned().ok_or("source track")).collect::<Result<Vec<_>,_>>()?,transitions).map_err(debug)?));
             deps.initialize(&owner).await;
             let mut admitted=deps.admitted;

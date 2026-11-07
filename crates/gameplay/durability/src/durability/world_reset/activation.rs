@@ -37,7 +37,6 @@ async fn activate(
     reset: RetiringWorldReset,
     target: &QualifiedNativeEntryRoom,
 ) -> Result<Option<u64>> {
-    let world_changes = crate::durability::world_event::prepare_catalogue()?;
     let owner = root.clone();
     let node = node.clone();
     let map = target.movement_cells().scope().map_revision.as_str().to_owned();
@@ -71,7 +70,7 @@ async fn activate(
         if let Some(epoch) = epoch {
             // Same transaction as epoch, calendar and content issuance. Historical
             // replay verifies the immutable decision; it never redraws at channel boot.
-            crate::durability::world_event::record_reset(&mut tx, reset.world, epoch, outcome.as_deref() == Some("NEW_EPOCH"), &world_changes).await?;
+            crate::durability::world_event::record_reset(&mut tx, reset.world, epoch, outcome.as_deref() == Some("NEW_EPOCH")).await?;
         }
         commit_semantic_transaction(tx, deadline).await?;
         Ok(epoch)

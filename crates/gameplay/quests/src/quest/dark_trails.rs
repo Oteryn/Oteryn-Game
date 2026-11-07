@@ -298,7 +298,6 @@ pub(super) fn extend(
             entry.effect = QuestEffectKind::Set(set.value);
         }
         transitions.push(QuestTransition {
-            world_change: None,
             key: transition_key(&rule.key),
             quest: QUEST.into(),
             effects: effects.into_values().collect(),

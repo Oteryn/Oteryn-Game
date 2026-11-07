@@ -158,8 +158,6 @@ struct Track {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Transition {
-    #[serde(default)]
-    world_change: Option<String>,
     key: String,
     quest: String,
     completes: bool,
@@ -316,7 +314,6 @@ pub fn parse_quest_state(
                     .any(|effect| effect.effect == QuestEffectKind::Computed),
             );
             transitions.push(QuestTransition {
-                world_change: transition.world_change,
                 key: transition.key,
                 quest: transition.quest,
                 effects,

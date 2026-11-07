@@ -44,7 +44,6 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     }
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
     transitions.push(QuestTransition {
-        world_change: None,
         key: COMPLETE.into(),
         quest: QUEST.into(),
         effects: vec![

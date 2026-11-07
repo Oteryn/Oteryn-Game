@@ -633,7 +633,6 @@ pub(super) fn extend(
                     }],
                     completes: false,
                     experience: None,
-                    world_change: None,
                 },
             )
             .is_some()

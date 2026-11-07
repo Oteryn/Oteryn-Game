@@ -98,7 +98,7 @@ pub const DRAW_PURPOSES: [&str; 9] = [
 ];
 
 // Crystal `fury_gates.lua:5-16` and `nightmare_isles.lua:5-9` source order.
-pub(crate) const FURY_LAYERS: [&str; 10] = [
+const FURY_LAYERS: [&str; 10] = [
     "fury_gates/abdendriel",
     "fury_gates/ankrahmun",
     "fury_gates/carlin",
@@ -110,7 +110,7 @@ pub(crate) const FURY_LAYERS: [&str; 10] = [
     "fury_gates/thais",
     "fury_gates/venore",
 ];
-pub(crate) const NIGHTMARE_LAYERS: [&str; 3] = [
+const NIGHTMARE_LAYERS: [&str; 3] = [
     "nightmare_isle/ankrahmun-north",
     "nightmare_isle/darashia-north",
     "nightmare_isle/darashia-west",
@@ -293,51 +293,6 @@ impl DailyWorldChanges {
             .flatten()
             .map(|position| (ICE_FLOWER, position))
     }
-}
-
-/// Canonical occurrence draws shared by durable decisions and physical projections.
-pub fn roll_calendar(world: &[u8; 16], reset_epoch: u64, month: u8, day: u8) -> DailyWorldChanges {
-    let (root, occurrence) = decision_context(world, reset_epoch);
-    DailyWorldChanges::roll(reset_epoch, month, day, |purpose| {
-        draw(&root, occurrence, purpose)
-    })
-}
-
-pub(crate) fn draw_for_epoch(world: &[u8; 16], epoch: u64, purpose: &str) -> u64 {
-    let (root, occurrence) = decision_context(world, epoch);
-    draw(&root, occurrence, purpose)
-}
-
-fn decision_context(
-    world: &[u8; 16],
-    epoch: u64,
-) -> (
-    oteryn_simulation_determinism::GameplayDecisionRoot,
-    [u8; 16],
-) {
-    use sha2::{Digest, Sha256};
-    let mut hash = Sha256::new();
-    hash.update(b"oteryn.world_change.daily.v1\0");
-    hash.update(world);
-    let root =
-        oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(hash.finalize().into());
-    let mut occurrence = [0; 16];
-    occurrence[8..].copy_from_slice(&epoch.to_be_bytes());
-    (root, occurrence)
-}
-
-fn draw(
-    root: &oteryn_simulation_determinism::GameplayDecisionRoot,
-    occurrence: [u8; 16],
-    purpose: &str,
-) -> u64 {
-    oteryn_simulation_determinism::deterministic_decision_u64(
-        root,
-        oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence),
-        purpose,
-        0,
-    )
-    .unwrap_or(u64::MAX)
 }
 
 #[cfg(test)]

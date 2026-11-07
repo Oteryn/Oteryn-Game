@@ -121,7 +121,6 @@ fn source_catalogue()
     let mut transitions = Vec::new();
     for balance in [159_999, 160_000, 319_999, 320_000, 429_999, 430_000] {
         transitions.push(QuestTransition {
-            world_change: None,
             key: format!("oteryn:quest-transition/srv6-points-{balance}"),
             quest: task_quest.into(),
             effects: vec![QuestEffect {
@@ -143,7 +142,6 @@ fn source_catalogue()
             max: i64::MAX,
         });
         transitions.push(QuestTransition {
-            world_change: None,
             key: format!("oteryn:quest-transition/srv6-dish-{dish}"),
             quest: hot.into(),
             effects: vec![QuestEffect {
