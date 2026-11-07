@@ -1511,8 +1511,33 @@
     },
     {
       "title": "Tomes of Knowledge",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "postgres_test": "questl2_knowledge_batch_tomes_full_journey",
+          "postgres_version": "18.6",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-tomes",
+          "duration_seconds": 106.118167266,
+          "nextest_duration_seconds": 111.469,
+          "passed": 1,
+          "failed": 0,
+          "log": "/tmp/l2-tomes-xp-receipt-pg.log",
+          "proves": [
+            "Ten actual source chests plus Curos and Zalamon NPC gifts; chest reuse refused",
+            "Twelve exact Cael hand-ins burn one physical book each",
+            "Seventh Tome requires full New Frontier",
+            "Locked shop refuses without spending; four paid shop purchases unlock incrementally; literal replay",
+            "Snake Head teleport, corruption hole and palace door refuse before unlock and admit afterwards",
+            "Additional Tome awards exactly 5000 native XP, consumes its obligation and cannot replay twice"
+          ]
+        }
+      ],
+      "source": {
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "file": "data-global/npc/cael.lua",
+        "lines": "30-35,84-128",
+        "sha256": "4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
+      }
     },
     {
       "title": "Top of the City",
@@ -2892,8 +2917,8 @@
       "lane_migrations": "1210-1219",
       "workspace_all_targets": {
         "result": "PASS",
-        "duration_seconds": 116,
-        "log": "/tmp/l2-empty-shop-final-workspace.log"
+        "duration_seconds": 162,
+        "log": "/tmp/l2-xp-receipt-workspace.log"
       },
       "authoring_tests": {
         "result": "PASS",
@@ -2927,7 +2952,7 @@
         "creatures": 1863,
         "npcs": 1282
       },
-      "push_gate": "Owner hard rule: push compiling state after cargo check --workspace --all-targets and fmt; own PG regressions retained, Tomes remains unqualified at valid Cael shop purchase.",
+      "push_gate": "Own full Tomes PG journey green; workspace all-target check and fmt pass. Owner hard rule permits immediate compiling-state pushes; CI runs complete suites.",
       "clippy": {
         "result": "PASS",
         "changed_crates": 28,
@@ -2935,13 +2960,12 @@
         "log": "/tmp/l2-push-clippy.log",
         "latest_dispatch": {
           "result": "PASS",
-          "duration_seconds": 26.81,
-          "log": "/tmp/l2-empty-shop-final-clippy.log"
+          "log": "/tmp/l2-xp-receipt-clippy.log"
         }
       },
       "fmt": {
         "result": "PASS",
-        "log": "/tmp/l2-empty-shop-final-fmt.log"
+        "log": "/tmp/l2-qualified-tomes-fmt.log"
       },
       "npc_placements": {
         "result": "PASS",
@@ -2954,8 +2978,8 @@
       "pins": {
         "result": "PASS",
         "world_digest": "507f743c46fb1699e41fa89096860b36e7428e1ccd96b3d3413ea564684985f0",
-        "inputs_digest": "27250bfa9b546c9a31e78d5715489c75f76d8ced217aeb26d35518215bb69b86",
-        "log": "/tmp/l2-final-authoring-pin-refresh.log"
+        "inputs_digest": "c4224acba27bc503e420b1aa036706c0b26fad81a27f24c0192a235d04a65d52",
+        "log": "/tmp/l2-tomes-qualified-pin-refresh.log"
       },
       "regression_proof": {
         "postgres_server": "18.6",
@@ -2975,14 +2999,16 @@
           "/tmp/l2-regression-current-batch-pg.log"
         ]
       },
-      "remaining_red": {
-        "quest": "Tomes of Knowledge",
-        "test": "questl2_knowledge_batch_tomes_full_journey",
-        "actual": "Rejected",
-        "expected": "Ok",
-        "point": "First unlocked Cael shop purchase after sixth Tome; both NPC gifts, ten source chests and first six hand-ins have passed",
-        "duration_seconds": 96.963,
-        "log": "/tmp/l2-tomes-empty-shop-pg.log"
+      "tomes_postgres": {
+        "result": "PASS",
+        "duration_seconds": 111.469,
+        "log": "/tmp/l2-tomes-xp-receipt-pg.log"
+      },
+      "completion_matrix": {
+        "result": "PASS",
+        "tests": 6,
+        "log": "/tmp/l2-tomes-completion-matrix-tests.log",
+        "regenerated_with": "quest_completion_matrix.py"
       }
     }
   },
@@ -3076,7 +3102,7 @@
       "An Uneasy Alliance",
       "Tomes of Knowledge"
     ],
-    "phase": "Kilmaresh and An Uneasy Alliance QUALIFIED; continue Tomes of Knowledge from its real PostgreSQL RED journey.",
+    "phase": "Kilmaresh, An Uneasy Alliance and Tomes of Knowledge QUALIFIED; prepare next owned batch.",
     "postgres_log": "/tmp/l2-knowledge-red.log",
     "postgres_version": "18.6",
     "red_durations_seconds": {
@@ -3121,7 +3147,7 @@
         "failed": 0,
         "log": "/tmp/l2-stateless-authoring.log"
       },
-      "remaining": "None for stateless paid source exchanges; continue Alliance and Tomes journeys.",
+      "remaining": "Completed; see tomes_qualification and qualified entry proof.",
       "postgres_log": "/tmp/l2-regalia-native-pg.log",
       "duration_seconds": 77.3660027,
       "clippy": {
@@ -3217,7 +3243,7 @@
       "status": "WIP",
       "mechanism": "Generic conditional NPC catalogue offers with authoritative trade-time track predicates",
       "domain_log": "/tmp/l2-quest-shop-domain.log",
-      "remaining": "Tomes source offers and full native PostgreSQL journey still RED at missing bindings",
+      "remaining": "Completed; see tomes_qualification and qualified entry proof.",
       "compile": {
         "status": "PASS",
         "duration": "2m36s",
@@ -3236,10 +3262,10 @@
       }
     },
     "tomes_source_progress": {
-      "status": "WIP",
+      "status": "QUALIFIED",
       "authoring_tests_passed": 22,
       "authoring_log": "/tmp/l2-tomes-lane-authoring.log",
-      "native_journey_log": "/tmp/l2-tomes-native-pg1.log",
+      "native_journey_log": "/tmp/l2-tomes-xp-receipt-pg.log",
       "remaining": "Native PG journey compiling; authoritative shop purchases and physical access callbacks still need journey assertions",
       "shared_authoring_tests_passed": 27,
       "shared_authoring_log": "/tmp/l2-tomes-shared-authoring2.log",
@@ -3254,6 +3280,11 @@
         "error": "format: palette index out of range",
         "fix": "Use sector palette vector indexes3/4, preserving manifest identities100/101"
       }
+    },
+    "tomes_qualification": {
+      "result": "PASS",
+      "duration_seconds": 106.118167266,
+      "log": "/tmp/l2-tomes-xp-receipt-pg.log"
     }
   }
 }

@@ -881,7 +881,11 @@ async fn tomes(
     );
     assert_eq!(quantity(h, 10217).await?, 0);
     assert_ne!(counts(h).await?, before);
-    let xp:i64=sqlx::query_scalar("SELECT sum(amount)::bigint FROM game_character_quest_xp_obligations WHERE transition_key=$1").bind(&extra.key).fetch_one(&h.pool).await?;
+    let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_xp_obligations WHERE transition_key=$1")
+        .bind(&extra.key).fetch_one(&h.pool).await?;
+    assert_eq!(pending, 0, "native progression consumes its XP obligation");
+    let xp: i64 = sqlx::query_scalar("SELECT sum(experience_awarded)::bigint FROM game_character_xp_receipts")
+        .fetch_one(&h.pool).await?;
     assert_eq!(xp, 5000);
     let xp_after: i64 =
         sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state")
@@ -954,6 +958,9 @@ async fn tome_shop(
     use oteryn_protocol_oteryn::npc_service::{
         NpcTradeIntent, NpcTradeSide, encode_npc_trade_intent,
     };
+    // The preceding tome conversation used three talk intents. Respect the
+    // native four-intents-per-second limit before this greeting and trade.
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     let book = owner.states.chat.npc_talk().ok_or("shop book")?;
     let entry = book.get("oteryn:npc.cael").ok_or("Cael shop")?;
     let shops = quest_shops::shops().map_err(debug)?;
