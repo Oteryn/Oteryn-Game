@@ -143,7 +143,12 @@ fn scenario_case(
     let world = world(&callback, trigger)?;
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
-            Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await
+            Harness::create_quest_reward(
+                admin,
+                "quest_rewards",
+                !name.ends_with("pirate") && !name.contains("beggar-male"),
+            )
+            .await
         } else {
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
@@ -256,6 +261,29 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        let premium = if name.contains("l6-beggar-") {
+            use crate::gameplay_transport::spell_premium_coordinator::{
+                SpellPremiumCoordinator, purchase_fixture,
+            };
+            let (consumer, clock, activation, _) =
+                purchase_fixture::current(super::super::fixture::id(40));
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            Some(SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            ))
+        } else {
+            None
+        };
         let (consumer, clock, activation, _) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
         if mead {
@@ -268,7 +296,7 @@ fn scenario_case(
                 .await
                 .map_err(debug)?;
         }
-        let premium =
+        let mead_premium =
             crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
                 consumer,
                 Some(clock),
@@ -276,8 +304,9 @@ fn scenario_case(
                 Some(h.root.clone()),
             );
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = premium.as_ref();
         if mead {
-            owner.premium_coordinator = Some(&premium);
+            owner.premium_coordinator = Some(&mead_premium);
         }
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;

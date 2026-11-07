@@ -25,7 +25,8 @@ Each record has these fields:
 | `npc` | Canonical `oteryn:npc.<name>`, resolved through the current conversation. |
 | `keywords` | One to eight exact, trimmed, lowercase ASCII player messages. |
 | `topic`, `next_topic` | Current/committed conversation topic, unsigned 16-bit integers. |
-| `storage` | One to eight `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as `-1`. `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
+| `storage` | One to eight `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as the declared track initial value (new callback tracks default to `-1`). `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
+| `requires` | Optional, up to eight distinct read-only `{track, minimum, maximum}` prerequisites. Tracks must already be declared and cannot also occur in `storage`. Their original quest retains ownership. The writer locks them in sorted order with written tracks and rechecks their fresh values before any consumption or reward. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
 | `give` | Optional/null `{item, count, contents?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
@@ -71,3 +72,76 @@ The world callback writer composes these grants with its existing fenced USE
 receipt and storage transaction; the Channel owner applies only map projections.
 A world outfit reward requires nonempty, once-only storage guards and the current
 native generation. Existing world callbacks can omit that participant.
+
+L2 adds complete Battle Mage, Festive and Elementalist outfit conversations.
+Battle Mage addons retain Secret Library ownership of their prerequisite; Festive
+addons retain First Dragon ownership. Offers use the same prerequisites, while
+the durable writer independently rechecks them under transaction locks.
+
+The optional top-level `tracks` list declares missing read-only parent tracks
+using `{key, quest, initial, min, max, sources}` (maximum256). Every declaration
+must be used by a `requires` predicate and must never be written by a callback.
+Sources are mandatory. Existing declarations must match the admitted original
+owner/default/bounds exactly; conflicting ownership/defaults fail closed.
+This adds catalogue facts only and never writes player progress. Missing donor
+storage uses its declared initial, so a missing positive prerequisite refuses.
+
+L3 composes Avar Tar's Demon base/shield/helmet with the original Annihilator,
+Demon Helmet and Demon Oak owners. Ezebeth shares one Dark Trails/Glooth Engineer
+base grant; six or more Oramond voting points prioritize addon2. The addon1 path
+at six or more points also requires completed addon2, preserving source `elseif`
+ordering without ambiguous eligible reward callbacks. Three to five points can
+earn addon1 first. Oramond voting progress retains its original owner.
+
+An optional `fee: {gold, include_bank}` composes the existing native fee owner
+with the same Quest transaction. A price is1..1000000000000 gold units; it cannot
+also consume coin identities through `take`. The retained native coin/change
+facts come from the admitted generation. The writer checks the source price,
+fresh carried tree, change capacity and the source bank policy under locks.
+Carried-only prices never debit Bank. Missing inputs or any later grant refusal
+roll back the entire payment, state, item and appearance transaction. A distinct
+native audit cause binds the callback, exact price and bank policy; it retains
+all bounded carried-source audit checks and the Type2 activation tuple.
+
+`creation_sex` optionally requires immutable Character creation sex (`female` or
+`male`). The fenced appearance owner reads it before any source value is paid.
+Selected look, disguise and caller-supplied gender never establish this guard.
+
+`participants` optionally names up to three distinct existing foreign quest
+owners and their exact storage effects. The combined primary and participant
+write set is limited to eight tracks, with no duplicates or overlap with readonly
+prerequisites. A participant cannot invent or reassign a track. Its validated
+transition contributes to its original owner's definition hash. Participants
+cannot be submitted as independent quest transitions. The Character writer locks
+the sorted union of source tracks and admits shared track/state capacity; all
+participants, exact owner pins, source proof, primary stage, costs and rewards
+commit at one revision or roll back together. Immutable participant proofs link
+to the same-transaction source and primary Quest receipt. Original single-owner
+SQL proof arms and row immutability remain in force, with a precise additional
+participant proof arm. A participant never completes another quest.
+
+`state_ops` optionally composes bounded `from` conditions (`any`, `between`,
+`elapsed_at_least`) and existing native effects (`add`, `set_now`). Both primary
+and foreign-owner participants support it. Elapsed checks preserve their clock
+with add0;the database transaction clock authorizes value. Dialogue time never
+authorizes a grant. Duplicate tracks,owner confusion and combined effects>8
+fail closed. Source deadlines can normalize to start+exact elapsed duration.
+
+A source-bound track declaration is read-only unless `writable:true` is explicit.
+Every writer must match its declared owner;existing native metadata must still
+match exactly. This permits missing shared counters without reassigning tracks.
+Immutable source/participant proofs validate exact operation conditions/results,
+and all state,costs,grants and original owner pins commit or roll back together.
+
+Optional `requires_premium` uses the existing native premium Current authority in
+the fenced transaction; an absent owner refuses before costs. Optional
+`requires_outfits` (at most8 distinct outfit identities) reuses the normal
+starter-or-compatible-earned account appearance proof in that transaction,
+before inventory or value effects. Empty/default fields preserve legacy plans.
+
+Filled gift children may declare a positive `fluid_subtype` with count1; the
+active native policy must prove a variable-fluid vessel. Intake and retained
+evidence keep their closed item/count shape until exact fluid matching is
+implemented. NPC requirements use `requires_premium`; world callbacks reuse
+the complete MINT with their existing world reward admission. Missing optional
+fields preserve existing JSON/receipt bindings.

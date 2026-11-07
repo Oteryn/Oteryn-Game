@@ -321,6 +321,7 @@ pub(super) async fn exercise(
     let admission = crate::durability::reward_claim_mint::QuestRewardAdmission {
         native,
         weights: &weights,
+        fee_payment: None,
     };
     let mut stale = fence;
     stale.character_lease_generation += 1;
@@ -354,7 +355,8 @@ pub(super) async fn exercise(
             Some(native),
             Some(crate::durability::reward_claim_mint::QuestRewardAdmission {
                 native,
-                weights: &NativeItemWeights(native)
+                weights: &NativeItemWeights(native),
+                fee_payment: None,
             })
         )
         .await
