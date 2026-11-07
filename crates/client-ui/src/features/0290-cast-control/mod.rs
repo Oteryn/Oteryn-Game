@@ -123,7 +123,7 @@ impl Panel {
             self.viewers,
             self.delay,
             self.cap,
-            format!(
+            format_args!(
                 "Allow me to be shown in casts: {}\n{}",
                 if !self.consent_known {
                     "unknown — refresh"
