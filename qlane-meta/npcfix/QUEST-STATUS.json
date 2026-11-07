@@ -317,10 +317,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 184,
+    "QUALIFIED": 190,
     "PENDING": 8,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 101,
+    "AUTHORED; QUALIFICATION PENDING": 95,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -1075,8 +1075,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/193",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-31",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only four pinned carpet/fur profiles through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 71.02,
+        "postgres_green_seconds": 133.67
+      }
     },
     {
       "npc": "Lailene",
@@ -1123,8 +1129,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/213",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-31",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only four pinned carpet/fur profiles through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 71.02,
+        "postgres_green_seconds": 133.67
+      }
     },
     {
       "npc": "Milos",
@@ -1186,8 +1198,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/264",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-31",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only four pinned carpet/fur profiles through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 71.02,
+        "postgres_green_seconds": 133.67
+      }
     },
     {
       "npc": "Pemaret",
@@ -1210,8 +1228,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/275",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-31",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only four pinned carpet/fur profiles through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 71.02,
+        "postgres_green_seconds": 133.67
+      }
     },
     {
       "npc": "Puffels",
@@ -1999,8 +2023,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/290",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-31",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only four pinned carpet/fur profiles through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 71.02,
+        "postgres_green_seconds": 133.67
+      }
     },
     {
       "npc": "Shortsighted Dwarf",
@@ -2053,8 +2083,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/310",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-31",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only four pinned carpet/fur profiles through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 71.02,
+        "postgres_green_seconds": 133.67
+      }
     },
     {
       "npc": "Tulf",
@@ -6389,6 +6425,64 @@
         "digest": "483097258d0597917f5e52d30f3f19d884d8bb8bcd43990ef63923efdcd855c9",
         "world": "oteryn"
       }
+    },
+    {
+      "name": "reviewed-passive-cells-31",
+      "state": "QUALIFIED",
+      "entries": [
+        "Lai",
+        "Maeryn",
+        "Owin",
+        "Pino",
+        "Riddler",
+        "The Orc King"
+      ],
+      "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only four pinned carpet/fur profiles through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 71.02,
+        "log": "/tmp/npcfix-evidence/passive-four-red.log",
+        "sha256": "b129b20bfee9d70c4ecda2f6723e73de347d69dde3cd31b1701c3fba70300bb3"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 133.67,
+        "log": "/tmp/npcfix-evidence/passive-four-green.log",
+        "sha256": "0f9f37434c5fba5115ef71d814ec044f73d2b3baddefd96e398fbbf7a36828bd",
+        "cumulative_npcs": 177,
+        "cumulative_actors": 178
+      },
+      "native_provider": {
+        "profiles": {
+          "source_commit": "199f309b0ab0d61722d539de2745fff3ef2186fe",
+          "existing_records": 3616,
+          "preserved_exactly": true,
+          "added_keys": [
+            "oteryn:item.tibia.i2576",
+            "oteryn:item.tibia.i2587",
+            "oteryn:item.tibia.i2588",
+            "oteryn:item.tibia.i2595"
+          ],
+          "xml_source": "imports/canary/items-xml/items.xml:5314-5326",
+          "xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+          "compiler_source_equivalence": "World compiler/content/world-bundle Rust unchanged from retained release compiler."
+        },
+        "native_reproduction": "42 files generated and independently reproduced",
+        "tests": "9 profile/canonical-conflict tests PASS",
+        "log": "/tmp/npcfix-evidence/passive-four-profile-units.log"
+      },
+      "world_pin": {
+        "inputs_digest": "2d85b3e389793cdc5d2c1d842142489a629a054146311598bb50a8fbd5071fb8",
+        "pins": [
+          {
+            "bytes": 32007254,
+            "digest": "685a297ae8db4510fb3ee529c84a4854f984d9762112ee368677142889a2dee3",
+            "world": "oteryn"
+          }
+        ]
+      },
+      "source_proof": "imports/canary/items-xml/items.xml:5314,5320,5326 sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; appearances2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2. Frozen retail-placement packet SHA recorded in case manifest.",
+      "checks": "fmt PASS. No changed Rust crates in this slice. Freshly compiled merged-source physical fixture runs before/after the provider change. Reuse scoped green Rust checks: own fixture89db51927 dispatch alltargets/allfeatures check18m26 including lock wait/strict Clippy7m17; incoming BookWorld compiler/content alltargets/allfeatures checks and Clippy, preserved in199f309b0 continuation_merge. Rebuilt merged release compiler PASS1m04; independent merged baseline pin-check628fa42e PASS before profile edit."
     }
   ],
   "shared_engine_lookup": {
@@ -6815,89 +6909,64 @@
       "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
     }
   },
-  "next_batch": "Push both green component histories immediately. Compile the merged source for the next six-profile RED/GREEN batch, retaining all unioned physical cases. Ahmet fluid authoring active in the other writer; continue the independent NPC/profile queue.",
+  "next_batch": "Push immediately, refresh parity/source certificate, continue all remaining owned NPCs in small green batches. Preserve concurrent Ahmet fluid work and all existing actor/quest proofs.",
   "active_batch": {
-    "log": "/tmp/npcfix-evidence/workshop-red.log",
+    "name": "reviewed-passive-cells-31",
+    "state": "QUALIFIED",
     "entries": [
-      "Henricus",
-      "Lizzie",
-      "Markwin",
-      "Marvik",
-      "Partos",
-      "Allen"
+      "Lai",
+      "Maeryn",
+      "Owin",
+      "Pino",
+      "Riddler",
+      "The Orc King"
     ],
-    "proof": {
-      "red": "3 actual PG failures116.40s;3 DB markers",
-      "green": "7 actual PG cases221.52s, all starts/completions; preserved incoming full clock/rollback PG1/96.56s",
-      "units": "quest263/11.67s; unchanged fee43/0.14s and NPC25/204.84s retained within scope",
-      "authoring": "12 shared tests11.125s +6 profile/overlay tests19.182s +13 placement tests; native42 regenerate/check",
-      "repository": "5 passed132.15s; unchanged repository test executable on final checkout inputs",
-      "check": "quests/durability/dispatch all-target/all-feature5m53s",
-      "clippy": "same three crates all targets/features -D warnings5m05s",
-      "pin": "d5f29ca31b87bc3a949017a6d7a2c18f3f9612f0629f9fe49943596a4c2bc0a1; independent pin-check PASS",
-      "fmt": "PASS"
+    "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only four pinned carpet/fur profiles through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+    "red": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 71.02,
+      "log": "/tmp/npcfix-evidence/passive-four-red.log",
+      "sha256": "b129b20bfee9d70c4ecda2f6723e73de347d69dde3cd31b1701c3fba70300bb3"
     },
-    "historical_projection": "Only new six placement absences restored from published ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb; current mode tests actual source authoring.",
-    "progress": "Generic fee+bounded DB clock effects and forward completion proof implemented. Native anchors strict-admitted for all3. Fresh read-only DB-clock refusal replies now retain source Fading reset and Sweaty remaining-time text. Fading source guard corrected from prototype0..1 to source-1..1. Current final PG rebuild64170; previous stale compile interrupted after self-review corrections, not a PG result. Latest Python5 and qengine12 passed; unit261 pass before last dialogue-only additions, rerunning. Sweaty remaining smithing exchanges stay active after amulet slice, never mark whole NPC qualified early.",
-    "scope": "Existing audited physical placement and exact display identity. Explicitly retain both captured Emiliana anchors and native actors; every other retained actor assertion remains exact. No new production or conditional-availability behavior.",
-    "state": "WORKSHOP_RUST_GREEN; MERGING_VALIDATED_SIX_CELL_DATA",
-    "remote": "803a33d3923bbd9756cf3c1733ec63420da1e54f",
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 131.74,
-      "log": "/tmp/npcfix-evidence/multi-anchor-green.log",
-      "sha256": "4bfbf5693f64014c7b5aebf2850d96e8942272fc481b40412fa28bd21314b943",
-      "cumulative_npcs": 168,
-      "cumulative_actors": 169
+      "seconds": 133.67,
+      "log": "/tmp/npcfix-evidence/passive-four-green.log",
+      "sha256": "0f9f37434c5fba5115ef71d814ec044f73d2b3baddefd96e398fbbf7a36828bd",
+      "cumulative_npcs": 177,
+      "cumulative_actors": 178
     },
-    "reuse": "Reuse incoming six-cell qualifications and exact-before name authoring. Combine passive-cell source attributes with local8 workshop profiles; retain both fact proofs and every existing known custody field.",
-    "latest_pg": {
-      "log": "/tmp/npcfix-evidence/workshop-green-final.log",
-      "result": "3 physical passed;3 composition fixtures failed;181.46s",
-      "physical_durations_seconds": {
-        "fading": 79.3093,
-        "altar": 88.4055,
-        "sweaty": 74.3037
+    "native_provider": {
+      "profiles": {
+        "source_commit": "199f309b0ab0d61722d539de2745fff3ef2186fe",
+        "existing_records": 3616,
+        "preserved_exactly": true,
+        "added_keys": [
+          "oteryn:item.tibia.i2576",
+          "oteryn:item.tibia.i2587",
+          "oteryn:item.tibia.i2588",
+          "oteryn:item.tibia.i2595"
+        ],
+        "xml_source": "imports/canary/items-xml/items.xml:5314-5326",
+        "xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "compiler_source_equivalence": "World compiler/content/world-bundle Rust unchanged from retained release compiler."
       },
-      "repairs": "Fixed test-only clock catalogue to install one stable set of receipt transitions before any write. Source monetary fees retain bank V1 refusal; tests now explicitly check V1 then activate existing V2 switch before bank success. Six-case rerun83195 executing; separate funded-missing-parts regression added, needs compile/run aftercurrent."
+      "native_reproduction": "42 files generated and independently reproduced",
+      "tests": "9 profile/canonical-conflict tests PASS",
+      "log": "/tmp/npcfix-evidence/passive-four-profile-units.log"
     },
-    "implementation_order": "Actual PG RED first, then generic fee/time participant support, then the three source compositions. Extend final tests to full payment, cooldown and delayed claim semantics; initial red probes missing conversations.",
-    "checks": "Changed dispatch all-target/all-feature cargo check and Clippy -D warnings PASS; workspace and mounted fixture fmt PASS. No production content/pin changes.",
-    "merge_plan": "Preserve concurrent locked cooldown and malformed-clock tests, reuse its declared-track support, retain local generic paid hand-ins, delayed clocks, fresh literal wait replies and strict physical admission. Resolve duplicate1144 by forward-numbered workshop extension. Revalidate merged source before push.",
-    "implementation": "Reuse published readiness owner and cooldown_reply field; extend remaining-time advice for delayed crafts. Remove duplicate clock reader/post-refusal code. Keep all published direct-owner/literal-reset/malformed-clock assertions plus unchanged-clock probe; preserve1144 and extend1145.",
-    "generic_reuse": "Applied33b640335 fee source selectively, retained physical permit; added bounded clocks using existing SetNow/ElapsedAtLeast and same transaction Quest receipt. Forward1144 preserves fee proof after1142 replacement. Production/PG GREEN still pending.",
-    "incoming": "8a7b65dc2",
-    "fixture_regression": {
-      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 50.03,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-29-red.log",
-      "sha256": "afce9be7c63c028296331526a93d08a8c9a3597b8d79ea3aa18a258a390389cf"
+    "world_pin": {
+      "inputs_digest": "2d85b3e389793cdc5d2c1d842142489a629a054146311598bb50a8fbd5071fb8",
+      "pins": [
+        {
+          "bytes": 32007254,
+          "digest": "685a297ae8db4510fb3ee529c84a4854f984d9762112ee368677142889a2dee3",
+          "world": "oteryn"
+        }
+      ]
     },
-    "session": 31487,
-    "sources": {
-      "new_heart_facts": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml#L75956-L75963 sha256:13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
-      "retained_bag_profile": "Existing admitted i43895 profile retained; do not replace existing accepted facts with conflicting XML weight."
-    },
-    "name": "retail-population-qualification-29",
-    "remaining": "Sweaty amulet component fully validated; remaining smithing exchanges stay active next, no whole NPC qualification yet. Fading/Altar exact audited scope implemented; final reviewed qualification metadata follows.",
-    "assumptions": [
-      "Charges and input consumption are atomic with successful admission. Normalize donor Sweaty bug that removes5000 before checking all pieces: missing pieces never charge.",
-      "Doctor/Wandering/Goldro batch4 is pushed and qualified; do not redo."
-    ],
-    "red": {
-      "result": "3 failed; NoConversation at actual hi",
-      "log": "/tmp/npcfix-evidence/multi-anchor-baseline-red.log",
-      "individual_seconds": [
-        105.5747,
-        113.1198,
-        116.3945
-      ],
-      "sha256": "b5ffc6f17a043c440c49696062addc5b4637e8cacca139794b08f9a2de447134",
-      "duration_seconds": 116.4,
-      "markers": 3,
-      "seconds": 57.08,
-      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches"
-    }
+    "source_proof": "imports/canary/items-xml/items.xml:5314,5320,5326 sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; appearances2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2. Frozen retail-placement packet SHA recorded in case manifest.",
+    "checks": "fmt PASS. No changed Rust crates in this slice. Freshly compiled merged-source physical fixture runs before/after the provider change. Reuse scoped green Rust checks: own fixture89db51927 dispatch alltargets/allfeatures check18m26 including lock wait/strict Clippy7m17; incoming BookWorld compiler/content alltargets/allfeatures checks and Clippy, preserved in199f309b0 continuation_merge. Rebuilt merged release compiler PASS1m04; independent merged baseline pin-check628fa42e PASS before profile edit."
   },
   "owner_constraints": {
     "excluded": [
