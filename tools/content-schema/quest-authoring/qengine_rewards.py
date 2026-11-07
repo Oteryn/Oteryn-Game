@@ -353,7 +353,7 @@ def validate_callbacks(document):
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
             or (not callback.get('repeatable',False) and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
-            or (callback.get('repeatable',False) and (not callback['take'] or not callback['give'] or callback['outfit'] is not None or (callback['achievement'] is not None and not callback.get('achievement_once',False))))
+            or (callback.get('repeatable',False) and (not (callback['take'] or callback.get('fee') or callback.get('cooldown')) or not callback['give'] or callback['outfit'] is not None or (callback['achievement'] is not None and not callback.get('achievement_once',False))))
             or (callback.get('achievement_once',False) and (not callback.get('repeatable',False) or callback['achievement'] is None))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'])

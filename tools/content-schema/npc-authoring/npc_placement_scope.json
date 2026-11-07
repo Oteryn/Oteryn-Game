@@ -5,6 +5,7 @@
     "oteryn:npc.a_beggar",
     "oteryn:npc.a_behemoth",
     "oteryn:npc.a_dark_priestess",
+    "oteryn:npc.a_fading_memory",
     "oteryn:npc.a_ghostly_guardian",
     "oteryn:npc.a_majestic_warwolf",
     "oteryn:npc.a_restless_soul",
@@ -512,13 +513,33 @@
     {
       "npc": "oteryn:npc.a_sweaty_cyclops",
       "position": {
-        "x": 32697,
+        "x": 32699,
         "y": 31674,
         "z": 3
       },
       "wiki": {
         "title": "A Sweaty Cyclops",
         "revid": 1114101
+      },
+      "audited_roaming_position": {
+        "x": 32697,
+        "y": 31674,
+        "z": 3
+      },
+      "origin": "native",
+      "captured_spawn_anchor": {
+        "x": 32699,
+        "y": 31674,
+        "z": 3
+      },
+      "walk_radius": 2,
+      "native_source": {
+        "repository": "Oteryn/Oteryn-Game",
+        "revision": "5e463759f3d8ede0aac19f1501cca9cb501c1e26",
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+        "record_pointer": "/candidates/38/placements/0/position",
+        "note": "Use exact captured source anchor admitted by npc-anchors. Retain audited alternate observation."
       }
     },
     {
@@ -4267,6 +4288,27 @@
         "record_pointer": "/candidates/42/placements/0/position",
         "donor_npc_sha256": "64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427",
         "note": "Nearest strictly admitted same-floor cell within captured walk radius2; preserve the original exact spawn anchor. Selected by delivered npc-anchors command; no map guard changed."
+      }
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "position": {
+        "x": 32952,
+        "y": 31440,
+        "z": 3
+      },
+      "origin": "native",
+      "native_source": {
+        "repository": "Oteryn/Oteryn-Game",
+        "revision": "5e463759f3d8ede0aac19f1501cca9cb501c1e26",
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+        "record_pointer": "/candidates/14/placements/0/position",
+        "note": "Exact captured donor spawn, no relocation; source world XML00ce02a line97 sha256:23ecce2bb4c11fdeed4c9b06933dd616d3ceb111b440d19f4a7a7336eeed88f9."
+      },
+      "wiki": {
+        "pageid": 31328,
+        "revid": 1116695
       }
     }
   ]

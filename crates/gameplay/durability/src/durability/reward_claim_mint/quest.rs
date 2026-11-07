@@ -60,10 +60,23 @@ pub(crate) fn outfit_compatible(
     })
 }
 
+/// Retained native coin/change identities; the source price remains in the callback.
+#[derive(Clone, Debug)]
+pub struct QuestRewardFeePayment {
+    pub command: crate::foundation::CommandRef,
+    pub occurrence: [u8;16],
+    pub transaction_id: [u8;16],
+    pub event_id: [u8;16],
+    pub coins: crate::durability::item_fee_burn::FeeChangeFacts,
+    pub expected_backpack: Option<[u8;16]>,
+    pub occurred_at_unix_ms: i64,
+}
+
 /// The runtime supplies its admitted generation and the normal wheel-aware capacity lookup.
 #[derive(Clone, Copy)]
 pub struct QuestRewardAdmission<'a> {
     pub permit: &'a super::super::spell_owner_commit::SpellLanePermit,
+    pub fee_payment: Option<&'a QuestRewardFeePayment>,
     pub native: &'a NativeGameplayState,
     pub weights: &'a dyn super::super::item_transfer::ItemWeightLookup,
 }
@@ -95,6 +108,32 @@ pub(crate) async fn apply(
         .is_some_and(|reward| !outfit_compatible(admission.native, reward))
     {
         return Ok(false);
+    }
+    if let Some(fee) = &callback.fee {
+        use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeBurnError, burn_quest_reward_fee_in_transaction};
+        let Some(payment) = admission.fee_payment else { return Ok(false); };
+        if payment.command != command { return Ok(false); }
+        let current: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        if current.as_deref() != payment.expected_backpack.as_ref().map(|id|id.as_slice()) { return Ok(false); }
+        let request = FeeBurnRequest { cause: FeeBurnCause::QuestRewardPayment {
+            callback: callback.key.clone(), occurrence: payment.occurrence, gold: fee.gold, include_bank: fee.include_bank },
+            fee_gold_units: fee.gold, transaction_id: payment.transaction_id, event_id: payment.event_id,
+            occurred_at_unix_ms: payment.occurred_at_unix_ms, server_build_id: "oteryn-game-server".into(), change: payment.coins.clone() };
+        match burn_quest_reward_fee_in_transaction(tx, &fence, &request, tuple).await {
+            Ok(_) => {},
+            Err(FeeBurnError::InsufficientFunds | FeeBurnError::ChangeDoesNotFit | FeeBurnError::CapacityExceeded) => return Ok(false),
+            Err(FeeBurnError::Unavailable(error)) => return Err(error),
+            Err(_) => return Err(DurabilityError::InvalidStoredState),
+        }
+    }
+    if let (Some(fee),Some(payment)) = (&callback.fee, admission.fee_payment) {
+        let committed = fence.expected_character_revision.get().checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
+        sqlx::query("INSERT INTO game_quest_reward_fees(character_id,fee_occurrence,cause_id,cause_ordinal,transition_key,fee_gold_units,include_bank,committed_character_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8::text::numeric)")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(payment.occurrence.as_slice())
+            .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
+            .bind(&callback.key).bind(i64::try_from(fee.gold).map_err(|_|DurabilityError::InvalidStoredState)?)
+            .bind(fee.include_bank).bind(committed.to_string()).execute(&mut **tx).await?;
     }
     if !super::super::quest_world_callback::consume_reward_inputs(
         tx,

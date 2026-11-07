@@ -3,7 +3,7 @@ import hashlib
 import re
 
 NPCS = ('al_dee', 'a_weakened_forest_fury', 'a_wandering_soul')
-ITEMS = {3456, 8225, 8453, 23812}
+ITEMS = {3456, 8225, 8453, 8746, 23812, 43854, 43855, 7528, 7529, 7530, 7531, 7532}
 
 
 def append(callbacks, offers, inputs, pin):
@@ -113,6 +113,21 @@ def append(callbacks, offers, inputs, pin):
         dict(track='oteryn:quest-progress/quest/u8_4/blood_brothers/mission05', minimum=2,
              item='oteryn:item.tibia.i8225', text=text('a_wandering_soul', 'The pain is slightly less...')),
     ]
+    fading = json.loads(INPUT.read_text())
+    workshop = json.loads(INPUT.with_name('npcfix_workshop.json').read_text())
+    callbacks.extend(fading['callbacks'] + workshop['callbacks'])
+    offers.extend(fading['offers'] + workshop['offers'])
+    greetings.update({row['npc']: row for row in fading['npcs']})
+    # Explicit conservative defaults for uncustomized farewells, with source provenance.
+    for npc, greet in [('altar', 'Kneel before the all-devouring power of blooded decay.'),
+                       ('a_sweaty_cyclops', 'Hum Humm! Welcume lil\' |PLAYERNAME|.')]:
+        citation = list(next(c['sources'] for c in workshop['callbacks'] if c['npc'] == 'oteryn:npc.' + npc))
+        if npc == 'a_sweaty_cyclops':
+            default = 'data/npclib/npc_system/npc_handler.lua'
+            citation.append(f'crystal:{pin}:{default}:90:sha256:{hashlib.sha256(inputs[default]).hexdigest()}')
+        greetings['oteryn:npc.' + npc] = dict(npc='oteryn:npc.' + npc, greet=greet,
+            farewell=('Good bye lil\' one.' if npc == 'a_sweaty_cyclops' else 'Bye, |PLAYERNAME|.'),
+            walkaway=('Good bye.' if npc == 'a_sweaty_cyclops' else 'Bye.'), sources=citation)
     return greetings
 
 import argparse
@@ -161,13 +176,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    for path, value in outputs().items():
-        if path.is_file() and path.read_text() == value:
+    # The shared catalogue has one canonical materializer. The overlay helper above
+    # remains useful for isolated source-input checks without moving other owners.
+    import qengine_rewards
+    for relative, raw in qengine_rewards.build().items():
+        path = ROOT / relative
+        if path.is_file() and path.read_bytes() == raw:
             continue
         if args.check:
-            raise SystemExit('NPCFIX_REWARD_DRIFT: ' + str(path.relative_to(ROOT)))
+            raise SystemExit('NPCFIX_REWARD_DRIFT: ' + relative)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(value)
+        path.write_bytes(raw)
 
 
 if __name__ == '__main__':

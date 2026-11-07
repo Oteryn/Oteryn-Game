@@ -3371,7 +3371,7 @@
         "Doctor Marrow",
         "Goldro"
       ],
-      "state": "GREEN",
+      "state": "GREEN; PUSHED",
       "session": 19401,
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_endpoint_postgres_ -- --nocapture",
       "log": "/tmp/npcfix-evidence/endpoint-red.log",
@@ -3390,7 +3390,7 @@
       "check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 15s",
       "clippy": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 24s",
       "fmt": "PASS cargo fmt --all and explicit mounted-file rustfmt",
-      "push": "Commit and fast-forward push follows; fetch/merge any remote movement."
+      "push": "PASS origin exact NPCFIX branch7178e767e..5e463759f"
     }
   ],
   "owner_constraints": {
@@ -3439,32 +3439,64 @@
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
   },
   "active_batch": {
-    "name": "native physical endpoints for three remaining NPCs",
+    "name": "source workshop clocks and monetary hand-ins",
     "entries": [
-      "A Wandering Soul",
-      "Doctor Marrow",
-      "Goldro"
+      "A Fading Memory",
+      "Altar",
+      "A Sweaty Cyclops"
     ],
-    "state": "GREEN",
-    "session": 19401,
-    "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_endpoint_postgres_ -- --nocapture",
-    "log": "/tmp/npcfix-evidence/endpoint-red.log",
-    "scope": "Actual canonical compiler admission, native-to-runtime placement and exact displayed identity; Wandering exchange component already PG-qualified in pushed batch3. Doctor and Goldro audit entries concern physical identity/placement, not wholesale implementation of every donor quest.",
-    "source_rules": {
-      "Wandering": "Delivered npc-anchors command selects32915,31489,7 within captured radius2; original32914,31490,7 retained.",
-      "Doctor": "Use primary audited Wiki34009,32643,6 when strictly admitted; preserve all old conflict observations. Donor is stationary radius0, so do not claim relocation within its donor radius.",
-      "Goldro": "Strictly admitted34055,32504,7 is one cell from donor34055,32503,7, within source radius1 (Crystal00ce goldro.lua:11 sha394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8)."
+    "state": "LOCAL_VALIDATION_GREEN; CONCURRENT_MERGE_REQUIRED",
+    "session": 31487,
+    "log": "/tmp/npcfix-evidence/workshop-red.log",
+    "reuse": "Refreshed qengine2 e45e8f8a9 and questl2 66bea9a40. Reuse fee delivery33b640335 (migration1000) selectively, preserve local physical permit/repeats/achievement/deadline support. Existing core SetNow and ElapsedAtLeast already use DB now(). Incoming Fading-only source producer is retained.",
+    "implementation_order": "Actual PG RED first, then generic fee/time participant support, then the three source compositions. Extend final tests to full payment, cooldown and delayed claim semantics; initial red probes missing conversations.",
+    "assumptions": [
+      "Charges and input consumption are atomic with successful admission. Normalize donor Sweaty bug that removes5000 before checking all pieces: missing pieces never charge.",
+      "Doctor/Wandering/Goldro batch4 is pushed and qualified; do not redo."
+    ],
+    "red": {
+      "result": "3 failed; NoConversation at actual hi",
+      "markers": 3,
+      "duration_seconds": 116.4,
+      "individual_seconds": [
+        105.5747,
+        113.1198,
+        116.3945
+      ],
+      "log": "/tmp/npcfix-evidence/workshop-red.log"
     },
-    "constraint": "No production authoring data changed before actual PG RED; no map admission guard weakened.",
-    "red": "3 failed28.51s; all three DB markers and per-case durations26.329s/26.470s/28.505s. Doctor absent; Goldro/Wandering BlockSolid.",
-    "green": "3 passed84.05s; all DB/completion markers. Doctor76.162s, Goldro84.016s, Wandering84.049s. Exact canonical-to-runtime actor identities, coordinates and floor conversion.",
-    "authoring": "12 passed; all previous assertions retained and added source-preservation/stationary-policy checks.",
-    "pin": "PASS refreshed and independently checked ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
-    "implementation": "Source-backed authoring changes only: Wandering within captured radius2; Goldro within immutable donor radius1; Doctor uses strictly admitted primary audited Wiki cell, preserving all three alternate observations and stationary radius0 evidence. Original compiler guards unchanged.",
-    "check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 15s",
-    "clippy": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 24s",
-    "fmt": "PASS cargo fmt --all and explicit mounted-file rustfmt",
-    "push": "Commit and fast-forward push follows; fetch/merge any remote movement."
+    "generic_reuse": "Applied33b640335 fee source selectively, retained physical permit; added bounded clocks using existing SetNow/ElapsedAtLeast and same transaction Quest receipt. Forward1144 preserves fee proof after1142 replacement. Production/PG GREEN still pending.",
+    "progress": "Generic fee+bounded DB clock effects and forward completion proof implemented. Native anchors strict-admitted for all3. Fresh read-only DB-clock refusal replies now retain source Fading reset and Sweaty remaining-time text. Fading source guard corrected from prototype0..1 to source-1..1. Current final PG rebuild64170; previous stale compile interrupted after self-review corrections, not a PG result. Latest Python5 and qengine12 passed; unit261 pass before last dialogue-only additions, rerunning. Sweaty remaining smithing exchanges stay active after amulet slice, never mark whole NPC qualified early.",
+    "sources": {
+      "new_heart_facts": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml#L75956-L75963 sha256:13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+      "retained_bag_profile": "Existing admitted i43895 profile retained; do not replace existing accepted facts with conflicting XML weight."
+    },
+    "latest_pg": {
+      "log": "/tmp/npcfix-evidence/workshop-green-final.log",
+      "result": "3 physical passed;3 composition fixtures failed;181.46s",
+      "physical_durations_seconds": {
+        "fading": 79.3093,
+        "altar": 88.4055,
+        "sweaty": 74.3037
+      },
+      "repairs": "Fixed test-only clock catalogue to install one stable set of receipt transitions before any write. Source monetary fees retain bank V1 refusal; tests now explicitly check V1 then activate existing V2 switch before bank success. Six-case rerun83195 executing; separate funded-missing-parts regression added, needs compile/run aftercurrent."
+    },
+    "remote": "803a33d3923bbd9756cf3c1733ec63420da1e54f",
+    "proof": {
+      "postgres_red": "3 failed116.40s;3 DB markers",
+      "postgres_green": "6 passed183.57s; all starts/completions",
+      "funded_missing": "1 passed96.27s",
+      "existing_bank": "1 passed96.20s",
+      "quest_unit": "261 passed11.66s",
+      "fee_unit": "43 passed0.14s",
+      "npc_unit": "25 passed204.84s",
+      "repository": "5 passed99.22s; unchanged repository executable on current input",
+      "check": "3 crates all-target/all-feature4m03s; explicit NPC4m31s",
+      "clippy": "3 crates all-target/all-feature -D warnings8m06s; explicit NPC1m39s",
+      "pin": "d5f29ca31b87bc3a949017a6d7a2c18f3f9612f0629f9fe49943596a4c2bc0a1",
+      "fmt": "PASS"
+    },
+    "merge_plan": "Preserve concurrent locked cooldown and malformed-clock tests, reuse its declared-track support, retain local generic paid hand-ins, delayed clocks, fresh literal wait replies and strict physical admission. Resolve duplicate1144 by forward-numbered workshop extension. Revalidate merged source before push."
   },
   "continuation_merge": {
     "note": "Preserved both histories; incoming state callers retained. Redundant npc_state catalogue compiler removed in consolidation. Superseded local caller draft remains stashed and must not be applied.",

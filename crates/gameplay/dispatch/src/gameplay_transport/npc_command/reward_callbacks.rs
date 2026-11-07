@@ -89,3 +89,75 @@ pub(super) fn prepare(
         },
     )
 }
+
+/// A refused clock may speak only from a new coherent database read.
+pub(super) async fn wait_reply(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    key: &str,
+) -> Result<Option<(u16, Vec<String>)>, ()> {
+    let callback = reward_callbacks::load()
+        .map_err(|_| ())?
+        .into_iter()
+        .find(|c| c.key == key)
+        .ok_or(())?;
+    if callback.clock_wait_reply.is_empty() {
+        return Ok(None);
+    }
+    let catalogue = admission.quest_catalogue.as_deref().ok_or(())?;
+    let fence = admission.current_quest_fence(session).await?.ok_or(())?;
+    let (copy, now) = admission
+        .root
+        .read_character_quest_state_at(admission.character, fence.character_id)
+        .await
+        .map_err(|_| ())?;
+    let value = |key: &str| {
+        catalogue
+            .track(key)
+            .map(|track| copy.tracks().get(key).copied().unwrap_or(track.initial))
+    };
+    if callback
+        .storage
+        .iter()
+        .any(|s| !value(&s.track).is_some_and(|v| (s.minimum..=s.maximum).contains(&v)))
+        || callback
+            .requires
+            .iter()
+            .any(|r| !r.holds(catalogue, copy.tracks()))
+    {
+        return Ok(None);
+    }
+    let remaining = callback.clock_effects().find_map(|clock| {
+        let seconds = clock.elapsed_seconds?;
+        let remaining = i128::from(seconds) - (i128::from(now) - i128::from(value(&clock.track)?));
+        (remaining > 0).then_some(remaining)
+    });
+    let Some(remaining) = remaining else {
+        return Ok(None);
+    };
+    let hours = remaining / 3600;
+    let minutes = (remaining % 3600) / 60;
+    let mut parts = Vec::new();
+    if hours > 0 {
+        parts.push(format!("{hours} hour{}", if hours == 1 { "" } else { "s" }));
+    }
+    if minutes > 0 {
+        parts.push(format!(
+            "{minutes} minute{}",
+            if minutes == 1 { "" } else { "s" }
+        ));
+    }
+    let time = if parts.is_empty() {
+        "less than a minute".into()
+    } else {
+        parts.join(" and ")
+    };
+    Ok(Some((
+        callback.next_topic,
+        callback
+            .clock_wait_reply
+            .iter()
+            .map(|line| line.replace("|REMAINING|", &time))
+            .collect(),
+    )))
+}

@@ -26,7 +26,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true
@@ -49,7 +49,10 @@
       "cooldown": {
         "track": "oteryn:quest-progress/npcfix/blood_brothers/ghost_tear_cooldown",
         "seconds": 72000
-      }
+      },
+      "clock_wait_reply": [
+        "... I'm sorry... my tears are not ready yet... my soul needs time to grieve..."
+      ]
     }
   ],
   "offers": [
@@ -63,7 +66,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true
@@ -83,7 +86,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true
@@ -103,7 +106,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true
@@ -123,7 +126,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true
@@ -143,7 +146,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true
@@ -163,7 +166,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true
@@ -183,7 +186,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true
@@ -203,7 +206,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true
@@ -223,7 +226,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true
@@ -243,7 +246,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 1,
           "set": 0,
           "preserve": true

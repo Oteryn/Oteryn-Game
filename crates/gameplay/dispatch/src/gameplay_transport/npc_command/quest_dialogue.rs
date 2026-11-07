@@ -356,6 +356,26 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
+    let fee_payment = if oteryn_gameplay_quests::quest::reward_callbacks::load()
+        .ok()
+        .and_then(|callbacks| {
+            callbacks
+                .into_iter()
+                .find(|c| c.key == request.transition_key)
+        })
+        .is_some_and(|c| c.fee.is_some())
+    {
+        match super::endgame::prepare_reward_fee(admission, command, fence).await {
+            Ok(payment) => Some(payment),
+            Err(outcome) => {
+                finish(admission, command.game_session_id, false);
+                return *outcome;
+            }
+        }
+    } else {
+        None
+    };
+    let reward_key = value_callback.then(|| request.transition_key.clone());
     let outcome = if value_callback {
         let Some(permit) = physical.as_ref() else {
             finish(admission, command.game_session_id, false);
@@ -379,6 +399,7 @@ pub(super) async fn apply(
             std::sync::Arc::clone(catalogue),
             crate::durability::reward_claim_mint::QuestRewardAdmission {
                 permit,
+                fee_payment: fee_payment.as_ref(),
                 native,
                 weights: &weights,
             },
@@ -432,6 +453,55 @@ pub(super) async fn apply(
                 &step.context,
                 rendered,
             )
+        }
+        Ok(QuestTransitionOutcome::Refused(
+            oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch,
+        )) if reward_key.is_some() => {
+            finish(admission, command.game_session_id, false);
+            let Some(key) = reward_key.as_deref() else {
+                return rejected();
+            };
+            let (next, lines) =
+                match super::reward_callbacks::wait_reply(admission, command.game_session_id, key)
+                    .await
+                {
+                    Ok(Some(reply)) => reply,
+                    Ok(None) => return rejected(),
+                    Err(()) => return unknown(),
+                };
+            let runtime = admission.runtime.lock().await;
+            if admission.states.npc_conversations.current_npc(
+                &admission.states.chat,
+                &runtime,
+                actor,
+                command.game_session_id,
+                &intent,
+            ) != Some(step.context.clone())
+            {
+                return rejected();
+            }
+            let rendered = reply(
+                &admission.states.chat,
+                command.game_session_id,
+                &step.context,
+                &intent,
+                lines,
+            );
+            if rendered.disposition != NpcIntentDisposition::Ok {
+                return rendered;
+            }
+            let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
+                return rejected();
+            };
+            let Some(session) = sessions.get_mut(&command.game_session_id) else {
+                return rejected();
+            };
+            let state = &mut session.quest_dialogue;
+            if state.pending.is_some() || state.topic(&step.context) != step.topic {
+                return rejected();
+            }
+            state.apply_topic(step.context, Some(next.into()));
+            rendered
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,

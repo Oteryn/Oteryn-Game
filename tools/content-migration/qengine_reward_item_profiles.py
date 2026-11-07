@@ -7,6 +7,7 @@ inferred, and the canonical Item admission records remain unchanged.
 import hashlib
 import json
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,6 +32,16 @@ def capture(root=ROOT):
     client_raw=(root/CLIENT).read_bytes()
     if hashlib.sha256(xml_raw).hexdigest()!=XML_SHA or hashlib.sha256(client_raw).hexdigest()!=CLIENT_SHA:
         raise ValueError('QENGINE_REWARD_ITEM_SOURCE_PIN')
+    supplement = json.loads((root / 'tools/content-schema/native-gameplay/npcfix-workshop-item-facts.json').read_bytes())
+    tree = ET.fromstring(xml_raw)
+    existing = source.xml_index(xml_raw)
+    for fact in supplement['items']:
+        if fact['id'] in existing:
+            raise ValueError('NPCFIX_ITEM_SUPPLEMENT_COLLISION')
+        node = ET.SubElement(tree, 'item', {k:str(v) for k,v in fact.items() if k != 'attributes'})
+        for key,value in fact['attributes'].items():
+            ET.SubElement(node, 'attribute', {'key':key,'value':value})
+    xml_raw = ET.tostring(tree)
     xml=source.xml_index(xml_raw)
     objects=source.engine_items.load_appearance_objects(client_raw)
     physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,IDS)}
@@ -57,7 +68,7 @@ def capture(root=ROOT):
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
         for group in ('physical','stack','container'):
             if accepted.known_conflict(definition['semantics'][group],record['semantics'][group]):
-                raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group)
+                raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+str(item_id)+':'+group)
         if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
             raise ValueError('QENGINE_REWARD_ITEM_STACK_CONFLICT')
         if record['admission']['legal_destinations']!=['CharacterInventory','Ground']:
@@ -69,6 +80,7 @@ def capture(root=ROOT):
         'producer':'tools/content-migration/qengine_reward_item_profiles.py',
         'sources':[{'path':XML,'revision':'47dfd51f45280a59a1d3e50ba7edd573d7234446','sha256':XML_SHA},
                    {'path':CLIENT,'sha256':CLIENT_SHA}],
+        'supplement':supplement['source'],
         'scope':'Physical custody for the shared quest exchanges; no custom use or script activation.',
         'records':records}
 

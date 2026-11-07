@@ -36,6 +36,29 @@ class NpcfixRewardProfiles(unittest.TestCase):
         after['semantics']['temporal'] = before['semantics']['temporal']
         self.assertEqual(after, before)
 
+    def test_workshop_items_use_source_facts_without_replacing_the_existing_bag(self):
+        packet = json.loads(self.outputs[items.PROOF])
+        records = {r['production_definition']['production_key']: r for r in packet['records']}
+        for number in (43854, 43855):
+            row = records[f'oteryn:item.tibia.i{number}']
+            self.assertEqual(row['semantics']['physical']['value']['weight']['value'], 100)
+        self.assertNotIn('oteryn:item.tibia.i43895', records)
+        self.assertIn('00ce02a57ca5a12e48f32a3476e37471167e4c3f', packet['supplement']['url'])
+        callbacks = json.loads(self.outputs['content/quests/shared-reward-callbacks.json'])['callbacks']
+        by_key = {c['key']: c for c in callbacks}
+        altar = by_key['oteryn:quest-reward/npcfix/altar-bag']
+        self.assertEqual(altar['fee'], {'gold': 50_000_000, 'include_bank': True})
+        self.assertEqual(altar['take'], [{'item':'oteryn:item.tibia.i43855','count':5},
+                                        {'item':'oteryn:item.tibia.i43854','count':5}])
+        submit = by_key['oteryn:quest-reward/npcfix/koshei-submit']
+        claim = by_key['oteryn:quest-reward/npcfix/koshei-claim']
+        self.assertIsNone(submit['give'])
+        self.assertEqual(submit['fee']['gold'], 5000)
+        self.assertTrue(submit['clocks'][0]['set_now'])
+        self.assertEqual(claim['clocks'][0]['track'], submit['clocks'][0]['track'])
+        self.assertEqual(claim['clocks'][0]['elapsed_seconds'], 86400)
+        self.assertFalse(claim['clocks'][0]['set_now'])
+
     def test_existing_known_weight_conflict_is_never_overridden(self):
         outputs, profiles, pick = self.profiles()
         pick['semantics']['physical']['value']['weight']['value'] += 1

@@ -49,6 +49,30 @@ pub struct OutfitReward {
     pub addons: u8,
 }
 
+/// Exact source price; only the durable fee owner may consume the funds.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MonetaryFee {
+    pub gold: u64,
+    pub include_bank: bool,
+}
+
+/// Database Unix-second clock effects, executed by the existing QuestState writer.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RewardClock {
+    pub track: String,
+    pub elapsed_seconds: Option<i64>,
+    pub set_now: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RewardCooldown {
+    pub track: String,
+    pub seconds: i64,
+}
+
 /// A read-only prerequisite: its original quest retains ownership and writes.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -78,8 +102,14 @@ pub struct RewardCallback {
     pub next_topic: u16,
     pub storage: Vec<Storage>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub clocks: Vec<RewardClock>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cooldown: Option<RewardCooldown>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires: Vec<TrackRequirement>,
     pub take: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fee: Option<MonetaryFee>,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
@@ -93,17 +123,46 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "is_false")]
     pub achievement_once: bool,
     pub reply: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub clock_wait_reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+impl RewardCallback {
+    pub fn clock_effects(&self) -> impl Iterator<Item = RewardClock> + '_ {
+        self.clocks
+            .iter()
+            .cloned()
+            .chain(self.cooldown.iter().map(|c| RewardClock {
+                track: c.track.clone(),
+                elapsed_seconds: Some(c.seconds),
+                set_now: true,
+            }))
+    }
 }
 
 fn is_false(value: &bool) -> bool {
     !*value
 }
 
+/// Source-bound catalogue input only; this declaration never writes progress.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TrackDeclaration {
+    key: String,
+    quest: String,
+    initial: i64,
+    min: i64,
+    max: i64,
+    sources: Vec<String>,
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Document {
     schema: u32,
+    #[serde(default)]
+    tracks: Vec<TrackDeclaration>,
     callbacks: Vec<RewardCallback>,
 }
 
@@ -130,8 +189,27 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
     if document.schema != 1 || document.callbacks.len() > 256 {
         return Err("reward callback bounds".into());
     }
+    let mut declarations = BTreeSet::new();
+    for track in &document.tracks {
+        if document.tracks.len() > 256
+            || !declarations.insert(&track.key)
+            || track.initial != -1
+            || track.min != -1
+            || track.max != i64::MAX
+            || track.sources.is_empty()
+            || track.sources.len() > 8
+            || track.sources.iter().any(|s| s.is_empty() || s.len() > 1024)
+            || !document.callbacks.iter().any(|c| {
+                c.quest == track.quest && c.clock_effects().any(|clock| clock.track == track.key)
+            })
+        {
+            return Err(format!("invalid declared reward clock {}", track.key));
+        }
+    }
     for c in &document.callbacks {
         let tracks: BTreeSet<_> = c.storage.iter().map(|s| &s.track).collect();
+        let clocks: Vec<_> = c.clock_effects().collect();
+        let clock_keys: BTreeSet<_> = clocks.iter().map(|c| &c.track).collect();
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
         let requires: BTreeSet<_> = c.requires.iter().map(|s| &s.track).collect();
@@ -140,7 +218,18 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
             || c.storage.is_empty()
-            || c.storage.len() > super::QUESTSTATE0_RL_02
+            || c.storage.len() + clocks.len() > super::QUESTSTATE0_RL_02
+            || clocks.len() > 8
+            || clock_keys.len() != clocks.len()
+            || !clock_keys.is_disjoint(&tracks)
+            || !clock_keys.is_disjoint(&requires)
+            || clocks.iter().any(|clock| {
+                !slug(&clock.track, "oteryn:", b"._/:-", 128)
+                    || clock
+                        .elapsed_seconds
+                        .is_some_and(|seconds| seconds <= 0 || seconds > 31_536_000)
+                    || (!clock.set_now && clock.elapsed_seconds.is_none())
+            })
             || tracks.len() != c.storage.len()
             || c.requires.len() > 8
             || requires.len() != c.requires.len()
@@ -156,7 +245,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || (c.repeatable
-                && (c.take.is_empty()
+                && ((c.take.is_empty() && c.fee.is_none() && c.cooldown.is_none())
                     || c.give.is_none()
                     || c.outfit.is_some()
                     || (c.achievement.is_some() && !c.achievement_once)))
@@ -166,6 +255,18 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.present
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.fee.as_ref().is_some_and(|fee| {
+                fee.gold == 0
+                    || fee.gold > 1_000_000_000_000
+                    || c.take.iter().any(|item| {
+                        matches!(
+                            item.item.as_str(),
+                            "oteryn:item.tibia.i3031"
+                                | "oteryn:item.tibia.i3035"
+                                | "oteryn:item.tibia.i3043"
+                        )
+                    })
+            })
             || c.take.len() > 8
             || inputs.len() != c.take.len()
             || c.take
@@ -195,10 +296,14 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.keywords.iter().any(|s| {
                 s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()
             })
+            || (!c.clock_wait_reply.is_empty()
+                && !clocks.iter().any(|clock| clock.elapsed_seconds.is_some()))
+            || c.clock_wait_reply.len() > 8
             || c.reply.is_empty()
             || c.reply.len() > 8
             || c.reply
                 .iter()
+                .chain(&c.clock_wait_reply)
                 .any(|s| s.is_empty() || s.len() > 512 || s.chars().any(char::is_control))
             || c.achievement
                 .as_ref()
@@ -236,6 +341,25 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 });
             }
         }
+        for clock in callback.clock_effects() {
+            if let Some(track) = tracks.iter().find(|track| track.key == clock.track) {
+                if track.quest != callback.quest
+                    || track.initial != -1
+                    || track.min != -1
+                    || track.max != i64::MAX
+                {
+                    return Err(format!("foreign reward clock {}", clock.track));
+                }
+            } else {
+                tracks.push(QuestTrack {
+                    key: clock.track,
+                    quest: callback.quest.clone(),
+                    initial: -1,
+                    min: -1,
+                    max: i64::MAX,
+                });
+            }
+        }
         transitions.push(QuestTransition {
             key: callback.key.clone(),
             quest: callback.quest.clone(),
@@ -251,6 +375,19 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                         QuestEffectKind::Set(s.set)
                     },
                 })
+                .chain(callback.clock_effects().map(|clock| {
+                    QuestEffect {
+                        track: clock.track,
+                        from: clock
+                            .elapsed_seconds
+                            .map_or(QuestComparison::Any, QuestComparison::ElapsedAtLeast),
+                        effect: if clock.set_now {
+                            QuestEffectKind::SetNow
+                        } else {
+                            QuestEffectKind::Add(0)
+                        },
+                    }
+                }))
                 .collect(),
             completes: false,
             experience: None,
@@ -269,6 +406,38 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn workshop_clocks_are_bounded_disjoint_and_required_for_free_repeats() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/npcfix-ghost-tear")
+            .ok_or("tear")?;
+        let original = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+        let document = |value: &serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[value]}).to_string()
+        };
+        assert!(parse(&document(&original)).is_ok());
+        for mutation in 0..6 {
+            let mut value = original.clone();
+            match mutation {
+                0 => {
+                    value.as_object_mut().ok_or("object")?.remove("cooldown");
+                }
+                1 => value["cooldown"]["seconds"] = 0.into(),
+                2 => value["cooldown"]["seconds"] = 31_536_001_i64.into(),
+                3 => value["cooldown"]["track"] = value["storage"][0]["track"].clone(),
+                4 => {
+                    value["clocks"] = serde_json::json!([{"track":value["cooldown"]["track"],"elapsed_seconds":72000,"set_now":true}])
+                }
+                _ => {
+                    value["requires"] = serde_json::json!([{"track":value["cooldown"]["track"],"minimum":0,"maximum":1}])
+                }
+            }
+            assert!(parse(&document(&value)).is_err(), "mutation {mutation}");
+        }
+        Ok(())
+    }
 
     #[test]
     fn repeatable_item_exchange_requires_an_explicit_cost() -> Result<(), String> {

@@ -43,18 +43,22 @@ fn npcfix_endpoint_postgres_goldro_has_admitted_native_actor() -> TestResult {
 }
 
 fn threaded(index: usize) -> TestResult {
+    threaded_anchor(ANCHORS[index])
+}
+
+pub(super) fn threaded_anchor(anchor: (&'static str, &'static str, u16, u16, i8)) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
     let result = std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(index).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(anchor).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "NPC endpoint thread panicked")?;
     eprintln!(
         "POSTGRES_CASE_COMPLETED NPCFIX physical {} duration={:?} success={}",
-        ANCHORS[index].0,
+        anchor.0,
         started.elapsed(),
         result.is_ok()
     );
@@ -62,8 +66,8 @@ fn threaded(index: usize) -> TestResult {
     Ok(())
 }
 
-fn scenario(index: usize) -> TestResult {
-    let anchors = [ANCHORS[index]];
+fn scenario(anchor: (&str, &str, u16, u16, i8)) -> TestResult {
+    let anchors = [anchor];
     run(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, "npcfix_endpoint", true, false).await?;
         let result: TestResult = async {

@@ -69,9 +69,13 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         all_callbacks=self.callbacks['callbacks']
-        npcfix=[c for c in all_callbacks if c['key'].startswith('oteryn:quest-reward/npcfix/')]
+        workshop_keys={'oteryn:quest-reward/npcfix-ghost-tear', 'oteryn:quest-reward/npcfix/altar-bag',
+                       'oteryn:quest-reward/npcfix/koshei-submit', 'oteryn:quest-reward/npcfix/koshei-claim'}
+        workshop=[c for c in all_callbacks if c['key'] in workshop_keys]
+        self.assertEqual({c['key'] for c in workshop}, workshop_keys)
+        npcfix=[c for c in all_callbacks if c['key'].startswith('oteryn:quest-reward/npcfix/') and c not in workshop]
         self.assertEqual({c['key'].split('/')[-1] for c in npcfix}, {'al-dee-pick','forest-fury-cage','wandering-crystal'})
-        callbacks=[c for c in all_callbacks if c not in npcfix]
+        callbacks=[c for c in all_callbacks if c not in npcfix and c not in workshop]
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),20)
