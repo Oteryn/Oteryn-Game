@@ -1556,6 +1556,7 @@ pub mod tests {
                 seed: [7; 32],
                 fungus: true,
                 grimvale_full_moon: false,
+                items: Vec::new(),
                 trader: None,
             })
             .boot(WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?, served)?;

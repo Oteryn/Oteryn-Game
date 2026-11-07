@@ -10287,7 +10287,7 @@
     "merge_validation": "Resolved two scenario fixture overlaps by retaining both native tower and native Tomb switch branches; formatting and diff checks only. Combined PG/check/clippy not rerun because owner requires immediate push and stop; r2 owns subsequent validation."
   },
   "full_dependent_validation": {
-    "status": "MAIN_MERGE_REGENERATED_FULL_NEXTEST_STARTING",
+    "status": "FULL_RUN_COMPILE_REPAIR_RERUN_ENTIRE_SET",
     "owner_rule_at": "2026-11-07 15:47 UTC",
     "direct_packages": [
       "oteryn-game-server",
@@ -10368,6 +10368,14 @@
       "generated_with": "cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh ."
     },
     "content_check_collection_log": "/tmp/questpc4-main-content-checks.log",
-    "nextest_log": "/tmp/questpc4-dependent-nextest-main-1.log"
+    "nextest_log": "/tmp/questpc4-dependent-nextest-main-1.log",
+    "first_full_run": {
+      "exit": 101,
+      "duration_seconds": 603,
+      "log": "/tmp/questpc4-dependent-nextest-main-1.log",
+      "runtime_tests_started": false,
+      "error": "error[E0063]: missing field `items` in initializer of `DailyMap`, crates/gameplay/world/src/map/boot.rs:1555:29",
+      "repair": "Supply empty native Item placements in existing fungus-only fixture; all three other DailyMap declarations/initializers audited, no assertions changed."
+    }
   }
 }
