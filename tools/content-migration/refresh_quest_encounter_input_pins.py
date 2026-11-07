@@ -86,8 +86,10 @@ def outputs(base='HEAD', root=ROOT):
         before = json.loads(path.read_bytes())
         after = json.loads(path.read_bytes())
         update(after)
-        if after != before:
-            result[path] = (json.dumps(after, indent=2, ensure_ascii=False)+'\n').encode()
+        raw = ((json.dumps(after,sort_keys=True,separators=(',', ':'),ensure_ascii=False)
+                if path == taxonomy else json.dumps(after,indent=2,ensure_ascii=False))+'\n').encode()
+        if after != before or (path == taxonomy and path.read_bytes() != raw):
+            result[path] = raw
     return result
 
 if __name__ == '__main__':
