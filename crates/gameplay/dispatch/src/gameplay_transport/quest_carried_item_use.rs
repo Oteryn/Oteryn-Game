@@ -117,10 +117,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(catalogue) = self.quest_catalogue.as_ref() else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
-        // World callbacks refresh their advisory copy asynchronously. Select a
-        // carried follow-up against the current durable stage as well.
-        self.refresh_quest_session(command.game_session_id, false)
-            .await;
         let callback = {
             let sessions = self.states.quest_sessions.lock().map_err(|_| ())?;
             let tracks = sessions

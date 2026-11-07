@@ -4022,7 +4022,7 @@
     },
     "current_batch": {
       "batch": "threatened_treasure_14",
-      "phase": "Compiling WIP: force fresh advisory quest copy before carried selection and invalidate loop cache after successful value mutation. Dispatch check PASS1m00s; instrumented focused PG rebuild running. Last real qualification remains RED5/6 at62710ms; do not claim repeat fixed.",
+      "phase": "Exact refusal proven: MainBackpackFull in eight-slot bag2853; fixture incorrectly expected room for nine retained entries. Corrected to canonical twenty-slot backpack2854 with native capacity assertion; all reward/replay/custody assertions retained. Speculative synchronous refresh removed; value-cache invalidation retained. Current two-crate check PASS34.63s; final focused PG rebuild running.",
       "previous_published": "6146ee945",
       "entries": [
         "agaric25385 -> fourth map24946",
@@ -4117,6 +4117,14 @@
         "assumption": "World execute.rs schedules quest refresh asynchronously; synchronize the carried follow-up and value cache before retest",
         "check": "PASS1m00s",
         "pg_log": "/tmp/questpc3-treasure-refresh-pg.log"
+      },
+      "capacity_fixture_correction": {
+        "diagnostic_pg_ms": 66160,
+        "exact_refusal": "QUEST_REWARD_REFUSED command=11 callback=compose-1 boundary=mint-admit reason=MainBackpackFull",
+        "source": "content/items/definitions/spell-native-profiles.json:1 @b3e2434ba (2853 cap8;2854 cap20)",
+        "assertions": "unchanged full six-entry and earned repeat expectations; added exact native cap20 assertion",
+        "check": "PASS34.63s",
+        "pg_log": "/tmp/questpc3-treasure-backpack-pg.log"
       }
     },
     "diagnosis": {

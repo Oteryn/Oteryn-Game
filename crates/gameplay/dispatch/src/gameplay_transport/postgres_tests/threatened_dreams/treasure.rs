@@ -95,7 +95,10 @@ fn scenario()->TestResult{
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        super::super::item_look::seed_main_backpack_definition(&h,&[],"oteryn:item.tibia.i2853").await?;
+        let bag = crate::durability::item_mint::TypedDefinitionRef { family:"Item".into(),production_key:"oteryn:item.tibia.i2854".into(),revision_ref:"definition-r1".into() };
+        let bag_facts = oteryn_gameplay_items::item_ref_admission::generation_item_facts(generation.native_gameplay().ok_or("native")?, &bag).map_err(debug)?;
+        assert_eq!(bag_facts.container_capacity,Some(20),"the repeated outputs require a real twenty-slot backpack, not the eight-slot bag2853");
+        super::super::item_look::seed_main_backpack_definition(&h,&[],"oteryn:item.tibia.i2854").await?;
         let mut selected=admitted.continuity.selected_capabilities.as_slice().to_vec();
         selected.extend([3,4,6,11,15,18,25]); selected.sort_unstable(); selected.dedup();
         let offered=crate::gameplay_transport::appearance_change::offer::offered(owner.offered_capabilities(),owner.appearance_available());

@@ -179,6 +179,8 @@ pub(crate) async fn apply(
     if !super::super::quest_world_callback::consume_reward_inputs(tx, fence, request, callback, admission.carried_use)
         .await?
     {
+        #[cfg(feature = "test-support")]
+        eprintln!("QUEST_REWARD_REFUSED command={} callback={} boundary=inputs", command.command_id().get(), callback.key);
         return Ok(false);
     }
     let mut grant_keys = Vec::new();
@@ -356,7 +358,12 @@ async fn mint(
     };
     let destination = match admit(tx, node, &fence.item_fence(), &request, &reservation).await? {
         Ok((destination, _)) => destination,
-        Err(RewardClaimMintError::Refused(_)) => return Ok(None),
+        Err(RewardClaimMintError::Refused(reason)) => {
+            #[cfg(feature = "test-support")]
+            eprintln!("QUEST_REWARD_REFUSED command={} callback={} boundary=mint-admit reason={reason:?}", command.command_id().get(), source_key);
+            let _ = reason;
+            return Ok(None);
+        },
         Err(_) => return Err(DurabilityError::InvalidStoredState),
     };
     match contents::check_capacity(
@@ -369,7 +376,12 @@ async fn mint(
     .await?
     {
         Ok(()) => {}
-        Err(RewardClaimMintError::Refused(_)) => return Ok(None),
+        Err(RewardClaimMintError::Refused(reason)) => {
+            #[cfg(feature = "test-support")]
+            eprintln!("QUEST_REWARD_REFUSED command={} callback={} boundary=mint-capacity reason={reason:?}", command.command_id().get(), source_key);
+            let _ = reason;
+            return Ok(None);
+        },
         Err(_) => return Err(DurabilityError::InvalidStoredState),
     }
     insert_reservation(tx, &request, &binding, &reservation).await?;
