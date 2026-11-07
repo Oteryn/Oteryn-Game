@@ -7490,7 +7490,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "bd7668d3388e49cc2020f1f2b1a8fdd10265e7c7caa4cc041d62b51802fd14f5",
+        "canonical_definition_sha256": "067a6152cf2f1dd34f2a434071744680abdcf86665789cca5c9a9694e128d24d",
         "canonical_name": "magic plate armor",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -9730,7 +9730,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "c91b41c3b11f276099d64481a158d032e199ec10f64eb87cbf378676a6992f8d",
+        "canonical_definition_sha256": "d6beed58e6221a31eccb0651e08f36d8c24b36a751691308a388fc7ecc662b09",
         "canonical_name": "mastermind shield",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -13630,7 +13630,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "5edecf38b02fd3d9a1fc7e9bcfb9e55050bf4433226ac18176b8dc759bcc020f",
+        "canonical_definition_sha256": "968a5e158466ffbafa5b3144fc745cb820fa84e00210acbb21b106ebb85d9af4",
         "canonical_name": "demonrage sword",
         "canonical_path": "content/items/definitions/items-31000-31499.json",
         "wiki_observations": [

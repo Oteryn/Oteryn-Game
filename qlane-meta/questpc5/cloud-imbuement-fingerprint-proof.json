@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "scope": "Dependent derived Item fingerprints after qualified encounter admission; no gameplay, source observation, recipe, eligibility or slot change.",
+  "guard": "Fresh existing builders requalify named identities; only canonical definition fingerprints can differ. Pins are refreshed only when the old packet matches its existing pin. All other changes refuse before writing.",
+  "checks": {
+    "fingerprint_guard_unit_tests": 3,
+    "adversarial_cases": "Slot, identity, observation, runtime-admission, wrong/unresolved fingerprint and extra-row changes refuse.",
+    "evidence_replay": "PASS",
+    "imbuement_authoring_and_static_import": "PASS24types72tiers; runtime admission unchanged",
+    "craft": "PASS129records",
+    "complete_tree_validator": "PASS34111Items/337RewardClaims; all final static checks PASS",
+    "cargo_fmt": "PASS",
+    "cargo_check_content": "PASS18.91s",
+    "strict_clippy_content_all_targets_all_features": "PASS26.43s",
+    "world_pin_refresh_and_check": "PASS; world digest 3fe4f02d9c01f2933270d2871b6f20095341a22c5a180dabbf93dfc27e5523f9"
+  },
+  "retained_gameplay_proof": "cloud-encounter-known-facts-proof.json PG54.28s; Native gameplay payloads unchanged by this metadata slice."
+}

@@ -439,7 +439,8 @@
     "source_level_access_evidence": "cloud-helmet-levels-proof.json",
     "completion_proof": "cloud-demon-complete-proof.json",
     "taxonomy_serialization": "Compact canonical form restored after source digest refresh; parsed values unchanged.",
-    "known_fact_preservation_followup": "Repaired and PG54.28s; accepted canonical/native facts retained. Static Imbuement binding fingerprints are the next immediate derived-data follow-up."
+    "known_fact_preservation_followup": "Complete: PG54.28s plus full tree/Imbuement/craft replay PASS; accepted canonical/native facts retained.",
+    "dependent_fingerprint_evidence": "cloud-imbuement-fingerprint-proof.json"
   },
   {
     "canonical": "oteryn:quest.devil_helmet_quest",

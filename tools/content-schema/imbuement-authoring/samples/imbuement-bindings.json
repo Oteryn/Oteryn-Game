@@ -473,7 +473,7 @@
     "Demon Horn": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "7719190c32e527b6c76271026d76241ee2ea1286f92fbaf63a2d0afdead4e708",
+          "definition_sha256": "0bc709e075a5e2acca3f78c6c0e615ee56d592601ea3f6f04e2e569310cd029b",
           "name": "demon horn",
           "path": "content/items/definitions/items-29500-29999.json"
         },
