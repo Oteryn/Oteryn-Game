@@ -1,3 +1,18 @@
+# Whole Grimvale PG GREEN — 2026-11-07
+
+Actual PG18.6 GREEN93.008242622s proves all13 selected stages,35 real
+native deaths, five carried blossoms, trap MINT/exact consumption/replay,
+both native contacts, two Oskayaat surveys, atomic amulet/two achievements/
+completion/access, exact final replay and actual earned exit/reentry.
+GRIMVALE-PG-PROOF.json records RED42.299587316s and the complete boundary.
+Source ambiguity was fixed by moving earned exit to real adjacent ground
+33001,32933,-8 appearance38069; ritual is sole USE on its altar. Source
+requirements, all quota/refusal/replay assertions and legacy guards stay intact.
+Push this PG-green source checkpoint immediately. Whole entry remains ACTIVE
+until15 focused gates in /tmp/questpc7-grimvale-story-validation.py pass.
+Stage source before pin refresh; runner handles idle-only cache cleanup.
+Then qualify/push Grimvale and continue remaining six without ending turn.
+
 # Grimvale full route compiling checkpoint after35 native deaths — 2026-11-07
 
 Publish source now under15-minute rule. Full source/test compiled in

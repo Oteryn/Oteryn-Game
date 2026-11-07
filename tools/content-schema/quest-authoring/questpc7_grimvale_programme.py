@@ -75,7 +75,8 @@ def build(root):
     site=sites['oskayaat_ritual'];row=cb('ritual','use',site['position'],site['appearance'],[state(TRACK,11,11,12),state(OSKAYAAT,2,2,2,True),state(ACCESS,-1,-1,1)],'The ancient ritual stills the local curse. You earn the Foxtail Amulet, Over the Moon and Drama in Darama.')
     row.update(completes=True,item_reward={'item':'oteryn:item.tibia.i27565','count':1,'contents':[]},achievements=['oteryn:achievement/over_the_moon','oteryn:achievement/drama_in_darama'],activation={'track':TRACK,'minimum':11,'maximum':11});worlds.append(row)
     for name,target in [('oskayaat_mosaic',sites['oskayaat_moon']['arrival']),('oskayaat_ritual',sites['oskayaat_mosaic']['arrival'])]:
-        site=sites[name];row=cb('earned-access-'+name,'use',site['position'],site['appearance'],[state(ACCESS,1,1,1,True)],'Your completed investigation opens the island route.',target);worlds.append(row)
+        site=sites[name] if name!='oskayaat_ritual' else {'position':(33001, 32933, -8),'appearance':38069}
+        row=cb('earned-access-'+name,'use',site['position'],site['appearance'],[state(ACCESS,1,1,1,True)],'Your completed investigation opens the island route.',target);worlds.append(row)
 
     objectives=[]
     for name in ['werewolf','werebear','wereboar','feroxa']+names+['werehyaena']:

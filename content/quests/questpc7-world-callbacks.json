@@ -4330,7 +4330,7 @@
       "trigger": "use",
       "selector": {
         "position": {
-          "x": 33002,
+          "x": 33001,
           "y": 32933,
           "floor": -8
         },

@@ -5,7 +5,7 @@
   "red_seconds": 42.299587316,
   "red_point": "No native programme entry after actual PostgreSQL fixture initialization",
   "red_log": "/tmp/questpc7-grimvale-story-red.log",
-  "green": "not yet; expanded route compiles and reaches actual PG18.6",
+  "green": "PASS; whole selected programme",
   "callback_count": 24,
   "native_death_objectives": 9,
   "subject_state_seeded": false,
@@ -43,7 +43,27 @@
     "correction": "Install both existing contacts once; charge exact six-actor peak; reuse Domizian actor"
   },
   "current_run": {
-    "log": "/tmp/questpc7-grimvale-story-green7.log",
-    "state": "compiled; full PG route running"
-  }
+    "log": "/tmp/questpc7-grimvale-story-green8.log",
+    "state": "PASS"
+  },
+  "green_seconds": 93.008242622,
+  "green_log": "/tmp/questpc7-grimvale-story-green8.log",
+  "scope_proved": [
+    "fresh Current Premium at entry, harvesting, trap, final rewards and earned travel",
+    "five actual carried22082 blossoms from once-only native sites",
+    "exact10 afflicted kills and four distinct native leaders",
+    "closed silvered trap22074 MINT, exact consumption and command replay",
+    "native Feroxa and20 Werehyaena deaths;35 total",
+    "Rhargu and Domizian conversations with distinct retained real actors",
+    "both Oskayaat native investigation sites",
+    "atomic27565 amulet, two achievements, completion and typed access",
+    "exact final command replay without duplicate grants",
+    "actual earned native exit/reentry without changing final grants/completion"
+  ],
+  "ritual_binding_correction": {
+    "red_seconds": 92.474344974,
+    "point": "ambiguous USE on shared altar cell",
+    "fix": "earned exit moved to adjacent actual ground33001,32933,-8 appearance38069; ritual remains sole altar USE"
+  },
+  "pending": "focused strict/generation/pin qualification gates"
 }
