@@ -1,3 +1,11 @@
+-- Source-derived per-Character exhaustion stays with the existing terrain receipt owner.
+-- Successful Gobbler actions alone yield12065; retries retain their original receipt.
+CREATE INDEX game_terrain_tool_gobbler_character_time
+    ON game_terrain_tool_receipts(character_id, committed_at DESC)
+    WHERE transformed_item_id = 12065;
+
+
+-- Consolidated package migration: 1132_world_change_voice_phase.sql
 -- Voice joins the same shared counters; its per-character eligibility belongs to
 -- the encounter deadline, independently of the spawn cohort's wave generation.
 ALTER TABLE game_world_change_counters DROP CONSTRAINT game_world_change_counters_change_key_check;

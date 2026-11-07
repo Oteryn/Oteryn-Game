@@ -705,3 +705,16 @@ Focused validation (command wall durations; logs retained under `/tmp/wpkg-*` in
 Content integration passed 123 tests (3.12s actual tests); world repository passed five (84.09s). All six owner PostgreSQL cases executed and passed (14.94s actual tests). The dispatch filter passed fourteen tests (193.16s actual tests), including thirteen native PostgreSQL cases with WORLDCHG-Q/RAIDS_GLOBAL execution markers. Case markers include Thawing51.776–71.725s, Voice54.880/68.648s, Grimvale45.743/57.326s, Hive66.131s, Benevola96.635s, Yasir102.670s and Yeo81.307s. The queued duplicate Cargo invocation was cancelled before any case executed; the actual run used six workers. No full PostgreSQL suite ran. The optional broader daily-map module was not run.
 
 The fresh pin-refresh and pin-check bind digest `7d31c6eb0395cafda888178a0d5e204bad469be754430172a2f396c5e330daaa` (32,839,521 bytes). All 93 quest-authoring modules passed. Rust checks cover all targets/features of the eleven changed crates; Rust source remained unchanged after them. No PR is opened. WVAR follows next; its completed Fury Gates qualification must be composed with main's existing native layer/raid path.
+
+## Coordinator migration registry — WPKG (2026-11-07)
+
+WPKG owns 1330–1349. The five incoming sources contain 29 package-owned migration files, so related unmerged SQL is consolidated in original order; no accepted main migration is renumbered or edited. SQL statements are preserved. QENGINE2 PR3020 is still open at `efad3dee13e9cbc9652296726bf15828769c69d4`; its 0999–1006 content must remain canonical dependencies, never package variants. Shared QBASE files, if present, use the coordinator's 1200–1209 numbers and unchanged shared SQL.
+
+Current WORLDCHG migration files:
+
+- `apps/game-server/migrations/1330_world_change_owner.sql`
+- `apps/game-server/migrations/1331_world_change_credit_counters.sql`
+- `apps/game-server/migrations/1332_world_change_voice_support.sql`
+- `apps/game-server/migrations/1333_world_change_barter_custody.sql`
+
+1330 retains the World owner; 1331 retains credited counters. 1332 concatenates the gobbler cooldown and Voice phase migrations; 1333 concatenates Benevola custody and Yeo barter. Every statement remains in its original lane order. Exact filename references were updated. The repository duplicate-version check on the staged tree returned no duplicates. Focused PostgreSQL checks and regenerated pins follow this compiling checkpoint. Future lane migration groups will continue in ascending order inside this same package range.
