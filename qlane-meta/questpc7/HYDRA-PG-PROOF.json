@@ -1,0 +1,51 @@
+{
+  "quest": "oteryn:quest.hydra_egg_quest",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "test": "questpc7_hydra_requires_personal_native_nest_pickup",
+    "seconds": 42.847576199,
+    "log": "/tmp/questpc7-hydra-red.log",
+    "marker": "QUESTPC7_HYDRA POSTGRES_STARTED",
+    "failure": "Native Hydra kill alone incorrectly permits nest completion without a personal ordinary pickup; actualCommitted expectedRejected."
+  },
+  "status": "Native route/source guard PG GREEN; reset replenishment and all required checks pending. ACTIVE.",
+  "scope": [
+    "fresh subject quest state",
+    "CurrentPremium entry and nest acknowledgement",
+    "one actual native Hydra lethal occurrence",
+    "ordinary map-source command9 pickup",
+    "unrelated carried egg refuses",
+    "exact source pickup milestone survives stack merge",
+    "no fabricated quest chest or reward MINT",
+    "ordinary reset epoch replenishment to be proved"
+  ],
+  "decisions": "CONTRACT-NOTES.md: Hydra Egg personal native pickup",
+  "fixture_repairs": [
+    "Stopped an early compile before source generation completed; exit130 is not a PG RED and is not counted as proof."
+  ],
+  "assumptions": [
+    "Selected existing1063 is a conservative authored search marker, not a uniquely resolved donor nest type.",
+    "Legacy B3 Item count0 denotes one materialized object; explicit opt-in export adapter preserves codec/runtime strictness."
+  ],
+  "green": {
+    "seconds": 44.918829126,
+    "log": "/tmp/questpc7-hydra-green.log",
+    "marker": "QUESTPC7_HYDRA POSTGRES_CASE_COMPLETED",
+    "scope": [
+      "fresh entry",
+      "native Hydra lethal",
+      "missing pickup refuses",
+      "unrelated carried egg refuses",
+      "ordinary command9 MapBase pickup",
+      "exact pickup replay and stale new command",
+      "native pickup milestone plus current carried quantity",
+      "nest completion without extra egg MINT"
+    ]
+  },
+  "legacy_export_unit": {
+    "test": "legacy_zero_item_quantity_defaults_without_weakening_the_sector_codec",
+    "log": "/tmp/questpc7-hydra-legacy-count-unit.log",
+    "cases": 1,
+    "kind": "unit, not a PostgreSQL proof"
+  }
+}

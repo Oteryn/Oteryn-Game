@@ -837,3 +837,29 @@ whole selected quests remain; continue Hydra Egg with the existing ordinary
 map pickup/reset owner. /tmp/questpc7-hydra-next-plan.txt contains bounded
 source findings, actual egg/nest positions and next implementation plan.
 No fake UID chest, duplicate quest reward MINT or additional donor investigation.
+
+## Hydra Egg generic pickup guard RED proved
+
+Last product653feac45 is pushed and closes Hidden Threats;12 ACTIVE remain.
+Actual PG18.6 RED42.847576199s proves kill alone wrongly completes Hydra
+without a personal native egg pickup. New read-only owned_items/map_source
+requirements join current custody and immutable native MINT/pickup receipts,
+including stack merge. Legacy B3 count0 adapter applies only to exported Items;
+codec exact presence and runtime typed-zero refusal remain unchanged.
+Current positive test session76541/log /tmp/questpc7-hydra-green.log is running.
+Before qualifying whole Hydra, prove native pickup/replay, unrelated egg refusal,
+stack merge, no quest reward MINT, and ordinary reset replenishment; then focused
+checks/pins/fmt. No subject quest-stage seeds. Native physical egg was already
+admitted; redundant qualifier changes were removed. CONTRACT-NOTES records
+actual source placement/SHA and conservative acknowledgement marker1063.
+
+## Hydra native route PG GREEN; reset proof/checks next
+
+Actual PG18.6 RED42.847576199s -> GREEN44.918829126s. Native entry/lethal,
+missing-source and unrelated carried egg refusals, ordinary command9 MapBase
+pickup, exact pickup replay/stale refusal, guarded nest completion with no
+extra quest reward MINT all pass. Export legacy-count unit passes, preserving
+raw codec zero and charge/action0 while materializing Item0 as default1.
+Whole Hydra remains ACTIVE until ordinary reset replenishment and required
+checks pass. Push this honest proof checkpoint within30-minute cadence; product
+source stays uncommitted until green gates. Continue reset proof immediately.

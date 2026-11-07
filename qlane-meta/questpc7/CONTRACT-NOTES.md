@@ -215,3 +215,40 @@ caught unconditional overlay routing intercepting it. The valuables overlay now
 activates only at selected programme1; the original claim remains reachable
 outside that phase. Activation exactly repeats an authoritative write guard;
 runtime quest copies select routing only, never authorize the reward.
+
+## Hydra Egg personal native pickup (2026-11-07)
+
+Keep ordinary map-source ownership and reset epochs; no UID quest chest and no
+quest reward MINT. Entry uses existing empty1019 at(33003,32665,-3); one native
+Hydra guardian uses existing empty1019 at(33005,32665,-3), with personal quota1.
+The selected nest egg is the existing4839 at(33004,32664,-3), ordinal2;1063 on
+that same tile is an explicitly authored search acknowledgement marker. Its
+visual identity is not claimed as a uniquely resolved donor "Hydra's Nest" ID.
+Source `content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2`,
+sha2564143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072.
+No world placement binary is edited. The entry is a selected chamber staging
+binding, not a claim of a recovered donor movement script.
+
+The current accepted physical profile already admits4839 as StackCapable100,
+materializable to carried inventory/Ground. Preserve those accepted facts;
+the attempted redundant qualifier was removed. XML `imports/canary/items-xml/
+items.xml:14105-14108`,sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+provides the retained name/20oz weight; absent XML stack attribute does not
+override the accepted canonical/client stack facts.
+
+Reusable `owned_items` is read-only current carried quantity. Optional
+`map_source` additionally requires personally completed native MapBase pickup:
+existing same-command map MINT + item-loop pickup(operation5) + exact source
+line/character/world/definition/placement. This survives normal stack merging;
+it does not demand that the new materialized instance remain live after merge.
+A stranded MINT, scripted Ground relocation, unrelated carried egg, or another
+Character's pickup does not qualify. Successful pickup history is monotone
+across channels/reset epochs in the same World; acknowledgement still requires
+fresh Premium, current carried quantity and the selected Hydra kill quota.
+
+Conservative legacy materialization rule: raw B3 Item count0 is the implicit
+single object already rendered as1 by map facts. Only materialized Item entries
+normalize it to absent/default1 during export; Terrain counts and positive Item
+counts stay exact. The shared sector codec preserves explicit zero unchanged,
+and runtime typed-zero pickup eligibility remains strict. Compiler equivalence
+uses the same explicit adapter. No charge, subtype, timer or use effect inferred.

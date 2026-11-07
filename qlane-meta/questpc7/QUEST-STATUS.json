@@ -1593,6 +1593,15 @@
         "Read the fresh Wiki route (explicitly permits ignoring the Hydra), searched all reward-claim shards and both pinned donor trees for the nest owner, and checked Item4839 native admission. Did not fabricate a selector or use a test-only mint as the quest reward."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "current_batch": {
+      "proof": "qlane-meta/questpc7/HYDRA-PG-PROOF.json",
+      "state": "PG18.6 RED42.847576199s -> GREEN44.918829126s, including ordinary pickup and unrelated egg refusal. Reset replenishment and focused checks/pins/fmt pending; ACTIVE.",
+      "assumptions": [
+        "Selected existing1063 is a conservative authored search marker, not a uniquely resolved donor nest type.",
+        "Legacy B3 Item count0 denotes one materialized object; explicit opt-in export adapter preserves codec/runtime strictness."
+      ],
+      "green_seconds": 44.918829126
     }
   },
   {
