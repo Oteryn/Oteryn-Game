@@ -1,5 +1,28 @@
 # Integrated producer contract notes
 
+## SRVWLD — W19b Dryad Garden
+
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`data-global/scripts/actions/other/dryad_garden.lua:1-27` binds unique IDs
+33331/33332 to the existing enter/leave destinations. Lines 18-19 teleport
+before emitting watersplash at the resulting player position. The existing
+callback executor owns movement; its successful teleport publishes effect 54
+through the ordinary item presentation journal, after the movement commit.
+No additional movement, quest storage or item writer is introduced.
+
+No migration, command, capability, mechanic ordinal or registry number is
+allocated. Existing USE and item presentation contracts are reused; migration
+range 1110-1119 remains unused. Tests use the production USE route in both
+directions and inspect the journal at the committed destination.
+
+The two `srvwld_dryad_garden_*_teleports_and_publishes_destination_splash`
+PostgreSQL cases first reproduced missing cues after successful teleports
+(46.28 s together). With the publisher wired, enter completed in 97.088 s
+and leave in 92.893 s against PostgreSQL 18.6, with explicit completed-case
+markers. Scope was narrowed to W01c, W19b and P01 using audit branch
+`claude/happy-davinci-ijz3wy-aud1107` at
+`d531f725dc25c70c268c85c40ad14e63a7a9c7cd`. No work on removed rows was pushed.
+
 Package GPROD-PKG composes all three deliveries below on current main. The delivery
 sections retain their original scope/history; statements about another producer being
 absent describe that delivery's base, rather than this combined package.
