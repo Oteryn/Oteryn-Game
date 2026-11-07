@@ -297,6 +297,7 @@ fn scenario(full_route: bool) -> TestResult {
                     },
                     Arc::clone(owner.quest_catalogue.as_ref().ok_or("catalogue")?),
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
+actor_conditions: None,
                         native,
                         weights: &weights,
                         fee_payment: None,

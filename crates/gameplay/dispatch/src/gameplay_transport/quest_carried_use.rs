@@ -707,6 +707,7 @@ async fn commit_pending(
             permit,
             pending.context.clone(),
             crate::durability::reward_claim_mint::QuestRewardAdmission {
+                actor_conditions: None,
                 native,
                 weights: &weights,
                 fee_payment: None,
@@ -724,6 +725,9 @@ async fn commit_pending(
             std::sync::Arc::clone(catalogue),
             permit,
             pending.context.clone(),
+            admission
+                .active_generation
+                .and_then(|generation| generation.native_gameplay()),
         )
         .await
     }

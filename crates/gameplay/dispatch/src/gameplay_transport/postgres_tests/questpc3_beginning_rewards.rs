@@ -1604,6 +1604,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     },
                     owner.quest_catalogue.clone().ok_or("catalogue")?,
                     QuestRewardAdmission {
+actor_conditions: None,
                         native,
                         weights: &weights,
                         fee_payment: None,
@@ -1662,6 +1663,7 @@ fn scenario(mode: Scenario) -> TestResult {
                 },
                 substituted,
                 QuestRewardAdmission {
+actor_conditions: None,
                     native,
                     weights: &weights,
                     fee_payment: None,

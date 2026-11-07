@@ -454,6 +454,7 @@ fn scenario_in_world(
                 failure_message: None,
                 success_message: None,
                 native_rule: None,
+                effects: Default::default(),
                 sources: vec![],
             };
             install(&owner, actor, session, false).await?;

@@ -415,7 +415,9 @@ pub(super) async fn settle(
     entry: &PendingKillSettlement,
     ordinary: impl std::future::Future<Output = SettleReport>,
 ) -> SettleReport {
-    if !admission.credit_grizzly_death(entry).await {
+    if !super::quest_kills::settle(admission, entry).await
+        || !admission.credit_grizzly_death(entry).await
+    {
         return SettleReport {
             verdict: SettleVerdict::Retry,
             no_progression: false,

@@ -232,10 +232,10 @@ pub fn load_embedded_quest_state(
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::trade_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::stampede::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    lowered.catalogue =
-        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Source-authored world callbacks can declare flags absent from the scalar
     // NPC lowering. Retain their normalized source identities without replacing
     // any alias already qualified by a lowered document.
@@ -243,7 +243,13 @@ pub fn load_embedded_quest_state(
         let backend = callback
             .sources
             .iter()
-            .find_map(|source| super::world_callbacks::source_backend(source))
+            .find_map(|source| {
+                super::world_callbacks::source_backend(source).or_else(|| {
+                    (callback.effects.outfit_reward.is_some()
+                        && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
+                    .then_some("crystalserver")
+                })
+            })
             .ok_or_else(|| QuestLoadError::Json("world callback lacks source authority".into()))?;
         for storage in callback.storage {
             let path = storage

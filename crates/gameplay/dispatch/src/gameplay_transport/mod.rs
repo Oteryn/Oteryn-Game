@@ -149,7 +149,6 @@ mod pvp_expert;
 mod pvp_live;
 mod quest_admission;
 mod quest_callbacks;
-mod quest_carried_item_use;
 mod quest_kills;
 mod quest_log_source;
 mod raid_live;

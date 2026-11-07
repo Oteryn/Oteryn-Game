@@ -9806,13 +9806,24 @@
       "current": "32 main merge conflicts manually resolved; generated registry regeneration ongoing before merge commit, restoring owned absence draft, and full nextest"
     },
     "main_merge_validation": {
-      "main": "bbb3e06d0",
-      "state": "regenerating_then_full_reverse_dependency_nextest",
-      "packages_file": "/tmp/questpc3-dependent-crates.txt",
-      "package_count": 23,
-      "imbuement_tests": "258 passed in124.183s; guarded canonical-definition-only evidence pin refresh added and tested",
-      "regen_log": "/tmp/questpc3-main-regen-finish.log",
-      "push_policy": "finish full run; collect all failures, fix together, rerun full set, one push; automatic push reminders superseded during validation"
+      "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+      "state": "canonical_engine_merged_regeneration_in_progress_full_pg_prevention_not_started",
+      "shared_migrations": "0999-1008 byte-identical to main; no QBASE1200-1205 copies; own1220-1229 retained",
+      "duplicate_migration_check": "staged tree: clear",
+      "quest_unit_suite": {
+        "command": "cargo test --locked -p oteryn-gameplay-quests --lib --no-fail-fast",
+        "passed": 296,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "duration_seconds": 31.57,
+        "log": "/tmp/questpc3-3020-quests-unit-rerun3.log"
+      },
+      "quest_authoring_suite": "29passed21.392s",
+      "callback_schema": "271merged callbacks; closed512limit; 512accepted/513rejected unittestpassed",
+      "regeneration_log": "/tmp/questpc3-3020-regen-retry.log",
+      "full_reverse_dependency_run": "NOT_STARTED; required23crates withrealPG beforeonepush",
+      "push_policy": "No partial push; collect all full-run failures, grouped repairs, full rerun then one push"
     }
   },
   "counts": {

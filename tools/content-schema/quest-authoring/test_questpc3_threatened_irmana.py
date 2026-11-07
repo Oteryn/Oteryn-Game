@@ -15,7 +15,7 @@ class IrmanaSourceContracts(unittest.TestCase):
         self.assertIn('irmana.lua:208-218,247-253 git-blob=76f53aa5ae2e04daabf1a8cca74b63f3ad13e751',r['sources'][-1])
         self.assertFalse(r.get('completes',False));self.assertFalse(r.get('repeatable_check',False))
     def test_offer_only_opens_exact_source_confirmation_and_placement_is_admitted(self):
-        offers=[r for r in json.loads((ROOT/'content/quests/shared-reward-offers.json').read_text())['offers'] if r['npc']==NPC]
+        offers=[r for r in json.loads((ROOT/'content/quests/shared-reward-offers.json').read_text())['offers'] if r['npc']==NPC and any(s['track'].endswith('/mission01/troubled_animals') for s in r['storage'])]
         self.assertEqual(len(offers),1);r=offers[0]
         self.assertEqual((r['keywords'],r['topic'],r['next_topic']),(['fur'],0,8));self.assertTrue(all(s['preserve'] for s in r['storage']))
         self.assertIn('1000 gold',r['reply'][-1]);self.assertEqual(len(r['reply']),3)

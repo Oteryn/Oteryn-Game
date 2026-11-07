@@ -133,7 +133,16 @@ impl DailyWorldChanges {
     /// Rolls the day after the reset `reset_epoch`, on the UTC calendar `month` and `day`.
     /// `draw(purpose)` returns the uniform 64-bit draw of that purpose for this epoch.
     pub fn roll(reset_epoch: u64, month: u8, day: u8, mut draw: impl FnMut(&str) -> u64) -> Self {
-        let [thawing, voice, trader, town, fury, fury_town, nightmare, stampede] = DRAW_PURPOSES;
+        let [
+            thawing,
+            voice,
+            trader,
+            town,
+            fury,
+            fury_town,
+            nightmare,
+            stampede,
+        ] = DRAW_PURPOSES;
         let thawing = percent_roll(draw(thawing), THAWING_PERCENT);
         let their_masters_voice = percent_roll(draw(voice), THEIR_MASTERS_VOICE_PERCENT);
         let oriental_trader = percent_roll(draw(trader), ORIENTAL_TRADER_PERCENT).then(|| {

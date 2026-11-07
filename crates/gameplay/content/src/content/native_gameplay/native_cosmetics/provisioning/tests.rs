@@ -75,3 +75,60 @@ fn nx5_load_time_cosmetics_matches_the_producer_and_rejects_tampered_inputs()
     std::fs::remove_dir_all(scratch)?;
     result
 }
+
+#[test]
+fn cosmetics_authoring_accepts_the_byte_limit_and_rejects_one_byte_over()
+-> Result<(), Box<dyn std::error::Error>> {
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let descriptor_path = root.join("content/cosmetics/outfits/native-cosmetics.json");
+    let mut descriptor: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&descriptor_path)?)?;
+    let source = descriptor_path.parent().ok_or("descriptor parent")?.join(
+        descriptor["source_manifest"]["path"]
+            .as_str()
+            .ok_or("source path")?,
+    );
+    descriptor["source_manifest"]["path"] = source.to_string_lossy().into_owned().into();
+    let scratch = std::env::temp_dir().join(format!(
+        "cosmetics-boundary-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    std::fs::create_dir_all(&scratch)?;
+    let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+        let mut authoring = std::fs::read(root.join("content/cosmetics/outfits/authoring.json"))?;
+        assert!(authoring.len() < MAX_AUTHORING_BYTES);
+        // JSON whitespace exercises the byte boundary without changing the
+        // admitted document, its promotions or the materialized section pin.
+        authoring.resize(MAX_AUTHORING_BYTES, b' ');
+        let path = scratch.join("authoring.json");
+        for extra in [false, true] {
+            if extra {
+                authoring.push(b' ');
+            }
+            std::fs::write(&path, &authoring)?;
+            descriptor["authoring"] = serde_json::json!({"path":"authoring.json",
+                "sha256":super::super::super::hex(crate::content::digest::sha256(&authoring))});
+            let bytes = serde_json::to_vec(&descriptor)?;
+            let pin = PinnedGameplayBytes {
+                sha256: super::super::super::hex(crate::content::digest::sha256(&bytes)),
+                bytes,
+            };
+            let actual = materialize(pin, &scratch.join("input.json"));
+            if extra {
+                assert!(matches!(
+                    actual,
+                    Err(ContentError::InvalidArtifact(
+                        "native gameplay provisioning file bounds"
+                    ))
+                ));
+            } else {
+                assert!(actual.is_ok(), "at-limit authoring rejected: {actual:?}");
+            }
+        }
+        Ok(())
+    })();
+    std::fs::remove_dir_all(scratch)?;
+    result
+}

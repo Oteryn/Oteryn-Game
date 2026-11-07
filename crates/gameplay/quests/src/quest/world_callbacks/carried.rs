@@ -145,7 +145,6 @@ mod tests {
         assert!(!accepted(&invalid));
         let mut ordinary = callback.clone();
         ordinary.trigger = super::super::Trigger::Use;
-        ordinary.carried_use = None;
         assert!(!accepted(&ordinary));
         let mut self_use = callback;
         self_use.trigger = super::super::Trigger::UseCarried;

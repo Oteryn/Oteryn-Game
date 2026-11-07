@@ -22,6 +22,46 @@ pub struct Counter {
 
 pub const COUNTERS: &[Counter] = &[
     Counter {
+        transition: "oteryn:quest-transition/native-kills/dragon-slayer-dragon",
+        creature: "oteryn:creature.dragon",
+        quest: "oteryn:quest.authored.dragon_slayer_outfits_quest",
+        track: "oteryn:quest-progress/chosen-trial/dragon_slayer/dragons",
+        gate: "oteryn:quest-progress/chosen-trial/dragon_slayer/phase",
+        gate_value: 1,
+        advance_gate_to: None,
+        maximum: 20,
+    },
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/dragon-slayer-lord",
+        creature: "oteryn:creature.dragon_lord",
+        quest: "oteryn:quest.authored.dragon_slayer_outfits_quest",
+        track: "oteryn:quest-progress/chosen-trial/dragon_slayer/dragon_lords",
+        gate: "oteryn:quest-progress/chosen-trial/dragon_slayer/phase",
+        gate_value: 1,
+        advance_gate_to: None,
+        maximum: 20,
+    },
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/cave-explorer",
+        creature: "oteryn:creature.crystal_spider",
+        quest: "oteryn:quest.cave_explorer_outfits_quest",
+        track: "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
+        gate: "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+        gate_value: 1,
+        advance_gate_to: None,
+        maximum: 20,
+    },
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/fire-fighter",
+        creature: "oteryn:creature.lava_lurker",
+        quest: "oteryn:quest.fire_fighter_outfits_quest",
+        track: "oteryn:quest-progress/chosen-trial/fire_fighter/kills",
+        gate: "oteryn:quest-progress/chosen-trial/fire_fighter/phase",
+        gate_value: 1,
+        advance_gate_to: None,
+        maximum: 10,
+    },
+    Counter {
         transition: "oteryn:quest-transition/native-kills/first-dragon",
         creature: "oteryn:creature.dragon",
         quest: "oteryn:quest.the_first_dragon_quest",
@@ -168,7 +208,8 @@ mod tests {
         let loaded = crate::quest::loader::load_embedded_quest_state("native-counter-test")
             .map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
-        let counter = &COUNTERS[0];
+        let counter = counter("oteryn:quest-transition/native-kills/first-dragon")
+            .ok_or("First Dragon counter")?;
         let transition = catalogue
             .transition(counter.transition)
             .ok_or("dragon binding")?;
