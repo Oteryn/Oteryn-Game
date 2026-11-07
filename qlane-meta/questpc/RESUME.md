@@ -1,3 +1,17 @@
+## Curos compiled bindings / regenerated pin WIP — 2026-11-07
+Curosstart-only sourceprogramme nowregistered, exactgreet118 throughreusable
+closedstatic parser (base23unchanged), sourceNPCscope47 placements. Fourcrate
+checkPASS1m20s, sourcegenerator/converterchecksPASS, greetingcustodyunit1PASS
+(non-PG), compilerbuildPASS. Rebuilttool beforepinrefresh; newworld909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9.
+OriginalactualPGRED47s retained; final3PG+strict notrunyet. WIPcompiles, not
+qualified. No newSQL; Father11atomicunchanged. SourcecueSourceProfileexists.
+NEXT finalCuros3PG/check/strict/fmt/generated checks, thenpushGREEN. Ifprereq
+fixture fails, inspectfenced foreigncatalogue beforeclaimingNPC failure; it
+seedsNF5/19 only, notTheNewFrontier qualification. Literalgreet asserted.
+Then addCuroslaterstages, nativeRenegade/questdoor, crystal40030/10srevert
+(reuseqworldfirst), exact10217grant. Keep wholequestunqualifieduntilcomplete.
+Everypush fetchexacttarget/mergeFETCH_HEAD; max15min, neverforce/rebase/main/PR.
+
 ## Curos actual PG RED / compiled probes — 2026-11-07
 Corrected signedfloor target compiles3m32s. ActualPG18.6 marker3cases:
 start46.934988753s,precedence46.959623179s,missing46.988316868s RED. Exact

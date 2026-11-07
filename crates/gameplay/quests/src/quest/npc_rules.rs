@@ -427,15 +427,17 @@ impl NpcRuleCatalog {
         RUNTIME
             .get_or_init(|| {
                 let mut catalogue = Self::load_embedded()?;
-                let supplemental = Self::from_json_documents(&[include_str!(
-                    "../../../../../content/dialogues/quest-rules-supplemental/draconia.json"
-                )])?;
+                let supplemental = Self::from_json_documents(&[
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/uneasy-curos.json"),
+                ])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
+                        || p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.uneasy-curos")
                         || matches!(
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"

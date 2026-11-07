@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.uneasy-curos",
+  "quest": "oteryn:quest.an_uneasy_alliance_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:82"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:81"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/an_uneasy_alliance_quest/curos/start",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "op": "ne",
+          "value": 16
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "op": "ne",
+          "value": 18
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06",
+          "op": "ge",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "So you still think you can be of any use for us? Words are cheap and easy. Admittedly, you've passed our first test but even some resilient beast might have accomplished that. ...",
+        "Your actions will tell if you are only yelping for attention like a puppy or if you have the teeth of a wolf. ...",
+        "A first tiny step was taken. You survived the test and ensured the survival of your allies for a while. Now it is time to make the next step. ...",
+        "So listen human: Our rule over the orcs is not unchallenged. Of course now and then someone shows up who thinks he can defeat us. Usually these fights end fast and bloody in the ring. ...",
+        "Right now, some coward from our midst, who is too afraid to face us in single combat, has gathered a group of followers, hoping more will follow and change sides. ...",
+        "With your help, his defeat will not only be deadly but also humiliating and so discourage others to follow his example. ...",
+        "You will seek out this rebel commander in his hideout and kill him. We will show them that not even a Mooh'Tah master is needed to get rid of such wannabe leaders but that a mere human can handle them. ...",
+        "Find him in the mountain north-west of here and kill him. If you find any loot, you can keep it."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:70",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:81",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:82"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/curos.lua",
+      "sha256": "6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

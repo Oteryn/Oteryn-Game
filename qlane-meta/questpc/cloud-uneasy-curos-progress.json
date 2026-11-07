@@ -1,6 +1,6 @@
 {
-  "status": "WIP_COMPILES_ACTUAL_PG_RED",
-  "runtime_change": false,
+  "status": "WIP_SOURCE_BINDINGS_COMPILE_PINNED_FINAL_PG_PENDING",
+  "runtime_change": true,
   "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua",
   "source_sha256": "6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e",
   "source_git_blob": "4fdffd8e90b8de6d2f17ce5c38c45020397c48c9",
@@ -19,7 +19,7 @@
     "Completed prerequisite accepts two flags in one receipt, exact command replay once.",
     "Preceding New Frontier branch suppresses Uneasy start."
   ],
-  "published_code": "Compiled source-coordinate NPC probes; no new Curos production bindings yet.",
+  "published_code": "Compiling WIP source bindings; whole quest remains unqualified.",
   "reuse_checked": {
     "npcfix": "c6caad19153b23400d6f750d208ff7cffa5f006b",
     "qnpcfx": "51d175bfbf23c25f7b8371fb2c6a841b1a609fd7",
@@ -36,5 +36,25 @@
     },
     "raw_sha256": "39f61912e9a7f9859f1acee81e695078aa1c86be2e7c3e0c14bd0e5afcc4a7d0",
     "stored_sha256": "39f61912e9a7f9859f1acee81e695078aa1c86be2e7c3e0c14bd0e5afcc4a7d0"
+  },
+  "implementation": {
+    "programme": "Curos start only; preceding Frontier guards; two flags in one existing writer commit",
+    "greeting": "Reusable closed static-greeting binding; frozen base23 unchanged",
+    "placement": "Curos source33174,31394,z7; regenerated47 placements",
+    "source_generator": "PASS --check and placement converter --check",
+    "check": "PASS four changed crates1m20s",
+    "unit": "PASS one non-PG source identity/hash/text rejection test",
+    "compiler_build": "PASS before pin-refresh",
+    "pins": {
+      "inputs_digest": "bf7cb49f4e74d0007703c8beb6db559f6f4bb739bd2a9f2600db7b570df97867",
+      "pins": [
+        {
+          "digest": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
+          "previous": "174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "actual_pg": "Final three cases pending; original actual RED retained, no positive qualification yet."
   }
 }

@@ -6,15 +6,25 @@ use std::sync::LazyLock;
 
 mod corym;
 mod draconia;
+mod supplemental;
 
 const BASE: &str = include_str!("../../../../content/dialogues/quests-2/npc-greetings.json");
 const CORYM: &str = include_str!("../../../../content/dialogues/quests-2/corym-npc-greetings.json");
+const CUROS: &str =
+    include_str!("../../../../content/dialogues/quests-2/uneasy-curos-npc-greetings.json");
+const CUROS_BINDINGS: &[supplemental::Binding] = &[supplemental::Binding {
+    npc: "oteryn:npc.curos",
+    path: "data-global/npc/curos.lua",
+    sha256: "6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e",
+    line: 118,
+    greet: "Be greeted blank skin.",
+}];
 
 const DRACONIA: &str =
     include_str!("../../../../content/dialogues/quests-2/draconia-npc-greetings.json");
 
-pub(crate) fn revision_material() -> [&'static str; 3] {
-    [BASE, CORYM, DRACONIA]
+pub(crate) fn revision_material() -> [&'static str; 4] {
+    [BASE, CORYM, CUROS, DRACONIA]
 }
 
 const PIN: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
@@ -99,12 +109,15 @@ fn parse(text: &str) -> Option<Vec<Greeting>> {
 pub fn get(npc: &str) -> Option<&'static Greeting> {
     static DATA: LazyLock<Option<Vec<Greeting>>> = LazyLock::new(|| parse(BASE));
     static CORYM_DATA: LazyLock<Option<Vec<Greeting>>> = LazyLock::new(|| corym::parse(CORYM));
+    static CUROS_DATA: LazyLock<Option<Vec<Greeting>>> =
+        LazyLock::new(|| supplemental::parse(CUROS, CUROS_BINDINGS));
     static DRACONIA_DATA: LazyLock<Option<Vec<Greeting>>> =
         LazyLock::new(|| draconia::parse(DRACONIA));
     DATA.as_ref()?
         .iter()
         .find(|entry| entry.npc == npc)
         .or_else(|| CORYM_DATA.as_ref()?.iter().find(|entry| entry.npc == npc))
+        .or_else(|| CUROS_DATA.as_ref()?.iter().find(|entry| entry.npc == npc))
         .or_else(|| {
             DRACONIA_DATA
                 .as_ref()?

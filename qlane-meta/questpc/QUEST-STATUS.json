@@ -8666,10 +8666,30 @@
     },
     "multi_player_proof": "cloud-source-death-multi-validation.json",
     "curos_baseline": {
-      "status": "ACTUAL_PG_RED",
+      "status": "WIP_SOURCE_BINDINGS_COMPILE_PINNED_FINAL_PG_PENDING",
       "proof": "cloud-uneasy-curos-progress.json",
       "red_point": "native Curos placement missing from committed world source table",
-      "runtime_change": false
+      "runtime_change": true
+    },
+    "curos_static_checks": {
+      "programme": "Curos start only; preceding Frontier guards; two flags in one existing writer commit",
+      "greeting": "Reusable closed static-greeting binding; frozen base23 unchanged",
+      "placement": "Curos source33174,31394,z7; regenerated47 placements",
+      "source_generator": "PASS --check and placement converter --check",
+      "check": "PASS four changed crates1m20s",
+      "unit": "PASS one non-PG source identity/hash/text rejection test",
+      "compiler_build": "PASS before pin-refresh",
+      "pins": {
+        "inputs_digest": "bf7cb49f4e74d0007703c8beb6db559f6f4bb739bd2a9f2600db7b570df97867",
+        "pins": [
+          {
+            "digest": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
+            "previous": "174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
+            "world": "oteryn"
+          }
+        ]
+      },
+      "actual_pg": "Final three cases pending; original actual RED retained, no positive qualification yet."
     }
   },
   "engine_progress": {

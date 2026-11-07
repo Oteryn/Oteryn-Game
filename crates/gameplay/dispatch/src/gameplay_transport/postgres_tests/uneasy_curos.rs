@@ -175,7 +175,11 @@ pub(super) async fn exercise(
     let [npc] = super::classic_quests::install(owner, admitted, [NPC]).await?;
     // The common NPC helper places at player x,y+1: this is exactly Curos's
     // committed source coordinate, rather than an arbitrary test-only anchor.
-    super::classic_quests::talk(owner, admitted, npc, 9200, "hi").await?;
+    let greet = super::classic_quests::talk(owner, admitted, npc, 9200, "hi").await?;
+    assert!(
+        greet.iter().any(|line| line == "Be greeted blank skin."),
+        "literal Curos source greeting: {greet:?}"
+    );
     let reply = super::classic_quests::talk(owner, admitted, npc, 9201, "mission").await?;
     let rows:Vec<(String,i64)>=sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=ANY($2::text[]) ORDER BY track_key").bind(admitted.item_fence.ok_or("fence")?.character_id.as_bytes().as_slice()).bind(vec![DOOR,LINE]).fetch_all(&h.pool).await?;
     if name.ends_with("start") {
