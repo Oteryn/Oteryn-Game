@@ -1725,3 +1725,20 @@ fn srv7_house_native_floor_bookcase_6115_move_then_use_constructs_in_place() -> 
         NativeWrapCase::Floor,
     )
 }
+
+pub(super) async fn capture_peer(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    command: u64,
+    kind: u32,
+    body: Vec<u8>,
+    observed: Option<std::num::NonZeroU32>,
+    carried: bool,
+) -> TestResult<(
+    oteryn_protocol_oteryn::CommandStatus,
+    Vec<u8>,
+    Vec<Vec<u8>>,
+    Vec<u8>,
+)> {
+    opaque_peer::command(owner, admitted, command, kind, body, observed, carried).await
+}

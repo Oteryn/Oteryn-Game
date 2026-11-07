@@ -89,13 +89,17 @@ pub(super) async fn command(
                 encode_item_move_intent_for(
                     &ItemMoveIntent {
                         source: handle,
-                        destination: ItemMoveDestination::Ground(
-                            oteryn_protocol_oteryn::item_view::WorldTilePosition {
-                                x: POSITION[0],
-                                y: POSITION[1],
-                                floor: map_floor.ok_or("actual House map wire floor")?,
-                            },
-                        ),
+                        destination: if body == [0] {
+                            ItemMoveDestination::MainBackpack
+                        } else {
+                            ItemMoveDestination::Ground(
+                                oteryn_protocol_oteryn::item_view::WorldTilePosition {
+                                    x: POSITION[0],
+                                    y: POSITION[1],
+                                    floor: map_floor.ok_or("actual House map wire floor")?,
+                                },
+                            )
+                        },
                     },
                     ItemMoveSelection {
                         world_interaction: true,
@@ -118,7 +122,9 @@ pub(super) async fn command(
                     handle,
                     observed_definition,
                 };
-                if carried {
+                if body == [5] {
+                    request.encode_probe().to_vec()
+                } else if carried {
                     request.encode_carried().to_vec()
                 } else {
                     request.encode().to_vec()

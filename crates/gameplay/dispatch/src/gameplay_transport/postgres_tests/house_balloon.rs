@@ -624,3 +624,8 @@ fn srv7_golden_display_missing_outfit_native_house_use_preserves_item_and_publis
         "oteryn:item.tibia.i31502",
     )
 }
+
+#[path = "house_balloon/artist_wrap_capture.rs"]
+mod artist_wrap_capture;
+#[path = "house_balloon/wrap_capture_metadata.rs"]
+mod wrap_capture_metadata;

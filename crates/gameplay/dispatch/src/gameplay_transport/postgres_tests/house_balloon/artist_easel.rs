@@ -167,7 +167,7 @@ pub(super) async fn exercise(
         Some(before_ref),
     )
     .map_err(debug)?;
-    let (_, outcome, _, _) = exchange(
+    let (mut admitted, outcome, _, _) = exchange(
         owner,
         admitted,
         2,
@@ -197,5 +197,8 @@ pub(super) async fn exercise(
         before["minted_transaction_id"]
     );
     assert!(sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM game_map_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid AND transaction_id=$2::uuid)").bind(source.as_slice()).bind(after["minted_transaction_id"].as_str().ok_or("mint lineage")?).fetch_one(&h.pool).await?);
+    if std::env::var_os("OTERYN_SRV7_ARTIST_WRAP_CAPTURE").is_some() {
+        super::artist_wrap_capture::exercise(h, owner, &mut admitted, source, after_ref).await?;
+    }
     Ok(())
 }

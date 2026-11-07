@@ -269,5 +269,8 @@ pub(super) async fn exercise(
     assert_eq!(final_origin, original_origin);
     let placed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_house_interior_locations WHERE item_instance_id=encode($1,'hex')::uuid AND house_key=$2)").bind(kit.as_slice()).bind(HOUSE).fetch_one(&h.pool).await?;
     assert!(placed);
+    if std::env::var_os("OTERYN_SRV7_OPAQUE_WRAP_CAPTURE").is_some() {
+        super::royal_wrap_capture::exercise(h, owner, admitted, kit).await?;
+    }
     Ok(())
 }

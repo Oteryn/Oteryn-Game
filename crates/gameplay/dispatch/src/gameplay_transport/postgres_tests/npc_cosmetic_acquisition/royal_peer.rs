@@ -17,6 +17,19 @@ pub(super) async fn command(
     body: Vec<u8>,
     observed: Option<std::num::NonZeroU32>,
 ) -> TestResult<(CommandStatus, Vec<u8>, Vec<Vec<u8>>)> {
+    let (status, payload, frames, _) =
+        command_capture(owner, admitted, command, kind, body, observed, None).await?;
+    Ok((status, payload, frames))
+}
+pub(super) async fn command_capture(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    command: u64,
+    kind: u32,
+    body: Vec<u8>,
+    observed: Option<std::num::NonZeroU32>,
+    opaque: Option<u8>,
+) -> TestResult<(CommandStatus, Vec<u8>, Vec<Vec<u8>>, Vec<u8>)> {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let initial = *admitted;
     let client_task = async {
@@ -72,7 +85,18 @@ pub(super) async fn command(
             }
         }
         let body = if observed.is_some() {
-            if Some(kind) == oteryn_protocol_oteryn::item_look::ITEM_LOOK_COMMAND_ID {
+            if let Some(marker) = opaque {
+                let request = oteryn_protocol_oteryn::house_wrap::OpaqueWrapRequest {
+                    handle: handle.ok_or("actual Royal opaque snapshot handle")?,
+                    observed_definition: observed.ok_or("actual opaque definition")?,
+                };
+                match marker {
+                    3 => request.encode().to_vec(),
+                    4 => request.encode_carried().to_vec(),
+                    5 => request.encode_probe().to_vec(),
+                    _ => return Err("invalid capture marker".into()),
+                }
+            } else if Some(kind) == oteryn_protocol_oteryn::item_look::ITEM_LOOK_COMMAND_ID {
                 oteryn_protocol_oteryn::item_look::encode_item_look_intent_for(
                     oteryn_protocol_oteryn::item_look::ItemLookIntent {
                         target: oteryn_protocol_oteryn::item_look::ItemLookTarget::Item(
@@ -127,7 +151,7 @@ pub(super) async fn command(
             cursor += 4 + length;
         }
         let (status, payload) = result.ok_or("actual Royal native command result")?;
-        Ok::<_, Box<dyn std::error::Error>>((status, payload, frames))
+        Ok::<_, Box<dyn std::error::Error>>((status, payload, frames, frame))
     };
     let server_task = async {
         let end = serve_admitted(&mut server, initial, owner, IDLE_LIVENESS).await;

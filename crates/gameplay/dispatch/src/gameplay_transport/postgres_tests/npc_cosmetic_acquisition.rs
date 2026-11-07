@@ -144,11 +144,21 @@ fn scenario_for_primal_case(
             .await
             .map_err(debug)?;
         let world_id = fence(1)?.runtime_scope.world_id();
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_source(
-            world_id,
-            "content-1",
-            None,
-        )?;
+        let (controller, pin) = if royal
+            && royal::full()
+            && std::env::var_os("OTERYN_SRV7_OPAQUE_WRAP_CAPTURE").is_some()
+        {
+            super::raid_live::hare_production_activation::activate(
+                world_id,
+                "OTERYN_SRV7_OPAQUE_WRAP_CLIENT_ARTIFACT",
+            )?
+        } else {
+            super::death_ml_loss_composed::production_generation_with_source(
+                world_id,
+                "content-1",
+                None,
+            )?
+        };
         let active = controller.active().ok_or("active generation")?;
         let (bundle, actual_npcs) = if simon_lifetime_source {
             let (bundle, npcs) = simon_lifetime::world(
@@ -491,7 +501,7 @@ fn scenario_for_primal_case(
                 &offered,
                 if royal && royal::full() {
                     &[
-                        3, 4, 6, 7, 11, 15, 18, 28, 37, 49, 62, 86, 153, 207, 350, 386,
+                        3, 4, 6, 7, 11, 15, 18, 28, 37, 49, 62, 86, 153, 207, 350, 386, 387,
                     ]
                 } else if npc_key == "oteryn:npc.gnomadness" {
                     &[3, 6, 7, 11, 15, 18, 37, 92, 153, 207, 350]
@@ -890,6 +900,10 @@ mod royal_downstream;
 mod royal_full_purchase;
 #[path = "npc_cosmetic_acquisition/royal_peer.rs"]
 mod royal_peer;
+#[path = "npc_cosmetic_acquisition/royal_wrap_capture.rs"]
+mod royal_wrap_capture;
+#[path = "npc_cosmetic_acquisition/wrap_capture_metadata.rs"]
+mod wrap_capture_metadata;
 #[test]
 fn srv7_npc_king_one_billion_actual_inbox_house_golden_display_pipeline() -> TestResult {
     std::thread::Builder::new()

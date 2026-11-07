@@ -33,7 +33,14 @@ pub(super) async fn scenario(
         .await
         .map_err(debug)?;
     let base = Dependencies::new()?;
-    let (controller, native_pin) = if matches!(
+    let (controller, native_pin) = if case == Case::ArtistEasel
+        && std::env::var_os("OTERYN_SRV7_ARTIST_WRAP_CAPTURE").is_some()
+    {
+        super::super::raid_live::hare_production_activation::activate(
+            base.admitted.world_id,
+            "OTERYN_SRV7_ARTIST_WRAP_CLIENT_ARTIFACT",
+        )?
+    } else if matches!(
         case,
         Case::GiftDragonDeath | Case::GiftDragonDeathCrash | Case::GiftDragonDeathHigh
     ) {
@@ -328,7 +335,7 @@ pub(super) async fn scenario(
         Case::NativeMove => &[4, 6, 11, 15, 18, 49, 86],
         Case::Voice => &[4, 6, 7, 11, 15, 18, 49, 86, 288, 350],
         Case::StaticBase => &[4, 6, 11, 15, 18, 49, 86],
-        Case::ArtistEasel => &[4, 6, 11, 15, 18, 49, 86, 388],
+        Case::ArtistEasel => &[4, 6, 11, 15, 18, 49, 86, 207, 350, 387, 388],
         Case::AbsoluteRotate | Case::AbsoluteLegacyPlace | Case::AbsoluteHistory => {
             &[4, 6, 11, 15, 18, 49, 86, 388, 350]
         }
