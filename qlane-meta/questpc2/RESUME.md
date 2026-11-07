@@ -1,3 +1,21 @@
+# WIP zero-claim guard proven, corrected safe landing compiles: push/rerunPG
+
+Actual PG180006109.45s /tmp/questpc2-completion-full-green-pg.log: Native6
+route then zero-claim return rejects completion (nativephase0/own3 asserted).
+Re-ascent reaches3 but flatpath tofirstchest picks down-stair88,43; actual4
+vsplanned3 assertion correctly fails. Driver now realEast to89,42,z3 before
+flatsearch, exactposition asserted. All movement/combat/claim guards retained.
+Core3crate alltarget/allfeatureclippy PASS149s; correcteddriver clippy21.76s.
+Cold new-layout native compile4m38s PASS,noOOM after verifiedoldREADYarchive.
+Push compiling checkpoint now (<15min), then fullcase zero/partial3/all4
+claim finish/journal PG. Still no wholequalification; owned27remain.
+NativeABI is now warm currentlayout; precompletion oldcache archive canretire
+onlyafter newREADYproof, ledger /tmp/questpc2-completion-native-abi-cache-retention.json.
+Current nativeexe is latest109.45sRED; hold/park before warmcompile tofree
+inactiveclippy RAM/linkspace. Latest oldbaseline binary retained in
+retained-cache-archives/questpc2-completion-before-native-abi-executable.gz.
+No source/native generator inputs changed by landingdriverfix.
+
 # WIP generic completion compiles: push, then full negative/positive PG
 
 Canonical source return32597,31642,z7 succeeds; actualPG104.46s exact RED

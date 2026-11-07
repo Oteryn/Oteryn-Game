@@ -551,3 +551,10 @@ after original receipt replay and before offering consumption. One terminal
 completion unit validates distinct<=8keys, terminal storage and exact current
 Elvenbane source SHA; qengine_access/Native43write+check passed. FullPG remains
 pending with zero/partial claims refusal and allfour positive finish.
+
+Completion firstPG109.45s proves actual zero-claim return refuses closing
+eitherphase. Driver re-ascent landed88,42,z3 then flatpath chose down-stair
+88,43; correct native movement descended4, so assertion failed. Use ordinary
+East step to89,42,z3 before flatsearch, matching previouslyobserved source
+room approach. No geometry/guard/health/damage changes. Threecrateclippy149s
+and driverclippy21.76s PASS; full partial/all-claim finish proof stillpending.

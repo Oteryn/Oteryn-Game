@@ -263,7 +263,7 @@ async fn return_to_chests(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
 ) -> TestResult {
-    use oteryn_protocol_oteryn::world_spatial::StepDirection::North;
+    use oteryn_protocol_oteryn::world_spatial::StepDirection::{East, North};
     for (floor, x, y) in [(7, 32593, 31644), (6, 32588, 31644)] {
         super::desert_earned_route::walk_to(
             owner,
@@ -313,6 +313,20 @@ async fn return_to_chests(
     assert_eq!(
         at.floor, 3,
         "actual source re-ascent after refused completion"
+    );
+    // Move off the landing before the flat path search can choose the down stair.
+    super::desert_earned_route::step(owner, member, East).await?;
+    let at = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(member.runtime_actor.ok_or("actor")?)
+        .map_err(debug)?
+        .position();
+    assert_eq!(
+        (at.x, at.y, at.floor),
+        (32589, 31642, 3),
+        "actual safe source approach to the treasure room"
     );
     Ok(())
 }

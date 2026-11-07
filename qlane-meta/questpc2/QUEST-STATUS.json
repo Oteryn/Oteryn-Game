@@ -2136,7 +2136,7 @@
     "world_digest": "56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306"
   },
   "treasure_completion_authoring": {
-    "state": "WIP_GENERIC_CLAIM_GUARDED_COMPLETION_COMPILES",
+    "state": "WIP_ZERO_CLAIM_REFUSAL_PROVEN_SAFE_LANDING_DRIVER_COMPILES",
     "server_version_num": 180006,
     "red_postgres_seconds": 95.95,
     "red_log": "/tmp/questpc2-treasure-source-corrected-red-pg.log",
@@ -2151,7 +2151,7 @@
       "native descent to source entry",
       "phase4 and completed admitted journal"
     ],
-    "next": "Full PG with zero-claim and partial3claim returns refused, all4claim completion/journal; final clippy. Do not qualify whole quest before proof.",
+    "next": "Push compiling driver checkpoint, rerun full zero/partial3/all4-claim PG then journal projection and mark wholequest only after final proof.",
     "latest_postgres_seconds": 100.4,
     "latest_log": "/tmp/questpc2-treasure-uids-green-pg.log",
     "latest_point": "Native6, four source chests, once/replay, four roots and five nested children samexmin, four native descending floor transitions all pass. No source walk floor7(32593,31644) to proposed south-east endpoint32599,31652. Next use existing canonical return marker32597,31642 then finish phase4/journal generically.",
@@ -2173,6 +2173,12 @@
     "completion": "Reusable bounded completion effect with distinct durable once-claim identities; same fenced transaction, after replay recovery and before consumption. Terminal8-track write marks journal completed.",
     "completion_unit": "PASS bounded/duplicate/wrongkey/read-only/exact current provenance rejection",
     "check_three_crates": "1m 05s",
-    "generation": "qengine_access write/check and Native43write/check PASS"
+    "generation": "qengine_access write/check and Native43write/check PASS",
+    "completion_full_red_seconds": 109.45,
+    "completion_full_red_log": "/tmp/questpc2-completion-full-green-pg.log",
+    "completion_full_red_point": "Zero-claim actual return refuses completion and keeps both phases. Re-ascent succeeds, then flat planner steps onto down stair: actualfloor4 vsplannedfloor3. Added real East step off landing, assert32589,31642,z3.",
+    "cold_native_compile": "PASS4m38s noOOM",
+    "clippy_three_crates_seconds": 149,
+    "clippy_safe_landing_seconds": 21.76
   }
 }
