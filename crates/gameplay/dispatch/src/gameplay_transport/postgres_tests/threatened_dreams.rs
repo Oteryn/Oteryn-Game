@@ -5,6 +5,8 @@
 mod acquisition;
 #[path = "threatened_dreams/treasure.rs"]
 mod treasure;
+#[path = "threatened_dreams/fairies.rs"]
+mod fairies;
 #[path = "threatened_dreams/irmana.rs"]
 mod irmana;
 #[path = "threatened_dreams/delivery.rs"]

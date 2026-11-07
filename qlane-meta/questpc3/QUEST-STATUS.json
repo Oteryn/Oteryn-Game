@@ -4374,7 +4374,7 @@
     },
     "current_batch": {
       "batch": "threatened_fairies_15",
-      "phase": "Five-entry PG RED test building locally after fixture API fixes; production15 remains untouched. Publish independently compiling shared multi-AID world fixture support now; test/mount remain local until full test build confirmed.",
+      "phase": "Compiled native five-entry PG RED complete; implement bounded relative world storage and existing channel transform/decay reuse now",
       "entries": [
         "AID40016 Fairy01",
         "AID40017 Fairy02",
@@ -4391,6 +4391,21 @@
         "log": "/tmp/questpc3-fairies-red-retry.log",
         "state": "building, no PostgreSQL RED marker accepted yet",
         "fixture_compile_fixes": "BundleWorld.facts() method; poll_fn rather than unavailable Tokio join macro; normal native capability offer"
+      },
+      "postgres_red": {
+        "duration_ms": 72151,
+        "server": "PostgreSQL18.6",
+        "evidence": "entries0 flags0 counter0 scheduled0 restored0",
+        "log": "/tmp/questpc3-fairies-red-retry.log",
+        "sha256": "a38ca1f342e1aea664cd10a47e483fcbe281438c066707ca712e3a5c3099b611"
+      },
+      "source_facts": {
+        "file": "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67",
+        "git_blob": "96e10ff0166fdc0d6c17fd584721173b973ae560",
+        "sha256": "73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243",
+        "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
+        "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
+        "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
       }
     },
     "diagnosis": {

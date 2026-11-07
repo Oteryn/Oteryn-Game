@@ -1,3 +1,5 @@
+FAIRIES15 real PG RED complete72151ms on PostgreSQL18.6: entries0/flags0/counter0/scheduled0/restored0. Test and multi-AID fixture compile; publish baseline then implement relative world-storage increment and existing channel decay/timed transform reuse. Production15 not yet changed. Log /tmp/questpc3-fairies-red-retry.log.
+
 BATCH15 ACTIVE: production untouched; five-fairy PG RED test/mount local, build /tmp/questpc3-fairies-red-retry.log. Multi-AID source world fixture helper typechecks and is published separately; no PG RED accepted until actual marker/result. Fixture uses existing world callback/timer APIs and all five source AIDs in one Channel.
 
 # questpc3 current handoff
